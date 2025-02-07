@@ -19,6 +19,11 @@ out/
 .turbo/
 .cache/
 
+# Turbo daemon logs
+.turbo/daemon/
+**/turbo/daemon/
+*.turbo.log*
+
 # Logs
 *.log
 npm-debug.log*
