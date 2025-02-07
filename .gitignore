@@ -40,6 +40,10 @@ pnpm-debug.log*
 # Testing
 coverage/
 
+# File Types Directory
+file_types/
+file_types/**/*
+
 # OS specific
 .DS_Store
 Thumbs.db 

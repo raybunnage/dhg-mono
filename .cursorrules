@@ -201,6 +201,32 @@
           "description": "Initialize Netlify for the second app"
         }
       ]
+    },
+    {
+      "type": "FileTypes",
+      "description": "Reference files and templates directory",
+      "structure": {
+        "root": {
+          "path": "/file_types",
+          "purpose": "Store reference files and templates that should not be in source control",
+          "patterns": [
+            "*.json - JSON schema examples",
+            "*.jsx - React component templates",
+            "*.md - Documentation templates",
+            "*.config.* - Configuration templates"
+          ]
+        }
+      },
+      "usage": {
+        "location": "root directory only",
+        "gitStatus": "completely ignored",
+        "purpose": [
+          "Store reference files",
+          "Keep template examples",
+          "Test file patterns",
+          "Temporary development files"
+        ]
+      }
     }
   ]
 } 
