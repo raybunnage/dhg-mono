@@ -227,6 +227,107 @@
           "Temporary development files"
         ]
       }
+    },
+    {
+      "type": "Documentation",
+      "instructions": "Maintain clear documentation in markdown (.md) files within the docs directory.",
+      "structure": {
+        "location": "docs/",
+        "files": {
+          "deployment-guide.md": {
+            "purpose": "Main deployment and setup documentation",
+            "sections": [
+              "Project Overview",
+              "Environment Setup",
+              "Local Development",
+              "Deployment",
+              "Project Structure"
+            ],
+            "beginnerGuidance": {
+              "environmentExplanations": {
+                "production": "The live website that users see at dhg-hub.org",
+                "development": "A separate version for testing new features before they go live",
+                "preview": "Temporary versions to check individual features while they're being built"
+              },
+              "vercelConcepts": {
+                "deployment": "The process of making your website live on the internet",
+                "buildCommand": "Instructions that tell Vercel how to create the final version of your website",
+                "rootDirectory": "The main folder containing your website code",
+                "outputDirectory": "Where the final, built version of your website is stored"
+              },
+              "branchingStrategy": {
+                "main": "Your primary code that runs the live website",
+                "development": "Where new features are combined and tested",
+                "feature": "Individual branches for working on new features"
+              }
+            },
+            "commonTasks": {
+              "localDevelopment": "How to run and test the website on your computer",
+              "makingChanges": "Steps to create and test new features",
+              "deployment": "How to get your changes onto the live website"
+            }
+          }
+        },
+        "formatting": {
+          "useMarkdown": true,
+          "includeCodeBlocks": true,
+          "maintainTableOfContents": true,
+          "style": {
+            "language": "Clear and simple, avoiding technical jargon",
+            "examples": "Include practical examples for each concept",
+            "screenshots": "Add visual guides for important steps"
+          }
+        }
+      }
+    },
+    {
+      "type": "Scripts",
+      "description": "Monorepo script organization and standards",
+      "structure": {
+        "root": {
+          "path": "/scripts",
+          "subdirectories": {
+            "setup": {
+              "description": "Initial setup and configuration scripts",
+              "examples": [
+                "init-workspace.sh",
+                "setup-env.sh",
+                "create-app.sh"
+              ]
+            },
+            "build": {
+              "description": "Build-related scripts",
+              "examples": [
+                "build-all.sh",
+                "build-affected.sh",
+                "clean-builds.sh"
+              ]
+            },
+            "app-management": {
+              "description": "Application management scripts",
+              "examples": [
+                "copy-lovable-app.sh",
+                "create-new-app.sh",
+                "update-app-config.sh"
+              ]
+            }
+          }
+        },
+        "conventions": {
+          "naming": {
+            "pattern": "kebab-case",
+            "extension": ".sh or .ts for complex scripts"
+          },
+          "documentation": {
+            "requirements": [
+              "Script purpose in header comment",
+              "Usage examples",
+              "Required environment variables",
+              "Dependencies"
+            ]
+          }
+        }
+      }
     }
   ]
 } 
