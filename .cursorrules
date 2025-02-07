@@ -1,0 +1,206 @@
+{
+  "rules": [
+    {
+      "type": "React",
+      "instructions": "Use functional components with hooks. Implement responsive design using Tailwind CSS.",
+      "componentStructure": {
+        "namingConventions": {
+          "componentNames": "PascalCase",
+          "directoryNames": "lowercase-with-dashes"
+        },
+        "bestPractices": {
+          "componentDeclaration": "function",
+          "hooksUsage": ["useState", "useEffect", "useContext"],
+          "preferFunctionalComponents": true
+        },
+        "styling": {
+          "approach": {
+            "primary": "Tailwind CSS",
+            "conventions": [
+              "Keep styles close to components",
+              "Use utility classes first"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "Vite",
+      "instructions": "Leverage Vite's fast bundling and hot module replacement."
+    },
+    {
+      "type": "PackageManagement",
+      "packageManager": "pnpm",
+      "commandLocation": {
+        "root": {
+          "description": "Commands that must be run from repository root",
+          "commands": [
+            "pnpm install",
+            "pnpm build",
+            "turbo run build",
+            "pnpm add -w"
+          ]
+        },
+        "app": {
+          "description": "Commands that should be run from app directory",
+          "commands": [
+            "vite",
+            "local development server"
+          ]
+        }
+      },
+      "rules": [
+        {
+          "name": "package-installation",
+          "description": "Rules for installing packages in monorepo",
+          "pattern": {
+            "command": "pnpm add",
+            "requireFilter": true,
+            "filterFormat": "--filter {app-name}"
+          },
+          "examples": [
+            {
+              "correct": "pnpm add -D package-name --filter app-name",
+              "incorrect": "pnpm add -D package-name",
+              "explanation": "Must specify app with --filter flag in monorepo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "GitIgnore",
+      "description": "Monorepo-specific gitignore patterns",
+      "structure": {
+        "root": {
+          "path": "/.gitignore",
+          "patterns": [
+            "node_modules/",
+            "dist/",
+            ".env*",
+            ".turbo/",
+            "*.log"
+          ]
+        },
+        "apps": {
+          "path": "apps/*/.gitignore",
+          "patterns": [
+            "dist/",
+            ".env*.local"
+          ]
+        }
+      }
+    },
+    {
+      "type": "StyleGuide",
+      "description": "Consistent styling patterns across components",
+      "patterns": {
+        "buttons": {
+          "primary": {
+            "base": "bg-blue-600 text-white rounded-md px-4 py-2",
+            "hover": "hover:bg-blue-700"
+          }
+        },
+        "layout": {
+          "container": "max-w-7xl mx-auto px-4",
+          "section": "py-12"
+        }
+      }
+    },
+    {
+      "type": "Netlify",
+      "description": "Netlify deployment configuration for monorepo",
+      "structure": {
+        "root": {
+          "path": "/netlify.toml",
+          "required": true
+        },
+        "apps": {
+          "path": "apps/*/netlify.toml",
+          "required": true,
+          "configuration": {
+            "base": "apps/{app-name}",
+            "publish": "dist"
+          }
+        }
+      }
+    },
+    {
+      "type": "MonorepoStructure",
+      "description": "Standard structure for dhg monorepo",
+      "apps": {
+        "location": "apps/",
+        "naming": "dhg-{name}",
+        "requiredFiles": [
+          "package.json",
+          "vite.config.js",
+          "netlify.toml",
+          "src/App.jsx",
+          "src/main.jsx",
+          "index.html"
+        ]
+      }
+    },
+    {
+      "type": "NetlifyCommands",
+      "description": "Netlify CLI commands and their proper locations",
+      "commandLocation": {
+        "root": {
+          "description": "Commands to run from repository root",
+          "commands": [
+            "pnpm add -Dw netlify-cli",
+            "netlify login",
+            "netlify link"
+          ]
+        },
+        "app": {
+          "description": "Commands to run from individual app directories (apps/dhg-a or apps/dhg-b)",
+          "commands": [
+            "netlify init",
+            "netlify deploy",
+            "netlify deploy --prod"
+          ],
+          "note": "Must cd into app directory first: cd apps/dhg-a"
+        }
+      },
+      "setupSteps": [
+        {
+          "step": 1,
+          "location": "root",
+          "command": "pnpm add -Dw netlify-cli",
+          "description": "Install Netlify CLI as a dev dependency in root"
+        },
+        {
+          "step": 2,
+          "location": "root",
+          "command": "netlify login",
+          "description": "Login to your Netlify account"
+        },
+        {
+          "step": 3,
+          "location": "app",
+          "command": "cd apps/dhg-a",
+          "description": "Navigate to first app directory"
+        },
+        {
+          "step": 4,
+          "location": "app",
+          "command": "netlify init",
+          "description": "Initialize Netlify for the app"
+        },
+        {
+          "step": 5,
+          "location": "app",
+          "command": "cd ../dhg-b",
+          "description": "Navigate to second app directory"
+        },
+        {
+          "step": 6,
+          "location": "app",
+          "command": "netlify init",
+          "description": "Initialize Netlify for the second app"
+        }
+      ]
+    }
+  ]
+} 
