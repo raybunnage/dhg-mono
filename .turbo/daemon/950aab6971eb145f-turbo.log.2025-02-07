@@ -56,3 +56,8 @@
 2025-02-07T13:54:44.509602Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-a/apps/dhg-a"), AnchoredSystemPathBuf("apps/dhg-a/apps")}
 2025-02-07T13:54:44.509624Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-a"), path: AnchoredSystemPathBuf("apps/dhg-a") }}))
 2025-02-07T13:54:44.509636Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-07T13:59:02.507584Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-b/vite.config.js.timestamp-1738936742412-709d2c66f1805.mjs")}
+2025-02-07T13:59:02.507623Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-b"), path: AnchoredSystemPathBuf("apps/dhg-b") }}))
+2025-02-07T13:59:02.807720Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-b/dist")}
+2025-02-07T13:59:02.807734Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-b"), path: AnchoredSystemPathBuf("apps/dhg-b") }}))
+2025-02-07T13:59:02.807749Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
