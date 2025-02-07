@@ -48,3 +48,8 @@
 2025-02-07T13:49:15.311211Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(All)
 2025-02-07T13:50:09.111642Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".gitignore")}
 2025-02-07T13:50:09.111654Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-07T13:54:14.109872Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-a/vite.config.js.timestamp-1738936454005-6beaa19cc8427.mjs")}
+2025-02-07T13:54:14.109923Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-a"), path: AnchoredSystemPathBuf("apps/dhg-a") }}))
+2025-02-07T13:54:14.409412Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-a/dist")}
+2025-02-07T13:54:14.409421Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-a"), path: AnchoredSystemPathBuf("apps/dhg-a") }}))
+2025-02-07T13:54:14.409438Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
