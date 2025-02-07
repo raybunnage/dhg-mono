@@ -53,3 +53,6 @@
 2025-02-07T13:54:14.409412Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-a/dist")}
 2025-02-07T13:54:14.409421Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-a"), path: AnchoredSystemPathBuf("apps/dhg-a") }}))
 2025-02-07T13:54:14.409438Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-07T13:54:44.509602Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-a/apps/dhg-a"), AnchoredSystemPathBuf("apps/dhg-a/apps")}
+2025-02-07T13:54:44.509624Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-a"), path: AnchoredSystemPathBuf("apps/dhg-a") }}))
+2025-02-07T13:54:44.509636Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
