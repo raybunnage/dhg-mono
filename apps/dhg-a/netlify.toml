@@ -1,0 +1,4 @@
+[build]
+  base = "apps/dhg-a"
+  command = "pnpm build"
+  publish = "dist" 
