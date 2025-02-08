@@ -6,7 +6,11 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
-    "copy-app": "chmod +x scripts/app-management/copy-lovable-app.sh && ./scripts/app-management/copy-lovable-app.sh"
+    "copy-app": "chmod +x scripts/app-management/copy-lovable-app.sh && ./scripts/app-management/copy-lovable-app.sh",
+    "backup-configs": "chmod +x scripts/app-management/backup-configs.sh && ./scripts/app-management/backup-configs.sh",
+    "restore-configs": "chmod +x scripts/app-management/restore-configs.sh && ./scripts/app-management/restore-configs.sh",
+    "list-backups": "chmod +x scripts/app-management/list-backups.sh && ./scripts/app-management/list-backups.sh",
+    "list-backups-date": "chmod +x scripts/app-management/list-backups.sh && ./scripts/app-management/list-backups.sh"
   },
   "devDependencies": {
     "netlify-cli": "^18.0.4",

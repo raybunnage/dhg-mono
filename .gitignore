@@ -19,6 +19,9 @@ out/
 .turbo/
 .cache/
 
+# Backups
+.backups/
+
 # Turbo daemon logs
 .turbo/daemon/
 **/turbo/daemon/
