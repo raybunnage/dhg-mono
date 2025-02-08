@@ -12,7 +12,10 @@ export default defineConfig({
     sourcemap: true,
   },
   server: {
+    port: 5173,      // Vite's default for development
     ...baseConfig.server,
-    port: 3000,
+  },
+  preview: {
+    port: 4173,      // Vite's default for preview
   }
 }) 

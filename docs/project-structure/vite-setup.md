@@ -28,8 +28,15 @@ Each app's `vite.config.js` extends the base configuration and adds:
 - Override shared settings as needed
 
 ## Port Assignments
-- dhg-a: 3000
-- dhg-b: 3001
+### Development Servers
+- dhg-a: 5173 (Vite default)
+- dhg-b: 5174
+
+### Preview Servers
+- dhg-a: 4173 (Vite default)
+- dhg-b: 4174
+
+Note: If ports are in use, Vite will automatically increment to the next available port
 
 ## Common Settings
 All apps inherit:
