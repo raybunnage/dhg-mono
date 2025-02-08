@@ -28,6 +28,7 @@ cp "$BACKUP_DIR/pnpm-lock.yaml" ./ 2>/dev/null || echo "No pnpm-lock.yaml to res
 cp "$BACKUP_DIR/pnpm-workspace.yaml" ./ 2>/dev/null || echo "No pnpm-workspace.yaml to restore"
 cp "$BACKUP_DIR/turbo.json" ./ 2>/dev/null || echo "No turbo.json to restore"
 cp "$BACKUP_DIR/vite.config."* ./ 2>/dev/null || echo "No root vite config files to restore"
+cp "$BACKUP_DIR/vite.config.base.js" ./ 2>/dev/null || echo "No root vite base config to restore"
 cp "$BACKUP_DIR/.env"* ./ 2>/dev/null || echo "No root .env files to restore"
 
 # Restore app-specific config files

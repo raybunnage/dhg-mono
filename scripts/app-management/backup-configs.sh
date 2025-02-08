@@ -37,6 +37,7 @@ cp pnpm-lock.yaml "$BACKUP_DIR/" 2>/dev/null || echo "No pnpm-lock.yaml found"
 cp pnpm-workspace.yaml "$BACKUP_DIR/" 2>/dev/null || echo "No pnpm-workspace.yaml found"
 cp turbo.json "$BACKUP_DIR/" 2>/dev/null || echo "No turbo.json found"
 cp vite.config.* "$BACKUP_DIR/" 2>/dev/null || echo "No root vite config files found"
+cp vite.config.base.js "$BACKUP_DIR/" 2>/dev/null || echo "No root vite base config found"
 cp .env* "$BACKUP_DIR/" 2>/dev/null || echo "No root .env files found"
 
 # Backup app-specific config files

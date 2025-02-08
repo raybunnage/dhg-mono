@@ -107,7 +107,8 @@ This directory is git-ignored and should not be committed to source control.
 - pnpm-lock.yaml
 - pnpm-workspace.yaml
 - turbo.json
-- vite.config.* (all vite config files)
+- vite.config.* files
+- vite.config.base.js
 - .env files
 
 ### For Each App
