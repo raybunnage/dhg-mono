@@ -9,7 +9,7 @@ importers:
   .:
     devDependencies:
       netlify-cli:
-        specifier: ^18.0.4
+        specifier: 18.0.4
         version: 18.0.4(@types/node@22.13.1)(picomatch@4.0.2)(rollup@4.34.5)
       turbo:
         specifier: ^1.12.4
@@ -999,8 +999,8 @@ packages:
     peerDependencies:
       '@octokit/core': '>=6'
 
-  '@octokit/plugin-rest-endpoint-methods@13.3.0':
-    resolution: {integrity: sha512-LUm44shlmkp/6VC+qQgHl3W5vzUP99ZM54zH6BuqkJK4DqfFLhegANd+fM4YRLapTvPm4049iG7F3haANKMYvQ==}
+  '@octokit/plugin-rest-endpoint-methods@13.3.1':
+    resolution: {integrity: sha512-o8uOBdsyR+WR8MK9Cco8dCgvG13H1RlM1nWnK/W7TEACQBFux/vPREgKucxUfuDQ5yi1T3hGf4C5ZmZXAERgwQ==}
     engines: {node: '>= 18'}
     peerDependencies:
       '@octokit/core': '>=6'
@@ -3717,10 +3717,6 @@ packages:
     resolution: {integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==}
     engines: {node: '>= 0.6'}
 
-  mime-db@1.53.0:
-    resolution: {integrity: sha512-oHlN/w+3MQ3rba9rqFr6V/ypF10LSkdwUysQL7GkXoTgIWeV+tcXGA852TBxH+gsh8UWoyhR1hKcoMJTuWflpg==}
-    engines: {node: '>= 0.6'}
-
   mime-types@2.1.35:
     resolution: {integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==}
     engines: {node: '>= 0.6'}
@@ -4477,8 +4473,8 @@ packages:
     resolution: {integrity: sha512-dYqgNSZbDwkaJ2ceRd9ojCGjBq+mOm9LmtXnAnEGyHhN/5R7iDW2TRw3h+o/jCFxus3P2LfWIIiwowAjANm7IA==}
     engines: {node: '>= 0.4'}
 
-  registry-auth-token@5.0.3:
-    resolution: {integrity: sha512-1bpc9IyC+e+CNFRaWyn77tk4xGG4PPUyfakSmA6F6cvUDjrm58dfyJ3II+9yb10EDkHoy1LaPSmHaWLOH3m6HA==}
+  registry-auth-token@5.1.0:
+    resolution: {integrity: sha512-GdekYuwLXLxMuFTwAPg5UKGLW/UXzQrZvH/Zj791BQif5T05T0RsaLfHc9q3ZOKi7n+BoprPD9mJ0O0k4xzUlw==}
     engines: {node: '>=14'}
 
   registry-url@6.0.1:
@@ -6509,7 +6505,7 @@ snapshots:
     dependencies:
       '@octokit/core': 6.1.3
 
-  '@octokit/plugin-rest-endpoint-methods@13.3.0(@octokit/core@6.1.3)':
+  '@octokit/plugin-rest-endpoint-methods@13.3.1(@octokit/core@6.1.3)':
     dependencies:
       '@octokit/core': 6.1.3
       '@octokit/types': 13.8.0
@@ -6531,7 +6527,7 @@ snapshots:
       '@octokit/core': 6.1.3
       '@octokit/plugin-paginate-rest': 11.4.0(@octokit/core@6.1.3)
       '@octokit/plugin-request-log': 5.3.1(@octokit/core@6.1.3)
-      '@octokit/plugin-rest-endpoint-methods': 13.3.0(@octokit/core@6.1.3)
+      '@octokit/plugin-rest-endpoint-methods': 13.3.1(@octokit/core@6.1.3)
 
   '@octokit/types@13.8.0':
     dependencies:
@@ -8353,7 +8349,7 @@ snapshots:
 
   ext-list@2.2.2:
     dependencies:
-      mime-db: 1.53.0
+      mime-db: 1.52.0
 
   ext-name@5.0.0:
     dependencies:
@@ -9592,8 +9588,6 @@ snapshots:
 
   mime-db@1.52.0: {}
 
-  mime-db@1.53.0: {}
-
   mime-types@2.1.35:
     dependencies:
       mime-db: 1.52.0
@@ -10130,7 +10124,7 @@ snapshots:
   package-json@10.0.1:
     dependencies:
       ky: 1.7.4
-      registry-auth-token: 5.0.3
+      registry-auth-token: 5.1.0
       registry-url: 6.0.1
       semver: 7.7.1
 
@@ -10491,7 +10485,7 @@ snapshots:
       gopd: 1.2.0
       set-function-name: 2.0.2
 
-  registry-auth-token@5.0.3:
+  registry-auth-token@5.1.0:
     dependencies:
       '@pnpm/npm-conf': 2.3.1
 

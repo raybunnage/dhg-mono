@@ -24,7 +24,7 @@
     "deploy:dhg-b:prod": "./scripts/deployment/deploy-app.sh dhg-b production"
   },
   "devDependencies": {
-    "netlify-cli": "^18.0.4",
+    "netlify-cli": "18.0.4",
     "turbo": "^1.12.4"
   }
 }
