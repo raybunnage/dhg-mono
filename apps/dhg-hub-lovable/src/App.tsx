@@ -5,6 +5,8 @@ import Auth from "@/pages/Auth";
 import Experts from "@/pages/Experts";
 import DocumentTypes from "@/pages/DocumentTypes";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import Header from './components/Header'
+import EnvironmentBadge from './components/EnvironmentBadge'
 
 function App() {
   return (
@@ -37,6 +39,10 @@ function App() {
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <div className="p-4">
+        <h2 className="text-lg font-semibold mb-2">Environment</h2>
+        <EnvironmentBadge />
+      </div>
     </Router>
   );
 }
