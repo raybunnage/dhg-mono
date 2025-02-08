@@ -1,5 +1,76 @@
 # Development and Deployment Workflow
 
+## Deployment Commands
+
+### Quick Reference
+```bash
+# Deploy to Preview Environment (for feature branches)
+pnpm deploy:dhg-a:preview
+# Creates: feature-name--dhg-hub.netlify.app
+# Shows: Yellow environment badge
+# Features: Debug, beta, and experimental flags enabled
+
+# Deploy to Development Environment
+pnpm deploy:dhg-a:development
+# Creates: dev.dhg-hub.org
+# Shows: Blue environment badge
+# Features: Debug and beta flags enabled
+
+# Deploy to Production Environment
+pnpm deploy:dhg-a:prod
+# Creates: dhg-hub.org
+# Shows: Green environment badge
+# Features: Release flags only
+```
+
+### Environment Characteristics
+
+| Command | URL Pattern | Badge | API URL | Feature Flags |
+|---------|------------|--------|---------|---------------|
+| `deploy:dhg-a:preview` | `feature-*--site.netlify.app` | Yellow | preview-api | debug,beta,experimental |
+| `deploy:dhg-a:development` | `dev.site.com` | Blue | dev-api | debug,beta |
+| `deploy:dhg-a:prod` | `site.com` | Green | prod-api | release |
+
+### Usage Examples
+
+#### Feature Development
+```bash
+# Start new feature
+git checkout -b feature/new-button
+
+# Deploy to preview environment for team review
+pnpm deploy:dhg-a:preview
+```
+
+#### Development Integration
+```bash
+# Merge feature to development
+git checkout development
+git merge feature/new-button
+
+# Deploy to development environment
+pnpm deploy:dhg-a:development
+```
+
+#### Production Release
+```bash
+# Merge development to main
+git checkout main
+git merge development
+
+# Deploy to production
+pnpm deploy:dhg-a:prod
+```
+
+### Visual Indicators
+
+Each environment has distinct visual cues:
+- **Header Color**: Matches the environment (Green/Blue/Yellow)
+- **Status Badge**: Shows environment name with matching color
+- **App Name**: Includes environment suffix (except production)
+- **API URL**: Points to environment-specific API
+- **Feature Flags**: Shows available features for that environment
+
 ## Branch Structure
 - `main` → Production branch (dhg-hub.org)
 - `development` → Development branch (dev.dhg-hub.org)
