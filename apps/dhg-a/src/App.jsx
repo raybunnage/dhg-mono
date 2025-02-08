@@ -6,13 +6,16 @@ function App() {
   return (
     <>
       <Header />
-      <main>
+      <main className="min-h-screen p-8">
         <h1>DHG App A</h1>
         <Button>Click Me</Button>
-        <div className="mt-4">
+        <div className="mt-8 space-y-4">
           <ThemeToggle />
+          <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold mb-2">Current Environment</h2>
+            <p className="mt-2">Environment: {import.meta.env.VITE_ENV}</p>
+          </div>
         </div>
-        <p className="mt-2">Environment: {import.meta.env.VITE_ENV}</p>
       </main>
       <footer role="contentinfo">
         <p>© 2024 DHG App A</p>
