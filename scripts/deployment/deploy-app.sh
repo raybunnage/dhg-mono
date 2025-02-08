@@ -26,12 +26,15 @@ esac
 if [ "$ENV_TYPE" = "production" ]; then
   export VITE_ENV="production"
   export VITE_API_URL="https://api.dhg-hub.org"
+  export VITE_APP_NAME="DHG Hub"
 elif [ "$ENV_TYPE" = "development" ]; then
   export VITE_ENV="development"
   export VITE_API_URL="https://dev-api.dhg-hub.org"
+  export VITE_APP_NAME="DHG Hub (Dev)"
 else
   export VITE_ENV="preview"
   export VITE_API_URL="https://preview-api.dhg-hub.org"
+  export VITE_APP_NAME="DHG Hub (Preview)"
 fi
 
 # Ensure we're in the app directory
@@ -44,7 +47,7 @@ DIST_PATH="$(pwd)/dist"
 echo "Building $APP_NAME for $ENV_TYPE environment..."
 CONTEXT=$ENV_TYPE \
 VITE_ENV=$ENV_TYPE \
-VITE_APP_NAME="DHG Hub ($ENV_TYPE)" \
+VITE_APP_NAME="$VITE_APP_NAME" \
 VITE_API_URL="$VITE_API_URL" \
 pnpm build
 

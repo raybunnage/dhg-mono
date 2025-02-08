@@ -18,7 +18,7 @@
     "deploy:init": "./scripts/deployment/setup-environments.sh",
     "deploy:app": "./scripts/deployment/deploy-app.sh",
     "deploy:backup": "./scripts/deployment/backup-env-configs.sh",
-    "deploy:dhg-a:dev": "./scripts/deployment/deploy-app.sh dhg-a development",
+    "deploy:dhg-a:development": "./scripts/deployment/deploy-app.sh dhg-a development",
     "deploy:dhg-a:prod": "./scripts/deployment/deploy-app.sh dhg-a production",
     "deploy:dhg-a:preview": "./scripts/deployment/deploy-app.sh dhg-a preview",
     "deploy:dhg-b:dev": "./scripts/deployment/deploy-app.sh dhg-b development",
