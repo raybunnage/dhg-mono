@@ -1,0 +1,21 @@
+# App-specific netlify.toml
+[build]
+  base = "apps/dhg-hub-lovable"
+  command = "pnpm build"
+  publish = "dist"
+
+# App-specific environment overrides
+[context.production]
+  [context.production.environment]
+    VITE_APP_NAME = "DHG Hub Lovable"
+    VITE_SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co"
+
+[context.development]
+  [context.development.environment]
+    VITE_APP_NAME = "DHG Hub Lovable (Dev)"
+    VITE_SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co"
+
+[context.deploy-preview]
+  [context.deploy-preview.environment]
+    VITE_APP_NAME = "DHG Hub Lovable (Preview)"
+    VITE_SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co" 
