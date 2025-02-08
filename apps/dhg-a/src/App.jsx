@@ -53,7 +53,7 @@ function App() {
             <div className="space-y-3">
               <div>
                 <span className="font-medium">Status: </span>
-                <span className={`inline-block px-2 py-1 rounded-md border ${getEnvColor(import.meta.env.VITE_ENV)}`}>
+                <span className={`inline-block px-2 py-1 rounded-md border ${getEnvColor(ENV.VITE_ENV)}`}>
                   {/* Debug output */}
                   <span className="hidden">
                     ENV: {JSON.stringify(import.meta.env, null, 2)}
