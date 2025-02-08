@@ -47,7 +47,8 @@ git push origin feature/new-feature
 
 # Deploy feature branch to Netlify
 cd apps/dhg-a
-netlify deploy
+pnpm build
+netlify deploy --dir=dist --message "Preview: Feature branch deployment"
 
 # Preview URL will be: feature-name--dhg-hub.netlify.app
 ```
@@ -62,7 +63,8 @@ git push origin development
 
 # Deploy development branch
 cd apps/dhg-a
-netlify deploy
+pnpm build
+netlify deploy --dir=dist --message "Development deployment"
 
 # Development URL: dev.dhg-hub.org
 ```
@@ -77,122 +79,8 @@ git push origin main
 
 # Deploy to production
 cd apps/dhg-a
-netlify deploy --prod
+pnpm build
+netlify deploy --dir=dist --prod --message "Production deployment"
 
 # Production URL: dhg-hub.org
 ```
-
-## Environment Stages
-
-### Feature Branch (feature-name--dhg-hub.netlify.app)
-- For testing new features
-- Temporary deployments
-- Development environment variables
-- Accessible to team for review
-
-### Development (dev.dhg-hub.org)
-- Integration environment
-- Latest merged features
-- Development environment variables
-- Staging for production
-
-### Production (dhg-hub.org)
-- Stable production site
-- Production environment variables
-- Public-facing site
-
-## Common Workflows
-
-### Starting New Feature
-```bash
-git checkout development
-git pull origin development
-git checkout -b feature/my-feature
-# Make changes...
-pnpm test:run --filter dhg-a
-pnpm build --filter dhg-a
-cd apps/dhg-a && netlify deploy
-```
-
-### Merging Feature to Development
-```bash
-# After feature is tested and approved
-git checkout development
-git pull origin development
-git merge feature/my-feature
-git push origin development
-cd apps/dhg-a && netlify deploy
-```
-
-### Promoting to Production
-```bash
-# After development is stable
-git checkout main
-git pull origin main
-git merge development
-git push origin main
-cd apps/dhg-a && netlify deploy --prod
-```
-
-## Best Practices
-
-1. **Branch Management**
-   - Always branch from development
-   - Keep feature branches short-lived
-   - Delete feature branches after merge
-
-2. **Testing**
-   - Test locally first
-   - Deploy to feature branch
-   - Test on development
-   - Final test before production
-
-3. **Deployments**
-   - Use feature branch deployments for review
-   - Keep development site stable
-   - Deploy to production during low-traffic periods
-
-4. **Environment Variables**
-   - Different values per environment
-   - Production secrets only in production
-   - Use .env.example for documentation
-
-## Netlify Configuration
-
-### Branch Deployments
-```toml
-[build]
-  base = "apps/dhg-a"
-  command = "pnpm build"
-  publish = "dist"
-
-[context.production]
-  environment = { NODE_ENV = "production" }
-
-[context.development]
-  environment = { NODE_ENV = "development" }
-
-[context.deploy-preview]
-  environment = { NODE_ENV = "development" }
-```
-
-## Troubleshooting
-
-### Build Issues
-```bash
-# Clean and rebuild
-pnpm clean
-pnpm install
-pnpm build
-
-# Debug specific app
-pnpm build --filter dhg-a --debug
-```
-
-### Deployment Issues
-```bash
-# Check Netlify status
-netlify status
-
-# View deploy logs
-netlify deploy --debug
