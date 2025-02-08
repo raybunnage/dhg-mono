@@ -6,10 +6,22 @@
 
 # App-specific environment overrides
 [context.production]
-  environment = { VITE_APP_NAME = "DHG Hub" }
+  environment = { 
+    VITE_APP_NAME = "DHG Hub",
+    VITE_ENV = "production",
+    VITE_FEATURE_FLAGS = "release"
+  }
 
 [context.development]
-  environment = { VITE_APP_NAME = "DHG Hub (Dev)" }
+  environment = { 
+    VITE_APP_NAME = "DHG Hub (Dev)",
+    VITE_ENV = "development",
+    VITE_FEATURE_FLAGS = "debug,beta"
+  }
 
 [context.deploy-preview]
-  environment = { VITE_APP_NAME = "DHG Hub (Preview)" } 
+  environment = { 
+    VITE_APP_NAME = "DHG Hub (Preview)",
+    VITE_ENV = "preview",
+    VITE_FEATURE_FLAGS = "debug,beta,experimental"
+  } 

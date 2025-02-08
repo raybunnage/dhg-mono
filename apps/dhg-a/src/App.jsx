@@ -12,6 +12,16 @@ function App() {
     setTimeout(() => setIsLoading(false), 2000);
   };
 
+  const getEnvColor = (env) => {
+    switch(env) {
+      case 'production': return 'bg-green-100 text-green-800 border-green-200';
+      case 'development': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    }
+  };
+
+  const featureFlags = import.meta.env.VITE_FEATURE_FLAGS?.split(',') || [];
+
   return (
     <>
       <Header />
@@ -23,8 +33,35 @@ function App() {
         <div className="mt-8 space-y-4">
           <ThemeToggle />
           <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold mb-2">Current Environment</h2>
-            <p className="mt-2">Environment: {import.meta.env.VITE_ENV}</p>
+            <h2 className="text-lg font-semibold mb-2">Environment Info</h2>
+            <div className="space-y-3">
+              <div>
+                <span className="font-medium">Status: </span>
+                <span className={`inline-block px-2 py-1 rounded-md border ${getEnvColor(import.meta.env.VITE_ENV)}`}>
+                  {import.meta.env.VITE_ENV.toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium">App Name: </span>
+                <span>{import.meta.env.VITE_APP_NAME}</span>
+              </div>
+              <div>
+                <span className="font-medium">API URL: </span>
+                <span className="font-mono text-sm">{import.meta.env.VITE_API_URL}</span>
+              </div>
+              {featureFlags.length > 0 && (
+                <div>
+                  <span className="font-medium">Feature Flags: </span>
+                  <div className="flex gap-2 mt-1">
+                    {featureFlags.map(flag => (
+                      <span key={flag} className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-sm">
+                        {flag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>
