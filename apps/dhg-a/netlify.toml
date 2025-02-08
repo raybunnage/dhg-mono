@@ -9,6 +9,7 @@
   VITE_APP_NAME = "DHG Hub"
   VITE_ENV = "production"
   VITE_FEATURE_FLAGS = "release"
+  VITE_API_URL = "https://api.dhg-hub.org"
 
 [context.development.environment]
   VITE_APP_NAME = "DHG Hub (Dev)"
