@@ -1,7 +1,7 @@
 # App-specific netlify.toml
 [build]
   base = "apps/dhg-a"
-  command = "pnpm build"
+  command = "VITE_ENV=$CONTEXT pnpm build"
   publish = "dist"
 
 # App-specific environment overrides
@@ -17,5 +17,15 @@
 
 [context.deploy-preview.environment]
   VITE_APP_NAME = "DHG Hub (Preview)"
+  VITE_ENV = "preview"
+  VITE_FEATURE_FLAGS = "debug,beta,experimental"
+
+[context.branch-deploy.environment]
+  VITE_APP_NAME = "DHG Hub (Branch)"
+  VITE_ENV = "preview"
+  VITE_FEATURE_FLAGS = "debug,beta,experimental"
+
+[context.feature-enhanced-env-display.environment]
+  VITE_APP_NAME = "DHG Hub (Feature Branch)"
   VITE_ENV = "preview"
   VITE_FEATURE_FLAGS = "debug,beta,experimental" 

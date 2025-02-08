@@ -13,7 +13,14 @@ function App() {
   };
 
   const getEnvColor = (env) => {
-    console.log('Current env:', env);
+    // Debug environment variables
+    console.log('Environment Variables:', {
+      currentEnv: env,
+      appName: import.meta.env.VITE_APP_NAME,
+      featureFlags: import.meta.env.VITE_FEATURE_FLAGS,
+      allEnv: import.meta.env
+    });
+
     switch(env) {
       case 'production': return 'bg-green-100 text-green-800 border-green-200';
       case 'development': return 'bg-blue-100 text-blue-800 border-blue-200';
