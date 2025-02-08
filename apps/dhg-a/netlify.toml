@@ -2,7 +2,7 @@
 [build]
   base = "apps/dhg-a"
   command = "echo Building for $CONTEXT && VITE_ENV=$CONTEXT NODE_ENV=$CONTEXT CONTEXT=$CONTEXT pnpm build"
-  publish = "dist"
+  publish = "./dist"
   functions = "netlify/functions"
 
 # App-specific environment overrides

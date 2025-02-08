@@ -155,3 +155,20 @@ netlify deploy --dir=dist --prod --message "Production deployment"
 
 # Production URL: dhg-hub.org
 ```
+
+### Testing Netlify Functions
+```bash
+# Test functions in each environment
+
+# Production
+curl https://dhg-hub-test-1738995595.netlify.app/.netlify/functions/api
+
+# Development
+curl https://dev--dhg-hub-test-1738995595.netlify.app/.netlify/functions/api
+
+# Preview
+curl https://deploy-preview-1--dhg-hub-test-1738995595.netlify.app/.netlify/functions/api
+
+# Add -v flag for verbose output
+curl -v https://dev--dhg-hub-test-1738995595.netlify.app/.netlify/functions/api
+```
