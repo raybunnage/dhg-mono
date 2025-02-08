@@ -9,19 +9,19 @@
   VITE_APP_NAME = "DHG Hub"
   VITE_ENV = "production"
   VITE_FEATURE_FLAGS = "release"
-  VITE_API_URL = "https://api.dhg-hub.org"
+  VITE_API_URL = "https://api.dhg-hub-test.netlify.app"
 
 [context.development.environment]
   VITE_APP_NAME = "DHG Hub (Dev)"
   VITE_ENV = "development"
   VITE_FEATURE_FLAGS = "debug,beta"
-  VITE_API_URL = "https://dev-api.dhg-hub.org"
+  VITE_API_URL = "https://dev--dhg-hub-test.netlify.app"
 
 [context.deploy-preview.environment]
   VITE_APP_NAME = "DHG Hub (Preview)"
   VITE_ENV = "preview"
   VITE_FEATURE_FLAGS = "debug,beta,experimental"
-  VITE_API_URL = "https://preview-api.dhg-hub.org"
+  VITE_API_URL = "https://deploy-preview-1--dhg-hub-test.netlify.app"
 
 [context.branch-deploy.environment]
   VITE_APP_NAME = "DHG Hub (Branch)"
