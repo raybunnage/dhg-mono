@@ -18,7 +18,9 @@ function App() {
       currentEnv: env,
       appName: import.meta.env.VITE_APP_NAME,
       featureFlags: import.meta.env.VITE_FEATURE_FLAGS,
-      allEnv: import.meta.env
+      allEnv: import.meta.env,
+      context: process.env.CONTEXT || 'unknown',
+      nodeEnv: process.env.NODE_ENV
     });
 
     switch(env) {

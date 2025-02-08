@@ -25,10 +25,13 @@ esac
 # Set environment variables based on deployment type
 if [ "$ENV_TYPE" = "production" ]; then
   export VITE_ENV="production"
+  export VITE_API_URL="https://api.dhg-hub.org"
 elif [ "$ENV_TYPE" = "development" ]; then
   export VITE_ENV="development"
+  export VITE_API_URL="https://dev-api.dhg-hub.org"
 else
   export VITE_ENV="preview"
+  export VITE_API_URL="https://preview-api.dhg-hub.org"
 fi
 
 # Ensure we're in the app directory
@@ -39,11 +42,15 @@ DIST_PATH="$(pwd)/dist"
 
 # Build with correct environment
 echo "Building $APP_NAME for $ENV_TYPE environment..."
-VITE_APP_ENV=$ENV_TYPE pnpm build
+CONTEXT=$ENV_TYPE \
+VITE_ENV=$ENV_TYPE \
+VITE_APP_NAME="DHG Hub ($ENV_TYPE)" \
+VITE_API_URL="$VITE_API_URL" \
+pnpm build
 
 # Deploy to Netlify
 if [ "$ENV_TYPE" = "production" ]; then
   netlify deploy --dir="$DIST_PATH" --prod --message "$APP_NAME: Production deployment"
 else
-  netlify deploy --dir="$DIST_PATH" --message "$APP_NAME: $ENV_TYPE deployment"
+  CONTEXT=$ENV_TYPE netlify deploy --dir="$DIST_PATH" --message "$APP_NAME: $ENV_TYPE deployment"
 fi 

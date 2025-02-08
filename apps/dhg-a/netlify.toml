@@ -1,7 +1,7 @@
 # App-specific netlify.toml
 [build]
   base = "apps/dhg-a"
-  command = "VITE_ENV=$CONTEXT pnpm build"
+  command = "echo Building for $CONTEXT && VITE_ENV=$CONTEXT CONTEXT=$CONTEXT pnpm build"
   publish = "dist"
 
 # App-specific environment overrides
