@@ -11,4 +11,8 @@ dist/
 .env.production.local
 
 # Logs
-*.log 
+*.log
+
+# Netlify
+.netlify/
+.netlify/state.json 
