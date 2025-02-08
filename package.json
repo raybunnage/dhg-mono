@@ -25,7 +25,10 @@
     "deploy:dhg-a:preview": "./scripts/deployment/deploy-app.sh dhg-a preview",
     "deploy:dhg-b:dev": "./scripts/deployment/deploy-app.sh dhg-b development",
     "deploy:dhg-b:prod": "./scripts/deployment/deploy-app.sh dhg-b production",
-    "deploy:dhg-b:preview": "./scripts/deployment/deploy-app.sh dhg-b preview"
+    "deploy:dhg-b:preview": "./scripts/deployment/deploy-app.sh dhg-b preview",
+    "deploy:dhg-hub-lovable:dev": "./scripts/deployment/deploy-app.sh dhg-hub-lovable development",
+    "deploy:dhg-hub-lovable:prod": "./scripts/deployment/deploy-app.sh dhg-hub-lovable production",
+    "deploy:dhg-hub-lovable:preview": "./scripts/deployment/deploy-app.sh dhg-hub-lovable preview"
   },
   "devDependencies": {
     "netlify-cli": "18.0.4",
