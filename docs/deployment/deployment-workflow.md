@@ -26,15 +26,40 @@ git checkout -b feature/new-feature
 pnpm dev --filter dhg-a  # Start development server
 ```
 
-### 3. Testing
+### 3. Merging Features
 ```bash
-# Run tests before committing
-pnpm test:run --filter dhg-a
+# After PR is approved, merge feature to development
+git checkout development
+git pull origin development
+git merge feature/new-feature
 
-# Build and preview locally
-pnpm build --filter dhg-a
-pnpm preview --filter dhg-a
+# Clean and rebuild to ensure new features are properly integrated
+pnpm clean              # Clean all build artifacts
+pnpm install           # Reinstall dependencies
+pnpm build            # Rebuild all apps
+
+# Deploy to development
+pnpm deploy:dhg-a:dev
+
+# After testing in development, merge to main
+git checkout main
+git pull origin main
+git merge development
+
+# Clean and rebuild again before production deployment
+pnpm clean
+pnpm install
+pnpm build
+
+# Deploy to production
+pnpm deploy:dhg-a:prod
 ```
+
+### Important Notes
+- Always clean and rebuild after merges
+- Test the build locally before deploying
+- Verify new features in development before merging to main
+- Use --filter flag for app-specific operations
 
 ## Deployment Flow
 
@@ -196,3 +221,4 @@ netlify status
 
 # View deploy logs
 netlify deploy --debug
+```
