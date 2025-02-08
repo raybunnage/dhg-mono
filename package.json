@@ -6,6 +6,8 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
+    "test": "turbo run test",
+    "test:run": "turbo run test:run",
     "copy-app": "./scripts/app-management/copy-lovable-app.sh",
     "backup-configs": "./scripts/app-management/backup-configs.sh",
     "restore-configs": "./scripts/app-management/restore-configs.sh",
