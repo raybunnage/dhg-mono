@@ -52,7 +52,15 @@ for APP_DIR in apps/*; do
         # Backup app config files
         cp "$APP_DIR/netlify.toml" "$BACKUP_DIR/apps/$APP_NAME/" 2>/dev/null || echo "No netlify.toml found for $APP_NAME"
         cp "$APP_DIR/package.json" "$BACKUP_DIR/apps/$APP_NAME/" 2>/dev/null || echo "No package.json found for $APP_NAME"
-        cp "$APP_DIR/vite.config.*" "$BACKUP_DIR/apps/$APP_NAME/" 2>/dev/null || echo "No vite config files found for $APP_NAME"
+        # Handle Vite config files more explicitly
+        if [ -f "$APP_DIR/vite.config.js" ]; then
+            echo "Found vite.config.js in $APP_DIR, copying..."
+            cp "$APP_DIR/vite.config.js" "$BACKUP_DIR/apps/$APP_NAME/"
+            echo "Copied vite.config.js to $BACKUP_DIR/apps/$APP_NAME/"
+        fi
+        if [ -f "$APP_DIR/vite.config.ts" ]; then
+            cp "$APP_DIR/vite.config.ts" "$BACKUP_DIR/apps/$APP_NAME/"
+        fi
         cp "$APP_DIR/.env"* "$BACKUP_DIR/apps/$APP_NAME/" 2>/dev/null || echo "No .env files found for $APP_NAME"
     fi
 done

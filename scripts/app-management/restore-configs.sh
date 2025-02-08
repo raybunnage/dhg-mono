@@ -40,7 +40,13 @@ for APP_BACKUP in "$BACKUP_DIR/apps"/*; do
         # Restore app config files
         cp "$APP_BACKUP/netlify.toml" "apps/$APP_NAME/" 2>/dev/null || echo "No netlify.toml to restore for $APP_NAME"
         cp "$APP_BACKUP/package.json" "apps/$APP_NAME/" 2>/dev/null || echo "No package.json to restore for $APP_NAME"
-        cp "$APP_BACKUP/vite.config."* "apps/$APP_NAME/" 2>/dev/null || echo "No vite config files to restore for $APP_NAME"
+        # Handle Vite config files more explicitly
+        if [ -f "$APP_BACKUP/vite.config.js" ]; then
+            cp "$APP_BACKUP/vite.config.js" "apps/$APP_NAME/"
+        fi
+        if [ -f "$APP_BACKUP/vite.config.ts" ]; then
+            cp "$APP_BACKUP/vite.config.ts" "apps/$APP_NAME/"
+        fi
         cp "$APP_BACKUP/.env"* "apps/$APP_NAME/" 2>/dev/null || echo "No .env files to restore for $APP_NAME"
     fi
 done
