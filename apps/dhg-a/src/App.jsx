@@ -18,9 +18,7 @@ function App() {
       currentEnv: env,
       appName: import.meta.env.VITE_APP_NAME,
       featureFlags: import.meta.env.VITE_FEATURE_FLAGS,
-      allEnv: import.meta.env,
-      context: process.env.CONTEXT || 'unknown',
-      nodeEnv: process.env.NODE_ENV
+      allEnv: import.meta.env
     });
 
     switch(env) {
@@ -28,6 +26,14 @@ function App() {
       case 'development': return 'bg-blue-100 text-blue-800 border-blue-200';
       default: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     }
+  };
+
+  // Default values for testing environment
+  const ENV = {
+    VITE_ENV: import.meta.env.VITE_ENV || 'test',
+    VITE_APP_NAME: import.meta.env.VITE_APP_NAME || 'DHG Hub (Test)',
+    VITE_API_URL: import.meta.env.VITE_API_URL || 'https://test-api.dhg-hub.org',
+    VITE_FEATURE_FLAGS: import.meta.env.VITE_FEATURE_FLAGS || 'test'
   };
 
   const featureFlags = import.meta.env.VITE_FEATURE_FLAGS?.split(',') || [];
@@ -52,16 +58,16 @@ function App() {
                   <span className="hidden">
                     ENV: {JSON.stringify(import.meta.env, null, 2)}
                   </span>
-                  {import.meta.env.VITE_ENV.toUpperCase()}
+                  {ENV.VITE_ENV.toUpperCase()}
                 </span>
               </div>
               <div>
                 <span className="font-medium">App Name: </span>
-                <span>{import.meta.env.VITE_APP_NAME}</span>
+                <span>{ENV.VITE_APP_NAME}</span>
               </div>
               <div>
                 <span className="font-medium">API URL: </span>
-                <span className="font-mono text-sm">{import.meta.env.VITE_API_URL}</span>
+                <span className="font-mono text-sm">{ENV.VITE_API_URL}</span>
               </div>
               {featureFlags.length > 0 && (
                 <div>
