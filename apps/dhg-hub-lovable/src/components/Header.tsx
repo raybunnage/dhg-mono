@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../lib/supabase';
+import { Link } from 'react-router-dom';
 
 export default function Header() {
   const navigate = useNavigate();
@@ -23,15 +24,15 @@ export default function Header() {
               Dynamic Healing Network
             </h1>
             <nav className="hidden md:flex space-x-6">
-              <a href="/" className="text-gray-600 hover:text-primary-600">
+              <Link to="/" className="text-gray-600 hover:text-primary-600">
                 Home
-              </a>
-              <a href="/experts" className="text-gray-600 hover:text-primary-600">
+              </Link>
+              <Link to="/experts" className="text-gray-600 hover:text-primary-600">
                 Experts
-              </a>
-              <a href="/document-types" className="text-gray-600 hover:text-primary-600">
+              </Link>
+              <Link to="/document-types" className="text-gray-600 hover:text-primary-600">
                 Document Types
-              </a>
+              </Link>
             </nav>
           </div>
           <button
