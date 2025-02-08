@@ -25,13 +25,16 @@ esac
 # Ensure we're in the app directory
 cd "apps/$APP_NAME" || exit 1
 
+# Get absolute path to dist directory
+DIST_PATH="$(pwd)/dist"
+
 # Build with correct environment
 echo "Building $APP_NAME for $ENV environment..."
-VITE_APP_ENV=$ENV pnpm build
+VITE_APP_ENV=$ENV NODE_ENV=$ENV pnpm build
 
 # Deploy
 if [ "$ENV" = "production" ]; then
-  netlify deploy --prod
+  netlify deploy --prod --dir="$DIST_PATH" --message "$APP_NAME: Production deployment"
 else
-  netlify deploy
+  netlify deploy --dir="$DIST_PATH" --message "$APP_NAME: $ENV deployment"
 fi 
