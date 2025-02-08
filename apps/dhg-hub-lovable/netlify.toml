@@ -1,0 +1,15 @@
+# App-specific netlify.toml
+[build]
+  base = "apps/dhg-hub-lovable"
+  command = "pnpm build"
+  publish = "dist"
+
+# App-specific environment overrides
+[context.production]
+  environment = { VITE_APP_NAME = "DHG Hub Lovable" }
+
+[context.development]
+  environment = { VITE_APP_NAME = "DHG Hub Lovable (Dev)" }
+
+[context.deploy-preview]
+  environment = { VITE_APP_NAME = "DHG Hub Lovable (Preview)" } 
