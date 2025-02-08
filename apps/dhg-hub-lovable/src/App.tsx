@@ -11,6 +11,9 @@ import EnvironmentBadge from './components/EnvironmentBadge'
 function App() {
   return (
     <Router>
+      <div className="fixed top-4 right-4 z-50">
+        <EnvironmentBadge />
+      </div>
       <Routes>
         <Route path="/auth" element={<Auth />} />
         <Route
@@ -39,10 +42,6 @@ function App() {
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <div className="p-4">
-        <h2 className="text-lg font-semibold mb-2">Environment</h2>
-        <EnvironmentBadge />
-      </div>
     </Router>
   );
 }
