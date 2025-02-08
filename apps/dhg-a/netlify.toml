@@ -19,13 +19,16 @@
   VITE_APP_NAME = "DHG Hub (Preview)"
   VITE_ENV = "preview"
   VITE_FEATURE_FLAGS = "debug,beta,experimental"
+  VITE_API_URL = "https://preview-api.dhg-hub.org"
 
 [context.branch-deploy.environment]
   VITE_APP_NAME = "DHG Hub (Branch)"
   VITE_ENV = "preview"
   VITE_FEATURE_FLAGS = "debug,beta,experimental"
+  VITE_API_URL = "https://preview-api.dhg-hub.org"
 
 [context.feature-enhanced-env-display.environment]
   VITE_APP_NAME = "DHG Hub (Feature Branch)"
   VITE_ENV = "preview"
-  VITE_FEATURE_FLAGS = "debug,beta,experimental" 
+  VITE_FEATURE_FLAGS = "debug,beta,experimental"
+  VITE_API_URL = "https://preview-api.dhg-hub.org" 

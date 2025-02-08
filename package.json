@@ -20,8 +20,10 @@
     "deploy:backup": "./scripts/deployment/backup-env-configs.sh",
     "deploy:dhg-a:dev": "./scripts/deployment/deploy-app.sh dhg-a development",
     "deploy:dhg-a:prod": "./scripts/deployment/deploy-app.sh dhg-a production",
+    "deploy:dhg-a:preview": "./scripts/deployment/deploy-app.sh dhg-a preview",
     "deploy:dhg-b:dev": "./scripts/deployment/deploy-app.sh dhg-b development",
-    "deploy:dhg-b:prod": "./scripts/deployment/deploy-app.sh dhg-b production"
+    "deploy:dhg-b:prod": "./scripts/deployment/deploy-app.sh dhg-b production",
+    "deploy:dhg-b:preview": "./scripts/deployment/deploy-app.sh dhg-b preview"
   },
   "devDependencies": {
     "netlify-cli": "18.0.4",
