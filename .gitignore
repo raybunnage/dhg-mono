@@ -12,8 +12,14 @@ build/
 .next/
 out/
 
-# Environment
-.env*
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.development.local
+.env.production.local
 !.env.example
 
 # Vercel
