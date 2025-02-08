@@ -45,6 +45,10 @@ DIST_PATH="$(pwd)/dist"
 
 # Build with correct environment
 echo "Building $APP_NAME for $ENV_TYPE environment..."
+echo "Environment variables:"
+echo "VITE_ENV=$VITE_ENV"
+echo "CONTEXT=$CONTEXT"
+
 CONTEXT=$ENV_TYPE \
 VITE_ENV=$ENV_TYPE \
 VITE_APP_NAME="$VITE_APP_NAME" \

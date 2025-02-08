@@ -18,7 +18,12 @@ function App() {
       currentEnv: env,
       appName: import.meta.env.VITE_APP_NAME,
       featureFlags: import.meta.env.VITE_FEATURE_FLAGS,
-      allEnv: import.meta.env
+      allEnv: import.meta.env,
+      rawEnv: import.meta.env.VITE_ENV,
+      processedEnv: ENV.VITE_ENV,
+      colorResult: env === 'production' ? 'green' : 
+                  env === 'development' ? 'blue' : 
+                  'yellow'
     });
 
     switch(env) {
@@ -49,7 +54,11 @@ function App() {
         <div className="mt-8 space-y-4">
           <ThemeToggle />
           <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold mb-2 bg-blue-500">Environment Info</h2>
+            <h2 className={`text-lg font-semibold mb-2 ${
+              ENV.VITE_ENV === 'production' ? 'bg-green-500' :
+              ENV.VITE_ENV === 'development' ? 'bg-blue-500' :
+              'bg-yellow-500'
+            }`}>Environment Info</h2>
             <div className="space-y-3">
               <div>
                 <span className="font-medium">Status: </span>
