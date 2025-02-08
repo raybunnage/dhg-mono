@@ -1,171 +1,180 @@
 # Development and Deployment Workflow
 
+## Branch Structure
+- `main` → Production branch (dhg-hub.org)
+- `development` → Development branch (dev.dhg-hub.org)
+- `feature/*` → Feature branches (feature-name--dhg-hub.netlify.app)
+
 ## Local Development Flow
 
 ### 1. Initial Setup
 ```bash
 # Run from root directory
+git checkout main
 pnpm install              # Install all dependencies
-pnpm build               # Build all apps (runs turbo build)
+pnpm build               # Build all apps
 ```
 
-### 2. Development
+### 2. Feature Development
 ```bash
-# Run from root directory
-pnpm dev                 # Start development servers for all apps
-# or for specific app
-pnpm dev --filter dhg-a  # Start only dhg-a development server
+# Create feature branch from development
+git checkout development
+git pull origin development
+git checkout -b feature/new-feature
+
+# Start development
+pnpm dev --filter dhg-a  # Start development server
 ```
 
 ### 3. Testing
 ```bash
-# Run from root directory
-pnpm test               # Run tests for all apps
-# or for specific app
-pnpm test --filter dhg-a
+# Run tests before committing
+pnpm test:run --filter dhg-a
+
+# Build and preview locally
+pnpm build --filter dhg-a
+pnpm preview --filter dhg-a
 ```
 
 ## Deployment Flow
 
-### 1. Local Testing
+### 1. Feature Branch Deployment
 ```bash
-# Run from root directory
-pnpm build              # Build all apps
-pnpm preview           # Preview built apps locally
-```
+# Commit your changes
+git add .
+git commit -m "feat: add new feature"
+git push origin feature/new-feature
 
-### 2. Netlify Preview Deploy
-```bash
-# Run from app directory (cd apps/dhg-a)
-netlify deploy          # Deploy to preview URL
-```
-
-### 3. Production Deploy
-```bash
-# Run from app directory (cd apps/dhg-a)
-netlify deploy --prod   # Deploy to production URL
-```
-
-## What Each Command Does
-
-### Build Commands
-- `pnpm install`
-  - Installs all dependencies
-  - Creates node_modules in root and apps
-  - Uses shared lockfile for consistency
-
-- `pnpm build`
-  - Runs Turbo build pipeline
-  - Builds all apps in parallel
-  - Creates production-ready assets in dist/
-  - Generates sourcemaps if configured
-
-### Development Commands
-- `pnpm dev`
-  - Starts Vite dev servers
-  - Enables hot module replacement
-  - dhg-a runs on port 5173
-  - dhg-b runs on port 5174
-  - Watches for file changes
-
-- `pnpm preview`
-  - Serves built production files
-  - dhg-a preview on port 4173
-  - dhg-b preview on port 4174
-  - Tests production build locally
-
-### Netlify Commands
-- `netlify deploy`
-  - Creates preview deployment
-  - Generates unique preview URL
-  - No impact on production
-  - Great for testing/sharing
-
-- `netlify deploy --prod`
-  - Deploys to production URL
-  - Updates live site
-  - Generates permanent URL
-  - Creates deployment record
-
-## Environment Stages
-
-### Development (Local)
-- Uses Vite dev server
-- Hot module replacement
-- Source maps enabled
-- Development environment variables
-
-### Preview (Netlify Draft)
-- Production build
-- Temporary URL
-- Testing environment
-- Preview environment variables
-
-### Production (Netlify Production)
-- Production build
-- Live site URL
-- Production environment
-- Production environment variables
-
-## Common Workflows
-
-### Feature Development
-```bash
-# 1. Start development
-pnpm dev --filter dhg-a
-
-# 2. Make changes and test locally
-
-# 3. Build and preview
-pnpm build --filter dhg-a
-pnpm preview --filter dhg-a
-
-# 4. Deploy preview
+# Deploy feature branch to Netlify
 cd apps/dhg-a
 netlify deploy
 
-# 5. If approved, deploy to production
-netlify deploy --prod
+# Preview URL will be: feature-name--dhg-hub.netlify.app
 ```
 
-### Full Site Update
+### 2. Development Branch Deployment
 ```bash
-# 1. Build all apps
-pnpm build
+# After feature is approved, merge to development
+git checkout development
+git pull origin development
+git merge feature/new-feature
+git push origin development
 
-# 2. Preview locally
-pnpm preview
+# Deploy development branch
+cd apps/dhg-a
+netlify deploy
 
-# 3. Deploy previews
+# Development URL: dev.dhg-hub.org
+```
+
+### 3. Production Deployment
+```bash
+# After thorough testing on development
+git checkout main
+git pull origin main
+git merge development
+git push origin main
+
+# Deploy to production
+cd apps/dhg-a
+netlify deploy --prod
+
+# Production URL: dhg-hub.org
+```
+
+## Environment Stages
+
+### Feature Branch (feature-name--dhg-hub.netlify.app)
+- For testing new features
+- Temporary deployments
+- Development environment variables
+- Accessible to team for review
+
+### Development (dev.dhg-hub.org)
+- Integration environment
+- Latest merged features
+- Development environment variables
+- Staging for production
+
+### Production (dhg-hub.org)
+- Stable production site
+- Production environment variables
+- Public-facing site
+
+## Common Workflows
+
+### Starting New Feature
+```bash
+git checkout development
+git pull origin development
+git checkout -b feature/my-feature
+# Make changes...
+pnpm test:run --filter dhg-a
+pnpm build --filter dhg-a
 cd apps/dhg-a && netlify deploy
-cd ../dhg-b && netlify deploy
+```
 
-# 4. If approved, deploy production
-cd ../dhg-a && netlify deploy --prod
-cd ../dhg-b && netlify deploy --prod
+### Merging Feature to Development
+```bash
+# After feature is tested and approved
+git checkout development
+git pull origin development
+git merge feature/my-feature
+git push origin development
+cd apps/dhg-a && netlify deploy
+```
+
+### Promoting to Production
+```bash
+# After development is stable
+git checkout main
+git pull origin main
+git merge development
+git push origin main
+cd apps/dhg-a && netlify deploy --prod
 ```
 
 ## Best Practices
 
-1. **Always Test Locally First**
-   - Use `pnpm build` and `pnpm preview`
-   - Check all features work
-   - Verify environment variables
+1. **Branch Management**
+   - Always branch from development
+   - Keep feature branches short-lived
+   - Delete feature branches after merge
 
-2. **Use Preview Deployments**
-   - Deploy to preview URL first
-   - Share with team for review
-   - Test on different devices
+2. **Testing**
+   - Test locally first
+   - Deploy to feature branch
+   - Test on development
+   - Final test before production
 
-3. **Production Deployments**
-   - Deploy during low-traffic periods
-   - Have rollback plan ready
-   - Monitor deployment success
+3. **Deployments**
+   - Use feature branch deployments for review
+   - Keep development site stable
+   - Deploy to production during low-traffic periods
 
 4. **Environment Variables**
-   - Verify correct variables set
-   - Check Netlify environment settings
-   - Use different values per environment
+   - Different values per environment
+   - Production secrets only in production
+   - Use .env.example for documentation
+
+## Netlify Configuration
+
+### Branch Deployments
+```toml
+[build]
+  base = "apps/dhg-a"
+  command = "pnpm build"
+  publish = "dist"
+
+[context.production]
+  environment = { NODE_ENV = "production" }
+
+[context.development]
+  environment = { NODE_ENV = "development" }
+
+[context.deploy-preview]
+  environment = { NODE_ENV = "development" }
+```
 
 ## Troubleshooting
 
@@ -187,9 +196,3 @@ netlify status
 
 # View deploy logs
 netlify deploy --debug
-```
-
-### Additional Testing Dependencies
-```bash
-# Run from root directory
-pnpm add -D @testing-library/dom @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom vitest --filter dhg-a 
