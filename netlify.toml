@@ -1,6 +1,17 @@
+# Root netlify.toml - Base configuration for all apps
 [build]
-  command = "pnpm build"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF . ../common/"
 
 [build.environment]
-  NODE_VERSION = "20"
-  NPM_FLAGS = "--version" 
+  NODE_VERSION = "18"
+  PNPM_VERSION = "8.15.1"
+
+# Shared environment variables
+[context.production.environment]
+  VITE_APP_ENV = "production"
+  
+[context.development.environment]
+  VITE_APP_ENV = "development"
+  
+[context.deploy-preview.environment]
+  VITE_APP_ENV = "preview" 
