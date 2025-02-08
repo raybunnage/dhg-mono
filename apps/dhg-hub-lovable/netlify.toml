@@ -6,10 +6,16 @@
 
 # App-specific environment overrides
 [context.production]
-  environment = { VITE_APP_NAME = "DHG Hub Lovable" }
+  [context.production.environment]
+    VITE_APP_NAME = "DHG Hub Lovable"
+    VITE_SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co"
 
 [context.development]
-  environment = { VITE_APP_NAME = "DHG Hub Lovable (Dev)" }
+  [context.development.environment]
+    VITE_APP_NAME = "DHG Hub Lovable (Dev)"
+    VITE_SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co"
 
 [context.deploy-preview]
-  environment = { VITE_APP_NAME = "DHG Hub Lovable (Preview)" } 
+  [context.deploy-preview.environment]
+    VITE_APP_NAME = "DHG Hub Lovable (Preview)"
+    VITE_SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co" 
