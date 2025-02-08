@@ -13,6 +13,7 @@ function App() {
   };
 
   const getEnvColor = (env) => {
+    console.log('Current env:', env);
     switch(env) {
       case 'production': return 'bg-green-100 text-green-800 border-green-200';
       case 'development': return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -33,11 +34,15 @@ function App() {
         <div className="mt-8 space-y-4">
           <ThemeToggle />
           <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold mb-2">Environment Info</h2>
+            <h2 className="text-lg font-semibold mb-2 bg-blue-500">Environment Info</h2>
             <div className="space-y-3">
               <div>
                 <span className="font-medium">Status: </span>
                 <span className={`inline-block px-2 py-1 rounded-md border ${getEnvColor(import.meta.env.VITE_ENV)}`}>
+                  {/* Debug output */}
+                  <span className="hidden">
+                    ENV: {JSON.stringify(import.meta.env, null, 2)}
+                  </span>
                   {import.meta.env.VITE_ENV.toUpperCase()}
                 </span>
               </div>
