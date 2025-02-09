@@ -1,15 +1,46 @@
 # App-specific netlify.toml
 [build]
   base = "apps/dhg-a"
-  command = "pnpm build"
-  publish = "dist"
+  command = "echo Building for $CONTEXT && VITE_ENV=$CONTEXT NODE_ENV=$CONTEXT CONTEXT=$CONTEXT pnpm build"
+  publish = "./dist"
+  functions = "netlify/functions"
 
 # App-specific environment overrides
-[context.production]
-  environment = { VITE_APP_NAME = "DHG Hub" }
+[context.production.environment]
+  VITE_APP_NAME = "DHG Hub"
+  VITE_ENV = "production"
+  VITE_FEATURE_FLAGS = "release"
+  VITE_API_URL = "https://dhg-hub-test-1738995595.netlify.app/.netlify/functions/api"
 
-[context.development]
-  environment = { VITE_APP_NAME = "DHG Hub (Dev)" }
+[context.development.environment]
+  VITE_APP_NAME = "DHG Hub (Dev)"
+  VITE_ENV = "development"
+  VITE_FEATURE_FLAGS = "debug,beta"
+  VITE_API_URL = "https://dev--dhg-hub-test-1738995595.netlify.app/.netlify/functions/api"
 
-[context.deploy-preview]
-  environment = { VITE_APP_NAME = "DHG Hub (Preview)" } 
+[context.deploy-preview.environment]
+  VITE_APP_NAME = "DHG Hub (Preview)"
+  VITE_ENV = "preview"
+  VITE_FEATURE_FLAGS = "debug,beta,experimental"
+  VITE_API_URL = "https://deploy-preview-1--dhg-hub-test-1738995595.netlify.app/.netlify/functions/api"
+
+[context.branch-deploy.environment]
+  VITE_APP_NAME = "DHG Hub (Branch)"
+  VITE_ENV = "preview"
+  VITE_FEATURE_FLAGS = "debug,beta,experimental"
+  VITE_API_URL = "https://preview-api.dhg-hub.org"
+
+[context.feature-enhanced-env-display.environment]
+  VITE_APP_NAME = "DHG Hub (Feature Branch)"
+  VITE_ENV = "preview"
+  VITE_FEATURE_FLAGS = "debug,beta,experimental"
+  VITE_API_URL = "https://preview-api.dhg-hub.org"
+
+[functions]
+  directory = "netlify/functions"
+  included_files = ["netlify/functions/**"]
+  node_bundler = "esbuild"
+
+# Add build output logging
+[build.environment]
+  DEBUG = "*" 

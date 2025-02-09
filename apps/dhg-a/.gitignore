@@ -15,4 +15,10 @@ dist/
 
 # Netlify
 .netlify/
-.netlify/state.json 
+.netlify/state.json
+
+# Node modules
+node_modules
+
+# Exclude functions
+!netlify/functions/** 
