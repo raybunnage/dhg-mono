@@ -14,10 +14,20 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, 'src')
       }
     },
+    optimizeDeps: {
+      include: ['pdfjs-dist']
+    },
     build: {
       ...baseConfig.build,
       outDir: 'dist',
-      sourcemap: true
+      sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            pdfjs: ['pdfjs-dist']
+          }
+        }
+      }
     }
   }
 }) 
