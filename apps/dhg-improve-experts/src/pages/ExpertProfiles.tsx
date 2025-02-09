@@ -30,6 +30,7 @@ export default function ExpertProfiles() {
     { id: import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID, name: 'Root' }
   ]);
   const [selectedFile, setSelectedFile] = useState<FilePreview | null>(null);
+  const [nextPageToken, setNextPageToken] = useState<string | undefined>();
 
   const testEnv = () => {
     const info = {
@@ -45,13 +46,19 @@ export default function ExpertProfiles() {
     setEnvInfo(JSON.stringify(info, null, 2));
   };
 
-  const fetchDriveContents = async (folderId?: string) => {
+  const fetchDriveContents = async (folderId?: string, pageToken?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const items = await listDriveContents(folderId);
-      console.log('Drive items:', items);
-      setDriveItems(items);
+      const result = await listDriveContents(folderId, 20, pageToken);
+      if (pageToken) {
+        // Append new items
+        setDriveItems(prev => [...prev, ...result.files]);
+      } else {
+        // Reset items for new folder
+        setDriveItems(result.files);
+      }
+      setNextPageToken(result.nextPageToken);
     } catch (err) {
       console.error('Error fetching drive contents:', err);
       setError(err.message);
@@ -64,36 +71,21 @@ export default function ExpertProfiles() {
     if (item.mimeType === 'application/vnd.google-apps.folder') {
       setBreadcrumbs(prev => [...prev, { id: item.id, name: item.name }]);
       await fetchDriveContents(item.id);
-    } else {
-      // Check if file is previewable
-      const previewableTypes = [
-        'text/plain',
-        'text/markdown',
-        'text/html',
-        'application/json',
-        'text/csv',
-        'application/pdf'
-      ];
-
-      if (previewableTypes.includes(item.mimeType)) {
-        try {
-          setLoading(true);
-          const content = await getFileContent(item.id);
-          setSelectedFile({
-            id: item.id,
-            name: item.name,
-            content,
-            mimeType: item.mimeType
-          });
-        } catch (err) {
-          console.error('Error fetching file content:', err);
-          setError('Failed to load file content');
-        } finally {
-          setLoading(false);
-        }
-      } else if (item.webViewLink) {
-        // For non-previewable files, open in new tab
-        window.open(item.webViewLink, '_blank');
+    } else if (!item.mimeType.includes('video/')) {
+      try {
+        setLoading(true);
+        const content = await getFileContent(item.id);
+        setSelectedFile({
+          id: item.id,
+          name: item.name,
+          content,
+          mimeType: item.mimeType
+        });
+      } catch (err) {
+        console.error('Error fetching file content:', err);
+        setError('Failed to load file content');
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -101,6 +93,15 @@ export default function ExpertProfiles() {
   const handleBreadcrumbClick = async (breadcrumb: FolderBreadcrumb, index: number) => {
     setBreadcrumbs(prev => prev.slice(0, index + 1));
     await fetchDriveContents(breadcrumb.id);
+  };
+
+  const handleLoadMore = () => {
+    if (nextPageToken) {
+      fetchDriveContents(
+        breadcrumbs[breadcrumbs.length - 1].id, 
+        nextPageToken
+      );
+    }
   };
 
   return (
@@ -176,6 +177,17 @@ export default function ExpertProfiles() {
                     </div>
                   ))}
                 </div>
+
+                {/* Load More Button */}
+                {nextPageToken && (
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loading}
+                    className="mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded w-full"
+                  >
+                    {loading ? 'Loading...' : 'Load More'}
+                  </button>
+                )}
               </div>
             )}
           </div>
