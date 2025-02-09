@@ -36,4 +36,27 @@ export async function listDriveContents(folderId = FOLDER_ID): Promise<DriveItem
     console.error('Error fetching drive contents:', error);
     throw error;
   }
+}
+
+export async function getFileContent(fileId: string): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+      {
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_GOOGLE_ACCESS_TOKEN}`,
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const content = await response.text();
+    return content;
+  } catch (error) {
+    console.error('Error fetching file content:', error);
+    throw error;
+  }
 } 
