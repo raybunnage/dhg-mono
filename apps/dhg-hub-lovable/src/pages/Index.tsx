@@ -55,7 +55,7 @@ const Index = () => {
       <div className="grid md:grid-cols-3 gap-6 mt-8">
         <Card className="border-primary/20 hover:border-primary/40 transition-colors">
           <CardHeader>
-            <CardTitle className="text-teal-600">Research Focus</CardTitle>
+            <CardTitle className="text-[#00B4E6]">Research Focus</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-gray-600">
@@ -66,7 +66,7 @@ const Index = () => {
 
         <Card className="border-secondary/20 hover:border-secondary/40 transition-colors">
           <CardHeader>
-            <CardTitle className="text-teal-600">Collaborative Approach</CardTitle>
+            <CardTitle className="text-[#00B4E6]">Collaborative Approach</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-gray-600">
@@ -77,7 +77,7 @@ const Index = () => {
 
         <Card className="border-accent/20 hover:border-accent/40 transition-colors">
           <CardHeader>
-            <CardTitle className="text-teal-600">Key Themes</CardTitle>
+            <CardTitle className="text-[#00B4E6]">Key Themes</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="text-gray-600 text-left list-disc pl-4 space-y-1">
