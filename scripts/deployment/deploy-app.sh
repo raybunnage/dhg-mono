@@ -31,7 +31,7 @@ VITE_APP_ENV=$ENV pnpm build
 
 # Deploy
 if [ "$ENV" = "production" ]; then
-  netlify deploy --prod
+  netlify deploy --prod --dir="$(pwd)/dist" --message "$APP_NAME: Production deployment"
 else
-  netlify deploy
+  netlify deploy --dir="$(pwd)/dist" --message "$APP_NAME: $ENV deployment"
 fi 
