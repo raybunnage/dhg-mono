@@ -1,4 +1,5 @@
 import mammoth from 'mammoth';
+import { initPdfJs } from './pdf-utils';
 
 const FOLDER_ID = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
 
@@ -50,7 +51,6 @@ export async function listDriveContents(
 
 export async function getFileContent(fileId: string): Promise<string> {
   try {
-    // Get file metadata first to check type
     const metadataResponse = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}?fields=mimeType`,
       {
@@ -68,7 +68,7 @@ export async function getFileContent(fileId: string): Promise<string> {
 
     // Handle different file types
     if (mimeType.includes('google-apps')) {
-      // Google Docs, Sheets, etc - export as plain text
+      // Google Docs handling...
       const exportResponse = await fetch(
         `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`,
         {
@@ -83,8 +83,8 @@ export async function getFileContent(fileId: string): Promise<string> {
       }
 
       return exportResponse.text();
-    } else if (mimeType.includes('officedocument') || mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      // Microsoft Office documents - use mammoth for DOCX
+    } else if (mimeType.includes('officedocument')) {
+      // Word docs handling...
       const downloadResponse = await fetch(
         `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
         {
@@ -101,6 +101,36 @@ export async function getFileContent(fileId: string): Promise<string> {
       const buffer = await downloadResponse.arrayBuffer();
       const result = await mammoth.extractRawText({ arrayBuffer: buffer });
       return result.value;
+    } else if (mimeType === 'application/pdf') {
+      // PDF handling
+      const downloadResponse = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        {
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_GOOGLE_ACCESS_TOKEN}`,
+          }
+        }
+      );
+
+      if (!downloadResponse.ok) {
+        throw new Error('Could not download PDF');
+      }
+
+      const arrayBuffer = await downloadResponse.arrayBuffer();
+      const pdfjs = await initPdfJs();
+      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n\n';
+      }
+
+      return fullText;
     } else {
       // Other files - try direct text download
       const downloadResponse = await fetch(
