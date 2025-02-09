@@ -1,5 +1,3 @@
-import { drive_v3 } from '@googleapis/drive';
-
 const FOLDER_ID = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
 
 interface DriveItem {
@@ -13,30 +11,29 @@ export async function listDriveContents(folderId = FOLDER_ID): Promise<DriveItem
   console.log('Starting listDriveContents...');
   
   try {
-    const drive = new drive_v3.Drive({
-      auth: import.meta.env.VITE_GOOGLE_ACCESS_TOKEN
-    });
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType,webViewLink)&orderBy=name`,
+      {
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_GOOGLE_ACCESS_TOKEN}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
 
-    console.log('Drive client created');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-    const response = await drive.files.list({
-      q: `'${folderId}' in parents and trashed = false`,
-      fields: 'files(id, name, mimeType, webViewLink)',
-      orderBy: 'name'
-    });
-
+    const data = await response.json();
     console.log('Drive response:', {
-      filesCount: response.data.files?.length,
-      firstFile: response.data.files?.[0]
+      filesCount: data.files?.length,
+      firstFile: data.files?.[0]
     });
 
-    return response.data.files || [];
+    return data.files || [];
   } catch (error) {
-    console.error('Detailed error in listDriveContents:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Error fetching drive contents:', error);
     throw error;
   }
 } 
