@@ -33,8 +33,15 @@ pnpm supabase link --project-ref your-project-ref
 # Push migrations
 pnpm supabase db push
 
-# If you get errors about relations not existing, push only the creation file:
-pnpm supabase db push supabase/migrations/[timestamp]_create_sources_google.sql
+# If you get a duplicate key error:
+# 1. Drop the existing migration
+pnpm supabase migration down 20240308000000
+# 2. Temporarily move the down file
+mv supabase/migrations/20240308000000_create_sources_google.down.sql supabase/migrations/20240308000000_create_sources_google.down.sql.bak
+# 3. Push just the creation file
+pnpm supabase db push
+# 4. Restore the down file
+mv supabase/migrations/20240308000000_create_sources_google.down.sql.bak supabase/migrations/20240308000000_create_sources_google.down.sql
 
 # When asked about which migrations to push:
 # - Review the listed migration files
@@ -43,4 +50,3 @@ pnpm supabase db push supabase/migrations/[timestamp]_create_sources_google.sql
 
 # Check status
 pnpm supabase migration list
-```
