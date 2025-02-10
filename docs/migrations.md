@@ -54,6 +54,23 @@ pnpm supabase migration repair --status reverted [timestamp]
 pnpm supabase db push
 ```
 
+## Handling Connection Issues
+
+```bash
+# If you get connection timeouts or pipe errors:
+
+# 1. List migrations without debug mode
+pnpm supabase migration list
+
+# 2. Push migrations individually
+pnpm supabase db push supabase/migrations/[timestamp]_create_sources_google.sql
+
+# 3. If connection issues persist:
+# - Wait a few minutes and try again
+# - Check your internet connection
+# - Verify your database password
+```
+
 ## Applying Migrations
 
 ```bash
