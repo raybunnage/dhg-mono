@@ -28,7 +28,8 @@
     "deploy:dhg-b:preview": "./scripts/deployment/deploy-app.sh dhg-b preview",
     "deploy:dhg-hub-lovable:dev": "./scripts/deployment/deploy-app.sh dhg-hub-lovable development",
     "deploy:dhg-hub-lovable:prod": "./scripts/deployment/deploy-app.sh dhg-hub-lovable production",
-    "deploy:dhg-hub-lovable:preview": "./scripts/deployment/deploy-app.sh dhg-hub-lovable preview"
+    "deploy:dhg-hub-lovable:preview": "./scripts/deployment/deploy-app.sh dhg-hub-lovable preview",
+    "reset:sources-google": "scripts/reset-sources-google.sh"
   },
   "devDependencies": {
     "netlify-cli": "18.0.4",
