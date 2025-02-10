@@ -1,0 +1,33 @@
+functionsDirectory = "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-b/netlify/functions"
+functionsDirectoryOrigin = "ui"
+plugins = []
+headers = []
+redirects = []
+
+[functions]
+
+[functions."*"]
+
+[build]
+publish = "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-b/apps/dhg-b/dist"
+publishOrigin = "ui"
+commandOrigin = "config"
+base = "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-b"
+command = "pnpm build"
+functions = "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-b/netlify/functions"
+
+[build.environment]
+NODE_VERSION = "20"
+NPM_FLAGS = "--version"
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]

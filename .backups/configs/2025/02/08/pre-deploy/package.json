@@ -1,0 +1,37 @@
+{
+  "name": "dhg-monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "test": "turbo run test",
+    "test:run": "turbo run test:run",
+    "copy-app": "./scripts/app-management/copy-lovable-app.sh",
+    "backup-configs": "./scripts/app-management/backup-configs.sh",
+    "restore-configs": "./scripts/app-management/restore-configs.sh",
+    "list-backups": "./scripts/app-management/list-backups.sh",
+    "list-backups-date": "./scripts/app-management/list-backups.sh",
+    "deploy:dev": "./scripts/deploy.sh dhg-a development",
+    "deploy:prod": "./scripts/deploy.sh dhg-a production",
+    "env:backup": "./scripts/backup-env.sh",
+    "env:restore": "./scripts/restore-env.sh",
+    "deploy:init": "./scripts/deployment/setup-environments.sh",
+    "deploy:app": "./scripts/deployment/deploy-app.sh",
+    "deploy:backup": "./scripts/deployment/backup-env-configs.sh",
+    "deploy:dhg-a:development": "./scripts/deployment/deploy-app.sh dhg-a development",
+    "deploy:dhg-a:prod": "./scripts/deployment/deploy-app.sh dhg-a production",
+    "deploy:dhg-a:preview": "./scripts/deployment/deploy-app.sh dhg-a preview",
+    "deploy:dhg-b:dev": "./scripts/deployment/deploy-app.sh dhg-b development",
+    "deploy:dhg-b:prod": "./scripts/deployment/deploy-app.sh dhg-b production",
+    "deploy:dhg-b:preview": "./scripts/deployment/deploy-app.sh dhg-b preview",
+    "deploy:dhg-hub-lovable:dev": "./scripts/deployment/deploy-app.sh dhg-hub-lovable development",
+    "deploy:dhg-hub-lovable:prod": "./scripts/deployment/deploy-app.sh dhg-hub-lovable production",
+    "deploy:dhg-hub-lovable:preview": "./scripts/deployment/deploy-app.sh dhg-hub-lovable preview"
+  },
+  "devDependencies": {
+    "netlify-cli": "18.0.4",
+    "turbo": "^1.12.4"
+  }
+}

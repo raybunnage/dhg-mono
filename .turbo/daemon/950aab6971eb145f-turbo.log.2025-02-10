@@ -1,0 +1,172 @@
+2025-02-10T00:31:23.265409Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T00:31:23.265944Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:35:01.358751Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T00:35:01.358810Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:36:37.159693Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T00:36:37.159724Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:41:25.058662Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/migrations/20240308000000_create_sources_google.down.sql")}
+2025-02-10T00:41:25.058683Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:41:26.758525Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/migrations/20240308000000_create_sources_google.down.sql")}
+2025-02-10T00:41:26.758541Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:44:02.757660Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/migrations/20240308000000_create_sources_google.sql")}
+2025-02-10T00:44:02.757682Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:45:53.258015Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T00:45:53.258047Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:47:11.757686Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T00:47:11.757706Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:48:32.557501Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T00:48:32.557528Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:49:51.758252Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T00:49:51.758304Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:50:09.258376Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/migrations/20240308000000_create_sources_google.down.sql.bak"), AnchoredSystemPathBuf("supabase/migrations/20240308000000_create_sources_google.down.sql")}
+2025-02-10T00:50:09.258399Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T00:51:10.657272Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/migrations/20240308000000_create_sources_google.down.sql"), AnchoredSystemPathBuf("supabase/migrations/20240308000000_create_sources_google.down.sql.bak")}
+2025-02-10T00:51:10.657286Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T01:56:57.570424Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/migrations/20250210015657_create_sources_google_v2.sql")}
+2025-02-10T01:56:57.570451Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T01:57:59.469222Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/migrations/20250210015657_create_sources_google_v2.down.sql"), AnchoredSystemPathBuf("supabase/migrations/20250210015657_create_sources_google_v2.sql")}
+2025-02-10T01:57:59.469246Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T01:58:44.467094Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/migrations/20240308000000_create_sources_google.sql"), AnchoredSystemPathBuf("supabase/migrations/20240308000000_create_sources_google.down.sql")}
+2025-02-10T01:58:44.467103Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:03:08.261632Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T02:03:08.261649Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:06:03.357204Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T02:06:03.357234Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:06:04.356407Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T02:06:04.356421Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:06:29.765120Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T02:06:29.765234Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:06:36.156123Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/migrations/20250210015657_create_sources_google.sql"), AnchoredSystemPathBuf("supabase/migrations/20250210015657_create_sources_google_v2.down.sql"), AnchoredSystemPathBuf("supabase/migrations/20250210015657_create_sources_google_v2.sql")}
+2025-02-10T02:06:36.156135Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:06:39.260621Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T02:06:39.260635Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:06:50.754929Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T02:06:50.754936Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:06:56.555559Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/migrations/20250210020656_create_sources_google_down.sql")}
+2025-02-10T02:06:56.555572Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:07:29.755097Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T02:07:29.755129Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:17:42.200586Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T02:17:42.200620Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:21:47.093526Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T02:21:47.093595Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:24:15.388651Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/migrations.md")}
+2025-02-10T02:24:15.388689Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:27:53.281404Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:27:53.281559Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:28:09.780096Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/sources-google.ts")}
+2025-02-10T02:28:09.780114Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:28:11.080232Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:28:11.080240Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:28:11.080262Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:28:26.679813Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/vite.config.js.timestamp-1739154506609-c378ee6ddbfc9.mjs")}
+2025-02-10T02:28:26.679820Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:28:26.679844Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:29:50.077277Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/client.ts")}
+2025-02-10T02:29:50.077298Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:29:59.077558Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/client.ts")}
+2025-02-10T02:29:59.077566Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:30:35.276069Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/types.ts")}
+2025-02-10T02:30:35.276095Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:30:58.975800Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/client/index.ts"), AnchoredSystemPathBuf("supabase/client")}
+2025-02-10T02:30:58.975809Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:31:01.074532Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/types"), AnchoredSystemPathBuf("supabase/types/index.ts")}
+2025-02-10T02:31:01.074540Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:31:05.875950Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/client.ts")}
+2025-02-10T02:31:05.876004Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:31:05.977623Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:31:10.575288Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/client/index.ts")}
+2025-02-10T02:31:10.575322Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:31:16.388749Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/client.ts")}
+2025-02-10T02:31:16.388765Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:31:16.633096Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:31:16.633189Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/client.ts")}
+2025-02-10T02:31:16.633191Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:31:16.633219Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:31:27.386773Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/client.ts")}
+2025-02-10T02:31:27.387542Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:31:27.614164Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:31:40.574132Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/types/index.ts")}
+2025-02-10T02:31:40.574149Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:31:45.873929Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("supabase/types/index.ts")}
+2025-02-10T02:31:45.873963Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:31:49.274460Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/client.ts")}
+2025-02-10T02:31:49.274470Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:33:12.971278Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/client.ts")}
+2025-02-10T02:33:12.971295Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:33:26.871293Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/supabase/client.ts")}
+2025-02-10T02:33:26.871302Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:33:26.871356Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:35:40.466736Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:35:40.466786Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:35:42.667058Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/google-drive/sync.ts")}
+2025-02-10T02:35:42.667069Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:36:55.564709Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/google-drive-integration.md")}
+2025-02-10T02:36:55.564743Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:36:57.163638Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/vite.config.js.timestamp-1739155017076-399993f855e13.mjs")}
+2025-02-10T02:36:57.163646Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:36:57.163688Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:37:20.063839Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/google-drive-integration.md"), AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:37:20.063856Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }, WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-02-10T02:37:20.063919Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:37:20.363224Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/vite.config.js.timestamp-1739155040274-466b4c841b461.mjs")}
+2025-02-10T02:37:20.363235Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:37:20.363274Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:38:19.461894Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/vite.config.js.timestamp-1739155099441-a261bfbb26be5.mjs")}
+2025-02-10T02:38:19.461903Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:38:19.486241Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:38:20.361479Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/vite.config.js.timestamp-1739155100302-dbbe8e7f681ed.mjs")}
+2025-02-10T02:38:20.361494Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:38:20.361535Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:39:17.060693Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/vite.config.js.timestamp-1739155156964-43a1a60988f7d.mjs")}
+2025-02-10T02:39:17.060712Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:39:17.060774Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:42:21.867807Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/google-drive/sync.ts")}
+2025-02-10T02:42:21.867833Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:42:32.567948Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/google-drive/sync.ts")}
+2025-02-10T02:42:32.568010Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:42:32.587733Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:42:39.966878Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/google-drive/sync.ts")}
+2025-02-10T02:42:39.966891Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:43:40.871026Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/google-drive/sync.ts")}
+2025-02-10T02:43:40.871676Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:45:56.168108Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:45:56.168130Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:46:06.768787Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:46:06.768807Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:46:06.768868Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:46:17.368360Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:46:17.368374Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:46:17.426816Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:46:28.568428Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:46:28.568439Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:46:28.574665Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:46:56.268251Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:46:56.268259Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:47:08.368735Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:47:08.368751Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:47:08.368787Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:47:11.669311Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:47:11.669324Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:47:11.706659Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:47:12.669284Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/lib/google-drive/sync.ts")}
+2025-02-10T02:47:12.669298Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:47:21.968923Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:47:21.968942Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:47:21.968975Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:47:28.369226Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:47:28.369238Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:47:47.269351Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:47:47.269358Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:47:47.269382Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:55:00.670830Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:55:00.670852Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:55:16.419055Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:55:16.419515Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:55:16.419577Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:55:27.912395Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:55:27.912407Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:55:27.912438Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-02-10T02:56:07.333506Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/dhg-improve-experts/src/pages/ExpertProfiles.tsx")}
+2025-02-10T02:56:07.333539Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("dhg-improve-experts"), path: AnchoredSystemPathBuf("apps/dhg-improve-experts") }}))
+2025-02-10T02:56:07.365700Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
