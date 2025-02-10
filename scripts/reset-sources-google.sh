@@ -7,9 +7,11 @@ echo "Resetting sources_google table..."
 cd apps/dhg-improve-experts
 
 # Link to project first (if not already linked)
-pnpm supabase link --project-ref jdksnfkupzywjdfefkyj --password "vIv157HuINuDSMZz"
+echo "Linking to Supabase project..."
+pnpm supabase link --project-ref jdksnfkupzywjdfefkyj
 
 # Disable RLS
+echo "Executing database operations..."
 pnpm supabase db remote query "
   -- Truncate just the sources_google table
   TRUNCATE TABLE sources_google CASCADE;
@@ -21,4 +23,8 @@ pnpm supabase db remote query "
 # Return to root
 cd ../..
 
-echo "Table reset complete!" 
+# Verify the operation
+echo "Verifying table was truncated..."
+pnpm supabase db remote query "SELECT COUNT(*) FROM sources_google;"
+
+echo "Operation complete! Table should be empty and RLS disabled." 
