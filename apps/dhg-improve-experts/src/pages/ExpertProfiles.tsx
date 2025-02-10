@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { listDriveContents, getFileContent } from "@/lib/google-drive";
+import { insertGoogleDriveFolder } from '../lib/supabase/sources-google'
+import { getGoogleDriveFolder } from '@/lib/google-drive/sync'
 
 interface DriveItem {
   id: string;
@@ -104,6 +106,31 @@ export default function ExpertProfiles() {
     }
   };
 
+  const handleSyncRootFolder = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      console.log('Starting folder sync...')
+      const folder = await getGoogleDriveFolder(
+        import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID
+      )
+      console.log('Got folder data:', folder)
+      
+      const result = await insertGoogleDriveFolder(folder)
+      console.log('Root folder synced:', result)
+      alert('Root folder synced successfully!')
+    } catch (error) {
+      console.error('Failed to sync root folder:', {
+        message: error.message,
+        stack: error.stack
+      })
+      setError(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="p-8">
       <h1 className="text-2xl mb-4">Google Drive Test</h1>
@@ -121,6 +148,13 @@ export default function ExpertProfiles() {
           disabled={loading}
         >
           {loading ? 'Loading...' : 'Fetch Drive Contents'}
+        </button>
+
+        <button
+          onClick={handleSyncRootFolder}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Sync Root Folder
         </button>
 
         {/* Breadcrumbs */}

@@ -1,5 +1,6 @@
 import { supabase } from './client'
 import type { SourceGoogle, SourceGoogleInsert, SourceGoogleUpdate } from './types'
+import { drive_v3 } from '@googleapis/drive'
 
 export const sourcesGoogleService = {
   async upsertSource(source: SourceGoogleInsert) {
@@ -78,4 +79,23 @@ export const sourcesGoogleService = {
     if (error) throw error
     return data as SourceGoogle[]
   }
+}
+
+export async function insertGoogleDriveFolder(folder: drive_v3.Schema$File) {
+  const { data, error } = await supabase
+    .from('sources_google')
+    .insert({
+      drive_id: folder.id,
+      name: folder.name,
+      mime_type: folder.mimeType,
+      web_view_link: folder.webViewLink,
+      is_root: true,
+      path: [folder.name],
+      metadata: folder
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
 } 
