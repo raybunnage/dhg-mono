@@ -5,20 +5,15 @@
 create extension if not exists "uuid-ossp";
 
 -- Create updated_at trigger function if it doesn't exist
-do $$
+create or replace function public.handle_updated_at()
+returns trigger
+language plpgsql
+as $$
 begin
-  if not exists (select 1 from pg_proc where proname = 'handle_updated_at') then
-    create function public.handle_updated_at()
-    returns trigger
-    language plpgsql
-    as $$
-    begin
-      new.updated_at = timezone('utc'::text, now());
-      return new;
-    end;
-    $$;
-  end if;
-end $$;
+  new.updated_at = timezone('utc'::text, now());
+  return new;
+end;
+$$;
 
 -- Create the sources_google table
 create table if not exists public.sources_google (
