@@ -34,14 +34,14 @@ pnpm supabase link --project-ref your-project-ref
 pnpm supabase db push
 
 # If you get a duplicate key error:
-# 1. Drop the existing migration
-pnpm supabase migration down 20240308000000
-# 2. Temporarily move the down file
-mv supabase/migrations/20240308000000_create_sources_google.down.sql supabase/migrations/20240308000000_create_sources_google.down.sql.bak
-# 3. Push just the creation file
+# 1. Repair the remote migration state
+pnpm supabase migration repair --status reverted 20240308000000
+
+# 2. Pull current database state
+pnpm supabase db pull
+
+# 3. Then push your migration
 pnpm supabase db push
-# 4. Restore the down file
-mv supabase/migrations/20240308000000_create_sources_google.down.sql.bak supabase/migrations/20240308000000_create_sources_google.down.sql
 
 # When asked about which migrations to push:
 # - Review the listed migration files
