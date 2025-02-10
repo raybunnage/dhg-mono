@@ -328,6 +328,46 @@
           }
         }
       }
+    },
+    {
+      "type": "SupabaseOperations",
+      "scope": "monorepo",
+      "description": "Safety rules for Supabase operations across all apps",
+      "databaseOperations": {
+        "riskLevels": {
+          "read": "low",
+          "targetedWrite": "medium",
+          "globalWrite": "high",
+          "schemaChanges": "high",
+          "reset": "extreme"
+        },
+        "requirements": [
+          "Always prefer targeted operations over global ones",
+          "Explicitly warn about potential data loss",
+          "Never suggest resets without clear warnings",
+          "Preserve existing working systems",
+          "Provide rollback steps for risky operations",
+          "Default to most conservative approach"
+        ],
+        "monorepoConsiderations": [
+          "Consider impact across all apps using shared database",
+          "Check for cross-app dependencies before modifications",
+          "Document changes that affect multiple apps"
+        ]
+      },
+      "migrations": {
+        "principles": [
+          "Keep migrations app-specific when possible",
+          "Document shared table modifications",
+          "Version control all schema changes",
+          "Test migrations in isolation"
+        ],
+        "warnings": {
+          "required": true,
+          "format": "Explicit warning about cross-app impacts",
+          "includeRollback": true
+        }
+      }
     }
   ]
 } 
