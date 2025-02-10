@@ -3,6 +3,7 @@ import { listDriveContents, getFileContent } from "@/lib/google-drive";
 import { insertGoogleDriveFolder } from '../lib/supabase/sources-google'
 import { getGoogleDriveFolder } from '@/lib/google-drive/sync'
 import { supabase } from '../lib/supabase/client'
+import { syncGoogleFolderWithDepth } from '@/lib/google-drive/sync'
 
 interface DriveItem {
   id: string;
@@ -110,28 +111,28 @@ export default function ExpertProfiles() {
 
   const handleSyncRootFolder = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
       
-      console.log('Starting folder sync...')
-      const folder = await getGoogleDriveFolder(
-        import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID
-      )
-      console.log('Got folder data:', folder)
+      console.log('Starting folder sync...');
+      // Sync root folder and 2 levels deep
+      await syncGoogleFolderWithDepth(
+        import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID,
+        2  // This will get root + 2 levels of subfolders
+      );
       
-      const result = await insertGoogleDriveFolder(folder)
-      console.log('Root folder synced:', result)
-      alert('Root folder synced successfully!')
+      console.log('Folder hierarchy synced!');
+      alert('Root folder synced successfully!');
     } catch (error) {
       console.error('Failed to sync root folder:', {
         message: error.message,
         stack: error.stack
-      })
-      setError(error.message)
+      });
+      setError(error.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSignIn = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -164,7 +165,7 @@ export default function ExpertProfiles() {
             </button>
 
             <button 
-              className="bg-green-500 text-white px-4 py-2 rounded"
+              className="bg-green-500 text-white px-4 py-2 rounded mr-4"
               onClick={() => fetchDriveContents()}
               disabled={loading}
             >
