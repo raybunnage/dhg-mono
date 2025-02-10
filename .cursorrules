@@ -368,6 +368,48 @@
           "includeRollback": true
         }
       }
+    },
+    {
+      "type": "ProgressiveDevelopment",
+      "description": "Rules for safe, incremental development",
+      "principles": {
+        "preserveExisting": {
+          "requirement": "Always preserve existing working functionality",
+          "steps": [
+            "Document current working features",
+            "Test existing functionality before changes",
+            "Make incremental changes only",
+            "Verify no regression after each change"
+          ]
+        },
+        "changeProcess": {
+          "steps": [
+            "List current working features",
+            "Document proposed changes",
+            "Identify potential impacts",
+            "Make smallest possible change",
+            "Test all existing features",
+            "Only commit when everything works"
+          ]
+        },
+        "regressionPrevention": {
+          "requirements": [
+            "Never remove working code without explicit request",
+            "Keep existing event handlers and state",
+            "Maintain all current UI elements",
+            "Preserve current styling and layout"
+          ]
+        }
+      },
+      "warnings": {
+        "required": true,
+        "checkpoints": [
+          "Are all existing buttons still present?",
+          "Do all current features still work?",
+          "Is existing state management preserved?",
+          "Are all event handlers intact?"
+        ]
+      }
     }
   ]
 } 
