@@ -1,0 +1,9 @@
+# Required environment variables:
+# - SUPABASE_DB_PASSWORD: Password for Supabase database
+
+echo "Resetting sources_google table..."
+cd apps/dhg-improve-experts
+
+# Link to project first (if not already linked)
+echo "Linking to Supabase project..."
+pnpm supabase link --project-ref <project-ref> --password "${SUPABASE_DB_PASSWORD}" 
