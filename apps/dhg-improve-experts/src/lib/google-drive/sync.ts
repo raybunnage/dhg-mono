@@ -66,45 +66,74 @@ export async function syncGoogleFolderWithDepth(
   currentDepth = 0, 
   parentPath: string[] = []
 ) {
+  let rootFolderId = null;  // Store the root folder's ID
+  console.log('----------------------------------------');
+  console.log(`Starting sync at depth ${currentDepth}`);
+  console.log(`Folder ID: ${folderId}`);
+  console.log(`Parent path: ${parentPath.join(' > ')}`);
+
   // Get folder metadata first
   const folderData = await getGoogleDriveFolder(folderId);
-  console.log(`Syncing folder: ${folderData.name} at depth ${currentDepth}`);
+  console.log(`Got folder metadata: ${folderData.name} (${folderData.id})`);
 
-  // Save folder info
-  await sourcesGoogleService.upsertSource({
-    drive_id: folderData.id,
-    name: folderData.name,
-    mime_type: folderData.mimeType,
-    web_view_link: folderData.webViewLink,
-    parent_folder_id: currentDepth === 0 ? null : parentPath[parentPath.length - 1],
-    is_root: currentDepth === 0,
-    path: [...parentPath, folderData.name],
-    metadata: folderData
-  });
+  // Save folder info first
+  try {
+    console.log(`Saving folder: ${folderData.name}`);
+    console.log(`Is root: ${currentDepth === 0}`);
+    // If this is the root folder, store its ID
+    if (currentDepth === 0) {
+      rootFolderId = folderData.id;
+    }
+    await sourcesGoogleService.upsertSource({
+      drive_id: folderData.id,
+      name: folderData.name,
+      mime_type: folderData.mimeType,
+      web_view_link: folderData.webViewLink,
+      parent_folder_id: currentDepth === 0 ? null : folderId,  // Link to immediate parent
+      is_root: currentDepth === 0,
+      path: [...parentPath, folderData.name],
+      metadata: folderData
+    });
+    console.log(`Successfully saved folder: ${folderData.name}`);
+  } catch (error) {
+    console.error(`Error saving folder ${folderData.name}:`, error);
+    console.error('Full folder data:', folderData);
+    throw error;
+  }
 
   // Get folder contents
   const { files } = await listDriveContents(folderId);
-  console.log(`Found ${files.length} items in ${folderData.name}`);
+  console.log(`Found ${files.length} items in ${folderData.name}:`);
+  files.forEach(f => console.log(`- ${f.name} (${f.mimeType})`));
   
   // Process each item
   for (const file of files) {
     const path = [...parentPath, folderData.name, file.name];
     
-    // Save file/folder to database
-    await sourcesGoogleService.upsertSource({
-      drive_id: file.id,
-      name: file.name,
-      mime_type: file.mimeType,
-      web_view_link: file.webViewLink,
-      parent_folder_id: folderId,
-      is_root: false,
-      path,
-      metadata: file
-    });
+    try {
+      console.log(`Saving item: ${file.name}`);
+      console.log(`Parent folder: ${folderData.name} (${folderData.id})`);
+      // Save file/folder to database
+      await sourcesGoogleService.upsertSource({
+        drive_id: file.id,
+        name: file.name,
+        mime_type: file.mimeType,
+        web_view_link: file.webViewLink,
+        parent_folder_id: currentDepth === 0 ? rootFolderId : folderData.id,  // Link to current folder
+        is_root: false,
+        path,
+        metadata: file
+      });
+      console.log(`Successfully saved item: ${file.name}`);
+    } catch (error) {
+      console.error(`Error saving item ${file.name}:`, error);
+      console.error('Full item data:', file);
+      throw error;
+    }
 
     // Recursively process folders up to maxDepth
     if (file.mimeType.includes('folder') && currentDepth < maxDepth) {
-      console.log(`Going deeper into folder: ${file.name}`);
+      console.log(`\nProcessing subfolder: ${file.name} at depth ${currentDepth + 1}`);
       await syncGoogleFolderWithDepth(
         file.id, 
         maxDepth, 
@@ -113,4 +142,6 @@ export async function syncGoogleFolderWithDepth(
       );
     }
   }
+  console.log(`\nCompleted sync of folder: ${folderData.name}`);
+  console.log('----------------------------------------');
 } 
