@@ -104,3 +104,41 @@ pnpm supabase db push
 
 # Check status
 pnpm supabase migration list
+```
+
+## Checking RLS Policies
+
+The sources_google table has three policies:
+
+1. Read Access:
+   - Allows authenticated users to SELECT
+   - Policy: auth.role() = 'authenticated'
+
+2. Insert Access:
+   - Allows authenticated users to INSERT
+   - Policy: auth.role() = 'authenticated'
+
+3. Update Access:
+   - Allows authenticated users to UPDATE
+   - Policy: auth.role() = 'authenticated'
+
+```bash
+# List all policies on sources_google table
+pnpm supabase db query "SELECT * FROM pg_policies WHERE tablename = 'sources_google';"
+
+# Detailed policy information
+pnpm supabase db query "
+  SELECT 
+    schemaname,
+    tablename,
+    policyname,
+    permissive,
+    roles,
+    cmd,
+    qual,
+    with_check
+  FROM pg_policies 
+  WHERE tablename = 'sources_google'
+  ORDER BY policyname;
+"
+```
