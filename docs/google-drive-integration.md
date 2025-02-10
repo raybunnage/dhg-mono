@@ -57,4 +57,15 @@ VITE_REDIRECT_URI=http://localhost:5173/auth/callback
 VITE_GOOGLE_ACCESS_TOKEN=your_access_token
 VITE_GOOGLE_REFRESH_TOKEN=your_refresh_token
 VITE_GOOGLE_DRIVE_FOLDER_ID=your_folder_id
-``` 
+```
+
+## Token Refresh Process
+
+When Google Drive tokens expire:
+
+1. Visit http://localhost:5173/auth/google
+2. Sign in with Google
+3. Copy new tokens from callback URL
+4. Update .env.development with new tokens
+
+Note: Access tokens typically expire after 1 hour 

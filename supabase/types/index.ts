@@ -15,5 +15,14 @@ export interface SourceGoogle {
   metadata: any
 }
 
-export type SourceGoogleInsert = Omit<SourceGoogle, 'id' | 'created_at' | 'updated_at'>
-export type SourceGoogleUpdate = Partial<SourceGoogleInsert> 
+export interface Database {
+  public: {
+    Tables: {
+      sources_google: {
+        Row: SourceGoogle
+        Insert: Omit<SourceGoogle, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<SourceGoogle, 'id' | 'created_at' | 'updated_at'>>
+      }
+    }
+  }
+} 
