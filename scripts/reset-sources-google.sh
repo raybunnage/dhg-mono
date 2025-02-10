@@ -3,17 +3,22 @@
 # Reset sources_google table
 echo "Resetting sources_google table..."
 
-PGPASSWORD="vIv157HuINuDSMZz" psql -h db.jdksnfkupzywjdfefkyj.supabase.co -U postgres -d postgres -c "
-  -- Disable RLS
-  ALTER TABLE sources_google DISABLE ROW LEVEL SECURITY;
+# Change to the app directory where supabase is configured
+cd apps/dhg-improve-experts
 
-  -- Drop existing policies
-  DROP POLICY IF EXISTS \"Enable read access for all authenticated users\" ON sources_google;
-  DROP POLICY IF EXISTS \"Enable insert for authenticated users\" ON sources_google;
-  DROP POLICY IF EXISTS \"Enable update for authenticated users\" ON sources_google;
+# Link to project first (if not already linked)
+pnpm supabase link --project-ref jdksnfkupzywjdfefkyj --password "vIv157HuINuDSMZz"
 
-  -- Truncate the table
+# Disable RLS
+pnpm supabase db remote query "
+  -- Truncate just the sources_google table
   TRUNCATE TABLE sources_google CASCADE;
+
+  -- Disable RLS for this table only
+  ALTER TABLE sources_google DISABLE ROW LEVEL SECURITY;
 "
+
+# Return to root
+cd ../..
 
 echo "Table reset complete!" 

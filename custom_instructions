@@ -1,0 +1,38 @@
+{
+  "rules": [
+    {
+      "type": "SafetyGuidelines",
+      "description": "Rules for safe database operations and system changes",
+      "databaseOperations": {
+        "riskLevels": {
+          "read": "low",
+          "targetedWrite": "medium",
+          "globalWrite": "high",
+          "schemaChanges": "high",
+          "reset": "extreme"
+        },
+        "requirements": [
+          "Always prefer targeted operations over global ones",
+          "Explicitly warn about potential data loss",
+          "Never suggest resets without clear warnings",
+          "Preserve existing working systems",
+          "Provide rollback steps for risky operations",
+          "Default to most conservative approach"
+        ]
+      },
+      "systemChanges": {
+        "principles": [
+          "Preserve working functionality",
+          "Make incremental changes",
+          "Backup before modifications",
+          "Test in isolation first"
+        ],
+        "warnings": {
+          "required": true,
+          "format": "Explicit warning about risks and consequences",
+          "includeRollback": true
+        }
+      }
+    }
+  ]
+} 
