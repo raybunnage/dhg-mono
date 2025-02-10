@@ -2,7 +2,6 @@ import { useState } from "react";
 import { listDriveContents, getFileContent } from "@/lib/google-drive";
 import { insertGoogleDriveFolder } from '../lib/supabase/sources-google'
 import { getGoogleDriveFolder } from '@/lib/google-drive/sync'
-import { supabase } from '../lib/supabase/client'
 import { syncGoogleFolderWithDepth } from '@/lib/google-drive/sync'
 
 interface DriveItem {
@@ -35,7 +34,6 @@ export default function ExpertProfiles() {
   ]);
   const [selectedFile, setSelectedFile] = useState<FilePreview | null>(null);
   const [nextPageToken, setNextPageToken] = useState<string | undefined>();
-  const [session, setSession] = useState(null)
 
   const testEnv = () => {
     const info = {
@@ -134,52 +132,31 @@ export default function ExpertProfiles() {
     }
   };
 
-  const handleSignIn = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'github'
-    })
-    if (error) {
-      console.error('Sign in error:', error)
-      setError(error.message)
-    }
-  }
-
   return (
     <div className="p-8">
       <h1 className="text-2xl mb-4">Google Drive Test</h1>
       <div className="space-y-4">
-        {!session ? (
-          <button
-            onClick={handleSignIn}
-            className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700"
-          >
-            Sign in with GitHub
-          </button>
-        ) : (
-          <>
-            <button 
-              className="bg-blue-500 text-white px-4 py-2 rounded mr-4"
-              onClick={testEnv}
-            >
-              Test Environment Variables
-            </button>
+        <button 
+          className="bg-blue-500 text-white px-4 py-2 rounded mr-4"
+          onClick={testEnv}
+        >
+          Test Environment Variables
+        </button>
 
-            <button 
-              className="bg-green-500 text-white px-4 py-2 rounded mr-4"
-              onClick={() => fetchDriveContents()}
-              disabled={loading}
-            >
-              {loading ? 'Loading...' : 'Fetch Drive Contents'}
-            </button>
+        <button 
+          className="bg-green-500 text-white px-4 py-2 rounded mr-4"
+          onClick={() => fetchDriveContents()}
+          disabled={loading}
+        >
+          {loading ? 'Loading...' : 'Fetch Drive Contents'}
+        </button>
 
-            <button
-              onClick={handleSyncRootFolder}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Sync Root Folder
-            </button>
-          </>
-        )}
+        <button
+          onClick={handleSyncRootFolder}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Sync Root Folder
+        </button>
 
         {/* Breadcrumbs */}
         {breadcrumbs.length > 0 && (
