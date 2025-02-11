@@ -1,10 +1,12 @@
 # Scripts with secrets
 scripts/reset-sources-google.sh
+scripts/reset-sources-google.sh.example
 scripts/*-local.sh
 scripts/**/*-secrets.sh
 scripts/**/*.secret.*
 scripts/**/*credentials*
 scripts/**/reset-*.sh
+scripts/**/*.example
 
 # Dependencies
 node_modules/
