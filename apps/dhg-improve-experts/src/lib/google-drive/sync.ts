@@ -144,4 +144,45 @@ export async function syncGoogleFolderWithDepth(
   }
   console.log(`\nCompleted sync of folder: ${folderData.name}`);
   console.log('----------------------------------------');
+}
+
+interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  parents: string[];
+}
+
+async function syncGoogleDriveContents(folderId: string) {
+  const files = await listAllDriveContents(folderId);
+  const processedFiles = buildFileHierarchy(files);
+  
+  // Batch insert into Supabase
+  const { data, error } = await supabase
+    .from('sources_google')
+    .upsert(processedFiles.map(file => ({
+      drive_id: file.id,
+      name: file.name,
+      path: file.path,
+      mime_type: file.mimeType,
+      parent_folder_id: file.parentId,
+      storage_type: 'reference',
+      processing_status: shouldProcess(file.mimeType) ? 'pending' : 'skipped',
+      file_metadata: {
+        size: file.size,
+        modifiedTime: file.modifiedTime,
+        webViewLink: file.webViewLink
+      }
+    })));
+
+  if (error) throw error;
+  return data;
+}
+
+function shouldProcess(mimeType: string): boolean {
+  return [
+    'application/pdf',
+    'application/vnd.google-apps.document',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ].includes(mimeType);
 } 
