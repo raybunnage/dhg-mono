@@ -1,5 +1,5 @@
 # Dependencies
-node_modules
+node_modules/
 **/node_modules
 .pnpm-store/
 .pnpm-debug.log
@@ -10,4 +10,8 @@ node_modules
 
 # Database passwords and keys
 **/supabase/passwords.txt
-**/scripts/secrets.env 
+**/scripts/secrets.env
+
+# Scripts with potential secrets
+scripts/reset-sources-google.sh
+scripts/*-local.sh 
