@@ -448,6 +448,30 @@
         "command": "pnpm supabase migration new",
         "runFrom": "root directory only"
       }
+    },
+    {
+      "name": "no-secrets-in-scripts",
+      "description": "Prevent secrets from being added to script files",
+      "pattern": {
+        "forbidden": [
+          {
+            "match": "postgresql://postgres:[^${}][^@]*@",
+            "message": "Do not hardcode database passwords. Use environment variables like ${SUPABASE_DB_PASSWORD}"
+          },
+          {
+            "match": "password=|secret=|token=|key=",
+            "message": "Do not hardcode secrets. Use environment variables"
+          }
+        ],
+        "required": [
+          {
+            "match": "\\${[A-Z_]+}",
+            "in": "DB_URL=|password=|token=|key=",
+            "message": "Secrets must use environment variables"
+          }
+        ]
+      },
+      "files": ["**/*.sh", "**/*.bash", "**/*.zsh"]
     }
   ]
 } 
