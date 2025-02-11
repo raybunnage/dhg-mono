@@ -3,6 +3,7 @@ import { listDriveContents, getFileContent } from "@/lib/google-drive";
 import { insertGoogleDriveFolder } from '../lib/supabase/sources-google'
 import { getGoogleDriveFolder } from '@/lib/google-drive/sync'
 import { syncGoogleFolderWithDepth } from '@/lib/google-drive/sync'
+import ExpertFolderAnalysis from "@/components/ExpertFolderAnalysis";
 
 interface DriveItem {
   id: string;
@@ -133,30 +134,32 @@ export default function ExpertProfiles() {
   };
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl mb-4">Google Drive Test</h1>
+    <div className="container mx-auto px-4 py-8">
       <div className="space-y-4">
-        <button 
-          className="bg-blue-500 text-white px-4 py-2 rounded mr-4"
-          onClick={testEnv}
-        >
-          Test Environment Variables
-        </button>
+        <h1 className="text-2xl mb-4">Google Drive Test</h1>
+        <div className="flex gap-4">
+          <button 
+            className="bg-blue-500 text-white px-4 py-2 rounded mr-4"
+            onClick={testEnv}
+          >
+            Test Environment Variables
+          </button>
 
-        <button 
-          className="bg-green-500 text-white px-4 py-2 rounded mr-4"
-          onClick={() => fetchDriveContents()}
-          disabled={loading}
-        >
-          {loading ? 'Loading...' : 'Fetch Drive Contents'}
-        </button>
+          <button 
+            className="bg-green-500 text-white px-4 py-2 rounded mr-4"
+            onClick={() => fetchDriveContents()}
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Fetch Drive Contents'}
+          </button>
 
-        <button
-          onClick={handleSyncRootFolder}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Sync Root Folder
-        </button>
+          <button
+            onClick={handleSyncRootFolder}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Sync Root Folder
+          </button>
+        </div>
 
         {/* Breadcrumbs */}
         {breadcrumbs.length > 0 && (
@@ -247,6 +250,8 @@ export default function ExpertProfiles() {
             </div>
           )}
         </div>
+
+        <ExpertFolderAnalysis />
       </div>
     </div>
   );

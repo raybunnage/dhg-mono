@@ -410,6 +410,44 @@
           "Are all event handlers intact?"
         ]
       }
+    },
+    {
+      "type": "SupabaseStructure",
+      "description": "Centralized Supabase configuration in root directory",
+      "structure": {
+        "root": {
+          "path": "/supabase",
+          "purpose": "Central location for all Supabase-related code and configuration",
+          "contents": {
+            "migrations": "Database migrations",
+            "types": "Shared TypeScript types",
+            "client": "Shared Supabase client configuration"
+          }
+        }
+      },
+      "requirements": [
+        "All Supabase files must be in root /supabase directory",
+        "No local Supabase configurations in app directories",
+        "Import types and clients from root /supabase",
+        "All migrations must be in /supabase/migrations",
+        "Use relative imports (../../../../../supabase) to access root Supabase files"
+      ],
+      "imports": {
+        "types": {
+          "correct": "import type { Database } from '../../../../../supabase/types'",
+          "incorrect": "import type { Database } from './types'"
+        },
+        "client": {
+          "correct": "import { supabase } from '@/integrations/supabase/client'",
+          "incorrect": "import { supabase } from './supabase/client'"
+        }
+      },
+      "migrations": {
+        "location": "/supabase/migrations only",
+        "naming": "YYYYMMDDHHMMSS_descriptive_name.sql",
+        "command": "pnpm supabase migration new",
+        "runFrom": "root directory only"
+      }
     }
   ]
 } 
