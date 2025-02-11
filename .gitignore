@@ -14,13 +14,17 @@ out/
 
 # Environment files
 .env
-.env.local
-.env.*.local
-.env.development
-.env.production
-.env.development.local
-.env.production.local
+.env.*
 !.env.example
+**/file_types/google-credentials/
+**/file_types/**/.env*
+**/.env*
+**/.env.*.backup
+**/.env.development*
+**/.env.production*
+**/.env.local*
+**/.env.test*
+**/.env.staging*
 
 # Vercel
 .vercel/
@@ -31,6 +35,8 @@ out/
 
 # Backups
 .backups/
+**/backups/
+**/configs/
 
 # Turbo daemon logs
 .turbo/daemon/
@@ -58,12 +64,10 @@ file_types/**/*
 
 # OS specific
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
 # Local Netlify folder
 .netlify
 .netlify/
 **/netlify/
 **/netlify/state.json
-# Backup files
-.backups/
-**/configs/
