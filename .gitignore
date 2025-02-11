@@ -1,3 +1,11 @@
+# Scripts with secrets
+scripts/reset-sources-google.sh
+scripts/*-local.sh
+scripts/**/*-secrets.sh
+scripts/**/*.secret.*
+scripts/**/*credentials*
+scripts/**/reset-*.sh
+
 # Dependencies
 node_modules/
 .pnpm-store/
