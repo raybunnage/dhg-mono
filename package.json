@@ -32,7 +32,9 @@
     "reset:sources-google": "scripts/reset-sources-google.sh",
     "db:migrate": "./scripts/supabase/run-migration.sh up",
     "db:rollback": "./scripts/supabase/run-migration.sh down",
-    "db:list": "./scripts/supabase/run-migration.sh list"
+    "db:list": "./scripts/supabase/run-migration.sh list",
+    "db:repair": "./scripts/supabase/run-migration.sh repair",
+    "db:check": "./scripts/supabase/run-migration.sh check"
   },
   "devDependencies": {
     "netlify-cli": "18.0.4",

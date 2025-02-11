@@ -36,6 +36,12 @@ DB_URL="postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.${SUPABASE_PROJECT_ID}.
 if [ "$COMMAND" = "list" ]; then
   echo "Listing migrations..."
   pnpm supabase migration list --db-url "$DB_URL" --workdir .
+elif [ "$COMMAND" = "repair" ]; then
+  echo "Repairing migration..."
+  pnpm supabase migration repair --db-url "$DB_URL" --status reverted 20250210215603
+elif [ "$COMMAND" = "check" ]; then
+  echo "Checking schema_migrations table..."
+  pnpm supabase migration list --db-url "$DB_URL" --workdir .
 else
   echo "Running migration ${COMMAND}..."
   pnpm supabase migration ${COMMAND} --db-url "$DB_URL" --workdir .
