@@ -10,8 +10,28 @@ if [ -z "$COMMAND" ]; then
   exit 1
 fi
 
-# Hardcode the URL for now until we fix env loading
-DB_URL="postgresql://postgres:iZRA1bV4HnOtSgcX@db.jdksnfkupzywjdfefkyj.supabase.co:5432/postgres"
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+  echo "Found .env file"
+  set -a
+  source .env
+  set +a
+else
+  echo "No .env file found in $(pwd)"
+fi
+
+# Verify required environment variables
+if [ -z "$SUPABASE_DB_PASSWORD" ] || [ -z "$SUPABASE_PROJECT_ID" ]; then
+  echo "Current directory: $(pwd)"
+  echo "SUPABASE_PROJECT_ID: ${SUPABASE_PROJECT_ID:-not set}"
+  echo "SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD:-not set}"
+  echo "Error: Required environment variables not set"
+  echo "Please ensure SUPABASE_DB_PASSWORD and SUPABASE_PROJECT_ID are set in .env"
+  exit 1
+fi
+
+# Construct database URL safely
+DB_URL="postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.${SUPABASE_PROJECT_ID}.supabase.co:5432/postgres"
 
 if [ "$COMMAND" = "list" ]; then
   echo "Listing migrations..."
