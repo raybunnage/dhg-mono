@@ -64,3 +64,6 @@ Thumbs.db
 .netlify/
 **/netlify/
 **/netlify/state.json
+# Backup files
+.backups/
+**/configs/
