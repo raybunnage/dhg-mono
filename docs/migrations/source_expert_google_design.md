@@ -153,6 +153,10 @@ set +a        # Turn off automatic export
 PGPASSWORD="$SUPABASE_DB_PASSWORD" psql -h "db.$SUPABASE_PROJECT_ID.supabase.co" \
   -U postgres -d postgres
 
+# To quit psql:
+\q           # Standard quit command
+# or Ctrl+D  # Keyboard shortcut
+
 # With SSL mode specified
 PGPASSWORD="$SUPABASE_DB_PASSWORD" psql "postgres://postgres:${SUPABASE_DB_PASSWORD}@db.${SUPABASE_PROJECT_ID}.supabase.co:5432/postgres?sslmode=require"
 ```
