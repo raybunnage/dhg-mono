@@ -1064,3 +1064,83 @@ pnpm db:check
 
 # 5. Only then create new migrations
 pnpm supabase migration new your_migration_name
+```
+
+## Common Migration Failures and Prevention
+
+### 1. Sequence Violations
+```bash
+# WRONG: Creating new migration before fixing remote/local mismatch
+pnpm supabase migration new my_migration   # Don't do this first!
+
+# RIGHT: Verify and fix state first
+pnpm db:check                             # Check state
+# Fix any mismatches
+pnpm db:check                             # Verify fixed
+pnpm supabase migration new my_migration  # Only then create new
+```
+
+### 2. Timestamp Confusion
+```bash
+# WRONG: Using placeholder timestamps
+# [timestamp]_name.sql        # Never use placeholders
+# YYYYMMDDHHMMSS_name.sql    # Never use placeholders
+
+# RIGHT: Let CLI generate proper timestamp
+pnpm supabase migration new name    # Creates correct timestamp automatically
+```
+
+### 3. Local/Remote Mismatch
+```bash
+# WRONG: Assuming states match
+pnpm db:migrate    # Don't run without checking
+
+# RIGHT: Always verify first
+pnpm db:check     # Check state
+# If mismatch:
+#  1. Get exact remote state
+PGPASSWORD="$SUPABASE_DB_PASSWORD" psql -h "db.$SUPABASE_PROJECT_ID.supabase.co" \
+  -U postgres -d postgres \
+  -c "SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY version;"
+#  2. Fix local state to match
+#  3. Verify fixed with db:check
+```
+
+### 4. Process Violations
+```bash
+# WRONG: Multiple actions without verification
+rm migrations/*
+pnpm db:pull
+pnpm db:migrate
+
+# RIGHT: One action, then verify
+rm migrations/*
+pnpm db:check    # Verify removal
+pnpm db:pull     # Get remote
+pnpm db:check    # Verify pull
+pnpm db:migrate  # Only then migrate
+```
+
+### 5. Documentation Divergence
+```bash
+# WRONG: Not following our own documented process
+# - Skipping steps
+# - Taking shortcuts
+# - Not verifying each step
+
+# RIGHT: Follow the docs exactly
+# 1. Check current state (db:check)
+# 2. Fix any mismatches
+# 3. Verify fixed state
+# 4. Create new migration
+# 5. Verify migration files
+```
+
+### Prevention Checklist
+1. Always start with `db:check`
+2. Never assume states match
+3. One action at a time
+4. Verify after each step
+5. Follow documentation exactly
+6. No shortcuts or assumptions
+7. If in doubt, check remote state directly
