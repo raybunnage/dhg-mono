@@ -38,10 +38,49 @@ if [ "$COMMAND" = "list" ]; then
   pnpm supabase migration list --db-url "$DB_URL" --workdir .
 elif [ "$COMMAND" = "repair" ]; then
   echo "Repairing migration..."
-  pnpm supabase migration repair --db-url "$DB_URL" --status reverted 20250210215603
+  pnpm supabase migration repair --db-url "$DB_URL" --status reverted 20250210215604
+elif [ "$COMMAND" = "repair-applied" ]; then
+  echo "Marking migration as applied..."
+  pnpm supabase migration repair --db-url "$DB_URL" --status applied 20250210215604
 elif [ "$COMMAND" = "check" ]; then
   echo "Checking schema_migrations table..."
   pnpm supabase migration list --db-url "$DB_URL" --workdir .
+elif [ "$COMMAND" = "down" ]; then
+  echo "Rolling back last migration..."
+  # Get the last migration version from REMOTE column (handle aligned output)
+  LAST_VERSION=$(pnpm supabase migration list --db-url "$DB_URL" --workdir . | 
+    grep -v "LOCAL.*REMOTE.*TIME" | 
+    grep -v "─.*─.*─" |
+    awk '{gsub(/[[:space:]]+/, " "); if ($3 != "") last=$3} END {print last}')
+  echo "Found last version: $LAST_VERSION"
+  if [ -n "$LAST_VERSION" ]; then
+    echo "Rolling back to version before $LAST_VERSION..."
+    # Find and execute the down migration file
+    DOWN_FILE="supabase/migrations/${LAST_VERSION}_add_last_synced_column_down.sql"
+    echo "Looking for down file: $DOWN_FILE"
+    if [ -f "$DOWN_FILE" ]; then
+      echo "Executing down migration: $DOWN_FILE"
+      echo "Down migration content:"
+      cat "$DOWN_FILE"
+      # First try to remove from schema_migrations if it exists
+      echo "Removing from schema_migrations if exists..."
+      pnpm supabase migration repair --db-url "$DB_URL" --status reverted "$LAST_VERSION"
+      # Execute the SQL directly
+      echo "Executing down SQL..."
+      PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
+        -U postgres -d postgres -p 5432 -f "$DOWN_FILE"
+      if [ $? -eq 0 ]; then
+        echo "Successfully executed down migration SQL"
+      else
+        echo "Failed to execute down migration SQL"
+        exit 1
+      fi
+    else
+      echo "Down migration file not found!"
+    fi
+  else
+    echo "No migrations to roll back"
+  fi
 else
   echo "Running migration ${COMMAND}..."
   pnpm supabase migration ${COMMAND} --db-url "$DB_URL" --workdir .
