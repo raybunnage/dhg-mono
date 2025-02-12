@@ -893,23 +893,36 @@ pnpm db:check
 pnpm db:check
 
 # Pull/sync with remote database
-pnpm supabase db remote commit    # Get remote migrations
-pnpm supabase db pull            # Pull full database schema
-pnpm supabase db reset           # Reset and resync (careful!)
+# Method 1: Using Supabase CLI
+pnpm supabase db pull
+
+# Method 2: Using psql directly (more reliable)
+set -a
+source .env
+set +a
+PGPASSWORD="$SUPABASE_DB_PASSWORD" psql -h "db.$SUPABASE_PROJECT_ID.supabase.co" \
+  -U postgres -d postgres \
+  -f supabase/migrations/20250210215603_add_last_synced_column.sql
 
 # Create new migration
 pnpm supabase migration new your_migration_name
 
-# Apply migrations
-pnpm db:migrate
+### Troubleshooting Connection Issues
+```bash
+# 1. Verify environment variables
+set -a
+source .env
+set +a
+echo "Project ID: $SUPABASE_PROJECT_ID"
+echo "DB Password: $SUPABASE_DB_PASSWORD"
 
-# Clean up problematic migrations
-rm supabase/migrations/[timestamp]*   # Remove specific migrations
-
-# Check remote migrations
+# 2. Test connection with psql
 PGPASSWORD="$SUPABASE_DB_PASSWORD" psql -h "db.$SUPABASE_PROJECT_ID.supabase.co" \
-  -U postgres -d postgres \
-  -c "SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY version;"
+  -U postgres -d postgres
+
+# 3. If needed, use full connection string
+PGPASSWORD="$SUPABASE_DB_PASSWORD" psql \
+  "postgres://postgres:${SUPABASE_DB_PASSWORD}@db.${SUPABASE_PROJECT_ID}.supabase.co:5432/postgres"
 ```
 
 ### Common Issues Prevention
