@@ -1008,3 +1008,20 @@ COMMIT;
 - Automatic backups
 - Change verification
 - Clear documentation
+```
+
+### Fixing Migration History
+```bash
+# When you see "migration history does not match local files":
+
+# 1. First repair any missing migrations
+pnpm supabase migration repair --status reverted [missing_version]
+
+# 2. Remove any duplicate local migrations
+rm supabase/migrations/[duplicate_timestamp]*
+
+# 3. Repair the history for removed migrations
+pnpm supabase migration repair --status applied [duplicate_version]
+
+# 4. Verify the fix worked
+pnpm db:check
