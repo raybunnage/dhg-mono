@@ -35,7 +35,8 @@
     "db:list": "./scripts/supabase/run-migration.sh list",
     "db:repair": "./scripts/supabase/run-migration.sh repair",
     "db:repair-applied": "./scripts/supabase/run-migration.sh repair-applied",
-    "db:check": "./scripts/supabase/run-migration.sh check"
+    "db:check": "./scripts/supabase/run-migration.sh check",
+    "migration:new": "./scripts/create-migration.sh"
   },
   "devDependencies": {
     "netlify-cli": "18.0.4",
