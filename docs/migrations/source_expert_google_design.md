@@ -1025,3 +1025,19 @@ pnpm supabase migration repair --status applied [duplicate_version]
 
 # 4. Verify the fix worked
 pnpm db:check
+```
+
+### When missing a remote migration:
+
+1. Get the missing migration content
+PGPASSWORD="$SUPABASE_DB_PASSWORD" psql -h "db.$SUPABASE_PROJECT_ID.supabase.co" \
+  -U postgres -d postgres \
+  -c "SELECT statements, name FROM supabase_migrations.schema_migrations WHERE version = '[version]';"
+
+2. Create the missing file
+touch supabase/migrations/[version]_[name].sql
+
+3. Copy the content from statements into the file
+
+4. Verify with db:check
+pnpm db:check
