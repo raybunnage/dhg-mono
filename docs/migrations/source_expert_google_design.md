@@ -887,9 +887,20 @@ pnpm db:check
    - Down migration (_down.sql)
    - Same timestamp for both files
 
-### Common Issues Prevention
-- Always run `db:check` before creating new migrations
-- Never modify existing remote migrations
-- Keep migrations atomic and focused
-- Test both up and down migrations locally
+### Common Commands
+```bash
+# Check migration status
+pnpm db:check
 
+# Pull remote database state
+pnpm supabase db remote commit
+
+# Create new migration
+pnpm supabase migration new your_migration_name
+
+# Apply migrations
+pnpm db:migrate
+```
+
+### Common Issues Prevention
+- Always run `db:check`
