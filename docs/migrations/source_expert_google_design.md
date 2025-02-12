@@ -892,14 +892,24 @@ pnpm db:check
 # Check migration status
 pnpm db:check
 
-# Pull remote database state
-pnpm supabase db remote commit
+# Pull/sync with remote database
+pnpm supabase db remote commit    # Get remote migrations
+pnpm supabase db pull            # Pull full database schema
+pnpm supabase db reset           # Reset and resync (careful!)
 
 # Create new migration
 pnpm supabase migration new your_migration_name
 
 # Apply migrations
 pnpm db:migrate
+
+# Clean up problematic migrations
+rm supabase/migrations/[timestamp]*   # Remove specific migrations
+
+# Check remote migrations
+PGPASSWORD="$SUPABASE_DB_PASSWORD" psql -h "db.$SUPABASE_PROJECT_ID.supabase.co" \
+  -U postgres -d postgres \
+  -c "SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY version;"
 ```
 
 ### Common Issues Prevention
