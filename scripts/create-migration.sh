@@ -1,13 +1,77 @@
 #!/bin/bash
-# Usage: ./scripts/create-migration.sh migration_name
+set -e  # Exit on any error
 
-name=$1
+# Function to check for duplicates
+check_duplicates() {
+  local pattern=$1
+  local count=$(ls supabase/migrations/*.sql 2>/dev/null | grep -c "$pattern")
+  if [ "$count" -gt 0 ]; then
+    echo "Error: Found existing migrations with pattern: $pattern"
+    echo "Existing files:"
+    ls supabase/migrations/*.sql | grep "$pattern"
+    exit 1
+  fi
+}
+
+# Usage check
+if [ -z "$1" ]; then
+  echo "Error: Migration name required"
+  echo "Usage: ./scripts/create-migration.sh <migration_name>"
+  exit 1
+fi
+
+# Get timestamp and check for duplicates
 timestamp=$(date -u +%Y%m%d%H%M%S)
+echo "Checking for duplicate migrations..."
+check_duplicates "$timestamp"
 
-# Create up migration
-pnpm supabase migration new $name
+# Verify clean state
+echo "Verifying clean state..."
+pnpm db:check
 
-# Create matching down migration
-latest=$(ls -t supabase/migrations/*.sql | head -1)
-down_file="${latest%.*}_down.sql"
-touch "$down_file" 
+# Create new migration
+name=$1
+echo "Creating new migration: $name"
+pnpm supabase migration new "$name"
+
+# Get the created migration file
+up_file=$(ls -t supabase/migrations/*.sql | head -1)
+
+# Verify the migration was created with expected timestamp
+if ! echo "$up_file" | grep -q "$timestamp"; then
+  echo "Error: Created migration file doesn't match expected timestamp"
+  echo "Expected: $timestamp"
+  echo "Got: $up_file"
+  exit 1
+fi
+
+down_file="${up_file%.*}_down.sql"
+
+# Create down migration
+echo "Creating down migration..."
+cat > "$down_file" << EOF
+-- Migration: Revert ${name}
+-- Created at: $(date -u +"%Y-%m-%d %H:%M:%S")
+-- Status: planned
+-- Dependencies: ${up_file##*/}
+
+BEGIN;
+
+-- Verify current state
+DO \$\$ 
+BEGIN
+  -- Add verification here
+END \$\$;
+
+-- Revert changes here
+
+COMMIT;
+EOF
+
+echo "Created migration files:"
+echo "  Up:   ${up_file##*/}"
+echo "  Down: ${down_file##*/}"
+
+# Final verification
+echo "Verifying final state..."
+pnpm db:check 
