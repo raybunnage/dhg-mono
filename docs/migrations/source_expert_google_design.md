@@ -927,3 +927,72 @@ PGPASSWORD="$SUPABASE_DB_PASSWORD" psql \
 
 ### Common Issues Prevention
 - Always run `db:check`
+
+## Migration Template Usage
+
+### 1. Check Current State First
+```bash
+# Always check before creating new migrations
+pnpm db:check
+
+# Note the latest timestamp (for our example):
+# 20250210215603 is latest remote
+```
+
+### 2. Use Template with Proper Timestamp
+```bash
+# Create new migration using timestamp AFTER latest remote
+pnpm supabase migration new rename_document_types
+
+# This will create:
+# YYYYMMDDHHMMSS_rename_document_types.sql
+# YYYYMMDDHHMMSS_rename_document_types_down.sql
+```
+
+### 3. Template Features
+```sql
+-- Migration: {description}
+-- Created at: {timestamp}
+-- Status: planned
+-- Dependencies: List any migrations this depends on
+
+BEGIN;
+
+-- Verify dependencies exist
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM supabase_migrations.schema_migrations 
+    WHERE version = '${timestamp}'
+  ) THEN
+    RAISE EXCEPTION 'Migration already exists';
+  END IF;
+END $$;
+
+-- Verify preconditions
+DO $$ 
+BEGIN
+  -- Add your checks here
+END $$;
+
+-- Backup affected data
+CREATE TABLE IF NOT EXISTS backup_${table}_${timestamp} AS 
+  SELECT * FROM ${table};
+
+-- Your migration code here
+
+-- Verify changes
+DO $$ 
+BEGIN
+  -- Add verification here
+END $$;
+
+COMMIT;
+```
+
+### 4. Key Template Features
+- Dependency checking
+- Precondition verification
+- Automatic backups
+- Change verification
+- Clear documentation
