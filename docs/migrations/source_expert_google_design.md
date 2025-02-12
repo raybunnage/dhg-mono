@@ -851,3 +851,45 @@ async function processGoogleFile(fileId: string) {
 }
 ```
 
+## Migration Best Practices
+
+### Before Creating New Migrations
+```bash
+# 1. Check current state
+pnpm db:check
+
+# 2. Note the latest migration timestamp from REMOTE
+# Example output:
+#   REMOTE
+#   20250210215603    2025-02-10 21:56:03
+
+# 3. Create new migration with timestamp after latest remote
+pnpm supabase migration new your_migration_name
+
+# 4. Verify the new migration files:
+ls -la supabase/migrations/
+# Should see:
+# YYYYMMDDHHMMSS_your_migration_name.sql
+# YYYYMMDDHHMMSS_your_migration_name_down.sql
+
+# 5. Check again to ensure clean state
+pnpm db:check
+```
+
+### Migration File Requirements
+1. Timestamp must be:
+   - After latest remote migration
+   - Current or future date/time
+   - Unique across all migrations
+
+2. Each migration needs:
+   - Up migration (.sql)
+   - Down migration (_down.sql)
+   - Same timestamp for both files
+
+### Common Issues Prevention
+- Always run `db:check` before creating new migrations
+- Never modify existing remote migrations
+- Keep migrations atomic and focused
+- Test both up and down migrations locally
+
