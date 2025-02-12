@@ -1041,3 +1041,26 @@ touch supabase/migrations/[version]_[name].sql
 
 4. Verify with db:check
 pnpm db:check
+```
+
+### Fixing Missing Migrations - Step by Step
+```bash
+# 1. Get exact content of missing migration
+PGPASSWORD="$SUPABASE_DB_PASSWORD" psql -h "db.$SUPABASE_PROJECT_ID.supabase.co" \
+  -U postgres -d postgres \
+  -c "\x" \
+  -c "SELECT statements, name FROM supabase_migrations.schema_migrations WHERE version = '[version]';"
+
+# 2. Create both up and down files
+touch supabase/migrations/[version]_[name].sql
+touch supabase/migrations/[version]_[name]_down.sql
+
+# 3. Copy content from statements array into files
+# First statement goes in up migration
+# Last statement goes in down migration
+
+# 4. Verify sequence is complete
+pnpm db:check
+
+# 5. Only then create new migrations
+pnpm supabase migration new your_migration_name
