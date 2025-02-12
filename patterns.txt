@@ -1,1 +1,0 @@
-literal:postgresql://postgres:iZRA1bV4HnOtSgcX@db.jdksnfkupzywjdfefkyj.supabase.co:5432/postgres=postgresql://postgres:[REMOVED]@db.jdksnfkupzywjdfefkyj.supabase.co:5432/postgres
