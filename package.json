@@ -34,6 +34,7 @@
     "db:rollback": "./scripts/supabase/run-migration.sh down",
     "db:list": "./scripts/supabase/run-migration.sh list",
     "db:repair": "./scripts/supabase/run-migration.sh repair",
+    "db:repair-applied": "./scripts/supabase/run-migration.sh repair-applied",
     "db:check": "./scripts/supabase/run-migration.sh check"
   },
   "devDependencies": {
