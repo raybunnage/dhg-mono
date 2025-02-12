@@ -81,3 +81,9 @@ Thumbs.db
 .netlify/
 **/netlify/
 **/netlify/state.json
+
+# Logs and databases
+*.sqlite
+
+# Sensitive files
+patterns.txt
