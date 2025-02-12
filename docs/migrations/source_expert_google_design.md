@@ -927,6 +927,18 @@ PGPASSWORD="$SUPABASE_DB_PASSWORD" psql \
 
 ### Common Issues Prevention
 - Always run `db:check`
+- Ensure all remote migrations exist locally
+- Fix missing migrations before adding new ones:
+  ```bash
+  # 1. Pull missing remote migrations
+  pnpm supabase db pull
+
+  # 2. Verify complete sequence
+  pnpm db:check
+
+  # 3. Then apply new migrations
+  pnpm db:migrate
+  ```
 
 ## Migration Template Usage
 
