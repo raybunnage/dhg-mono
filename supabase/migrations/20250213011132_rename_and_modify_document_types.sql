@@ -16,21 +16,9 @@ BEGIN
   END IF;
 END $$;
 
--- Backup affected data with domain info
+-- Simple backup of all existing data
 CREATE TABLE IF NOT EXISTS backup_uni_document_types_20250213011132 AS 
-  SELECT 
-    dt.*,
-    d.name as domain_name
-  FROM uni_document_types dt
-  LEFT JOIN domains d ON dt.domain_id = d.id;
-
--- Store domain info in metadata before removing
-UPDATE uni_document_types
-SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-  'legacy_domain_id', domain_id,
-  'legacy_domain_name', (SELECT name FROM domains WHERE id = domain_id),
-  'migration_timestamp', CURRENT_TIMESTAMP
-);
+  SELECT * FROM uni_document_types;
 
 -- Drop RLS policies first
 DROP POLICY IF EXISTS "Dynamic Healing Group select access" ON uni_document_types;

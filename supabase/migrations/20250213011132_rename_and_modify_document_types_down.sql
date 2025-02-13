@@ -109,16 +109,9 @@ CREATE TRIGGER set_updated_at
 
 -- After adding domain_id column but before constraints, restore domain_id values
 UPDATE uni_document_types ut
-SET domain_id = (
-  SELECT (backup.metadata->>'legacy_domain_id')::uuid
-  FROM backup_uni_document_types_20250213011132 backup
-  WHERE backup.id = ut.id
-)
-WHERE EXISTS (
-  SELECT 1 
-  FROM backup_uni_document_types_20250213011132 backup 
-  WHERE backup.id = ut.id
-);
+SET domain_id = backup.domain_id
+FROM backup_uni_document_types_20250213011132 backup
+WHERE backup.id = ut.id;
 
 -- Verify domain_id values were restored
 DO $$
