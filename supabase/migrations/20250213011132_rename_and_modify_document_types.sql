@@ -16,13 +16,59 @@ BEGIN
   END IF;
 END $$;
 
--- Backup affected data
+-- Backup affected data with domain info
 CREATE TABLE IF NOT EXISTS backup_uni_document_types_20250213011132 AS 
-  SELECT * FROM uni_document_types;
+  SELECT 
+    dt.*,
+    d.name as domain_name,
+    d.slug as domain_slug
+  FROM uni_document_types dt
+  LEFT JOIN domains d ON dt.domain_id = d.id;
 
--- Drop foreign key constraints first
+-- Store domain info in metadata before removing
+UPDATE uni_document_types
+SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+  'legacy_domain_id', domain_id,
+  'legacy_domain_name', (SELECT name FROM domains WHERE id = domain_id),
+  'legacy_domain_slug', (SELECT slug FROM domains WHERE id = domain_id),
+  'migration_timestamp', CURRENT_TIMESTAMP
+);
+
+-- Drop RLS policies first
+DROP POLICY IF EXISTS "Dynamic Healing Group select access" ON uni_document_types;
+DROP POLICY IF EXISTS "Allow authenticated users to delete document types" ON uni_document_types;
+DROP POLICY IF EXISTS "Allow authenticated users to insert document types" ON uni_document_types;
+DROP POLICY IF EXISTS "Allow authenticated users to update document types" ON uni_document_types;
+DROP POLICY IF EXISTS "Allow users to view all document types" ON uni_document_types;
+
+-- Drop trigger first
+DROP TRIGGER IF EXISTS set_updated_at ON uni_document_types;
+
+-- Drop indexes
+DROP INDEX IF EXISTS idx_uni_document_types_domain_id;
+ALTER TABLE uni_document_types DROP CONSTRAINT IF EXISTS unique_document_type;
+
+-- Drop foreign key constraints
 ALTER TABLE uni_document_types
-  DROP CONSTRAINT IF EXISTS uni_document_types_domain_id_fkey;
+  DROP CONSTRAINT IF EXISTS uni_document_types_domain_id_fkey,
+  DROP CONSTRAINT IF EXISTS uni_document_types_created_by_fkey,
+  DROP CONSTRAINT IF EXISTS uni_document_types_updated_by_fkey;
+
+-- Check for any other tables referencing uni_document_types.domain_id
+DO $$ 
+BEGIN
+  -- This will raise an exception if there are any remaining dependencies
+  PERFORM *
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.constraint_column_usage ccu 
+    ON tc.constraint_name = ccu.constraint_name
+  WHERE ccu.table_name = 'uni_document_types' 
+    AND ccu.column_name = 'domain_id';
+  
+  IF FOUND THEN
+    RAISE EXCEPTION 'Found unexpected dependencies on domain_id column';
+  END IF;
+END $$;
 
 -- Now we can rename and modify
 ALTER TABLE uni_document_types RENAME TO document_types;
@@ -47,6 +93,47 @@ ALTER TABLE document_types
     CHECK (jsonb_typeof(ai_processing_rules) = 'object'),
   ADD CONSTRAINT valid_validation_rules 
     CHECK (jsonb_typeof(validation_rules) = 'object');
+
+-- Restore unique constraint with new name
+ALTER TABLE document_types
+  ADD CONSTRAINT unique_document_type_name UNIQUE (document_type);
+
+-- Restore auth user foreign keys
+ALTER TABLE document_types
+  ADD CONSTRAINT document_types_created_by_fkey 
+    FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  ADD CONSTRAINT document_types_updated_by_fkey 
+    FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- Recreate trigger on new table
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON document_types
+  FOR EACH ROW
+  EXECUTE FUNCTION handle_updated_at();
+
+-- Recreate RLS policies for new table
+ALTER TABLE document_types ENABLE ROW LEVEL SECURITY;
+
+DO $$ 
+BEGIN
+  -- Create new policies (without domain_id dependency)
+  CREATE POLICY "Allow authenticated users to delete document types" 
+    ON document_types FOR DELETE TO authenticated
+    USING (true);
+
+  CREATE POLICY "Allow authenticated users to insert document types" 
+    ON document_types FOR INSERT TO authenticated
+    WITH CHECK (true);
+
+  CREATE POLICY "Allow authenticated users to update document types" 
+    ON document_types FOR UPDATE TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+  CREATE POLICY "Allow users to view all document types" 
+    ON document_types FOR SELECT TO authenticated
+    USING (true);
+END $$;
 
 COMMIT;
 
