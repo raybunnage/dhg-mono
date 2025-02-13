@@ -61,7 +61,8 @@ elif [ "$COMMAND" = "repair" ]; then
     pnpm supabase migration repair "$VERSION" --status applied
   else
     # Then repair with all current migrations
-    echo "y" | pnpm supabase migration repair --status applied
+    echo "Repairing all current migrations..."
+    pnpm supabase migration repair --status applied --no-verify
   fi
 elif [ "$COMMAND" = "repair-applied" ]; then
   echo "Marking migration as applied..."
