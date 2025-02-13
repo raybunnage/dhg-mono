@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SourceGoogle {
@@ -20,6 +20,23 @@ export function SourcesView() {
   const [viewMode, setViewMode] = useState<'folder' | 'raw'>('folder');
   const [sources, setSources] = useState<SourceGoogle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMimeType, setSelectedMimeType] = useState<string>('all');
+
+  // Get unique mime types from sources
+  const mimeTypes = useMemo(() => {
+    const types = new Set(sources.map(source => source.mime_type));
+    return ['all', ...Array.from(types)].sort();
+  }, [sources]);
+
+  // Filter sources based on search and mime type
+  const filteredSources = useMemo(() => {
+    return sources.filter(source => {
+      const matchesSearch = source.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesMimeType = selectedMimeType === 'all' || source.mime_type === selectedMimeType;
+      return matchesSearch && matchesMimeType;
+    });
+  }, [sources, searchTerm, selectedMimeType]);
 
   useEffect(() => {
     fetchSources();
@@ -43,7 +60,7 @@ export function SourcesView() {
 
   function FolderView() {
     // Group by parent_folder_id
-    const folderMap = sources.reduce((acc, source) => {
+    const folderMap = filteredSources.reduce((acc, source) => {
       const parentId = source.parent_folder_id || 'root';
       if (!acc[parentId]) acc[parentId] = [];
       acc[parentId].push(source);
@@ -90,7 +107,7 @@ export function SourcesView() {
             </tr>
           </thead>
           <tbody>
-            {sources.map(source => (
+            {filteredSources.map(source => (
               <tr key={source.id} className="border-t">
                 <td className="px-4 py-2">{source.name}</td>
                 <td className="px-4 py-2">{source.mime_type}</td>
@@ -116,7 +133,9 @@ export function SourcesView() {
 
   return (
     <div className="p-4">
+      {/* Updated top bar with search */}
       <div className="flex items-center mb-4 space-x-4">
+        {/* View toggle */}
         <div className="flex items-center space-x-2">
           <span className="text-gray-700">Folder View</span>
           <button 
@@ -133,14 +152,58 @@ export function SourcesView() {
           </button>
           <span className="text-gray-700">Raw View</span>
         </div>
+
+        {/* Search input */}
+        <div className="flex-1 flex items-center space-x-2 max-w-lg">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search files..."
+            className="px-4 py-2 border rounded-md w-full"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="px-3 py-2 bg-gray-100 rounded hover:bg-gray-200"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Results count */}
+        <div className="text-sm text-gray-600 whitespace-nowrap">
+          {filteredSources.length} of {sources.length}
+        </div>
+
+        {/* Refresh button */}
         <button
           onClick={fetchSources}
-          className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
+          className="px-3 py-2 bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
         >
           Refresh
         </button>
       </div>
 
+      {/* MIME Type Tabs */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        {mimeTypes.map(type => (
+          <button
+            key={type}
+            onClick={() => setSelectedMimeType(type)}
+            className={`px-3 py-1 rounded-full text-sm ${
+              selectedMimeType === type
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            {type === 'all' ? 'All Types' : type.split('/')[1] || type}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
       {loading ? (
         <div>Loading...</div>
       ) : (
