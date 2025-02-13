@@ -12,48 +12,55 @@ interface GoogleDriveFile {
 export async function populateSourcesGoogle(expertId: string, folderId: string) {
   const accessToken = await getValidAccessToken();
   let processedCount = 0;
-  const LIMIT = 100; // Limit to first 100 records
+  let pageToken: string | undefined;
   
   try {
-    // First get all files in the folder
-    const files = await listDriveContents(folderId);
+    console.log('Starting Google Drive source population...');
     
-    console.log(`Found ${files.length} files, processing first ${LIMIT}`);
-    
-    // Process each file up to limit
-    for (const file of files.slice(0, LIMIT)) {
-      const sourceData = {
-        drive_id: file.id,
-        name: file.name,
-        mime_type: file.mimeType,
-        web_view_link: file.webViewLink,
-        parent_folder_id: folderId,
-        is_root: false,
-        path: [folderId],
-        expert_id: expertId,
-        sync_status: 'pending',
-        content_extracted: false,
-        metadata: {
-          driveData: file
+    do {
+      // Get batch of files
+      const { files, nextPageToken } = await listDriveContents(folderId, pageToken);
+      console.log(`Found ${files.length} files in current batch`);
+      
+      // Process each file in this batch
+      for (const file of files) {
+        const sourceData = {
+          drive_id: file.id,
+          name: file.name,
+          mime_type: file.mimeType,
+          web_view_link: file.webViewLink,
+          parent_folder_id: folderId,
+          is_root: false,
+          path: [folderId],
+          expert_id: expertId,
+          sync_status: 'pending',
+          content_extracted: false,
+          metadata: {
+            driveData: file
+          }
+        };
+
+        // Insert into sources_google using upsert
+        const { data, error } = await supabase
+          .from('sources_google')
+          .upsert(sourceData, {
+            onConflict: 'drive_id',
+            returning: true
+          });
+
+        if (error) {
+          console.error('Error inserting source:', error);
+          continue;
         }
-      };
 
-      // Insert into sources_google using upsert
-      const { data, error } = await supabase
-        .from('sources_google')
-        .upsert(sourceData, {
-          onConflict: 'drive_id',
-          returning: true
-        });
-
-      if (error) {
-        console.error('Error inserting source:', error);
-        continue;
+        processedCount++;
+        if (processedCount % 10 === 0) {
+          console.log(`Processed ${processedCount} files...`);
+        }
       }
 
-      processedCount++;
-      console.log(`Processed ${processedCount}/${LIMIT}: ${file.name}`);
-    }
+      pageToken = nextPageToken;
+    } while (pageToken); // Continue while there are more pages
 
     console.log(`Completed processing ${processedCount} files`);
     return processedCount;
@@ -64,16 +71,21 @@ export async function populateSourcesGoogle(expertId: string, folderId: string) 
   }
 }
 
-// Update listDriveContents to get more metadata
-export async function listDriveContents(folderId: string) {
+// Update listDriveContents to handle pagination
+export async function listDriveContents(folderId: string, pageToken?: string) {
   const accessToken = await getValidAccessToken();
   
   try {
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents` +
-      '&fields=files(id,name,mimeType,webViewLink,parents,createdTime,modifiedTime,size,md5Checksum)' +
+    let url = `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents` +
+      '&fields=nextPageToken,files(id,name,mimeType,webViewLink,parents,createdTime,modifiedTime,size,md5Checksum)' +
       '&orderBy=folder,name desc' +
-      '&pageSize=100', { // Increased page size to match our limit
+      '&pageSize=1000'; // Maximum page size for efficiency
+
+    if (pageToken) {
+      url += `&pageToken=${pageToken}`;
+    }
+
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Accept': 'application/json'
@@ -85,7 +97,10 @@ export async function listDriveContents(folderId: string) {
     }
 
     const data = await response.json();
-    return data.files;
+    return {
+      files: data.files,
+      nextPageToken: data.nextPageToken
+    };
   } catch (error) {
     console.error('\n Error fetching drive contents:', error);
     throw error;
