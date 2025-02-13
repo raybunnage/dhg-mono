@@ -58,11 +58,22 @@ elif [ "$COMMAND" = "repair" ]; then
   if [ -n "$VERSION" ]; then
     # Repair specific version
     echo "Repairing specific version: $VERSION"
-    pnpm supabase migration repair "$VERSION" --status applied
+    # Insert directly using SQL
+    PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
+      -U postgres -d postgres -p 5432 -c "INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('$VERSION', 'migration_$VERSION');"
   else
-    # Then repair with all current migrations
+    # Then repair all current migrations
     echo "Repairing all current migrations..."
-    pnpm supabase migration repair --status applied --no-verify
+    # Get all migration files and insert them
+    for f in supabase/migrations/*.sql; do
+      if [[ $f != *".down.sql" ]]; then
+        version=$(basename "$f" | cut -d'_' -f1)
+        name=$(basename "$f" .sql | cut -d'_' -f2-)
+        echo "Adding migration: $version - $name"
+        PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
+          -U postgres -d postgres -p 5432 -c "INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('$version', '$name');"
+      fi
+    done
   fi
 elif [ "$COMMAND" = "repair-applied" ]; then
   echo "Marking migration as applied..."
