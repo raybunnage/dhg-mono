@@ -39,10 +39,12 @@ export function SourcesView() {
   }, [sources, searchTerm, selectedMimeType]);
 
   useEffect(() => {
+    console.log('SourcesView mounted');
     fetchSources();
   }, []);
 
   async function fetchSources() {
+    console.log('Fetching sources...');
     setLoading(true);
     const { data, error } = await supabase
       .from('sources_google')
@@ -54,6 +56,7 @@ export function SourcesView() {
       return;
     }
     
+    console.log('Fetched sources:', data?.length || 0, 'items');
     setSources(data || []);
     setLoading(false);
   }
@@ -132,62 +135,58 @@ export function SourcesView() {
   }
 
   return (
-    <div className="p-4">
-      {/* Updated top bar with search */}
-      <div className="flex items-center mb-4 space-x-4">
-        {/* View toggle */}
-        <div className="flex items-center space-x-2">
-          <span className="text-gray-700">Folder View</span>
-          <button 
-            className={`w-12 h-6 rounded-full p-1 ${
-              viewMode === 'raw' ? 'bg-gray-300' : 'bg-blue-500'
-            }`}
-            onClick={() => setViewMode(viewMode === 'folder' ? 'raw' : 'folder')}
-          >
-            <div 
-              className={`w-4 h-4 rounded-full bg-white transform transition-transform ${
-                viewMode === 'raw' ? 'translate-x-6' : ''
-              }`}
+    <div className="p-4 bg-white">
+      {/* Top Controls Bar */}
+      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg mb-4">
+        {/* Search Bar - Made larger and more prominent */}
+        <div className="flex-1 flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search files..."
+              className="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* View Toggle */}
+        <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-md border">
+          <button 
+            onClick={() => setViewMode('folder')}
+            className={`px-3 py-1 rounded ${viewMode === 'folder' ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'}`}
+          >
+            Folder View
           </button>
-          <span className="text-gray-700">Raw View</span>
+          <button 
+            onClick={() => setViewMode('raw')}
+            className={`px-3 py-1 rounded ${viewMode === 'raw' ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'}`}
+          >
+            Raw View
+          </button>
         </div>
 
-        {/* Search input */}
-        <div className="flex-1 flex items-center space-x-2 max-w-lg">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search files..."
-            className="px-4 py-2 border rounded-md w-full"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="px-3 py-2 bg-gray-100 rounded hover:bg-gray-200"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
-        {/* Results count */}
-        <div className="text-sm text-gray-600 whitespace-nowrap">
-          {filteredSources.length} of {sources.length}
-        </div>
-
-        {/* Refresh button */}
+        {/* Refresh Button */}
         <button
           onClick={fetchSources}
-          className="px-3 py-2 bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+          className="px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200 flex items-center gap-2"
         >
-          Refresh
+          <span>Refresh</span>
+          <span className="text-sm text-gray-500">({filteredSources.length} of {sources.length})</span>
         </button>
       </div>
 
       {/* MIME Type Tabs */}
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-lg mb-4">
         {mimeTypes.map(type => (
           <button
             key={type}
@@ -195,7 +194,7 @@ export function SourcesView() {
             className={`px-3 py-1 rounded-full text-sm ${
               selectedMimeType === type
                 ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 hover:bg-gray-200'
+                : 'bg-white border hover:bg-gray-50'
             }`}
           >
             {type === 'all' ? 'All Types' : type.split('/')[1] || type}
@@ -204,11 +203,13 @@ export function SourcesView() {
       </div>
 
       {/* Content */}
-      {loading ? (
-        <div>Loading...</div>
-      ) : (
-        viewMode === 'folder' ? <FolderView /> : <RawView />
-      )}
+      <div className="bg-white rounded-lg border">
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Loading...</div>
+        ) : (
+          viewMode === 'folder' ? <FolderView /> : <RawView />
+        )}
+      </div>
     </div>
   );
 } 

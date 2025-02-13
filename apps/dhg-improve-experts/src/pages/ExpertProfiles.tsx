@@ -4,6 +4,7 @@ import { insertGoogleDriveFolder } from '../lib/supabase/sources-google'
 import { getGoogleDriveFolder } from '@/lib/google-drive/sync'
 import { syncGoogleFolderWithDepth } from '@/lib/google-drive/sync'
 import ExpertFolderAnalysis from "@/components/ExpertFolderAnalysis";
+import { SourcesView } from "@/components/SourcesView";
 
 interface DriveItem {
   id: string;
@@ -25,230 +26,56 @@ interface FilePreview {
 }
 
 export default function ExpertProfiles() {
-  console.log('ExpertProfiles rendering');
-  const [envInfo, setEnvInfo] = useState('');
-  const [driveItems, setDriveItems] = useState<DriveItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [breadcrumbs, setBreadcrumbs] = useState<FolderBreadcrumb[]>([
-    { id: import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID, name: 'Root' }
-  ]);
-  const [selectedFile, setSelectedFile] = useState<FilePreview | null>(null);
-  const [nextPageToken, setNextPageToken] = useState<string | undefined>();
-
-  const testEnv = () => {
-    const info = {
-      clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID?.slice(0, 10) + '...',
-      clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET ? 'present' : 'missing',
-      redirectUri: import.meta.env.VITE_REDIRECT_URI,
-      accessToken: import.meta.env.VITE_GOOGLE_ACCESS_TOKEN?.slice(0, 10) + '...',
-      refreshToken: import.meta.env.VITE_GOOGLE_REFRESH_TOKEN ? 'present' : 'missing',
-      folderId: import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID
-    };
-    
-    console.log('Environment Variables:', info);
-    setEnvInfo(JSON.stringify(info, null, 2));
-  };
-
-  const fetchDriveContents = async (folderId?: string, pageToken?: string) => {
+  const [status, setStatus] = useState('');
+  
+  async function handlePopulateSourcesGoogle() {
     setLoading(true);
-    setError(null);
+    setStatus('');
     try {
-      const result = await listDriveContents(folderId, 20, pageToken);
-      if (pageToken) {
-        // Append new items
-        setDriveItems(prev => [...prev, ...result.files]);
-      } else {
-        // Reset items for new folder
-        setDriveItems(result.files);
-      }
-      setNextPageToken(result.nextPageToken);
-    } catch (err) {
-      console.error('Error fetching drive contents:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleItemClick = async (item: DriveItem) => {
-    if (item.mimeType === 'application/vnd.google-apps.folder') {
-      setBreadcrumbs(prev => [...prev, { id: item.id, name: item.name }]);
-      await fetchDriveContents(item.id);
-    } else if (!item.mimeType.includes('video/')) {
-      try {
-        setLoading(true);
-        const content = await getFileContent(item.id);
-        setSelectedFile({
-          id: item.id,
-          name: item.name,
-          content,
-          mimeType: item.mimeType
-        });
-      } catch (err) {
-        console.error('Error fetching file content:', err);
-        setError('Failed to load file content');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const handleBreadcrumbClick = async (breadcrumb: FolderBreadcrumb, index: number) => {
-    setBreadcrumbs(prev => prev.slice(0, index + 1));
-    await fetchDriveContents(breadcrumb.id);
-  };
-
-  const handleLoadMore = () => {
-    if (nextPageToken) {
-      fetchDriveContents(
-        breadcrumbs[breadcrumbs.length - 1].id, 
-        nextPageToken
-      );
-    }
-  };
-
-  const handleSyncRootFolder = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+      const folderId = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
+      const expertId = 'test-expert-id'; // TODO: Get from selection
       
-      console.log('Starting folder sync...');
-      // Sync root folder and 2 levels deep
-      await syncGoogleFolderWithDepth(
-        import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID,
-        2  // This will get root + 2 levels of subfolders
-      );
+      await syncGoogleFolderWithDepth(folderId, 2);
+      console.log('Successfully populated Google sources');
+      setStatus('Successfully populated Google sources');
       
-      console.log('Folder hierarchy synced!');
-      alert('Root folder synced successfully!');
     } catch (error) {
-      console.error('Failed to sync root folder:', {
-        message: error.message,
-        stack: error.stack
-      });
-      setError(error.message);
+      console.error('Error populating sources:', error);
+      setStatus(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="space-y-4">
-        <h1 className="text-2xl mb-4">Google Drive Test</h1>
+        <h1 className="text-2xl mb-4">Expert Profiles</h1>
+        
+        {/* Action Buttons */}
         <div className="flex gap-4">
           <button 
-            className="bg-blue-500 text-white px-4 py-2 rounded mr-4"
-            onClick={testEnv}
-          >
-            Test Environment Variables
-          </button>
-
-          <button 
-            className="bg-green-500 text-white px-4 py-2 rounded mr-4"
-            onClick={() => fetchDriveContents()}
+            onClick={handlePopulateSourcesGoogle}
             disabled={loading}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
           >
-            {loading ? 'Loading...' : 'Fetch Drive Contents'}
-          </button>
-
-          <button
-            onClick={handleSyncRootFolder}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Sync Root Folder
+            {loading ? 'Processing...' : 'Populate All Sources'}
           </button>
         </div>
 
-        {/* Breadcrumbs */}
-        {breadcrumbs.length > 0 && (
-          <div className="flex items-center gap-2 text-sm text-gray-600 mt-4">
-            {breadcrumbs.map((crumb, index) => (
-              <div key={crumb.id} className="flex items-center">
-                {index > 0 && <span className="mx-2">/</span>}
-                <button
-                  onClick={() => handleBreadcrumbClick(crumb, index)}
-                  className="hover:text-blue-500"
-                >
-                  {crumb.name}
-                </button>
-              </div>
-            ))}
+        {/* Status Message */}
+        {status && (
+          <div className={`p-2 rounded ${
+            status.startsWith('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+          }`}>
+            {status}
           </div>
         )}
 
-        {envInfo && (
-          <pre className="bg-gray-100 p-4 rounded mt-4 whitespace-pre-wrap">
-            {envInfo}
-          </pre>
-        )}
-
-        {error && (
-          <div className="text-red-500 mt-4">
-            Error: {error}
-          </div>
-        )}
-
-        <div className="flex gap-8">
-          {/* File/Folder List */}
-          <div className="flex-1">
-            {driveItems.length > 0 && (
-              <div className="mt-4">
-                <h2 className="text-xl mb-2">Drive Contents:</h2>
-                <div className="space-y-2">
-                  {driveItems.map(item => (
-                    <div 
-                      key={item.id} 
-                      className={`p-2 border rounded flex items-center ${
-                        item.mimeType === 'application/vnd.google-apps.folder' || 
-                        !item.mimeType.includes('video/')
-                          ? 'cursor-pointer hover:bg-gray-50' 
-                          : ''
-                      }`}
-                      onClick={() => handleItemClick(item)}
-                    >
-                      {item.mimeType === 'application/vnd.google-apps.folder' ? '📁' : '📄'} 
-                      <span className="ml-2">
-                        {item.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Load More Button */}
-                {nextPageToken && (
-                  <button
-                    onClick={handleLoadMore}
-                    disabled={loading}
-                    className="mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded w-full"
-                  >
-                    {loading ? 'Loading...' : 'Load More'}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* File Preview */}
-          {selectedFile && (
-            <div className="flex-1">
-              <div className="sticky top-4">
-                <h2 className="text-xl mb-2">
-                  {selectedFile.name}
-                  <button 
-                    onClick={() => setSelectedFile(null)}
-                    className="ml-2 text-sm text-gray-500 hover:text-red-500"
-                  >
-                    ✕
-                  </button>
-                </h2>
-                <pre className="bg-gray-100 p-4 rounded overflow-auto max-h-[600px] whitespace-pre-wrap">
-                  {selectedFile.content}
-                </pre>
-              </div>
-            </div>
-          )}
+        {/* Sources View with Search */}
+        <div className="border rounded-lg">
+          <SourcesView />
         </div>
 
         <ExpertFolderAnalysis />
