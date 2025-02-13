@@ -126,6 +126,29 @@ SELECT COUNT(*) FROM supabase_migrations.schema_migrations;
 pnpm db:repair
 ```
 
+### Reset Google Sources Data
+⚠️ WARNING: This will delete ALL data in sources_google and related tables
+
+```sql
+-- Start transaction
+BEGIN;
+
+-- First truncate dependent tables due to foreign key constraints
+TRUNCATE TABLE expert_documents CASCADE;
+
+-- Then truncate sources_google
+TRUNCATE TABLE sources_google CASCADE;
+
+-- Verify tables are empty
+SELECT COUNT(*) FROM expert_documents;
+SELECT COUNT(*) FROM sources_google;
+
+COMMIT;
+```
+
+⚠️ DANGER: The CASCADE option will automatically truncate any table that has a foreign key 
+pointing to sources_google. Make sure you understand which tables will be affected before running this command.
+
 ### Restore from Backup
 If needed, you can restore the backup:
 
