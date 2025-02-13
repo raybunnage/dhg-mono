@@ -39,7 +39,8 @@
     "migration:new": "./scripts/create-migration.sh",
     "db:psql": "./scripts/supabase/start-psql.sh",
     "db:psql:check": "./scripts/supabase/start-psql.sh \"SELECT version FROM supabase_migrations.schema_migrations ORDER BY version DESC LIMIT 1;\"",
-    "db:psql:migrations": "./scripts/supabase/start-psql.sh \"SELECT version, name, executed_at FROM supabase_migrations.schema_migrations ORDER BY executed_at DESC;\""
+    "db:psql:migrations": "./scripts/supabase/start-psql.sh \"SELECT version, name, statements[1] as first_statement FROM supabase_migrations.schema_migrations ORDER BY version DESC;\"",
+    "db:psql:describe-migrations": "./scripts/supabase/start-psql.sh \"\\d supabase_migrations.schema_migrations;\""
   },
   "devDependencies": {
     "netlify-cli": "18.0.4",

@@ -16,12 +16,11 @@ BEGIN
   END IF;
 END $$;
 
--- Simple backup of all existing data
+-- Backup affected data
 CREATE TABLE IF NOT EXISTS backup_uni_document_types_20250213011132 AS 
   SELECT * FROM uni_document_types;
 
 -- Drop RLS policies first
-DROP POLICY IF EXISTS "Dynamic Healing Group select access" ON uni_document_types;
 DROP POLICY IF EXISTS "Allow authenticated users to delete document types" ON uni_document_types;
 DROP POLICY IF EXISTS "Allow authenticated users to insert document types" ON uni_document_types;
 DROP POLICY IF EXISTS "Allow authenticated users to update document types" ON uni_document_types;
@@ -30,40 +29,12 @@ DROP POLICY IF EXISTS "Allow users to view all document types" ON uni_document_t
 -- Drop trigger first
 DROP TRIGGER IF EXISTS set_updated_at ON uni_document_types;
 
--- Drop indexes
-DROP INDEX IF EXISTS idx_uni_document_types_domain_id;
+-- Drop indexes and constraints
+DROP INDEX IF EXISTS idx_uni_document_types_document_type;
 ALTER TABLE uni_document_types DROP CONSTRAINT IF EXISTS unique_document_type;
-
--- Drop foreign key constraints
-ALTER TABLE uni_document_types
-  DROP CONSTRAINT IF EXISTS uni_document_types_domain_id_fkey,
-  DROP CONSTRAINT IF EXISTS uni_document_types_created_by_fkey,
-  DROP CONSTRAINT IF EXISTS uni_document_types_updated_by_fkey;
-
--- Check for any other tables referencing uni_document_types.domain_id
-DO $$ 
-BEGIN
-  -- This will raise an exception if there are any remaining dependencies
-  PERFORM *
-  FROM information_schema.table_constraints tc
-  JOIN information_schema.constraint_column_usage ccu 
-    ON tc.constraint_name = ccu.constraint_name
-  WHERE ccu.table_name = 'uni_document_types' 
-    AND ccu.column_name = 'domain_id';
-  
-  IF FOUND THEN
-    RAISE EXCEPTION 'Found unexpected dependencies on domain_id column';
-  END IF;
-END $$;
 
 -- Now we can rename and modify
 ALTER TABLE uni_document_types RENAME TO document_types;
-
--- Remove domain_id and modify defaults
-ALTER TABLE document_types
-  DROP COLUMN domain_id,
-  ALTER COLUMN created_by DROP DEFAULT,
-  ALTER COLUMN updated_by DROP DEFAULT;
 
 -- Add new fields
 ALTER TABLE document_types
@@ -84,13 +55,6 @@ ALTER TABLE document_types
 ALTER TABLE document_types
   ADD CONSTRAINT unique_document_type_name UNIQUE (document_type);
 
--- Restore auth user foreign keys
-ALTER TABLE document_types
-  ADD CONSTRAINT document_types_created_by_fkey 
-    FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
-  ADD CONSTRAINT document_types_updated_by_fkey 
-    FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL;
-
 -- Recreate trigger on new table
 CREATE TRIGGER set_updated_at
   BEFORE UPDATE ON document_types
@@ -102,7 +66,6 @@ ALTER TABLE document_types ENABLE ROW LEVEL SECURITY;
 
 DO $$ 
 BEGIN
-  -- Create new policies (without domain_id dependency)
   CREATE POLICY "Allow authenticated users to delete document types" 
     ON document_types FOR DELETE TO authenticated
     USING (true);
