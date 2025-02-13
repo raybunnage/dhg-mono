@@ -516,6 +516,72 @@
         ]
       },
       "files": ["**/*.sh", "**/*.bash", "**/*.zsh"]
+    },
+    {
+      "databaseSchema": {
+        "tables": {
+          // ... existing table definitions ...
+        },
+        "relationships": {
+          // ... existing relationships ...
+        }
+      },
+      "safetyGuidelines": {
+        "databaseOperations": {
+          "riskLevels": {
+            "read": "low",
+            "targetedWrite": "medium",
+            "globalWrite": "high",
+            "schemaChanges": "high",
+            "reset": "extreme"
+          },
+          "requirements": [
+            "Always prefer targeted operations over global ones",
+            "Explicitly warn about potential data loss",
+            "Never suggest resets without clear warnings",
+            "Preserve existing working systems",
+            "Provide rollback steps for risky operations",
+            "Default to most conservative approach"
+          ]
+        },
+        "systemChanges": {
+          "principles": [
+            "Preserve working functionality",
+            "Make incremental changes",
+            "Backup before modifications",
+            "Test in isolation first"
+          ],
+          "warnings": {
+            "required": true,
+            "format": "Explicit warning about risks and consequences",
+            "includeRollback": true
+          }
+        }
+      },
+      "migrations": {
+        "safetyChecks": {
+          "preChecks": [
+            "Verify table existence",
+            "Check for data conflicts",
+            "Validate foreign key integrity",
+            "Ensure backup exists for risky changes"
+          ],
+          "postChecks": [
+            "Verify data integrity",
+            "Check constraint enforcement",
+            "Validate index creation",
+            "Confirm triggers are active"
+          ],
+          "rollbackPlan": {
+            "required": true,
+            "mustInclude": [
+              "Step by step reversion commands",
+              "Data restoration process",
+              "Verification queries"
+            ]
+          }
+        }
+      }
     }
   ]
 } 
