@@ -38,7 +38,7 @@ if [ ! -f "$up_file" ]; then
   exit 1
 fi
 
-down_file="${up_file%.*}_down.sql"
+down_file="${up_file%.*}.down.sql"
 
 # Create down migration
 echo "Creating down migration..."
