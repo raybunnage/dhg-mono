@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { SourceButtons } from './SourceButtons';
+import toast from 'react-hot-toast';
 
 interface SourceGoogle {
   id: string;
@@ -138,7 +140,10 @@ export function SourcesView() {
     <div className="p-4 bg-white">
       {/* Top Controls Bar */}
       <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg mb-4">
-        {/* Search Bar - Made larger and more prominent */}
+        {/* Source Buttons */}
+        <SourceButtons />
+
+        {/* Search Bar */}
         <div className="flex-1 flex items-center gap-2">
           <div className="relative flex-1">
             <input
