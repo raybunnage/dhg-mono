@@ -53,8 +53,17 @@ elif [ "$COMMAND" = "repair" ]; then
   if [ -n "$VERSION" ]; then
     # Repair specific version
     echo "Repairing specific version: $VERSION"
-    PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
-      -U postgres -d postgres -p 5432 -c "INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('$VERSION', 'migration_$VERSION');"
+    # Get the actual name from the file
+    MIGRATION_FILE=$(find supabase/migrations -name "${VERSION}*.sql" ! -name "*.down.sql")
+    if [ -n "$MIGRATION_FILE" ]; then
+      name=$(basename "$MIGRATION_FILE" .sql | cut -d'_' -f2-)
+      echo "Found migration: $VERSION - $name"
+      PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
+        -U postgres -d postgres -p 5432 -c "INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('$VERSION', '$name');"
+    else
+      echo "Error: Migration file not found for version $VERSION"
+      exit 1
+    fi
   else
     # Then repair all current migrations
     echo "Repairing all current migrations..."
@@ -73,7 +82,19 @@ elif [ "$COMMAND" = "repair-applied" ]; then
   pnpm supabase migration repair --db-url "$DB_URL" --status applied 20250210215604
 elif [ "$COMMAND" = "check" ]; then
   echo "Checking schema_migrations table..."
-  pnpm supabase migration list --db-url "$DB_URL" --workdir .
+  # Get local migrations (excluding .down.sql files)
+  echo "LOCAL MIGRATIONS:"
+  for f in supabase/migrations/*.sql; do
+    if [[ $f != *".down.sql" ]]; then
+      version=$(basename "$f" | cut -d'_' -f1)
+      name=$(basename "$f" .sql | cut -d'_' -f2-)
+      echo "$version - $name"
+    fi
+  done
+  echo ""
+  echo "REMOTE MIGRATIONS:"
+  PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
+    -U postgres -d postgres -p 5432 -c "SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY version;"
 elif [ "$COMMAND" = "down" ]; then
   echo "Rolling back last migration..."
   # Get the last migration version from REMOTE column (handle aligned output)
