@@ -20,10 +20,12 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-# Get timestamp and check for duplicates
-timestamp=$(date -u +%Y%m%d%H%M%S)
+# Get current timestamp and next second to handle CLI delay
+current_timestamp=$(date -u +%Y%m%d%H%M%S)
+next_timestamp=$(date -u -v+1S +%Y%m%d%H%M%S)
 echo "Checking for duplicate migrations..."
-check_duplicates "$timestamp"
+check_duplicates "$current_timestamp"
+check_duplicates "$next_timestamp"
 
 # Verify clean state
 echo "Verifying clean state..."
@@ -38,9 +40,9 @@ pnpm supabase migration new "$name"
 up_file=$(ls -t supabase/migrations/*.sql | head -1)
 
 # Verify the migration was created with expected timestamp
-if ! echo "$up_file" | grep -q "$timestamp"; then
+if ! echo "$up_file" | grep -q "$current_timestamp\|$next_timestamp"; then
   echo "Error: Created migration file doesn't match expected timestamp"
-  echo "Expected: $timestamp"
+  echo "Expected: $current_timestamp or $next_timestamp"
   echo "Got: $up_file"
   exit 1
 fi

@@ -95,6 +95,15 @@ fi
     - Verify backup locations are secure
     - Use .gitignore before initial commit
 
+    Verifying File Removal:
+    ```bash
+    # Complete git security check
+    git status                    # Check current state
+    git ls-files --cached file    # Check if tracked
+    git log --all -- "**/file"    # Check all history
+    git grep -l "content"         # Check all content
+    ```
+
 ### 8. Common Gotchas
 ```bash
 # WRONG: Unquoted variables
