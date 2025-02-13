@@ -20,10 +20,14 @@ END $$;
 CREATE TABLE IF NOT EXISTS backup_uni_document_types_20250213011132 AS 
   SELECT * FROM uni_document_types;
 
--- Rename and modify table
+-- Drop foreign key constraints first
+ALTER TABLE uni_document_types
+  DROP CONSTRAINT IF EXISTS uni_document_types_domain_id_fkey;
+
+-- Now we can rename and modify
 ALTER TABLE uni_document_types RENAME TO document_types;
 
--- Remove domain_id and hardcoded defaults
+-- Remove domain_id and modify defaults
 ALTER TABLE document_types
   DROP COLUMN domain_id,
   ALTER COLUMN created_by DROP DEFAULT,
