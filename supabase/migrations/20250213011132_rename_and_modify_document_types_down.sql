@@ -29,10 +29,8 @@ DROP POLICY IF EXISTS "Allow authenticated users to insert document types" ON do
 DROP POLICY IF EXISTS "Allow authenticated users to update document types" ON document_types;
 DROP POLICY IF EXISTS "Allow users to view all document types" ON document_types;
 
--- Drop new foreign key constraints
-ALTER TABLE document_types
-  DROP CONSTRAINT IF EXISTS document_types_created_by_fkey,
-  DROP CONSTRAINT IF EXISTS document_types_updated_by_fkey;
+-- Drop trigger
+DROP TRIGGER IF EXISTS set_updated_at ON document_types;
 
 -- Drop unique constraint
 ALTER TABLE document_types DROP CONSTRAINT IF EXISTS unique_document_type_name;
@@ -49,31 +47,16 @@ ALTER TABLE document_types
   DROP COLUMN IF EXISTS ai_processing_rules,
   DROP COLUMN IF EXISTS validation_rules;
 
--- Add back original columns and defaults
-ALTER TABLE document_types
-  ADD COLUMN domain_id UUID NOT NULL DEFAULT '752f3bf7-a392-4283-bd32-e3f0e530c205'::uuid,
-  ALTER COLUMN created_by SET DEFAULT 'fef040df-000e-4982-b6bf-8eea9f9fa59d'::uuid,
-  ALTER COLUMN updated_by SET DEFAULT 'fef040df-000e-4982-b6bf-8eea9f9fa59d'::uuid;
-
 -- Rename table back
 ALTER TABLE document_types RENAME TO uni_document_types;
 
 -- Restore original indexes
-CREATE INDEX IF NOT EXISTS idx_uni_document_types_domain_id 
-  ON uni_document_types(domain_id);
+CREATE INDEX IF NOT EXISTS idx_uni_document_types_document_type 
+  ON uni_document_types(document_type);
 
 -- Restore original unique constraint
 ALTER TABLE uni_document_types
   ADD CONSTRAINT unique_document_type UNIQUE (document_type);
-
--- Restore original foreign keys
-ALTER TABLE uni_document_types
-  ADD CONSTRAINT uni_document_types_domain_id_fkey 
-    FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE SET NULL,
-  ADD CONSTRAINT uni_document_types_created_by_fkey 
-    FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
-  ADD CONSTRAINT uni_document_types_updated_by_fkey 
-    FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL;
 
 -- Restore RLS policies
 ALTER TABLE uni_document_types ENABLE ROW LEVEL SECURITY;
@@ -98,29 +81,10 @@ BEGIN
     USING (true);
 END $$;
 
--- Drop trigger first
-DROP TRIGGER IF EXISTS set_updated_at ON document_types;
-
--- Restore trigger at the end
+-- Create trigger on renamed table
 CREATE TRIGGER set_updated_at
   BEFORE UPDATE ON uni_document_types
   FOR EACH ROW
   EXECUTE FUNCTION handle_updated_at();
-
--- After adding domain_id column but before constraints, restore domain_id values
-UPDATE uni_document_types ut
-SET domain_id = backup.domain_id
-FROM backup_uni_document_types_20250213011132 backup
-WHERE backup.id = ut.id;
-
--- Verify domain_id values were restored
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM uni_document_types WHERE domain_id IS NULL
-  ) THEN
-    RAISE EXCEPTION 'Some domain_id values could not be restored';
-  END IF;
-END $$;
 
 COMMIT;
