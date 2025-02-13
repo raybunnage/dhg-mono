@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "netlify-cli": "18.0.4",
-    "supabase": "2.9.6",
+    "supabase": "2.12.1",
     "turbo": "^1.12.4"
   }
 }
