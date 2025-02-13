@@ -32,7 +32,7 @@ export function ExpertProfiles() {
           disabled={isLoading}
           className="bg-blue-500 text-white px-4 py-2 rounded"
         >
-          {isLoading ? 'Processing...' : 'Populate Sources (First 100)'}
+          {isLoading ? 'Processing...' : 'Populate All Sources'}
         </button>
       </div>
 
