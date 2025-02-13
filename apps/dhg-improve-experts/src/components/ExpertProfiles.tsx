@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { populateSourcesGoogle } from '../integrations/google-drive';
 import { toast } from 'react-hot-toast';
+import { SourcesView } from './SourcesView';
 
 export function ExpertProfiles() {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,14 +25,18 @@ export function ExpertProfiles() {
   }
 
   return (
-    <div>
-      <button 
-        onClick={handlePopulateSourcesGoogle}
-        disabled={isLoading}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        {isLoading ? 'Processing...' : 'Populate Sources (First 100)'}
-      </button>
+    <div className="space-y-4">
+      <div>
+        <button 
+          onClick={handlePopulateSourcesGoogle}
+          disabled={isLoading}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          {isLoading ? 'Processing...' : 'Populate Sources (First 100)'}
+        </button>
+      </div>
+
+      <SourcesView />
     </div>
   );
 } 
