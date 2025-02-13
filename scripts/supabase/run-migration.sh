@@ -38,7 +38,18 @@ if [ "$COMMAND" = "list" ]; then
   pnpm supabase migration list --db-url "$DB_URL" --workdir .
 elif [ "$COMMAND" = "repair" ]; then
   echo "Repairing migration..."
-  pnpm supabase migration repair --db-url "$DB_URL" --status reverted 20250210215604
+  VERSION=$2
+  if [ -n "$VERSION" ]; then
+    # Repair specific version
+    echo "Repairing specific version: $VERSION"
+    pnpm supabase migration repair "$VERSION" --status applied
+  else
+    # First clear the migrations table
+    PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
+      -U postgres -d postgres -p 5432 -c "TRUNCATE supabase_migrations.schema_migrations;"
+    # Then repair with all current migrations
+    pnpm supabase migration repair --status applied
+  fi
 elif [ "$COMMAND" = "repair-applied" ]; then
   echo "Marking migration as applied..."
   pnpm supabase migration repair --db-url "$DB_URL" --status applied 20250210215604
