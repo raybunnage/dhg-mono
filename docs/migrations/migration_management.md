@@ -18,7 +18,7 @@ This document describes our process for managing database migrations using pnpm 
 
 ### 1. Create Migration
 ```bash
-pnpm supabase migration new descriptive_name
+pnpm supabase migration new your_migration_name
 ```
 
 ### 2. Apply Migration
@@ -96,3 +96,47 @@ WHERE table_name = 'your_table';
 SELECT * FROM supabase_migrations.schema_migrations 
 ORDER BY version DESC;
 ```
+
+## Managing Schema Migrations Table
+
+### Reset Migration State
+Sometimes you need to reset the migration state table. Use with caution:
+
+```bash
+# Connect to database
+pnpm db:psql
+
+# View current migrations
+SELECT * FROM supabase_migrations.schema_migrations ORDER BY version;
+
+# Backup current state (optional but recommended)
+CREATE TABLE supabase_migrations.schema_migrations_backup AS 
+SELECT * FROM supabase_migrations.schema_migrations;
+
+# Clear migration state
+TRUNCATE supabase_migrations.schema_migrations;
+
+# Verify table is empty
+SELECT COUNT(*) FROM supabase_migrations.schema_migrations;
+
+# Exit psql
+\q
+
+# Then repair migration state
+pnpm db:repair
+```
+
+### Restore from Backup
+If needed, you can restore the backup:
+
+```sql
+-- First verify backup exists
+SELECT COUNT(*) FROM supabase_migrations.schema_migrations_backup;
+
+-- Then restore
+INSERT INTO supabase_migrations.schema_migrations 
+SELECT * FROM supabase_migrations.schema_migrations_backup;
+```
+
+⚠️ Warning: Truncating the schema_migrations table should be done with caution 
+and only when you're sure about the current state of your database schema.
