@@ -33,7 +33,7 @@
     "db:migrate": "./scripts/supabase/run-migration.sh up",
     "db:rollback": "./scripts/supabase/run-migration.sh down",
     "db:list": "./scripts/supabase/run-migration.sh list",
-    "db:repair": "./scripts/supabase/run-migration.sh repair",
+    "db:repair": "supabase migration repair --status applied",
     "db:repair-applied": "./scripts/supabase/run-migration.sh repair-applied",
     "db:check": "./scripts/supabase/run-migration.sh check",
     "migration:new": "./scripts/create-migration.sh",
