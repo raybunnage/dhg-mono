@@ -49,22 +49,15 @@ elif [ "$COMMAND" = "repair" ]; then
     exit 1
   fi
   
-  # Verify table is empty
-  echo "Verifying table is empty..."
-  PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
-    -U postgres -d postgres -p 5432 -c "SELECT COUNT(*) FROM supabase_migrations.schema_migrations;"
-  
   VERSION=$2
   if [ -n "$VERSION" ]; then
     # Repair specific version
     echo "Repairing specific version: $VERSION"
-    # Insert directly using SQL
     PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
       -U postgres -d postgres -p 5432 -c "INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('$VERSION', 'migration_$VERSION');"
   else
     # Then repair all current migrations
     echo "Repairing all current migrations..."
-    # Get all migration files and insert them
     for f in supabase/migrations/*.sql; do
       if [[ $f != *".down.sql" ]]; then
         version=$(basename "$f" | cut -d'_' -f1)
