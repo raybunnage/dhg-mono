@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import toast from 'react-hot-toast';
+import { processUnextractedDocuments } from '@/utils/document-processing';
 
 export function SourceButtons() {
   const [loading, setLoading] = useState(false);
@@ -22,12 +23,19 @@ export function SourceButtons() {
   const handleExtractContent = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('extract-source-content');
-      if (error) throw error;
-      toast.success('Started content extraction');
+      const result = await processUnextractedDocuments();
+      
+      if (result.success) {
+        toast.success(result.message);
+        if (result.errors?.length) {
+          console.warn('Some documents had errors:', result.errors);
+        }
+      } else {
+        toast.error(result.message);
+      }
     } catch (error) {
-      console.error('Error extracting content:', error);
-      toast.error('Failed to extract content');
+      console.error('Error processing documents:', error);
+      toast.error('Failed to process documents');
     } finally {
       setLoading(false);
     }
