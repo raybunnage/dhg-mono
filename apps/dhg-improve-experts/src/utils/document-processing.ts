@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client'
+import { getGoogleDocContent, getPdfContent } from './google-drive'
 
 interface ProcessingResult {
   success: boolean
@@ -77,7 +78,11 @@ export async function processUnextractedDocuments(): Promise<ProcessingResult> {
             is_latest: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            classification_metadata: {}
+            classification_metadata: {
+              is_test_record: true,
+              test_created_at: new Date().toISOString(),
+              original_mime_type: doc.mime_type
+            }
           })
 
         if (insertError) throw insertError
@@ -113,5 +118,40 @@ export async function processUnextractedDocuments(): Promise<ProcessingResult> {
       processedCount: 0,
       errors: [errorMessage]
     }
+  }
+}
+
+export async function testSingleDocument(documentId: string): Promise<void> {
+  try {
+    // Get document from sources_google
+    const { data: doc, error: fetchError } = await supabase
+      .from('sources_google')
+      .select('*')
+      .eq('id', documentId)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (!doc) throw new Error('Document not found');
+
+    console.log('Testing document:', doc);
+
+    let content: string;
+    
+    // Extract content based on mime type
+    if (doc.mime_type === 'application/pdf') {
+      const pdfBuffer = await getPdfContent(doc.drive_id);
+      content = `PDF content length: ${pdfBuffer.byteLength} bytes`;
+      // TODO: Add PDF text extraction
+    } else if (doc.mime_type === 'application/vnd.google-apps.document') {
+      content = await getGoogleDocContent(doc.drive_id);
+    } else {
+      throw new Error(`Unsupported mime type: ${doc.mime_type}`);
+    }
+
+    console.log('Extracted content:', content.substring(0, 200) + '...');
+
+  } catch (error) {
+    console.error('Test failed:', error);
+    throw error;
   }
 } 
