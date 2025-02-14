@@ -26,6 +26,44 @@ This document explains how the various buttons in the application interact with 
   1. Finds first unprocessed PDF or Google Doc
   2. Attempts content extraction
   3. Shows success/failure message
+  4. Creates expert_documents record:
+     ```typescript
+     await supabase.from('expert_documents').insert({
+       expert_id: doc.expert_id,
+       source_id: doc.id,
+       document_type_id: doc.document_type_id,
+       raw_content: extractedContent,
+       processed_content: { text: extractedContent },
+       processing_status: 'pending',
+       word_count: 0,
+       language: 'en',
+       version: 1,
+       is_latest: true,
+       classification_metadata: {
+         is_test_record: true,
+         test_created_at: new Date().toISOString(),
+         original_mime_type: doc.mime_type
+       }
+     })
+     ```
+  5. Updates source record:
+     ```typescript
+     await supabase
+       .from('sources_google')
+       .update({
+         content_extracted: true,
+         extracted_content: { text: extractedContent },
+         updated_at: new Date().toISOString()
+       })
+       .eq('id', doc.id)
+     ```
+
+   The created expert_documents record includes:
+   - Link to original source via source_id
+   - Raw extracted content
+   - Processing metadata
+   - Test record flag for tracking test extractions
+   - Version control fields for future updates
 
 ### 4. Test Env Button
 - **Purpose**: Validates environment configuration
