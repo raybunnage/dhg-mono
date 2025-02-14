@@ -135,20 +135,57 @@ export async function testSingleDocument(documentId: string): Promise<void> {
 
     console.log('Testing document:', doc);
 
-    let content: string;
+    let extractedContent: string;
     
     // Extract content based on mime type
     if (doc.mime_type === 'application/pdf') {
       const pdfBuffer = await getPdfContent(doc.drive_id);
-      content = `PDF content length: ${pdfBuffer.byteLength} bytes`;
+      extractedContent = `PDF content length: ${pdfBuffer.byteLength} bytes`;
       // TODO: Add PDF text extraction
     } else if (doc.mime_type === 'application/vnd.google-apps.document') {
-      content = await getGoogleDocContent(doc.drive_id);
+      extractedContent = await getGoogleDocContent(doc.drive_id);
     } else {
       throw new Error(`Unsupported mime type: ${doc.mime_type}`);
     }
 
-    console.log('Extracted content:', content.substring(0, 200) + '...');
+    console.log('Extracted content:', extractedContent.substring(0, 200) + '...');
+
+    // Create expert_documents record
+    const { error: insertError } = await supabase
+      .from('expert_documents')
+      .insert({
+        expert_id: doc.expert_id,
+        source_id: doc.id,
+        document_type_id: doc.document_type_id,
+        raw_content: extractedContent,
+        processed_content: { text: extractedContent },
+        processing_status: 'pending',
+        word_count: extractedContent.split(/\s+/).length,
+        language: 'en',
+        version: 1,
+        is_latest: true,
+        classification_metadata: {
+          is_test_record: true,
+          test_created_at: new Date().toISOString(),
+          original_mime_type: doc.mime_type
+        }
+      });
+
+    if (insertError) throw insertError;
+
+    // Update sources_google record
+    const { error: updateError } = await supabase
+      .from('sources_google')
+      .update({
+        content_extracted: true,
+        extracted_content: { text: extractedContent },
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', doc.id);
+
+    if (updateError) throw updateError;
+
+    console.log('Successfully created expert_documents record and updated source');
 
   } catch (error) {
     console.error('Test failed:', error);
