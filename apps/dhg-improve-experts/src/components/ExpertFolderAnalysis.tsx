@@ -11,28 +11,53 @@ export default function ExpertFolderAnalysis() {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
   const [viewMode, setViewMode] = useState<'folders' | 'raw'>('folders')
+  const [error, setError] = useState<string | null>(null)
+  const [data, setData] = useState<any[]>([])
 
   useEffect(() => {
     loadData()
   }, [])
 
   async function loadData() {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
       // Load folder view data
       const folderData = await getExpertFolders()
       setFolders(folderData)
 
       // Load raw sources data
-      const { data: sourcesData, error } = await supabase
+      const { data: sourcesData, error: queryError } = await supabase
         .from('sources_google')
         .select('*')
         .order('path')
       
-      if (error) throw error
+      if (queryError) throw queryError
       setRawSources(sourcesData)
-    } catch (error) {
-      console.error('Error loading data:', error)
+
+      // Get expert documents with source info
+      const { data: expertDocs, error: queryError2 } = await supabase
+        .from('expert_documents')
+        .select(`
+          id,
+          source_id,
+          sources_google (
+            id,
+            name,
+            mime_type,
+            web_view_link
+          )
+        `)
+
+      if (queryError2) throw queryError2
+
+      // Safely handle the data
+      const validDocs = (expertDocs || []).filter(doc => doc && doc.sources_google)
+      setData(validDocs)
+
+    } catch (err) {
+      console.error('Error loading data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -63,6 +88,8 @@ export default function ExpertFolderAnalysis() {
   }
 
   if (loading) return <div>Loading data...</div>
+  if (error) return <div className="text-red-500">Error: {error}</div>
+  if (!data.length) return <div>No expert documents found</div>
 
   return (
     <div className="mt-8 p-4">
@@ -179,6 +206,30 @@ export default function ExpertFolderAnalysis() {
           </button>
         </div>
       )}
+
+      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+        <h3 className="font-medium">Expert Documents</h3>
+        <div className="grid gap-4">
+          {data.map((doc) => (
+            <div key={doc.id} className="p-4 border rounded">
+              <div className="font-medium">{doc.sources_google?.name || 'Unnamed Document'}</div>
+              <div className="text-sm text-gray-600">
+                Type: {doc.sources_google?.mime_type || 'Unknown'}
+              </div>
+              {doc.sources_google?.web_view_link && (
+                <a 
+                  href={doc.sources_google.web_view_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-500 hover:underline"
+                >
+                  View in Drive
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 } 

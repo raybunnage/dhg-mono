@@ -73,4 +73,85 @@ export async function getPdfContent(fileId: string): Promise<ArrayBuffer> {
   }
 
   return await response.arrayBuffer();
+}
+
+export async function listDriveFiles(): Promise<any[]> {
+  const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+  const folderId = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
+
+  const response = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents&fields=files(id,name,mimeType,webViewLink)`,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json'
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to list files: ${await response.text()}`);
+  }
+
+  const data = await response.json();
+  return data.files;
+}
+
+interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  webViewLink: string;
+  parentId?: string;
+  path?: string;
+}
+
+export async function listAllDriveFiles(rootFolderId: string): Promise<DriveFile[]> {
+  const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+  let allFiles: DriveFile[] = [];
+  const folderPaths = new Map<string, string>();
+  
+  async function getFilesInFolder(folderId: string, parentPath: string = '') {
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents&fields=files(id,name,mimeType,webViewLink)&pageSize=1000`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to list files: ${await response.text()}`);
+    }
+
+    const data = await response.json();
+    
+    // Process each file/folder
+    for (const file of data.files) {
+      const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
+      const currentPath = parentPath ? `${parentPath} / ${file.name}` : file.name;
+      
+      // Save folder path for later reference
+      if (isFolder) {
+        folderPaths.set(file.id, currentPath);
+      }
+      
+      // Add file with path info
+      allFiles.push({
+        ...file,
+        parentId: folderId,
+        path: currentPath
+      });
+
+      // Recursively process subfolders
+      if (isFolder) {
+        await getFilesInFolder(file.id, currentPath);
+      }
+    }
+  }
+
+  await getFilesInFolder(rootFolderId);
+  return allFiles;
 } 
