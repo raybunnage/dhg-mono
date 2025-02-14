@@ -50,29 +50,30 @@ export async function processUnextractedDocuments(): Promise<ProcessingResult> {
     // Process each document
     for (const doc of documents) {
       try {
-        // For now, just mark as processed with placeholder content
-        const { error: updateError } = await supabase
-          .from('sources_google')
-          .update({
-            content_extracted: true,
-            extracted_content: { text: `Processed content for ${doc.name}` },
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', doc.id)
+        let extractedContent: string;
+        
+        // Extract content based on mime type
+        if (doc.mime_type === 'application/pdf') {
+          const pdfBuffer = await getPdfContent(doc.drive_id);
+          extractedContent = `PDF content length: ${pdfBuffer.byteLength} bytes`;
+          // TODO: Add PDF text extraction
+        } else if (doc.mime_type === 'application/vnd.google-apps.document') {
+          extractedContent = await getGoogleDocContent(doc.drive_id);
+        } else {
+          throw new Error(`Unsupported mime type: ${doc.mime_type}`);
+        }
 
-        if (updateError) throw updateError
-
-        // Create record in expert_documents
+        // Create expert_documents record
         const { error: insertError } = await supabase
           .from('expert_documents')
           .insert({
             expert_id: doc.expert_id,
             source_id: doc.id,
             document_type_id: doc.document_type_id,
-            raw_content: `Processed content for ${doc.name}`,
-            processed_content: { text: `Processed content for ${doc.name}` },
+            raw_content: extractedContent,
+            processed_content: { text: extractedContent },
             processing_status: 'pending',
-            word_count: 0,
+            word_count: extractedContent.split(/\s+/).length,
             language: 'en',
             version: 1,
             is_latest: true,
@@ -83,11 +84,23 @@ export async function processUnextractedDocuments(): Promise<ProcessingResult> {
               test_created_at: new Date().toISOString(),
               original_mime_type: doc.mime_type
             }
+          });
+
+        if (insertError) throw insertError;
+
+        // Update sources_google record
+        const { error: updateError } = await supabase
+          .from('sources_google')
+          .update({
+            content_extracted: true,
+            extracted_content: { text: extractedContent },
+            updated_at: new Date().toISOString()
           })
+          .eq('id', doc.id);
 
-        if (insertError) throw insertError
+        if (updateError) throw updateError;
 
-        processedCount++
+        processedCount++;
 
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'

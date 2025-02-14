@@ -6,10 +6,7 @@ This document explains how the various buttons in the application interact with 
 
 ### 1. Sync Sources Button
 - **Purpose**: Syncs documents from Google Drive to Supabase
-- **Process**:
-  1. Calls Supabase Edge Function `sync-google-sources`
-  2. Edge function fetches files from specified Google Drive folder
-  3. Stores file metadata in `sources_google` table
+- See detailed documentation in [Google Drive Sync Process](#google-drive-sync-process) section
 
 ### 2. Extract Content Button
 - **Purpose**: Processes unextracted documents in batch
@@ -143,3 +140,68 @@ VITE_SUPABASE_ANON_KEY=     # Public anon key
 - Keep `.env.development` out of source control
 - Refresh tokens are long-lived - protect them
 - Use `.env.example` for template values only
+
+## Google Drive Sync Process
+
+### Sync Sources Button (Blue)
+- **Function**: `handleSyncSources` in `SourceButtons.tsx`
+- **Purpose**: Syncs files from Google Drive folder to `sources_google` table
+
+### Process Flow
+1. Calls `listDriveFiles()` from `google-drive.ts`:
+```typescript
+// Gets files from specified folder
+const response = await fetch(
+  `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents&fields=files(id,name,mimeType,webViewLink)`
+);
+```
+
+2. For each file, checks for duplicates:
+```typescript
+const { data: existing } = await supabase
+  .from('sources_google')
+  .select('id, drive_id')
+  .eq('drive_id', file.id)
+  .single();
+```
+
+3. Inserts new records to `sources_google`:
+```typescript
+await supabase.from('sources_google').insert({
+  drive_id: file.id,        // Google Drive's file ID
+  name: file.name,          // Original filename
+  mime_type: file.mimeType, // File type (PDF, Google Doc, etc)
+  web_view_link: file.webViewLink, // Link to view in browser
+  content_extracted: false,  // Tracks extraction status
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
+});
+```
+
+4. Cleans up orphaned records:
+```typescript
+await supabase
+  .from('sources_google')
+  .delete()
+  .not('drive_id', 'in', validDriveIds)
+  .is('content_extracted', false);
+```
+
+### Database Fields (sources_google table)
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID | Primary key (auto-generated) |
+| drive_id | Text | Google Drive file ID |
+| name | Text | Original filename |
+| mime_type | Text | File type (PDF, Doc, etc) |
+| web_view_link | Text | Browser view URL |
+| content_extracted | Boolean | Extraction status |
+| created_at | Timestamp | Record creation time |
+| updated_at | Timestamp | Last update time |
+| extraction_error | Text | Error message if extraction failed |
+
+### Error Handling
+- Skips duplicate files (same drive_id)
+- Logs insertion errors
+- Removes orphaned records
+- Shows toast notifications for success/failure 
