@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../integrations/supabase/client';
+import type { Database } from '../types/supabase';
 import { toast } from 'react-hot-toast';
 
 interface GetContentButtonProps {
@@ -14,6 +15,8 @@ interface DocInfo {
   index: number;
   total: number;
 }
+
+type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
 
 function GetContentButton({ onSuccess, onError }: GetContentButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -65,14 +68,26 @@ function GetContentButton({ onSuccess, onError }: GetContentButtonProps) {
     const toastId = toast.loading(`Processing document ${currentIndex + 1} of ${documents.length}`);
 
     try {
+      // First get the document and its source with detailed logging
       const { data: doc, error } = await supabase
         .from('expert_documents')
         .select(`
           id,
           raw_content,
-          source:source_id (
+          content_type,
+          processing_status,
+          source_id,
+          error_message,
+          processing_error,
+          source:sources_google!expert_documents_source_id_fkey (
+            id,
             name,
-            mime_type
+            mime_type,
+            drive_id,
+            content_extracted,
+            extraction_error,
+            extracted_content,
+            metadata
           )
         `)
         .eq('id', docId)
@@ -82,12 +97,80 @@ function GetContentButton({ onSuccess, onError }: GetContentButtonProps) {
         throw new Error(`Failed to fetch document ${docId}: ${error.message}`);
       }
 
-      if (!doc?.raw_content) {
-        console.warn(`Document ${docId} has no content`);
-        toast.error(`Document ${docId} has no content`, { id: toastId });
+      // Debug log the complete document structure
+      console.log('Complete document structure:', JSON.stringify({
+        document: {
+          id: doc.id,
+          allFields: doc,
+          source: doc.source
+        }
+      }, null, 2));
+
+      // Also log the source_id to make sure we're linking to the right source
+      console.log('Document source relationship:', {
+        documentId: doc.id,
+        sourceId: doc.source_id,
+        sourceRecord: doc.source ? {
+          id: doc.source.id,
+          name: doc.source.name,
+          hasContent: !!doc.source.extracted_content
+        } : 'No source record found'
+      });
+
+      // Handle content whether it's an object or string
+      let contentToUse = null;
+      if (doc?.raw_content) {
+        contentToUse = typeof doc.raw_content === 'object' 
+          ? JSON.stringify(doc.raw_content)
+          : doc.raw_content;
+      } else if (doc?.source?.extracted_content) {
+        contentToUse = typeof doc.source.extracted_content === 'object'
+          ? JSON.stringify(doc.source.extracted_content)
+          : doc.source.extracted_content;
+      }
+
+      if (!contentToUse && doc?.source?.drive_id && !doc.source.content_extracted) {
+        console.log('Document needs content extraction:', {
+          name: doc.source.name,
+          driveId: doc.source.drive_id,
+          mimeType: doc.source.mime_type
+        });
+        
+        toast.info(`Document ${doc.source.name} needs content extraction first`, { id: toastId });
+        
+        // Skip to next document
+        if (currentIndex < documents.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+        }
         return;
       }
 
+      if (!contentToUse) {
+        // More informative warning about missing content
+        console.warn(`Document ${docId} has no usable content:`, {
+          rawContentType: typeof doc?.raw_content,
+          rawContent: doc?.raw_content,
+          sourceContentType: typeof doc?.source?.extracted_content,
+          sourceContent: doc?.source?.extracted_content,
+          status: doc?.processing_status,
+          source: {
+            id: doc?.source?.id,
+            contentExtracted: doc?.source?.content_extracted,
+            extractionError: doc?.source?.extraction_error
+          },
+          contentType: doc?.content_type
+        });
+        
+        toast.error(`Document ${docId} has no usable content. Check console for details.`, { id: toastId });
+        
+        // Continue to next document automatically
+        if (currentIndex < documents.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+        }
+        return;
+      }
+
+      // If we got here, we have content to use
       const docInfo: DocInfo = {
         id: doc.id,
         sourceName: doc.source?.name,
@@ -98,15 +181,14 @@ function GetContentButton({ onSuccess, onError }: GetContentButtonProps) {
 
       console.log('Retrieved document:', {
         id: doc.id,
-        contentLength: doc.raw_content.length,
+        contentLength: contentToUse.length,
         sourceName: doc.source?.name,
         mimeType: doc.source?.mime_type,
         progress: `${currentIndex + 1}/${documents.length}`,
-        preview: doc.raw_content.slice(0, 200).replace(/\n/g, ' ') + '...',
-        fullContent: doc.raw_content
+        preview: contentToUse.slice(0, 200).replace(/\n/g, ' ') + '...'
       });
 
-      onSuccess?.(doc.raw_content, docInfo);
+      onSuccess?.(contentToUse, docInfo);
       toast.success('Document processed successfully', { id: toastId });
 
     } catch (err) {
