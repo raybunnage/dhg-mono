@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/types/supabase'; // Update to correct path
+import type { Database } from '../types/supabase';
 
 // Debugging utility
 const debug = {
@@ -16,18 +16,8 @@ const debug = {
   }
 };
 
-// Add type definitions for database tables
-interface ExpertDocument {
-  id: string;
-  raw_content: string;
-  source_id: string;
-  processed_at?: string;
-  processing_status?: 'pending' | 'processing' | 'completed' | 'failed';
-  source?: {
-    name: string;
-    mime_type: string;
-  }
-}
+// Update type to use Database type
+type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
 
 interface Expert {
   id?: string;
