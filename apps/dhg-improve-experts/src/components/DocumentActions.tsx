@@ -1,54 +1,29 @@
 import React, { useState } from 'react';
 import GetContentButton from './GetContentButton';
+import ExtractContentButton from './ExtractContentButton';
 import ExtractButton from './ExtractButton';
 
-interface DocumentActionsProps {
-  documentId?: string; // Made optional since we're processing all docs
-}
-
-function DocumentActions({ documentId }: DocumentActionsProps) {
-  const [processedDocs, setProcessedDocs] = useState<string[]>([]);
-
-  const handleContentRetrieved = (content: string, docInfo: DocInfo) => {
-    const preview = content.slice(0, 100).replace(/\n/g, ' ');
-    console.log(`Document ${docInfo.index}/${docInfo.total}:`, {
-      id: docInfo.id,
-      length: content.length,
-      preview: preview + '...',
-      source: docInfo.sourceName,
-      mimeType: docInfo.mimeType
-    });
-
-    setProcessedDocs(prev => [...prev, docInfo.id]);
-  };
-
-  const handleError = (error: Error, docId?: string) => {
-    console.error('Operation failed:', {
-      documentId: docId,
-      error: error.message,
-      stack: error.stack
-    });
-  };
+function DocumentActions() {
+  const [extractedDocs, setExtractedDocs] = useState<string[]>([]);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-2">
-        <GetContentButton 
-          onSuccess={handleContentRetrieved}
-          onError={handleError}
+      <div className="p-4 bg-gray-50 rounded-lg">
+        <h3 className="text-lg font-medium mb-4">1. Extract Content from Documents</h3>
+        <ExtractContentButton 
+          onSuccess={(docId) => setExtractedDocs(prev => [...prev, docId])}
         />
-        {documentId && (
-          <ExtractButton 
-            documentId={documentId}
-            onError={handleError}
-          />
-        )}
       </div>
-      {processedDocs.length > 0 && (
-        <div className="text-sm text-gray-600">
-          Processed {processedDocs.length} documents
-        </div>
-      )}
+
+      <div className="p-4 bg-gray-50 rounded-lg">
+        <h3 className="text-lg font-medium mb-4">2. Verify Extracted Content</h3>
+        <GetContentButton />
+      </div>
+
+      <div className="p-4 bg-gray-50 rounded-lg">
+        <h3 className="text-lg font-medium mb-4">3. Process with AI</h3>
+        <ExtractButton />
+      </div>
     </div>
   );
 }
