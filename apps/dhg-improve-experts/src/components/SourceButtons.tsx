@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import { processUnextractedDocuments, testSingleDocument } from '@/utils/document-processing';
-import { listDriveFiles, listAllDriveFiles } from '@/utils/google-drive';
+import { listDriveFiles, listAllDriveFiles, getGoogleDocContent, getPdfContent } from '@/utils/google-drive';
 import { FileTree } from './FileTree';
+import { processDocumentWithAI } from '@/utils/ai-processing';
 
 function sanitizeFileName(name: string): string {
   // Remove or replace problematic characters
@@ -420,6 +421,82 @@ export function SourceButtons() {
     }
   };
 
+  const handleTestAI = async () => {
+    setLoading(true);
+    try {
+      // 1. Get first unprocessed document that needs content
+      const { data: doc, error: fetchError } = await supabase
+        .from('expert_documents')
+        .select(`
+          id,
+          raw_content,
+          processing_status,
+          source:source_id (
+            id,
+            drive_id,
+            mime_type,
+            name
+          )
+        `)
+        .eq('processing_status', 'pending')
+        .is('raw_content', null)  // Only get docs without content
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!doc) {
+        toast.error('No documents found needing content extraction');
+        return;
+      }
+
+      console.log('Found document to process:', {
+        id: doc.id,
+        sourceName: doc.source?.name,
+        mimeType: doc.source?.mime_type
+      });
+
+      // 2. Extract content based on mime type
+      let content: string;
+      if (doc.source?.mime_type === 'application/pdf') {
+        const pdfBuffer = await getPdfContent(doc.source.drive_id);
+        // TODO: Convert PDF buffer to text
+        content = `PDF content length: ${pdfBuffer.byteLength} bytes`;
+      } else if (doc.source?.mime_type === 'application/vnd.google-apps.document') {
+        content = await getGoogleDocContent(doc.source.drive_id);
+      } else {
+        throw new Error(`Unsupported mime type: ${doc.source?.mime_type}`);
+      }
+
+      // 3. Update expert_documents with content
+      const { error: updateError } = await supabase
+        .from('expert_documents')
+        .update({
+          raw_content: content,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', doc.id);
+
+      if (updateError) {
+        throw new Error(`Failed to update document content: ${updateError.message}`);
+      }
+
+      console.log('Content extracted and saved, length:', content.length);
+
+      // 4. Process with AI
+      const profile = await processDocumentWithAI(doc.id);
+      
+      toast.success(`Successfully processed profile for ${profile.name}`);
+      console.log('Extracted profile:', profile);
+
+    } catch (error) {
+      console.error('AI processing failed:', error);
+      toast.error(error instanceof Error ? error.message : 'AI processing failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2 items-center">
@@ -495,6 +572,13 @@ export function SourceButtons() {
           className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
         >
           {loading ? 'Deleting...' : 'Delete All Records'}
+        </button>
+        <button
+          onClick={handleTestAI}
+          disabled={loading}
+          className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
+        >
+          {loading ? 'Processing...' : 'Test AI Extract'}
         </button>
       </div>
       
