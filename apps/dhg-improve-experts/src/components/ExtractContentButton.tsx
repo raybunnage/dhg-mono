@@ -412,4 +412,4 @@ function ExtractContentButton({ onSuccess, onError }: ExtractContentButtonProps)
   );
 }
 
-export default ExtractContentButton; 
+export { ExtractContentButton }; 
