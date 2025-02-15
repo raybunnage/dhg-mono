@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FileNode {
   id: string;
@@ -8,6 +10,8 @@ interface FileNode {
   parent_path: string | null;
   content_extracted?: boolean;
   web_view_link?: string;
+  processing_status?: 'queued' | 'processing' | 'completed' | 'error';
+  batch_id?: string;
 }
 
 interface FileTreeProps {
@@ -15,9 +19,24 @@ interface FileTreeProps {
   onSelectionChange?: (selectedIds: string[]) => void;
 }
 
+// Add new type for supported file types
+type SupportedFileType = 'pdf' | 'document' | 'other';
+
+// Add helper function to determine file type
+const getFileType = (mimeType: string): SupportedFileType => {
+  if (mimeType.includes('pdf')) return 'pdf';
+  if (
+    mimeType.includes('document') || 
+    mimeType.includes('msword') || 
+    mimeType.includes('wordprocessingml')
+  ) return 'document';
+  return 'other';
+};
+
 export function FileTree({ files, onSelectionChange }: FileTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [showOnlyProcessable, setShowOnlyProcessable] = useState(true);
 
   const expandAll = () => {
     // Get all possible folder paths
@@ -65,10 +84,22 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
     return '📎';
   };
 
+  // Filter function for processable files
+  const isProcessableFile = (file: FileNode) => {
+    if (!showOnlyProcessable) return true;
+    const fileType = getFileType(file.mime_type);
+    return fileType === 'pdf' || fileType === 'document';
+  };
+
   const renderTree = (parentPath: string | null = null, level: number = 0) => {
     const items = files.filter(f => f.parent_path === parentPath);
+    
+    // Filter out non-processable files unless it's a folder
+    const filteredItems = items.filter(item => 
+      item.mime_type === 'application/vnd.google-apps.folder' || isProcessableFile(item)
+    );
 
-    const sortedItems = items.sort((a, b) => {
+    const sortedItems = filteredItems.sort((a, b) => {
       const aIsFolder = a.mime_type === 'application/vnd.google-apps.folder';
       const bIsFolder = b.mime_type === 'application/vnd.google-apps.folder';
 
@@ -129,13 +160,23 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
                   type="checkbox"
                   checked={selectedFiles.has(item.id)}
                   onChange={() => toggleFile(item.id)}
+                  disabled={item.processing_status === 'processing'}
                   className="form-checkbox h-4 w-4"
-                  onClick={(e) => e.stopPropagation()}
                 />
                 <span className="mr-1">{getIcon(item.mime_type)}</span>
                 <span className="flex-1">{item.name}</span>
                 <span className="ml-2">
-                  {item.content_extracted ? '✅' : '⬜'}
+                  {item.content_extracted ? (
+                    <span title="Processed" className="text-green-500">✅</span>
+                  ) : item.processing_status === 'queued' ? (
+                    <span title="Queued" className="text-yellow-500">⏳</span>
+                  ) : item.processing_status === 'processing' ? (
+                    <span title="Processing" className="text-blue-500 animate-pulse">⚡</span>
+                  ) : item.processing_status === 'error' ? (
+                    <span title="Error" className="text-red-500">❌</span>
+                  ) : (
+                    <span title="Not Processed">⬜</span>
+                  )}
                 </span>
               </>
             )}
@@ -146,6 +187,62 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
     });
   };
 
+  const handleProcessSelected = async () => {
+    const selectedFileNodes = Array.from(selectedFiles)
+      .map(id => files.find(f => f.id === id))
+      .filter(f => f && !f.content_extracted) as FileNode[]; // Only process unextracted files
+
+    if (selectedFileNodes.length === 0) {
+      toast.info('No new files to process');
+      return;
+    }
+
+    // Split into batches of 10
+    const batches = [];
+    for (let i = 0; i < selectedFileNodes.length; i += 10) {
+      batches.push(selectedFileNodes.slice(i, i + 10));
+    }
+
+    try {
+      for (const batch of batches) {
+        // Create batch record and expert_documents
+        const { data: batchData, error: batchError } = await supabase
+          .from('processing_batches')
+          .insert({
+            created_at: new Date().toISOString(),
+            status: 'queued',
+            total_files: batch.length
+          })
+          .select()
+          .single();
+
+        if (batchError) throw batchError;
+
+        // Create expert_documents for each file
+        const { error: docsError } = await supabase
+          .from('expert_documents')
+          .insert(
+            batch.map(file => ({
+              source_id: file.id,
+              batch_id: batchData.id,
+              status: 'queued',
+              created_at: new Date().toISOString()
+            }))
+          );
+
+        if (docsError) throw docsError;
+
+        toast.success(`Created batch of ${batch.length} files for processing`);
+      }
+
+      // Clear selection after successful batch creation
+      setSelectedFiles(new Set());
+    } catch (error) {
+      console.error('Error creating batch:', error);
+      toast.error('Failed to create processing batch');
+    }
+  };
+
   return (
     <div className="file-tree p-4 border rounded-lg bg-white">
       <div className="mb-4 flex justify-between items-center">
@@ -153,23 +250,80 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
           <span>🗂️</span>
           <span>Dynamic Healing Group Files</span>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={expandAll}
-            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-          >
-            Expand All
-          </button>
-          <button
-            onClick={collapseAll}
-            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-          >
-            Collapse All
-          </button>
+        <div className="flex items-center gap-4">
+          {/* Add filter toggle */}
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showOnlyProcessable}
+              onChange={(e) => setShowOnlyProcessable(e.target.checked)}
+              className="form-checkbox h-4 w-4"
+            />
+            Show only PDFs & Documents
+          </label>
+          <div className="flex gap-2">
+            <button
+              onClick={expandAll}
+              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+            >
+              Expand All
+            </button>
+            <button
+              onClick={collapseAll}
+              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+            >
+              Collapse All
+            </button>
+          </div>
         </div>
       </div>
+      
+      {/* Add file type legend */}
+      {showOnlyProcessable && (
+        <div className="mb-4 text-sm text-gray-500 flex gap-4">
+          <span>📕 PDF</span>
+          <span>📄 Document</span>
+          <span>📁 Folder</span>
+        </div>
+      )}
+
       {/* Only start rendering from root level (parentPath === null) */}
       {renderTree(null)}
+
+      {/* New selected files panel - only shows when files are selected */}
+      {selectedFiles.size > 0 && (
+        <div className="mt-4 border-t pt-4">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-medium">
+              Selected Files ({selectedFiles.size})
+            </h3>
+            <button
+              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+              onClick={handleProcessSelected}
+            >
+              Process Selected
+            </button>
+          </div>
+          <div className="max-h-40 overflow-y-auto">
+            {Array.from(selectedFiles).map(fileId => {
+              const file = files.find(f => f.id === fileId);
+              if (!file) return null;
+              return (
+                <div key={file.id} className="flex items-center gap-2 py-1 text-sm">
+                  <span>{getIcon(file.mime_type)}</span>
+                  <span className="flex-1">{file.name}</span>
+                  <button
+                    onClick={() => toggleFile(file.id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
