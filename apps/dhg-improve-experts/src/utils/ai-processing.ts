@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '../types/supabase';
+import { toast } from 'react-hot-toast';
+import { Anthropic } from '@anthropic-ai/sdk';
 
 // Debugging utility
 const debug = {
@@ -51,6 +53,114 @@ interface ProcessingStatus {
   startTime: string;
   error?: any;
 }
+
+interface AIProcessingOptions {
+  systemPrompt: string;
+  userMessage: string;
+  temperature?: number;
+  requireJsonOutput?: boolean;
+  maxTokens?: number;
+}
+
+export const processWithAI = async ({
+  systemPrompt,
+  userMessage,
+  temperature = 0.0,
+  requireJsonOutput = false,
+  maxTokens = 4000
+}: AIProcessingOptions) => {
+  const startTime = Date.now();
+  
+  try {
+    debug.log('init', {
+      messageLength: userMessage.length,
+      systemPromptLength: systemPrompt.length,
+      temperature,
+      maxTokens
+    });
+
+    const anthropic = new Anthropic({
+      apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
+      dangerouslyAllowBrowser: true
+    });
+
+    debug.log('request', {
+      model: 'claude-3-5-sonnet-20241022',
+      messagePreview: userMessage.slice(0, 100) + '...',
+      systemPromptPreview: systemPrompt.slice(0, 100) + '...'
+    });
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: maxTokens,
+      temperature,
+      system: systemPrompt,
+      messages: [{
+        role: 'user',
+        content: userMessage
+      }]
+    });
+
+    // Log successful response
+    debug.log('response', {
+      processingTime: `${Date.now() - startTime}ms`,
+      contentLength: response.content[0].text.length,
+      preview: response.content[0].text.slice(0, 100) + '...'
+    });
+
+    const content = response.content[0].text;
+
+    if (requireJsonOutput) {
+      try {
+        const parsed = JSON.parse(content);
+        debug.log('json-parsing', {
+          successful: true,
+          keys: Object.keys(parsed)
+        });
+        return parsed;
+      } catch (parseError) {
+        debug.error('json-parsing', {
+          error: parseError,
+          content: content.slice(0, 500) + '...',
+          message: 'Failed to parse AI response as JSON'
+        });
+        throw new AIProcessingError('json-parsing', 'AI response was not valid JSON', parseError);
+      }
+    }
+
+    return content;
+
+  } catch (error) {
+    // Detailed error logging based on error type
+    if (error instanceof AIProcessingError) {
+      debug.error(error.name, {
+        stage: error.message.split(']')[0].slice(1),
+        message: error.message,
+        cause: error.cause
+      });
+    } else if (error instanceof Error) {
+      debug.error('anthropic-api', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        processingTime: `${Date.now() - startTime}ms`
+      });
+    } else {
+      debug.error('unknown', {
+        error,
+        processingTime: `${Date.now() - startTime}ms`
+      });
+    }
+
+    // User-friendly error message
+    const errorMessage = error instanceof Error 
+      ? `AI processing failed: ${error.message}`
+      : 'An unknown error occurred during AI processing';
+    
+    toast.error(errorMessage);
+    throw error;
+  }
+};
 
 export async function processDocumentWithAI(documentId: string): Promise<ExpertProfile> {
   const processingStatus: ProcessingStatus = {
