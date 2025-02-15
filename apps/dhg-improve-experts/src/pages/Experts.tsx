@@ -42,12 +42,20 @@ export default function Experts() {
           </button>
           <h1 className="text-3xl font-serif text-primary-900">Our Experts</h1>
         </div>
-        <button 
-          onClick={() => navigate('/experts/new')} 
-          className="btn-primary"
-        >
-          Add Expert
-        </button>
+        <div className="flex gap-4">
+          <button 
+            onClick={() => navigate('/experts/profiler')}
+            className="btn-secondary"
+          >
+            Profile Extractor
+          </button>
+          <button 
+            onClick={() => navigate('/experts/new')} 
+            className="btn-primary"
+          >
+            Add Expert
+          </button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
