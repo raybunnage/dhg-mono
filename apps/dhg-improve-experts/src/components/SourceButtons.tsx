@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import { processUnextractedDocuments, testSingleDocument } from '@/utils/document-processing';
 import { listDriveFiles, listAllDriveFiles } from '@/utils/google-drive';
+import { FileTree } from './FileTree';
 
 function sanitizeFileName(name: string): string {
   // Remove or replace problematic characters
@@ -21,9 +22,29 @@ function sanitizePath(path: string | null): string | null {
 export function SourceButtons() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [dryRun, setDryRun] = useState(true);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [files, setFiles] = useState<any[]>([]);
+
+  // Add this effect to load files on mount
+  useEffect(() => {
+    const loadFiles = async () => {
+      const { data, error } = await supabase
+        .from('sources_google')
+        .select('*')
+        .eq('deleted', false)
+        .order('name');
+      
+      if (error) {
+        console.error('Error loading files:', error);
+        return;
+      }
+      
+      setFiles(data);
+    };
+
+    loadFiles();
+  }, []);
 
   const handleDryRunChange = (checked: boolean) => {
     if (!checked) {
@@ -344,40 +365,6 @@ export function SourceButtons() {
     }
   }
 
-  const handleSearch = async () => {
-    setLoading(true);
-    try {
-      console.log('Searching for:', searchTerm);
-      
-      const { data, error } = await supabase
-        .from('sources_google')
-        .select('*')
-        .eq('deleted', false)  // Only show active files
-        .ilike('name', `%${searchTerm}%`)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-      
-      console.log('Search results:', data);
-      setSearchResults(data || []);
-      
-      if (data?.length === 0) {
-        toast.error('No files found');
-      } else {
-        toast.success(`Found ${data.length} files`);
-      }
-    } catch (error) {
-      console.error('Search failed:', error);
-      toast.error(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDeleteAllRecords = async () => {
     if (!window.confirm('⚠️ WARNING: This will delete ALL records from sources_google. Are you sure?')) {
       return;
@@ -520,7 +507,7 @@ export function SourceButtons() {
           className="px-4 py-2 border rounded"
         />
         <button
-          onClick={handleSearch}
+          onClick={() => {/* TODO: Implement search */}}
           disabled={loading || !searchTerm}
           className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-50"
         >
@@ -528,32 +515,7 @@ export function SourceButtons() {
         </button>
       </div>
 
-      {searchResults.length > 0 && (
-        <div className="mt-4">
-          <h3 className="font-bold mb-2">Search Results:</h3>
-          <ul className="space-y-2">
-            {searchResults.map((file) => (
-              <li key={file.id} className="p-2 bg-gray-50 rounded">
-                <div className="font-medium">{file.name}</div>
-                <div className="text-sm text-gray-600">
-                  Type: {file.mime_type}
-                  {file.content_extracted && ' ✓ Extracted'}
-                </div>
-                {file.web_view_link && (
-                  <a 
-                    href={file.web_view_link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-500 hover:underline"
-                  >
-                    View in Drive
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <FileTree files={files} />
     </div>
   );
 } 

@@ -181,12 +181,9 @@ export default function ExpertFolderAnalysis() {
   function renderFolder(structure: FolderStructure, currentPath: string = '') {
     const sortedFolders = Object.entries(structure.subfolders)
       .sort(([a], [b]) => {
-        // First sort by date if present
         const dateA = a.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || '';
         const dateB = b.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || '';
         if (dateA && dateB) return dateB.localeCompare(dateA);
-        
-        // Then by name
         return a.localeCompare(b);
       });
 
@@ -215,19 +212,6 @@ export default function ExpertFolderAnalysis() {
 
               {isExpanded && (hasFiles || hasSubfolders) && (
                 <div className="ml-4">
-                  {content.files?.map(file => (
-                    <div key={file.id} className="flex items-center gap-2 py-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedFiles.has(file.id)}
-                        onChange={() => toggleFile(file.id)}
-                        className="form-checkbox h-4 w-4"
-                      />
-                      <span className="text-sm">
-                        {getFileIcon(file.mime_type)} {file.name}
-                      </span>
-                    </div>
-                  ))}
                   {renderFolder(content, folderPath)}
                 </div>
               )}
@@ -332,58 +316,9 @@ export default function ExpertFolderAnalysis() {
 
   return (
     <div className="mt-8 p-4">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Source Files</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={expandAll}
-            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-          >
-            Expand All
-          </button>
-          <button
-            onClick={collapseAll}
-            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-          >
-            Collapse All
-          </button>
-        </div>
-      </div>
-
       <div className="border rounded-lg p-4">
         {renderFolder(folderStructure)}
       </div>
-
-      {/* Selected Files Panel */}
-      {selectedFilesList.length > 0 && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium">Selected Files ({selectedFilesList.length})</h3>
-            <button 
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              onClick={handleProcessSelected}
-            >
-              Process Selected Files
-            </button>
-          </div>
-          
-          <div className="space-y-2">
-            {selectedFilesList.map(file => (
-              <div key={file.id} className="flex items-center justify-between bg-white p-2 rounded">
-                <span className="text-sm">
-                  {getFileIcon(file.mime_type)} {file.name}
-                </span>
-                <button
-                  onClick={() => toggleFile(file.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 } 
