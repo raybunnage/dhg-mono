@@ -12,10 +12,25 @@ interface FileNode {
 
 interface FileTreeProps {
   files: FileNode[];
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
-export function FileTree({ files }: FileTreeProps) {
+export function FileTree({ files, onSelectionChange }: FileTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+
+  const expandAll = () => {
+    // Get all possible folder paths
+    const allPaths = files
+      .filter(f => f.mime_type === 'application/vnd.google-apps.folder')
+      .map(f => f.path || '')
+      .filter(Boolean);
+    setExpandedFolders(new Set(allPaths));
+  };
+
+  const collapseAll = () => {
+    setExpandedFolders(new Set());
+  };
 
   const toggleFolder = (path: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -25,6 +40,19 @@ export function FileTree({ files }: FileTreeProps) {
       newExpanded.add(path);
     }
     setExpandedFolders(newExpanded);
+  };
+
+  const toggleFile = (fileId: string) => {
+    setSelectedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(fileId)) {
+        next.delete(fileId);
+      } else {
+        next.add(fileId);
+      }
+      onSelectionChange?.(Array.from(next));
+      return next;
+    });
   };
 
   const getIcon = (mimeType: string) => {
@@ -38,15 +66,36 @@ export function FileTree({ files }: FileTreeProps) {
   };
 
   const renderTree = (parentPath: string | null = null, level: number = 0) => {
-    // Only get items that belong directly to this parent
     const items = files.filter(f => f.parent_path === parentPath);
 
-    // Sort folders first, then by name
     const sortedItems = items.sort((a, b) => {
       const aIsFolder = a.mime_type === 'application/vnd.google-apps.folder';
       const bIsFolder = b.mime_type === 'application/vnd.google-apps.folder';
+
+      // First sort by folder/file
       if (aIsFolder && !bIsFolder) return -1;
       if (!aIsFolder && bIsFolder) return 1;
+
+      // Then sort by date if both are folders
+      if (aIsFolder && bIsFolder) {
+        // Extract full date strings (YYYY-MM-DD)
+        const dateA = a.name.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+        const dateB = b.name.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+
+        // If both have dates, compare them directly
+        if (dateA && dateB) {
+          // Convert to timestamps for accurate comparison
+          const timeA = new Date(dateA).getTime();
+          const timeB = new Date(dateB).getTime();
+          return timeB - timeA; // Descending order (newest first)
+        }
+        
+        // If only one has a date, put it first
+        if (dateA) return -1;
+        if (dateB) return 1;
+      }
+
+      // Finally sort by name
       return a.name.localeCompare(b.name);
     });
 
@@ -61,37 +110,36 @@ export function FileTree({ files }: FileTreeProps) {
             className="flex items-center gap-2 py-1 hover:bg-gray-50 rounded cursor-pointer"
             style={{ paddingLeft: `${level * 20}px` }}
           >
-            {isFolder && hasChildren && (
-              <span 
-                className="text-gray-500 hover:text-gray-700" 
-                onClick={() => toggleFolder(item.path || '')}
-              >
-                {isExpanded ? '▼' : '▶'}
-              </span>
-            )}
-            {isFolder && !hasChildren && (
-              <div className="inline-block w-4" />
-            )}
-            <span className="mr-1">{getIcon(item.mime_type)}</span>
-            <span className="flex-1">{item.name}</span>
-            {!isFolder && (
-              <span className="ml-2">
-                {item.content_extracted ? '✅' : '⬜'}
-              </span>
-            )}
-            {item.web_view_link && (
-              <a 
-                href={item.web_view_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline ml-2 text-sm"
-                onClick={(e) => e.stopPropagation()}
-              >
-                View
-              </a>
+            {isFolder ? (
+              <>
+                {hasChildren && (
+                  <span 
+                    className="text-gray-500 hover:text-gray-700" 
+                    onClick={() => toggleFolder(item.path || '')}
+                  >
+                    {isExpanded ? '▼' : '▶'}
+                  </span>
+                )}
+                <span className="mr-1">{getIcon(item.mime_type)}</span>
+                <span className="flex-1">{item.name}</span>
+              </>
+            ) : (
+              <>
+                <input
+                  type="checkbox"
+                  checked={selectedFiles.has(item.id)}
+                  onChange={() => toggleFile(item.id)}
+                  className="form-checkbox h-4 w-4"
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <span className="mr-1">{getIcon(item.mime_type)}</span>
+                <span className="flex-1">{item.name}</span>
+                <span className="ml-2">
+                  {item.content_extracted ? '✅' : '⬜'}
+                </span>
+              </>
             )}
           </div>
-          {/* Only render children if this is a folder and it's expanded */}
           {isFolder && isExpanded && renderTree(item.path, level + 1)}
         </div>
       );
@@ -100,9 +148,25 @@ export function FileTree({ files }: FileTreeProps) {
 
   return (
     <div className="file-tree p-4 border rounded-lg bg-white">
-      <div className="mb-4 text-lg font-medium flex items-center gap-2">
-        <span>🗂️</span>
-        <span>Dynamic Healing Group Files</span>
+      <div className="mb-4 flex justify-between items-center">
+        <div className="text-lg font-medium flex items-center gap-2">
+          <span>🗂️</span>
+          <span>Dynamic Healing Group Files</span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={expandAll}
+            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+          >
+            Expand All
+          </button>
+          <button
+            onClick={collapseAll}
+            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+          >
+            Collapse All
+          </button>
+        </div>
       </div>
       {/* Only start rendering from root level (parentPath === null) */}
       {renderTree(null)}
