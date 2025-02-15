@@ -104,17 +104,45 @@ interface DriveFile {
   webViewLink: string;
   parentId?: string;
   path?: string;
+  isFolder: boolean;
+  fullName: string;
 }
 
 export async function listAllDriveFiles(folderId: string, parentPath: string = ''): Promise<any[]> {
   const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
   let allFiles: DriveFile[] = [];
 
+  // First get the root folder's info
+  const rootResponse = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,mimeType,webViewLink`,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json'
+      }
+    }
+  );
+
+  if (!rootResponse.ok) {
+    throw new Error(`Failed to get root folder: ${await rootResponse.text()}`);
+  }
+
+  const rootFolder = await rootResponse.json();
+  console.log('Root folder:', rootFolder.name);
+
+  // Add the root folder itself to our files list
+  allFiles.push({
+    ...rootFolder,
+    path: rootFolder.name,
+    parentPath: null,
+    isFolder: true,
+    fullName: rootFolder.name
+  });
+
   async function getFilesInFolder(currentFolderId: string, currentPath: string) {
     let nextPageToken: string | undefined = undefined;
 
     do {
-      // Build the query URL
       const baseUrl = 'https://www.googleapis.com/drive/v3/files';
       const query = `'${currentFolderId}' in parents`;
       const fields = 'nextPageToken,files(id,name,mimeType,webViewLink,parents)';
@@ -122,8 +150,6 @@ export async function listAllDriveFiles(folderId: string, parentPath: string = '
       
       const url = `${baseUrl}?q=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}&pageSize=${pageSize}${nextPageToken ? '&pageToken=' + encodeURIComponent(nextPageToken) : ''}`;
 
-      console.log(`Fetching files from folder "${currentPath || 'root'}"${nextPageToken ? ' (continued)' : ''}`);
-      
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -138,32 +164,38 @@ export async function listAllDriveFiles(folderId: string, parentPath: string = '
       }
 
       const data = await response.json();
-      nextPageToken = data.nextPageToken; // Store for next iteration
-      
-      console.log(`Found ${data.files.length} files in this batch`);
+      nextPageToken = data.nextPageToken;
       
       for (const file of data.files) {
         const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
+        const fullName = file.name;
         
-        // Only build nested paths for actual folders
-        const filePath = isFolder ? (currentPath ? `${currentPath}/${file.name}` : file.name) : null;
-        
+        // For files, use the current folder's path as parent_path
+        // For folders, set their own path and use current folder as parent_path
+        const filePath = isFolder ? `${currentPath}/${fullName}` : null;
+        const parentPath = currentPath;
+
+        console.log(`Processing: "${fullName}" (${isFolder ? 'folder' : 'file'})`);
+        console.log(`Parent path: ${parentPath}`);
+        console.log(`File path: ${filePath || 'N/A'}`);
+
         allFiles.push({
           ...file,
-          path: filePath,         // Only set path for folders
-          parentPath: currentPath // Parent path shows which folder contains this file
+          path: filePath,
+          parentPath: parentPath,
+          isFolder: isFolder,
+          fullName: fullName
         });
 
         if (isFolder) {
-          console.log(`Found folder: "${file.name}"`);
-          await getFilesInFolder(file.id, filePath);
+          await getFilesInFolder(file.id, `${currentPath}/${fullName}`);
         }
       }
     } while (nextPageToken);
   }
 
-  console.log('Starting file listing from root folder...');
-  await getFilesInFolder(folderId, parentPath);
+  // Now process all children starting from root
+  await getFilesInFolder(folderId, rootFolder.name);
   console.log(`Total files found: ${allFiles.length}`);
   
   return allFiles;
