@@ -1,8 +1,22 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { processUnextractedDocuments, testSingleDocument } from '@/utils/document-processing';
 import { listDriveFiles, listAllDriveFiles } from '@/utils/google-drive';
+
+function sanitizeFileName(name: string): string {
+  // Remove or replace problematic characters
+  return name
+    .replace(/"/g, '') // Remove double quotes
+    .replace(/\\/g, '/') // Replace backslashes with forward slashes
+    .trim(); // Remove leading/trailing whitespace
+}
+
+function sanitizePath(path: string | null): string | null {
+  if (!path) return null;
+  // Remove leading/trailing slashes and normalize internal ones
+  return path.replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/');
+}
 
 export function SourceButtons() {
   const [loading, setLoading] = useState(false);
@@ -28,30 +42,21 @@ export function SourceButtons() {
     try {
       console.log(`Starting sync in ${dryRun ? 'DRY RUN' : 'LIVE'} mode`);
       
+      // First get list of existing files to prevent duplicates
+      const { data: existingFiles, error: existingError } = await supabase
+        .from('sources_google')
+        .select('drive_id')
+        .eq('deleted', false);
+
+      if (existingError) throw existingError;
+
+      // Create Set of existing drive_ids for faster lookup
+      const existingDriveIds = new Set(existingFiles?.map(f => f.drive_id) || []);
+      console.log(`Found ${existingDriveIds.size} existing files`);
+
       // Get ALL files recursively
       const files = await listAllDriveFiles(import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID);
-      const folders = files.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
-      const documents = files.filter(f => f.mimeType !== 'application/vnd.google-apps.folder');
-      
-      setProgress({ current: 0, total: files.length });
-
-      // Build folder tree visualization
-      const folderTree = folders.reduce((acc, folder) => {
-        acc[folder.path || folder.name] = documents
-          .filter(doc => doc.parentId === folder.id)
-          .map(doc => doc.name);
-        return acc;
-      }, {} as Record<string, string[]>);
-
-      console.log('Drive contents summary:');
-      console.log(`- Total items: ${files.length}`);
-      console.log(`- Folders: ${folders.length}`);
-      console.log(`- Documents: ${documents.length}`);
-      console.log('\nFolder structure:');
-      Object.entries(folderTree).forEach(([folder, files]) => {
-        console.log(`\n${folder}:`);
-        files.forEach(file => console.log(`  - ${file}`));
-      });
+      console.log(`Found ${files.length} total files in Drive`);
 
       // Track changes that would be made
       const changes = {
@@ -60,67 +65,96 @@ export function SourceButtons() {
         toDelete: [] as any[],
       };
 
+      if (!dryRun) {
+        // First mark files as deleted if they're no longer in Drive
+        const { error: updateError } = await supabase
+          .from('sources_google')
+          .update({ 
+            deleted: true,
+            updated_at: new Date().toISOString() 
+          })
+          .not('drive_id', 'in', existingDriveIds)
+          .eq('deleted', false);
+
+        if (updateError) {
+          console.error('Error marking deleted files:', updateError);
+        }
+
+        // Restore files if they reappear in Drive
+        const { error: restoreError } = await supabase
+          .from('sources_google')
+          .update({ 
+            deleted: false,
+            updated_at: new Date().toISOString() 
+          })
+          .in('drive_id', existingDriveIds)
+          .eq('deleted', true);
+
+        if (restoreError) {
+          console.error('Error restoring files:', restoreError);
+        }
+      }
+
       // Process each file with progress
       for (const [index, file] of files.entries()) {
-        setProgress(prev => ({ ...prev, current: index + 1 }));
+        setProgress({ current: index + 1, total: files.length });
         
         try {
-          // Modified query to check for existing record
-          const { data: existing, error: queryError } = await supabase
-            .from('sources_google')
-            .select('id')
-            .eq('drive_id', file.id)
-            .maybeSingle(); // Use maybeSingle instead of single
-
-          if (queryError) {
-            console.error(`Error checking file ${file.name}:`, queryError);
-            continue;
-          }
-
-          if (existing) {
+          // Skip if file already exists
+          if (existingDriveIds.has(file.id)) {
             changes.toSkip.push(file.name);
-            console.log(`Would skip duplicate: ${file.name} (${file.id})`);
             continue;
           }
 
           changes.toAdd.push(file.name);
           
           if (!dryRun) {
-            // Only insert if not in dry-run mode
+            const sanitizedName = sanitizeFileName(file.name);
+            const sanitizedPath = sanitizePath(file.path);
+            const sanitizedParentPath = sanitizePath(file.parentPath);
+
+            console.log('Inserting new file:', {
+              name: sanitizedName,
+              path: sanitizedPath,
+              parentPath: sanitizedParentPath
+            });
+
             const { error: insertError } = await supabase
               .from('sources_google')
-              .insert({
+              .insert([{
                 drive_id: file.id,
-                name: file.name,
+                name: sanitizedName,
                 mime_type: file.mimeType,
                 web_view_link: file.webViewLink,
+                path: sanitizedPath,
+                parent_path: sanitizedParentPath,
                 content_extracted: false,
+                deleted: false,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
-              });
+              }]);
 
             if (insertError) {
-              console.error(`Error inserting file ${file.name}:`, insertError);
+              console.error('Insert error:', insertError);
+              throw insertError;
             } else {
-              console.log(`Added new file: ${file.name}`);
-              toast.success(`Added: ${file.name}`, { duration: 2000 });
+              console.log(`Added new file: ${sanitizedName}`);
+              toast.success(`Added: ${sanitizedName}`, { duration: 2000 });
             }
           }
         } catch (error) {
           console.error(`Error processing file ${file.name}:`, error);
-          toast.error(`Failed to process: ${file.name}`);
         }
       }
 
       // Cleanup check
-      const validDriveIds = files.map(f => f.id);
       console.log('Checking for orphaned records...');
 
-      if (validDriveIds.length > 0) {
+      if (existingDriveIds.size > 0) {
         const { data: orphanedRecords, error: queryError } = await supabase
           .from('sources_google')
           .select('id, name, drive_id')
-          .not('drive_id', 'in', validDriveIds)
+          .not('drive_id', 'in', existingDriveIds)
           .eq('content_extracted', false)
           .not('id', 'in', 
             supabase
@@ -136,17 +170,15 @@ export function SourceButtons() {
         }
       }
 
-      // Enhanced summary message
-      const summary = [
-        `${dryRun ? '[DRY RUN] Would make' : 'Made'} these changes:`,
-        `Total items in Drive: ${files.length} (${folders.length} folders, ${documents.length} documents)`,
-        `- Add: ${changes.toAdd.length} files`,
-        `- Skip: ${changes.toSkip.length} files`,
-        `- Delete: ${changes.toDelete.length} files`,
-      ].join('\n');
+      // Summary
+      console.log('Sync Summary:', {
+        totalInDrive: files.length,
+        existing: existingDriveIds.size,
+        added: changes.toAdd.length,
+        skipped: changes.toSkip.length
+      });
 
-      console.log(summary);
-      toast.success(summary);
+      toast.success(`Sync completed. Added ${changes.toAdd.length} new files.`);
 
     } catch (error) {
       console.error('Sync failed:', error);
@@ -320,6 +352,7 @@ export function SourceButtons() {
       const { data, error } = await supabase
         .from('sources_google')
         .select('*')
+        .eq('deleted', false)  // Only show active files
         .ilike('name', `%${searchTerm}%`)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -346,54 +379,55 @@ export function SourceButtons() {
   };
 
   const handleDeleteAllRecords = async () => {
-    if (!window.confirm('⚠️ WARNING: This will delete ALL records from sources_google and related expert_documents. Are you sure?')) {
+    if (!window.confirm('⚠️ WARNING: This will delete ALL records from sources_google. Are you sure?')) {
       return;
     }
 
     setLoading(true);
     try {
-      console.log('Starting deletion process...');
-
-      // First get all sources_google IDs
-      const { data: sources } = await supabase
+      // Get all sources_google records
+      const { data: sources, error: fetchError } = await supabase
         .from('sources_google')
         .select('id');
 
+      if (fetchError) throw fetchError;
       if (!sources?.length) {
-        console.log('No records to delete');
+        toast.success('No records to delete');
         return;
       }
 
+      console.log(`Found ${sources.length} records to delete`);
+
+      // Delete in batches of 100
+      const BATCH_SIZE = 100;
       const sourceIds = sources.map(s => s.id);
-      console.log(`Found ${sourceIds.length} records to delete`);
+      const batches = [];
 
-      // Delete expert_documents first
-      const { error: expertDocsError } = await supabase
-        .from('expert_documents')
-        .delete()
-        .in('source_id', sourceIds);
-
-      if (expertDocsError) {
-        throw new Error(`Failed to delete expert_documents: ${expertDocsError.message}`);
-      }
-      console.log('Deleted related expert_documents');
-
-      // Now delete sources_google records
-      const { error: sourcesError } = await supabase
-        .from('sources_google')
-        .delete()
-        .in('id', sourceIds);
-
-      if (sourcesError) {
-        throw new Error(`Failed to delete sources_google: ${sourcesError.message}`);
+      for (let i = 0; i < sourceIds.length; i += BATCH_SIZE) {
+        batches.push(sourceIds.slice(i, i + BATCH_SIZE));
       }
 
-      console.log('Successfully deleted all records');
-      toast.success(`Deleted ${sourceIds.length} records`);
+      let deletedCount = 0;
+      for (const batch of batches) {
+        const { error: deleteError } = await supabase
+          .from('sources_google')
+          .delete()
+          .in('id', batch);
+
+        if (deleteError) {
+          console.error('Batch delete error:', deleteError);
+          throw deleteError;
+        }
+        
+        deletedCount += batch.length;
+        console.log(`Deleted batch of ${batch.length} records. Total: ${deletedCount}`);
+      }
+
+      toast.success(`Successfully deleted ${deletedCount} records`);
 
     } catch (error) {
       console.error('Delete failed:', error);
-      toast.error(`Delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error('Failed to delete records');
     } finally {
       setLoading(false);
     }
