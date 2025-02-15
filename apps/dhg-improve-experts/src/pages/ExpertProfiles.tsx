@@ -10,7 +10,7 @@ export default function ExpertProfiles() {
       <div className="space-y-4">
         <h1 className="text-2xl mb-4">Expert Profiles</h1>
         
-        {/* Single instance of SourceButtons */}
+        {/* Only include SourceButtons here */}
         <SourceButtons />
 
         {/* Status Message */}
@@ -22,7 +22,7 @@ export default function ExpertProfiles() {
           </div>
         )}
 
-        {/* Expert Folder Analysis */}
+        {/* Expert Folder Analysis - but without SourcesView */}
         <ExpertFolderAnalysis />
       </div>
     </div>
