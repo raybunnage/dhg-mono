@@ -168,58 +168,9 @@ export default function ExpertFolderAnalysis() {
     })
   }
 
-  // Add helper to sort folder names by date
-  function sortFoldersByDate(a: string, b: string): number {
-    // Extract dates from folder names (assuming format YYYY-MM-DD-*)
-    const dateA = a.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || '';
-    const dateB = b.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || '';
-    // Sort descending (most recent first)
-    return dateB.localeCompare(dateA);
-  }
-
   // Update renderFolder to sort folders
   function renderFolder(structure: FolderStructure, currentPath: string = '') {
-    const sortedFolders = Object.entries(structure.subfolders)
-      .sort(([a], [b]) => {
-        const dateA = a.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || '';
-        const dateB = b.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || '';
-        if (dateA && dateB) return dateB.localeCompare(dateA);
-        return a.localeCompare(b);
-      });
-
-    return (
-      <div className="space-y-2">
-        {sortedFolders.map(([folderName, content]) => {
-          const folderPath = currentPath ? `${currentPath}/${folderName}` : folderName;
-          const isExpanded = expandedFolders.has(folderPath);
-          const hasFiles = content.files?.length > 0;
-          const hasSubfolders = Object.keys(content.subfolders).length > 0;
-
-          return (
-            <div key={folderPath} className="ml-4">
-              <div 
-                className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
-                onClick={() => toggleFolder(folderPath)}
-              >
-                <span className="text-gray-500">
-                  {isExpanded ? '📂' : '📁'}
-                </span>
-                <span>{folderName}</span>
-                <span className="text-gray-500 text-sm">
-                  ({content.files?.length || 0} files)
-                </span>
-              </div>
-
-              {isExpanded && (hasFiles || hasSubfolders) && (
-                <div className="ml-4">
-                  {renderFolder(content, folderPath)}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
+    return null;
   }
 
   // Update toggleFile to immediately update the selected files list
