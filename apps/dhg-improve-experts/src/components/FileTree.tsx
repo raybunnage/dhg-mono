@@ -109,8 +109,6 @@ const MIME_TYPE_FILTERS = [
 export function FileTree({ files, onSelectionChange }: FileTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
-  const [showOnlyProcessable, setShowOnlyProcessable] = useState(true);
-  const [showOnlyDocs, setShowOnlyDocs] = useState(false);
   const [activeMimeTypes, setActiveMimeTypes] = useState<Set<string>>(new Set());
 
   const expandAll = () => {
@@ -247,16 +245,12 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
       const isFolder = item.mime_type === 'application/vnd.google-apps.folder';
       const isExpanded = expandedFolders.has(item.path || '');
       const hasChildren = files.some(f => f.parent_path === item.path);
-      const fileSize = (() => {
-        console.log('File metadata:', item.metadata); // Debug log
-        if (!item.metadata?.size) return '';
-        return formatFileSize(Number(item.metadata.size));
-      })();
 
       return (
         <div key={item.id} className="file-tree-item">
           <div 
-            className="flex items-center gap-2 py-1 hover:bg-gray-50 rounded cursor-pointer"
+            className={`flex items-center gap-2 py-1 hover:bg-gray-50 rounded cursor-pointer
+              ${!isFolder && item.content_extracted ? 'bg-green-50' : ''}`}
             style={{ paddingLeft: `${level * 20}px` }}
           >
             {isFolder ? (
@@ -282,26 +276,23 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
                   className="form-checkbox h-4 w-4"
                 />
                 <span className="mr-1">{getIcon(item.mime_type)}</span>
-                <span className="flex-1">
-                  {item.name}
-                  {!isFolder && (
-                    <span className="text-gray-500 text-sm ml-2">
-                      {formatFileSize(item.metadata?.size || item.metadata?.quotaBytesUsed || item.metadata?.fileSize || '0')}
-                    </span>
-                  )}
-                </span>
-                <span className="ml-2">
+                <span className={`flex-1 flex items-center gap-2 
+                  ${item.content_extracted ? 'text-green-700' : ''}`}
+                >
+                  <span>{item.name}</span>
+                  <span className="text-gray-500 text-sm">
+                    {formatFileSize(item.metadata?.size || item.metadata?.quotaBytesUsed || item.metadata?.fileSize || '0')}
+                  </span>
+                  {/* Processing status indicators */}
                   {item.content_extracted ? (
-                    <span title="Processed" className="text-green-500">✅</span>
+                    <span title="Processed" className="text-green-600 text-sm">✓</span>
                   ) : item.processing_status === 'queued' ? (
                     <span title="Queued" className="text-yellow-500">⏳</span>
                   ) : item.processing_status === 'processing' ? (
                     <span title="Processing" className="text-blue-500 animate-pulse">⚡</span>
                   ) : item.processing_status === 'error' ? (
                     <span title="Error" className="text-red-500">❌</span>
-                  ) : (
-                    <span title="Not Processed">⬜</span>
-                  )}
+                  ) : null}
                 </span>
               </>
             )}
@@ -510,38 +501,8 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
           <span>🗂️</span>
           <span>Dynamic Healing Group Files</span>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Add filter toggle */}
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={showOnlyProcessable}
-              onChange={(e) => setShowOnlyProcessable(e.target.checked)}
-              className="form-checkbox h-4 w-4"
-            />
-            Show only PDFs & Documents
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={showOnlyDocs}
-              onChange={(e) => setShowOnlyDocs(e.target.checked)}
-              className="form-checkbox h-4 w-4"
-            />
-            Show only Documents
-          </label>
-        </div>
       </div>
       
-      {/* Add file type legend */}
-      {showOnlyProcessable && (
-        <div className="mb-4 text-sm text-gray-500 flex gap-4">
-          <span>📕 PDF</span>
-          <span>📄 Document</span>
-          <span>📁 Folder</span>
-        </div>
-      )}
-
       {/* Only start rendering from root level (parentPath === null) */}
       {renderTree(null)}
 
