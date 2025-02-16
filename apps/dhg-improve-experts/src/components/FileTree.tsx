@@ -387,112 +387,111 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
       
       {/* Updated MIME type filter pills */}
       <div className="mb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex flex-wrap gap-2 mb-2">
-              {MIME_TYPE_FILTERS.map(({ type, label, tooltip }) => {
-                const count = getFileCountByMimeType(type);
-                if (count === 0) return null;
-                
-                const isActive = Array.isArray(type) 
-                  ? type.some(t => activeMimeTypes.has(t))
-                  : activeMimeTypes.has(type);
-                
-                return (
-                  <button
-                    key={Array.isArray(type) ? type[0] : type}
-                    onClick={() => toggleMimeType(type)}
-                    title={tooltip}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
-                      ${isActive
-                        ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                  >
-                    {label} ({count})
-                  </button>
-                );
-              })}
+        <div className="flex-1">
+          <div className="flex flex-wrap gap-2 mb-2">
+            {MIME_TYPE_FILTERS.map(({ type, label, tooltip }) => {
+              const count = getFileCountByMimeType(type);
+              if (count === 0) return null;
               
-              {/* Misc pill with tooltip */}
-              {getMiscFilesCount() > 0 && (
+              const isActive = Array.isArray(type) 
+                ? type.some(t => activeMimeTypes.has(t))
+                : activeMimeTypes.has(type);
+              
+              return (
                 <button
-                  onClick={() => {
-                    const knownTypes = new Set(MIME_TYPE_FILTERS.flatMap(f => 
-                      Array.isArray(f.type) ? f.type : [f.type]
-                    ));
-                    const miscTypes = Array.from(new Set(
-                      files
-                        .filter(f => !knownTypes.has(f.mime_type) && 
-                          f.mime_type !== 'application/vnd.google-apps.folder'
-                        )
-                        .map(f => f.mime_type)
-                    ));
-                    
-                    const hasActiveMisc = miscTypes.some(type => activeMimeTypes.has(type));
-                    setActiveMimeTypes(prev => {
-                      const next = new Set(prev);
-                      miscTypes.forEach(type => {
-                        if (hasActiveMisc) {
-                          next.delete(type);
-                        } else {
-                          next.add(type);
-                        }
-                      });
-                      return next;
-                    });
-                  }}
-                  title={`Other file types:\n${Array.from(new Set(
-                    files
-                      .filter(f => !MIME_TYPE_FILTERS.flatMap(filter => 
-                        Array.isArray(filter.type) ? filter.type : [filter.type]
-                      ).includes(f.mime_type) && 
-                      f.mime_type !== 'application/vnd.google-apps.folder'
-                      )
-                      .map(f => f.mime_type)
-                  )).join('\n')}`}
+                  key={Array.isArray(type) ? type[0] : type}
+                  onClick={() => toggleMimeType(type)}
+                  title={tooltip}
                   className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
-                    ${files.some(f => 
-                      !MIME_TYPE_FILTERS.flatMap(filter => 
-                        Array.isArray(filter.type) ? filter.type : [filter.type]
-                      ).includes(f.mime_type) && 
-                      activeMimeTypes.has(f.mime_type)
-                    )
+                    ${isActive
                       ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                 >
-                  Misc ({getMiscFilesCount()})
+                  {label} ({count})
                 </button>
-              )}
-            </div>
+              );
+            })}
             
-            {activeMimeTypes.size > 0 && (
+            {/* Misc pill */}
+            {getMiscFilesCount() > 0 && (
               <button
-                onClick={clearMimeFilters}
-                className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                onClick={() => {
+                  const knownTypes = new Set(MIME_TYPE_FILTERS.flatMap(f => 
+                    Array.isArray(f.type) ? f.type : [f.type]
+                  ));
+                  const miscTypes = Array.from(new Set(
+                    files
+                      .filter(f => !knownTypes.has(f.mime_type) && 
+                        f.mime_type !== 'application/vnd.google-apps.folder'
+                      )
+                      .map(f => f.mime_type)
+                  ));
+                  
+                  const hasActiveMisc = miscTypes.some(type => activeMimeTypes.has(type));
+                  setActiveMimeTypes(prev => {
+                    const next = new Set(prev);
+                    miscTypes.forEach(type => {
+                      if (hasActiveMisc) {
+                        next.delete(type);
+                      } else {
+                        next.add(type);
+                      }
+                    });
+                    return next;
+                  });
+                }}
+                title={`Other file types:\n${Array.from(new Set(
+                  files
+                    .filter(f => !MIME_TYPE_FILTERS.flatMap(filter => 
+                      Array.isArray(filter.type) ? filter.type : [filter.type]
+                    ).includes(f.mime_type) && 
+                    f.mime_type !== 'application/vnd.google-apps.folder'
+                    )
+                    .map(f => f.mime_type)
+                )).join('\n')}`}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                  ${files.some(f => 
+                    !MIME_TYPE_FILTERS.flatMap(filter => 
+                      Array.isArray(filter.type) ? filter.type : [filter.type]
+                    ).includes(f.mime_type) && 
+                    activeMimeTypes.has(f.mime_type)
+                  )
+                    ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
-                <span>✕</span>
-                Clear Filters
+                Misc ({getMiscFilesCount()})
               </button>
             )}
-          </div>
-          
-          {/* Moved expand/collapse buttons */}
-          <div className="flex gap-2 ml-4">
+
+            {/* Add a separator */}
+            <div className="h-6 w-px bg-gray-200 mx-1"></div>
+
+            {/* Move expand/collapse buttons here */}
             <button
               onClick={expandAll}
-              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+              className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               Expand All
             </button>
             <button
               onClick={collapseAll}
-              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+              className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               Collapse All
             </button>
           </div>
+          
+          {activeMimeTypes.size > 0 && (
+            <button
+              onClick={clearMimeFilters}
+              className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+            >
+              <span>✕</span>
+              Clear Filters
+            </button>
+          )}
         </div>
       </div>
       
