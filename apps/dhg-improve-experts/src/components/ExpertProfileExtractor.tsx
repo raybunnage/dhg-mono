@@ -1,10 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import { processWithAI } from '@/utils/ai-processing';
 import { loadPromptFromMarkdown } from '@/utils/prompt-loader';
 import { ProcessedProfileViewer } from './ProcessedProfileViewer';
 import { ProcessingControls } from '@/components/ProcessingControls';
+
+interface FileTypeFilter {
+  type: string;
+  label: string;
+  mimeTypes: string[];
+}
 
 interface ExpertDocument {
   id: string;
@@ -15,6 +21,7 @@ interface ExpertDocument {
   source: {
     id: string;
     name: string;
+    mime_type: string;
   };
 }
 
@@ -63,6 +70,71 @@ export function ExpertProfileExtractor() {
   });
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [processAll, setProcessAll] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+
+  const fileTypeFilters: FileTypeFilter[] = [
+    {
+      type: 'pdf',
+      label: 'PDF Files',
+      mimeTypes: ['application/pdf']
+    },
+    {
+      type: 'document',
+      label: 'Documents',
+      mimeTypes: [
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.google-apps.document'
+      ]
+    },
+    {
+      type: 'presentation',
+      label: 'Presentations',
+      mimeTypes: [
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      ]
+    },
+    {
+      type: 'video',
+      label: 'Videos',
+      mimeTypes: ['video/mp4', 'video/mpeg']
+    },
+    {
+      type: 'audio',
+      label: 'Audio',
+      mimeTypes: ['audio/mpeg', 'audio/wav']
+    },
+    {
+      type: 'text',
+      label: 'Text',
+      mimeTypes: ['text/plain', 'text/csv']
+    }
+  ];
+
+  const toggleFilter = (filterType: string) => {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(filterType)) {
+        next.delete(filterType);
+      } else {
+        next.add(filterType);
+      }
+      return next;
+    });
+  };
+
+  const filteredDocuments = useMemo(() => {
+    if (activeFilters.size === 0) return documents;
+    
+    return documents.filter(doc => {
+      const docMimeType = doc.source.mime_type;
+      return Array.from(activeFilters).some(filterType => {
+        const filter = fileTypeFilters.find(f => f.type === filterType);
+        return filter?.mimeTypes.includes(docMimeType);
+      });
+    });
+  }, [documents, activeFilters]);
 
   useEffect(() => {
     loadDocuments();
@@ -81,7 +153,8 @@ export function ExpertProfileExtractor() {
           processed_at,
           source:sources_google!expert_documents_source_id_fkey (
             id,
-            name
+            name,
+            mime_type
           )
         `)
         .not('raw_content', 'is', null)
@@ -384,6 +457,11 @@ ${doc.raw_content}`,
     }
   };
 
+  // Add clearFilters function
+  const clearFilters = () => {
+    setActiveFilters(new Set());
+  };
+
   // Add state debugging
   console.log('Processing state:', {
     isBatchProcessing,
@@ -392,7 +470,14 @@ ${doc.raw_content}`,
   });
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-col gap-6 p-4" data-testid="expert-extractor-v1">
+      {/* Add version info at the top */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-gray-400 mb-2">
+          ExpertProfileExtractor v1.0 [DEBUG-ID: EXT-2024-04-17]
+        </div>
+      )}
+      
       <h2 className="text-xl font-semibold">Expert Profile Extraction</h2>
       
       <div className="mb-4 flex flex-col gap-2">
@@ -463,11 +548,53 @@ Document content:
         )}
       </div>
 
+      {/* Filter Pills with Clear Button */}
+      <div className="flex flex-col gap-2 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-2">
+            {fileTypeFilters.map(filter => (
+              <button
+                key={filter.type}
+                onClick={() => toggleFilter(filter.type)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                  ${activeFilters.has(filter.type)
+                    ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+              >
+                {filter.label}
+                <span className="ml-1 text-xs">
+                  ({documents.filter(doc => filter.mimeTypes.includes(doc.source.mime_type)).length})
+                </span>
+              </button>
+            ))}
+          </div>
+          
+          {/* Clear Filters button - only shows when filters are active */}
+          {activeFilters.size > 0 && (
+            <button
+              onClick={clearFilters}
+              className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+            >
+              <span>✕</span>
+              Clear Filters
+            </button>
+          )}
+        </div>
+
+        {/* Show active filter count */}
+        {activeFilters.size > 0 && (
+          <div className="text-sm text-gray-600">
+            Showing {filteredDocuments.length} of {documents.length} documents
+          </div>
+        )}
+      </div>
+
       {/* Split view for documents and JSON */}
       <div className="flex gap-6">
         {/* Left side: Documents list */}
         <div className="w-1/2 flex flex-col gap-2">
-          {documents.map(doc => {
+          {filteredDocuments.map(doc => {
             const sizeKB = (new TextEncoder().encode(doc.raw_content).length / 1024).toFixed(1);
             const isLarge = new TextEncoder().encode(doc.raw_content).length > 30 * 1024;
             
