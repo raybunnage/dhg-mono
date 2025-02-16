@@ -604,6 +604,50 @@
           "import": "import { useNavigate, useLocation } from 'react-router-dom'"
         }
       }
+    },
+    {
+      "type": "FileManagement",
+      "description": "Rules for managing file versions and locations",
+      "rules": [
+        {
+          "pattern": "^(import|export).*from.*_archive",
+          "message": "Do not import from archive directories in active code",
+          "severity": "error"
+        },
+        {
+          "pattern": "duplicate|copy of|old version",
+          "message": "Avoid duplicate implementations. Check for existing versions",
+          "severity": "warning"
+        }
+      ],
+      "fileLocations": {
+        "components": {
+          "active": "src/components/",
+          "archived": "src/_archive/components/",
+          "naming": {
+            "archive": "{filename}.{YYYY-MM-DD}.{tsx|ts}",
+            "active": "{filename}.{tsx|ts}"
+          }
+        },
+        "pages": {
+          "active": ["src/app/", "src/pages/"],
+          "archived": "src/_archive/pages/",
+          "naming": {
+            "archive": "{filename}.{YYYY-MM-DD}.{tsx|ts}",
+            "active": "{filename}.{tsx|ts}"
+          }
+        }
+      },
+      "preCheck": {
+        "requireTreeReview": true,
+        "treeCommand": "pnpm tree",
+        "checkLocations": [
+          "Check current directory",
+          "Check _archive directories",
+          "Search for similar component names",
+          "Review import statements"
+        ]
+      }
     }
   ]
 } 
