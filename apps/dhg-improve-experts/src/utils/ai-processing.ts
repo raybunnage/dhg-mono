@@ -107,7 +107,9 @@ export async function processWithAI({
       throw new Error('Processing aborted by user');
     }
 
-    const content = response.content[0].text;
+    const content = response.content[0].type === 'text' 
+      ? response.content[0].text 
+      : '';
 
     if (requireJsonOutput) {
       try {

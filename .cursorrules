@@ -582,6 +582,28 @@
           }
         }
       }
+    },
+    {
+      "pattern": "claude-3-5-sonnet-20241022",
+      "message": "Do not change the Claude model version - must remain claude-3-5-sonnet-20241022",
+      "severity": "error"
+    },
+    {
+      "type": "RouterFramework",
+      "pattern": "next/",
+      "message": "This is a Vite app - use react-router-dom instead of Next.js components",
+      "severity": "error",
+      "replacements": {
+        "next/link": {
+          "import": "import { Link } from 'react-router-dom'",
+          "props": {
+            "href": "to"
+          }
+        },
+        "next/router": {
+          "import": "import { useNavigate, useLocation } from 'react-router-dom'"
+        }
+      }
     }
   ]
 } 

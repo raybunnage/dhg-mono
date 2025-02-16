@@ -1,5 +1,5 @@
 import { ProcessingControls } from '@/components/ProcessingControls';
-import Link from 'next/link';
+import { Link } from "react-router-dom";
 
 export default function ProfilerPage() {
   console.log('Rendering ProfilerPage');
@@ -8,7 +8,7 @@ export default function ProfilerPage() {
     <div className="p-4">
       <div className="flex items-center gap-4 mb-6">
         <Link 
-          href="/experts" 
+          to="/experts" 
           className="text-blue-500 hover:text-blue-600"
         >
           ← Back to Experts

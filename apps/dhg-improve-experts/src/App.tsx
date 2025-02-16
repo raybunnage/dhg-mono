@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, UNSAFE_DataRouterContext } from
 import ExpertProfiles from "@/pages/ExpertProfiles";
 import { Toaster } from 'react-hot-toast';
 import DocumentTestingPage from './pages/document-testing';
-import ExpertProfilerPage from './pages/expert-profiler';
+import ExpertProfilerPage from './app/experts/profiler/page';
 
 function App() {
   console.log('App component mounting');
