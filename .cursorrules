@@ -648,6 +648,38 @@
           "Review import statements"
         ]
       }
+    },
+    {
+      "type": "DateHandling",
+      "description": "Rules for handling dates in code and filenames",
+      "rules": [
+        {
+          "pattern": "2024-04-17|2024-\\d{2}-\\d{2}",
+          "message": "Using hardcoded past date. Use current date from new Date().toISOString()",
+          "severity": "error"
+        },
+        {
+          "pattern": "\\.\\d{4}-\\d{2}-\\d{2}\\.",
+          "requireDynamicDate": true,
+          "message": "Archive filenames must use current date",
+          "correctExample": "FileTree.${new Date().toISOString().split('T')[0]}.tsx",
+          "incorrectExample": "FileTree.2024-04-17.tsx"
+        }
+      ],
+      "dateHelpers": {
+        "getCurrentDate": {
+          "code": "new Date().toISOString().split('T')[0]",
+          "description": "Gets current date in YYYY-MM-DD format"
+        },
+        "archiveFormat": {
+          "pattern": "${filename}.${getCurrentDate()}.${extension}",
+          "example": "FileTree.2025-02-16.tsx"
+        }
+      },
+      "archiveCommands": {
+        "shell": "cp $SOURCE $DEST.$(date +%Y-%m-%d).$EXT",
+        "node": "const date = new Date().toISOString().split('T')[0];"
+      }
     }
   ]
 } 

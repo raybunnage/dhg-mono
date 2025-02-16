@@ -466,7 +466,8 @@ ${doc.raw_content}`,
   console.log('Processing state:', {
     isBatchProcessing,
     hasAbortController: !!abortController,
-    progress
+    progress,
+    nodeEnv: process.env.NODE_ENV  // Add this to check the value
   });
 
   return (
