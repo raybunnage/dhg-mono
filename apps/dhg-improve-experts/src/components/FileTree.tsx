@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { FileTreeItem } from './FileTreeItem';
 
 interface FileNode {
   id: string;
@@ -12,6 +13,11 @@ interface FileNode {
   web_view_link?: string;
   processing_status?: 'queued' | 'processing' | 'completed' | 'error';
   batch_id?: string;
+  metadata?: {
+    size?: string;
+    quotaBytesUsed?: string;  // Google Drive sometimes uses this
+    fileSize?: string;        // Or might use this
+  };
 }
 
 interface FileTreeProps {
@@ -26,17 +32,30 @@ type SupportedFileType = 'pdf' | 'document' | 'other';
 const getFileType = (mimeType: string): SupportedFileType => {
   if (mimeType.includes('pdf')) return 'pdf';
   if (
-    mimeType.includes('document') || 
-    mimeType.includes('msword') || 
-    mimeType.includes('wordprocessingml')
+    mimeType === 'application/vnd.google-apps.document' ||
+    mimeType === 'application/msword' ||
+    mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ) return 'document';
   return 'other';
+};
+
+// Add helper function to format file size
+const formatFileSize = (bytes: string | number): string => {
+  const numBytes = typeof bytes === 'string' ? parseInt(bytes, 10) : bytes;
+  if (!numBytes) return '';
+  const kb = numBytes / 1024;
+  if (kb < 1024) {
+    return `(${Math.round(kb)}KB)`;
+  }
+  const mb = kb / 1024;
+  return `(${mb.toFixed(1)}MB)`;
 };
 
 export function FileTree({ files, onSelectionChange }: FileTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [showOnlyProcessable, setShowOnlyProcessable] = useState(true);
+  const [showOnlyDocs, setShowOnlyDocs] = useState(false);
 
   const expandAll = () => {
     // Get all possible folder paths
@@ -86,13 +105,37 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
 
   // Filter function for processable files
   const isProcessableFile = (file: FileNode) => {
-    if (!showOnlyProcessable) return true;
+    // Always show folders
+    if (file.mime_type === 'application/vnd.google-apps.folder') return true;
+
+    // Get file type
     const fileType = getFileType(file.mime_type);
-    return fileType === 'pdf' || fileType === 'document';
+
+    // If showing only documents
+    if (showOnlyDocs) {
+      return fileType === 'document' || 
+             file.mime_type === 'application/vnd.google-apps.document' ||
+             file.name.endsWith('.doc') ||
+             file.name.endsWith('.docx');
+    }
+
+    // If showing processable files (PDFs and documents)
+    if (showOnlyProcessable) {
+      return fileType === 'pdf' || fileType === 'document';
+    }
+
+    return true;
   };
 
   const renderTree = (parentPath: string | null = null, level: number = 0) => {
     const items = files.filter(f => f.parent_path === parentPath);
+    
+    // Add this debug log
+    console.log('Files with metadata:', items.map(item => ({
+      name: item.name,
+      metadata: item.metadata,
+      mime_type: item.mime_type
+    })));
     
     // Filter out non-processable files unless it's a folder
     const filteredItems = items.filter(item => 
@@ -134,6 +177,11 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
       const isFolder = item.mime_type === 'application/vnd.google-apps.folder';
       const isExpanded = expandedFolders.has(item.path || '');
       const hasChildren = files.some(f => f.parent_path === item.path);
+      const fileSize = (() => {
+        console.log('File metadata:', item.metadata); // Debug log
+        if (!item.metadata?.size) return '';
+        return formatFileSize(Number(item.metadata.size));
+      })();
 
       return (
         <div key={item.id} className="file-tree-item">
@@ -164,7 +212,14 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
                   className="form-checkbox h-4 w-4"
                 />
                 <span className="mr-1">{getIcon(item.mime_type)}</span>
-                <span className="flex-1">{item.name}</span>
+                <span className="flex-1">
+                  {item.name}
+                  {!isFolder && (
+                    <span className="text-gray-500 text-sm ml-2">
+                      {formatFileSize(item.metadata?.size || item.metadata?.quotaBytesUsed || item.metadata?.fileSize || '0')}
+                    </span>
+                  )}
+                </span>
                 <span className="ml-2">
                   {item.content_extracted ? (
                     <span title="Processed" className="text-green-500">✅</span>
@@ -260,6 +315,15 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
               className="form-checkbox h-4 w-4"
             />
             Show only PDFs & Documents
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showOnlyDocs}
+              onChange={(e) => setShowOnlyDocs(e.target.checked)}
+              className="form-checkbox h-4 w-4"
+            />
+            Show only Documents
           </label>
           <div className="flex gap-2">
             <button
