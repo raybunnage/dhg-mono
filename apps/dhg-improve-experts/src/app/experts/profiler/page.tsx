@@ -1,4 +1,4 @@
-import { ProcessingControls } from '@/components/ProcessingControls';
+import { ExpertProfileExtractor } from '@/components/ExpertProfileExtractor';
 import { Link } from "react-router-dom";
 
 export default function ProfilerPage() {
@@ -16,29 +16,7 @@ export default function ProfilerPage() {
         <h1 className="text-2xl font-bold">Expert Profile Extractor</h1>
       </div>
 
-      <div className="grid grid-cols-2 gap-8">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Expert Profile Extraction</h2>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg">Documents (59)</h3>
-              <ProcessingControls />
-            </div>
-            
-            {/* Existing document list */}
-            <div className="space-y-4">
-              {/* Your existing document items */}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Expert Profile</h2>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-gray-500">Select a document to view its profile</p>
-          </div>
-        </div>
-      </div>
+      <ExpertProfileExtractor />
     </div>
   );
 } 
