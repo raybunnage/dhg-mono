@@ -3,10 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import { processWithAI } from '@/utils/ai-processing';
 import { loadPromptFromMarkdown } from '@/utils/prompt-loader';
+import { ProcessedProfileViewer } from './ProcessedProfileViewer';
 
 interface ExpertDocument {
   id: string;
   raw_content: string;
+  processed_content?: any;
+  processing_status?: string;
+  processed_at?: string;
   source: {
     id: string;
     name: string;
@@ -140,6 +144,9 @@ export const ExpertProfileExtractor = () => {
         .select(`
           id,
           raw_content,
+          processed_content,
+          processing_status,
+          processed_at,
           source:sources_google!expert_documents_source_id_fkey (
             id,
             name
@@ -373,26 +380,38 @@ ${doc.raw_content}`,
           <div className="flex flex-col gap-2">
             {documents.map(doc => {
               const sizeKB = (new TextEncoder().encode(doc.raw_content).length / 1024).toFixed(1);
-              const isLarge = new TextEncoder().encode(doc.raw_content).length > ANNOUNCEMENT_SIZE_LIMIT;
+              const isLarge = new TextEncoder().encode(doc.raw_content).length > 30 * 1024;
               
               return (
                 <button
                   key={doc.id}
-                  onClick={() => extractProfile(doc)}
-                  disabled={isLoading || isLarge}
+                  onClick={() => setCurrentDoc(doc)}
+                  disabled={isBatchProcessing}
                   className={`text-left p-3 rounded border hover:bg-gray-50 
                     ${currentDoc?.id === doc.id ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}
-                    ${(isLoading || isLarge) ? 'opacity-50 cursor-not-allowed' : ''}
+                    ${isBatchProcessing ? 'opacity-50 cursor-not-allowed' : ''}
                   `}
                 >
                   <div className="font-medium">{doc.source.name}</div>
-                  <div className="text-sm text-gray-500">
-                    Size: {sizeKB}KB
-                    {isLarge && <span className="ml-2 text-amber-600">(Too large for announcement processing)</span>}
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>Size: {sizeKB}KB</span>
+                    <span className={`
+                      ${doc.processing_status === 'completed' ? 'text-green-600' : ''}
+                      ${doc.processing_status === 'failed' ? 'text-red-600' : ''}
+                    `}>
+                      {doc.processing_status || 'pending'}
+                    </span>
                   </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    {doc.raw_content.slice(0, 100)}...
-                  </div>
+                  {isLarge && (
+                    <div className="text-sm text-amber-600 mt-1">
+                      Too large for processing
+                    </div>
+                  )}
+                  {doc.processed_at && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      Processed: {new Date(doc.processed_at).toLocaleDateString()}
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -401,17 +420,18 @@ ${doc.raw_content}`,
 
         {/* Extracted Profile Display */}
         <div className="w-2/3">
-          <h3 className="text-lg mb-3">Extracted Profile</h3>
-          {isLoading ? (
-            <div className="flex items-center gap-2">
-              <span className="animate-spin">⟳</span>
-              <span>Extracting profile...</span>
-            </div>
-          ) : extractedProfile ? (
-            <ProfileViewer profile={extractedProfile} />
+          <h3 className="text-lg mb-3">Expert Profile</h3>
+          {currentDoc ? (
+            currentDoc.processed_content ? (
+              <ProcessedProfileViewer profile={currentDoc.processed_content} />
+            ) : (
+              <div className="text-gray-500 italic">
+                No processed content available for this document
+              </div>
+            )
           ) : (
             <div className="text-gray-500">
-              Select a document to extract its profile
+              Select a document to view its profile
             </div>
           )}
         </div>
