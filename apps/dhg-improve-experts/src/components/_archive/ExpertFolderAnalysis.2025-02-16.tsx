@@ -23,6 +23,11 @@ interface SelectedFileDisplay {
   mime_type: string;
 }
 
+// Archived on 2025-02-16
+// Original folder analysis component replaced by FileTree.tsx
+// Contains useful folder parsing logic for date-based folders
+// and proper MIME type handling for Google Drive files
+
 export default function ExpertFolderAnalysis() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
