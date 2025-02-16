@@ -121,6 +121,12 @@ export const ExpertProfileExtractor = () => {
   const [extractedProfile, setExtractedProfile] = useState<ExpertProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [expertPrompt, setExpertPrompt] = useState<string | null>(null);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [progress, setProgress] = useState({
+    current: 0,
+    total: 0,
+    currentDoc: ''
+  });
 
   useEffect(() => {
     loadDocuments();
@@ -205,6 +211,110 @@ ${doc.raw_content}`,
     }
   };
 
+  const processAllDocuments = async () => {
+    setIsBatchProcessing(true);
+    const toastId = toast.loading('Processing all documents...');
+    let processed = 0;
+    
+    try {
+      const eligibleDocs = documents.filter(doc => {
+        const contentSize = new TextEncoder().encode(doc.raw_content).length;
+        return contentSize <= 30 * 1024;
+      });
+
+      // Initialize progress
+      setProgress({
+        current: 0,
+        total: eligibleDocs.length,
+        currentDoc: ''
+      });
+
+      for (const doc of eligibleDocs) {
+        // Update progress with current document
+        setProgress(prev => ({
+          ...prev,
+          current: processed,
+          currentDoc: doc.source.name
+        }));
+
+        try {
+          // Extract profile using AI
+          const profile = await processWithAI({
+            systemPrompt: expertPrompt!,
+            userMessage: `Analyze this document and extract a professional profile according to the above structure. Return ONLY a JSON object with no additional text.
+
+Document content:
+${doc.raw_content}`,
+            temperature: 0.0,
+            requireJsonOutput: true
+          });
+
+          // Update only the AI processing related fields
+          const { error: updateError } = await supabase
+            .from('expert_documents')
+            .update({
+              processed_content: profile,        // Store AI-extracted JSON
+              processing_status: 'completed',    // Mark as processed
+              processed_at: new Date().toISOString(),
+              processing_error: null            // Clear any previous errors
+            })
+            .eq('id', doc.id);
+
+          if (updateError) {
+            console.error('Failed to save AI processing results:', {
+              docId: doc.id,
+              error: updateError
+            });
+            continue;
+          }
+
+          processed++;
+          console.log('AI processing complete:', {
+            id: doc.id,
+            name: doc.source.name,
+            extractedFields: Object.keys(profile)
+          });
+
+        } catch (error) {
+          console.error('AI processing failed:', {
+            id: doc.id,
+            name: doc.source.name,
+            error
+          });
+
+          // Update document to mark processing failure
+          await supabase
+            .from('expert_documents')
+            .update({
+              processing_status: 'failed',
+              processed_at: new Date().toISOString(),
+              processing_error: error instanceof Error ? error.message : 'Unknown error'
+            })
+            .eq('id', doc.id);
+        }
+
+        // Update progress toast
+        toast.loading(
+          `Processed ${processed} of ${eligibleDocs.length} documents...`, 
+          { id: toastId }
+        );
+      }
+
+      toast.success(
+        `Completed: ${processed} processed, ${documents.length - eligibleDocs.length} skipped`, 
+        { id: toastId }
+      );
+
+    } catch (error) {
+      console.error('Batch processing error:', error);
+      toast.error('Error during batch processing', { id: toastId });
+    } finally {
+      setIsBatchProcessing(false);
+      // Reset progress
+      setProgress({ current: 0, total: 0, currentDoc: '' });
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 p-4">
       <h2 className="text-xl font-semibold">Expert Profile Extraction</h2>
@@ -212,7 +322,54 @@ ${doc.raw_content}`,
       {/* Document List */}
       <div className="flex gap-4">
         <div className="w-1/3">
-          <h3 className="text-lg mb-3">Documents ({documents.length})</h3>
+          <div className="mb-4 flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg">Documents ({documents.length})</h3>
+              <button
+                onClick={processAllDocuments}
+                disabled={isBatchProcessing || !expertPrompt}
+                className={`px-4 py-2 rounded text-white
+                  ${isBatchProcessing || !expertPrompt 
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'}
+                `}
+              >
+                {isBatchProcessing ? (
+                  <span className="flex items-center gap-2">
+                    <span className="animate-spin">⟳</span>
+                    Processing...
+                  </span>
+                ) : (
+                  'Process All Documents'
+                )}
+              </button>
+            </div>
+
+            {/* Progress Bar */}
+            {isBatchProcessing && progress.total > 0 && (
+              <div className="w-full space-y-2">
+                <div className="bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                  />
+                </div>
+                <div className="text-sm text-gray-600 flex justify-between">
+                  <span>
+                    Processing: {progress.current} of {progress.total}
+                  </span>
+                  <span>
+                    {Math.round((progress.current / progress.total) * 100)}%
+                  </span>
+                </div>
+                {progress.currentDoc && (
+                  <div className="text-sm text-gray-500 truncate">
+                    Current: {progress.currentDoc}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <div className="flex flex-col gap-2">
             {documents.map(doc => {
               const sizeKB = (new TextEncoder().encode(doc.raw_content).length / 1024).toFixed(1);
