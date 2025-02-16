@@ -51,11 +51,67 @@ const formatFileSize = (bytes: string | number): string => {
   return `(${mb.toFixed(1)}MB)`;
 };
 
+// Define common MIME types with friendly names
+const MIME_TYPE_FILTERS = [
+  { 
+    type: 'application/pdf', 
+    label: 'PDF',
+    tooltip: 'application/pdf'
+  },
+  { 
+    type: [
+      'application/vnd.google-apps.document',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ], 
+    label: 'Word',
+    tooltip: '.doc, .docx, Google Docs'
+  },
+  { 
+    type: [
+      'application/vnd.google-apps.presentation',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ], 
+    label: 'PowerPoint',
+    tooltip: '.ppt, .pptx, Google Slides'
+  },
+  { 
+    type: [
+      'text/plain',
+      'text/csv',
+      'text/tab-separated-values'
+    ], 
+    label: 'Chats',
+    tooltip: '.txt, .csv files (Zoom chat summaries)'
+  },
+  { 
+    type: 'video/mp4', 
+    label: 'Video',
+    tooltip: 'video/mp4'
+  },
+  { 
+    type: [
+      'audio/mpeg',
+      'audio/mp4',
+      'audio/m4a',
+      'audio/wav',
+      'audio/ogg',
+      'audio/webm',
+      'audio/aac',
+      'audio/x-m4a'
+    ], 
+    label: 'Audio',
+    tooltip: '.mp3, .m4a, .wav, .ogg, .webm, .aac'
+  }
+];
+
 export function FileTree({ files, onSelectionChange }: FileTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [showOnlyProcessable, setShowOnlyProcessable] = useState(true);
   const [showOnlyDocs, setShowOnlyDocs] = useState(false);
+  const [activeMimeTypes, setActiveMimeTypes] = useState<Set<string>>(new Set());
 
   const expandAll = () => {
     // Get all possible folder paths
@@ -103,28 +159,42 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
     return '📎';
   };
 
+  const toggleMimeType = (mimeType: string | string[]) => {
+    setActiveMimeTypes(prev => {
+      const next = new Set(prev);
+      const types = Array.isArray(mimeType) ? mimeType : [mimeType];
+      
+      // Check if any of the types are already active
+      const hasActive = types.some(type => prev.has(type));
+      
+      // If any are active, remove all. Otherwise, add all
+      types.forEach(type => {
+        if (hasActive) {
+          next.delete(type);
+        } else {
+          next.add(type);
+        }
+      });
+      
+      return next;
+    });
+  };
+
+  const clearMimeFilters = () => {
+    setActiveMimeTypes(new Set());
+  };
+
   // Filter function for processable files
   const isProcessableFile = (file: FileNode) => {
-    // Always show folders
     if (file.mime_type === 'application/vnd.google-apps.folder') return true;
-
-    // Get file type
-    const fileType = getFileType(file.mime_type);
-
-    // If showing only documents
-    if (showOnlyDocs) {
-      return fileType === 'document' || 
-             file.mime_type === 'application/vnd.google-apps.document' ||
-             file.name.endsWith('.doc') ||
-             file.name.endsWith('.docx');
-    }
-
-    // If showing processable files (PDFs and documents)
-    if (showOnlyProcessable) {
-      return fileType === 'pdf' || fileType === 'document';
-    }
-
-    return true;
+    if (activeMimeTypes.size === 0) return true; // Show all if no filters
+    return Array.from(activeMimeTypes).some(type => {
+      // Handle both string and array types
+      if (Array.isArray(type)) {
+        return type.includes(file.mime_type);
+      }
+      return type === file.mime_type;
+    });
   };
 
   const renderTree = (parentPath: string | null = null, level: number = 0) => {
@@ -298,8 +368,143 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
     }
   };
 
+  // Add function to count files by MIME type
+  const getFileCountByMimeType = (mimeType: string | string[]) => {
+    const mimeTypes = Array.isArray(mimeType) ? mimeType : [mimeType];
+    return files.filter(file => mimeTypes.includes(file.mime_type)).length;
+  };
+
+  // Add function to get misc files count
+  const getMiscFilesCount = () => {
+    const knownMimeTypes = MIME_TYPE_FILTERS.flatMap(filter => 
+      Array.isArray(filter.type) ? filter.type : [filter.type]
+    );
+    return files.filter(file => 
+      !knownMimeTypes.includes(file.mime_type) && 
+      file.mime_type !== 'application/vnd.google-apps.folder'
+    ).length;
+  };
+
   return (
     <div className="file-tree p-4 border rounded-lg bg-white">
+      {/* Add debug ID at the top */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-gray-400 mb-2">
+          FileTree v1.0 [DEBUG-ID: FT-2025-02-16]
+        </div>
+      )}
+      
+      {/* Updated MIME type filter pills */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex flex-wrap gap-2 mb-2">
+              {MIME_TYPE_FILTERS.map(({ type, label, tooltip }) => {
+                const count = getFileCountByMimeType(type);
+                if (count === 0) return null;
+                
+                const isActive = Array.isArray(type) 
+                  ? type.some(t => activeMimeTypes.has(t))
+                  : activeMimeTypes.has(type);
+                
+                return (
+                  <button
+                    key={Array.isArray(type) ? type[0] : type}
+                    onClick={() => toggleMimeType(type)}
+                    title={tooltip}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                      ${isActive
+                        ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                  >
+                    {label} ({count})
+                  </button>
+                );
+              })}
+              
+              {/* Misc pill with tooltip */}
+              {getMiscFilesCount() > 0 && (
+                <button
+                  onClick={() => {
+                    const knownTypes = new Set(MIME_TYPE_FILTERS.flatMap(f => 
+                      Array.isArray(f.type) ? f.type : [f.type]
+                    ));
+                    const miscTypes = Array.from(new Set(
+                      files
+                        .filter(f => !knownTypes.has(f.mime_type) && 
+                          f.mime_type !== 'application/vnd.google-apps.folder'
+                        )
+                        .map(f => f.mime_type)
+                    ));
+                    
+                    const hasActiveMisc = miscTypes.some(type => activeMimeTypes.has(type));
+                    setActiveMimeTypes(prev => {
+                      const next = new Set(prev);
+                      miscTypes.forEach(type => {
+                        if (hasActiveMisc) {
+                          next.delete(type);
+                        } else {
+                          next.add(type);
+                        }
+                      });
+                      return next;
+                    });
+                  }}
+                  title={`Other file types:\n${Array.from(new Set(
+                    files
+                      .filter(f => !MIME_TYPE_FILTERS.flatMap(filter => 
+                        Array.isArray(filter.type) ? filter.type : [filter.type]
+                      ).includes(f.mime_type) && 
+                      f.mime_type !== 'application/vnd.google-apps.folder'
+                      )
+                      .map(f => f.mime_type)
+                  )).join('\n')}`}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                    ${files.some(f => 
+                      !MIME_TYPE_FILTERS.flatMap(filter => 
+                        Array.isArray(filter.type) ? filter.type : [filter.type]
+                      ).includes(f.mime_type) && 
+                      activeMimeTypes.has(f.mime_type)
+                    )
+                      ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  Misc ({getMiscFilesCount()})
+                </button>
+              )}
+            </div>
+            
+            {activeMimeTypes.size > 0 && (
+              <button
+                onClick={clearMimeFilters}
+                className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              >
+                <span>✕</span>
+                Clear Filters
+              </button>
+            )}
+          </div>
+          
+          {/* Moved expand/collapse buttons */}
+          <div className="flex gap-2 ml-4">
+            <button
+              onClick={expandAll}
+              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+            >
+              Expand All
+            </button>
+            <button
+              onClick={collapseAll}
+              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+            >
+              Collapse All
+            </button>
+          </div>
+        </div>
+      </div>
+      
       <div className="mb-4 flex justify-between items-center">
         <div className="text-lg font-medium flex items-center gap-2">
           <span>🗂️</span>
@@ -325,20 +530,6 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
             />
             Show only Documents
           </label>
-          <div className="flex gap-2">
-            <button
-              onClick={expandAll}
-              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-            >
-              Expand All
-            </button>
-            <button
-              onClick={collapseAll}
-              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-            >
-              Collapse All
-            </button>
-          </div>
         </div>
       </div>
       
