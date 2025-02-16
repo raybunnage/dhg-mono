@@ -5,6 +5,8 @@ import { processUnextractedDocuments, testSingleDocument } from '@/utils/documen
 import { listDriveFiles, listAllDriveFiles, getGoogleDocContent, getPdfContent } from '@/utils/google-drive';
 import { FileTree } from './FileTree';
 import { processDocumentWithAI } from '@/utils/ai-processing';
+import { syncGoogleDriveFiles } from '@/utils/google-drive-sync';
+import { syncFileMetadata } from '@/utils/metadata-sync';
 
 function sanitizeFileName(name: string): string {
   // Remove or replace problematic characters
@@ -497,6 +499,74 @@ export function SourceButtons() {
     }
   };
 
+  const handleGoogleDriveSync = async () => {
+    setLoading(true);
+    setProgress({ current: 0, total: 0 });
+
+    const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+    const folderId = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
+
+    if (!accessToken || !folderId) {
+      toast.error('Missing access token or folder ID');
+      return;
+    }
+
+    try {
+      toast.loading('Syncing with Google Drive...');
+      const result = await syncGoogleDriveFiles(accessToken, folderId);
+      
+      if (result.success) {
+        toast.success(result.message);
+        // Refresh files without full page reload
+        const { data: updatedFiles } = await supabase
+          .from('sources_google')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (updatedFiles) {
+          setFiles(updatedFiles);
+        }
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Sync failed:', error);
+      toast.error('Failed to sync with Google Drive');
+    } finally {
+      setLoading(false);
+      toast.dismiss();
+    }
+  };
+
+  const handleMetadataSync = async () => {
+    setLoading(true);
+    try {
+      const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+      if (!accessToken) {
+        toast.error('Missing access token');
+        return;
+      }
+      
+      const result = await syncFileMetadata(accessToken);
+      if (result.success) {
+        // Refresh the file list
+        const { data: updatedFiles } = await supabase
+          .from('sources_google')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (updatedFiles) {
+          setFiles(updatedFiles);
+        }
+      }
+    } catch (error) {
+      console.error('Metadata sync failed:', error);
+      toast.error('Failed to sync metadata');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2 items-center">
@@ -579,6 +649,20 @@ export function SourceButtons() {
           className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
         >
           {loading ? 'Processing...' : 'Test AI Extract'}
+        </button>
+        <button
+          onClick={handleGoogleDriveSync}
+          disabled={loading}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+        >
+          {loading ? 'Syncing...' : 'Sync Google Drive'}
+        </button>
+        <button
+          onClick={handleMetadataSync}
+          disabled={loading}
+          className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
+        >
+          {loading ? 'Syncing Metadata...' : 'Sync Metadata'}
         </button>
       </div>
       
