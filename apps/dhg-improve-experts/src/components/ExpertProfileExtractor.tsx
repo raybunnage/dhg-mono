@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { processWithAI } from '@/utils/ai-processing';
 import { loadPromptFromMarkdown } from '@/utils/prompt-loader';
 import { ProcessedProfileViewer } from './ProcessedProfileViewer';
+import { ProcessingControls } from '@/components/ProcessingControls';
 
 interface ExpertDocument {
   id: string;
@@ -30,96 +31,25 @@ interface ExpertProfile {
   expertise_keywords: string[];
 }
 
+interface ProcessingCleanup {
+  abortedAt: string;
+  processedCount: number;
+  remainingDocs: string[];
+}
+
 const ProfileViewer = ({ profile }: { profile: ExpertProfile }) => {
-  const [expandedSection, setExpandedSection] = useState<string | null>('basic');
-
-  const sections = {
-    basic: {
-      title: 'Basic Information',
-      fields: ['name', 'title', 'current_position', 'institution']
-    },
-    expertise: {
-      title: 'Expertise & Specialties',
-      fields: ['credentials', 'specialty_areas', 'expertise_keywords']
-    },
-    research: {
-      title: 'Research & Achievements',
-      fields: ['research_summary', 'notable_achievements']
-    },
-    links: {
-      title: 'Professional Links',
-      fields: ['website_urls']
-    }
-  };
-
-  const formatValue = (key: string, value: any) => {
-    if (Array.isArray(value)) {
-      return (
-        <ul className="list-disc pl-4">
-          {value.map((item, i) => (
-            <li key={i} className="mb-1">{item}</li>
-          ))}
-        </ul>
-      );
-    }
-    if (key === 'research_summary') {
-      return <p className="whitespace-pre-wrap">{value}</p>;
-    }
-    return <span>{value}</span>;
-  };
-
   return (
-    <div className="space-y-4">
-      {Object.entries(sections).map(([key, section]) => (
-        <div key={key} className="border rounded-lg overflow-hidden">
-          <button
-            onClick={() => setExpandedSection(expandedSection === key ? null : key)}
-            className="w-full px-4 py-2 text-left bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-          >
-            <span className="font-medium">{section.title}</span>
-            <span>{expandedSection === key ? '−' : '+'}</span>
-          </button>
-          {expandedSection === key && (
-            <div className="p-4 space-y-4">
-              {section.fields.map(field => (
-                <div key={field} className="space-y-1">
-                  <div className="text-sm font-medium text-gray-500 capitalize">
-                    {field.replace(/_/g, ' ')}
-                  </div>
-                  <div className="text-gray-900">
-                    {formatValue(field, profile[field as keyof ExpertProfile])}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-
-      {/* Raw JSON View */}
-      <div className="border rounded-lg overflow-hidden">
-        <button
-          onClick={() => setExpandedSection(expandedSection === 'raw' ? null : 'raw')}
-          className="w-full px-4 py-2 text-left bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-        >
-          <span className="font-medium">Raw JSON</span>
-          <span>{expandedSection === 'raw' ? '−' : '+'}</span>
-        </button>
-        {expandedSection === 'raw' && (
-          <div className="p-4">
-            <pre className="bg-gray-50 p-4 rounded overflow-x-auto text-sm">
-              {JSON.stringify(profile, null, 2)}
-            </pre>
-          </div>
-        )}
-      </div>
+    <div className="bg-gray-50 p-4 rounded-lg">
+      <pre className="whitespace-pre-wrap text-sm overflow-x-auto">
+        {JSON.stringify(profile, null, 2)}
+      </pre>
     </div>
   );
 };
 
 const ANNOUNCEMENT_SIZE_LIMIT = 20 * 1024; // 20KB in bytes
 
-export const ExpertProfileExtractor = () => {
+export function ExpertProfileExtractor() {
   const [documents, setDocuments] = useState<ExpertDocument[]>([]);
   const [currentDoc, setCurrentDoc] = useState<ExpertDocument | null>(null);
   const [extractedProfile, setExtractedProfile] = useState<ExpertProfile | null>(null);
@@ -131,6 +61,8 @@ export const ExpertProfileExtractor = () => {
     total: 0,
     currentDoc: ''
   });
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [processAll, setProcessAll] = useState(false);
 
   useEffect(() => {
     loadDocuments();
@@ -164,8 +96,13 @@ export const ExpertProfileExtractor = () => {
   };
 
   const loadExpertPrompt = async () => {
+    console.log('Starting to load expert prompt...');
     try {
       const prompt = await loadPromptFromMarkdown('/docs/prompts/expert-extraction-prompt.md');
+      console.log('Successfully loaded prompt:', {
+        length: prompt.length,
+        preview: prompt.slice(0, 100)
+      });
       setExpertPrompt(prompt);
     } catch (error) {
       console.error('Failed to load expert prompt:', error);
@@ -182,7 +119,7 @@ export const ExpertProfileExtractor = () => {
     // Check document size
     const contentSizeBytes = new TextEncoder().encode(doc.raw_content).length;
     if (contentSizeBytes > ANNOUNCEMENT_SIZE_LIMIT) {
-      toast.info(`Skipping "${doc.source.name}" - Document size (${(contentSizeBytes/1024).toFixed(1)}KB) exceeds announcement limit (20KB)`);
+      toast.success(`Skipping "${doc.source.name}" - Document size (${(contentSizeBytes/1024).toFixed(1)}KB) exceeds announcement limit (20KB)`);
       console.log('Skipped large document:', {
         name: doc.source.name,
         size: `${(contentSizeBytes/1024).toFixed(1)}KB`,
@@ -218,18 +155,65 @@ ${doc.raw_content}`,
     }
   };
 
+  const cleanupPartialProcessing = async (cleanup: ProcessingCleanup) => {
+    const toastId = toast.loading('Cleaning up interrupted processing...');
+    
+    try {
+      // Update all remaining documents to show they were part of an aborted batch
+      const { error } = await supabase
+        .from('expert_documents')
+        .update({
+          processing_status: 'pending',  // Reset to pending
+          processing_error: `Part of aborted batch at ${cleanup.abortedAt}. Will retry in next run.`,
+          metadata: {
+            last_abort: {
+              timestamp: cleanup.abortedAt,
+              processed_in_batch: cleanup.processedCount,
+              batch_position: cleanup.remainingDocs
+            }
+          }
+        })
+        .in('id', cleanup.remainingDocs);
+
+      if (error) throw error;
+      
+      toast.success('Cleanup completed', { id: toastId });
+      
+      // Refresh document list to show updated statuses
+      await loadDocuments();
+      
+    } catch (error) {
+      console.error('Cleanup failed:', error);
+      toast.error('Failed to cleanup aborted processing', { id: toastId });
+    }
+  };
+
   const processAllDocuments = async () => {
+    const controller = new AbortController();
+    setAbortController(controller);
     setIsBatchProcessing(true);
     const toastId = toast.loading('Processing all documents...');
     let processed = 0;
     
     try {
+      // Filter documents based on size and processing status
       const eligibleDocs = documents.filter(doc => {
         const contentSize = new TextEncoder().encode(doc.raw_content).length;
-        return contentSize <= 30 * 1024;
+        const sizeOk = contentSize <= 30 * 1024;
+        // Only include completed docs if processAll is true
+        const statusOk = processAll || doc.processing_status !== 'completed';
+        return sizeOk && statusOk;
       });
 
-      // Initialize progress
+      // Update UI to show what we're doing
+      toast.loading(
+        `Processing ${eligibleDocs.length} documents (${processAll ? 'including completed' : 'skipping completed'})`, 
+        { id: toastId }
+      );
+
+      // Keep track of remaining docs for cleanup
+      let remainingDocs = eligibleDocs.map(doc => doc.id);
+
       setProgress({
         current: 0,
         total: eligibleDocs.length,
@@ -237,7 +221,23 @@ ${doc.raw_content}`,
       });
 
       for (const doc of eligibleDocs) {
-        // Update progress with current document
+        if (controller.signal.aborted) {
+          const abortTime = new Date().toISOString();
+          
+          // Remove processed docs from remaining list
+          remainingDocs = remainingDocs.slice(processed);
+          
+          // Perform cleanup
+          await cleanupPartialProcessing({
+            abortedAt: abortTime,
+            processedCount: processed,
+            remainingDocs
+          });
+          
+          toast.success('Processing aborted and cleaned up', { id: toastId });
+          return;
+        }
+
         setProgress(prev => ({
           ...prev,
           current: processed,
@@ -245,7 +245,7 @@ ${doc.raw_content}`,
         }));
 
         try {
-          // Extract profile using AI
+          // Pass abort signal to AI processing
           const profile = await processWithAI({
             systemPrompt: expertPrompt!,
             userMessage: `Analyze this document and extract a professional profile according to the above structure. Return ONLY a JSON object with no additional text.
@@ -253,36 +253,41 @@ ${doc.raw_content}`,
 Document content:
 ${doc.raw_content}`,
             temperature: 0.0,
-            requireJsonOutput: true
+            requireJsonOutput: true,
+            signal: controller.signal // Pass abort signal
           });
 
-          // Update only the AI processing related fields
+          // Update document status
           const { error: updateError } = await supabase
             .from('expert_documents')
             .update({
-              processed_content: profile,        // Store AI-extracted JSON
-              processing_status: 'completed',    // Mark as processed
+              processed_content: profile,
+              processing_status: 'completed',
               processed_at: new Date().toISOString(),
-              processing_error: null            // Clear any previous errors
+              processing_error: null
             })
             .eq('id', doc.id);
 
-          if (updateError) {
-            console.error('Failed to save AI processing results:', {
-              docId: doc.id,
-              error: updateError
-            });
-            continue;
+          if (updateError) throw updateError;
+
+          // Remove this doc from remaining list after successful processing
+          remainingDocs = remainingDocs.filter(id => id !== doc.id);
+          processed++;
+          
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') {
+            // Update document to show processing was aborted
+            await supabase
+              .from('expert_documents')
+              .update({
+                processing_status: 'aborted',
+                processed_at: new Date().toISOString(),
+                processing_error: 'Processing aborted by user'
+              })
+              .eq('id', doc.id);
+            break; // Exit the loop
           }
 
-          processed++;
-          console.log('AI processing complete:', {
-            id: doc.id,
-            name: doc.source.name,
-            extractedFields: Object.keys(profile)
-          });
-
-        } catch (error) {
           console.error('AI processing failed:', {
             id: doc.id,
             name: doc.source.name,
@@ -300,7 +305,6 @@ ${doc.raw_content}`,
             .eq('id', doc.id);
         }
 
-        // Update progress toast
         toast.loading(
           `Processed ${processed} of ${eligibleDocs.length} documents...`, 
           { id: toastId }
@@ -313,129 +317,229 @@ ${doc.raw_content}`,
       );
 
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        const abortTime = new Date().toISOString();
+        const remainingDocs = documents
+          .filter(doc => doc.processing_status === 'pending')
+          .map(doc => doc.id);
+        
+        await cleanupPartialProcessing({
+          abortedAt: abortTime,
+          processedCount: processed,
+          remainingDocs
+        });
+      }
       console.error('Batch processing error:', error);
       toast.error('Error during batch processing', { id: toastId });
     } finally {
       setIsBatchProcessing(false);
-      // Reset progress
+      setAbortController(null);
       setProgress({ current: 0, total: 0, currentDoc: '' });
     }
   };
+
+  const handleAbort = async () => {
+    if (abortController) {
+      abortController.abort();
+      toast.loading('Aborting and cleaning up...');
+      // Cleanup will be handled in the processAllDocuments catch block
+    }
+  };
+
+  // Add a function to retry aborted documents
+  const retryAbortedDocuments = async () => {
+    const toastId = toast.loading('Finding aborted documents...');
+    
+    try {
+      const { data: abortedDocs, error } = await supabase
+        .from('expert_documents')
+        .select('id')
+        .eq('processing_status', 'aborted');
+
+      if (error) throw error;
+
+      if (!abortedDocs || abortedDocs.length === 0) {
+        toast.success('No aborted documents found', { id: toastId });
+        return;
+      }
+
+      // Reset their status to pending
+      await supabase
+        .from('expert_documents')
+        .update({
+          processing_status: 'pending',
+          processing_error: null,
+          metadata: {
+            retry_after_abort: new Date().toISOString()
+          }
+        })
+        .in('id', abortedDocs.map(doc => doc.id));
+
+      toast.success(`Reset ${abortedDocs.length} documents for retry`, { id: toastId });
+      await loadDocuments(); // Refresh the list
+
+    } catch (error) {
+      console.error('Failed to retry aborted documents:', error);
+      toast.error('Failed to reset aborted documents', { id: toastId });
+    }
+  };
+
+  // Add state debugging
+  console.log('Processing state:', {
+    isBatchProcessing,
+    hasAbortController: !!abortController,
+    progress
+  });
 
   return (
     <div className="flex flex-col gap-6 p-4">
       <h2 className="text-xl font-semibold">Expert Profile Extraction</h2>
       
-      {/* Document List */}
-      <div className="flex gap-4">
-        <div className="w-1/3">
-          <div className="mb-4 flex flex-col gap-2">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg">Documents ({documents.length})</h3>
-              <button
-                onClick={processAllDocuments}
-                disabled={isBatchProcessing || !expertPrompt}
-                className={`px-4 py-2 rounded text-white
-                  ${isBatchProcessing || !expertPrompt 
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'}
-                `}
-              >
-                {isBatchProcessing ? (
-                  <span className="flex items-center gap-2">
-                    <span className="animate-spin">⟳</span>
-                    Processing...
-                  </span>
-                ) : (
-                  'Process All Documents'
-                )}
-              </button>
+      <div className="mb-4 flex flex-col gap-2">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <h3 className="text-lg">Documents ({documents.length})</h3>
+            <div className="text-sm text-gray-600 flex gap-3">
+              <span className="text-green-600">
+                Completed: {documents.filter(d => d.processing_status === 'completed').length}
+              </span>
+              <span className="text-blue-600">
+                Pending: {documents.filter(d => !d.processing_status || d.processing_status === 'pending').length}
+              </span>
+              {documents.some(d => d.processing_status === 'failed') && (
+                <span className="text-red-600">
+                  Failed: {documents.filter(d => d.processing_status === 'failed').length}
+                </span>
+              )}
             </div>
-
-            {/* Progress Bar */}
-            {isBatchProcessing && progress.total > 0 && (
-              <div className="w-full space-y-2">
-                <div className="bg-gray-200 rounded-full h-2.5">
-                  <div 
-                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                    style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                  />
-                </div>
-                <div className="text-sm text-gray-600 flex justify-between">
-                  <span>
-                    Processing: {progress.current} of {progress.total}
-                  </span>
-                  <span>
-                    {Math.round((progress.current / progress.total) * 100)}%
-                  </span>
-                </div>
-                {progress.currentDoc && (
-                  <div className="text-sm text-gray-500 truncate">
-                    Current: {progress.currentDoc}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
-          <div className="flex flex-col gap-2">
-            {documents.map(doc => {
-              const sizeKB = (new TextEncoder().encode(doc.raw_content).length / 1024).toFixed(1);
-              const isLarge = new TextEncoder().encode(doc.raw_content).length > 30 * 1024;
-              
-              return (
-                <button
-                  key={doc.id}
-                  onClick={() => setCurrentDoc(doc)}
-                  disabled={isBatchProcessing}
-                  className={`text-left p-3 rounded border hover:bg-gray-50 
-                    ${currentDoc?.id === doc.id ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}
-                    ${isBatchProcessing ? 'opacity-50 cursor-not-allowed' : ''}
-                  `}
-                >
-                  <div className="font-medium">{doc.source.name}</div>
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>Size: {sizeKB}KB</span>
-                    <span className={`
-                      ${doc.processing_status === 'completed' ? 'text-green-600' : ''}
-                      ${doc.processing_status === 'failed' ? 'text-red-600' : ''}
-                    `}>
-                      {doc.processing_status || 'pending'}
-                    </span>
-                  </div>
-                  {isLarge && (
-                    <div className="text-sm text-amber-600 mt-1">
-                      Too large for processing
-                    </div>
-                  )}
-                  {doc.processed_at && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      Processed: {new Date(doc.processed_at).toLocaleDateString()}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={processAll}
+                onChange={(e) => setProcessAll(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Reprocess completed documents
+            </label>
+            <ProcessingControls 
+              onProcess={processAllDocuments}
+              onAbort={handleAbort}
+              isProcessing={isBatchProcessing}
+              showPrompt={true}
+              systemPrompt={expertPrompt}
+              userPrompt={`Analyze this document and extract a professional profile according to the above structure. Return ONLY a JSON object with no additional text.
+
+Document content:
+[Document content will be inserted here]`}
+            />
           </div>
         </div>
 
-        {/* Extracted Profile Display */}
-        <div className="w-2/3">
-          <h3 className="text-lg mb-3">Expert Profile</h3>
+        {/* Progress Bar */}
+        {isBatchProcessing && progress.total > 0 && (
+          <div className="w-full space-y-2">
+            <div className="bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                style={{ width: `${(progress.current / progress.total) * 100}%` }}
+              />
+            </div>
+            <div className="text-sm text-gray-600 flex justify-between">
+              <span>
+                Processing: {progress.current} of {progress.total}
+              </span>
+              <span>
+                {Math.round((progress.current / progress.total) * 100)}%
+              </span>
+            </div>
+            {progress.currentDoc && (
+              <div className="text-sm text-gray-500 truncate">
+                Current: {progress.currentDoc}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Split view for documents and JSON */}
+      <div className="flex gap-6">
+        {/* Left side: Documents list */}
+        <div className="w-1/2 flex flex-col gap-2">
+          {documents.map(doc => {
+            const sizeKB = (new TextEncoder().encode(doc.raw_content).length / 1024).toFixed(1);
+            const isLarge = new TextEncoder().encode(doc.raw_content).length > 30 * 1024;
+            
+            return (
+              <button
+                key={doc.id}
+                onClick={() => setCurrentDoc(doc)}
+                disabled={isBatchProcessing}
+                className={`text-left p-3 rounded border hover:bg-gray-50 
+                  ${currentDoc?.id === doc.id ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}
+                  ${isBatchProcessing ? 'opacity-50 cursor-not-allowed' : ''}
+                `}
+              >
+                <div className="font-medium">{doc.source.name}</div>
+                <div className="flex justify-between text-sm text-gray-500">
+                  <span>Size: {sizeKB}KB</span>
+                  <span className={`
+                    ${doc.processing_status === 'completed' ? 'text-green-600' : ''}
+                    ${doc.processing_status === 'failed' ? 'text-red-600' : ''}
+                    ${doc.processing_status === 'aborted' ? 'text-amber-600' : ''}
+                  `}>
+                    {doc.processing_status || 'pending'}
+                  </span>
+                </div>
+                {isLarge && (
+                  <div className="text-sm text-amber-600 mt-1">
+                    Too large for processing
+                  </div>
+                )}
+                {doc.processed_at && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Processed: {new Date(doc.processed_at).toLocaleDateString()}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right side: JSON viewer */}
+        <div className="w-1/2">
+          <h3 className="text-lg mb-3">Processed Content</h3>
           {currentDoc ? (
             currentDoc.processed_content ? (
-              <ProcessedProfileViewer profile={currentDoc.processed_content} />
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <pre className="whitespace-pre-wrap text-sm overflow-x-auto">
+                  {JSON.stringify(currentDoc.processed_content, null, 2)}
+                </pre>
+              </div>
             ) : (
               <div className="text-gray-500 italic">
-                No processed content available for this document
+                No processed content available
               </div>
             )
           ) : (
             <div className="text-gray-500">
-              Select a document to view its profile
+              Select a document to view its content
             </div>
           )}
         </div>
       </div>
+
+      {/* Retry button at the bottom */}
+      {documents.some(doc => doc.processing_status === 'aborted') && (
+        <button
+          onClick={retryAbortedDocuments}
+          className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md"
+        >
+          <span>⟳</span>
+          Retry Documents That Were Stopped
+        </button>
+      )}
     </div>
   );
-}; 
+} 

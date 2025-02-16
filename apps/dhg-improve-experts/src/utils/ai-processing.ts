@@ -54,29 +54,28 @@ interface ProcessingStatus {
   error?: any;
 }
 
-interface AIProcessingOptions {
+interface ProcessWithAIOptions {
   systemPrompt: string;
   userMessage: string;
   temperature?: number;
   requireJsonOutput?: boolean;
-  maxTokens?: number;
+  signal?: AbortSignal;
 }
 
-export const processWithAI = async ({
+export async function processWithAI({
   systemPrompt,
   userMessage,
-  temperature = 0.0,
+  temperature = 0.7,
   requireJsonOutput = false,
-  maxTokens = 4000
-}: AIProcessingOptions) => {
+  signal
+}: ProcessWithAIOptions) {
   const startTime = Date.now();
   
   try {
     debug.log('init', {
       messageLength: userMessage.length,
       systemPromptLength: systemPrompt.length,
-      temperature,
-      maxTokens
+      temperature
     });
 
     const anthropic = new Anthropic({
@@ -90,23 +89,23 @@ export const processWithAI = async ({
       systemPromptPreview: systemPrompt.slice(0, 100) + '...'
     });
 
+    // Remove signal from request if it causes issues
     const response = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
-      max_tokens: maxTokens,
+      max_tokens: 4096,
       temperature,
       system: systemPrompt,
       messages: [{
         role: 'user',
         content: userMessage
       }]
+      // Remove signal here as it's causing the 400 error
     });
 
-    // Log successful response
-    debug.log('response', {
-      processingTime: `${Date.now() - startTime}ms`,
-      contentLength: response.content[0].text.length,
-      preview: response.content[0].text.slice(0, 100) + '...'
-    });
+    // Check for abort after the request
+    if (signal?.aborted) {
+      throw new Error('Processing aborted by user');
+    }
 
     const content = response.content[0].text;
 
@@ -131,6 +130,9 @@ export const processWithAI = async ({
     return content;
 
   } catch (error) {
+    if (signal?.aborted) {
+      throw new Error('Processing aborted by user');
+    }
     // Detailed error logging based on error type
     if (error instanceof AIProcessingError) {
       debug.error(error.name, {
@@ -160,7 +162,7 @@ export const processWithAI = async ({
     toast.error(errorMessage);
     throw error;
   }
-};
+}
 
 export async function processDocumentWithAI(documentId: string): Promise<ExpertProfile> {
   const processingStatus: ProcessingStatus = {
