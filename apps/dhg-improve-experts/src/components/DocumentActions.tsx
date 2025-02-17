@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import GetContentButton from './GetContentButton';
-import ExtractContentButton from './ExtractContentButton';
+import { ExtractContentButton } from './ExtractContentButton';
+import { GetContentButton } from './GetContentButton';
 import ExtractButton from './ExtractButton';
 
-function DocumentActions() {
+export default function DocumentActions() {
   const [extractedDocs, setExtractedDocs] = useState<string[]>([]);
 
   return (
@@ -26,6 +26,4 @@ function DocumentActions() {
       </div>
     </div>
   );
-}
-
-export default DocumentActions; 
+} 

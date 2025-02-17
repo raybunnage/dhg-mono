@@ -28,6 +28,10 @@ export default defineConfig(({ mode }) => {
           }
         }
       }
+    },
+    publicDir: 'public',
+    server: {
+      // ... other config
     }
   }
 }) 

@@ -622,6 +622,45 @@ export type Database = {
         }
         Relationships: []
       }
+      presentations: {
+        Row: {
+          created_at: string | null
+          duration: unknown | null
+          filename: string
+          folder_path: string
+          id: string
+          metadata: Json | null
+          title: string | null
+          transcript: string | null
+          transcript_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration?: unknown | null
+          filename: string
+          folder_path: string
+          id?: string
+          metadata?: Json | null
+          title?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration?: unknown | null
+          filename?: string
+          folder_path?: string
+          id?: string
+          metadata?: Json | null
+          title?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       processing_batches: {
         Row: {
           completed_at: string | null
@@ -856,6 +895,7 @@ export type Database = {
           parent_folder_id: string | null
           parent_path: string | null
           path: string | null
+          presentation_id: string | null
           sync_error: string | null
           sync_status: string | null
           updated_at: string
@@ -881,6 +921,7 @@ export type Database = {
           parent_folder_id?: string | null
           parent_path?: string | null
           path?: string | null
+          presentation_id?: string | null
           sync_error?: string | null
           sync_status?: string | null
           updated_at?: string
@@ -906,6 +947,7 @@ export type Database = {
           parent_folder_id?: string | null
           parent_path?: string | null
           path?: string | null
+          presentation_id?: string | null
           sync_error?: string | null
           sync_status?: string | null
           updated_at?: string
@@ -933,6 +975,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sources_google"
             referencedColumns: ["drive_id"]
+          },
+          {
+            foreignKeyName: "sources_google_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "presentations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1154,6 +1203,19 @@ export type Database = {
           table_name: string
         }
         Returns: undefined
+      }
+      find_mp4_files_in_folder: {
+        Args: {
+          folder_id: string
+        }
+        Returns: {
+          file_id: string
+          file_name: string
+          file_drive_id: string
+          file_web_view_link: string
+          parent_folder_name: string
+          parent_folder_drive_id: string
+        }[]
       }
       find_orphaned_user_ids: {
         Args: Record<PropertyKey, never>

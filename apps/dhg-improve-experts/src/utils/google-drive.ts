@@ -202,107 +202,32 @@ export async function listAllDriveFiles(folderId: string, parentPath: string = '
 }
 
 // Add this function to handle .docx files
-export const getDocxContent = async (fileId: string): Promise<string> => {
+export async function getDocxContent(fileId: string): Promise<string> {
+  const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+  
   try {
-    const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
-    
-    console.log('Starting DOCX extraction:', {
-      fileId,
-      tokenLength: accessToken?.length,
-      tokenStart: accessToken?.substring(0, 10) + '...'
-    });
-
     const response = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Accept': '*/*'
-        }
+          'Accept': 'application/json'
+        },
+        mode: 'no-cors'
       }
     );
 
-    console.log('Drive API Response:', {
-      ok: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-      contentType: response.headers.get('content-type'),
-      contentLength: response.headers.get('content-length')
-    });
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Drive API Error Response:', {
-        status: response.status,
-        headers: Object.fromEntries(response.headers.entries()),
-        error: errorText
-      });
-      throw new Error(`Drive API error: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to fetch document: ${response.status}`);
     }
 
-    // Get content as blob
     const blob = await response.blob();
-    console.log('Blob received:', {
-      size: blob.size,
-      type: blob.type
-    });
-
-    // Convert to buffer
-    const buffer = await blob.arrayBuffer();
-    console.log('Buffer created:', {
-      byteLength: buffer.byteLength
-    });
-
-    try {
-      // Convert to base64
-      const base64 = btoa(
-        new Uint8Array(buffer)
-          .reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
-
-      console.log('Base64 conversion successful:', {
-        inputBytes: buffer.byteLength,
-        base64Length: base64.length,
-        sampleStart: base64.substring(0, 50) + '...'
-      });
-
-      // Create final content object
-      const content = JSON.stringify({
-        type: 'docx',
-        encoding: 'base64',
-        content: base64,
-        metadata: {
-          originalSize: blob.size,
-          mimeType: blob.type,
-          convertedAt: new Date().toISOString()
-        }
-      });
-
-      console.log('Final content object created:', {
-        originalSize: blob.size,
-        jsonLength: content.length,
-        hasContent: !!content
-      });
-
-      return content;
-    } catch (conversionError) {
-      console.error('Base64 conversion failed:', {
-        error: conversionError,
-        bufferSize: buffer.byteLength,
-        blobSize: blob.size
-      });
-      throw conversionError;
-    }
+    const arrayBuffer = await blob.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer });
+    
+    return result.value || '';
   } catch (error) {
-    console.error('DOCX extraction failed:', {
-      fileId,
-      error: error instanceof Error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      } : error,
-      stage: 'full process'
-    });
+    console.error('DOCX extraction failed:', { fileId, error, stage: 'full process' });
     throw error;
   }
-}; 
+} 

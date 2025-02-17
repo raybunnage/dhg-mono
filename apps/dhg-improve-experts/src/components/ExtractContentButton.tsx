@@ -12,7 +12,7 @@ interface ExtractContentButtonProps {
   onError?: (error: Error, docId?: string) => void;
 }
 
-function ExtractContentButton({ onSuccess, onError }: ExtractContentButtonProps) {
+export function ExtractContentButton({ onSuccess, onError }: ExtractContentButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [documents, setDocuments] = useState<{ id: string }[]>([]);
@@ -410,6 +410,4 @@ function ExtractContentButton({ onSuccess, onError }: ExtractContentButtonProps)
       </div>
     </div>
   );
-}
-
-export { ExtractContentButton }; 
+} 
