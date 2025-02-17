@@ -574,11 +574,14 @@ export type Database = {
           dependencies: string[] | null
           description: string
           git_branch: string | null
+          git_commit: string | null
           git_commit_hash: string | null
+          github_url: string | null
           id: string
           implementation_notes: string | null
           input_types: Json | null
           last_modified_by: string | null
+          last_verified_at: string | null
           location: string
           name: string
           output_types: Json | null
@@ -599,11 +602,14 @@ export type Database = {
           dependencies?: string[] | null
           description: string
           git_branch?: string | null
+          git_commit?: string | null
           git_commit_hash?: string | null
+          github_url?: string | null
           id?: string
           implementation_notes?: string | null
           input_types?: Json | null
           last_modified_by?: string | null
+          last_verified_at?: string | null
           location: string
           name: string
           output_types?: Json | null
@@ -624,11 +630,14 @@ export type Database = {
           dependencies?: string[] | null
           description?: string
           git_branch?: string | null
+          git_commit?: string | null
           git_commit_hash?: string | null
+          github_url?: string | null
           id?: string
           implementation_notes?: string | null
           input_types?: Json | null
           last_modified_by?: string | null
+          last_verified_at?: string | null
           location?: string
           name?: string
           output_types?: Json | null
@@ -682,6 +691,13 @@ export type Database = {
             referencedRelation: "function_registry"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "function_registry_history_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "function_registry_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       function_relationships: {
@@ -718,10 +734,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "function_relationships_source_function_id_fkey"
+            columns: ["source_function_id"]
+            isOneToOne: false
+            referencedRelation: "function_registry_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "function_relationships_target_function_id_fkey"
             columns: ["target_function_id"]
             isOneToOne: false
             referencedRelation: "function_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "function_relationships_target_function_id_fkey"
+            columns: ["target_function_id"]
+            isOneToOne: false
+            referencedRelation: "function_registry_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      function_verification_history: {
+        Row: {
+          created_at: string | null
+          function_id: string | null
+          git_branch: string | null
+          git_commit: string | null
+          github_url: string | null
+          id: string
+          screenshot_url: string | null
+          verification_notes: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          function_id?: string | null
+          git_branch?: string | null
+          git_commit?: string | null
+          github_url?: string | null
+          id?: string
+          screenshot_url?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          function_id?: string | null
+          git_branch?: string | null
+          git_commit?: string | null
+          github_url?: string | null
+          id?: string
+          screenshot_url?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "function_verification_history_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "function_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "function_verification_history_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "function_registry_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1399,6 +1480,39 @@ export type Database = {
         }
         Relationships: []
       }
+      function_history_view: {
+        Row: {
+          change_type: string | null
+          changed_at: string | null
+          changed_by: string | null
+          function_name: string | null
+          git_commit_hash: string | null
+          history_id: string | null
+          new_state: Json | null
+          previous_state: Json | null
+        }
+        Relationships: []
+      }
+      function_registry_view: {
+        Row: {
+          category: string | null
+          code_signature: string | null
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          has_history: boolean | null
+          id: string | null
+          implementation_notes: string | null
+          location: string | null
+          name: string | null
+          relationships: Json | null
+          repository: string | null
+          status: string | null
+          supabase_operations: Json | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_unique_constraint: {
@@ -1528,6 +1642,16 @@ export type Database = {
           foreign_table_schema: string
           foreign_table_name: string
           foreign_column_name: string
+        }[]
+      }
+      get_function_details: {
+        Args: {
+          p_name: string
+        }
+        Returns: {
+          function_details: Json
+          relationships: Json
+          history: Json
         }[]
       }
       get_table_columns: {
