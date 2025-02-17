@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getFunctionInfo } from '@/utils/function-registry';
+import { getAllFunctions, getFunctionInfo } from '@/utils/function-registry';
 import { generateMigrationReport } from '@/utils/function-migration';
 
 export default function FunctionRegistryPage() {
@@ -64,8 +64,9 @@ function FunctionList({ searchTerm, category }: { searchTerm: string; category: 
   const [functions, setFunctions] = useState<string[]>([]);
   
   useEffect(() => {
-    const allFunctions = Object.keys(require('@/utils/function-registry').functionRegistry);
-    setFunctions(allFunctions);
+    // Get all functions from registry
+    const allFunctions = getAllFunctions();
+    setFunctions(allFunctions.map(f => f.name));
   }, []);
 
   const filteredFunctions = functions.filter(f => {

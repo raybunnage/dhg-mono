@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import mammoth from 'mammoth';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
 import type { Database } from '@/../../supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { FileNode } from '@/components/FileTree';
@@ -10,11 +7,6 @@ import { formatFileSize } from '@/utils/format';
 import { getDocxContent } from '@/utils/google-drive';
 import { proxyGoogleDrive } from '@/api/proxy';
 import docx4js from 'docx4js';
-
-// Set up PDF.js worker
-if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-}
 
 type Json = Database['public']['Tables']['sources_google']['Row']['metadata'];
 
@@ -424,40 +416,62 @@ export function FileViewer({ file }: FileViewerProps) {
         ) : (
           <>
             {isPdf && file.web_view_link && (
-              <Document
-                file={file.web_view_link}
-                onLoadSuccess={({ numPages }) => {
-                  console.log('PDF loaded successfully with', numPages, 'pages');
-                  setNumPages(numPages);
-                  setIsLoading(false);
-                }}
-                onLoadError={(error) => {
-                  console.error('Error loading PDF:', error);
-                  setError('Error loading PDF');
-                  setIsLoading(false);
-                }}
-                loading={
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-blue-500 animate-pulse">Loading PDF...</div>
+              <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'}`}>
+                {isLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="animate-pulse text-blue-500">Loading PDF...</div>
                   </div>
-                }
-                className="flex justify-center"
-              >
-                <Page 
-                  pageNumber={currentPage} 
-                  scale={scale}
-                  className="shadow-lg bg-white"
-                  renderTextLayer={true}
-                  renderAnnotationLayer={true}
-                  loading={
-                    <div className="w-full h-[800px] bg-gray-50 animate-pulse flex items-center justify-center">
-                      Loading page {currentPage}...
+                ) : (
+                  <>
+                    <video 
+                      controls 
+                      className={`w-full ${isFullscreen ? 'max-h-[90vh]' : 'max-h-[70vh]'} rounded-lg shadow-lg`}
+                      src={`${file.web_view_link}&download=true`}
+                      onLoadStart={(e) => {
+                        const videoElement = e.currentTarget;
+                        console.log('Video load starting:', {
+                          src: videoElement.src,
+                          readyState: videoElement.readyState,
+                          networkState: videoElement.networkState,
+                          networkStateMessage: getNetworkStateMessage(videoElement.networkState),
+                          error: videoElement.error
+                        });
+                        setIsLoading(true);
+                      }}
+                      onError={(e) => {
+                        const videoElement = e.currentTarget;
+                        console.error('Video loading error:', {
+                          error: videoElement.error?.message,
+                          code: videoElement.error?.code,
+                          networkState: videoElement.networkState,
+                          readyState: videoElement.readyState,
+                          src: videoElement.src
+                        });
+                        if (!videoElement.src.includes('&download=true')) {
+                          console.log('Trying alternative video URL format...');
+                          videoElement.src = `${file.web_view_link}&download=true`;
+                        } else {
+                          setError(`Failed to load video: ${videoElement.error?.message || 'Unknown error'}`);
+                          setIsLoading(false);
+                        }
+                      }}
+                      playsInline
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                    <div className="mt-2 text-sm text-gray-500 flex flex-col">
+                      <span>File: {file.name}</span>
+                      <span>Type: {file.mime_type}</span>
+                      <span>Size: {formatFileSize((file.metadata as FileMetadata)?.size || 0)}</span>
                     </div>
-                  }
-                  onRenderSuccess={() => setPdfLoadingPage(false)}
-                  onRenderError={() => setPdfLoadingPage(false)}
-                />
-              </Document>
+                  </>
+                )}
+                {error && (
+                  <div className="mt-4 text-red-500 text-center">
+                    {error}
+                  </div>
+                )}
+              </div>
             )}
             {(isDoc || isText) && (
               <div 
