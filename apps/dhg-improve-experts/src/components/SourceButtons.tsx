@@ -8,7 +8,7 @@ import { processDocumentWithAI } from '@/utils/ai-processing';
 import { syncGoogleDriveFiles } from '@/utils/google-drive-sync';
 import { syncFileMetadata } from '@/utils/metadata-sync';
 import { FunctionUsageTooltip } from '@/components/FunctionUsageTooltip';
-import { RegisterFunction } from '@/utils/function-decorators';
+import { functionRegistry } from '@/utils/function-registry';
 
 function sanitizeFileName(name: string): string {
   // Remove or replace problematic characters
@@ -216,6 +216,17 @@ export function SourceButtons() {
   };
 
   const handleExtractContent = async () => {
+    // Register the function
+    functionRegistry.register('handleExtractContent', {
+      description: 'Extracts content from Google Drive documents',
+      status: 'active',
+      location: 'src/components/SourceButtons.tsx',
+      category: 'CONTENT_EXTRACTION',
+      dependencies: ['mammoth', 'supabase'],
+      usedIn: ['SourceButtons'],
+      targetPackage: 'content-extraction'
+    });
+
     setLoading(true);
     try {
       const result = await processUnextractedDocuments();

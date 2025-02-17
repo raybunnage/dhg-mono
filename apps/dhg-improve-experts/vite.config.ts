@@ -18,10 +18,10 @@ export default defineConfig(({ mode }) => {
     build: {
       ...baseConfig.build,
       outDir: 'dist',
-      sourcemap: true,
+      sourcemap: true
     },
     server: {
-      port: 5173,      // Align with dhg-a port
+      port: 5174,  // Change from 5173 to 5174
       host: "::",      // Keep host setting from lovable
       ...baseConfig.server,
     },
@@ -49,7 +49,7 @@ export default defineConfig(({ mode }) => {
     },
     publicDir: 'public',
     optimizeDeps: {
-      include: ['pdfjs-dist/build/pdf.worker.entry'],
+      include: ['zod']
     }
   }
 })

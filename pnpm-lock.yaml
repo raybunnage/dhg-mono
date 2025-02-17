@@ -467,9 +467,6 @@ importers:
       next-themes:
         specifier: ^0.3.0
         version: 0.3.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      pdfjs-dist:
-        specifier: 4.8.69
-        version: 4.8.69
       pptxjs:
         specifier: ^0.0.0
         version: 0.0.0
@@ -491,9 +488,6 @@ importers:
       react-icons:
         specifier: ^5.4.0
         version: 5.4.0(react@18.3.1)
-      react-pdf:
-        specifier: 9.2.1
-        version: 9.2.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-resizable-panels:
         specifier: ^2.1.3
         version: 2.1.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -516,7 +510,7 @@ importers:
         specifier: ^0.9.3
         version: 0.9.9(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       zod:
-        specifier: ^3.23.8
+        specifier: ^3.24.1
         version: 3.24.1
     devDependencies:
       '@eslint/js':
@@ -546,9 +540,6 @@ importers:
       '@types/react-dom':
         specifier: ^18.2.19
         version: 18.3.5(@types/react@18.3.18)
-      '@types/react-pdf':
-        specifier: ^7.0.0
-        version: 7.0.0(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.3.4(vite@5.4.14(@types/node@22.13.1))
@@ -2549,10 +2540,6 @@ packages:
     peerDependencies:
       '@types/react': ^18.0.0
 
-  '@types/react-pdf@7.0.0':
-    resolution: {integrity: sha512-G0a+5UiKk3AvEauBP/Js7r9kGZNW3iBbS6kXkH0foGSaKWR6K3ElTe7Y4tlolc2VKbM9udmMxpkbxh/dtR2wXA==}
-    deprecated: This is a stub types definition. react-pdf provides its own type definitions, so you do not need this installed.
-
   '@types/react@18.3.18':
     resolution: {integrity: sha512-t4yC+vtgnkYjNSKlFx1jkAhH8LgTo2N/7Qvi83kdEaUtMDiwpbLAktKDaAMlRcJ5eSxZkH74eEGt1ky31d7kfQ==}
 
@@ -3635,10 +3622,6 @@ packages:
   depd@2.0.0:
     resolution: {integrity: sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==}
     engines: {node: '>= 0.8'}
-
-  dequal@2.0.3:
-    resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
-    engines: {node: '>=6'}
 
   destr@2.0.3:
     resolution: {integrity: sha512-2N3BOUU4gYMpTP24s5rF5iP7BDr7uNTCs4ozw3kf/eKfvWSIu93GEBi5m427YoyJoeOzQ5smuu4nNAPGb8idSQ==}
@@ -5242,9 +5225,6 @@ packages:
   magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
 
-  make-cancellable-promise@1.3.2:
-    resolution: {integrity: sha512-GCXh3bq/WuMbS+Ky4JBPW1hYTOU+znU+Q5m9Pu+pI8EoUqIHk9+tviOKC6/qhHh8C4/As3tzJ69IF32kdz85ww==}
-
   make-dir@3.1.0:
     resolution: {integrity: sha512-g3FeP20LNwhALb/6Cz6Dd4F2ngze0jz7tbzrD2wAV+o9FeNHe4rL+yK2md0J/fiSf1sa1ADhXqi5+oVwOM/eGw==}
     engines: {node: '>=8'}
@@ -5255,9 +5235,6 @@ packages:
 
   make-error@1.3.6:
     resolution: {integrity: sha512-s8UhlNe7vPKomQhC1qFelMokr/Sc3AgNbso3n74mVPA5LTZwkB9NlXf4XPamLxJE8h0gh73rM94xvwRT2CVInw==}
-
-  make-event-props@1.6.2:
-    resolution: {integrity: sha512-iDwf7mA03WPiR8QxvcVHmVWEPfMY1RZXerDVNCRYW7dUr2ppH3J58Rwb39/WG39yTZdRSxr3x+2v22tvI0VEvA==}
 
   mammoth@1.9.0:
     resolution: {integrity: sha512-F+0NxzankQV9XSUAuVKvkdQK0GbtGGuqVnND9aVf9VSeUA82LQa29GjLqYU6Eez8LHqSJG3eGiDW3224OKdpZg==}
@@ -5297,14 +5274,6 @@ packages:
   merge-options@3.0.4:
     resolution: {integrity: sha512-2Sug1+knBjkaMsMgf1ctR1Ujx+Ayku4EdJN4Z+C2+JzoeF7A3OZ9KM2GY0CpQS51NR61LTurMJrRKPhSs3ZRTQ==}
     engines: {node: '>=10'}
-
-  merge-refs@1.3.0:
-    resolution: {integrity: sha512-nqXPXbso+1dcKDpPCXvwZyJILz+vSLqGGOnDrYHQYE+B8n9JTCekVLC65AfCpR4ggVyA/45Y0iR9LDyS2iI+zA==}
-    peerDependencies:
-      '@types/react': ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
 
   merge-stream@2.0.0:
     resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
@@ -5880,10 +5849,6 @@ packages:
     resolution: {integrity: sha512-5HviZNaZcfqP95rwpv+1HDgUamezbqdSYTyzjTvwtJSnIH+3vnbmWsItli8OFEndS984VT55M3jduxZbX351gg==}
     engines: {node: '>=12'}
 
-  path2d@0.2.2:
-    resolution: {integrity: sha512-+vnG6S4dYcYxZd+CZxzXCNKdELYZSKfohrk98yajCo1PtRoDgCTrrwOvK1GT0UoAdVszagDVllQc0U1vaX4NUQ==}
-    engines: {node: '>=6'}
-
   pathe@1.1.2:
     resolution: {integrity: sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ==}
 
@@ -5893,10 +5858,6 @@ packages:
   pathval@2.0.0:
     resolution: {integrity: sha512-vE7JKRyES09KiunauX7nd2Q9/L7lhok4smP9RZTDeD4MVs72Dp2qNFVz39Nz5a0FVEW0BJR6C0DYrq6unoziZA==}
     engines: {node: '>= 14.16'}
-
-  pdfjs-dist@4.8.69:
-    resolution: {integrity: sha512-IHZsA4T7YElCKNNXtiLgqScw4zPd3pG9do8UrznC757gMd7UPeHSL2qwNNMJo4r79fl8oj1Xx+1nh2YkzdMpLQ==}
-    engines: {node: '>=18'}
 
   peek-readable@5.4.2:
     resolution: {integrity: sha512-peBp3qZyuS6cNIJ2akRNG1uo1WJ1d0wTxg/fxMdZ0BqCVhx242bSFHM9eNqflfJVS9SsgkzgT/1UgnsurBOTMg==}
@@ -6160,16 +6121,6 @@ packages:
 
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
-
-  react-pdf@9.2.1:
-    resolution: {integrity: sha512-AJt0lAIkItWEZRA5d/mO+Om4nPCuTiQ0saA+qItO967DTjmGjnhmF+Bi2tL286mOTfBlF5CyLzJ35KTMaDoH+A==}
-    peerDependencies:
-      '@types/react': ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
 
   react-refresh@0.14.2:
     resolution: {integrity: sha512-jCvmsr+1IUSMUyzOkRcvnVbX3ZYC6g9TDrDbFuFmRDq7PD4yaGbLKNQL6k2jnArV8hjYxh7hVhAZB6s9HDGpZA==}
@@ -7354,9 +7305,6 @@ packages:
     resolution: {integrity: sha512-3e04qkoN3LxTMLakdqeWth8nih8usyg+sf1Bgdf9wwUkp05iuK1eSY/QpLvscT/+F/gA89+LpUmmgBtesbqI2Q==}
     engines: {node: '>=10'}
     hasBin: true
-
-  warning@4.0.3:
-    resolution: {integrity: sha512-rpJyN222KWIvHJ/F53XSZv0Zl/accqHR8et1kpaMTD/fLCRxtV8iX8czMzY7sVZupTI3zcUTg8eycS2kNF9l6w==}
 
   web-streams-polyfill@3.3.3:
     resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
@@ -9567,14 +9515,6 @@ snapshots:
     dependencies:
       '@types/react': 18.3.18
 
-  '@types/react-pdf@7.0.0(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      react-pdf: 9.2.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - react
-      - react-dom
-
   '@types/react@18.3.18':
     dependencies:
       '@types/prop-types': 15.7.14
@@ -10791,8 +10731,6 @@ snapshots:
   depd@1.1.2: {}
 
   depd@2.0.0: {}
-
-  dequal@2.0.3: {}
 
   destr@2.0.3: {}
 
@@ -12717,8 +12655,6 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.0
 
-  make-cancellable-promise@1.3.2: {}
-
   make-dir@3.1.0:
     dependencies:
       semver: 6.3.1
@@ -12728,8 +12664,6 @@ snapshots:
       semver: 7.7.1
 
   make-error@1.3.6: {}
-
-  make-event-props@1.6.2: {}
 
   mammoth@1.9.0:
     dependencies:
@@ -12770,10 +12704,6 @@ snapshots:
   merge-options@3.0.4:
     dependencies:
       is-plain-obj: 2.1.0
-
-  merge-refs@1.3.0(@types/react@18.3.18):
-    optionalDependencies:
-      '@types/react': 18.3.18
 
   merge-stream@2.0.0: {}
 
@@ -13424,19 +13354,11 @@ snapshots:
 
   path-type@5.0.0: {}
 
-  path2d@0.2.2:
-    optional: true
-
   pathe@1.1.2: {}
 
   pathe@2.0.2: {}
 
   pathval@2.0.0: {}
-
-  pdfjs-dist@4.8.69:
-    optionalDependencies:
-      canvas: 3.1.0
-      path2d: 0.2.2
 
   peek-readable@5.4.2: {}
 
@@ -13704,21 +13626,6 @@ snapshots:
   react-is@17.0.2: {}
 
   react-is@18.3.1: {}
-
-  react-pdf@9.2.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      clsx: 2.1.1
-      dequal: 2.0.3
-      make-cancellable-promise: 1.3.2
-      make-event-props: 1.6.2
-      merge-refs: 1.3.0(@types/react@18.3.18)
-      pdfjs-dist: 4.8.69
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      tiny-invariant: 1.3.3
-      warning: 4.0.3
-    optionalDependencies:
-      '@types/react': 18.3.18
 
   react-refresh@0.14.2: {}
 
@@ -15009,10 +14916,6 @@ snapshots:
       debug: 4.4.0(supports-color@9.4.0)
     transitivePeerDependencies:
       - supports-color
-
-  warning@4.0.3:
-    dependencies:
-      loose-envify: 1.4.0
 
   web-streams-polyfill@3.3.3: {}
 
