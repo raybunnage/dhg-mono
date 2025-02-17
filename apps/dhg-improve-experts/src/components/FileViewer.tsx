@@ -80,6 +80,8 @@ export function FileViewer({ file }: FileViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [pdfLoadingPage, setPdfLoadingPage] = useState(false);
   const [contentSource, setContentSource] = useState<'expert_doc' | 'sources_google' | 'drive' | null>(null);
+  const [extractedContent, setExtractedContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Handle fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -183,19 +185,23 @@ export function FileViewer({ file }: FileViewerProps) {
           console.log('Attempting to load from Google Drive...');
           setContentSource('drive');
           
+          // For Word documents, use the working extraction method
           if (file.mime_type.includes('wordprocessingml.document') || 
               file.mime_type.includes('msword')) {
             try {
+              // Get the file from Supabase first
+              const { data: doc } = await supabase
+                .from('sources_google')
+                .select('id, name, drive_id, mime_type')
+                .eq('id', file.id)
+                .single();
+
+              if (!doc) {
+                throw new Error('Document not found');
+              }
+
               const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
-
-              console.log('Starting Drive content extraction:', {
-                driveId: file.drive_id,
-                mimeType: file.mime_type,
-                hasAccessToken: !!accessToken
-              });
-
-              const url = `https://www.googleapis.com/drive/v3/files/${file.drive_id}?alt=media`;
-              console.log('Fetching document:', { url });
+              const url = `https://www.googleapis.com/drive/v3/files/${doc.drive_id}?alt=media`;
 
               const downloadResponse = await fetch(url, {
                 headers: {
@@ -204,33 +210,22 @@ export function FileViewer({ file }: FileViewerProps) {
               });
 
               if (!downloadResponse.ok) {
-                const errorText = await downloadResponse.text();
-                throw new Error(`Could not download Office document: ${downloadResponse.status} - ${errorText}`);
+                throw new Error(`Could not download Office document: ${downloadResponse.status}`);
               }
 
               const buffer = await downloadResponse.arrayBuffer();
               const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
 
               if (!result.value) {
-                throw new Error('Mammoth conversion produced no content');
+                throw new Error('No content extracted from document');
               }
 
-              // Strip HTML but preserve structure
-              const cleanText = result.value
-                .replace(/<p>/g, '')
-                .replace(/<\/p>/g, '\n\n')
-                .replace(/<li>/g, '• ')
-                .replace(/<\/li>/g, '\n')
-                .replace(/<[^>]*>/g, '')
-                .replace(/\n{3,}/g, '\n\n')
-                .trim();
-
-              setDocContent(cleanText);
+              setDocContent(result.value);
               setContentSource('drive');
+
             } catch (error) {
               console.error('Word document processing error:', error);
               setError(`Error processing Word document: ${error.message}`);
-              setDocContent('<p class="text-red-500">Failed to load document content</p>');
             }
           } else if (file.mime_type.includes('text/plain') || 
                     file.mime_type.includes('text/csv') ||
@@ -242,9 +237,8 @@ export function FileViewer({ file }: FileViewerProps) {
           }
         }
       } catch (error) {
-        console.error('Detailed error:', error);
+        console.error('Content loading error:', error);
         setError('Error loading document');
-        setDocContent('<p>Error loading document</p>');
       } finally {
         setIsLoading(false);
       }
@@ -252,6 +246,37 @@ export function FileViewer({ file }: FileViewerProps) {
 
     loadContent();
   }, [file]);
+
+  const handleExtractContent = async () => {
+    if (!file?.drive_id) return;
+    
+    setLoading(true);
+    try {
+      const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+      const url = `https://www.googleapis.com/drive/v3/files/${file.drive_id}?alt=media`;
+
+      const downloadResponse = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        }
+      });
+
+      if (!downloadResponse.ok) {
+        throw new Error(`Could not download document: ${downloadResponse.status}`);
+      }
+
+      const buffer = await downloadResponse.arrayBuffer();
+      const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
+
+      if (result.value) {
+        setExtractedContent(result.value);
+      }
+    } catch (error) {
+      console.error('Content extraction failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!file) {
     return (
