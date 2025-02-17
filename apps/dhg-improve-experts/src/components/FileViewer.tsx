@@ -9,6 +9,7 @@ import { FileNode } from '@/components/FileTree';
 import { formatFileSize } from '@/utils/format';
 import { getDocxContent } from '@/utils/google-drive';
 import { proxyGoogleDrive } from '@/api/proxy';
+import docx4js from 'docx4js';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -206,7 +207,9 @@ export function FileViewer({ file }: FileViewerProps) {
               const downloadResponse = await fetch(url, {
                 headers: {
                   'Authorization': `Bearer ${accessToken}`,
-                }
+                  'Accept': 'application/json'
+                },
+                mode: 'cors'
               });
 
               if (!downloadResponse.ok) {
@@ -214,13 +217,56 @@ export function FileViewer({ file }: FileViewerProps) {
               }
 
               const buffer = await downloadResponse.arrayBuffer();
-              const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
 
-              if (!result.value) {
-                throw new Error('No content extracted from document');
+              // For .docx files, use mammoth
+              if (file.mime_type.includes('wordprocessingml.document')) {
+                const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
+                if (!result.value) {
+                  throw new Error('No content extracted from document');
+                }
+                setDocContent(result.value);
+              } 
+              // For .doc files, use text extraction with cleanup
+              else if (file.mime_type.includes('msword')) {
+                const text = await new Response(buffer).text();
+                
+                // Clean up the text content
+                const cleanedText = text
+                  // First remove everything before the first letter
+                  .replace(/^[^a-zA-Z]*/, '')
+                  // Remove all non-standard characters and control codes
+                  .replace(/[^\x20-\x7E\n]/g, '')
+                  // Remove any remaining special characters except basic punctuation
+                  .replace(/[^a-zA-Z0-9\s.,!?:;()\-'"]/g, ' ')
+                  // Fix spacing issues
+                  .replace(/\s+/g, ' ')
+                  // Split into lines and clean each line
+                  .split('\n')
+                  .map(line => line.trim())
+                  .filter(line => {
+                    const cleanLine = line.trim();
+                    // Only keep lines with actual text content
+                    return cleanLine.length > 0 && 
+                           /[a-zA-Z]/.test(cleanLine) && // Must have at least one letter
+                           cleanLine.length > 3; // Must be more than 3 chars to avoid fragments
+                  })
+                  .join('\n')
+                  .trim();
+
+                // Format into clean paragraphs
+                setDocContent(`
+                  <div class="prose max-w-none bg-white rounded-lg">
+                    <div class="text-gray-800 leading-relaxed">
+                      ${cleanedText
+                        .split(/\n\s*\n/)
+                        .filter(para => para.trim().length > 0)
+                        .map(para => `<p class="mb-4">${para.trim()}</p>`)
+                        .join('')}
+                    </div>
+                  </div>
+                `.trim());
               }
 
-              setDocContent(result.value);
               setContentSource('drive');
 
             } catch (error) {
