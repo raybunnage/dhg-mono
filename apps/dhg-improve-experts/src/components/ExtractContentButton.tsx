@@ -87,14 +87,14 @@ export function ExtractContentButton({ onSuccess, onError }: ExtractContentButto
   // Add Google Drive content extraction
   const extractGoogleDriveContent = async (driveId: string, mimeType: string) => {
     try {
-      const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+      const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
 
       console.log('Starting Drive content extraction:', {
         driveId,
         mimeType,
-        hasAccessToken: !!accessToken,
-        tokenLength: accessToken?.length,
-        tokenStart: accessToken?.substring(0, 10) + '...'
+        hasAccessToken: !!apiKey,
+        tokenLength: apiKey?.length,
+        tokenStart: apiKey?.substring(0, 10) + '...'
       });
 
       if (mimeType.includes('officedocument')) {
@@ -103,7 +103,7 @@ export function ExtractContentButton({ onSuccess, onError }: ExtractContentButto
 
         const downloadResponse = await fetch(url, {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${apiKey}`,
           }
         });
 

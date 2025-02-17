@@ -9,6 +9,7 @@ import SourceButtonsPage from '@/pages/source-buttons';
 import FunctionRegistryPage from '@/pages/function-registry';
 import FileExplorer from '@/pages/file-explorer';
 import { MainNavbar } from '@/components/MainNavbar';
+import RegistryViewer from './routes/RegistryViewer';
 
 function App() {
   console.log('App component mounting');
@@ -21,7 +22,8 @@ function App() {
     '/source-management',
     '/source-buttons',
     '/function-registry',
-    '/file-explorer'
+    '/file-explorer',
+    '/registry'
   ]);
   
   return (
@@ -66,6 +68,10 @@ function App() {
           <Route 
             path="/file-explorer" 
             element={<FileExplorer />} 
+          />
+          <Route 
+            path="/registry" 
+            element={<RegistryViewer />} 
           />
         </Routes>
       </main>
