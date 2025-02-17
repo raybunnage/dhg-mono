@@ -18,6 +18,12 @@ type FunctionRegistryEntry = {
     relationship_type: string;
     details: Record<string, any>;
   }>;
+  formatted_date: string;
+  git_info?: {
+    branch: string;
+    commit: string;
+    commit_message: string;
+  };
 };
 
 export default function RegistryViewer() {
@@ -73,6 +79,19 @@ export default function RegistryViewer() {
               <div>
                 <h2 className="text-xl font-semibold text-blue-600">{entry.name}</h2>
                 <p className="text-gray-600">{entry.description}</p>
+                <div className="mt-2 text-sm text-gray-500">
+                  <p>Created: {entry.formatted_date}</p>
+                  {entry.git_info && (
+                    <div className="mt-1 space-y-1">
+                      <p className="font-medium">Git Context:</p>
+                      <p className="ml-2">Branch: {entry.git_info.branch}</p>
+                      <p className="ml-2">
+                        Commit: <span className="font-mono">{entry.git_info.commit.slice(0, 7)}</span>
+                      </p>
+                      <p className="ml-2 italic">"{entry.git_info.commit_message}"</p>
+                    </div>
+                  )}
+                </div>
               </div>
               <span className={`px-3 py-1 rounded-full text-sm ${
                 entry.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
