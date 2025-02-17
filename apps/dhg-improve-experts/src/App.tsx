@@ -7,6 +7,8 @@ import { TestPdfViewer } from '@/components/TestPdfViewer';
 import SourceButtonsTest from '@/pages/source-buttons-test';
 import SourceManagementPage from '@/pages/source-management';
 import SourceButtonsPage from '@/pages/source-buttons';
+import FunctionRegistryPage from '@/pages/function-registry';
+import FileExplorer from '@/pages/file-explorer';
 
 function App() {
   console.log('App component mounting');
@@ -18,7 +20,9 @@ function App() {
     '/test-pdf',
     '/source-buttons-test',
     '/source-management',
-    '/source-buttons'
+    '/source-buttons',
+    '/function-registry',
+    '/file-explorer'
   ]);
   
   return (
@@ -57,6 +61,14 @@ function App() {
         <Route 
           path="/source-buttons" 
           element={<SourceButtonsPage />}
+        />
+        <Route 
+          path="/function-registry" 
+          element={<FunctionRegistryPage />} 
+        />
+        <Route 
+          path="/file-explorer" 
+          element={<FileExplorer />} 
         />
       </Routes>
     </BrowserRouter>
