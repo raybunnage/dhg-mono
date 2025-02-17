@@ -41,7 +41,8 @@
     "db:psql:check": "./scripts/supabase/start-psql.sh \"SELECT version FROM supabase_migrations.schema_migrations ORDER BY version DESC LIMIT 1;\"",
     "db:psql:migrations": "./scripts/supabase/start-psql.sh \"SELECT version, name, statements[1] as first_statement FROM supabase_migrations.schema_migrations ORDER BY version DESC;\"",
     "db:psql:describe-migrations": "./scripts/supabase/start-psql.sh \"\\d supabase_migrations.schema_migrations;\"",
-    "tree": "node scripts/show-tree.js"
+    "tree": "node scripts/show-tree.js",
+    "gen:types": "supabase gen types typescript --local > supabase/types.ts"
   },
   "bin": {
     "dhg-tree": "./scripts/show-tree.js"
