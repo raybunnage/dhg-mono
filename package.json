@@ -8,6 +8,7 @@
     "clean": "turbo run clean",
     "test": "turbo run test",
     "test:run": "turbo run test:run",
+    "git:info": "./scripts/get-git-info.sh",
     "list-backups": "./scripts/app-management/list-backups.sh",
     "list-backups-date": "./scripts/app-management/list-backups.sh",
     "deploy:dev": "./scripts/deploy.sh dhg-a development",
