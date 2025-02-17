@@ -45,6 +45,13 @@ export default function RegistryViewer() {
         }
 
         console.log('Fetched data:', data?.length, 'entries');
+        console.log('Sample entry:', JSON.stringify(data?.[0], null, 2));
+        console.log('Git info examples:', data?.map(d => ({
+          name: d.name,
+          git_info: d.git_info,
+          supabase_operations: d.supabase_operations
+        })));
+
         setEntries(data || []);
       } catch (err) {
         console.error('Error fetching registry:', err);
@@ -81,14 +88,18 @@ export default function RegistryViewer() {
                 <p className="text-gray-600">{entry.description}</p>
                 <div className="mt-2 text-sm text-gray-500">
                   <p>Created: {entry.formatted_date}</p>
-                  {entry.git_info && (
+                  {entry.supabase_operations?.git_info && (
                     <div className="mt-1 space-y-1">
                       <p className="font-medium">Git Context:</p>
-                      <p className="ml-2">Branch: {entry.git_info.branch}</p>
+                      <p className="ml-2">Branch: {entry.supabase_operations.git_info.branch}</p>
                       <p className="ml-2">
-                        Commit: <span className="font-mono">{entry.git_info.commit.slice(0, 7)}</span>
+                        Commit: <span className="font-mono">
+                          {entry.supabase_operations.git_info.commit.slice(0, 7)}
+                        </span>
                       </p>
-                      <p className="ml-2 italic">"{entry.git_info.commit_message}"</p>
+                      <p className="ml-2 italic">
+                        "{entry.supabase_operations.git_info.commit_message}"
+                      </p>
                     </div>
                   )}
                 </div>
