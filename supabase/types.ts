@@ -1111,6 +1111,58 @@ export type Database = {
         }
         Relationships: []
       }
+      video_summaries: {
+        Row: {
+          id: string;  // UUID
+          source_id: string;  // matches drive_id from sources_google
+          status: string | null;
+          summary: string | null;
+          error: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          source_id: string;
+          status?: string | null;
+          summary?: string | null;
+          error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          source_id?: string;
+          status?: string | null;
+          summary?: string | null;
+          error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      processing_costs: {
+        Row: {
+          id: string;  // UUID
+          service: string | null;
+          duration_minutes: number | null;
+          cost_usd: number | null;
+          processed_at: string;
+        };
+        Insert: {
+          id?: string;
+          service?: string | null;
+          duration_minutes?: number | null;
+          cost_usd?: number | null;
+          processed_at?: string;
+        };
+        Update: {
+          id?: string;
+          service?: string | null;
+          duration_minutes?: number | null;
+          cost_usd?: number | null;
+          processed_at?: string;
+        };
+      };
     }
     Views: {
       batch_processing_status: {

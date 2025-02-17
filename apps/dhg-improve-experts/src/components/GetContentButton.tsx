@@ -18,7 +18,7 @@ interface DocInfo {
 
 type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
 
-function GetContentButton({ onSuccess, onError }: GetContentButtonProps) {
+export function GetContentButton({ onSuccess, onError }: GetContentButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [documents, setDocuments] = useState<{ id: string }[]>([]);
@@ -254,6 +254,4 @@ function GetContentButton({ onSuccess, onError }: GetContentButtonProps) {
       )}
     </div>
   );
-}
-
-export default GetContentButton; 
+} 

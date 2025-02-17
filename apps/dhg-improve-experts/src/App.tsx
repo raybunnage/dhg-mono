@@ -1,8 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, UNSAFE_DataRouterContext } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ExpertProfiles from "@/pages/ExpertProfiles";
 import { Toaster } from 'react-hot-toast';
 import DocumentTestingPage from './pages/document-testing';
 import ExpertProfilerPage from './app/experts/profiler/page';
+import { TestPdfViewer } from '@/components/TestPdfViewer';
+import SourceButtonsTest from '@/pages/source-buttons-test';
 
 function App() {
   console.log('App component mounting');
@@ -10,11 +12,13 @@ function App() {
     '/',
     '/experts',
     '/document-testing',
-    '/experts/profiler'
+    '/experts/profiler',
+    '/test-pdf',
+    '/source-buttons-test'
   ]);
   
   return (
-    <Router future={{ v7_startTransition: true }}>
+    <BrowserRouter>
       <Toaster position="top-right" />
       <Routes>
         <Route 
@@ -34,8 +38,16 @@ function App() {
           element={<ExpertProfilerPage />}
           errorElement={<div>Error loading profiler page</div>} 
         />
+        <Route 
+          path="/test-pdf" 
+          element={<TestPdfViewer />}
+        />
+        <Route 
+          path="/source-buttons-test" 
+          element={<SourceButtonsTest />}
+        />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
 

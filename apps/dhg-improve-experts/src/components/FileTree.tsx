@@ -2,27 +2,49 @@ import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { FileTreeItem } from './FileTreeItem';
+import type { Database } from '@/../../supabase/types';
 
-interface FileNode {
+type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
+type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
+type BatchProcessingStatus = Database['public']['Views']['batch_processing_status']['Row'];
+type Json = Database['public']['Tables']['sources_google']['Row']['metadata'];
+
+// First, let's define a proper metadata type based on what we know exists
+interface FileMetadata {
+  size?: string | number;
+  quotaBytesUsed?: string | number;
+  fileSize?: string | number;
+  [key: string]: any; // Allow other properties since it's Json type
+}
+
+// Update FileNode interface
+export interface FileNode {
   id: string;
   name: string;
   mime_type: string;
   path: string | null;
   parent_path: string | null;
-  content_extracted?: boolean;
-  web_view_link?: string;
-  processing_status?: 'queued' | 'processing' | 'completed' | 'error';
-  batch_id?: string;
-  metadata?: {
-    size?: string;
-    quotaBytesUsed?: string;  // Google Drive sometimes uses this
-    fileSize?: string;        // Or might use this
+  content_extracted: boolean | null;
+  web_view_link: string | null;
+  metadata: Json | null;
+  expertDocument?: {
+    processing_status: string | null;
+    batch_id: string | null;
+    error_message: string | null;
+    queued_at: string | null;
+    processing_started_at: string | null;
+    processing_completed_at: string | null;
+    processing_error: string | null;
+    retry_count: number | null;
+    processed_content?: string | Record<string, any>;
   };
+  drive_id?: string;
 }
 
 interface FileTreeProps {
   files: FileNode[];
   onSelectionChange?: (selectedIds: string[]) => void;
+  onFileClick?: (file: FileNode) => void;
 }
 
 // Add new type for supported file types
@@ -106,7 +128,7 @@ const MIME_TYPE_FILTERS = [
   }
 ];
 
-export function FileTree({ files, onSelectionChange }: FileTreeProps) {
+export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [activeMimeTypes, setActiveMimeTypes] = useState<Set<string>>(new Set());
@@ -252,6 +274,7 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
             className={`flex items-center gap-2 py-1 hover:bg-gray-50 rounded cursor-pointer
               ${!isFolder && item.content_extracted ? 'bg-green-50' : ''}`}
             style={{ paddingLeft: `${level * 20}px` }}
+            onClick={() => !isFolder && onFileClick?.(item)}
           >
             {isFolder ? (
               <>
@@ -272,7 +295,7 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
                   type="checkbox"
                   checked={selectedFiles.has(item.id)}
                   onChange={() => toggleFile(item.id)}
-                  disabled={item.processing_status === 'processing'}
+                  disabled={item.content_extracted === null}
                   className="form-checkbox h-4 w-4"
                 />
                 <span className="mr-1">{getIcon(item.mime_type)}</span>
@@ -281,20 +304,37 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
                 >
                   <span>{item.name}</span>
                   <span className="text-gray-500 text-sm">
-                    {formatFileSize(item.metadata?.size || item.metadata?.quotaBytesUsed || item.metadata?.fileSize || '0')}
+                    {formatFileSize(
+                      (item.metadata as FileMetadata)?.size || 
+                      (item.metadata as FileMetadata)?.quotaBytesUsed || 
+                      (item.metadata as FileMetadata)?.fileSize || 
+                      '0'
+                    )}
                   </span>
-                  {/* Processing status indicators */}
-                  {item.content_extracted ? (
-                    <span title="Processed" className="text-green-600 text-sm">✓</span>
-                  ) : item.processing_status === 'queued' ? (
-                    <span title="Queued" className="text-yellow-500">⏳</span>
-                  ) : item.processing_status === 'processing' ? (
-                    <span title="Processing" className="text-blue-500 animate-pulse">⚡</span>
-                  ) : item.processing_status === 'error' ? (
-                    <span title="Error" className="text-red-500">❌</span>
-                  ) : null}
                 </span>
               </>
+            )}
+            {!isFolder && (
+              <span className="flex items-center gap-1">
+                {item.expertDocument ? (
+                  <>
+                    {item.expertDocument.processing_status === 'completed' && (
+                      <span title="Processed" className="text-green-600 text-sm">✓</span>
+                    )}
+                    {item.expertDocument.processing_status === 'queued' && (
+                      <span title="Queued" className="text-yellow-500">⏳</span>
+                    )}
+                    {item.expertDocument.processing_status === 'processing' && (
+                      <span title="Processing" className="text-blue-500 animate-pulse">⚡</span>
+                    )}
+                    {item.expertDocument.processing_status === 'failed' && (
+                      <span title={item.expertDocument.error_message || 'Error'} className="text-red-500">❌</span>
+                    )}
+                  </>
+                ) : item.content_extracted ? (
+                  <span title="Content Extracted" className="text-green-600 text-sm">✓</span>
+                ) : null}
+              </span>
             )}
           </div>
           {isFolder && isExpanded && renderTree(item.path, level + 1)}
@@ -306,7 +346,7 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
   const handleProcessSelected = async () => {
     const selectedFileNodes = Array.from(selectedFiles)
       .map(id => files.find(f => f.id === id))
-      .filter(f => f && !f.content_extracted) as FileNode[]; // Only process unextracted files
+      .filter(f => f && f.content_extracted === null) as FileNode[]; // Only process unextracted files
 
     if (selectedFileNodes.length === 0) {
       toast.success('No new files to process');
