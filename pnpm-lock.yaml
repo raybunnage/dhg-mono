@@ -546,6 +546,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.20(postcss@8.5.1)
+      esbuild-register:
+        specifier: ^3.6.0
+        version: 3.6.0(esbuild@0.21.5)
       eslint:
         specifier: ^8.56.0
         version: 8.57.1
@@ -573,8 +576,11 @@ importers:
       tailwindcss:
         specifier: ^3.4.11
         version: 3.4.17(ts-node@10.9.2(@types/node@22.13.1)(typescript@5.7.3))
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@types/node@22.13.1)(typescript@5.7.3)
       typescript:
-        specifier: ^5.5.3
+        specifier: ^5.7.3
         version: 5.7.3
       typescript-eslint:
         specifier: ^8.0.1
@@ -3878,6 +3884,11 @@ packages:
 
   es6-promisify@6.1.1:
     resolution: {integrity: sha512-HBL8I3mIki5C1Cc9QjKUenHtnG0A5/xA8Q/AllRcfiwl2CZFXGK7ddBiCoRwAix4i2KxcQfjtIVcrVbB3vbmwg==}
+
+  esbuild-register@3.6.0:
+    resolution: {integrity: sha512-H2/S7Pm8a9CL1uhp9OvjwrBh5Pvx0H8qVOxNu8Wed9Y7qv56MPtq+GGM8RJpq6glYJn9Wspr8uw7l55uyinNeg==}
+    peerDependencies:
+      esbuild: '>=0.12 <1'
 
   esbuild@0.19.11:
     resolution: {integrity: sha512-HJ96Hev2hX/6i5cDVwcqiJBBtuo9+FeIJOtZ9W1kA5M6AMJRHUZlpYZ1/SbEwtO0ioNAW8rUooVpC/WehY2SfA==}
@@ -11057,6 +11068,13 @@ snapshots:
       is-symbol: 1.1.1
 
   es6-promisify@6.1.1: {}
+
+  esbuild-register@3.6.0(esbuild@0.21.5):
+    dependencies:
+      debug: 4.4.0(supports-color@9.4.0)
+      esbuild: 0.21.5
+    transitivePeerDependencies:
+      - supports-color
 
   esbuild@0.19.11:
     optionalDependencies:

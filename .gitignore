@@ -87,3 +87,7 @@ Thumbs.db
 
 # Sensitive files
 patterns.txt
+
+# API Keys
+*.env.local
+*.env.development
