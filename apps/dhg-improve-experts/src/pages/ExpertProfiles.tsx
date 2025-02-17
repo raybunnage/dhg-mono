@@ -5,6 +5,7 @@ import { SourceButtons } from "@/components/SourceButtons";
 import { FileViewer } from '@/components/FileViewer';
 import { useNavigate } from 'react-router-dom';
 import type { Database } from '@/../../supabase/types';
+import { toast } from 'react-hot-toast';
 
 type SourcesGoogleRow = Database['public']['Tables']['sources_google']['Row'];
 type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
@@ -25,56 +26,70 @@ export default function ExpertProfiles() {
 
   useEffect(() => {
     async function loadFiles() {
-      const { data, error } = await supabase
-        .from('sources_google')
-        .select(`
-          *,
-          expert_documents (
-            processing_status,
-            batch_id,
-            error_message,
-            queued_at,
-            processing_started_at,
-            processing_completed_at,
-            processing_error,
-            retry_count,
-            batch_processing_status (
-              computed_status,
-              error_rate_percentage,
-              processing_hours,
-              top_error_types
+      try {
+        const { data, error } = await supabase
+          .from('sources_google')
+          .select(`
+            *,
+            expert_documents (
+              processing_status,
+              batch_id,
+              error_message,
+              queued_at,
+              processing_started_at,
+              processing_completed_at,
+              processing_error,
+              retry_count,
+              batch_processing_status (
+                computed_status,
+                error_rate_percentage,
+                processing_hours,
+                top_error_types
+              )
             )
-          )
-        `)
-        .eq('deleted', false)
-        .order('name');
+          `)
+          .eq('deleted', false)
+          .order('name');
 
-      if (error) {
-        console.error('Error loading files:', error);
-        return;
+        if (error) {
+          console.error('Error loading files:', error);
+          toast.error('Failed to load files');
+          return;
+        }
+
+        // Log the response to help debug
+        console.log('Files loaded:', {
+          count: data?.length,
+          sample: data?.[0],
+          error
+        });
+
+        const mapToFileNode = (sourceData: SourcesGoogleRow & { 
+          expert_documents: (ExpertDocument & {
+            batch_processing_status: BatchProcessingStatus
+          })[] 
+        }): FileNode => ({
+          id: sourceData.id,
+          name: sourceData.name,
+          mime_type: sourceData.mime_type,
+          path: sourceData.path,
+          parent_path: sourceData.parent_path,
+          content_extracted: sourceData.content_extracted,
+          web_view_link: sourceData.web_view_link,
+          metadata: sourceData.metadata as FileMetadata,
+          expertDocument: sourceData.expert_documents?.[0] ? {
+            ...sourceData.expert_documents[0],
+            batchStatus: sourceData.expert_documents[0].batch_processing_status
+          } : undefined
+        });
+
+        setFiles((data || []).map(mapToFileNode));
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to load files:', error);
+        toast.error('Failed to load files');
+        setLoading(false);
       }
-
-      const mapToFileNode = (sourceData: SourcesGoogleRow & { 
-        expert_documents: (ExpertDocument & {
-          batch_processing_status: BatchProcessingStatus
-        })[] 
-      }): FileNode => ({
-        id: sourceData.id,
-        name: sourceData.name,
-        mime_type: sourceData.mime_type,
-        path: sourceData.path,
-        parent_path: sourceData.parent_path,
-        content_extracted: sourceData.content_extracted,
-        web_view_link: sourceData.web_view_link,
-        metadata: sourceData.metadata as FileMetadata,
-        expertDocument: sourceData.expert_documents?.[0] ? {
-          ...sourceData.expert_documents[0],
-          batchStatus: sourceData.expert_documents[0].batch_processing_status
-        } : undefined
-      });
-
-      setFiles((data || []).map(mapToFileNode));
-      setLoading(false);
     }
 
     loadFiles();
