@@ -28,13 +28,20 @@ export default function RegistryViewer() {
   useEffect(() => {
     async function fetchRegistry() {
       try {
+        console.log('Fetching registry data...');
         const { data, error } = await supabase
           .from('function_registry_view')
           .select('*');
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error:', error);
+          throw error;
+        }
+
+        console.log('Fetched data:', data?.length, 'entries');
         setEntries(data || []);
       } catch (err) {
+        console.error('Error fetching registry:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
