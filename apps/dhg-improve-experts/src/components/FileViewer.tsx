@@ -7,6 +7,7 @@ import { formatFileSize } from '@/utils/format';
 import { getDocxContent } from '@/utils/google-drive';
 import { proxyGoogleDrive } from '@/api/proxy';
 import docx4js from 'docx4js';
+import { ChatContent } from '@/components/ChatContent';
 
 type Json = Database['public']['Tables']['sources_google']['Row']['metadata'];
 
@@ -128,6 +129,22 @@ export function FileViewer({ file }: FileViewerProps) {
 
   // Add helper to check if file is video
   const isVideo = file?.mime_type?.includes('video/');
+
+  // First, update the isAudio check to specifically handle m4a
+  const isAudio = file?.mime_type?.includes('audio');
+  const isM4A = file?.mime_type?.includes('x-m4a') || file?.mime_type?.includes('mp4a');
+
+  // Update other file type checks with optional chaining
+  const isPdf = file?.mime_type?.includes('pdf');
+  const isDoc = file?.mime_type?.includes('wordprocessingml.document') || 
+                file?.mime_type?.includes('msword');
+  const isText = file?.mime_type?.includes('text/plain') || 
+                file?.mime_type?.includes('text/csv') ||
+                file?.mime_type?.includes('text/tab-separated-values');
+  const isPresentation = file?.mime_type?.includes('presentation') || 
+                        file?.mime_type?.includes('powerpoint') ||
+                        file?.mime_type?.includes('vnd.openxmlformats-officedocument.presentationml.presentation') || // .pptx
+                        file?.mime_type?.includes('vnd.ms-powerpoint'); // .ppt
 
   // Handle fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -384,18 +401,6 @@ export function FileViewer({ file }: FileViewerProps) {
     );
   }
 
-  const isPdf = file.mime_type.includes('pdf');
-  const isDoc = file.mime_type.includes('wordprocessingml.document') || 
-                file.mime_type.includes('msword');
-  const isText = file.mime_type.includes('text/plain') || 
-                file.mime_type.includes('text/csv') ||
-                file.mime_type.includes('text/tab-separated-values');
-  const isAudio = file.mime_type.includes('audio');
-  const isPresentation = file.mime_type.includes('presentation') || 
-                        file.mime_type.includes('powerpoint') ||
-                        file.mime_type.includes('vnd.openxmlformats-officedocument.presentationml.presentation') || // .pptx
-                        file.mime_type.includes('vnd.ms-powerpoint'); // .ppt
-
   return (
     <div className={`${isFullscreen ? 'w-full' : 'w-1/2'} fixed top-0 right-0 h-screen bg-white border-l flex flex-col`}>
       {/* Header with controls and filename */}
@@ -475,9 +480,9 @@ export function FileViewer({ file }: FileViewerProps) {
         ) : (
           <>
             {isVideo && file.web_view_link && (
-              <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'}`}>
+              <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'} flex-col`}>
                 <div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
-                  {/* Debug info */}
+                  {/* Video debug info */}
                   {process.env.NODE_ENV === 'development' && (
                     <div className="p-2 bg-black/50 text-white text-xs space-y-1">
                       <div className="font-bold text-yellow-400">Video Debug Info:</div>
@@ -494,6 +499,17 @@ export function FileViewer({ file }: FileViewerProps) {
                     onLoad={() => console.log('🎥 Video iframe loaded with ID:', extractDriveId(file.web_view_link))}
                   />
                 </div>
+                
+                {/* Look for associated chat.txt */}
+                {file.name && (
+                  <div className="mt-4 w-full">
+                    <div className="text-sm font-medium mb-2">Associated Chat:</div>
+                    <div className="bg-gray-50 rounded-lg p-4 max-h-[300px] overflow-y-auto">
+                      <ChatContent videoFileName={file.name} />
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-2 text-sm text-gray-500 flex flex-col">
                   <span>File: {file.name}</span>
                   <span>Type: {file.mime_type}</span>
@@ -514,22 +530,62 @@ export function FileViewer({ file }: FileViewerProps) {
                 )}
                 <iframe
                   src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
-                  className={`w-full ${isFullscreen ? 'h-[90vh]' : 'h-[70vh]'} rounded-lg shadow-lg`}
+                  className="w-full h-[calc(100vh-8rem)] rounded-lg shadow-lg"
                   title="PDF Preview"
                   onLoad={() => console.log('📄 PDF iframe loaded with ID:', extractDriveId(file.web_view_link))}
                 />
               </div>
             )}
             {(isDoc || isText) && (
-              <div 
-                className={`prose max-w-none font-mono ${isFullscreen ? 'bg-white p-8 rounded-lg shadow-lg mx-auto max-w-4xl' : ''}`}
-                style={{ whiteSpace: 'pre-wrap', fontSize: '0.9em' }}
-                dangerouslySetInnerHTML={{ 
-                  __html: docContent.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-                }}
-              />
+              <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'}`}>
+                {/* Show processed content if available */}
+                {file.expertDocument?.processed_content ? (
+                  <div className="w-full h-[calc(100vh-10rem)] bg-white p-4 rounded-lg shadow-lg overflow-y-auto">
+                    {/* Debug info */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="p-2 bg-black/50 text-white text-xs space-y-1 mb-4">
+                        <div className="font-bold text-yellow-400">Document Debug Info:</div>
+                        <div>Source: Expert Document (Processed)</div>
+                        <div>Content Type: {typeof file.expertDocument.processed_content}</div>
+                        <div>MIME: {file.mime_type}</div>
+                      </div>
+                    )}
+                    <div 
+                      className="prose max-w-none"
+                      dangerouslySetInnerHTML={{ 
+                        __html: typeof file.expertDocument.processed_content === 'string' 
+                          ? file.expertDocument.processed_content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                          : JSON.stringify(file.expertDocument.processed_content, null, 2)
+                              .replace(/"([^"]+)":/g, '<strong>$1</strong>:')
+                              .replace(/\n/g, '<br/>')
+                              .replace(/\s/g, '&nbsp;')
+                      }}
+                    />
+                  </div>
+                ) : (
+                  // Fallback to Google Drive preview if no processed content
+                  <>
+                    {/* Debug info */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="p-2 bg-black/50 text-white text-xs space-y-1">
+                        <div className="font-bold text-yellow-400">Document Debug Info:</div>
+                        <div>Source: Google Drive (Raw)</div>
+                        <div>Extracted ID: {extractDriveId(file.web_view_link)}</div>
+                        <div>Original URL: {file.web_view_link}</div>
+                        <div>MIME: {file.mime_type}</div>
+                      </div>
+                    )}
+                    <iframe
+                      src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
+                      className="w-full h-[calc(100vh-10rem)] rounded-lg shadow-lg"
+                      title="Document Preview"
+                      onLoad={() => console.log('📝 Document iframe loaded with ID:', extractDriveId(file.web_view_link))}
+                    />
+                  </>
+                )}
+              </div>
             )}
-            {isAudio && (
+            {isAudio && file.web_view_link && (
               <div className="flex flex-col items-center justify-center p-4 gap-4">
                 <div className="w-full max-w-2xl bg-gray-50 p-4 rounded-lg shadow">
                   <div className="mb-4">
@@ -538,21 +594,78 @@ export function FileViewer({ file }: FileViewerProps) {
                       Size: {formatFileSize((file.metadata as FileMetadata)?.size || 0)}
                     </p>
                   </div>
-                  <audio 
-                    controls 
-                    className="w-full"
-                    src={file.web_view_link}
-                    onLoadStart={() => setIsLoading(true)}
-                    onLoadedData={() => setIsLoading(false)}
-                    controlsList="nodownload"
-                  >
-                    Your browser does not support the audio element.
-                  </audio>
+                  
+                  {/* Debug info */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="p-2 bg-black/50 text-white text-xs space-y-1 mb-2">
+                      <div className="font-bold text-yellow-400">Audio Debug Info:</div>
+                      <div>Extracted ID: {extractDriveId(file.web_view_link)}</div>
+                      <div>Original URL: {file.web_view_link}</div>
+                      <div>MIME: {file.mime_type}</div>
+                      <div>Is M4A: {isM4A ? 'Yes' : 'No'}</div>
+                    </div>
+                  )}
+
+                  {/* Multiple player options */}
+                  <div className="space-y-4">
+                    {/* Option 1: Native audio with direct preview URL */}
+                    <div>
+                      <div className="text-sm font-medium mb-2">Player 1: Native Preview</div>
+                      <audio 
+                        controls 
+                        className="w-full"
+                        src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
+                        onLoadStart={() => console.log('🎵 Trying native preview')}
+                        onError={(e) => console.log('Player 1 error:', e)}
+                      >
+                        <source src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`} type="audio/mp4" />
+                      </audio>
+                    </div>
+
+                    {/* Option 2: Native audio with uc export */}
+                    <div>
+                      <div className="text-sm font-medium mb-2">Player 2: Direct Download</div>
+                      <audio 
+                        controls 
+                        className="w-full"
+                        src={`https://drive.google.com/uc?export=download&id=${extractDriveId(file.web_view_link)}`}
+                        onLoadStart={() => console.log('🎵 Trying direct download')}
+                        onError={(e) => console.log('Player 2 error:', e)}
+                      >
+                        <source src={`https://drive.google.com/uc?export=download&id=${extractDriveId(file.web_view_link)}`} type="audio/mp4" />
+                      </audio>
+                    </div>
+
+                    {/* Option 3: Iframe fallback */}
+                    <div>
+                      <div className="text-sm font-medium mb-2">Player 3: Drive Preview</div>
+                      <iframe
+                        src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
+                        className="w-full h-20"
+                        allow="autoplay"
+                        onLoad={() => console.log('🎵 Iframe loaded')}
+                      />
+                    </div>
+
+                    {/* Option 4: Direct link fallback */}
+                    <div className="text-center">
+                      <a 
+                        href={file.web_view_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:text-blue-600"
+                      >
+                        Open in Google Drive ↗
+                      </a>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Transcript section remains the same */}
                 {file.expertDocument?.processed_content && (
                   <div className="w-full max-w-2xl mt-4">
                     <h4 className="text-lg font-medium mb-2">Transcript</h4>
-                    <div className="bg-white p-4 rounded-lg shadow">
+                    <div className="bg-white p-4 rounded-lg shadow max-h-[50vh] overflow-y-auto">
                       <pre className="whitespace-pre-wrap">
                         {typeof file.expertDocument.processed_content === 'string' 
                           ? file.expertDocument.processed_content
@@ -564,26 +677,23 @@ export function FileViewer({ file }: FileViewerProps) {
                 )}
               </div>
             )}
-            {isPresentation && (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <span className="text-4xl mb-4">🎯</span>
-                <p className="text-gray-600">
-                  {file.mime_type.includes('vnd.openxmlformats-officedocument.presentationml.presentation') ? 
-                    'PowerPoint (.pptx)' : 
-                    file.mime_type.includes('vnd.ms-powerpoint') ? 
-                    'PowerPoint (.ppt)' : 
-                    'Google Slides'} presentation
-                  {file.web_view_link && (
-                    <a 
-                      href={file.web_view_link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:text-blue-600 block mt-2"
-                    >
-                      Open in Google Drive ↗
-                    </a>
-                  )}
-                </p>
+            {isPresentation && file.web_view_link && (
+              <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'}`}>
+                {/* Debug info */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="p-2 bg-black/50 text-white text-xs space-y-1">
+                    <div className="font-bold text-yellow-400">Presentation Debug Info:</div>
+                    <div>Extracted ID: {extractDriveId(file.web_view_link)}</div>
+                    <div>Original URL: {file.web_view_link}</div>
+                    <div>MIME: {file.mime_type}</div>
+                  </div>
+                )}
+                <iframe
+                  src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
+                  className="w-full h-[calc(100vh-8rem)] rounded-lg shadow-lg"
+                  title="Presentation Preview"
+                  onLoad={() => console.log('🎯 Presentation iframe loaded with ID:', extractDriveId(file.web_view_link))}
+                />
               </div>
             )}
           </>
