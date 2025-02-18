@@ -502,11 +502,23 @@ export function FileViewer({ file }: FileViewerProps) {
               </div>
             )}
             {isPdf && file.web_view_link && (
-              <iframe
-                src={file.web_view_link}
-                className={`w-full ${isFullscreen ? 'h-[90vh]' : 'h-[70vh]'} rounded-lg shadow-lg`}
-                title="PDF Preview"
-              />
+              <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'}`}>
+                {/* Optional debug info */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="p-2 bg-black/50 text-white text-xs space-y-1">
+                    <div className="font-bold text-yellow-400">PDF Debug Info:</div>
+                    <div>Extracted ID: {extractDriveId(file.web_view_link)}</div>
+                    <div>Original URL: {file.web_view_link}</div>
+                    <div>MIME: {file.mime_type}</div>
+                  </div>
+                )}
+                <iframe
+                  src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
+                  className={`w-full ${isFullscreen ? 'h-[90vh]' : 'h-[70vh]'} rounded-lg shadow-lg`}
+                  title="PDF Preview"
+                  onLoad={() => console.log('📄 PDF iframe loaded with ID:', extractDriveId(file.web_view_link))}
+                />
+              </div>
             )}
             {(isDoc || isText) && (
               <div 
