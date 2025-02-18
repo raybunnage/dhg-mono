@@ -1555,6 +1555,8 @@ export type Database = {
           code_signature: string | null
           dependencies: string[] | null
           description: string | null
+          formatted_date: string | null
+          git_info: Json | null
           has_history: boolean | null
           id: string | null
           implementation_notes: string | null
