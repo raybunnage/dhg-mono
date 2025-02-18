@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import mammoth from 'mammoth';
-import type { Database } from '@/../../supabase/types';
+import type { Database } from '../../../../../supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { FileNode } from '@/components/FileTree';
 import { formatFileSize } from '@/utils/format';
@@ -63,6 +63,56 @@ const getNetworkStateMessage = (state: number) => {
   }
 };
 
+// Add debug helper
+const debugVideoFile = (file: FileNode | null, stage: string) => {
+  if (!file) return;
+  
+  // Extract drive ID from web_view_link if not directly available
+  const extractDriveId = (url: string | null) => {
+    if (!url) return null;
+    const match = url.match(/\/d\/([^/]+)/);
+    return match ? match[1] : null;
+  };
+
+  const extractedDriveId = extractDriveId(file.web_view_link);
+  
+  console.group(`🎥 Video Debug [${stage}]`);
+  console.log('Basic Info:', {
+    name: file.name,
+    mime_type: file.mime_type,
+    size: file?.metadata?.size || 'unknown'
+  });
+  
+  console.log('IDs:', {
+    supabase_id: file.id,
+    drive_id: file.drive_id || 'MISSING',
+    extracted_drive_id: extractedDriveId,
+    parent_id: file.parent_path
+  });
+  
+  console.log('URLs:', {
+    web_view_link: file.web_view_link,
+    constructed_preview: extractedDriveId ? 
+      `https://drive.google.com/file/d/${extractedDriveId}/preview` : 
+      'Cannot construct - No drive_id',
+    alternate_preview: file.id ? 
+      `https://drive.google.com/file/d/${file.id}/preview` : 
+      'Cannot construct - No id'
+  });
+
+  console.log('Full File Object:', file);
+  console.groupEnd();
+
+  return extractedDriveId; // Return the extracted ID for use
+};
+
+// Add helper to extract Drive ID from URL
+const extractDriveId = (url: string | null): string | null => {
+  if (!url) return null;
+  const match = url.match(/\/d\/([^/]+)/);
+  return match ? match[1] : null;
+};
+
 export function FileViewer({ file }: FileViewerProps) {
   const [docContent, setDocContent] = useState<string>('');
   const [numPages, setNumPages] = useState<number>(1);
@@ -75,6 +125,9 @@ export function FileViewer({ file }: FileViewerProps) {
   const [contentSource, setContentSource] = useState<'expert_doc' | 'sources_google' | 'drive' | null>(null);
   const [extractedContent, setExtractedContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Add helper to check if file is video
+  const isVideo = file?.mime_type?.includes('video/');
 
   // Handle fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -316,6 +369,13 @@ export function FileViewer({ file }: FileViewerProps) {
     }
   };
 
+  // Add debug effect
+  useEffect(() => {
+    if (isVideo && file) {
+      debugVideoFile(file, 'Initial Mount');
+    }
+  }, [file, isVideo]);
+
   if (!file) {
     return (
       <div className="w-1/2 fixed top-0 right-0 h-screen bg-white border-l p-4 flex items-center justify-center text-gray-500">
@@ -330,7 +390,6 @@ export function FileViewer({ file }: FileViewerProps) {
   const isText = file.mime_type.includes('text/plain') || 
                 file.mime_type.includes('text/csv') ||
                 file.mime_type.includes('text/tab-separated-values');
-  const isVideo = file.mime_type.includes('video');
   const isAudio = file.mime_type.includes('audio');
   const isPresentation = file.mime_type.includes('presentation') || 
                         file.mime_type.includes('powerpoint') ||
@@ -415,63 +474,39 @@ export function FileViewer({ file }: FileViewerProps) {
           </div>
         ) : (
           <>
-            {isPdf && file.web_view_link && (
+            {isVideo && file.web_view_link && (
               <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'}`}>
-                {isLoading ? (
-                  <div className="flex items-center justify-center p-8">
-                    <div className="animate-pulse text-blue-500">Loading PDF...</div>
-                  </div>
-                ) : (
-                  <>
-                    <video 
-                      controls 
-                      className={`w-full ${isFullscreen ? 'max-h-[90vh]' : 'max-h-[70vh]'} rounded-lg shadow-lg`}
-                      src={`${file.web_view_link}&download=true`}
-                      onLoadStart={(e) => {
-                        const videoElement = e.currentTarget;
-                        console.log('Video load starting:', {
-                          src: videoElement.src,
-                          readyState: videoElement.readyState,
-                          networkState: videoElement.networkState,
-                          networkStateMessage: getNetworkStateMessage(videoElement.networkState),
-                          error: videoElement.error
-                        });
-                        setIsLoading(true);
-                      }}
-                      onError={(e) => {
-                        const videoElement = e.currentTarget;
-                        console.error('Video loading error:', {
-                          error: videoElement.error?.message,
-                          code: videoElement.error?.code,
-                          networkState: videoElement.networkState,
-                          readyState: videoElement.readyState,
-                          src: videoElement.src
-                        });
-                        if (!videoElement.src.includes('&download=true')) {
-                          console.log('Trying alternative video URL format...');
-                          videoElement.src = `${file.web_view_link}&download=true`;
-                        } else {
-                          setError(`Failed to load video: ${videoElement.error?.message || 'Unknown error'}`);
-                          setIsLoading(false);
-                        }
-                      }}
-                      playsInline
-                    >
-                      Your browser does not support the video tag.
-                    </video>
-                    <div className="mt-2 text-sm text-gray-500 flex flex-col">
-                      <span>File: {file.name}</span>
-                      <span>Type: {file.mime_type}</span>
-                      <span>Size: {formatFileSize((file.metadata as FileMetadata)?.size || 0)}</span>
+                <div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
+                  {/* Debug info */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="p-2 bg-black/50 text-white text-xs space-y-1">
+                      <div className="font-bold text-yellow-400">Video Debug Info:</div>
+                      <div>Extracted ID: {extractDriveId(file.web_view_link)}</div>
+                      <div>Original URL: {file.web_view_link}</div>
+                      <div>MIME: {file.mime_type}</div>
                     </div>
-                  </>
-                )}
-                {error && (
-                  <div className="mt-4 text-red-500 text-center">
-                    {error}
-                  </div>
-                )}
+                  )}
+                  <iframe 
+                    src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
+                    className="w-full h-full rounded"
+                    title="Video Preview"
+                    allow="autoplay"
+                    onLoad={() => console.log('🎥 Video iframe loaded with ID:', extractDriveId(file.web_view_link))}
+                  />
+                </div>
+                <div className="mt-2 text-sm text-gray-500 flex flex-col">
+                  <span>File: {file.name}</span>
+                  <span>Type: {file.mime_type}</span>
+                  <span>Size: {formatFileSize((file.metadata as FileMetadata)?.size || 0)}</span>
+                </div>
               </div>
+            )}
+            {isPdf && file.web_view_link && (
+              <iframe
+                src={file.web_view_link}
+                className={`w-full ${isFullscreen ? 'h-[90vh]' : 'h-[70vh]'} rounded-lg shadow-lg`}
+                title="PDF Preview"
+              />
             )}
             {(isDoc || isText) && (
               <div 
@@ -481,64 +516,6 @@ export function FileViewer({ file }: FileViewerProps) {
                   __html: docContent.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
                 }}
               />
-            )}
-            {isVideo && (
-              <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'}`}>
-                {isLoading ? (
-                  <div className="flex items-center justify-center p-8">
-                    <div className="animate-pulse text-blue-500">Loading video...</div>
-                  </div>
-                ) : (
-                  <>
-                    <video 
-                      controls 
-                      className={`w-full ${isFullscreen ? 'max-h-[90vh]' : 'max-h-[70vh]'} rounded-lg shadow-lg`}
-                      src={`${file.web_view_link}&download=true`}
-                      onLoadStart={(e) => {
-                        const videoElement = e.currentTarget;
-                        console.log('Video load starting:', {
-                          src: videoElement.src,
-                          readyState: videoElement.readyState,
-                          networkState: videoElement.networkState,
-                          networkStateMessage: getNetworkStateMessage(videoElement.networkState),
-                          error: videoElement.error
-                        });
-                        setIsLoading(true);
-                      }}
-                      onError={(e) => {
-                        const videoElement = e.currentTarget;
-                        console.error('Video loading error:', {
-                          error: videoElement.error?.message,
-                          code: videoElement.error?.code,
-                          networkState: videoElement.networkState,
-                          readyState: videoElement.readyState,
-                          src: videoElement.src
-                        });
-                        if (!videoElement.src.includes('&download=true')) {
-                          console.log('Trying alternative video URL format...');
-                          videoElement.src = `${file.web_view_link}&download=true`;
-                        } else {
-                          setError(`Failed to load video: ${videoElement.error?.message || 'Unknown error'}`);
-                          setIsLoading(false);
-                        }
-                      }}
-                      playsInline
-                    >
-                      Your browser does not support the video tag.
-                    </video>
-                    <div className="mt-2 text-sm text-gray-500 flex flex-col">
-                      <span>File: {file.name}</span>
-                      <span>Type: {file.mime_type}</span>
-                      <span>Size: {formatFileSize((file.metadata as FileMetadata)?.size || 0)}</span>
-                    </div>
-                  </>
-                )}
-                {error && (
-                  <div className="mt-4 text-red-500 text-center">
-                    {error}
-                  </div>
-                )}
-              </div>
             )}
             {isAudio && (
               <div className="flex flex-col items-center justify-center p-4 gap-4">
