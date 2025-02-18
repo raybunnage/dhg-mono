@@ -10,6 +10,8 @@ import FunctionRegistryPage from '@/pages/function-registry';
 import FileExplorer from '@/pages/file-explorer';
 import { MainNavbar } from '@/components/MainNavbar';
 import RegistryViewer from './routes/RegistryViewer';
+import PDFTestExtract from '@/pages/pdf-test-extract';
+import PDFResearchPortal from '@/pages/pdf-research-portal';
 
 function App() {
   console.log('App component mounting');
@@ -23,7 +25,9 @@ function App() {
     '/source-buttons',
     '/function-registry',
     '/file-explorer',
-    '/registry'
+    '/registry',
+    '/pdf-test-extract',
+    '/pdf-research-portal'
   ]);
   
   return (
@@ -72,6 +76,14 @@ function App() {
           <Route 
             path="/registry" 
             element={<RegistryViewer />} 
+          />
+          <Route 
+            path="/pdf-test-extract" 
+            element={<PDFTestExtract />} 
+          />
+          <Route 
+            path="/pdf-research-portal" 
+            element={<PDFResearchPortal />} 
           />
         </Routes>
       </main>

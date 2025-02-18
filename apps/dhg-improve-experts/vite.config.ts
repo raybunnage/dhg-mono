@@ -18,7 +18,17 @@ export default defineConfig(({ mode }) => {
     build: {
       ...baseConfig.build,
       outDir: 'dist',
-      sourcemap: true
+      sourcemap: true,
+      commonjsOptions: {
+        include: [/pdfjs-dist/]
+      },
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            pdfjs: ['pdfjs-dist']
+          }
+        }
+      }
     },
     server: {
       port: 5174,  // Change from 5173 to 5174
@@ -49,7 +59,7 @@ export default defineConfig(({ mode }) => {
     },
     publicDir: 'public',
     optimizeDeps: {
-      include: ['zod']
+      include: ['zod', 'pdfjs-dist']
     }
   }
 })
