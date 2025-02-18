@@ -1,5 +1,6 @@
 import mammoth from 'mammoth';
-import { initPdfJs } from './pdf-utils';
+import { google } from 'googleapis';
+import { Readable } from 'stream';
 
 const FOLDER_ID = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
 
@@ -151,5 +152,27 @@ export async function getFileContent(fileId: string): Promise<string> {
   } catch (error) {
     console.error('Error details:', error);
     throw new Error('Failed to load file content');
+  }
+}
+
+export async function getFileFromDrive(fileId: string): Promise<ArrayBuffer> {
+  try {
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+      {
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_GOOGLE_ACCESS_TOKEN}`,
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch PDF from Google Drive');
+    }
+
+    return response.arrayBuffer();
+  } catch (error) {
+    console.error('Error fetching file from Drive:', error);
+    throw new Error('Failed to fetch PDF from Google Drive');
   }
 } 
