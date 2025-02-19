@@ -9,17 +9,8 @@ export function MainNavbar() {
             <Link to="/" className="text-gray-700 hover:text-gray-900">
               Home
             </Link>
-            <Link to="/file-explorer" className="text-gray-700 hover:text-gray-900">
-              File Explorer
-            </Link>
             <Link to="/source-management" className="text-gray-700 hover:text-gray-900">
               Source Management
-            </Link>
-            <Link to="/pdf-research-portal" className="text-gray-700 hover:text-gray-900">
-              Research Portal
-            </Link>
-            <Link to="/mp4-test" className="text-gray-700 hover:text-gray-900">
-              MP4 Test
             </Link>
             <Link to="/registry" className="text-gray-700 hover:text-gray-900">
               Function Registry

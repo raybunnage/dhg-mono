@@ -53,7 +53,7 @@ interface FileTreeProps {
 type SupportedFileType = 'pdf' | 'document' | 'other';
 
 // Add helper function to determine file type
-const getFileType = (mimeType: string): keyof typeof FILE_TYPE_COLORS => {
+export const getFileType = (mimeType: string): keyof typeof FILE_TYPE_COLORS => {
   if (mimeType.includes('pdf')) return 'pdf';
   if (mimeType.includes('document') || 
       mimeType.includes('msword') || 
@@ -85,8 +85,22 @@ const formatFileSize = (bytes: string | number): string => {
   return `(${mb.toFixed(1)}MB)`;
 };
 
-// Define common MIME types with friendly names
+// Rearrange MIME_TYPE_FILTERS
 const MIME_TYPE_FILTERS = [
+  { 
+    type: 'video/mp4', 
+    label: 'Video',
+    tooltip: 'video/mp4'
+  },
+  { 
+    type: [
+      'application/vnd.google-apps.presentation',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ], 
+    label: 'PowerPoint',
+    tooltip: '.ppt, .pptx, Google Slides'
+  },
   { 
     type: 'application/pdf', 
     label: 'PDF',
@@ -103,26 +117,12 @@ const MIME_TYPE_FILTERS = [
   },
   { 
     type: [
-      'application/vnd.google-apps.presentation',
-      'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-    ], 
-    label: 'PowerPoint',
-    tooltip: '.ppt, .pptx, Google Slides'
-  },
-  { 
-    type: [
       'text/plain',
       'text/csv',
       'text/tab-separated-values'
     ], 
     label: 'Chats',
     tooltip: '.txt, .csv files (Zoom chat summaries)'
-  },
-  { 
-    type: 'video/mp4', 
-    label: 'Video',
-    tooltip: 'video/mp4'
   },
   { 
     type: [
@@ -141,7 +141,7 @@ const MIME_TYPE_FILTERS = [
 ];
 
 // Update FILE_TYPE_COLORS with better color coordination
-const FILE_TYPE_COLORS = {
+export const FILE_TYPE_COLORS = {
   pdf: {
     pill: 'bg-red-50 text-red-700',
     icon: { bg: 'bg-red-100', text: 'text-red-700' },
@@ -175,12 +175,12 @@ const FILE_TYPE_COLORS = {
   text: {
     pill: 'bg-slate-50 text-slate-700',
     icon: { bg: 'bg-slate-100', text: 'text-slate-700' },
-    emoji: '📝'
+    emoji: '📄'  // Changed to a simple document icon
   },
   other: {
     pill: 'bg-gray-50 text-gray-600',
     icon: { bg: 'bg-gray-100', text: 'text-gray-600' },
-    emoji: '��'
+    emoji: '📎'  // Changed to paperclip for misc files
   }
 } as const;
 
@@ -199,7 +199,7 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
   const [hideProcessedFiles, setHideProcessedFiles] = useState(false);
   const [processingStage, setProcessingStage] = useState<'idle' | 'analyzing' | 'processing'>('idle');
   const [processingStatus, setProcessingStatus] = useState<Record<string, string>>({});
-  const [hideSubfolders, setHideSubfolders] = useState(false);
+  const [hideSubfolders, setHideSubfolders] = useState(true);
 
   const expandAll = () => {
     // Get all possible folder paths
@@ -256,13 +256,13 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
     // Return special "processed" icon if content has been processed
     if (hasProcessedContent) {
       switch (fileType) {
-        case 'pdf': return '🔍'; // Magnifying glass to show it's been analyzed
-        case 'document': return '📊'; // Chart to show data extraction
-        case 'presentation': return '🎯'; // Target to show focused content
-        case 'audio': return '📝'; // Notes to show transcription
-        case 'video': return '📝'; // Notes to show transcription
-        case 'text': return '📈'; // Graph to show analysis
-        default: return '✨'; // Sparkles for any other processed type
+        case 'pdf': return '🔍';
+        case 'document': return '📊';
+        case 'presentation': return '🎯';
+        case 'audio': return '📝';
+        case 'video': return '📝';
+        case 'text': return '📋';  // Changed to clipboard for processed text
+        default: return '✨';
       }
     }
     
@@ -532,14 +532,7 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto pl-2">
-      {/* Add debug ID at the top */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="text-xs text-gray-400 mb-2">
-          FileTree v1.0 [DEBUG-ID: FT-2025-02-16]
-        </div>
-      )}
-      
+    <div className="w-full h-full overflow-y-auto pl-6">
       {/* Updated MIME type filter pills */}
       <div className="mb-4">
         <div className="flex-1">
@@ -613,8 +606,8 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
                     ).includes(f.mime_type) && 
                     activeMimeTypes.has(f.mime_type)
                   )
-                    ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                   }`}
               >
                 Misc ({getMiscFilesCount()})
@@ -673,10 +666,12 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
         </div>
       </div>
       
-      <div className="mb-4 flex justify-between items-center">
-        <div className="text-lg font-medium flex items-center gap-2">
-          <span>🗂️</span>
-          <span>Dynamic Healing Group Files</span>
+      <div className="mb-6">
+        <div className="text-xl font-semibold flex items-center gap-3 px-2 py-3 border-b">
+          <span className="text-2xl">🗂️</span>
+          <span className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+            Dynamic Healing Group Files
+          </span>
         </div>
       </div>
       

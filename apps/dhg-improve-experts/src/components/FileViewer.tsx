@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import mammoth from 'mammoth';
 import type { Database } from '../../../../supabase/types';
 import { supabase } from '@/integrations/supabase/client';
-import { FileNode } from '@/components/FileTree';
+import { FileNode, FILE_TYPE_COLORS, getFileType } from '@/components/FileTree';
 import { formatFileSize } from '@/utils/format';
 import { getDocxContent } from '@/utils/google-drive';
 import { proxyGoogleDrive } from '@/api/proxy';
@@ -218,6 +218,32 @@ const formatJSON = (content: any): string => {
   }
 };
 
+// Add getIcon function to FileViewer
+const getIcon = (file: FileNode) => {
+  if (file.mime_type === 'application/vnd.google-apps.folder') return '📁';
+  
+  // Check if file has processed content
+  const hasProcessedContent = file.expertDocument?.processed_content || file.content_extracted;
+  
+  const fileType = getFileType(file.mime_type);
+  const colors = FILE_TYPE_COLORS[fileType] || FILE_TYPE_COLORS.other;
+  
+  // Return special "processed" icon if content has been processed
+  if (hasProcessedContent) {
+    switch (fileType) {
+      case 'pdf': return '🔍';
+      case 'document': return '📊';
+      case 'presentation': return '🎯';
+      case 'audio': return '📝';
+      case 'video': return '📝';
+      case 'text': return '📈';
+      default: return '✨';
+    }
+  }
+  
+  return colors.emoji;
+};
+
 export function FileViewer({ file }: FileViewerProps) {
   const [docContent, setDocContent] = useState<string>('');
   const [numPages, setNumPages] = useState<number>(1);
@@ -245,17 +271,21 @@ export function FileViewer({ file }: FileViewerProps) {
   const isText = file?.mime_type?.includes('text/plain') || 
                 file?.mime_type?.includes('text/csv') ||
                 file?.mime_type?.includes('text/tab-separated-values');
-  const isPresentation = file?.mime_type?.includes('presentation') || 
-                        file?.mime_type?.includes('powerpoint') ||
-                        file?.mime_type?.includes('vnd.openxmlformats-officedocument.presentationml.presentation') || // .pptx
-                        file?.mime_type?.includes('vnd.ms-powerpoint'); // .ppt
+  
+  // Move isSpreadsheet check inside component
+  const isSpreadsheet = file?.mime_type?.includes('spreadsheet') || 
+                       file?.mime_type?.includes('excel') ||
+                       file?.mime_type?.includes('xlsx') ||
+                       file?.mime_type?.includes('sheet') ||
+                       file?.mime_type === 'application/vnd.google-apps.spreadsheet' ||
+                       file?.mime_type === 'application/vnd.ms-excel' ||
+                       file?.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
   // Move the isPowerPoint check inside the component
-  const isPowerPoint = file?.mime_type?.includes('presentation') || 
-                      file?.mime_type?.includes('powerpoint') ||
-                      file?.mime_type?.includes('pptx') ||
-                      file?.mime_type?.includes('ppt') ||
-                      file?.mime_type === 'application/vnd.google-apps.presentation';
+  const isPresentation = file?.mime_type?.includes('presentation') || 
+                        file?.mime_type?.includes('powerpoint') ||
+                        file?.mime_type?.includes('vnd.openxmlformats-officedocument.presentationml.presentation') || 
+                        file?.mime_type?.includes('vnd.ms-powerpoint');
 
   // Handle fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -384,28 +414,39 @@ export function FileViewer({ file }: FileViewerProps) {
   return (
     <div className={`${isFullscreen ? 'w-full' : 'w-1/2'} fixed top-0 right-0 h-screen bg-white border-l flex flex-col`}>
       {/* Header with controls and filename */}
-      <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
-        <div className="font-medium truncate flex items-center gap-2">
-          {file.name}
-          {contentSource && (
-            <span className="text-xs px-2 py-1 rounded bg-gray-100">
-              {contentSource === 'expert_doc' ? 'Processed' : 
-               contentSource === 'sources_google' ? 'Extracted' : 
-               'Live'}
-            </span>
-          )}
-          {error && <span className="text-red-500 text-sm">({error})</span>}
-          {isLoading && <span className="text-blue-500 text-sm animate-pulse">Loading...</span>}
-        </div>
-        <div className="flex items-center gap-4">
-          {/* PDF controls removed until we can implement proper functionality */}
-          <button
-            onClick={toggleFullscreen}
-            className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
-            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-          >
-            {isFullscreen ? "↙" : "↗"}
-          </button>
+      <div className="sticky top-0 bg-white border-b p-4 z-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
+                Currently Viewing
+              </div>
+              <h1 className="text-2xl font-semibold flex items-center gap-3">
+                <span className={`${FILE_TYPE_COLORS[getFileType(file.mime_type)].icon.bg} 
+                  ${FILE_TYPE_COLORS[getFileType(file.mime_type)].icon.text} p-1.5 rounded`}
+                >
+                  {getIcon(file)}
+                </span>
+                <span className="truncate">{file.name}</span>
+                {contentSource && (
+                  <span className="text-sm px-2 py-1 rounded bg-gray-100 font-normal">
+                    {contentSource === 'expert_doc' ? 'Processed' : 
+                     contentSource === 'sources_google' ? 'Extracted' : 
+                     'Live'}
+                  </span>
+                )}
+              </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleFullscreen}
+                className="px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200"
+                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              >
+                {isFullscreen ? "↙" : "↗"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -524,13 +565,13 @@ export function FileViewer({ file }: FileViewerProps) {
                 />
               </div>
             )}
-            {isPowerPoint && file.web_view_link && (
+            {isSpreadsheet && file.web_view_link && (
               <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'}`}>
                 <iframe
                   src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
                   className="w-full h-[calc(100vh-9.5rem)] rounded-lg shadow-lg"
-                  title="PowerPoint Preview"
-                  onLoad={() => console.log('📊 PowerPoint iframe loaded with ID:', extractDriveId(file.web_view_link))}
+                  title="Spreadsheet Preview"
+                  onLoad={() => console.log('📊 Spreadsheet iframe loaded with ID:', extractDriveId(file.web_view_link))}
                 />
               </div>
             )}
