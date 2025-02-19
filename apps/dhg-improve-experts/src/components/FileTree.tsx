@@ -199,6 +199,7 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
   const [hideProcessedFiles, setHideProcessedFiles] = useState(false);
   const [processingStage, setProcessingStage] = useState<'idle' | 'analyzing' | 'processing'>('idle');
   const [processingStatus, setProcessingStatus] = useState<Record<string, string>>({});
+  const [hideSubfolders, setHideSubfolders] = useState(false);
 
   const expandAll = () => {
     // Get all possible folder paths
@@ -310,8 +311,23 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
     });
   };
 
-  const renderTree = (parentPath: string | null = null, level: number = 0) => {
-    const items = files.filter(f => f.parent_path === parentPath);
+  const renderTree = (parentPath: string | null, level: number = 0) => {
+    const items = files.filter(item => {
+      // Get items at this level
+      const isAtThisLevel = item.parent_path === parentPath;
+      
+      // If hiding subfolders, show:
+      // 1. All files regardless of level
+      // 2. Top-level folders (level 0)
+      // 3. First-level folders (level 1)
+      if (hideSubfolders) {
+        const isFile = item.mime_type !== 'application/vnd.google-apps.folder';
+        const isTopOrFirstLevelFolder = (level === 0 || level === 1) && !isFile;
+        return isAtThisLevel && (isFile || isTopOrFirstLevelFolder);
+      }
+      
+      return isAtThisLevel;
+    });
     
     // Add this debug log
     console.log('Files with metadata:', items.map(item => ({
@@ -630,6 +646,18 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
                 }`}
             >
               {hideProcessedFiles ? 'Show Processed' : 'Hide Processed'}
+            </button>
+            
+            {/* New subfolder toggle button */}
+            <button
+              onClick={() => setHideSubfolders(!hideSubfolders)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                ${hideSubfolders
+                  ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+            >
+              {hideSubfolders ? 'Show Subfolders' : 'Hide Subfolders'}
             </button>
           </div>
           
