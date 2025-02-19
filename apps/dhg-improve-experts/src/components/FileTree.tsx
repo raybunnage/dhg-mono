@@ -59,7 +59,10 @@ const getFileType = (mimeType: string): keyof typeof FILE_TYPE_COLORS => {
       mimeType.includes('msword') || 
       mimeType.includes('wordprocessingml')) return 'document';
   if (mimeType.includes('presentation') || 
-      mimeType.includes('powerpoint')) return 'presentation';
+      mimeType.includes('powerpoint') ||
+      mimeType.includes('pptx') ||
+      mimeType.includes('ppt') ||
+      mimeType === 'application/vnd.google-apps.presentation') return 'presentation';
   if (mimeType.includes('spreadsheet') || 
       mimeType.includes('excel')) return 'spreadsheet';
   if (mimeType.includes('audio') || 
@@ -137,27 +140,27 @@ const MIME_TYPE_FILTERS = [
   }
 ];
 
-// Add color mapping for file types
+// Update FILE_TYPE_COLORS with better color coordination
 const FILE_TYPE_COLORS = {
   pdf: {
     pill: 'bg-red-50 text-red-700',
     icon: { bg: 'bg-red-100', text: 'text-red-700' },
-    emoji: '📄'
+    emoji: '📕'  // Back to red book emoji
   },
   document: {
     pill: 'bg-blue-50 text-blue-700',
     icon: { bg: 'bg-blue-100', text: 'text-blue-700' },
-    emoji: '📝'
+    emoji: '📘'  // Blue book emoji
   },
   presentation: {
     pill: 'bg-orange-50 text-orange-700',
     icon: { bg: 'bg-orange-100', text: 'text-orange-700' },
-    emoji: '📙'
+    emoji: '📙'  // Orange book emoji
   },
   spreadsheet: {
     pill: 'bg-green-50 text-green-700',
     icon: { bg: 'bg-green-100', text: 'text-green-700' },
-    emoji: '📗'
+    emoji: '📗'  // Green book emoji
   },
   audio: {
     pill: 'bg-purple-50 text-purple-700',
@@ -170,19 +173,27 @@ const FILE_TYPE_COLORS = {
     emoji: '🎬'
   },
   text: {
-    pill: 'bg-gray-50 text-gray-700',
-    icon: { bg: 'bg-gray-100', text: 'text-gray-700' },
-    emoji: '📋'
+    pill: 'bg-slate-50 text-slate-700',
+    icon: { bg: 'bg-slate-100', text: 'text-slate-700' },
+    emoji: '📝'
   },
   other: {
     pill: 'bg-gray-50 text-gray-600',
     icon: { bg: 'bg-gray-100', text: 'text-gray-600' },
-    emoji: '📎'
+    emoji: '��'
   }
 } as const;
 
 export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProps) {
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  // Get all folder paths initially for expandAll
+  const initialExpandedFolders = new Set(
+    files
+      .filter(f => f.mime_type === 'application/vnd.google-apps.folder')
+      .map(f => f.path || '')
+      .filter(Boolean)
+  );
+  
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(initialExpandedFolders);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [activeMimeTypes, setActiveMimeTypes] = useState<Set<string>>(new Set());
   const [hideProcessedFiles, setHideProcessedFiles] = useState(false);
@@ -232,10 +243,29 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
     });
   };
 
-  const getIcon = (mimeType: string) => {
-    if (mimeType === 'application/vnd.google-apps.folder') return '📁';
-    const fileType = getFileType(mimeType);
-    return FILE_TYPE_COLORS[fileType].emoji;
+  const getIcon = (file: FileNode) => {
+    if (file.mime_type === 'application/vnd.google-apps.folder') return '📁';
+    
+    // Check if file has processed content
+    const hasProcessedContent = file.expertDocument?.processed_content || file.content_extracted;
+    
+    const fileType = getFileType(file.mime_type);
+    const baseEmoji = FILE_TYPE_COLORS[fileType].emoji;
+    
+    // Return special "processed" icon if content has been processed
+    if (hasProcessedContent) {
+      switch (fileType) {
+        case 'pdf': return '🔍'; // Magnifying glass to show it's been analyzed
+        case 'document': return '📊'; // Chart to show data extraction
+        case 'presentation': return '🎯'; // Target to show focused content
+        case 'audio': return '📝'; // Notes to show transcription
+        case 'video': return '📝'; // Notes to show transcription
+        case 'text': return '📈'; // Graph to show analysis
+        default: return '✨'; // Sparkles for any other processed type
+      }
+    }
+    
+    return baseEmoji;
   };
 
   const toggleMimeType = (mimeType: string | string[]) => {
@@ -368,7 +398,7 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
                   className="form-checkbox h-4 w-4"
                 />
                 <span className={`${colors.icon.bg} ${colors.icon.text} p-1 rounded`}>
-                  {colors.emoji}
+                  {getIcon(item)}
                 </span>
                 <span className={`flex-1 flex items-center gap-2 
                   ${item.content_extracted ? 'text-green-700' : ''}`}
@@ -498,6 +528,7 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
       <div className="mb-4">
         <div className="flex-1">
           <div className="flex flex-wrap gap-2 mb-2">
+            {/* File type filters */}
             {MIME_TYPE_FILTERS.map(({ type, label, tooltip }) => {
               const count = getFileCountByMimeType(type);
               if (count === 0) return null;
@@ -577,19 +608,7 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
             {/* Add a separator */}
             <div className="h-6 w-px bg-gray-200 mx-1"></div>
 
-            {/* Add processed files filter */}
-            <button
-              onClick={() => setHideProcessedFiles(!hideProcessedFiles)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
-                ${hideProcessedFiles
-                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-            >
-              {hideProcessedFiles ? 'Show Processed' : 'Hide Processed'} Files
-            </button>
-
-            {/* Move expand/collapse buttons here */}
+            {/* Expand/Collapse and Hide Processed buttons */}
             <button
               onClick={expandAll}
               className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -601,6 +620,16 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
               className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               Collapse All
+            </button>
+            <button
+              onClick={() => setHideProcessedFiles(!hideProcessedFiles)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                ${hideProcessedFiles
+                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+            >
+              {hideProcessedFiles ? 'Show Processed' : 'Hide Processed'}
             </button>
           </div>
           
@@ -626,11 +655,15 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
       {/* Only start rendering from root level (parentPath === null) */}
       {renderTree(null)}
 
-      {/* New selected files panel - only shows when files are selected */}
+      {/* Updated selected files panel */}
       {selectedFiles.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium">Selected Files ({selectedFiles.size})</h3>
+              </div>
+              
               {/* Processing options */}
               <div className="flex flex-wrap gap-2">
                 <button
@@ -671,7 +704,7 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
                       className={`flex items-center gap-2 py-1 ${colors.pill} rounded px-2 mb-1`}
                     >
                       <span className={`${colors.icon.bg} ${colors.icon.text} p-1 rounded`}>
-                        {colors.emoji}
+                        {getIcon(file)}
                       </span>
                       <span className="flex-1">{file.name}</span>
                       <button

@@ -83,7 +83,7 @@ const debugVideoFile = (file: FileNode | null, stage: string) => {
   console.log('Basic Info:', {
     name: file.name,
     mime_type: file.mime_type,
-    size: file?.metadata?.size || 'unknown'
+    size: (file.metadata as FileMetadata)?.size || 'unknown'
   });
   
   console.log('IDs:', {
@@ -249,6 +249,13 @@ export function FileViewer({ file }: FileViewerProps) {
                         file?.mime_type?.includes('powerpoint') ||
                         file?.mime_type?.includes('vnd.openxmlformats-officedocument.presentationml.presentation') || // .pptx
                         file?.mime_type?.includes('vnd.ms-powerpoint'); // .ppt
+
+  // Move the isPowerPoint check inside the component
+  const isPowerPoint = file?.mime_type?.includes('presentation') || 
+                      file?.mime_type?.includes('powerpoint') ||
+                      file?.mime_type?.includes('pptx') ||
+                      file?.mime_type?.includes('ppt') ||
+                      file?.mime_type === 'application/vnd.google-apps.presentation';
 
   // Handle fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -514,6 +521,16 @@ export function FileViewer({ file }: FileViewerProps) {
                   className="w-full h-[calc(100vh-8rem)] rounded-lg shadow-lg"
                   title="Presentation Preview"
                   onLoad={() => console.log('🎯 Presentation iframe loaded with ID:', extractDriveId(file.web_view_link))}
+                />
+              </div>
+            )}
+            {isPowerPoint && file.web_view_link && (
+              <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'}`}>
+                <iframe
+                  src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
+                  className="w-full h-[calc(100vh-9.5rem)] rounded-lg shadow-lg"
+                  title="PowerPoint Preview"
+                  onLoad={() => console.log('📊 PowerPoint iframe loaded with ID:', extractDriveId(file.web_view_link))}
                 />
               </div>
             )}
