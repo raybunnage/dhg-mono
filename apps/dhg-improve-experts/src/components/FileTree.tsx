@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { FileTreeItem } from './FileTreeItem';
-import type { Database } from '../../../../file_types/supabase/types';
+import type { Database } from '../../../../supabase/types';
 
 type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
 type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
@@ -40,6 +40,7 @@ export interface FileNode {
     processed_content?: string | Record<string, any>;
   };
   drive_id?: string;
+  content?: string | null;
 }
 
 interface FileTreeProps {
@@ -54,11 +55,18 @@ type SupportedFileType = 'pdf' | 'document' | 'other';
 // Add helper function to determine file type
 const getFileType = (mimeType: string): keyof typeof FILE_TYPE_COLORS => {
   if (mimeType.includes('pdf')) return 'pdf';
-  if (
-    mimeType === 'application/vnd.google-apps.document' ||
-    mimeType === 'application/msword' ||
-    mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  ) return 'document';
+  if (mimeType.includes('document') || 
+      mimeType.includes('msword') || 
+      mimeType.includes('wordprocessingml')) return 'document';
+  if (mimeType.includes('presentation') || 
+      mimeType.includes('powerpoint')) return 'presentation';
+  if (mimeType.includes('spreadsheet') || 
+      mimeType.includes('excel')) return 'spreadsheet';
+  if (mimeType.includes('audio') || 
+      mimeType.includes('mp3') || 
+      mimeType.includes('wav')) return 'audio';
+  if (mimeType.includes('video') || 
+      mimeType.includes('mp4')) return 'video';
   return 'other';
 };
 
@@ -132,19 +140,39 @@ const MIME_TYPE_FILTERS = [
 // Add color mapping for file types
 const FILE_TYPE_COLORS = {
   pdf: {
-    bg: 'bg-red-50',
-    text: 'text-red-700',
-    icon: '📄'
+    pill: 'bg-red-50 text-red-700',
+    icon: { bg: 'bg-red-100', text: 'text-red-700' },
+    emoji: '📕'
   },
   document: {
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    icon: '📄'
+    pill: 'bg-blue-50 text-blue-700',
+    icon: { bg: 'bg-blue-100', text: 'text-blue-700' },
+    emoji: '📘'
+  },
+  presentation: {
+    pill: 'bg-orange-50 text-orange-700',
+    icon: { bg: 'bg-orange-100', text: 'text-orange-700' },
+    emoji: '📙'
+  },
+  spreadsheet: {
+    pill: 'bg-green-50 text-green-700',
+    icon: { bg: 'bg-green-100', text: 'text-green-700' },
+    emoji: '📗'
+  },
+  audio: {
+    pill: 'bg-purple-50 text-purple-700',
+    icon: { bg: 'bg-purple-100', text: 'text-purple-700' },
+    emoji: '🎵'
+  },
+  video: {
+    pill: 'bg-pink-50 text-pink-700',
+    icon: { bg: 'bg-pink-100', text: 'text-pink-700' },
+    emoji: '🎥'
   },
   other: {
-    bg: 'bg-gray-50',
-    text: 'text-gray-700',
-    icon: '��'
+    pill: 'bg-gray-50 text-gray-600',
+    icon: { bg: 'bg-gray-100', text: 'text-gray-600' },
+    emoji: '📎'
   }
 } as const;
 
@@ -153,6 +181,8 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [activeMimeTypes, setActiveMimeTypes] = useState<Set<string>>(new Set());
   const [hideProcessedFiles, setHideProcessedFiles] = useState(false);
+  const [processingStage, setProcessingStage] = useState<'idle' | 'analyzing' | 'processing'>('idle');
+  const [processingStatus, setProcessingStatus] = useState<Record<string, string>>({});
 
   const expandAll = () => {
     // Get all possible folder paths
@@ -199,12 +229,8 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
 
   const getIcon = (mimeType: string) => {
     if (mimeType === 'application/vnd.google-apps.folder') return '📁';
-    if (mimeType.includes('pdf')) return '📕';
-    if (mimeType.includes('document')) return '📄';
-    if (mimeType.includes('spreadsheet')) return '📊';
-    if (mimeType.includes('presentation')) return '📑';
-    if (mimeType.includes('video')) return '📹';
-    return '📎';
+    const fileType = getFileType(mimeType);
+    return FILE_TYPE_COLORS[fileType].emoji;
   };
 
   const toggleMimeType = (mimeType: string | string[]) => {
@@ -300,11 +326,15 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
       const isExpanded = expandedFolders.has(item.path || '');
       const hasChildren = files.some(f => f.parent_path === item.path);
 
+      const fileType = getFileType(item.mime_type);
+      const colors = FILE_TYPE_COLORS[fileType] || FILE_TYPE_COLORS.other;
+
       return (
         <div key={item.id} className="file-tree-item">
           <div 
             className={`flex items-center gap-2 py-1 hover:bg-gray-50 rounded cursor-pointer
-              ${!isFolder && item.content_extracted ? 'bg-green-50' : ''}`}
+              ${!isFolder && item.content_extracted ? 'bg-green-50' : ''}
+              ${!isFolder ? colors.pill : ''}`}
             style={{ paddingLeft: `${level * 20}px` }}
             onClick={() => !isFolder && onFileClick?.(item)}
           >
@@ -318,7 +348,9 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
                     {isExpanded ? '▼' : '▶'}
                   </span>
                 )}
-                <span className="mr-1">{getIcon(item.mime_type)}</span>
+                <span className={`${colors.icon.bg} ${colors.icon.text} p-1 rounded`}>
+                  {isFolder ? '📁' : colors.emoji}
+                </span>
                 <span className="flex-1">{item.name}</span>
               </>
             ) : (
@@ -330,7 +362,9 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
                   disabled={item.content_extracted === null}
                   className="form-checkbox h-4 w-4"
                 />
-                <span className="mr-1">{getIcon(item.mime_type)}</span>
+                <span className={`${colors.icon.bg} ${colors.icon.text} p-1 rounded`}>
+                  {colors.emoji}
+                </span>
                 <span className={`flex-1 flex items-center gap-2 
                   ${item.content_extracted ? 'text-green-700' : ''}`}
                 >
@@ -344,29 +378,29 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
                     )}
                   </span>
                 </span>
+                {!isFolder && (
+                  <span className="flex items-center gap-1">
+                    {item.expertDocument ? (
+                      <>
+                        {item.expertDocument.processing_status === 'completed' && (
+                          <span title="Processed" className="text-green-600 text-sm">✓</span>
+                        )}
+                        {item.expertDocument.processing_status === 'queued' && (
+                          <span title="Queued" className="text-yellow-500">⏳</span>
+                        )}
+                        {item.expertDocument.processing_status === 'processing' && (
+                          <span title="Processing" className="text-blue-500 animate-pulse">⚡</span>
+                        )}
+                        {item.expertDocument.processing_status === 'failed' && (
+                          <span title={item.expertDocument.error_message || 'Error'} className="text-red-500">❌</span>
+                        )}
+                      </>
+                    ) : item.content_extracted ? (
+                      <span title="Content Extracted" className="text-green-600 text-sm">✓</span>
+                    ) : null}
+                  </span>
+                )}
               </>
-            )}
-            {!isFolder && (
-              <span className="flex items-center gap-1">
-                {item.expertDocument ? (
-                  <>
-                    {item.expertDocument.processing_status === 'completed' && (
-                      <span title="Processed" className="text-green-600 text-sm">✓</span>
-                    )}
-                    {item.expertDocument.processing_status === 'queued' && (
-                      <span title="Queued" className="text-yellow-500">⏳</span>
-                    )}
-                    {item.expertDocument.processing_status === 'processing' && (
-                      <span title="Processing" className="text-blue-500 animate-pulse">⚡</span>
-                    )}
-                    {item.expertDocument.processing_status === 'failed' && (
-                      <span title={item.expertDocument.error_message || 'Error'} className="text-red-500">❌</span>
-                    )}
-                  </>
-                ) : item.content_extracted ? (
-                  <span title="Content Extracted" className="text-green-600 text-sm">✓</span>
-                ) : null}
-              </span>
             )}
           </div>
           {isFolder && isExpanded && renderTree(item.path, level + 1)}
@@ -376,59 +410,38 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
   };
 
   const handleProcessSelected = async () => {
-    const selectedFileNodes = Array.from(selectedFiles)
+    const selectedFilesList = Array.from(selectedFiles)
       .map(id => files.find(f => f.id === id))
-      .filter(f => f && f.content_extracted === null) as FileNode[]; // Only process unextracted files
+      .filter((f): f is FileNode => f !== undefined);
 
-    if (selectedFileNodes.length === 0) {
-      toast.success('No new files to process');
-      return;
-    }
+    setProcessingStage('analyzing');
+    
+    for (const file of selectedFilesList) {
+      try {
+        setProcessingStatus(prev => ({ ...prev, [file.id]: 'Analyzing document type...' }));
+        
+        // Step 1: Ensure content is in sources_google
+        if (!file.content) {
+          setProcessingStatus(prev => ({ ...prev, [file.id]: 'Extracting content...' }));
+          // Add content extraction logic here
+        }
 
-    // Split into batches of 10
-    const batches = [];
-    for (let i = 0; i < selectedFileNodes.length; i += 10) {
-      batches.push(selectedFileNodes.slice(i, i + 10));
-    }
+        // Step 2: Determine processing type
+        setProcessingStatus(prev => ({ ...prev, [file.id]: 'Determining processing approach...' }));
+        const processingType = await determineProcessingType(file);
 
-    try {
-      for (const batch of batches) {
-        // Create batch record and expert_documents
-        const { data: batchData, error: batchError } = await supabase
-          .from('processing_batches')
-          .insert({
-            created_at: new Date().toISOString(),
-            status: 'queued',
-            total_files: batch.length
-          })
-          .select()
-          .single();
+        // Step 3: Process based on type
+        setProcessingStatus(prev => ({ ...prev, [file.id]: 'Processing content...' }));
+        await processContent(file, processingType);
 
-        if (batchError) throw batchError;
-
-        // Create expert_documents for each file
-        const { error: docsError } = await supabase
-          .from('expert_documents')
-          .insert(
-            batch.map(file => ({
-              source_id: file.id,
-              batch_id: batchData.id,
-              status: 'queued',
-              created_at: new Date().toISOString()
-            }))
-          );
-
-        if (docsError) throw docsError;
-
-        toast.success(`Created batch of ${batch.length} files for processing`);
+        setProcessingStatus(prev => ({ ...prev, [file.id]: 'Completed' }));
+      } catch (error) {
+        console.error(`Error processing ${file.name}:`, error);
+        setProcessingStatus(prev => ({ ...prev, [file.id]: 'Error: ' + (error as Error).message }));
       }
-
-      // Clear selection after successful batch creation
-      setSelectedFiles(new Set());
-    } catch (error) {
-      console.error('Error creating batch:', error);
-      toast.error('Failed to create processing batch');
     }
+
+    setProcessingStage('idle');
   };
 
   // Add function to count files by MIME type
@@ -446,6 +459,25 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
       !knownMimeTypes.includes(file.mime_type) && 
       file.mime_type !== 'application/vnd.google-apps.folder'
     ).length;
+  };
+
+  const determineProcessingType = async (file: FileNode) => {
+    const types = {
+      EXPERT_INFO: 'expert_info',
+      PDF_EXTRACT: 'pdf_extract',
+      TRANSCRIPT: 'transcript',
+      CHAT_SUMMARY: 'chat_summary'
+    } as const;
+
+    if (file.mime_type.includes('pdf')) return types.PDF_EXTRACT;
+    if (file.mime_type.includes('document')) return types.EXPERT_INFO;
+    if (file.mime_type.includes('text')) return types.TRANSCRIPT;
+    return types.EXPERT_INFO; // default
+  };
+
+  const processContent = async (file: FileNode, processingType: string) => {
+    // Implementation will come later
+    console.log(`Processing ${file.name} with type ${processingType}`);
   };
 
   return (
@@ -610,9 +642,11 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
                 const colors = FILE_TYPE_COLORS[fileType] || FILE_TYPE_COLORS.other;
                 return (
                   <div key={file.id} 
-                    className={`flex items-center gap-2 py-1 ${colors.bg} ${colors.text} rounded px-2 mb-1`}
+                    className={`flex items-center gap-2 py-1 ${colors.pill} rounded px-2 mb-1`}
                   >
-                    <span>{colors.icon}</span>
+                    <span className={`${colors.icon.bg} ${colors.icon.text} p-1 rounded`}>
+                      {colors.emoji}
+                    </span>
                     <span className="flex-1">{file.name}</span>
                     <button
                       onClick={() => toggleFile(file.id)}
