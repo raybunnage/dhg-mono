@@ -142,12 +142,12 @@ const FILE_TYPE_COLORS = {
   pdf: {
     pill: 'bg-red-50 text-red-700',
     icon: { bg: 'bg-red-100', text: 'text-red-700' },
-    emoji: '📕'
+    emoji: '📄'
   },
   document: {
     pill: 'bg-blue-50 text-blue-700',
     icon: { bg: 'bg-blue-100', text: 'text-blue-700' },
-    emoji: '📘'
+    emoji: '📝'
   },
   presentation: {
     pill: 'bg-orange-50 text-orange-700',
@@ -167,7 +167,12 @@ const FILE_TYPE_COLORS = {
   video: {
     pill: 'bg-pink-50 text-pink-700',
     icon: { bg: 'bg-pink-100', text: 'text-pink-700' },
-    emoji: '🎥'
+    emoji: '🎬'
+  },
+  text: {
+    pill: 'bg-gray-50 text-gray-700',
+    icon: { bg: 'bg-gray-100', text: 'text-gray-700' },
+    emoji: '📋'
   },
   other: {
     pill: 'bg-gray-50 text-gray-600',
@@ -625,38 +630,60 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
       {selectedFiles.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
           <div className="max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium">Selected Files ({selectedFiles.size})</h3>
-              <button
-                onClick={handleProcessSelected}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                Process Selected Files
-              </button>
-            </div>
-            <div className="max-h-32 overflow-y-auto">
-              {Array.from(selectedFiles).map(fileId => {
-                const file = files.find(f => f.id === fileId);
-                if (!file) return null;
-                const fileType = getFileType(file.mime_type || '');
-                const colors = FILE_TYPE_COLORS[fileType] || FILE_TYPE_COLORS.other;
-                return (
-                  <div key={file.id} 
-                    className={`flex items-center gap-2 py-1 ${colors.pill} rounded px-2 mb-1`}
-                  >
-                    <span className={`${colors.icon.bg} ${colors.icon.text} p-1 rounded`}>
-                      {colors.emoji}
-                    </span>
-                    <span className="flex-1">{file.name}</span>
-                    <button
-                      onClick={() => toggleFile(file.id)}
-                      className="text-gray-500 hover:text-gray-700"
+            <div className="flex flex-col gap-4">
+              {/* Processing options */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleProcessSelected('extract_content')}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <span>📄</span> Extract Content
+                </button>
+                <button
+                  onClick={() => handleProcessSelected('expert_info')}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <span>👤</span> Extract Expert Info
+                </button>
+                <button
+                  onClick={() => handleProcessSelected('transcribe')}
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <span>🎙️</span> Transcribe Audio/Video
+                </button>
+                <button
+                  onClick={() => handleProcessSelected('summarize')}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <span>📝</span> Summarize Content
+                </button>
+              </div>
+
+              {/* Selected files list */}
+              <div className="max-h-32 overflow-y-auto">
+                {Array.from(selectedFiles).map(fileId => {
+                  const file = files.find(f => f.id === fileId);
+                  if (!file) return null;
+                  const fileType = getFileType(file.mime_type || '');
+                  const colors = FILE_TYPE_COLORS[fileType] || FILE_TYPE_COLORS.other;
+                  return (
+                    <div key={file.id} 
+                      className={`flex items-center gap-2 py-1 ${colors.pill} rounded px-2 mb-1`}
                     >
-                      ✕
-                    </button>
-                  </div>
-                );
-              })}
+                      <span className={`${colors.icon.bg} ${colors.icon.text} p-1 rounded`}>
+                        {colors.emoji}
+                      </span>
+                      <span className="flex-1">{file.name}</span>
+                      <button
+                        onClick={() => toggleFile(file.id)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

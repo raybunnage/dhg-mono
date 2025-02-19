@@ -391,49 +391,7 @@ export function FileViewer({ file }: FileViewerProps) {
           {isLoading && <span className="text-blue-500 text-sm animate-pulse">Loading...</span>}
         </div>
         <div className="flex items-center gap-4">
-          {isPdf && (
-            <>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setScale(s => Math.max(0.5, s - 0.1))}
-                  className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
-                  title="Zoom Out"
-                >
-                  -
-                </button>
-                <span className="text-sm w-16 text-center">{Math.round(scale * 100)}%</span>
-                <button 
-                  onClick={() => setScale(s => Math.min(2, s + 0.1))}
-                  className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
-                  title="Zoom In"
-                >
-                  +
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-                >
-                  ←
-                </button>
-                <span className="text-sm w-32 text-center">
-                  {pdfLoadingPage ? 
-                    <span className="text-blue-500 animate-pulse">Loading...</span> :
-                    `Page ${currentPage} of ${numPages}`
-                  }
-                </span>
-                <button 
-                  onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
-                  disabled={currentPage === numPages}
-                  className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-                >
-                  →
-                </button>
-              </div>
-            </>
-          )}
+          {/* PDF controls removed until we can implement proper functionality */}
           <button
             onClick={toggleFullscreen}
             className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
@@ -453,40 +411,13 @@ export function FileViewer({ file }: FileViewerProps) {
         ) : (
           <>
             {isVideo && file.web_view_link && (
-              <div className={`${isFullscreen ? 'flex items-center justify-center h-full' : 'w-full'} flex-col`}>
-                <div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
-                  {/* Video debug info */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="p-2 bg-black/50 text-white text-xs space-y-1">
-                      <div className="font-bold text-yellow-400">Video Debug Info:</div>
-                      <div>Extracted ID: {extractDriveId(file.web_view_link)}</div>
-                      <div>Original URL: {file.web_view_link}</div>
-                      <div>MIME: {file.mime_type}</div>
-                    </div>
-                  )}
-                  <iframe 
+              <div className="flex flex-col items-center justify-center p-4">
+                <div className="w-full max-w-4xl aspect-video">
+                  <iframe
                     src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
-                    className="w-full h-full rounded"
-                    title="Video Preview"
+                    className="w-full h-full rounded-lg shadow-lg"
                     allow="autoplay"
-                    onLoad={() => console.log('🎥 Video iframe loaded with ID:', extractDriveId(file.web_view_link))}
                   />
-                </div>
-                
-                {/* Look for associated chat.txt */}
-                {file.name && (
-                  <div className="mt-4 w-full">
-                    <div className="text-sm font-medium mb-2">Associated Chat:</div>
-                    <div className="bg-gray-50 rounded-lg p-4 max-h-[300px] overflow-y-auto">
-                      <ChatContent videoFileName={file.name} />
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-2 text-sm text-gray-500 flex flex-col">
-                  <span>File: {file.name}</span>
-                  <span>Type: {file.mime_type}</span>
-                  <span>Size: {formatFileSize((file.metadata as FileMetadata)?.size || 0)}</span>
                 </div>
               </div>
             )}
