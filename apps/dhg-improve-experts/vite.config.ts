@@ -55,6 +55,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        '@supabase': path.resolve(__dirname, './supabase'),
       },
     },
     publicDir: 'public',

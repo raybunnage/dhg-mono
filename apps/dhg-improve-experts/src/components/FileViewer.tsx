@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import mammoth from 'mammoth';
-import type { Database } from '../../../../../supabase/types';
+import type { Database } from '../../../../supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { FileNode } from '@/components/FileTree';
 import { formatFileSize } from '@/utils/format';

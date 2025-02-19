@@ -1,28 +1,38 @@
-import { createClient } from '@supabase/supabase-js';
+import { execSync } from 'child_process';
 import fs from 'fs';
+import path from 'path';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase URL or Anon Key in environment variables');
-  process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function generateTypes() {
+const main = async () => {
   try {
-    const { data, error } = await supabase.rpc('get_types');
+    console.log('Starting Supabase type generation...');
     
-    if (error) throw error;
+    // Get environment variables
+    const projectId = process.env.SUPABASE_PROJECT_ID;
+    const accessToken = process.env.SUPABASE_ACCESS_TOKEN;
+    
+    if (!projectId || !accessToken) {
+      throw new Error('Missing required environment variables: SUPABASE_PROJECT_ID or SUPABASE_ACCESS_TOKEN');
+    }
 
-    fs.writeFileSync('supabase/types.ts', data);
+    console.log('Executing type generation command...');
+    const command = `supabase gen types typescript --project-id ${projectId} --access-token ${accessToken}`;
+    
+    const types = execSync(command, { encoding: 'utf-8' });
+    
+    // Ensure supabase directory exists
+    const typesPath = path.join(process.cwd(), 'supabase');
+    if (!fs.existsSync(typesPath)) {
+      fs.mkdirSync(typesPath, { recursive: true });
+    }
+    
+    // Write types file
+    fs.writeFileSync(path.join(typesPath, 'types.ts'), types);
+    
     console.log('Types generated successfully!');
-  } catch (err) {
-    console.error('Error generating types:', err);
+  } catch (error) {
+    console.error('Error generating types:', error);
     process.exit(1);
   }
-}
+};
 
-generateTypes(); 
+main(); 
