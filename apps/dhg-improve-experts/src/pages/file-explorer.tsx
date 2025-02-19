@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileTree, FileNode } from '@/components/FileTree';
 import { supabase } from '@/integrations/supabase/client';
 import { FileViewer } from '@/components/FileViewer';
-import type { Database } from '@/../../supabase/types';
+import type { Database } from '../../../../file_types/supabase/types';
 import { toast } from 'react-hot-toast';
 
 type SourcesGoogleRow = Database['public']['Tables']['sources_google']['Row'];

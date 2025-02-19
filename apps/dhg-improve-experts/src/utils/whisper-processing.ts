@@ -1,6 +1,6 @@
 import { createParser } from 'eventsource-parser';
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/../../supabase/types';
+import type { Database } from '../../../../file_types/supabase/types';
 
 type VideoSummary = Database['public']['Tables']['video_summaries']['Row'];
 type ProcessingCost = Database['public']['Tables']['processing_costs']['Row'];

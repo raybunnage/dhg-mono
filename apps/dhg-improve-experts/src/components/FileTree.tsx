@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { FileTreeItem } from './FileTreeItem';
-import type { Database } from '@/../../supabase/types';
+import type { Database } from '../../../../file_types/supabase/types';
 
 type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
 type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
@@ -28,6 +28,7 @@ export interface FileNode {
   web_view_link: string | null;
   metadata: Json | null;
   expertDocument?: {
+    id: string;
     processing_status: string | null;
     batch_id: string | null;
     error_message: string | null;
@@ -51,7 +52,7 @@ interface FileTreeProps {
 type SupportedFileType = 'pdf' | 'document' | 'other';
 
 // Add helper function to determine file type
-const getFileType = (mimeType: string): SupportedFileType => {
+const getFileType = (mimeType: string): keyof typeof FILE_TYPE_COLORS => {
   if (mimeType.includes('pdf')) return 'pdf';
   if (
     mimeType === 'application/vnd.google-apps.document' ||
@@ -128,10 +129,30 @@ const MIME_TYPE_FILTERS = [
   }
 ];
 
+// Add color mapping for file types
+const FILE_TYPE_COLORS = {
+  pdf: {
+    bg: 'bg-red-50',
+    text: 'text-red-700',
+    icon: '📄'
+  },
+  document: {
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    icon: '📄'
+  },
+  other: {
+    bg: 'bg-gray-50',
+    text: 'text-gray-700',
+    icon: '��'
+  }
+} as const;
+
 export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [activeMimeTypes, setActiveMimeTypes] = useState<Set<string>>(new Set());
+  const [hideProcessedFiles, setHideProcessedFiles] = useState(false);
 
   const expandAll = () => {
     // Get all possible folder paths
@@ -157,15 +178,22 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
   };
 
   const toggleFile = (fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+
+    const fileType = getFileType(file.mime_type || ''); // Provide default empty string
+    const colors = FILE_TYPE_COLORS[fileType] || FILE_TYPE_COLORS.other; // Fallback to 'other' if type not found
+
     setSelectedFiles(prev => {
-      const next = new Set(prev);
-      if (next.has(fileId)) {
-        next.delete(fileId);
+      const newSelected = new Set(prev);
+      if (newSelected.has(fileId)) {
+        newSelected.delete(fileId);
       } else {
-        next.add(fileId);
+        newSelected.add(fileId);
       }
-      onSelectionChange?.(Array.from(next));
-      return next;
+      // Call the callback if provided
+      onSelectionChange?.(Array.from(newSelected));
+      return newSelected;
     });
   };
 
@@ -206,6 +234,10 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
 
   // Filter function for processable files
   const isProcessableFile = (file: FileNode) => {
+    if (hideProcessedFiles && 
+        file.expertDocument?.processing_status === 'completed') {
+      return false;
+    }
     if (file.mime_type === 'application/vnd.google-apps.folder') return true;
     if (activeMimeTypes.size === 0) return true; // Show all if no filters
     return Array.from(activeMimeTypes).some(type => {
@@ -417,7 +449,7 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
   };
 
   return (
-    <div className="file-tree p-4 border rounded-lg bg-white">
+    <div className="w-full h-full overflow-y-auto pl-2">
       {/* Add debug ID at the top */}
       {process.env.NODE_ENV === 'development' && (
         <div className="text-xs text-gray-400 mb-2">
@@ -508,6 +540,18 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
             {/* Add a separator */}
             <div className="h-6 w-px bg-gray-200 mx-1"></div>
 
+            {/* Add processed files filter */}
+            <button
+              onClick={() => setHideProcessedFiles(!hideProcessedFiles)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                ${hideProcessedFiles
+                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+            >
+              {hideProcessedFiles ? 'Show Processed' : 'Hide Processed'} Files
+            </button>
+
             {/* Move expand/collapse buttons here */}
             <button
               onClick={expandAll}
@@ -547,35 +591,39 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
 
       {/* New selected files panel - only shows when files are selected */}
       {selectedFiles.size > 0 && (
-        <div className="mt-4 border-t pt-4">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-medium">
-              Selected Files ({selectedFiles.size})
-            </h3>
-            <button
-              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-              onClick={handleProcessSelected}
-            >
-              Process Selected
-            </button>
-          </div>
-          <div className="max-h-40 overflow-y-auto">
-            {Array.from(selectedFiles).map(fileId => {
-              const file = files.find(f => f.id === fileId);
-              if (!file) return null;
-              return (
-                <div key={file.id} className="flex items-center gap-2 py-1 text-sm">
-                  <span>{getIcon(file.mime_type)}</span>
-                  <span className="flex-1">{file.name}</span>
-                  <button
-                    onClick={() => toggleFile(file.id)}
-                    className="text-red-500 hover:text-red-700"
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-medium">Selected Files ({selectedFiles.size})</h3>
+              <button
+                onClick={handleProcessSelected}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+              >
+                Process Selected Files
+              </button>
+            </div>
+            <div className="max-h-32 overflow-y-auto">
+              {Array.from(selectedFiles).map(fileId => {
+                const file = files.find(f => f.id === fileId);
+                if (!file) return null;
+                const fileType = getFileType(file.mime_type || '');
+                const colors = FILE_TYPE_COLORS[fileType] || FILE_TYPE_COLORS.other;
+                return (
+                  <div key={file.id} 
+                    className={`flex items-center gap-2 py-1 ${colors.bg} ${colors.text} rounded px-2 mb-1`}
                   >
-                    ✕
-                  </button>
-                </div>
-              );
-            })}
+                    <span>{colors.icon}</span>
+                    <span className="flex-1">{file.name}</span>
+                    <button
+                      onClick={() => toggleFile(file.id)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SourceButtons } from "@/components/SourceButtons";
 import { FileViewer } from '@/components/FileViewer';
 import { useNavigate } from 'react-router-dom';
-import type { Database } from '@/../../supabase/types';
+import type { Database } from '../../../../file_types/supabase/types';
 import { toast } from 'react-hot-toast';
 
 type SourcesGoogleRow = Database['public']['Tables']['sources_google']['Row'];
