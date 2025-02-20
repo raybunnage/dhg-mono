@@ -13,6 +13,7 @@ import RegistryViewer from './routes/RegistryViewer';
 import PDFTestExtract from '@/pages/pdf-test-extract';
 import PDFResearchPortal from '@/pages/pdf-research-portal';
 import MP4Test from './pages/mp4-test';
+import ClassifyDocument from '@/pages/ClassifyDocument';
 
 function App() {
   console.log('App component mounting');
@@ -28,7 +29,8 @@ function App() {
     '/file-explorer',
     '/registry',
     '/pdf-test-extract',
-    '/pdf-research-portal'
+    '/pdf-research-portal',
+    '/classify'
   ]);
   
   return (
@@ -85,6 +87,10 @@ function App() {
           <Route 
             path="/pdf-research-portal" 
             element={<PDFResearchPortal />} 
+          />
+          <Route 
+            path="/classify" 
+            element={<ClassifyDocument />} 
           />
         </Routes>
       </main>

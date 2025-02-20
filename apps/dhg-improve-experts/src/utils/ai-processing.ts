@@ -60,6 +60,7 @@ interface ProcessWithAIOptions {
   userMessage: string;
   temperature?: number;
   requireJsonOutput?: boolean;
+  validateResponse?: (response: any) => any;
   signal?: AbortSignal;
 }
 
@@ -83,6 +84,7 @@ export async function processWithAI({
   userMessage,
   temperature = 0.7,
   requireJsonOutput = false,
+  validateResponse,
   signal
 }: ProcessWithAIOptions) {
   const startTime = Date.now();
@@ -130,10 +132,12 @@ export async function processWithAI({
     if (requireJsonOutput) {
       try {
         const parsed = JSON.parse(content);
-        debug.log('json-parsing', {
-          successful: true,
-          keys: Object.keys(parsed)
-        });
+        
+        // If a validation function is provided, use it
+        if (validateResponse) {
+          return validateResponse(parsed);
+        }
+        
         return parsed;
       } catch (parseError) {
         debug.error('json-parsing', {

@@ -12,6 +12,9 @@ export function MainNavbar() {
             <Link to="/source-management" className="text-gray-700 hover:text-gray-900">
               Source Management
             </Link>
+            <Link to="/classify" className="text-gray-700 hover:text-gray-900">
+              Classify
+            </Link>
             <Link to="/registry" className="text-gray-700 hover:text-gray-900">
               Function Registry
             </Link>
