@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import type { Database } from '../../../../supabase/types';
@@ -11,7 +11,9 @@ type DocumentType = Database['public']['Tables']['document_types']['Row'];
 
 // Add this near the top of the file after the imports
 const DEBUG_QUERIES = {
-  count: () => supabase.from('document_types').select('*', { count: 'exact', head: true }),
+  count: () => supabase
+    .from('document_types')
+    .select('*', { count: 'exact', head: true }),
   sample: () => supabase.from('document_types').select('*').limit(5),
   all: () => supabase.from('document_types').select('*')
 };
@@ -58,6 +60,8 @@ export function ClassifyDocument() {
   const [debugInfo, setDebugInfo] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [classificationResults, setClassificationResults] = useState<string>('');
+  const [isExtracting, setIsExtracting] = useState(false);
+  const extractionRef = useRef<boolean>(true);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -832,6 +836,289 @@ ${results.map(r => `
     }
   };
 
+  // Add function to check DOCX count
+  const checkDocxCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('sources_google')
+        .select('*', { count: 'exact', head: true })
+        .eq('mime_type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        .is('extracted_content', null);
+
+      if (error) throw error;
+
+      console.log('DOCX files needing extraction:', {
+        count,
+        query: 'mime_type=docx AND extracted_content IS NULL'
+      });
+
+      toast.success(`Found ${count} DOCX files needing content extraction`);
+      return count;
+    } catch (error) {
+      console.error('Error checking DOCX count:', error);
+      toast.error('Failed to check DOCX count');
+      return null;
+    }
+  };
+
+  // Add new function to extract DOCX content
+  const extractDocxContent = async () => {
+    setLoading(true);
+    setIsExtracting(true);
+    extractionRef.current = true;
+
+    try {
+      console.log('🚀 Starting DOCX content extraction process...');
+
+      // Check auth first
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Auth check:', {
+        isAuthenticated: !!session,
+        userId: session?.user?.id
+      });
+
+      // Get all DOCX files without extracted content
+      const { data: docxFiles, error: fetchError } = await supabase
+        .from('sources_google')
+        .select(`
+          id,
+          name,
+          mime_type,
+          extracted_content,
+          drive_id,
+          content_extracted,
+          updated_at
+        `)
+        .eq('mime_type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        .is('extracted_content', null)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        console.error('Error fetching DOCX files:', {
+          error: fetchError,
+          message: fetchError.message,
+          details: fetchError.details
+        });
+        throw fetchError;
+      }
+
+      console.log('Query results:', {
+        totalFiles: docxFiles?.length,
+        fileList: docxFiles?.map(f => ({
+          name: f.name,
+          id: f.id,
+          driveId: f.drive_id,
+          hasContent: !!f.extracted_content,
+          contentExtracted: f.content_extracted,
+          lastUpdated: f.updated_at
+        }))
+      });
+
+      if (!docxFiles?.length) {
+        toast.success('No unprocessed DOCX files found');
+        return;
+      }
+
+      let successCount = 0;
+      let failureCount = 0;
+      const results = [];
+      const errors = [];
+
+      const updateFile = async (file: any, content: string) => {
+        try {
+          // Format content as a JSON object
+          const contentObject = {
+            text: content,
+            metadata: {
+              extractedAt: new Date().toISOString(),
+              contentLength: content.length,
+              extractionMethod: 'mammoth'
+            }
+          };
+
+          console.log('Attempting database update:', {
+            fileId: file.id,
+            fileName: file.name,
+            contentType: typeof contentObject,
+            isValidJson: true
+          });
+
+          const { error: updateError } = await supabase
+            .from('sources_google')
+            .update({
+              extracted_content: contentObject,  // Send as JSON object
+              content_extracted: true,
+              updated_at: new Date().toISOString()
+            })
+            .match({ id: file.id })
+            .single();
+
+          if (updateError) {
+            console.error('Update error:', updateError);
+            throw updateError;
+          }
+
+          return true;
+        } catch (error) {
+          console.error('Update failed:', error);
+          return false;
+        }
+      };
+
+      for (const file of docxFiles) {
+        // Check if extraction was stopped
+        if (!extractionRef.current) {
+          console.log('Extraction process stopped by user');
+          toast.success('Extraction process stopped');
+          break;
+        }
+
+        try {
+          console.log(`\n📄 Processing file:`, {
+            name: file.name,
+            id: file.id,
+            driveId: file.drive_id
+          });
+
+          const content = await getDocxContent(file.drive_id);
+          
+          if (!content) {
+            console.warn(`No content extracted from ${file.name}`);
+            failureCount++;
+            errors.push({
+              file: file.name,
+              error: 'No content extracted',
+              stage: 'content extraction'
+            });
+            continue;
+          }
+
+          // Use the new update function
+          const updateSuccess = await updateFile(file, content);
+          
+          if (!updateSuccess) {
+            failureCount++;
+            errors.push({
+              file: file.name,
+              error: 'Database update failed',
+              stage: 'database update'
+            });
+            continue;
+          }
+
+          successCount++;
+          results.push({
+            fileName: file.name,
+            fileId: file.id,
+            contentLength: content.length
+          });
+
+        } catch (error) {
+          console.error(`Failed to process ${file.name}:`, {
+            error,
+            stack: error.stack,
+            fileId: file.id,
+            driveId: file.drive_id
+          });
+          failureCount++;
+          errors.push({
+            file: file.name,
+            error: error.message,
+            stage: 'processing'
+          });
+        }
+      }
+
+      // Log detailed summary
+      console.log('\n📊 Content Extraction Summary:', {
+        totalFiles: docxFiles.length,
+        successful: successCount,
+        failed: failureCount,
+        errors: errors,
+        successRate: `${((successCount / docxFiles.length) * 100).toFixed(1)}%`
+      });
+
+      toast.success(`Processed ${successCount} files (${failureCount} failed)`);
+
+      // Show detailed results including errors
+      setClassificationResults(
+        `# Content Extraction Results
+${new Date().toISOString()}
+
+## Summary
+- Total DOCX Files: ${docxFiles.length}
+- Successfully Processed: ${successCount}
+- Failed: ${failureCount}
+- Success Rate: ${((successCount / docxFiles.length) * 100).toFixed(1)}%
+
+## Successfully Processed Files
+${results.map(r => `
+### ${r.fileName}
+- File ID: ${r.fileId}
+- Content Length: ${r.contentLength} characters
+`).join('\n')}
+
+## Errors
+${errors.map(e => `
+### ${e.file}
+- Stage: ${e.stage}
+- Error: ${e.error}
+`).join('\n')}
+`
+      );
+
+    } catch (error) {
+      console.error('Content extraction error:', error);
+      toast.error('Failed to extract content: ' + error.message);
+    } finally {
+      setLoading(false);
+      setIsExtracting(false);
+    }
+  };
+
+  // Add this debug function
+  const checkExtractedContent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sources_google')
+        .select(`
+          id,
+          name,
+          extracted_content,
+          content_extracted,
+          updated_at
+        `)
+        .in('id', [
+          '0434507-8429-4386-abeb-b4f3d46c7220',
+          '906654bd-4742-4ac5-a420-4f7ec11dd19c'
+        ])
+        .order('updated_at', { ascending: false });
+
+      console.log('Extraction check:', {
+        success: !error,
+        files: data?.map(f => ({
+          name: f.name,
+          hasContent: !!f.extracted_content,
+          contentLength: f.extracted_content?.length,
+          contentExtracted: f.content_extracted,
+          lastUpdated: f.updated_at
+        })),
+        error
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Failed to check extracted content:', error);
+      return null;
+    }
+  };
+
+  // Add stop function
+  const stopExtraction = () => {
+    extractionRef.current = false;
+    toast.success('Stopping extraction process...');
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-6">Document Classification</h1>
@@ -856,6 +1143,32 @@ ${results.map(r => `
               >
                 <span>➕</span> Add Presentation Type
               </button>
+
+              <div className="relative">
+                {isExtracting ? (
+                  <button
+                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 font-bold"
+                    onClick={stopExtraction}
+                  >
+                    <span>⏹️</span> Stop Extraction
+                  </button>
+                ) : (
+                  <button
+                    className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg flex items-center gap-2"
+                    onClick={async () => {
+                      const count = await checkDocxCount();
+                      if (count && count > 0) {
+                        if (confirm(`Process ${count} DOCX files for content extraction?`)) {
+                          extractDocxContent();
+                        }
+                      }
+                    }}
+                    disabled={loading}
+                  >
+                    <span>📄</span> Extract Content
+                  </button>
+                )}
+              </div>
             </div>
 
             {classificationResults && (
@@ -910,6 +1223,13 @@ ${results.map(r => `
               disabled={loading}
             >
               <span>📝</span> Update Classification Metadata
+            </button>
+
+            <button
+              className="text-sm bg-orange-200 hover:bg-orange-300 px-3 py-1 rounded ml-2"
+              onClick={checkExtractedContent}
+            >
+              Check Extracted Content
             </button>
           </>
         ) : (
