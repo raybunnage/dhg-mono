@@ -1,3 +1,6 @@
+import { supabase } from '@/integrations/supabase/client';
+import mammoth from 'mammoth';
+
 async function getValidAccessToken(): Promise<string> {
   const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
   
@@ -201,33 +204,96 @@ export async function listAllDriveFiles(folderId: string, parentPath: string = '
   return allFiles;
 }
 
-// Add this function to handle .docx files
-export async function getDocxContent(fileId: string): Promise<string> {
-  const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
-  
+export async function getDocxContent(driveId: string) {
   try {
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json'
-        },
-        mode: 'no-cors'
+    console.log('🔍 Starting DOCX content extraction:', {
+      driveId,
+      timestamp: new Date().toISOString()
+    });
+
+    const accessToken = await getValidAccessToken();
+
+    // Construct Google Drive API URL
+    const url = `https://www.googleapis.com/drive/v3/files/${driveId}?alt=media`;
+    
+    console.log('📡 Fetching from Google Drive:', {
+      url,
+      hasAccessToken: !!accessToken
+    });
+
+    // Make request with token
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       }
-    );
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch document: ${response.status}`);
     }
 
-    const blob = await response.blob();
-    const arrayBuffer = await blob.arrayBuffer();
-    const result = await mammoth.convertToHtml({ arrayBuffer });
+    // Get the binary content as ArrayBuffer
+    const arrayBuffer = await response.arrayBuffer();
     
-    return result.value || '';
+    console.log('Converting DOCX content with mammoth...', {
+      driveId,
+      bufferSize: arrayBuffer.byteLength
+    });
+
+    // Use mammoth with more options to get better content
+    const result = await mammoth.extractRawText({
+      arrayBuffer,
+      options: {
+        includeDefaultStyleMap: true,
+        preserveCharacterStyles: true,
+        preserveParagraphs: true,
+        preserveImages: false,
+        styleMap: [
+          "p[style-name='Heading 1'] => h1:fresh",
+          "p[style-name='Heading 2'] => h2:fresh",
+          "p[style-name='Heading 3'] => h3:fresh",
+          "p => p:fresh",
+          "r => span"
+        ]
+      }
+    });
+
+    if (!result.value || result.value.length < 100) {  // Minimum content check
+      console.error('Extraction produced insufficient content:', {
+        driveId,
+        contentLength: result.value?.length,
+        content: result.value,
+        warnings: result.messages
+      });
+      throw new Error('Extracted content too short or empty');
+    }
+
+    // Clean up the content
+    const cleanedContent = result.value
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+      .replace(/\u0000/g, '')  // Remove null bytes
+      .replace(/\n{3,}/g, '\n\n')  // Normalize multiple line breaks
+      .replace(/\s+/g, ' ')  // Normalize whitespace
+      .trim();
+
+    console.log('✅ Successfully extracted content:', {
+      driveId,
+      originalLength: result.value.length,
+      cleanedLength: cleanedContent.length,
+      preview: cleanedContent.slice(0, 100) + '...',
+      warnings: result.messages
+    });
+
+    return cleanedContent;
+
   } catch (error) {
-    console.error('DOCX extraction failed:', { fileId, error, stage: 'full process' });
+    console.error('❌ DOCX extraction error:', {
+      error,
+      message: error.message,
+      stack: error.stack,
+      driveId
+    });
     throw error;
   }
 } 
