@@ -416,8 +416,23 @@ Check console for full details.
         // Update the document
         const updateData: Database['public']['Tables']['sources_google']['Update'] = {
           document_type_id: result.typeId,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          metadata: {
+            ...doc.metadata, // Preserve any existing metadata
+            classification: {  // Add our classification metadata in its own namespace
+              confidence: result.confidence,
+              reasoning: result.reasoning,
+              classified_at: new Date().toISOString()
+            }
+          }
         };
+
+        console.log('Updating document with classification:', {
+          docId: doc.id,
+          typeId: result.typeId,
+          confidence: result.confidence,
+          metadata: updateData.metadata
+        });
 
         const { error: updateError } = await supabase
           .from('sources_google')
@@ -667,6 +682,156 @@ ${results.map(result => `
     }
   };
 
+  // Add new function to update metadata for already classified documents
+  const updateClassificationMetadata = async () => {
+    setLoading(true);
+    try {
+      // Get all documents that have a document_type_id but might not have metadata
+      const { data: classifiedDocs, error: fetchError } = await supabase
+        .from('sources_google')
+        .select(`
+          id,
+          name,
+          extracted_content,
+          document_type_id,
+          metadata,
+          mime_type
+        `)
+        .not('document_type_id', 'is', null)
+        .not('extracted_content', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      if (!classifiedDocs?.length) {
+        toast.info('No classified documents found to update');
+        return;
+      }
+
+      console.log(`Found ${classifiedDocs.length} classified documents to update metadata`);
+
+      // Load document types for reference
+      const documentTypes = await loadDocumentTypes();
+      if (!documentTypes) throw new Error('Failed to load document types');
+
+      // Load the classification prompt
+      const prompt = await loadClassificationPrompt();
+      if (!prompt) throw new Error('Failed to load classification prompt');
+
+      let updatedCount = 0;
+      const results = [];
+
+      for (const doc of classifiedDocs) {
+        // Skip if already has classification metadata
+        if (doc.metadata?.classification?.confidence) {
+          console.log(`Skipping ${doc.name} - already has classification metadata`);
+          continue;
+        }
+
+        console.log(`\n🔍 Re-processing ${doc.name} for confidence/reasoning`);
+
+        // Prepare content for AI processing
+        const content = typeof doc.extracted_content === 'string' ? 
+          doc.extracted_content : 
+          JSON.stringify(doc.extracted_content);
+
+        // Process with AI, but this time we know the target type
+        const result = await processWithAI({
+          systemPrompt: prompt,
+          userMessage: JSON.stringify({
+            documentTypes: documentTypes.map(dt => ({
+              id: dt.id,
+              type: dt.document_type,
+              category: dt.category,
+              description: dt.description
+            })),
+            documentToClassify: {
+              name: doc.name,
+              content: content.slice(0, 15000)
+            },
+            currentTypeId: doc.document_type_id // Tell AI which type it's already classified as
+          }),
+          temperature: 0.1,
+          requireJsonOutput: true,
+          validateResponse: (response) => {
+            const parsed = ClassificationResponseSchema.safeParse(response);
+            if (!parsed.success) {
+              throw new Error(`Invalid response format: ${parsed.error.message}`);
+            }
+            return parsed.data;
+          }
+        });
+
+        // Update only the metadata
+        const updateData: Database['public']['Tables']['sources_google']['Update'] = {
+          metadata: {
+            ...doc.metadata, // Preserve existing metadata
+            classification: {
+              confidence: result.confidence,
+              reasoning: result.reasoning,
+              classified_at: new Date().toISOString()
+            }
+          }
+        };
+
+        const { error: updateError } = await supabase
+          .from('sources_google')
+          .update(updateData)
+          .eq('id', doc.id);
+
+        if (updateError) {
+          console.error('Failed to update metadata:', {
+            error: updateError,
+            docId: doc.id
+          });
+          continue;
+        }
+
+        updatedCount++;
+        results.push({
+          fileName: doc.name,
+          documentId: doc.id,
+          confidence: result.confidence,
+          reasoning: result.reasoning
+        });
+      }
+
+      // Log summary
+      console.log('\n📊 Metadata Update Summary:', {
+        totalClassifiedDocs: classifiedDocs.length,
+        updatedWithMetadata: updatedCount,
+        skipped: classifiedDocs.length - updatedCount
+      });
+
+      toast.success(`Updated metadata for ${updatedCount} documents`);
+
+      // Show results
+      setClassificationResults(
+        `# Classification Metadata Update Results
+${new Date().toISOString()}
+
+## Summary
+- Total Classified Documents: ${classifiedDocs.length}
+- Updated with Metadata: ${updatedCount}
+- Skipped (already had metadata): ${classifiedDocs.length - updatedCount}
+
+## Updated Documents
+${results.map(r => `
+### ${r.fileName}
+- Document ID: ${r.documentId}
+- Confidence: ${(r.confidence * 100).toFixed(1)}%
+- Reasoning: ${r.reasoning}
+`).join('\n')}
+`
+      );
+
+    } catch (error) {
+      console.error('Metadata update error:', error);
+      toast.error('Failed to update classification metadata');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-6">Document Classification</h1>
@@ -737,6 +902,14 @@ ${results.map(result => `
               onClick={checkTableStructure}
             >
               Check Table Structure
+            </button>
+
+            <button
+              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              onClick={updateClassificationMetadata}
+              disabled={loading}
+            >
+              <span>📝</span> Update Classification Metadata
             </button>
           </>
         ) : (
