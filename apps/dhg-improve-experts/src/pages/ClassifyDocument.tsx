@@ -62,6 +62,12 @@ export function ClassifyDocument() {
   const [classificationResults, setClassificationResults] = useState<string>('');
   const [isExtracting, setIsExtracting] = useState(false);
   const extractionRef = useRef<boolean>(true);
+  const [todaysClassifications, setTodaysClassifications] = useState<{
+    name: string;
+    documentType: string;
+    confidence: number;
+    reasoning: string;
+  }[]>([]);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -1119,6 +1125,182 @@ ${errors.map(e => `
     toast.success('Stopping extraction process...');
   };
 
+  // Add this function near other similar functions
+  const classifyNewContent = async () => {
+    setLoading(true);
+    try {
+      console.log('Starting classification of new content...');
+      
+      // Get today's date at midnight UTC
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      // Load document types for reference
+      const documentTypes = await loadDocumentTypes();
+      if (!documentTypes) throw new Error('Failed to load document types');
+
+      // Load the classification prompt
+      const prompt = await loadClassificationPrompt();
+      if (!prompt) throw new Error('Failed to load classification prompt');
+
+      // Find documents extracted today without document_type_id
+      const { data: newDocuments, error: queryError } = await supabase
+        .from('sources_google')
+        .select('*')
+        .gte('updated_at', today.toISOString())
+        .is('document_type_id', null)
+        .not('extracted_content', 'is', null);
+
+      if (queryError) throw queryError;
+
+      if (!newDocuments?.length) {
+        toast.success('No new unclassified documents found from today');
+        return;
+      }
+
+      console.log(`Found ${newDocuments.length} new documents to classify`);
+      let successCount = 0;
+      let failureCount = 0;
+      const results = [];
+
+      for (const doc of newDocuments) {
+        try {
+          console.log(`Processing: ${doc.name}`);
+
+          // Get content from JSON object
+          const content = doc.extracted_content?.text || 
+            (typeof doc.extracted_content === 'string' ? doc.extracted_content : '');
+
+          if (!content) {
+            console.warn(`No content found for ${doc.name}`);
+            continue;
+          }
+
+          // Process with AI
+          const result = await processWithAI({
+            systemPrompt: prompt,
+            userMessage: JSON.stringify({
+              documentTypes: documentTypes.map(dt => ({
+                id: dt.id,
+                type: dt.document_type,
+                category: dt.category,
+                description: dt.description
+              })),
+              documentToClassify: {
+                name: doc.name,
+                content: content.slice(0, 15000) // Limit content length
+              }
+            }),
+            temperature: 0.1,
+            requireJsonOutput: true,
+            validateResponse: (response) => {
+              const parsed = ClassificationResponseSchema.safeParse(response);
+              if (!parsed.success) {
+                throw new Error(`Invalid response format: ${parsed.error.message}`);
+              }
+              return parsed.data;
+            }
+          });
+
+          // Update the document with classification results
+          const { error: updateError } = await supabase
+            .from('sources_google')
+            .update({
+              document_type_id: result.typeId,
+              metadata: {
+                ...doc.metadata,
+                classification: {
+                  confidence: result.confidence,
+                  reasoning: result.reasoning,
+                  classified_at: new Date().toISOString()
+                }
+              },
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', doc.id);
+
+          if (updateError) {
+            throw updateError;
+          }
+
+          successCount++;
+          results.push({
+            name: doc.name,
+            typeId: result.typeId,
+            confidence: result.confidence
+          });
+
+        } catch (error) {
+          console.error(`Failed to classify ${doc.name}:`, error);
+          failureCount++;
+        }
+      }
+
+      // Show results
+      toast.success(`Classified ${successCount} documents (${failureCount} failed)`);
+      console.log('Classification complete:', {
+        total: newDocuments.length,
+        success: successCount,
+        failed: failureCount,
+        results
+      });
+
+    } catch (error) {
+      console.error('Classification failed:', error);
+      toast.error('Failed to classify new content');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add function to fetch and display today's classifications
+  const showTodaysClassifications = async () => {
+    setLoading(true);
+    try {
+      // Get today's date at midnight UTC
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      // Get documents updated today with their document types
+      const { data: documents, error } = await supabase
+        .from('sources_google')
+        .select(`
+          name,
+          document_type_id,
+          metadata,
+          document_types (
+            document_type
+          )
+        `)
+        .gte('updated_at', today.toISOString())
+        .not('document_type_id', 'is', null);
+
+      if (error) throw error;
+
+      if (!documents?.length) {
+        toast.success('No documents classified today');
+        return;
+      }
+
+      // Format the results
+      const classifications = documents.map(doc => ({
+        name: doc.name,
+        documentType: doc.document_types?.document_type || 'Unknown',
+        confidence: doc.metadata?.classification?.confidence || 0,
+        reasoning: doc.metadata?.classification?.reasoning || 'No reasoning provided'
+      }));
+
+      setTodaysClassifications(classifications);
+      console.log('Today\'s classifications:', classifications);
+
+    } catch (error) {
+      console.error('Failed to fetch classifications:', error);
+      toast.error('Failed to load today\'s classifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-6">Document Classification</h1>
@@ -1231,6 +1413,49 @@ ${errors.map(e => `
             >
               Check Extracted Content
             </button>
+
+            <button
+              className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              onClick={classifyNewContent}
+              disabled={loading}
+            >
+              <span>🤖</span> Classify New Content
+            </button>
+
+            <button
+              className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              onClick={showTodaysClassifications}
+              disabled={loading}
+            >
+              <span>📋</span> Show Today's Classifications
+            </button>
+
+            {todaysClassifications.length > 0 && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h2 className="text-lg font-medium mb-4">Today's Classifications</h2>
+                <div className="space-y-4">
+                  {todaysClassifications.map((doc, index) => (
+                    <div key={index} className="border-b pb-4">
+                      <h3 className="font-medium text-blue-600">{doc.name}</h3>
+                      <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                        <div>
+                          <span className="font-medium">Document Type:</span>
+                          <span className="ml-2">{doc.documentType}</span>
+                        </div>
+                        <div>
+                          <span className="font-medium">Confidence:</span>
+                          <span className="ml-2">{(doc.confidence * 100).toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm">
+                        <span className="font-medium">Reasoning:</span>
+                        <p className="mt-1 text-gray-600">{doc.reasoning}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="text-gray-600">
