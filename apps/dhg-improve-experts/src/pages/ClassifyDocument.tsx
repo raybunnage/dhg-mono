@@ -1301,6 +1301,250 @@ ${errors.map(e => `
     }
   };
 
+  // Add this helper function at the top level
+  const cleanContent = (content: string): string => {
+    if (!content) return '';
+    
+    // First clean HTML if present
+    let cleaned = content;
+    if (content.includes('<')) {
+      cleaned = content
+        .replace(/<p>/g, '')
+        .replace(/<\/p>/g, '\n\n')
+        .replace(/<li>/g, '• ')
+        .replace(/<\/li>/g, '\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/\n{3,}/g, '\n\n');
+    }
+
+    // Clean for PostgreSQL text compatibility
+    cleaned = cleaned
+      .replace(/\u0000/g, '')  // Remove null bytes
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove non-printable chars
+      .replace(/\r\n/g, '\n')  // Normalize newlines
+      .replace(/\s+/g, ' ')    // Normalize spaces
+      .trim();
+
+    return cleaned;
+  };
+
+  // Add enum for valid status values
+  const EXPERT_DOCUMENT_STATUS = {
+    DRAFT: 'draft',
+    ACTIVE: 'active',
+    ARCHIVED: 'archived',
+    PENDING: 'pending'
+  } as const;
+
+  const PROCESSING_STATUS = {
+    PENDING: 'pending',
+    QUEUED: 'queued',
+    PROCESSING: 'processing',
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+    RETRYING: 'retrying'
+  } as const;
+
+  // Define valid status values
+  const DOCUMENT_STATUS = {
+    QUEUED: 'queued',
+    PROCESSING: 'processing',
+    COMPLETED: 'completed',
+    ERROR: 'error'
+  } as const;
+
+  // Update the transfer function
+  const transferToExpertDocuments = async () => {
+    setLoading(true);
+    try {
+      console.log('🚀 Starting transfer process...');
+
+      // STEP 1: Query sources_google
+      const { data: sourceDocs, error: sourceError } = await supabase
+        .from('sources_google')
+        .select(`
+          id,
+          name,
+          drive_id,
+          mime_type,
+          extracted_content,
+          document_type_id,
+          metadata
+        `)
+        .gte('updated_at', new Date().toISOString().split('T')[0])
+        .not('extracted_content', 'is', null)
+        .not('document_type_id', 'is', null);
+
+      if (sourceError) {
+        console.error('Query failed:', sourceError);
+        throw sourceError;
+      }
+
+      console.log('Found documents:', sourceDocs?.length);
+
+      let successCount = 0;
+      const transferred = [];
+      const errors = [];
+
+      for (const doc of sourceDocs || []) {
+        try {
+          console.log(`\n📄 Processing: ${doc.name}`);
+
+          // Check for existing
+          const { data: existingDocs, error: checkError } = await supabase
+            .from('expert_documents')
+            .select('id')
+            .eq('source_id', doc.id);
+
+          if (checkError) {
+            console.error('Check error:', checkError);
+            continue;
+          }
+
+          if (existingDocs?.length > 0) {
+            console.log('⏭️ Already exists, skipping');
+            continue;
+          }
+
+          // Extract and clean content
+          let rawContent;
+          if (typeof doc.extracted_content === 'string') {
+            rawContent = cleanContent(doc.extracted_content);
+          } else if (doc.extracted_content?.text) {
+            rawContent = cleanContent(doc.extracted_content.text);
+          } else {
+            console.warn('⚠️ Invalid content:', doc.extracted_content);
+            continue;
+          }
+
+          // Update the insert data to handle JSON properly
+          const now = new Date().toISOString();
+          const insertData = {
+            // Required fields (NOT NULL)
+            raw_content: rawContent,
+            document_type_id: doc.document_type_id,
+            source_id: doc.id,
+            created_at: now,  // NOT NULL with default now()
+            updated_at: now,  // NOT NULL with default now()
+            
+            // Content fields (jsonb type)
+            processed_content: {  // Don't stringify - it's jsonb
+              title: doc.name,
+              content: rawContent,
+              source: {
+                drive_id: doc.drive_id,
+                mime_type: doc.mime_type
+              }
+            },
+            
+            // Status field
+            processing_status: 'pending' as const,  // text type
+            
+            // Optional fields
+            word_count: rawContent.split(/\s+/).length || null,  // integer
+            language: 'en',  // text
+            confidence_score: doc.metadata?.classification?.confidence || null,  // numeric
+            
+            // Arrays
+            key_insights: [],  // ARRAY type
+            topics: [],  // ARRAY type
+          };
+
+          // Add detailed debugging
+          console.log('Document insert debug:', {
+            document: {
+              name: doc.name,
+              id: doc.id,
+              typeId: doc.document_type_id
+            },
+            insertData: debugObject(insertData),
+            metadata: {
+              original: doc.metadata,
+              classification: doc.metadata?.classification
+            },
+            contentSample: {
+              raw: rawContent.slice(0, 100),
+              processed: JSON.stringify(insertData.processed_content).slice(0, 100)
+            }
+          });
+
+          // Attempt insert with better error handling
+          try {
+            const { data, error: insertError } = await supabase
+              .from('expert_documents')
+              .insert(insertData)
+              .select()
+              .single();
+
+            if (insertError) {
+              console.error('Insert failed:', {
+                error: insertError,
+                code: insertError.code,
+                message: insertError.message,
+                hint: insertError.hint,
+                details: insertError.details,
+                data: debugObject(insertData)
+              });
+              throw insertError;
+            }
+
+            console.log('Insert succeeded:', {
+              id: data.id,
+              fields: Object.keys(data)
+            });
+          } catch (error) {
+            console.error('Insert error:', error);
+            throw error;
+          }
+
+          successCount++;
+          transferred.push(doc.name);
+          console.log('✅ Success');
+
+        } catch (error) {
+          console.error('Failed:', {
+            doc: doc.name,
+            error: error.message
+          });
+          errors.push({
+            doc: doc.name,
+            error: error.message
+          });
+        }
+      }
+
+      // Show results
+      console.log('\n📊 Summary:', {
+        processed: sourceDocs?.length || 0,
+        succeeded: successCount,
+        failed: errors.length,
+        errors: errors
+      });
+
+      if (successCount > 0) {
+        toast.success(`Transferred ${successCount} documents`);
+      } else {
+        toast.info('No documents transferred');
+      }
+
+    } catch (error) {
+      console.error('Process failed:', error);
+      toast.error('Transfer failed: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add debug helper
+  const debugObject = (obj: any) => {
+    return Object.entries(obj).map(([key, value]) => ({
+      key,
+      type: typeof value,
+      isNull: value === null,
+      preview: JSON.stringify(value).slice(0, 100)
+    }));
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-6">Document Classification</h1>
@@ -1428,6 +1672,14 @@ ${errors.map(e => `
               disabled={loading}
             >
               <span>📋</span> Show Today's Classifications
+            </button>
+
+            <button
+              className="bg-violet-500 hover:bg-violet-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              onClick={transferToExpertDocuments}
+              disabled={loading}
+            >
+              <span>📋➡️</span> Transfer to Expert Documents
             </button>
 
             {todaysClassifications.length > 0 && (
