@@ -16,6 +16,9 @@ const DEBUG_QUERIES = {
   all: () => supabase.from('document_types').select('*')
 };
 
+// Add type for sources_google
+type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];
+
 const ensureAuth = async () => {
   try {
     // Check if we're already authenticated
@@ -302,6 +305,12 @@ Check console for full details.
     }
   };
 
+  // Add UUID validation helper
+  const isValidUUID = (uuid: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  };
+
   const classifyDocuments = async () => {
     setLoading(true);
     try {
@@ -315,19 +324,18 @@ Check console for full details.
       const prompt = await loadClassificationPrompt();
       if (!prompt) throw new Error('Failed to load classification prompt');
 
-      // Load source documents that already have extracted content
+      // Load all documents with extracted content
       const { data: sourceDocuments, error: sourceError } = await supabase
         .from('sources_google')
-        .select(`
+        .select<'sources_google', SourceGoogle>(`
           id,
           name,
           mime_type,
           extracted_content,
-          metadata
+          document_type_id
         `)
         .not('extracted_content', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(15);
+        .order('created_at', { ascending: false });
 
       if (sourceError) throw sourceError;
       if (!sourceDocuments?.length) {
@@ -335,11 +343,26 @@ Check console for full details.
         return;
       }
 
-      console.log(`Found ${sourceDocuments.length} documents to classify`);
+      // Filter out already classified documents
+      const unclassifiedDocs = sourceDocuments.filter(doc => doc.document_type_id === null);
+      const classifiedDocs = sourceDocuments.filter(doc => doc.document_type_id !== null);
+
+      console.log(`📊 Document Status:`, {
+        total: sourceDocuments.length,
+        alreadyClassified: classifiedDocs.length,
+        needingClassification: unclassifiedDocs.length
+      });
+
+      if (unclassifiedDocs.length === 0) {
+        toast.success('All documents are already classified!');
+        return;
+      }
+
       const results = [];
       let presentationCount = 0;
+      let successfulUpdates = 0;
 
-      for (const doc of sourceDocuments) {
+      for (const doc of unclassifiedDocs) {
         console.log(`\n🔍 Processing document: ${doc.name}`, {
           id: doc.id,
           mimeType: doc.mime_type,
@@ -382,20 +405,37 @@ Check console for full details.
               throw new Error('Invalid typeId: does not match any provided document type');
             }
 
-            // Track presentation announcements
             if (parsed.data.documentType === 'Presentation Announcement') {
               presentationCount++;
-              console.log('🎯 Found Presentation Announcement:', {
-                confidence: parsed.data.confidence,
-                reasoning: parsed.data.reasoning
-              });
             }
 
             return parsed.data;
           }
         });
 
-        // Store result with more details
+        // Update the document
+        const updateData: Database['public']['Tables']['sources_google']['Update'] = {
+          document_type_id: result.typeId,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error: updateError } = await supabase
+          .from('sources_google')
+          .update(updateData)
+          .eq('id', doc.id);
+
+        if (updateError) {
+          console.error('Failed to update document:', {
+            error: updateError,
+            docId: doc.id,
+            typeId: result.typeId
+          });
+          continue;
+        }
+
+        successfulUpdates++;
+        console.log(`✅ Updated document ${doc.id} with type ${result.typeId}`);
+
         results.push({
           fileName: doc.name,
           documentId: doc.id,
@@ -403,23 +443,27 @@ Check console for full details.
             ...result,
             isPresentationAnnouncement: result.documentType === 'Presentation Announcement',
             confidenceScore: result.confidence,
-            classificationReasoning: result.reasoning
+            classificationReasoning: result.reasoning,
+            assignedTypeId: result.typeId
           }
         });
       }
 
-      // Log summary statistics
+      // Log final summary
       console.log('\n📊 Classification Summary:', {
         totalDocuments: sourceDocuments.length,
+        previouslyClassified: classifiedDocs.length,
+        processedDocuments: unclassifiedDocs.length,
+        successfulUpdates,
         presentationAnnouncements: presentationCount,
-        presentationPercentage: `${(presentationCount / sourceDocuments.length * 100).toFixed(1)}%`
+        presentationPercentage: `${(presentationCount / unclassifiedDocs.length * 100).toFixed(1)}%`
       });
 
       // Generate and display report
-      const markdown = generateMarkdownReport(results);
+      const markdown = generateMarkdownReport(results, classifiedDocs.length);
       setClassificationResults(markdown);
       
-      toast.success(`Classified ${results.length} documents`);
+      toast.success(`Classified and updated ${successfulUpdates} documents. ${classifiedDocs.length} were already classified.`);
       return results;
     } catch (error) {
       console.error('Classification error:', error);
@@ -429,12 +473,13 @@ Check console for full details.
     }
   };
 
-  const generateMarkdownReport = (results) => {
+  const generateMarkdownReport = (results: any[], previouslyClassifiedCount: number) => {
     return `# Document Classification Results
 ${new Date().toISOString()}
 
 ## Summary
-- Total Documents Processed: ${results.length}
+- Previously Classified: ${previouslyClassifiedCount}
+- Newly Processed: ${results.length}
 - Presentation Announcements Found: ${results.filter(r => r.classification.isPresentationAnnouncement).length}
 
 ## Detailed Results
@@ -443,6 +488,7 @@ ${results.map(result => `
 ### ${result.fileName}
 - Document ID: ${result.documentId}
 - Assigned Type: ${result.classification.documentType}
+- Document Type ID: \`${result.classification.assignedTypeId}\`
 - Confidence: ${(result.classification.confidenceScore * 100).toFixed(1)}%
 - Is Presentation Announcement: ${result.classification.isPresentationAnnouncement ? '✅' : '❌'}
 - Reasoning: ${result.classification.classificationReasoning}
