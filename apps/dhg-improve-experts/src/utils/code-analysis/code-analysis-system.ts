@@ -201,57 +201,28 @@ export class CodeAnalysisSystem {
             this.log('Parsed response data:', {
               hasData: !!data,
               keys: Object.keys(data || {}),
-              hasFunctionDetails: !!data?.function_details
+              hasFunctionDetails: !!data?.overview
             });
 
-            // Return with defaults
+            // Return with new streamlined structure
             return {
-              function_details: {
-                name: data.function_details?.name || 'Unknown',
-                category: data.function_details?.category || 'Component',
-                description: data.function_details?.description || '',
-                location: request.relativePath,
-                implementation_notes: data.function_details?.implementation_notes || ''
+              overview: {
+                name: data.overview?.name || 'Unknown',
+                purpose: data.overview?.purpose || '',
+                key_integrations: data.overview?.key_integrations || []
               },
-              dependencies: {
-                external: data.dependencies?.external || [],
-                internal: data.dependencies?.internal || [],
-                environment_vars: data.dependencies?.environment_vars || []
+              ai_processing: {
+                calls: data.ai_processing?.calls || []
               },
-              error_handling: data.error_handling || {
-                strategies: [],
-                logging_patterns: [],
-                recovery_mechanisms: [],
-                user_feedback: {
-                  success_patterns: '',
-                  error_patterns: '',
-                  progress_tracking: ''
-                }
+              supabase_operations: {
+                tables_used: data.supabase_operations?.tables_used || [],
+                operations: data.supabase_operations?.operations || []
               },
-              performance_patterns: data.performance_patterns || {
-                batch_operations: {
-                  implemented: false,
-                  batch_size: "dynamic",
-                  progress_tracking: false,
-                  cancellation: false
-                },
-                optimization_strategies: [],
-                caching_implementation: ''
+              google_drive: {
+                operations: data.google_drive?.operations || []
               },
-              security_implementations: data.security_implementations || {
-                auth_checks: [],
-                permission_patterns: [],
-                sensitive_data_handling: [],
-                token_management: {
-                  refresh_pattern: '',
-                  storage_method: '',
-                  validation: ''
-                }
-              },
-              function_relationships: data.function_relationships || {
-                depends_on: [],
-                called_by: [],
-                shares_state_with: []
+              integration_flow: {
+                sequences: data.integration_flow?.sequences || []
               }
             };
           } catch (error) {
