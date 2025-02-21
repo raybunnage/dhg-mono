@@ -584,8 +584,13 @@
       }
     },
     {
-      "pattern": "claude-3-5-sonnet-20241022",
-      "message": "Do not change the Claude model version - must remain claude-3-5-sonnet-20241022",
+      "pattern": "claude-3-sonnet-20240229",
+      "message": "Must use model claude-3-5-sonnet-20241022",
+      "severity": "error"
+    },
+    {
+      "pattern": "model: ['\"]((?!claude-3-5-sonnet-20241022).)*['\"]",
+      "message": "Must use model claude-3-5-sonnet-20241022",
       "severity": "error"
     },
     {

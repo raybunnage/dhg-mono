@@ -1,3 +1,5 @@
+import { supabase } from '@/integrations/supabase/client';
+
 interface FunctionMetadata {
   name: string;
   description: string;
@@ -8,6 +10,16 @@ interface FunctionMetadata {
   usedIn?: string[];
   targetPackage?: string;
   notes?: string;
+}
+
+interface WorkingSolution {
+  name: string;
+  category: string;
+  description: string;
+  implementation_notes?: string;
+  code_signature?: string;
+  git_commit?: string;
+  git_branch?: string;
 }
 
 // Add debug utility
@@ -103,4 +115,40 @@ export function getFunctionInfo(name: string) {
 
 export function getAllFunctions() {
   return functionRegistry.getAll();
+}
+
+export async function recordWorkingSolution({
+  name,
+  category,
+  description,
+  implementation_notes,
+  code_signature,
+  git_commit,
+  git_branch
+}: WorkingSolution) {
+  try {
+    const { data, error } = await supabase
+      .from('function_registry')
+      .insert({
+        name,
+        category,
+        description,
+        implementation_notes,
+        code_signature,
+        git_commit,
+        git_branch,
+        repository: 'dhg-improve-experts',
+        location: 'src/utils/ai-processing.ts',
+        status: 'verified',
+        last_verified_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Failed to record working solution:', error);
+    throw error;
+  }
 }
