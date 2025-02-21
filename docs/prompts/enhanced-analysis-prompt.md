@@ -234,4 +234,4 @@ Analysis Instructions:
    - Validation strategies
 
 Code to analyze:
-${codeContent}
+${fileContent}
