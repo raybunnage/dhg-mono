@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import type { Database } from '../../../../supabase/types';
-import { processWithAI } from '@/utils/ai-processing';
+import { processWithAI, processDocumentWithAI, validateExpertProfile } from '@/utils/ai-processing';
 import { getDocxContent } from '@/utils/google-drive';
 import { ClassificationResponseSchema } from '@/schemas/classification.schema';
 
@@ -20,6 +20,22 @@ const DEBUG_QUERIES = {
 
 // Add type for sources_google
 type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];
+
+// Add type for the select query
+type SourceGoogleSelect = {
+  id: string;
+  name: string;
+  mime_type: string;
+  extracted_content: any;
+  document_type_id: string | null;
+  metadata: {
+    classification?: {
+      confidence: number;
+      reasoning: string;
+      classified_at: string;
+    }
+  } | null;
+}
 
 const ensureAuth = async () => {
   try {
@@ -337,7 +353,7 @@ Check console for full details.
       // Load all documents with extracted content
       const { data: sourceDocuments, error: sourceError } = await supabase
         .from('sources_google')
-        .select<'sources_google', SourceGoogle>(`
+        .select<string, SourceGoogleSelect>(`
           id,
           name,
           mime_type,
@@ -349,7 +365,7 @@ Check console for full details.
 
       if (sourceError) throw sourceError;
       if (!sourceDocuments?.length) {
-        toast.error('No documents with extracted content found');
+        toast.success('No documents with extracted content found');
         return;
       }
 
@@ -428,8 +444,8 @@ Check console for full details.
           document_type_id: result.typeId,
           updated_at: new Date().toISOString(),
           metadata: {
-            ...doc.metadata, // Preserve any existing metadata
-            classification: {  // Add our classification metadata in its own namespace
+            ...(doc.metadata || {}), // Add null check with default empty object
+            classification: {
               confidence: result.confidence,
               reasoning: result.reasoning,
               classified_at: new Date().toISOString()
@@ -713,7 +729,7 @@ ${results.map(result => `
 
       if (fetchError) throw fetchError;
       if (!classifiedDocs?.length) {
-        toast.info('No classified documents found to update');
+        toast.success('No classified documents found to update');
         return;
       }
 
@@ -774,7 +790,7 @@ ${results.map(result => `
         // Update only the metadata
         const updateData: Database['public']['Tables']['sources_google']['Update'] = {
           metadata: {
-            ...doc.metadata, // Preserve existing metadata
+            ...(doc.metadata || {}), // Add null check with default empty object
             classification: {
               confidence: result.confidence,
               reasoning: result.reasoning,
@@ -1524,7 +1540,7 @@ ${errors.map(e => `
       if (successCount > 0) {
         toast.success(`Transferred ${successCount} documents`);
       } else {
-        toast.info('No documents transferred');
+        toast.success('No documents transferred');
       }
 
     } catch (error) {
@@ -1543,6 +1559,215 @@ ${errors.map(e => `
       isNull: value === null,
       preview: JSON.stringify(value).slice(0, 100)
     }));
+  };
+
+  // Update to use processDocumentWithAI
+  const processPresentationAnnouncements = async () => {
+    setLoading(true);
+    try {
+      console.log('🔍 Starting presentation processing...');
+      let processedCount = 0;
+      let failedCount = 0;
+
+      // Get ALL unprocessed presentation announcements
+      const { data: docs, error } = await supabase
+        .from('expert_documents')
+        .select(`
+          id,
+          raw_content,
+          processing_status,
+          sources_google!inner (
+            name,
+            document_type_id,
+            document_types!inner (
+              document_type
+            )
+          )
+        `)
+        .eq('sources_google.document_types.document_type', 'Presentation Announcement')
+        .neq('processing_status', 'completed');
+
+      console.log('Query results:', {
+        success: !error,
+        error: error ? {
+          message: error.message,
+          details: error.details
+        } : null,
+        docsFound: docs?.length
+      });
+
+      if (error) throw error;
+      if (!docs?.length) {
+        toast.success('No unprocessed presentation announcements found');
+        return;
+      }
+
+      // Load and verify prompt
+      const promptResponse = await fetch('/docs/prompts/expert-extraction-prompt.md');
+      if (!promptResponse.ok) {
+        throw new Error(`Failed to load prompt: ${promptResponse.status}`);
+      }
+      const prompt = await promptResponse.text();
+
+      // Process each document
+      for (const doc of docs) {
+        try {
+          console.log('\n📄 Processing document:', {
+            id: doc.id,
+            name: doc.sources_google?.name
+          });
+
+          if (!doc.raw_content) {
+            console.warn('⚠️ Skipping - no content:', doc.id);
+            failedCount++;
+            continue;
+          }
+
+          const systemPrompt = prompt + `
+\nIMPORTANT: Your response must be ONLY a valid JSON object. Do not include any text before or after the JSON.
+Use this exact structure, with empty arrays [] for missing information:
+{
+  "basic_information": {
+    "name": "string",
+    "title": "string",
+    "current_position": "string",
+    "institution": "string",
+    "credentials": [],
+    "specialty_areas": []
+  },
+  "research_summary": "string",
+  "notable_achievements": [],
+  "professional_links": {
+    "website_urls": [],
+    "social_media": []
+  },
+  "expertise_keywords": []
+}`;
+
+          const result = await processWithAI({
+            systemPrompt,
+            userMessage: doc.raw_content,
+            requireJsonOutput: true,
+            validateResponse: validateExpertProfile
+          });
+
+          // Update the document with results
+          const { error: updateError } = await supabase
+            .from('expert_documents')
+            .update({
+              processing_status: 'completed',
+              processed_content: {
+                raw: doc.raw_content,
+                ai_analysis: result,
+                processed_at: new Date().toISOString()
+              },
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', doc.id);
+
+          if (updateError) throw updateError;
+          processedCount++;
+          toast.success(`Processed: ${doc.sources_google?.name}`);
+
+        } catch (error) {
+          console.error(`Failed processing ${doc.id}:`, error);
+          failedCount++;
+          toast.error(`Failed: ${doc.sources_google?.name}`);
+        }
+      }
+
+      // Show final summary
+      toast.success(`Processing complete: ${processedCount} processed, ${failedCount} failed`);
+      console.log('Processing Summary:', {
+        total: docs.length,
+        processed: processedCount,
+        failed: failedCount,
+        completionTime: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Processing failed:', error);
+      toast.error('Failed to process presentation announcements');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add this function near your other handlers
+  const checkProcessedPresentations = async () => {
+    try {
+      console.log('Checking processed presentations...');
+
+      // Get today's date at midnight UTC
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      const { data: docs, error } = await supabase
+        .from('expert_documents')
+        .select(`
+          id,
+          processing_status,
+          processed_content,
+          raw_content,
+          updated_at,
+          sources_google (
+            name,
+            document_type_id,
+            document_types (
+              document_type
+            )
+          )
+        `)
+        .gte('updated_at', today.toISOString())
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        console.error('Query failed:', error);
+        toast.error('Failed to check presentations');
+        return;
+      }
+
+      console.log('Today\'s processed documents:', {
+        total: docs?.length || 0,
+        documents: docs?.map(doc => ({
+          id: doc.id,
+          fileName: doc.sources_google?.name,
+          documentType: doc.sources_google?.document_types?.document_type,
+          status: doc.processing_status,
+          processedAt: doc.updated_at,
+          hasRawContent: !!doc.raw_content,
+          hasProcessedContent: !!doc.processed_content,
+          aiAnalysis: doc.processed_content?.ai_analysis 
+            ? JSON.stringify(doc.processed_content.ai_analysis).slice(0, 100) + '...'
+            : 'No AI analysis'
+        }))
+      });
+
+      // Show results in UI
+      if (docs && docs.length > 0) {
+        toast.success(`Found ${docs.length} documents processed today`);
+        
+        // Create detailed formatted list
+        const resultsList = docs.map(doc => `
+📄 ${doc.sources_google?.name || 'Unnamed'}
+Status: ${doc.processing_status}
+Type: ${doc.sources_google?.document_types?.document_type || 'Unknown'}
+Processed: ${new Date(doc.updated_at).toLocaleTimeString()}
+AI Analysis: ${doc.processed_content?.ai_analysis 
+  ? JSON.stringify(doc.processed_content.ai_analysis, null, 2).slice(0, 200) + '...'
+  : 'No AI analysis'}
+-------------------`).join('\n');
+        
+        setDebugInfo(resultsList);
+      } else {
+        toast.success('No documents processed today');
+        setDebugInfo('No documents processed today');
+      }
+
+    } catch (error) {
+      console.error('Check failed:', error);
+      toast.error('Failed to check processed documents');
+    }
   };
 
   return (
@@ -1680,6 +1905,22 @@ ${errors.map(e => `
               disabled={loading}
             >
               <span>📋➡️</span> Transfer to Expert Documents
+            </button>
+
+            <button
+              className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              onClick={processPresentationAnnouncements}
+              disabled={loading}
+            >
+              <span>🎯</span> Process Presentations
+            </button>
+
+            <button
+              className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              onClick={checkProcessedPresentations}
+              disabled={loading}
+            >
+              <span>🎯</span> Check Processed Presentations
             </button>
 
             {todaysClassifications.length > 0 && (
