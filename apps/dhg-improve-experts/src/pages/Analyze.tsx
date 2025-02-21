@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CodeAnalysisSystem from '@/utils/code-analysis/code-analysis-system';
 import { toast } from 'react-hot-toast';
 import ClassifyDocumentSource from '@/pages/ClassifyDocument.tsx?raw';
-import promptTemplate from '@/../../docs/prompts/enhanced-analysis-prompt.md?raw';
 
 interface AnalysisResult {
   filePath: string;
@@ -13,6 +12,13 @@ interface AnalysisResult {
 export function Analyze() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [promptTemplate, setPromptTemplate] = useState('');
+
+  useEffect(() => {
+    fetch('/prompts/enhanced-analysis-prompt.md')
+      .then(r => r.text())
+      .then(setPromptTemplate);
+  }, []);
 
   const analyzeClassifyDocument = async () => {
     setLoading(true);

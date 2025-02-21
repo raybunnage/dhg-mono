@@ -420,28 +420,4 @@ export class CodeAnalysisSystem {
   }
 }
 
-// Example usage
-async function example() {
-  try {
-    // Load the analysis prompt
-    const promptTemplate = await fetch('/docs/prompts/code-analysis-prompt.md').then(r => r.text());
-    
-    // Create analysis system
-    const analyzer = new CodeAnalysisSystem(promptTemplate, true);
-
-    // Analyze a file
-    const analysis = await analyzer.analyzeFile({
-      filePath: '/path/to/file.tsx',
-      content: '// file content here',
-      repository: 'your-repo-name',
-      relativePath: 'src/components/file.tsx'
-    });
-
-    console.log('Analysis complete:', analysis);
-
-  } catch (error) {
-    console.error('Analysis failed:', error);
-  }
-}
-
 export default CodeAnalysisSystem;

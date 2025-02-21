@@ -11,7 +11,12 @@ export default defineConfig(({ mode }) => {
   return {
     ...baseConfig,
     plugins: [
-      react(),
+      react({
+        jsxRuntime: 'automatic',
+        babel: {
+          plugins: ['@babel/plugin-transform-react-jsx']
+        }
+      }),
       mode === 'development' && componentTagger()
     ].filter(Boolean),
     // Custom configurations
@@ -56,6 +61,7 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
         '@supabase': path.resolve(__dirname, './supabase'),
+        "@root": path.resolve(__dirname, "../../"),
       },
     },
     publicDir: 'public',
