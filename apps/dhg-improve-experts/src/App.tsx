@@ -14,6 +14,7 @@ import PDFTestExtract from '@/pages/pdf-test-extract';
 import PDFResearchPortal from '@/pages/pdf-research-portal';
 import MP4Test from './pages/mp4-test';
 import ClassifyDocument from '@/pages/ClassifyDocument';
+import { Analyze } from '@/pages/Analyze';
 
 function App() {
   console.log('App component mounting');
@@ -30,7 +31,8 @@ function App() {
     '/registry',
     '/pdf-test-extract',
     '/pdf-research-portal',
-    '/classify'
+    '/classify',
+    '/analyze'
   ]);
 
   return (
@@ -94,6 +96,10 @@ function App() {
           <Route 
             path="/classify" 
             element={<ClassifyDocument />} 
+          />
+          <Route 
+            path="/analyze" 
+            element={<Analyze />} 
           />
         </Routes>
       </main>

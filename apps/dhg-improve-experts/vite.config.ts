@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
     ...baseConfig,
     plugins: [
       react(),
-      mode === 'development' && componentTagger(),
+      mode === 'development' && componentTagger()
     ].filter(Boolean),
     // Custom configurations
     build: {
