@@ -135,7 +135,7 @@ export function Analyze() {
   const analyzeFile = async (fileInfo: FileInfo) => {
     setLoading(true);
     try {
-      const analyzer = new CodeAnalysisSystem(enhancedPrompt, true);
+      const analyzer = new CodeAnalysisSystem(enhancedPrompt, reactPrompt, true);
       
       console.log('🔍 Starting analysis of:', fileInfo.path);
       const analysis = await analyzer.analyzeFile({
