@@ -16,7 +16,10 @@ export function MainNavbar() {
               Classify
             </Link>
             <Link to="/analyze" className="text-gray-700 hover:text-gray-900">
-              Code Analysis
+              Analysis
+            </Link>
+            <Link to="/transcribe" className="text-gray-700 hover:text-gray-900">
+              Transcribe
             </Link>
             <Link to="/registry" className="text-gray-700 hover:text-gray-900">
               Function Registry
