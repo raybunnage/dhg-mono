@@ -9,7 +9,7 @@ import SourceButtonsPage from '@/pages/source-buttons';
 import FunctionRegistryPage from '@/pages/function-registry';
 import FileExplorer from '@/pages/file-explorer';
 import { MainNavbar } from '@/components/MainNavbar';
-import RegistryViewer from './routes/RegistryViewer';
+import { RegistryViewer } from '@/components/RegistryViewer';
 import PDFTestExtract from '@/pages/pdf-test-extract';
 import PDFResearchPortal from '@/pages/pdf-research-portal';
 import MP4Test from './pages/mp4-test';
