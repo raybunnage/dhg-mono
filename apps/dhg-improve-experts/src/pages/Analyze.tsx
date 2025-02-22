@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CodeAnalysisSystem from '@/utils/code-analysis/code-analysis-system';
 import { toast } from 'react-hot-toast';
 import { SourceButtons } from '@/components/SourceButtons';
+import { AnalysisDebugger } from '@/components/AnalysisDebugger';
 
 interface FileInfo {
   path: string;
@@ -17,6 +18,12 @@ interface AnalysisResult {
   error?: string;
 }
 
+interface DebugLog {
+  stage: string;
+  data: any;
+  timestamp: number;
+}
+
 export function Analyze() {
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
@@ -24,6 +31,7 @@ export function Analyze() {
   const [enhancedPrompt, setEnhancedPrompt] = useState('');
   const [reactPrompt, setReactPrompt] = useState('');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [debugLogs, setDebugLogs] = useState<DebugLog[]>([]);
 
   useEffect(() => {
     // Load both prompts
@@ -31,6 +39,11 @@ export function Analyze() {
       fetch('/prompts/enhanced-analysis-prompt.md').then(r => r.text()),
       fetch('/prompts/react-component-analysis-prompt.md').then(r => r.text())
     ]).then(([enhancedText, reactText]) => {
+      console.log('Prompts loaded:', {
+        enhancedLength: enhancedText?.length,
+        reactLength: reactText?.length,
+        reactPreview: reactText?.slice(0, 100)
+      });
       setEnhancedPrompt(enhancedText);
       setReactPrompt(reactText);
     }).catch(error => {
@@ -135,7 +148,31 @@ export function Analyze() {
   const analyzeFile = async (fileInfo: FileInfo) => {
     setLoading(true);
     try {
-      const analyzer = new CodeAnalysisSystem(enhancedPrompt, reactPrompt, true);
+      // Add initial debug log
+      setDebugLogs(prevLogs => [...prevLogs, {
+        stage: 'Analysis Start',
+        data: {
+          filePath: fileInfo.path,
+          fileSize: fileInfo.size,
+          hasEnhancedPrompt: Boolean(enhancedPrompt),
+          hasReactPrompt: Boolean(reactPrompt)
+        },
+        timestamp: Date.now()
+      }]);
+
+      const analyzer = new CodeAnalysisSystem(
+        enhancedPrompt, 
+        reactPrompt, 
+        true,
+        // Add a debug callback
+        (stage: string, data: any) => {
+          setDebugLogs(prevLogs => [...prevLogs, {
+            stage,
+            data,
+            timestamp: Date.now()
+          }]);
+        }
+      );
       
       console.log('🔍 Starting analysis of:', fileInfo.path);
       const analysis = await analyzer.analyzeFile({
@@ -145,10 +182,17 @@ export function Analyze() {
         relativePath: fileInfo.path
       });
       
-      console.log('✅ Analysis complete:', {
-        path: fileInfo.path,
-        analysis: analysis
-      });
+      // Add completion debug log
+      setDebugLogs(prevLogs => [...prevLogs, {
+        stage: 'Analysis Complete',
+        data: {
+          path: fileInfo.path,
+          hasReactAnalysis: Boolean(analysis.react),
+          hasEnhancedAnalysis: Boolean(analysis.enhanced),
+          analysisPreview: JSON.stringify(analysis).slice(0, 200)
+        },
+        timestamp: Date.now()
+      }]);
 
       setAnalysisResults(prev => [...prev, {
         filePath: fileInfo.path,
@@ -159,6 +203,17 @@ export function Analyze() {
       toast.success(`Analyzed ${fileInfo.path}`);
 
     } catch (error) {
+      // Add error debug log
+      setDebugLogs(prevLogs => [...prevLogs, {
+        stage: 'Analysis Error',
+        data: {
+          error: error.message,
+          stack: error.stack,
+          filePath: fileInfo.path
+        },
+        timestamp: Date.now()
+      }]);
+
       console.error('Analysis failed:', error);
       toast.error(`Analysis failed: ${error.message}`);
       setAnalysisResults(prev => [...prev, {
@@ -186,6 +241,56 @@ export function Analyze() {
     const fileInfo = files.find(f => f.path === selectedFile);
     if (fileInfo) {
       await analyzeFile(fileInfo);
+    }
+  };
+
+  const analyzeCode = async (code: string) => {
+    try {
+      setDebugLogs(prevLogs => [...prevLogs, {
+        stage: 'Analysis Start',
+        data: {
+          codeLength: code.length,
+          hasEnhancedPrompt: Boolean(enhancedPrompt),
+          hasReactPrompt: Boolean(reactPrompt)
+        },
+        timestamp: Date.now()
+      }]);
+
+      // Create new instance with prompts
+      const analyzer = new CodeAnalysisSystem(enhancedPrompt, reactPrompt, true);
+
+      const result = await analyzer.analyzeFile({
+        filePath: 'analysis.tsx',
+        content: code,
+        repository: 'dhg-mono',
+        relativePath: 'analysis.tsx'
+      });
+
+      setDebugLogs(prevLogs => [...prevLogs, {
+        stage: 'Analysis Complete',
+        data: {
+          result,
+          hasReactAnalysis: Boolean(result.react),
+          hasEnhancedAnalysis: Boolean(result.enhanced)
+        },
+        timestamp: Date.now()
+      }]);
+
+      return result;
+    } catch (error) {
+      setDebugLogs(prevLogs => [...prevLogs, {
+        stage: 'Analysis Error',
+        data: { 
+          error: error.message,
+          stack: error.stack,
+          prompts: {
+            enhancedPromptLength: enhancedPrompt?.length || 0,
+            reactPromptLength: reactPrompt?.length || 0
+          }
+        },
+        timestamp: Date.now()
+      }]);
+      throw error;
     }
   };
 
@@ -250,8 +355,8 @@ export function Analyze() {
               <h2 className="text-lg font-semibold mb-2">Analysis Results</h2>
               {analysisResults
                 .filter(result => result.filePath === selectedFile)
-                .map(result => (
-                  <div key={result.filePath} className="space-y-4">
+                .map((result, index) => (
+                  <div key={`${result.filePath}-${index}`} className="space-y-4">
                     <div className="text-sm text-gray-600">
                       File: {result.filePath}
                       <br />
@@ -272,6 +377,8 @@ export function Analyze() {
           )}
         </div>
       </div>
+
+      <AnalysisDebugger logs={debugLogs} />
     </div>
   );
 }

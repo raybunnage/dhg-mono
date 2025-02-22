@@ -237,6 +237,13 @@ export async function processWithAI({
   validateResponse,
   signal
 }: ProcessWithAIOptions) {
+  console.log('AI Processing - Input:', {
+    systemPromptLength: systemPrompt.length,
+    userMessageLength: userMessage.length,
+    temperature,
+    requireJsonOutput
+  });
+
   const startTime = Date.now();
   
   try {
@@ -286,22 +293,37 @@ export async function processWithAI({
       preview: content.slice(0, 100)
     });
 
+    console.log('AI Processing - Raw Response:', {
+      responseType: typeof content,
+      responseLength: content?.length,
+      preview: content?.slice(0, 200)
+    });
+
     if (requireJsonOutput) {
       try {
-        // If validateResponse is provided, pass the raw content
-        if (validateResponse) {
-          return validateResponse(content);
-        }
-        
-        // Otherwise just parse as JSON
-        return JSON.parse(content);
-      } catch (parseError) {
-        debug.error('json-parsing', {
-          error: parseError,
-          content: content.slice(0, 500) + '...',
-          message: 'Failed to parse AI response as JSON'
+        // Attempt to parse as JSON first
+        const parsed = JSON.parse(content);
+        console.log('AI Processing - JSON Parsed:', {
+          hasData: Boolean(parsed),
+          topLevelKeys: Object.keys(parsed)
         });
-        throw new AIProcessingError('json-parsing', 'AI response was not valid JSON', parseError);
+        
+        // Run custom validation if provided
+        if (validateResponse) {
+          const validated = validateResponse(parsed);
+          console.log('AI Processing - Validated:', {
+            hasValidated: Boolean(validated),
+            type: typeof validated
+          });
+          return validated;
+        }
+        return parsed;
+      } catch (parseError) {
+        console.error('AI Processing - JSON Parse Error:', {
+          error: parseError,
+          response: content?.slice(0, 500)
+        });
+        throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
       }
     }
 

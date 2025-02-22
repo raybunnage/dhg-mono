@@ -90,37 +90,33 @@ interface FileInfo {
   extension: string;
 }
 
-export function determineAnalysisType(file: FileInfo): AnalysisTypes {
-  const { content, extension, path } = file;
-  
-  const result = detectFileContent(content);
-  
-  // Additional file-based checks
-  if (extension === '.tsx' || path.includes('components/')) {
-    if (!result.needsReactAnalysis && !result.needsEnhancedAnalysis) {
-      // If it's a .tsx file but no clear indicators, default to React analysis
-      result.needsReactAnalysis = true;
-      result.reasons.push('File is a TypeScript React file (.tsx)');
+export function determineAnalysisType(file: { path: string; content: string; extension: string }) {
+  const isReactFile = (
+    file.extension === 'tsx' || 
+    file.extension === 'jsx' ||
+    file.content.includes('React.') ||
+    file.content.includes('import React') ||
+    file.content.includes('function') && file.content.includes('return') && file.content.includes('jsx')
+  );
+
+  console.log('Analysis type determination:', {
+    path: file.path,
+    extension: file.extension,
+    contentLength: file.content.length,
+    isReactFile,
+    reactIndicators: {
+      hasTsxExt: file.extension === 'tsx',
+      hasJsxExt: file.extension === 'jsx',
+      hasReactImport: file.content.includes('import React'),
+      hasReactUsage: file.content.includes('React.'),
+      hasFunctionComponent: file.content.includes('function') && file.content.includes('return')
     }
-  }
+  });
 
-  // Special case for utility files
-  if (
-    path.includes('utils/') || 
-    path.includes('helpers/') || 
-    path.includes('services/')
-  ) {
-    result.needsEnhancedAnalysis = true;
-    result.reasons.push('File is located in a utility/service directory');
-  }
-
-  // If no analysis type was determined, default to enhanced analysis
-  if (!result.needsReactAnalysis && !result.needsEnhancedAnalysis) {
-    result.needsEnhancedAnalysis = true;
-    result.reasons.push('Default to enhanced analysis for unclassified files');
-  }
-
-  return result;
+  return {
+    needsReactAnalysis: isReactFile,
+    needsEnhancedAnalysis: true
+  };
 }
 
 // Example usage in a button handler:
