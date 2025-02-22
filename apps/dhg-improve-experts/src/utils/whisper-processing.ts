@@ -2,6 +2,9 @@ import { createParser } from 'eventsource-parser';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '../../../../file_types/supabase/types';
 import OpenAI from 'openai';
+import { proxyGoogleDrive } from '@/api/proxy';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 type VideoSummary = Database['public']['Tables']['video_summaries']['Row'];
 type ProcessingCost = Database['public']['Tables']['processing_costs']['Row'];
@@ -181,13 +184,32 @@ interface WhisperSummaryResult {
   error?: string;
 }
 
+async function extractAudioFromVideo(videoData: Blob): Promise<Blob> {
+  const ffmpeg = new FFmpeg();
+  await ffmpeg.load();
+
+  // Write video file to FFmpeg's virtual filesystem
+  await ffmpeg.writeFile('input.mp4', await fetchFile(videoData));
+  
+  // Extract audio
+  await ffmpeg.exec([
+    '-i', 'input.mp4',
+    '-vn', // No video
+    '-acodec', 'libmp3lame',
+    '-ac', '2', // Stereo
+    '-ab', '160k', // Bitrate
+    '-ar', '44100', // Sample rate
+    'output.mp3'
+  ]);
+
+  // Read the audio file
+  const data = await ffmpeg.readFile('output.mp3');
+  return new Blob([data], { type: 'audio/mpeg' });
+}
+
 export async function getVideoSummary(fileId: string): Promise<WhisperSummaryResult> {
   try {
-    // Test OpenAI connection first
-    const isConnected = await testOpenAIConnection();
-    if (!isConnected) {
-      throw new Error('Could not connect to OpenAI');
-    }
+    console.log('Starting getVideoSummary for fileId:', fileId);
 
     // Get video details from Supabase
     const { data: file, error } = await supabase
@@ -199,12 +221,104 @@ export async function getVideoSummary(fileId: string): Promise<WhisperSummaryRes
     if (error) throw error;
     if (!file) throw new Error('File not found');
 
-    // For testing, return mock data
-    // TODO: Implement actual Whisper API call
-    return {
-      summary: `Test summary for ${file.name}`,
-      duration: 0
-    };
+    // Log what we found
+    console.log('Found video file:', {
+      name: file.name,
+      type: file.mime_type,
+      size: file.metadata?.size,
+      parent_path: file.parent_path,
+      drive_id: file.drive_id
+    });
+
+    // Get the access token
+    const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+    if (!accessToken) {
+      throw new Error('Google Drive access token not found');
+    }
+
+    try {
+      // First try to find an m4a file in the same folder
+      const { data: audioFiles } = await supabase
+        .from('sources_google')
+        .select('*')
+        .eq('parent_path', file.parent_path)
+        .in('mime_type', ['audio/m4a', 'audio/x-m4a'])
+        .eq('deleted', false);
+
+      console.log('Found audio files in same folder:', 
+        audioFiles?.map(f => ({
+          name: f.name,
+          type: f.mime_type,
+          path: f.parent_path
+        }))
+      );
+
+      let audioData: Blob;
+      
+      // If we found an m4a file with matching name pattern, use it
+      const matchingAudio = audioFiles?.find(af => {
+        // Remove extensions and audio/video labels
+        const audioBaseName = af.name
+          .toLowerCase()
+          .replace('.m4a', '')
+          .replace(' audio', '');
+        
+        const videoBaseName = file.name
+          .toLowerCase()
+          .replace('.mp4', '')
+          .replace(' video', '');
+
+        const matches = audioBaseName === videoBaseName;
+        
+        console.log('Comparing:', {
+          audio: {
+            original: af.name,
+            baseName: audioBaseName,
+            path: af.parent_path
+          },
+          video: {
+            original: file.name,
+            baseName: videoBaseName,
+            path: file.parent_path
+          },
+          matches
+        });
+
+        return matches;
+      });
+
+      if (matchingAudio) {
+        console.log('Found matching audio:', {
+          name: matchingAudio.name,
+          id: matchingAudio.id,
+          drive_id: matchingAudio.drive_id
+        });
+
+        audioData = await proxyGoogleDrive(matchingAudio.drive_id, accessToken);
+        console.log('Successfully got audio data:', {
+          size: formatBytes(audioData.size),
+          type: audioData.type
+        });
+
+        // For now, just return success message
+        return {
+          summary: `Successfully fetched audio: ${matchingAudio.name} (${formatBytes(audioData.size)})`,
+          duration: 0
+        };
+      } else {
+        console.log('No matching audio file found');
+        return {
+          summary: 'No matching audio file found',
+          duration: 0,
+          error: 'Need to extract audio first'
+        };
+      }
+
+    } catch (driveError) {
+      console.error('Drive fetch failed:', driveError);
+      throw driveError;
+    }
+
   } catch (error) {
     console.error('Error in getVideoSummary:', error);
     return {
@@ -213,4 +327,13 @@ export async function getVideoSummary(fileId: string): Promise<WhisperSummaryRes
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
+}
+
+// Helper function to format bytes
+function formatBytes(bytes: number) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 } 
