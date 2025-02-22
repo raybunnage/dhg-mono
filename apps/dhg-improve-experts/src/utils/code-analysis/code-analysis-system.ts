@@ -311,10 +311,47 @@ interface FunctionRelationships {
   shares_state_with: string[];
 }
 
-// Add new interface for combined results
+interface ReactAnalysis {
+  component_overview: {
+    name: string;
+    type: string;
+    purpose: string;
+    complexity_level: string;
+    reusability: string;
+    key_dependencies: string[];
+  };
+  component_architecture: {
+    props: Array<{
+      name: string;
+      type: string;
+      required: boolean;
+      default_value: any;
+      validation: string;
+      description: string;
+      usage_pattern: string;
+    }>;
+    internal_state: Array<{
+      name: string;
+      type: string;
+      initial_value: any;
+      update_triggers: string[];
+      dependencies: string[];
+      persistence_requirements: string;
+    }>;
+    refs: Array<{
+      name: string;
+      target: string;
+      purpose: string;
+      initialization: string;
+    }>;
+  };
+  // ... rest of React analysis interface
+}
+
+// Update CombinedAnalysis to use the proper type
 interface CombinedAnalysis {
   enhanced: CodeAnalysis;
-  react?: any; // We'll type this properly later
+  react?: ReactAnalysis;
 }
 
 /**
@@ -516,7 +553,7 @@ export class CodeAnalysisSystem {
   }
 
   // Add new private method for React analysis
-  private async runReactAnalysis(request: AnalysisRequest): Promise<any> {
+  private async runReactAnalysis(request: AnalysisRequest): Promise<ReactAnalysis> {
     const reactPrompt = `${this.reactPrompt}\n\n${request.content}`;
     
     this.log('Running React analysis with prompt:', {
