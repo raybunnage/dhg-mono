@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/lib/database.types';
+import { getVideoSummary } from '@/utils/whisper-processing';
+import { toast } from 'react-hot-toast';
 
 type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];
 
 interface MP4FileWithAudio extends SourceGoogle {
   has_audio_file: boolean;
   audio_file?: SourceGoogle | null;
+  summary?: string;
+  processing?: boolean;
 }
 
 export function Transcribe() {
@@ -109,6 +113,29 @@ export function Transcribe() {
     }
   };
 
+  const handleGetSummary = async (fileId: string) => {
+    try {
+      // Update UI to show processing
+      setMP4Files(prev => prev.map(f => 
+        f.id === fileId ? {...f, processing: true} : f
+      ));
+
+      const result = await getVideoSummary(fileId);
+      
+      // Update file with summary
+      setMP4Files(prev => prev.map(f => 
+        f.id === fileId ? {
+          ...f, 
+          processing: false,
+          summary: result.summary
+        } : f
+      ));
+    } catch (error) {
+      console.error('Error getting summary:', error);
+      toast.error('Failed to get summary');
+    }
+  };
+
   if (loading) {
     return <div className="container mx-auto p-4">Loading MP4 files...</div>;
   }
@@ -171,6 +198,25 @@ export function Transcribe() {
                   )}
                 </div>
               )}
+
+              <div className="mt-2">
+                {!file.summary && (
+                  <button
+                    onClick={() => handleGetSummary(file.id)}
+                    disabled={file.processing}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                  >
+                    {file.processing ? 'Getting Summary...' : 'Get Quick Summary'}
+                  </button>
+                )}
+                
+                {file.summary && (
+                  <div className="bg-gray-50 p-3 rounded mt-2">
+                    <h3 className="font-medium text-gray-700">Summary:</h3>
+                    <p className="text-gray-600 text-sm mt-1">{file.summary}</p>
+                  </div>
+                )}
+              </div>
 
               <div className="mt-2 text-sm text-gray-500">
                 Last updated: {new Date(file.updated_at).toLocaleString()}

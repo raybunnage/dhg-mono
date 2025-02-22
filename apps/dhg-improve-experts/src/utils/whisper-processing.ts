@@ -1,9 +1,14 @@
 import { createParser } from 'eventsource-parser';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '../../../../file_types/supabase/types';
+import OpenAI from 'openai';
 
 type VideoSummary = Database['public']['Tables']['video_summaries']['Row'];
 type ProcessingCost = Database['public']['Tables']['processing_costs']['Row'];
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 async function processVideo(fileId: string): Promise<VideoSummary> {
   try {
@@ -104,4 +109,38 @@ async function trackUsage(durationMinutes: number): Promise<ProcessingCost> {
     cost_usd: cost,
     processed_at: new Date().toISOString()
   };
+}
+
+interface WhisperSummaryResult {
+  summary: string;
+  duration: number;
+  error?: string;
+}
+
+export async function getVideoSummary(fileId: string): Promise<WhisperSummaryResult> {
+  try {
+    // Get video details from Supabase
+    const { data: file, error } = await supabase
+      .from('sources_google')
+      .select('*')
+      .eq('id', fileId)
+      .single();
+
+    if (error) throw error;
+    if (!file) throw new Error('File not found');
+
+    // For testing, return mock data
+    // TODO: Implement actual Whisper API call
+    return {
+      summary: `Test summary for ${file.name}`,
+      duration: 0
+    };
+  } catch (error) {
+    console.error('Error in getVideoSummary:', error);
+    return {
+      summary: '',
+      duration: 0,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
 } 
