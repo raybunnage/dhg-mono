@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { processWithAI } from '@/utils/ai-processing';
 import { v4 as uuidv4 } from 'uuid';
+import { determineAnalysisType } from './analysis-detector';
 
 /**
  * Types for the code analysis system
@@ -341,6 +342,15 @@ export class CodeAnalysisSystem {
     });
 
     try {
+      // Determine analysis type needed
+      const analysisType = determineAnalysisType({
+        path: request.filePath,
+        content: request.content,
+        extension: request.filePath.split('.').pop() || ''
+      });
+
+      this.log('Analysis type determined:', analysisType);
+
       // Prepare analysis prompt
       const analysisPrompt = `${this.enhancedPrompt}\n\n${request.content}`;
       this.log('Prompt prepared:', {
