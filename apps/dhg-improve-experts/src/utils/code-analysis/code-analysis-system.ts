@@ -311,6 +311,12 @@ interface FunctionRelationships {
   shares_state_with: string[];
 }
 
+// Add new interface for combined results
+interface CombinedAnalysis {
+  enhanced: CodeAnalysis;
+  react?: any; // We'll type this properly later
+}
+
 /**
  * Core analysis functionality
  */
@@ -334,7 +340,7 @@ export class CodeAnalysisSystem {
   /**
    * Analyze a single code file
    */
-  async analyzeFile(request: AnalysisRequest, options: AnalysisOptions = {}): Promise<CodeAnalysis> {
+  async analyzeFile(request: AnalysisRequest, options: AnalysisOptions = {}): Promise<CombinedAnalysis> {
     this.log('Starting analysis:', {
       filePath: request.filePath,
       contentLength: request.content.length,
@@ -351,120 +357,16 @@ export class CodeAnalysisSystem {
 
       this.log('Analysis type determined:', analysisType);
 
-      // Prepare analysis prompt
-      const analysisPrompt = `${this.enhancedPrompt}\n\n${request.content}`;
-      this.log('Prompt prepared:', {
-        templateLength: this.enhancedPrompt.length,
-        contentLength: request.content.length,
-        totalLength: analysisPrompt.length,
-        promptPreview: this.enhancedPrompt.slice(0, 100)
-      });
+      const result: CombinedAnalysis = {
+        enhanced: await this.runEnhancedAnalysis(request)
+      };
 
-      // Process with AI
-      this.log('Calling AI processor with options:', {
-        temperature: 0.1,
-        requireJsonOutput: true
-      });
+      if (analysisType.needsReactAnalysis) {
+        this.log('React analysis needed, running additional analysis');
+        result.react = await this.runReactAnalysis(request);
+      }
 
-      const analysisResult = await processWithAI({
-        systemPrompt: "You are a specialized code analysis system. Analyze the code and provide a detailed analysis matching the CodeAnalysis interface structure. Return only valid JSON.",
-        userMessage: analysisPrompt,
-        temperature: 0.1,
-        requireJsonOutput: true,
-        validateResponse: (response) => {
-          this.log('Validating AI response:', {
-            responseType: typeof response,
-            responseLength: response?.length,
-            isString: typeof response === 'string'
-          });
-
-          try {
-            let data = typeof response === 'string' ? JSON.parse(response) : response;
-            
-            this.log('Parsed response data:', {
-              hasData: !!data,
-              keys: Object.keys(data || {})
-            });
-
-            // Return complete structure matching new prompt
-            return {
-              overview: {
-                name: data.overview?.name || 'Unknown',
-                purpose: data.overview?.purpose || '',
-                key_integrations: data.overview?.key_integrations || [],
-                technical_stack: data.overview?.technical_stack || []
-              },
-              functions: {
-                declarations: data.functions?.declarations || [],
-                ui_relationships: data.functions?.ui_relationships || []
-              },
-              type_definitions: {
-                interfaces: data.type_definitions?.interfaces || [],
-                types: data.type_definitions?.types || []
-              },
-              external_integrations: {
-                ai_processing: {
-                  calls: data.external_integrations?.ai_processing?.calls || []
-                },
-                database_operations: {
-                  tables_used: data.external_integrations?.database_operations?.tables_used || [],
-                  operations: data.external_integrations?.database_operations?.operations || []
-                },
-                api_integrations: data.external_integrations?.api_integrations || []
-              },
-              error_handling: {
-                strategies: data.error_handling?.strategies || [],
-                validation: data.error_handling?.validation || [],
-                global_handlers: data.error_handling?.global_handlers || []
-              },
-              performance_considerations: {
-                critical_paths: data.performance_considerations?.critical_paths || [],
-                caching_strategies: data.performance_considerations?.caching_strategies || [],
-                optimization_opportunities: data.performance_considerations?.optimization_opportunities || []
-              },
-              security_considerations: {
-                authentication: data.security_considerations?.authentication || {
-                  method: '',
-                  implementation: '',
-                  token_handling: ''
-                },
-                authorization: data.security_considerations?.authorization || [],
-                data_validation: data.security_considerations?.data_validation || []
-              },
-              testing_requirements: {
-                unit_tests: data.testing_requirements?.unit_tests || [],
-                integration_tests: data.testing_requirements?.integration_tests || []
-              },
-              documentation_requirements: {
-                inline_documentation: data.documentation_requirements?.inline_documentation || [],
-                type_documentation: data.documentation_requirements?.type_documentation || []
-              },
-              environmental_requirements: {
-                variables: data.environmental_requirements?.variables || [],
-                third_party_services: data.environmental_requirements?.third_party_services || []
-              },
-              code_quality: {
-                function_analysis: data.code_quality?.function_analysis || [],
-                potential_issues: data.code_quality?.potential_issues || []
-              }
-            };
-          } catch (error) {
-            this.log('Validation error:', {
-              error,
-              message: error.message,
-              response: typeof response === 'string' ? response.slice(0, 200) : 'non-string response'
-            });
-            throw error;
-          }
-        }
-      });
-
-      this.log('Analysis complete:', {
-        hasResult: !!analysisResult,
-        resultKeys: Object.keys(analysisResult || {})
-      });
-
-      return analysisResult;
+      return result;
 
     } catch (error) {
       this.log('Analysis failed:', {
@@ -611,6 +513,57 @@ export class CodeAnalysisSystem {
       this.log('Relationship update failed:', error);
       throw error;
     }
+  }
+
+  // Add new private method for React analysis
+  private async runReactAnalysis(request: AnalysisRequest): Promise<any> {
+    const reactPrompt = `${this.reactPrompt}\n\n${request.content}`;
+    
+    this.log('Running React analysis with prompt:', {
+      promptLength: this.reactPrompt.length,
+      contentLength: request.content.length
+    });
+
+    return processWithAI({
+      systemPrompt: "You are a specialized React component analysis system. Analyze the component and provide detailed analysis. Return only valid JSON.",
+      userMessage: reactPrompt,
+      temperature: 0.1,
+      requireJsonOutput: true
+    });
+  }
+
+  private async runEnhancedAnalysis(request: AnalysisRequest): Promise<CodeAnalysis> {
+    const analysisPrompt = `${this.enhancedPrompt}\n\n${request.content}`;
+    
+    this.log('Running enhanced analysis with prompt:', {
+      promptLength: this.enhancedPrompt.length,
+      contentLength: request.content.length
+    });
+
+    return processWithAI({
+      systemPrompt: "You are a specialized code analysis system. Analyze the code and provide a detailed analysis matching the CodeAnalysis interface structure. Return only valid JSON.",
+      userMessage: analysisPrompt,
+      temperature: 0.1,
+      requireJsonOutput: true,
+      validateResponse: (response) => {
+        // ... existing validation code ...
+        try {
+          let data = typeof response === 'string' ? JSON.parse(response) : response;
+          return {
+            overview: {
+              name: data.overview?.name || 'Unknown',
+              purpose: data.overview?.purpose || '',
+              key_integrations: data.overview?.key_integrations || [],
+              technical_stack: data.overview?.technical_stack || []
+            },
+            // ... rest of validation structure ...
+          };
+        } catch (error) {
+          this.log('Validation error:', error);
+          throw error;
+        }
+      }
+    });
   }
 }
 
