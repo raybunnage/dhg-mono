@@ -345,7 +345,144 @@ interface ReactAnalysis {
       initialization: string;
     }>;
   };
-  // ... rest of React analysis interface
+  component_lifecycle: {
+    initialization: {
+      props_processing: string[];
+      state_initialization: string[];
+      side_effects: string[];
+    };
+    mounting: {
+      sequence: string[];
+      effects: Array<{
+        purpose: string;
+        dependencies: string[];
+        cleanup: string;
+      }>;
+      error_handling: string[];
+    };
+    updates: Array<{
+      trigger: string;
+      affected_state: string[];
+      side_effects: string[];
+      optimization: {
+        memoization: boolean;
+        strategy: string;
+      };
+    }>;
+    unmounting: {
+      cleanup_operations: string[];
+      state_persistence: string[];
+    };
+  };
+  render_logic: {
+    conditions: Array<{
+      description: string;
+      dependencies: string[];
+      branches: string[];
+    }>;
+    dynamic_content: Array<{
+      location: string;
+      data_source: string;
+      update_trigger: string;
+    }>;
+    optimizations: Array<{
+      type: string;
+      target: string;
+      strategy: string;
+    }>;
+  };
+  state_management: {
+    local_state: Array<{
+      name: string;
+      type: string;
+      update_pattern: string;
+      dependencies: string[];
+      initialization: string;
+    }>;
+    derived_state: Array<{
+      name: string;
+      computation: string;
+      dependencies: string[];
+      caching_strategy: string;
+    }>;
+    handler_analysis: {
+      event_handlers: Array<{
+        name: string;
+        trigger: string;
+        purpose: string;
+        parameters: Array<{
+          name: string;
+          type: string;
+          purpose: string;
+        }>;
+        integrations: {
+          supabase: {
+            operations: Array<{
+              type: string;
+              table: string;
+              purpose: string;
+              error_handling: string;
+            }>;
+          };
+          ai_calls: Array<{
+            service: string;
+            purpose: string;
+            prompt_construction: string;
+            response_handling: string;
+          }>;
+          external_apis: Array<{
+            service: string;
+            endpoint: string;
+            purpose: string;
+            data_flow: string;
+          }>;
+        };
+        state_updates: Array<{
+          target: string;
+          trigger: string;
+          side_effects: string[];
+        }>;
+        error_handling: {
+          strategy: string;
+          user_feedback: string;
+          recovery: string;
+        };
+        performance: {
+          debouncing: boolean;
+          throttling: boolean;
+          caching: string;
+        };
+      }>;
+      effect_handlers: Array<{
+        trigger: string;
+        dependencies: string[];
+        integrations: {
+          supabase?: {
+            operations: Array<{
+              type: string;
+              table: string;
+              purpose: string;
+              error_handling: string;
+            }>;
+          };
+          ai_calls?: Array<{
+            service: string;
+            purpose: string;
+            prompt_construction: string;
+            response_handling: string;
+          }>;
+          external_apis?: Array<{
+            service: string;
+            endpoint: string;
+            purpose: string;
+            data_flow: string;
+          }>;
+        };
+        cleanup: string;
+        timing: string;
+      }>;
+    };
+  };
 }
 
 // Update CombinedAnalysis to use the proper type
@@ -428,130 +565,6 @@ export class CodeAnalysisSystem {
     };
   }
 
-  /**
-   * Write analysis results to the function registry
-   */
-  private async writeToRegistry(
-    analysis: CodeAnalysis,
-    repository: string,
-    options: AnalysisOptions
-  ) {
-    try {
-      const functionEntry: RegistryEntry = {
-        id: uuidv4(),
-        name: analysis.overview.name,
-        category: 'function', // Default category
-        description: analysis.overview.purpose,
-        location: analysis.overview.key_integrations.join(', '),
-        repository,
-        implementation_notes: analysis.overview.technical_stack,
-        dependencies: analysis.functions.declarations.map(d => d.name),
-        input_types: {
-          ai_config: analysis.external_integrations.ai_processing,
-          environment: analysis.environmental_requirements.variables.map(v => v.name)
-        },
-        output_types: null,
-        supabase_operations: analysis.external_integrations.database_operations || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        status: 'active',
-        code_signature: null,
-        similar_functions: null
-      };
-
-      // Check for existing entry
-      const { data: existingFunc } = await supabase
-        .from('function_registry')
-        .select('id')
-        .eq('name', functionEntry.name)
-        .eq('location', functionEntry.location)
-        .single();
-
-      if (existingFunc && options.updateExisting) {
-        await supabase
-          .from('function_registry')
-          .update({
-            ...functionEntry,
-            id: existingFunc.id,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingFunc.id);
-
-        await this.updateRelationships(existingFunc.id, analysis.function_relationships);
-      } else {
-        await supabase
-          .from('function_registry')
-          .insert(functionEntry);
-
-        await this.updateRelationships(functionEntry.id, analysis.function_relationships);
-      }
-
-    } catch (error) {
-      this.log('Registry write failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update function relationships in the database
-   */
-  private async updateRelationships(
-    functionId: string,
-    relationships: FunctionRelationships
-  ) {
-    try {
-      // Remove existing relationships
-      await supabase
-        .from('function_relationships')
-        .delete()
-        .eq('source_function_id', functionId);
-
-      const relationshipEntries = [];
-
-      // Process all relationship types
-      for (const dependsOn of relationships.depends_on) {
-        relationshipEntries.push({
-          id: uuidv4(),
-          source_function_id: functionId,
-          target_function_id: dependsOn,
-          relationship_type: 'depends_on',
-          created_at: new Date().toISOString()
-        });
-      }
-
-      for (const calledBy of relationships.called_by) {
-        relationshipEntries.push({
-          id: uuidv4(),
-          source_function_id: calledBy,
-          target_function_id: functionId,
-          relationship_type: 'calls',
-          created_at: new Date().toISOString()
-        });
-      }
-
-      for (const sharesState of relationships.shares_state_with) {
-        relationshipEntries.push({
-          id: uuidv4(),
-          source_function_id: functionId,
-          target_function_id: sharesState,
-          relationship_type: 'shares_state',
-          created_at: new Date().toISOString()
-        });
-      }
-
-      // Insert new relationships
-      if (relationshipEntries.length > 0) {
-        await supabase
-          .from('function_relationships')
-          .insert(relationshipEntries);
-      }
-
-    } catch (error) {
-      this.log('Relationship update failed:', error);
-      throw error;
-    }
-  }
-
   // Add new private method for React analysis
   private async runReactAnalysis(request: AnalysisRequest): Promise<ReactAnalysis> {
     const reactPrompt = `${this.reactPrompt}\n\n${request.content}`;
@@ -561,12 +574,123 @@ export class CodeAnalysisSystem {
       contentLength: request.content.length
     });
 
-    return processWithAI({
-      systemPrompt: "You are a specialized React component analysis system. Analyze the component and provide detailed analysis. Return only valid JSON.",
+    const result = await processWithAI({
+      systemPrompt: `You are a specialized React component analysis system. Analyze the component and provide detailed analysis.
+Your response must be a JSON object with this exact structure:
+{
+  "component_overview": {
+    "name": "string",
+    "type": "string",
+    "purpose": "string",
+    "complexity_level": "string",
+    "reusability": "string",
+    "key_dependencies": []
+  },
+  "component_architecture": {
+    "props": [],
+    "internal_state": [],
+    "refs": []
+  },
+  "component_lifecycle": {...},
+  "render_logic": {...},
+  "state_management": {
+    "local_state": [],
+    "derived_state": [],
+    "handler_analysis": {
+      "event_handlers": [],
+      "effect_handlers": []
+    }
+  }
+}`,
       userMessage: reactPrompt,
       temperature: 0.1,
-      requireJsonOutput: true
+      requireJsonOutput: true,
+      validateResponse: (response) => {
+        try {
+          let data = typeof response === 'string' ? JSON.parse(response) : response;
+          this.log('React analysis raw response:', data);
+          return {
+            component_overview: {
+              name: data.component_overview?.name || '',
+              type: data.component_overview?.type || '',
+              purpose: data.component_overview?.purpose || '',
+              complexity_level: data.component_overview?.complexity_level || '',
+              reusability: data.component_overview?.reusability || '',
+              key_dependencies: data.component_overview?.key_dependencies || []
+            },
+            component_architecture: {
+              props: data.component_architecture?.props || [],
+              internal_state: data.component_architecture?.internal_state || [],
+              refs: data.component_architecture?.refs || []
+            },
+            component_lifecycle: {
+              initialization: {
+                props_processing: data.component_lifecycle?.initialization?.props_processing || [],
+                state_initialization: data.component_lifecycle?.initialization?.state_initialization || [],
+                side_effects: data.component_lifecycle?.initialization?.side_effects || []
+              },
+              mounting: {
+                sequence: data.component_lifecycle?.mounting?.sequence || [],
+                effects: data.component_lifecycle?.mounting?.effects || [],
+                error_handling: data.component_lifecycle?.mounting?.error_handling || []
+              },
+              updates: data.component_lifecycle?.updates || [],
+              unmounting: {
+                cleanup_operations: data.component_lifecycle?.unmounting?.cleanup_operations || [],
+                state_persistence: data.component_lifecycle?.unmounting?.state_persistence || []
+              }
+            },
+            render_logic: {
+              conditions: data.render_logic?.conditions || [],
+              dynamic_content: data.render_logic?.dynamic_content || [],
+              optimizations: data.render_logic?.optimizations || []
+            },
+            state_management: {
+              local_state: data.state_management?.local_state || [],
+              derived_state: data.state_management?.derived_state || [],
+              handler_analysis: {
+                event_handlers: data.state_management?.handler_analysis?.event_handlers?.map(handler => ({
+                  name: handler.name || '',
+                  trigger: handler.trigger || '',
+                  purpose: handler.purpose || '',
+                  parameters: handler.parameters || [],
+                  integrations: {
+                    supabase: {
+                      operations: handler.integrations?.supabase?.operations || []
+                    },
+                    ai_calls: handler.integrations?.ai_calls || [],
+                    external_apis: handler.integrations?.external_apis || []
+                  },
+                  state_updates: handler.state_updates || [],
+                  error_handling: {
+                    strategy: handler.error_handling?.strategy || '',
+                    user_feedback: handler.error_handling?.user_feedback || '',
+                    recovery: handler.error_handling?.recovery || ''
+                  },
+                  performance: {
+                    debouncing: handler.performance?.debouncing || false,
+                    throttling: handler.performance?.throttling || false,
+                    caching: handler.performance?.caching || ''
+                  }
+                })) || [],
+                effect_handlers: data.state_management?.handler_analysis?.effect_handlers?.map(effect => ({
+                  trigger: effect.trigger || '',
+                  dependencies: effect.dependencies || [],
+                  integrations: effect.integrations || {},
+                  cleanup: effect.cleanup || '',
+                  timing: effect.timing || ''
+                })) || []
+              }
+            }
+          };
+        } catch (error) {
+          this.log('React validation error:', error);
+          throw error;
+        }
+      }
     });
+
+    return result;
   }
 
   private async runEnhancedAnalysis(request: AnalysisRequest): Promise<CodeAnalysis> {
