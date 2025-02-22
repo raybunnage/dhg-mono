@@ -286,11 +286,13 @@ interface AnalysisOptions {
  * Core analysis functionality
  */
 export class CodeAnalysisSystem {
-  private promptTemplate: string;
+  private enhancedPrompt: string;
+  private reactPrompt: string;
   private debugMode: boolean;
 
-  constructor(promptTemplate: string, debugMode = false) {
-    this.promptTemplate = promptTemplate;
+  constructor(enhancedPrompt: string, reactPrompt: string, debugMode = false) {
+    this.enhancedPrompt = enhancedPrompt;
+    this.reactPrompt = reactPrompt;
     this.debugMode = debugMode;
   }
 
@@ -312,12 +314,12 @@ export class CodeAnalysisSystem {
 
     try {
       // Prepare analysis prompt
-      const analysisPrompt = `${this.promptTemplate}\n\n${request.content}`;
+      const analysisPrompt = `${this.enhancedPrompt}\n\n${request.content}`;
       this.log('Prompt prepared:', {
-        templateLength: this.promptTemplate.length,
+        templateLength: this.enhancedPrompt.length,
         contentLength: request.content.length,
         totalLength: analysisPrompt.length,
-        promptPreview: this.promptTemplate.slice(0, 100)
+        promptPreview: this.enhancedPrompt.slice(0, 100)
       });
 
       // Process with AI
