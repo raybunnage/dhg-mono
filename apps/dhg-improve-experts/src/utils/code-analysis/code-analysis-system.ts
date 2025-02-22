@@ -498,16 +498,27 @@ export class CodeAnalysisSystem {
   private enhancedPrompt: string;
   private reactPrompt: string;
   private debugMode: boolean;
+  private debugCallback?: (stage: string, data: any) => void;
 
-  constructor(enhancedPrompt: string, reactPrompt: string, debugMode = false) {
+  constructor(
+    enhancedPrompt: string, 
+    reactPrompt: string, 
+    debugMode = false,
+    debugCallback?: (stage: string, data: any) => void
+  ) {
     this.enhancedPrompt = enhancedPrompt;
     this.reactPrompt = reactPrompt;
     this.debugMode = debugMode;
+    this.debugCallback = debugCallback;
   }
 
-  private log(...args: any[]) {
+  private log(stage: string, data: any) {
     if (this.debugMode) {
-      console.log('[CodeAnalysis]', ...args);
+      console.log(`[CodeAnalysis] ${stage}:`, data);
+      // Call debug callback if provided
+      if (this.debugCallback) {
+        this.debugCallback(stage, data);
+      }
     }
   }
 
@@ -567,55 +578,79 @@ export class CodeAnalysisSystem {
 
   // Add new private method for React analysis
   private async runReactAnalysis(request: AnalysisRequest): Promise<ReactAnalysis> {
-    const reactPrompt = `${this.reactPrompt}\n\n${request.content}`;
+    const cleanContent = request.content.replace(/<!DOCTYPE.*?>|<html.*?>|<head>.*?<\/head>|<script.*?>|<\/script>/gs, '');
     
-    this.log('Running React analysis with prompt:', {
-      promptLength: this.reactPrompt.length,
-      contentLength: request.content.length
+    this.log('React Analysis Start', {
+      originalLength: request.content.length,
+      cleanedLength: cleanContent.length,
+      hasReactPrompt: Boolean(this.reactPrompt),
+      reactPromptLength: this.reactPrompt?.length,
+      filePath: request.filePath
     });
 
-    const result = await processWithAI({
-      systemPrompt: `You are a specialized React component analysis system. Analyze the component and provide detailed analysis.
-Your response must be a JSON object with this exact structure:
+    const reactPrompt = `Analyze this React component and provide a detailed analysis. Focus on actual implementation details, not placeholder values.
+
+Component Code:
+\`\`\`tsx
+${cleanContent}
+\`\`\`
+
+Analyze the code and provide a detailed breakdown including:
+1. Component name, type, and primary purpose
+2. Props and their usage
+3. State management
+4. Effects and lifecycle
+5. Event handlers
+6. Render logic and conditions
+7. Performance considerations
+
+Return the analysis as JSON matching this structure, but with ACTUAL VALUES from the code (not empty strings or arrays):
 {
   "component_overview": {
-    "name": "string",
-    "type": "string",
-    "purpose": "string",
-    "complexity_level": "string",
-    "reusability": "string",
-    "key_dependencies": []
+    "name": "actual component name",
+    "type": "actual component type (Function/Class/HOC)",
+    "purpose": "actual component purpose",
+    "complexity_level": "low/medium/high based on analysis",
+    "reusability": "assessment of reusability",
+    "key_dependencies": ["list", "of", "actual", "dependencies"]
   },
-  "component_architecture": {
-    "props": [],
-    "internal_state": [],
-    "refs": []
-  },
-  "component_lifecycle": {...},
-  "render_logic": {...},
-  "state_management": {
-    "local_state": [],
-    "derived_state": [],
-    "handler_analysis": {
-      "event_handlers": [],
-      "effect_handlers": []
-    }
-  }
-}`,
+  // ... rest of the structure
+}
+
+IMPORTANT: 
+- Replace ALL placeholder values with actual data from the code
+- Include ALL hooks, state, and props found in the code
+- Document ALL event handlers and their purposes
+- List ALL conditions in the render logic
+- Provide actual implementation details, not empty values`;
+
+    const result = await processWithAI({
+      systemPrompt: `You are a specialized React component analysis system. Your task is to analyze React components and provide detailed insights about their implementation.
+
+Rules:
+1. Never return empty strings or arrays unless the component truly has none of that item
+2. Always analyze the actual code and provide specific details
+3. Include all hooks, state variables, and props found in the code
+4. Document all event handlers with their actual purposes
+5. List all conditions and dynamic content in the render logic
+6. Focus on providing meaningful, implementation-specific details
+
+Return only valid JSON matching the required structure.`,
       userMessage: reactPrompt,
       temperature: 0.1,
       requireJsonOutput: true,
       validateResponse: (response) => {
         try {
           let data = typeof response === 'string' ? JSON.parse(response) : response;
-          this.log('React analysis raw response:', data);
-          return {
+          
+          // Validate that we're not getting empty values where we should have data
+          const transformed = {
             component_overview: {
-              name: data.component_overview?.name || '',
-              type: data.component_overview?.type || '',
-              purpose: data.component_overview?.purpose || '',
-              complexity_level: data.component_overview?.complexity_level || '',
-              reusability: data.component_overview?.reusability || '',
+              name: data.component_overview?.name || 'Unknown',
+              type: data.component_overview?.type || 'Function Component',
+              purpose: data.component_overview?.purpose || 'Component purpose not provided',
+              complexity_level: data.component_overview?.complexity_level || 'medium',
+              reusability: data.component_overview?.reusability || 'Component reusability not assessed',
               key_dependencies: data.component_overview?.key_dependencies || []
             },
             component_architecture: {
@@ -649,42 +684,25 @@ Your response must be a JSON object with this exact structure:
               local_state: data.state_management?.local_state || [],
               derived_state: data.state_management?.derived_state || [],
               handler_analysis: {
-                event_handlers: data.state_management?.handler_analysis?.event_handlers?.map(handler => ({
-                  name: handler.name || '',
-                  trigger: handler.trigger || '',
-                  purpose: handler.purpose || '',
-                  parameters: handler.parameters || [],
-                  integrations: {
-                    supabase: {
-                      operations: handler.integrations?.supabase?.operations || []
-                    },
-                    ai_calls: handler.integrations?.ai_calls || [],
-                    external_apis: handler.integrations?.external_apis || []
-                  },
-                  state_updates: handler.state_updates || [],
-                  error_handling: {
-                    strategy: handler.error_handling?.strategy || '',
-                    user_feedback: handler.error_handling?.user_feedback || '',
-                    recovery: handler.error_handling?.recovery || ''
-                  },
-                  performance: {
-                    debouncing: handler.performance?.debouncing || false,
-                    throttling: handler.performance?.throttling || false,
-                    caching: handler.performance?.caching || ''
-                  }
-                })) || [],
-                effect_handlers: data.state_management?.handler_analysis?.effect_handlers?.map(effect => ({
-                  trigger: effect.trigger || '',
-                  dependencies: effect.dependencies || [],
-                  integrations: effect.integrations || {},
-                  cleanup: effect.cleanup || '',
-                  timing: effect.timing || ''
-                })) || []
+                event_handlers: data.state_management?.handler_analysis?.event_handlers || [],
+                effect_handlers: data.state_management?.handler_analysis?.effect_handlers || []
               }
             }
           };
+
+          // Verify we have some actual data
+          if (!transformed.component_overview.purpose || 
+              transformed.component_overview.purpose === 'Component purpose not provided') {
+            throw new Error('Analysis must include component purpose');
+          }
+
+          return transformed;
         } catch (error) {
-          this.log('React validation error:', error);
+          this.log('React Analysis - Validation Error:', {
+            error,
+            message: error.message,
+            stack: error.stack
+          });
           throw error;
         }
       }
