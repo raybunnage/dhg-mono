@@ -6,123 +6,267 @@ import { v4 as uuidv4 } from 'uuid';
  * Types for the code analysis system
  */
 
-interface AIModelConfig {
-  model_name: string;
-  temperature?: number;
-  max_tokens?: number;
-  usage_pattern?: string;
+interface Overview {
+  name: string;
+  purpose: string;
+  key_integrations: string[];
+  technical_stack: string[];
 }
 
-interface PromptPatterns {
-  system_prompts: string[];
-  validation_schemas: string[];
-  error_handling: string[];
+interface FunctionParameter {
+  name: string;
+  type: string;
+  purpose: string;
+  validation: string;
 }
 
-interface ProcessingPatterns {
-  batch_size: number | "dynamic";
-  retry_logic: string;
-  error_handling: string;
-  optimization: string[];
+interface UsageStatus {
+  status: 'active' | 'deprecated' | 'unused';
+  evidence: string;
+  last_modified: string;
+  usage_locations: string[];
 }
 
-interface AIProcessing {
-  model_configs: AIModelConfig[];
-  prompt_patterns: PromptPatterns;
-  processing_patterns: ProcessingPatterns;
+interface Complexity {
+  level: 'low' | 'medium' | 'high';
+  factors: string[];
+  optimization_opportunities: string[];
 }
 
-interface SupabaseOperation {
-  table: string;
-  operations: string[];
-  query_patterns: string[];
-  error_handling: string;
+interface FunctionDependencies {
+  functions: string[];
+  external_services: string[];
+  state: string[];
+  environment: string[];
 }
 
-interface SupabaseOperations {
-  tables_accessed: string[];
-  operation_patterns: SupabaseOperation[];
-  transaction_patterns: string[];
-  optimization_strategies: string[];
+interface FunctionDeclaration {
+  name: string;
+  type: string;
+  purpose: string;
+  parameters: FunctionParameter[];
+  return_type: string;
+  usage_status: UsageStatus;
+  complexity: Complexity;
+  dependencies: FunctionDependencies;
 }
 
-interface GoogleDriveIntegration {
-  operation_types: string[];
-  authentication_pattern: string;
-  content_handling: string[];
-  error_handling: {
-    retry_logic: boolean;
-    token_refresh: boolean;
-    content_validation: boolean;
+interface UIRelationship {
+  function_name: string;
+  trigger_type: string;
+  ui_element: string;
+  location: string;
+  user_interaction: string;
+  state_effects: string[];
+  error_states: string[];
+}
+
+interface InterfaceProperty {
+  name: string;
+  type: string;
+  optional: boolean;
+  description: string;
+  validation: string | null;
+}
+
+interface TypeDefinitions {
+  interfaces: Array<{
+    name: string;
+    properties: InterfaceProperty[];
+    usage: string[];
+    extensions: string[];
+  }>;
+  types: Array<{
+    name: string;
+    definition: string;
+    usage: string[];
+    constraints: string[];
+  }>;
+}
+
+interface AICall {
+  location: string;
+  function_context: string;
+  purpose: string;
+  prompt_details: {
+    construction: string;
+    model_config: {
+      model: string;
+      temperature: number;
+      max_tokens: number;
+    }
   };
+  input_handling: string;
+  response_handling: string;
+  error_handling: string;
+  retry_strategy: string;
 }
 
-interface ErrorHandlingStrategy {
-  scope: string;
-  pattern: string;
-  recovery: string;
-  logging: string;
+interface DatabaseOperation {
+  type: string;
+  function_context: string;
+  purpose: string;
+  table: string;
+  details: string;
+  error_handling: string;
+  usage_frequency: string;
+  optimization: string;
+}
+
+interface APIEndpoint {
+  path: string;
+  method: string;
+  request_format: string;
+  response_format: string;
+  error_handling: string;
+}
+
+interface ExternalIntegrations {
+  ai_processing: {
+    calls: AICall[];
+  };
+  database_operations: {
+    tables_used: Array<{
+      name: string;
+      purpose: string;
+      operations_count: number;
+      schema_dependencies: string[];
+    }>;
+    operations: DatabaseOperation[];
+  };
+  api_integrations: Array<{
+    service: string;
+    purpose: string;
+    endpoints_used: APIEndpoint[];
+    auth_method: string;
+    rate_limiting: string;
+  }>;
 }
 
 interface ErrorHandling {
-  strategies: ErrorHandlingStrategy[];
-  logging_patterns: string[];
-  recovery_mechanisms: string[];
-  user_feedback: {
-    success_patterns: string;
-    error_patterns: string;
-    progress_tracking: string;
-  };
-}
-
-interface PerformancePatterns {
-  batch_operations: {
-    implemented: boolean;
-    batch_size: number | "dynamic";
-    progress_tracking: boolean;
-    cancellation: boolean;
-  };
-  optimization_strategies: string[];
-  caching_implementation: string;
-}
-
-interface SecurityImplementations {
-  auth_checks: string[];
-  permission_patterns: string[];
-  sensitive_data_handling: string[];
-  token_management: {
-    refresh_pattern: string;
-    storage_method: string;
-    validation: string;
-  };
-}
-
-interface FunctionRelationships {
-  depends_on: string[];
-  called_by: string[];
-  shares_state_with: string[];
+  strategies: Array<{
+    pattern: string;
+    location: string;
+    error_types: string[];
+    recovery_mechanism: string;
+    user_feedback: string;
+  }>;
+  validation: Array<{
+    type: string;
+    schema: string;
+    location: string;
+    failure_handling: string;
+  }>;
+  global_handlers: Array<{
+    type: string;
+    coverage: string;
+    implementation: string;
+  }>;
 }
 
 interface CodeAnalysis {
-  function_details: {
-    name: string;
-    category: string;
-    description: string;
-    location: string;
-    implementation_notes: string;
+  overview: Overview;
+  functions: {
+    declarations: FunctionDeclaration[];
+    ui_relationships: UIRelationship[];
   };
-  ai_processing?: AIProcessing;
-  supabase_operations?: SupabaseOperations;
-  google_drive_integration?: GoogleDriveIntegration;
+  type_definitions: TypeDefinitions;
+  external_integrations: ExternalIntegrations;
   error_handling: ErrorHandling;
-  performance_patterns: PerformancePatterns;
-  dependencies: {
-    external: string[];
-    internal: string[];
-    environment_vars: string[];
+  performance_considerations: {
+    critical_paths: Array<{
+      description: string;
+      components_involved: string[];
+      optimization_requirements: string[];
+      monitoring_points: string[];
+    }>;
+    caching_strategies: Array<{
+      data: string;
+      strategy: string;
+      invalidation_triggers: string[];
+      storage_requirements: string;
+    }>;
+    optimization_opportunities: Array<{
+      type: string;
+      location: string;
+      potential_impact: string;
+      implementation_complexity: string;
+    }>;
   };
-  security_implementations: SecurityImplementations;
-  function_relationships: FunctionRelationships;
+  security_considerations: {
+    authentication: {
+      method: string;
+      implementation: string;
+      token_handling: string;
+    };
+    authorization: Array<{
+      resource: string;
+      checks: string[];
+      implementation: string;
+    }>;
+    data_validation: Array<{
+      input: string;
+      method: string;
+      sanitization: string;
+    }>;
+  };
+  testing_requirements: {
+    unit_tests: Array<{
+      function: string;
+      test_scenarios: string[];
+      mocks_required: string[];
+      edge_cases: string[];
+    }>;
+    integration_tests: Array<{
+      flow: string;
+      systems_involved: string[];
+      test_requirements: string[];
+      data_requirements: string[];
+    }>;
+  };
+  documentation_requirements: {
+    inline_documentation: Array<{
+      location: string;
+      required_elements: string[];
+      examples_needed: string[];
+    }>;
+    type_documentation: Array<{
+      type: string;
+      required_details: string[];
+      usage_examples: string[];
+    }>;
+  };
+  environmental_requirements: {
+    variables: Array<{
+      name: string;
+      purpose: string;
+      type: string;
+      default: string | null;
+    }>;
+    third_party_services: Array<{
+      name: string;
+      purpose: string;
+      configuration: string;
+      fallback: string;
+    }>;
+  };
+  code_quality: {
+    function_analysis: Array<{
+      name: string;
+      clarity: string;
+      maintenance_needs: string[];
+      error_coverage: string;
+      documentation: string;
+      test_coverage: string;
+    }>;
+    potential_issues: Array<{
+      type: string;
+      location: string;
+      severity: string;
+      suggestion: string;
+      impact: string;
+    }>;
+  };
 }
 
 interface AnalysisRequest {
@@ -195,34 +339,73 @@ export class CodeAnalysisSystem {
           });
 
           try {
-            // Parse response if it's a string
             let data = typeof response === 'string' ? JSON.parse(response) : response;
             
             this.log('Parsed response data:', {
               hasData: !!data,
-              keys: Object.keys(data || {}),
-              hasFunctionDetails: !!data?.overview
+              keys: Object.keys(data || {})
             });
 
-            // Return with new streamlined structure
+            // Return complete structure matching new prompt
             return {
               overview: {
                 name: data.overview?.name || 'Unknown',
                 purpose: data.overview?.purpose || '',
-                key_integrations: data.overview?.key_integrations || []
+                key_integrations: data.overview?.key_integrations || [],
+                technical_stack: data.overview?.technical_stack || []
               },
-              ai_processing: {
-                calls: data.ai_processing?.calls || []
+              functions: {
+                declarations: data.functions?.declarations || [],
+                ui_relationships: data.functions?.ui_relationships || []
               },
-              supabase_operations: {
-                tables_used: data.supabase_operations?.tables_used || [],
-                operations: data.supabase_operations?.operations || []
+              type_definitions: {
+                interfaces: data.type_definitions?.interfaces || [],
+                types: data.type_definitions?.types || []
               },
-              google_drive: {
-                operations: data.google_drive?.operations || []
+              external_integrations: {
+                ai_processing: {
+                  calls: data.external_integrations?.ai_processing?.calls || []
+                },
+                database_operations: {
+                  tables_used: data.external_integrations?.database_operations?.tables_used || [],
+                  operations: data.external_integrations?.database_operations?.operations || []
+                },
+                api_integrations: data.external_integrations?.api_integrations || []
               },
-              integration_flow: {
-                sequences: data.integration_flow?.sequences || []
+              error_handling: {
+                strategies: data.error_handling?.strategies || [],
+                validation: data.error_handling?.validation || [],
+                global_handlers: data.error_handling?.global_handlers || []
+              },
+              performance_considerations: {
+                critical_paths: data.performance_considerations?.critical_paths || [],
+                caching_strategies: data.performance_considerations?.caching_strategies || [],
+                optimization_opportunities: data.performance_considerations?.optimization_opportunities || []
+              },
+              security_considerations: {
+                authentication: data.security_considerations?.authentication || {
+                  method: '',
+                  implementation: '',
+                  token_handling: ''
+                },
+                authorization: data.security_considerations?.authorization || [],
+                data_validation: data.security_considerations?.data_validation || []
+              },
+              testing_requirements: {
+                unit_tests: data.testing_requirements?.unit_tests || [],
+                integration_tests: data.testing_requirements?.integration_tests || []
+              },
+              documentation_requirements: {
+                inline_documentation: data.documentation_requirements?.inline_documentation || [],
+                type_documentation: data.documentation_requirements?.type_documentation || []
+              },
+              environmental_requirements: {
+                variables: data.environmental_requirements?.variables || [],
+                third_party_services: data.environmental_requirements?.third_party_services || []
+              },
+              code_quality: {
+                function_analysis: data.code_quality?.function_analysis || [],
+                potential_issues: data.code_quality?.potential_issues || []
               }
             };
           } catch (error) {
