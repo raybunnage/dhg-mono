@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/lib/database.types';
-import { getVideoSummary } from '@/utils/whisper-processing';
+import type { Database } from '../../../../../supabase/types';
+import { getVideoSummary, testOpenAIConnection } from '@/utils/whisper-processing';
 import { toast } from 'react-hot-toast';
 
 type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];
 
 interface MP4FileWithAudio extends SourceGoogle {
+  id: string;
+  name: string;
+  parent_path: string | null;
+  web_view_link: string | null;
+  updated_at: string;
   has_audio_file: boolean;
   audio_file?: SourceGoogle | null;
   summary?: string;
@@ -17,6 +22,7 @@ export function Transcribe() {
   const [mp4Files, setMP4Files] = useState<MP4FileWithAudio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [apiStatus, setApiStatus] = useState<'untested' | 'working' | 'error'>('untested');
 
   useEffect(() => {
     loadMP4Files();
@@ -136,6 +142,22 @@ export function Transcribe() {
     }
   };
 
+  const testAPI = async () => {
+    try {
+      const isWorking = await testOpenAIConnection();
+      setApiStatus(isWorking ? 'working' : 'error');
+      if (isWorking) {
+        toast.success('OpenAI connection working!');
+      } else {
+        toast.error('OpenAI connection failed');
+      }
+    } catch (error) {
+      console.error('API test failed:', error);
+      toast.error('API test failed');
+      setApiStatus('error');
+    }
+  };
+
   if (loading) {
     return <div className="container mx-auto p-4">Loading MP4 files...</div>;
   }
@@ -146,7 +168,19 @@ export function Transcribe() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">MP4 Transcription</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">MP4 Transcription</h1>
+        <button
+          onClick={testAPI}
+          className={`px-4 py-2 rounded text-white ${
+            apiStatus === 'working' ? 'bg-green-500' :
+            apiStatus === 'error' ? 'bg-red-500' :
+            'bg-blue-500'
+          }`}
+        >
+          Test OpenAI Connection
+        </button>
+      </div>
       
       {mp4Files.length === 0 ? (
         <div className="text-gray-600">No MP4 files found</div>
