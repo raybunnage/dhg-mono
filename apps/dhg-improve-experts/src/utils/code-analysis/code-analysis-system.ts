@@ -546,7 +546,6 @@ export class CodeAnalysisSystem {
       temperature: 0.1,
       requireJsonOutput: true,
       validateResponse: (response) => {
-        // ... existing validation code ...
         try {
           let data = typeof response === 'string' ? JSON.parse(response) : response;
           return {
@@ -556,7 +555,55 @@ export class CodeAnalysisSystem {
               key_integrations: data.overview?.key_integrations || [],
               technical_stack: data.overview?.technical_stack || []
             },
-            // ... rest of validation structure ...
+            functions: {
+              declarations: data.functions?.declarations || [],
+              ui_relationships: data.functions?.ui_relationships || []
+            },
+            type_definitions: {
+              interfaces: data.type_definitions?.interfaces || [],
+              types: data.type_definitions?.types || []
+            },
+            external_integrations: {
+              ai_processing: {
+                calls: data.external_integrations?.ai_processing?.calls || []
+              },
+              database_operations: {
+                tables_used: data.external_integrations?.database_operations?.tables_used || [],
+                operations: data.external_integrations?.database_operations?.operations || []
+              },
+              api_integrations: data.external_integrations?.api_integrations || []
+            },
+            error_handling: {
+              strategies: data.error_handling?.strategies || [],
+              validation: data.error_handling?.validation || [],
+              global_handlers: data.error_handling?.global_handlers || []
+            },
+            performance_considerations: data.performance_considerations || {
+              critical_paths: [],
+              caching_strategies: [],
+              optimization_opportunities: []
+            },
+            security_considerations: data.security_considerations || {
+              authentication: { method: '', implementation: '', token_handling: '' },
+              authorization: [],
+              data_validation: []
+            },
+            testing_requirements: data.testing_requirements || {
+              unit_tests: [],
+              integration_tests: []
+            },
+            documentation_requirements: data.documentation_requirements || {
+              inline_documentation: [],
+              type_documentation: []
+            },
+            environmental_requirements: data.environmental_requirements || {
+              variables: [],
+              third_party_services: []
+            },
+            code_quality: data.code_quality || {
+              function_analysis: [],
+              potential_issues: []
+            }
           };
         } catch (error) {
           this.log('Validation error:', error);
