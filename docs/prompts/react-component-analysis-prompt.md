@@ -99,4 +99,65 @@ This specialized prompt is designed for analyzing React components. It should be
       "name": "string - Derived state name",
       "computation": "string - How it's computed",
       "dependencies": ["array of dependencies"],
-      "caching_strategy": "string - How it's cache
+      "caching_strategy": "string - How it's cache"
+    }],
+    "handler_analysis": {
+      "event_handlers": [{
+        "name": "string - Handler function name",
+        "trigger": "string - What triggers this handler",
+        "purpose": "string - What this handler does",
+        "parameters": [{
+          "name": "string - Parameter name",
+          "type": "string - Parameter type",
+          "purpose": "string - What this parameter is used for"
+        }],
+        "integrations": {
+          "supabase": {
+            "operations": [{
+              "type": "string - query/insert/update/delete",
+              "table": "string - Table name",
+              "purpose": "string - Why this operation is needed",
+              "error_handling": "string - How errors are handled"
+            }]
+          },
+          "ai_calls": [{
+            "service": "string - anthropic/openai/etc",
+            "purpose": "string - Why AI is needed here",
+            "prompt_construction": "string - How the prompt is built",
+            "response_handling": "string - How the response is processed"
+          }],
+          "external_apis": [{
+            "service": "string - API name",
+            "endpoint": "string - Specific endpoint used",
+            "purpose": "string - Why this API is called",
+            "data_flow": "string - How data flows through this call"
+          }]
+        },
+        "state_updates": [{
+          "target": "string - What state is updated",
+          "trigger": "string - What causes this update",
+          "side_effects": "string - Any side effects of this update"
+        }],
+        "error_handling": {
+          "strategy": "string - How errors are handled",
+          "user_feedback": "string - How users are notified",
+          "recovery": "string - How the system recovers"
+        },
+        "performance": {
+          "debouncing": "boolean - Is the handler debounced",
+          "throttling": "boolean - Is the handler throttled",
+          "caching": "string - Any caching strategies used"
+        }
+      }],
+      "effect_handlers": [{
+        "trigger": "string - What triggers this effect",
+        "dependencies": ["array of dependencies"],
+        "integrations": {
+          // Same structure as event_handlers.integrations
+        },
+        "cleanup": "string - Cleanup operations",
+        "timing": "string - When this effect runs"
+      }]
+    }
+  }
+}
