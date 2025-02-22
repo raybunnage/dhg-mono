@@ -282,6 +282,34 @@ interface AnalysisOptions {
   debugMode?: boolean;
 }
 
+interface RegistryEntry {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  location: string;
+  repository: string;
+  implementation_notes: string[];
+  dependencies: string[];
+  input_types: {
+    ai_config?: any;
+    environment?: string[];
+  } | null;
+  output_types: any | null;
+  supabase_operations: any | null;
+  created_at: string;
+  updated_at: string;
+  status: 'active' | 'deprecated' | 'archived';
+  code_signature: string | null;
+  similar_functions: any | null;
+}
+
+interface FunctionRelationships {
+  depends_on: string[];
+  called_by: string[];
+  shares_state_with: string[];
+}
+
 /**
  * Core analysis functionality
  */
@@ -460,26 +488,26 @@ export class CodeAnalysisSystem {
     options: AnalysisOptions
   ) {
     try {
-      const functionEntry = {
+      const functionEntry: RegistryEntry = {
         id: uuidv4(),
-        name: analysis.function_details.name,
-        category: analysis.function_details.category,
-        description: analysis.function_details.description,
-        location: analysis.function_details.location,
-        repository: repository,
-        implementation_notes: analysis.function_details.implementation_notes,
-        dependencies: analysis.dependencies.external.concat(analysis.dependencies.internal),
-        input_types: analysis.ai_processing ? {
-          ai_config: analysis.ai_processing.model_configs,
-          environment: analysis.dependencies.environment_vars
-        } : null,
+        name: analysis.overview.name,
+        category: 'function', // Default category
+        description: analysis.overview.purpose,
+        location: analysis.overview.key_integrations.join(', '),
+        repository,
+        implementation_notes: analysis.overview.technical_stack,
+        dependencies: analysis.functions.declarations.map(d => d.name),
+        input_types: {
+          ai_config: analysis.external_integrations.ai_processing,
+          environment: analysis.environmental_requirements.variables.map(v => v.name)
+        },
         output_types: null,
-        supabase_operations: analysis.supabase_operations || null,
+        supabase_operations: analysis.external_integrations.database_operations || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         status: 'active',
         code_signature: null,
-        similar_functions: analysis.function_relationships || null
+        similar_functions: null
       };
 
       // Check for existing entry
