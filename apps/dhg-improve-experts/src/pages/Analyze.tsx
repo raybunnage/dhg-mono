@@ -21,14 +21,22 @@ export function Analyze() {
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [promptTemplate, setPromptTemplate] = useState('');
+  const [enhancedPrompt, setEnhancedPrompt] = useState('');
+  const [reactPrompt, setReactPrompt] = useState('');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load prompt template only
-    fetch('/prompts/enhanced-analysis-prompt.md')
-      .then(r => r.text())
-      .then(setPromptTemplate);
+    // Load both prompts
+    Promise.all([
+      fetch('/prompts/enhanced-analysis-prompt.md').then(r => r.text()),
+      fetch('/prompts/react-component-analysis-prompt.md').then(r => r.text())
+    ]).then(([enhancedText, reactText]) => {
+      setEnhancedPrompt(enhancedText);
+      setReactPrompt(reactText);
+    }).catch(error => {
+      console.error('Failed to load prompts:', error);
+      toast.error('Failed to load analysis prompts');
+    });
 
     // Comment out auto file loading
     // loadSourceFiles();
@@ -127,7 +135,7 @@ export function Analyze() {
   const analyzeFile = async (fileInfo: FileInfo) => {
     setLoading(true);
     try {
-      const analyzer = new CodeAnalysisSystem(promptTemplate, true);
+      const analyzer = new CodeAnalysisSystem(enhancedPrompt, true);
       
       console.log('🔍 Starting analysis of:', fileInfo.path);
       const analysis = await analyzer.analyzeFile({
