@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CodeAnalysisSystem from '@/utils/code-analysis/code-analysis-system';
 import { toast } from 'react-hot-toast';
-import ClassifyDocument from '@/pages/ClassifyDocument';
+import { SourceButtons } from '@/components/SourceButtons';
 
 interface FileInfo {
   path: string;
@@ -34,26 +34,33 @@ export function Analyze() {
     // loadSourceFiles();
   }, []);
 
-  // Add ClassifyDocument content directly
+  // Add SourceButtons content directly
   useEffect(() => {
-    // Get actual source code
-    const classifyContent = ClassifyDocument.toString();
-    const filePath = 'pages/ClassifyDocument.tsx';
-    
-    console.log('📄 Loading ClassifyDocument content:', {
-      content: classifyContent.slice(0, 200) + '...',  // Log first 200 chars
-      size: classifyContent.length
-    });
+    // Fetch the source code directly
+    fetch('/src/components/SourceButtons.tsx')
+      .then(r => r.text())
+      .then(sourceCode => {
+        const filePath = 'components/SourceButtons.tsx';
+        
+        console.log('📄 Loading SourceButtons content:', {
+          content: sourceCode.slice(0, 200) + '...',  // Log first 200 chars
+          size: sourceCode.length
+        });
 
-    setFiles([{
-      path: filePath,
-      content: classifyContent,
-      lastModified: new Date().toISOString(),
-      size: classifyContent.length
-    }]);
+        setFiles([{
+          path: filePath,
+          content: sourceCode,
+          lastModified: new Date().toISOString(),
+          size: sourceCode.length
+        }]);
 
-    // Auto-select the file
-    setSelectedFile(filePath);
+        // Auto-select the file
+        setSelectedFile(filePath);
+      })
+      .catch(error => {
+        console.error('Failed to load source code:', error);
+        toast.error('Failed to load source code');
+      });
   }, []);
 
   const loadSourceFiles = async () => {
