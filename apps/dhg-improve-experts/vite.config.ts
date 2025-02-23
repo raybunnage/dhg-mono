@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react-swc'
 import baseConfig from '../../vite.config.base.js'
 import path from "path"
 import { componentTagger } from "lovable-tagger"
@@ -53,12 +53,7 @@ export default defineConfig(({ mode }) => {
   return {
     ...baseConfig,
     plugins: [
-      react({
-        jsxRuntime: 'automatic',
-        babel: {
-          plugins: ['@babel/plugin-transform-react-jsx']
-        }
-      }),
+      react(),
       mode === 'development' && componentTagger(),
       {
         name: 'api-routes',
@@ -79,6 +74,16 @@ export default defineConfig(({ mode }) => {
           });
           console.log('✅ API routes configured');
         }
+      },
+      {
+        name: 'env-check',
+        configResolved(config) {
+          console.log('📝 Vite env files:', {
+            dir: config.envDir,
+            mode: config.mode,
+            env: config.env
+          })
+        }
       }
     ].filter(Boolean),
     // Custom configurations
@@ -98,7 +103,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     server: {
-      port: 5174,
+      port: 8080,
       host: "::",
       ...baseConfig.server,
       headers: {
@@ -134,6 +139,7 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: ['zod', 'pdfjs-dist'],
       exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
-    }
+    },
+    envDir: process.cwd()
   }
 })
