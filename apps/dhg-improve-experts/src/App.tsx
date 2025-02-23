@@ -19,6 +19,7 @@ import MP4Test from './pages/mp4-test';
 import ClassifyDocument from '@/pages/ClassifyDocument';
 import { Analyze } from '@/pages/Analyze';
 import { Transcribe } from '@/pages/Transcribe';
+import { SupabasePage } from './pages/Supabase'
 
 // Component imports
 import { MainNavbar } from '@/components/MainNavbar';
@@ -37,7 +38,6 @@ function TestComponent() {
         });
 
         if (authError) throw authError;
-        setAuthStatus(`Authenticated as: ${authData.user?.email}`);
 
         // Test a simple query
         const { data, error } = await supabase
@@ -47,17 +47,12 @@ function TestComponent() {
         console.log('Query test:', { data, error });
       } catch (err) {
         console.error('Init error:', err);
-        setAuthStatus('Error: ' + (err instanceof Error ? err.message : 'Unknown error'));
       }
     }
     init();
   }, []);
 
-  return (
-    <div className="p-4">
-      <div>Status: {authStatus}</div>
-    </div>
-  );
+  return null;
 }
 
 const queryClient = new QueryClient();
@@ -85,6 +80,7 @@ function App() {
           <Route path="/classify" element={<ClassifyDocument />} />
           <Route path="/analyze" element={<Analyze />} />
           <Route path="/transcribe" element={<Transcribe />} />
+          <Route path="/supabase" element={<SupabasePage />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
