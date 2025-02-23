@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '../../../../../supabase/types';
+import type { Database } from '@/types/supabase';
 
 type FunctionRegistry = Database['public']['Tables']['function_registry']['Row'];
 

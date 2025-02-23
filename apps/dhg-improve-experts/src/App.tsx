@@ -71,6 +71,7 @@ function App() {
         <TestComponent />
         <Routes>
           <Route path="/" element={<ExpertProfiles />} />
+          <Route path="/registry" element={<RegistryViewer />} />
           <Route path="/document-testing" element={<DocumentTestingPage />} />
           <Route path="/expert-profiler" element={<ExpertProfilerPage />} />
           <Route path="/source-buttons-test" element={<SourceButtonsTest />} />
