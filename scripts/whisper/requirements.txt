@@ -1,0 +1,2 @@
+faster-whisper==0.10.0  # Specify exact version for reproducibility
+tqdm>=4.65.0  # For progress bars 

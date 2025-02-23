@@ -91,3 +91,16 @@ patterns.txt
 # API Keys
 *.env.local
 *.env.development
+
+# Python
+.venv*
+__pycache__/
+*.pyc
+.models/
+transcripts/
+
+# Python virtual environment
+scripts/whisper/.venv-whisper/
+
+# Schema temporary files
+supabase/schema-info.tmp.json

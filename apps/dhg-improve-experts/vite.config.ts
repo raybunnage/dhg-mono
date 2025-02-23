@@ -101,6 +101,10 @@ export default defineConfig(({ mode }) => {
       port: 5174,
       host: "::",
       ...baseConfig.server,
+      headers: {
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+      },
     },
     preview: {
       port: 4173,
@@ -128,7 +132,8 @@ export default defineConfig(({ mode }) => {
     },
     publicDir: 'public',
     optimizeDeps: {
-      include: ['zod', 'pdfjs-dist']
+      include: ['zod', 'pdfjs-dist'],
+      exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
     }
   }
 })

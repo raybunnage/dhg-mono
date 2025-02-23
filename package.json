@@ -36,7 +36,7 @@
     "db:list": "./scripts/supabase/run-migration.sh list",
     "db:repair": "./scripts/supabase/run-migration.sh repair",
     "db:repair-applied": "./scripts/supabase/run-migration.sh repair-applied",
-    "db:check": "./scripts/supabase/run-migration.sh check",
+    "db:check": "supabase db diff --linked",
     "migration:new": "./scripts/create-migration.sh",
     "db:psql": "./scripts/supabase/start-psql.sh",
     "db:psql:check": "./scripts/supabase/start-psql.sh \"SELECT version FROM supabase_migrations.schema_migrations ORDER BY version DESC LIMIT 1;\"",
@@ -44,7 +44,12 @@
     "db:psql:describe-migrations": "./scripts/supabase/start-psql.sh \"\\d supabase_migrations.schema_migrations;\"",
     "tree": "node scripts/show-tree.js",
     "gen:types": "supabase gen types typescript --local > supabase/types.ts",
-    "generate-types": "tsx scripts/generate-types.ts"
+    "generate-types": "tsx scripts/generate-types.ts",
+    "db:types": "supabase gen types typescript --local > supabase/types.ts",
+    "db:schema": "bash supabase/scripts/update-schema.sh",
+    "db:update": "pnpm db:types && pnpm db:schema",
+    "precommit": "pnpm db:update",
+    "setup:permissions": "./scripts/set-permissions.sh"
   },
   "bin": {
     "dhg-tree": "./scripts/show-tree.js"
