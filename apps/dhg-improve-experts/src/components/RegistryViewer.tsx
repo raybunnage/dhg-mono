@@ -33,7 +33,10 @@ export function RegistryViewer() {
           app_name,
           code_signature,
           git_branch,
-          github_url
+          github_url,
+          input_types,
+          output_types,
+          supabase_operations
         `)
         .order('name');
 
@@ -92,6 +95,34 @@ export function RegistryViewer() {
                     View on GitHub
                   </a>
                 )}
+              </div>
+            )}
+            {(func.input_types || func.output_types) && (
+              <div className="mt-4 space-y-2">
+                {func.input_types && (
+                  <div>
+                    <span className="font-medium">Input Types:</span>
+                    <pre className="mt-1 p-2 bg-gray-50 rounded text-sm overflow-auto">
+                      {JSON.stringify(func.input_types, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                {func.output_types && (
+                  <div>
+                    <span className="font-medium">Output Types:</span>
+                    <pre className="mt-1 p-2 bg-gray-50 rounded text-sm overflow-auto">
+                      {JSON.stringify(func.output_types, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+            {func.supabase_operations && (
+              <div className="mt-4">
+                <span className="font-medium">Supabase Operations:</span>
+                <pre className="mt-1 p-2 bg-gray-50 rounded text-sm overflow-auto">
+                  {JSON.stringify(func.supabase_operations, null, 2)}
+                </pre>
               </div>
             )}
             <div className="mt-2 text-gray-600">{func.description}</div>
