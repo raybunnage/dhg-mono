@@ -29,7 +29,11 @@ export function RegistryViewer() {
           repository,
           status,
           created_at,
-          updated_at
+          updated_at,
+          app_name,
+          code_signature,
+          git_branch,
+          github_url
         `)
         .order('name');
 
@@ -59,6 +63,37 @@ export function RegistryViewer() {
         {functions.map((func) => (
           <div key={func.id} className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-xl font-semibold">{func.name}</h3>
+            {func.app_name && (
+              <div className="mt-2">
+                <span className="font-medium">App:</span> {func.app_name}
+              </div>
+            )}
+            {func.code_signature && (
+              <div className="mt-2">
+                <span className="font-medium">Signature:</span>
+                <code className="ml-2 p-1 bg-gray-100 rounded text-sm">{func.code_signature}</code>
+              </div>
+            )}
+            {(func.git_branch || func.github_url) && (
+              <div className="mt-2">
+                <span className="font-medium">Git:</span>
+                {func.git_branch && (
+                  <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                    {func.git_branch}
+                  </span>
+                )}
+                {func.github_url && (
+                  <a 
+                    href={func.github_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-blue-600 hover:text-blue-800"
+                  >
+                    View on GitHub
+                  </a>
+                )}
+              </div>
+            )}
             <div className="mt-2 text-gray-600">{func.description}</div>
             <div className="mt-2">
               <span className="font-medium">Category:</span> {func.category}
