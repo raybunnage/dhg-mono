@@ -36,6 +36,12 @@ out/
 **/.env.test*
 **/.env.staging*
 
+**/apps/**/.env*
+**/apps/**/.env.development
+**/apps/**/.env.production
+
+
+
 # Vercel
 .vercel/
 
@@ -104,3 +110,4 @@ scripts/whisper/.venv-whisper/
 
 # Schema temporary files
 supabase/schema-info.tmp.json
+

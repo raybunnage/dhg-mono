@@ -16,6 +16,7 @@ import MP4Test from './pages/mp4-test';
 import ClassifyDocument from '@/pages/ClassifyDocument';
 import { Analyze } from '@/pages/Analyze';
 import { Transcribe } from '@/pages/Transcribe';
+import { useEffect } from 'react';
 
 function App() {
   console.log('App component mounting');
@@ -36,6 +37,22 @@ function App() {
     '/analyze',
     '/transcribe'
   ]);
+
+  useEffect(() => {
+    // Validate environment variables on app start
+    const requiredEnvVars = {
+      'VITE_SUPABASE_URL': import.meta.env.VITE_SUPABASE_URL,
+      'VITE_SUPABASE_ANON_KEY': import.meta.env.VITE_SUPABASE_ANON_KEY
+    }
+
+    const missingVars = Object.entries(requiredEnvVars)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key)
+
+    if (missingVars.length > 0) {
+      console.error('Missing required environment variables:', missingVars)
+    }
+  }, [])
 
   return (
     <BrowserRouter future={{ 
