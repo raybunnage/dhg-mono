@@ -1,93 +1,61 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+// Page imports
+import ExpertProfiles from "@/pages/ExpertProfiles";
+import DocumentTestingPage from './pages/document-testing';
+import ExpertProfilerPage from './app/experts/profiler/page';
+import SourceButtonsTest from '@/pages/source-buttons-test';
+import SourceManagementPage from '@/pages/source-management';
+import SourceButtonsPage from '@/pages/source-buttons';
+import FunctionRegistryPage from '@/pages/function-registry';
+import FileExplorer from '@/pages/file-explorer';
+import PDFTestExtract from '@/pages/pdf-test-extract';
+import PDFResearchPortal from '@/pages/pdf-research-portal';
+import MP4Test from './pages/mp4-test';
+import ClassifyDocument from '@/pages/ClassifyDocument';
+import { Analyze } from '@/pages/Analyze';
+import { Transcribe } from '@/pages/Transcribe';
+
+// Component imports
+import { MainNavbar } from '@/components/MainNavbar';
+import { RegistryViewer } from '@/components/RegistryViewer';
 
 function TestComponent() {
-  const [status, setStatus] = useState('Initializing...');
-  const [expert, setExpert] = useState<any>(null);
-  const [authStatus, setAuthStatus] = useState<string>('Not authenticated');
+  const [authStatus, setAuthStatus] = useState<string>('Checking auth...');
 
   useEffect(() => {
-    async function testConnection() {
+    async function init() {
       try {
-        // First test basic connection
+        // Authenticate with test user
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: import.meta.env.VITE_TEST_USER_EMAIL,
+          password: import.meta.env.VITE_TEST_USER_PASSWORD || 'testpassword123'
+        });
+
+        if (authError) throw authError;
+        setAuthStatus(`Authenticated as: ${authData.user?.email}`);
+
+        // Test a simple query
         const { data, error } = await supabase
           .from('experts')
-          .select('*')
-          .limit(1)
-          .single();
+          .select('count');
 
-        if (error) throw error;
-        
-        setExpert(data);
-        setStatus('Connected successfully! Found expert:');
-
-        // Now authenticate with test user
-        try {
-          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-            email: import.meta.env.VITE_TEST_USER_EMAIL,
-            password: import.meta.env.VITE_TEST_USER_PASSWORD || 'testpassword123'
-          });
-
-          if (authError) throw authError;
-
-          setAuthStatus(`Authenticated as: ${authData.user?.email}`);
-          
-          // Test authenticated query
-          const { data: authExpert, error: authQueryError } = await supabase
-            .from('experts')
-            .select('*')
-            .limit(1)
-            .single();
-
-          if (authQueryError) throw authQueryError;
-          
-          setExpert(authExpert); // Update with authenticated data
-          
-        } catch (authErr) {
-          setAuthStatus(`Auth Error: ${authErr instanceof Error ? authErr.message : 'Unknown error'}`);
-          console.error('Auth error details:', authErr);
-        }
-
+        console.log('Query test:', { data, error });
       } catch (err) {
-        setStatus(`Connection Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-        console.error('Full error details:', err);
+        console.error('Init error:', err);
+        setAuthStatus('Error: ' + (err instanceof Error ? err.message : 'Unknown error'));
       }
     }
-
-    testConnection();
+    init();
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold mb-6">Supabase Connection Test</h1>
-
-        {/* Connection Status */}
-        <div className="mt-4">
-          <h2 className="text-lg font-semibold mb-2">Connection Status</h2>
-          <pre className="bg-gray-100 p-4 rounded mb-4">
-            {status}
-          </pre>
-
-          {/* Auth Status */}
-          <h2 className="text-lg font-semibold mb-2">Authentication Status</h2>
-          <pre className="bg-gray-100 p-4 rounded mb-4">
-            {authStatus}
-          </pre>
-
-          {/* Display Expert Data */}
-          {expert && (
-            <div className="mt-4">
-              <h3 className="text-md font-semibold mb-2">Expert Data:</h3>
-              <pre className="bg-gray-100 p-4 rounded overflow-auto">
-                {JSON.stringify(expert, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="p-4">
+      <div>Status: {authStatus}</div>
     </div>
   );
 }
@@ -98,7 +66,26 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster position="top-right" />
-      <TestComponent />
+      <BrowserRouter>
+        <MainNavbar />
+        <TestComponent />
+        <Routes>
+          <Route path="/" element={<ExpertProfiles />} />
+          <Route path="/document-testing" element={<DocumentTestingPage />} />
+          <Route path="/expert-profiler" element={<ExpertProfilerPage />} />
+          <Route path="/source-buttons-test" element={<SourceButtonsTest />} />
+          <Route path="/source-management" element={<SourceManagementPage />} />
+          <Route path="/source-buttons" element={<SourceButtonsPage />} />
+          <Route path="/function-registry" element={<FunctionRegistryPage />} />
+          <Route path="/file-explorer" element={<FileExplorer />} />
+          <Route path="/pdf-test-extract" element={<PDFTestExtract />} />
+          <Route path="/pdf-research-portal" element={<PDFResearchPortal />} />
+          <Route path="/mp4-test" element={<MP4Test />} />
+          <Route path="/classify" element={<ClassifyDocument />} />
+          <Route path="/analyze" element={<Analyze />} />
+          <Route path="/transcribe" element={<Transcribe />} />
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
