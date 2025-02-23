@@ -19,15 +19,6 @@ export function SupabasePage() {
       )
       if (tablesError) throw tablesError
 
-      // Foreign keys
-      const { data: fkeysData, error: fkeysError } = await supabase.rpc(
-        'get_foreign_keys',
-        {
-          schema_name: 'public'
-        }
-      )
-      if (fkeysError) throw fkeysError
-
       // Functions
       const { data: functionsData, error: functionsError } = await supabase.rpc(
         'get_functions',
@@ -48,7 +39,6 @@ export function SupabasePage() {
 
       const schema = {
         tables: tablesData,
-        foreignKeys: fkeysData,
         functions: functionsData,
         triggers: triggersData
       }
