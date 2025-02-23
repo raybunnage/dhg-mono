@@ -45,9 +45,8 @@
     "tree": "node scripts/show-tree.js",
     "gen:types": "supabase gen types typescript --local > supabase/types.ts",
     "generate-types": "tsx scripts/generate-types.ts",
-    "db:types": "supabase gen types typescript --local > supabase/types.ts",
-    "db:schema": "bash supabase/scripts/update-schema.sh",
-    "db:update": "pnpm db:types && pnpm db:schema",
+    "db:types": "pnpm db:types && pnpm db:schema",
+    "db:schema": "pnpm supabase db pull --project-id jdksnfkupzywjdfefkyj > supabase/schema/schema.sql",
     "precommit": "pnpm db:update",
     "setup:permissions": "./scripts/set-permissions.sh"
   },

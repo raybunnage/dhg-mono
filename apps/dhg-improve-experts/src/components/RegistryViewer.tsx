@@ -38,7 +38,7 @@ export function RegistryViewer() {
           output_types,
           supabase_operations
         `)
-        .order('name');
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
