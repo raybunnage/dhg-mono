@@ -27,24 +27,42 @@ import { RegistryViewer } from '@/components/RegistryViewer';
 
 function TestComponent() {
   const [authStatus, setAuthStatus] = useState<string>('Checking auth...');
+  const [openaiStatus, setOpenaiStatus] = useState<string>('Not tested');
 
   useEffect(() => {
     async function init() {
       try {
-        // Authenticate with test user
+        // Test Supabase connection
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email: import.meta.env.VITE_TEST_USER_EMAIL,
           password: import.meta.env.VITE_TEST_USER_PASSWORD || 'testpassword123'
         });
-
         if (authError) throw authError;
 
-        // Test a simple query
+        // Test a simple Supabase query
         const { data, error } = await supabase
           .from('experts')
           .select('count');
+        console.log('Supabase test:', { data, error });
 
-        console.log('Query test:', { data, error });
+        // Test OpenAI connection
+        try {
+          const response = await fetch('/api/test-openai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              test: 'This is a test message to verify OpenAI connection.' 
+            })
+          });
+          
+          if (!response.ok) throw new Error('OpenAI test failed');
+          setOpenaiStatus('OpenAI connection working');
+          console.log('OpenAI test successful');
+        } catch (openaiErr) {
+          console.error('OpenAI test failed:', openaiErr);
+          setOpenaiStatus('OpenAI test failed');
+        }
+
       } catch (err) {
         console.error('Init error:', err);
       }
