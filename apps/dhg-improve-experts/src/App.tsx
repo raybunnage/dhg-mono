@@ -27,7 +27,6 @@ import { RegistryViewer } from '@/components/RegistryViewer';
 
 function TestComponent() {
   const [authStatus, setAuthStatus] = useState<string>('Checking auth...');
-  const [openaiStatus, setOpenaiStatus] = useState<string>('Not tested');
 
   useEffect(() => {
     async function init() {
@@ -44,24 +43,6 @@ function TestComponent() {
           .from('experts')
           .select('count');
         console.log('Supabase test:', { data, error });
-
-        // Test OpenAI connection
-        try {
-          const response = await fetch('/api/test-openai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              test: 'This is a test message to verify OpenAI connection.' 
-            })
-          });
-          
-          if (!response.ok) throw new Error('OpenAI test failed');
-          setOpenaiStatus('OpenAI connection working');
-          console.log('OpenAI test successful');
-        } catch (openaiErr) {
-          console.error('OpenAI test failed:', openaiErr);
-          setOpenaiStatus('OpenAI test failed');
-        }
 
       } catch (err) {
         console.error('Init error:', err);

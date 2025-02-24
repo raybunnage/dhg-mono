@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '../../../../supabase/types';
 import { getVideoSummary, testOpenAIConnection } from '@/utils/whisper-processing';
 import { toast } from 'react-hot-toast';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];
 
@@ -22,7 +23,10 @@ export function Transcribe() {
   const [mp4Files, setMP4Files] = useState<MP4FileWithAudio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [apiStatus, setApiStatus] = useState<'untested' | 'working' | 'error'>('untested');
+  const [extracting, setExtracting] = useState(false);
+  const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string>('');
 
   useEffect(() => {
     loadMP4Files();
@@ -142,21 +146,50 @@ export function Transcribe() {
     }
   };
 
-  const testAPI = async () => {
+  async function handleExtractAudio() {
+    setExtracting(true);
+    setProgress('Starting extraction...');
     try {
-      const isWorking = await testOpenAIConnection();
-      setApiStatus(isWorking ? 'working' : 'error');
-      if (isWorking) {
-        toast.success('OpenAI connection working!');
-      } else {
-        toast.error('OpenAI connection failed');
+      // Step 1: Find an M4A file (keeping our working code)
+      const { data: sourceFile, error: queryError } = await supabase
+        .from('sources_google')
+        .select('id, name, mime_type, processing_status, raw_content')  // Added raw_content
+        .eq('mime_type', 'audio/m4a')
+        .eq('processing_status', 'pending')
+        .limit(1)
+        .single();
+
+      if (queryError) throw queryError;
+      if (!sourceFile) {
+        toast.error('No pending M4A files found');
+        return;
       }
-    } catch (error) {
-      console.error('API test failed:', error);
-      toast.error('API test failed');
-      setApiStatus('error');
+
+      setCurrentFile(sourceFile.name);
+      setProgress(`Found file: ${sourceFile.name}`);
+
+      // Step 2: Try to create audio blob from raw content
+      try {
+        const audioBlob = new Blob([sourceFile.raw_content], { type: 'audio/m4a' });
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+        setProgress('Created audio URL - testing playback');
+        toast.success('Audio ready for playback');
+      } catch (blobError) {
+        console.error('Error creating audio blob:', blobError);
+        toast.error('Failed to create audio from content');
+        setProgress('Error processing audio content');
+        return;
+      }
+
+    } catch (err) {
+      console.error('Error finding M4A file:', err);
+      toast.error('Failed to find M4A file');
+      setProgress('Error finding file');
+    } finally {
+      setExtracting(false);
     }
-  };
+  }
 
   if (loading) {
     return <div className="container mx-auto p-4">Loading MP4 files...</div>;
@@ -170,16 +203,6 @@ export function Transcribe() {
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">MP4 Transcription</h1>
-        <button
-          onClick={testAPI}
-          className={`px-4 py-2 rounded text-white ${
-            apiStatus === 'working' ? 'bg-green-500' :
-            apiStatus === 'error' ? 'bg-red-500' :
-            'bg-blue-500'
-          }`}
-        >
-          Test OpenAI Connection
-        </button>
       </div>
       
       {mp4Files.length === 0 ? (
@@ -259,6 +282,31 @@ export function Transcribe() {
           ))}
         </div>
       )}
+
+      <div className="mb-8">
+        <button
+          onClick={handleExtractAudio}
+          disabled={extracting}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+        >
+          {extracting ? 'Extracting...' : 'Extract Next Audio File'}
+        </button>
+
+        {progress && (
+          <div className="mt-4 p-4 bg-gray-100 rounded">
+            <p className="font-semibold">Progress:</p>
+            <p>{progress}</p>
+            {currentFile && <p>Current file: {currentFile}</p>}
+          </div>
+        )}
+
+        {audioUrl && (
+          <div className="mt-4">
+            <h2 className="text-lg font-semibold mb-2">Test Playback</h2>
+            <AudioPlayer url={audioUrl} />
+          </div>
+        )}
+      </div>
     </div>
   );
 } 
