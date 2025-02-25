@@ -93,7 +93,8 @@ const ExpertiseSchema = z.object({
 });
 
 // Add constant for model name
-const MODEL_NAME = "claude-3-5-sonnet-20241022";
+// const MODEL_NAME = "claude-3-5-sonnet-20241022";
+const MODEL_NAME_NEW = "claude-3-7-sonnet-20250219";
 
 // Add type for valid sync statuses
 const SYNC_STATUS = {

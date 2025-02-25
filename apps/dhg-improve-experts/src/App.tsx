@@ -20,6 +20,8 @@ import ClassifyDocument from '@/pages/ClassifyDocument';
 import { Analyze } from '@/pages/Analyze';
 import { Transcribe } from '@/pages/Transcribe';
 import { SupabasePage } from './pages/Supabase'
+import { FileTree } from './pages/FileTree';
+import { BatchProcessingMonitor } from './components/BatchProcessingMonitor';
 
 // Component imports
 import { MainNavbar } from '@/components/MainNavbar';
@@ -80,6 +82,8 @@ function App() {
           <Route path="/analyze" element={<Analyze />} />
           <Route path="/transcribe" element={<Transcribe />} />
           <Route path="/supabase" element={<SupabasePage />} />
+          <Route path="/file-tree" element={<FileTree />} />
+          <Route path="/batches" element={<BatchProcessingMonitor />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
