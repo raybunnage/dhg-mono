@@ -183,8 +183,13 @@ export function Transcribe() {
           throw new Error('No valid audio content found');
         }
         
-        // Assuming extracted_content contains a base64 string of the audio data
-        const base64Content = sourceFile.extracted_content.data;
+        // Check if extracted_content is an object with data property
+        const content = sourceFile.extracted_content as { data?: string };
+        if (!content || !content.data) {
+          throw new Error('No audio data found in content');
+        }
+        
+        const base64Content = content.data;
         if (!base64Content || typeof base64Content !== 'string') {
           throw new Error('Invalid audio content format');
         }
