@@ -23,6 +23,7 @@ export function Transcribe() {
   const [mp4Files, setMP4Files] = useState<MP4FileWithAudio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pendingM4A, setPendingM4A] = useState<SourceGoogle | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -153,9 +154,16 @@ export function Transcribe() {
       // Step 1: Find an M4A file (keeping our working code)
       const { data: sourceFile, error: queryError } = await supabase
         .from('sources_google')
-        .select('id, name, mime_type, processing_status, raw_content')  // Added raw_content
+        .select(`
+          id, 
+          name,
+          mime_type,
+          drive_id,
+          content_extracted,
+          extracted_content
+        `)  // Only select columns that exist
         .eq('mime_type', 'audio/m4a')
-        .eq('processing_status', 'pending')
+        .is('content_extracted', false)  // Use the correct column
         .limit(1)
         .single();
 
@@ -170,7 +178,25 @@ export function Transcribe() {
 
       // Step 2: Try to create audio blob from raw content
       try {
-        const audioBlob = new Blob([sourceFile.raw_content], { type: 'audio/m4a' });
+        // First check if we have content and it's in the expected format
+        if (!sourceFile.extracted_content || typeof sourceFile.extracted_content !== 'object') {
+          throw new Error('No valid audio content found');
+        }
+        
+        // Assuming extracted_content contains a base64 string of the audio data
+        const base64Content = sourceFile.extracted_content.data;
+        if (!base64Content || typeof base64Content !== 'string') {
+          throw new Error('Invalid audio content format');
+        }
+        
+        // Convert base64 to array buffer
+        const binaryContent = atob(base64Content);
+        const bytes = new Uint8Array(binaryContent.length);
+        for (let i = 0; i < binaryContent.length; i++) {
+          bytes[i] = binaryContent.charCodeAt(i);
+        }
+        
+        const audioBlob = new Blob([bytes], { type: 'audio/m4a' });
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
         setProgress('Created audio URL - testing playback');
@@ -191,6 +217,32 @@ export function Transcribe() {
     }
   }
 
+  async function findPendingM4A() {
+    try {
+      // Find specific M4A file by ID
+      const { data: sourceFile, error: queryError } = await supabase
+        .from('sources_google')
+        .select('*')
+        .eq('id', '08c67178-1487-4f5b-920b-c60efa3ea938')
+        .limit(1)
+        .single();
+
+      if (queryError) throw queryError;
+      if (!sourceFile) {
+        toast.error('Could not find file with specified ID');
+        return;
+      }
+
+      setPendingM4A(sourceFile);
+      console.log('Found file:', sourceFile);  // Log all file details
+      toast.success(`Found file: ${sourceFile.name}`);
+
+    } catch (err) {
+      console.error('Error finding file:', err);
+      toast.error('Failed to find file');
+    }
+  }
+
   if (loading) {
     return <div className="container mx-auto p-4">Loading MP4 files...</div>;
   }
@@ -203,6 +255,12 @@ export function Transcribe() {
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">MP4 Transcription</h1>
+        <button
+          onClick={findPendingM4A}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Find Pending M4A
+        </button>
       </div>
       
       {mp4Files.length === 0 ? (
@@ -243,6 +301,10 @@ export function Transcribe() {
                 <div className="mt-2 text-sm bg-gray-50 p-2 rounded">
                   <div className="font-medium text-gray-700">Audio File:</div>
                   <div className="text-gray-600">{file.audio_file.name}</div>
+                  <div className="text-gray-500 text-xs mt-1">
+                    ID: {file.audio_file.id}<br/>
+                    Drive ID: {file.audio_file.drive_id}
+                  </div>
                   {file.audio_file.web_view_link && (
                     <a 
                       href={file.audio_file.web_view_link}
@@ -307,6 +369,14 @@ export function Transcribe() {
           </div>
         )}
       </div>
+
+      {pendingM4A && (
+        <div className="mt-4 p-4 bg-gray-100 rounded">
+          <h2 className="font-semibold">Found M4A File:</h2>
+          <p>Name: {pendingM4A.name}</p>
+          <p>Path: {pendingM4A.parent_path || 'Root'}</p>
+        </div>
+      )}
     </div>
   );
 } 
