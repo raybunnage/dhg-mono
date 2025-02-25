@@ -296,4 +296,194 @@ export async function getDocxContent(driveId: string) {
     });
     throw error;
   }
+}
+
+/**
+ * Fetches binary content from Google Drive
+ * @param driveId Google Drive file ID
+ * @returns ArrayBuffer of file content
+ */
+export async function fetchDriveFileContent(driveId: string): Promise<ArrayBuffer> {
+  console.log('Fetching file content for:', driveId);
+  
+  // First, check if the access token is still valid
+  try {
+    const token = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+    console.log('🔐 Checking token validity...');
+    const testResponse = await fetch(
+      'https://www.googleapis.com/drive/v3/files?pageSize=1',
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    
+    if (!testResponse.ok) {
+      console.error('❌ Google token validation failed:', testResponse.status, testResponse.statusText);
+      throw new Error(`Token validation failed: ${testResponse.status} ${testResponse.statusText}`);
+    }
+    
+    console.log('✅ Google token appears valid');
+  } catch (error) {
+    console.error('❌ Error validating token:', error);
+  }
+  
+  // First, try our existing API endpoint if it exists
+  try {
+    const response = await fetch(`/api/google/files/${driveId}/content`);
+    if (response.ok) {
+      const data = await response.arrayBuffer();
+      const validation = validateAudioData(data);
+      if (!validation.isValid) {
+        console.error('❌ Received invalid audio data:', validation);
+        throw new Error(validation.reason);
+      }
+      return data;
+    }
+    console.log('Regular API endpoint failed, trying alternative method');
+  } catch (error) {
+    console.warn('API endpoint not available:', error);
+  }
+
+  // Fallback: Direct download using token
+  try {
+    const token = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${driveId}?alt=media`, 
+      { 
+        headers: { 
+          'Authorization': `Bearer ${token}`
+        } 
+      }
+    );
+    
+    if (response.ok) {
+      const data = await response.arrayBuffer();
+      console.log('🔍 Checking downloaded data format...');
+      const validation = validateAudioData(data);
+      
+      if (!validation.isValid) {
+        if (validation.isHTML) {
+          console.error('❌ Received HTML instead of audio data. Token may have expired.');
+          // Get some of the HTML to see what error message it contains
+          const textDecoder = new TextDecoder('utf-8');
+          const htmlSample = textDecoder.decode(data.slice(0, 200));
+          console.error('HTML sample:', htmlSample);
+        } else {
+          console.error('❌ Invalid audio data:', validation);
+        }
+        throw new Error(validation.reason);
+      }
+      
+      console.log('✅ Downloaded valid audio data:', validation);
+      return data;
+    } else {
+      throw new Error(`Failed to download: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Direct download failed:', error);
+    throw new Error('Could not fetch file content from Google Drive');
+  }
+}
+
+/**
+ * Checks if binary data is actually audio and not HTML/error page
+ * @param data The binary data to check
+ * @returns Object with validity check and reason
+ */
+export function validateAudioData(data: ArrayBuffer): { 
+  isValid: boolean; 
+  reason?: string;
+  isHTML?: boolean;
+  detectedFormat?: string;
+} {
+  // Convert first bytes to a string to check for HTML
+  const firstBytes = new Uint8Array(data.slice(0, 20));
+  let textVersion = '';
+  for (let i = 0; i < firstBytes.length; i++) {
+    textVersion += String.fromCharCode(firstBytes[i]);
+  }
+  
+  // Check for HTML response (error page)
+  if (textVersion.includes('<!DOCTYPE') || 
+      textVersion.includes('<html') || 
+      textVersion.includes('HTTP/')) {
+    return {
+      isValid: false,
+      reason: 'Received HTML instead of audio data. Authentication may have expired.',
+      isHTML: true
+    };
+  }
+ 
+  // Check for various audio format signatures
+  // M4A/AAC signature check
+  if (firstBytes[4] === 0x66 && firstBytes[5] === 0x74 && 
+      firstBytes[6] === 0x79 && firstBytes[7] === 0x70) {
+    return { 
+      isValid: true,
+      detectedFormat: 'M4A/AAC'
+    };
+  }
+  
+  // MP3 signature check - often starts with ID3
+  if (firstBytes[0] === 0x49 && firstBytes[1] === 0x44 && firstBytes[2] === 0x33) {
+    return { 
+      isValid: true,
+      detectedFormat: 'MP3'
+    };
+  }
+  
+  // WAV signature check
+  if (firstBytes[0] === 0x52 && firstBytes[1] === 0x49 && 
+      firstBytes[2] === 0x46 && firstBytes[3] === 0x46) {
+    return { 
+      isValid: true,
+      detectedFormat: 'WAV'
+    };
+  }
+ 
+  // If we get here, it's not a recognized audio format or HTML
+  return {
+    isValid: false,
+    reason: 'Unknown format - not a recognized audio file'
+  };
+}
+
+/**
+ * Fetches metadata for a Google Drive file
+ * @param driveId Google Drive file ID
+ * @returns File metadata including size and mimeType
+ */
+export async function fetchDriveFileMetadata(driveId: string): Promise<{
+  name: string;
+  mimeType: string;
+  size: number;
+  id: string;
+}> {
+  console.log('🔍 Fetching metadata for:', driveId);
+  
+  const token = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+  const response = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${driveId}?fields=name,mimeType,size,id`, 
+    { 
+      headers: { 
+        'Authorization': `Bearer ${token}`
+      } 
+    }
+  );
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch metadata: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  console.log('✅ File metadata:', data);
+  
+  return {
+    name: data.name,
+    mimeType: data.mimeType,
+    size: parseInt(data.size, 10),
+    id: data.id
+  };
 } 
