@@ -9,6 +9,292 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_processing_attempts: {
+        Row: {
+          cost: number | null
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          expert_document_id: string | null
+          id: string
+          input_tokens: number | null
+          model_name: string
+          output_tokens: number | null
+          prompt: string | null
+          success: boolean | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          expert_document_id?: string | null
+          id?: string
+          input_tokens?: number | null
+          model_name: string
+          output_tokens?: number | null
+          prompt?: string | null
+          success?: boolean | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          expert_document_id?: string | null
+          id?: string
+          input_tokens?: number | null
+          model_name?: string
+          output_tokens?: number | null
+          prompt?: string | null
+          success?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_processing_attempts_expert_document_id_fkey"
+            columns: ["expert_document_id"]
+            isOneToOne: false
+            referencedRelation: "expert_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      audio_processing_configs: {
+        Row: {
+          configuration: Json
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          document_type_id: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          configuration: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          document_type_id?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          document_type_id?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_processing_configs_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audio_processing_stages: {
+        Row: {
+          batch_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          metrics: Json | null
+          output_data: Json | null
+          source_id: string | null
+          stage_name: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          batch_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          metrics?: Json | null
+          output_data?: Json | null
+          source_id?: string | null
+          stage_name: string
+          started_at?: string | null
+          status: string
+        }
+        Update: {
+          batch_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          metrics?: Json | null
+          output_data?: Json | null
+          source_id?: string | null
+          stage_name?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_processing_stages_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batch_processing_status"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "audio_processing_stages_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "processing_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audio_processing_stages_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audio_processor_steps: {
+        Row: {
+          config_id: string | null
+          id: string
+          is_required: boolean | null
+          processor_type: string
+          retry_policy: Json | null
+          sequence_order: number
+          settings: Json
+          step_name: string
+          timeout_seconds: number | null
+        }
+        Insert: {
+          config_id?: string | null
+          id?: string
+          is_required?: boolean | null
+          processor_type: string
+          retry_policy?: Json | null
+          sequence_order: number
+          settings: Json
+          step_name: string
+          timeout_seconds?: number | null
+        }
+        Update: {
+          config_id?: string | null
+          id?: string
+          is_required?: boolean | null
+          processor_type?: string
+          retry_policy?: Json | null
+          sequence_order?: number
+          settings?: Json
+          step_name?: string
+          timeout_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_processor_steps_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "audio_processing_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audio_segments: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          end_time: number
+          expert_document_id: string | null
+          id: string
+          important: boolean | null
+          speaker: string | null
+          speaker_profile_id: string | null
+          start_time: number
+          transcript: string
+          updated_at: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          end_time: number
+          expert_document_id?: string | null
+          id?: string
+          important?: boolean | null
+          speaker?: string | null
+          speaker_profile_id?: string | null
+          start_time: number
+          transcript: string
+          updated_at?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          end_time?: number
+          expert_document_id?: string | null
+          id?: string
+          important?: boolean | null
+          speaker?: string | null
+          speaker_profile_id?: string | null
+          start_time?: number
+          transcript?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_segments_expert_document_id_fkey"
+            columns: ["expert_document_id"]
+            isOneToOne: false
+            referencedRelation: "expert_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audio_segments_speaker_profile_id_fkey"
+            columns: ["speaker_profile_id"]
+            isOneToOne: false
+            referencedRelation: "speaker_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       citation_expert_aliases: {
         Row: {
           alias_name: string
@@ -285,6 +571,7 @@ export type Database = {
       expert_documents: {
         Row: {
           ai_analysis: Json | null
+          ai_processing_details: Json | null
           batch_id: string | null
           classification_confidence: number | null
           classification_metadata: Json | null
@@ -292,6 +579,7 @@ export type Database = {
           content_type: string | null
           created_at: string
           created_by: string | null
+          diarization_complete: boolean | null
           document_type_id: string | null
           error_message: string | null
           expert_id: string | null
@@ -301,26 +589,36 @@ export type Database = {
           language: string | null
           last_error_at: string | null
           last_processed_at: string | null
+          last_viewed_at: string | null
+          model_used: string | null
           previous_version_id: string | null
           processed_at: string | null
           processed_content: Json | null
           processing_completed_at: string | null
           processing_error: string | null
           processing_started_at: string | null
+          processing_stats: Json | null
           processing_status: string | null
+          prompt_used: string | null
           queued_at: string | null
           raw_content: string | null
           retry_count: number | null
           source_id: string | null
           status: string | null
+          structure: Json | null
+          summary_complete: boolean | null
+          token_count: number | null
           topics: string[] | null
+          transcription_complete: boolean | null
           updated_at: string
           updated_by: string | null
           version: number | null
+          whisper_model_used: string | null
           word_count: number | null
         }
         Insert: {
           ai_analysis?: Json | null
+          ai_processing_details?: Json | null
           batch_id?: string | null
           classification_confidence?: number | null
           classification_metadata?: Json | null
@@ -328,6 +626,7 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           created_by?: string | null
+          diarization_complete?: boolean | null
           document_type_id?: string | null
           error_message?: string | null
           expert_id?: string | null
@@ -337,26 +636,36 @@ export type Database = {
           language?: string | null
           last_error_at?: string | null
           last_processed_at?: string | null
+          last_viewed_at?: string | null
+          model_used?: string | null
           previous_version_id?: string | null
           processed_at?: string | null
           processed_content?: Json | null
           processing_completed_at?: string | null
           processing_error?: string | null
           processing_started_at?: string | null
+          processing_stats?: Json | null
           processing_status?: string | null
+          prompt_used?: string | null
           queued_at?: string | null
           raw_content?: string | null
           retry_count?: number | null
           source_id?: string | null
           status?: string | null
+          structure?: Json | null
+          summary_complete?: boolean | null
+          token_count?: number | null
           topics?: string[] | null
+          transcription_complete?: boolean | null
           updated_at?: string
           updated_by?: string | null
           version?: number | null
+          whisper_model_used?: string | null
           word_count?: number | null
         }
         Update: {
           ai_analysis?: Json | null
+          ai_processing_details?: Json | null
           batch_id?: string | null
           classification_confidence?: number | null
           classification_metadata?: Json | null
@@ -364,6 +673,7 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           created_by?: string | null
+          diarization_complete?: boolean | null
           document_type_id?: string | null
           error_message?: string | null
           expert_id?: string | null
@@ -373,22 +683,31 @@ export type Database = {
           language?: string | null
           last_error_at?: string | null
           last_processed_at?: string | null
+          last_viewed_at?: string | null
+          model_used?: string | null
           previous_version_id?: string | null
           processed_at?: string | null
           processed_content?: Json | null
           processing_completed_at?: string | null
           processing_error?: string | null
           processing_started_at?: string | null
+          processing_stats?: Json | null
           processing_status?: string | null
+          prompt_used?: string | null
           queued_at?: string | null
           raw_content?: string | null
           retry_count?: number | null
           source_id?: string | null
           status?: string | null
+          structure?: Json | null
+          summary_complete?: boolean | null
+          token_count?: number | null
           topics?: string[] | null
+          transcription_complete?: boolean | null
           updated_at?: string
           updated_by?: string | null
           version?: number | null
+          whisper_model_used?: string | null
           word_count?: number | null
         }
         Relationships: [
@@ -665,43 +984,65 @@ export type Database = {
         Row: {
           asset_role: string
           asset_type: string
+          asset_type_id: string | null
           created_at: string | null
           created_by: string | null
           expert_document_id: string | null
           id: string
+          importance_level: number | null
           metadata: Json | null
           presentation_id: string | null
           source_id: string | null
+          timestamp_end: number | null
+          timestamp_start: number | null
           updated_at: string | null
           updated_by: string | null
+          user_notes: string | null
         }
         Insert: {
           asset_role: string
           asset_type: string
+          asset_type_id?: string | null
           created_at?: string | null
           created_by?: string | null
           expert_document_id?: string | null
           id?: string
+          importance_level?: number | null
           metadata?: Json | null
           presentation_id?: string | null
           source_id?: string | null
+          timestamp_end?: number | null
+          timestamp_start?: number | null
           updated_at?: string | null
           updated_by?: string | null
+          user_notes?: string | null
         }
         Update: {
           asset_role?: string
           asset_type?: string
+          asset_type_id?: string | null
           created_at?: string | null
           created_by?: string | null
           expert_document_id?: string | null
           id?: string
+          importance_level?: number | null
           metadata?: Json | null
           presentation_id?: string | null
           source_id?: string | null
+          timestamp_end?: number | null
+          timestamp_start?: number | null
           updated_at?: string | null
           updated_by?: string | null
+          user_notes?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "presentation_assets_asset_type_id_fkey"
+            columns: ["asset_type_id"]
+            isOneToOne: false
+            referencedRelation: "asset_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "presentation_assets_expert_document_id_fkey"
             columns: ["expert_document_id"]
@@ -725,78 +1066,403 @@ export type Database = {
           },
         ]
       }
-      presentations: {
+      presentation_collection_items: {
+        Row: {
+          collection_id: string
+          created_at: string | null
+          notes: string | null
+          position: number
+          presentation_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string | null
+          notes?: string | null
+          position: number
+          presentation_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string | null
+          notes?: string | null
+          position?: number
+          presentation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "presentation_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentation_collection_items_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentation_collections: {
         Row: {
           created_at: string | null
-          duration: unknown | null
-          filename: string
-          folder_path: string
+          created_by: string | null
+          description: string | null
           id: string
-          metadata: Json | null
-          title: string | null
-          transcript: string | null
-          transcript_status: string | null
+          is_public: boolean | null
+          name: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          duration?: unknown | null
-          filename: string
-          folder_path: string
+          created_by?: string | null
+          description?: string | null
           id?: string
-          metadata?: Json | null
-          title?: string | null
-          transcript?: string | null
-          transcript_status?: string | null
+          is_public?: boolean | null
+          name: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          duration?: unknown | null
-          filename?: string
-          folder_path?: string
+          created_by?: string | null
+          description?: string | null
           id?: string
+          is_public?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      presentation_relationships: {
+        Row: {
+          created_at: string | null
+          relationship_type: string
+          source_presentation_id: string
+          strength: number | null
+          target_presentation_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          relationship_type: string
+          source_presentation_id: string
+          strength?: number | null
+          target_presentation_id: string
+        }
+        Update: {
+          created_at?: string | null
+          relationship_type?: string
+          source_presentation_id?: string
+          strength?: number | null
+          target_presentation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_relationships_source_presentation_id_fkey"
+            columns: ["source_presentation_id"]
+            isOneToOne: false
+            referencedRelation: "presentations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentation_relationships_target_presentation_id_fkey"
+            columns: ["target_presentation_id"]
+            isOneToOne: false
+            referencedRelation: "presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentation_search_index: {
+        Row: {
+          content_vector: unknown | null
+          presentation_id: string
+          title_vector: unknown | null
+          updated_at: string | null
+        }
+        Insert: {
+          content_vector?: unknown | null
+          presentation_id: string
+          title_vector?: unknown | null
+          updated_at?: string | null
+        }
+        Update: {
+          content_vector?: unknown | null
+          presentation_id?: string
+          title_vector?: unknown | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_search_index_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: true
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentation_tag_links: {
+        Row: {
+          created_at: string | null
+          presentation_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          presentation_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string | null
+          presentation_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_tag_links_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentation_tag_links_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "presentation_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentation_tags: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      presentation_theme_links: {
+        Row: {
+          created_at: string | null
+          presentation_id: string
+          relevance_score: number | null
+          theme_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          presentation_id: string
+          relevance_score?: number | null
+          theme_id: string
+        }
+        Update: {
+          created_at?: string | null
+          presentation_id?: string
+          relevance_score?: number | null
+          theme_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_theme_links_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentation_theme_links_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "presentation_themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentation_themes: {
+        Row: {
+          ai_confidence: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      presentations: {
+        Row: {
+          created_at: string | null
+          duration: unknown | null
+          duration_seconds: number | null
+          filename: string
+          folder_path: string
+          id: string
+          is_public: boolean | null
+          main_video_id: string | null
+          metadata: Json | null
+          presenter_name: string | null
+          recorded_date: string | null
+          title: string | null
+          transcript: string | null
+          transcript_status: string | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration?: unknown | null
+          duration_seconds?: number | null
+          filename: string
+          folder_path: string
+          id?: string
+          is_public?: boolean | null
+          main_video_id?: string | null
           metadata?: Json | null
+          presenter_name?: string | null
+          recorded_date?: string | null
           title?: string | null
           transcript?: string | null
           transcript_status?: string | null
           updated_at?: string | null
+          view_count?: number | null
         }
-        Relationships: []
+        Update: {
+          created_at?: string | null
+          duration?: unknown | null
+          duration_seconds?: number | null
+          filename?: string
+          folder_path?: string
+          id?: string
+          is_public?: boolean | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          presenter_name?: string | null
+          recorded_date?: string | null
+          title?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentations_main_video_id_fkey"
+            columns: ["main_video_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       processing_batches: {
         Row: {
           completed_at: string | null
           created_at: string
+          error_details: string | null
           error_message: string | null
           id: string
           item_ids: Json | null
+          priority: number | null
+          processed_duration_seconds: number | null
           processed_files: number | null
+          processor_config: Json | null
+          resource_usage: Json | null
           status: string
+          total_duration_seconds: number | null
           total_files: number
           updated_at: string
         }
         Insert: {
           completed_at?: string | null
           created_at?: string
+          error_details?: string | null
           error_message?: string | null
           id?: string
           item_ids?: Json | null
+          priority?: number | null
+          processed_duration_seconds?: number | null
           processed_files?: number | null
+          processor_config?: Json | null
+          resource_usage?: Json | null
           status: string
+          total_duration_seconds?: number | null
           total_files: number
           updated_at?: string
         }
         Update: {
           completed_at?: string | null
           created_at?: string
+          error_details?: string | null
           error_message?: string | null
           id?: string
           item_ids?: Json | null
+          priority?: number | null
+          processed_duration_seconds?: number | null
           processed_files?: number | null
+          processor_config?: Json | null
+          resource_usage?: Json | null
           status?: string
+          total_duration_seconds?: number | null
           total_files?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      processing_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          file_type_pattern: string | null
+          id: string
+          name: string
+          processor_sequence: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          file_type_pattern?: string | null
+          id?: string
+          name: string
+          processor_sequence?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          file_type_pattern?: string | null
+          id?: string
+          name?: string
+          processor_sequence?: Json | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -983,6 +1649,12 @@ export type Database = {
       }
       sources_google: {
         Row: {
+          audio_bitrate: number | null
+          audio_channels: number | null
+          audio_duration_seconds: number | null
+          audio_extracted: boolean | null
+          audio_extraction_path: string | null
+          audio_quality_metrics: Json | null
           content_extracted: boolean | null
           created_at: string
           created_by: string | null
@@ -1001,14 +1673,21 @@ export type Database = {
           parent_folder_id: string | null
           parent_path: string | null
           path: string | null
-          presentation_id: string | null
+          size_bytes: number | null
           sync_error: string | null
           sync_status: string | null
+          thumbnail_link: string | null
           updated_at: string
           updated_by: string | null
           web_view_link: string | null
         }
         Insert: {
+          audio_bitrate?: number | null
+          audio_channels?: number | null
+          audio_duration_seconds?: number | null
+          audio_extracted?: boolean | null
+          audio_extraction_path?: string | null
+          audio_quality_metrics?: Json | null
           content_extracted?: boolean | null
           created_at?: string
           created_by?: string | null
@@ -1027,14 +1706,21 @@ export type Database = {
           parent_folder_id?: string | null
           parent_path?: string | null
           path?: string | null
-          presentation_id?: string | null
+          size_bytes?: number | null
           sync_error?: string | null
           sync_status?: string | null
+          thumbnail_link?: string | null
           updated_at?: string
           updated_by?: string | null
           web_view_link?: string | null
         }
         Update: {
+          audio_bitrate?: number | null
+          audio_channels?: number | null
+          audio_duration_seconds?: number | null
+          audio_extracted?: boolean | null
+          audio_extraction_path?: string | null
+          audio_quality_metrics?: Json | null
           content_extracted?: boolean | null
           created_at?: string
           created_by?: string | null
@@ -1053,9 +1739,10 @@ export type Database = {
           parent_folder_id?: string | null
           parent_path?: string | null
           path?: string | null
-          presentation_id?: string | null
+          size_bytes?: number | null
           sync_error?: string | null
           sync_status?: string | null
+          thumbnail_link?: string | null
           updated_at?: string
           updated_by?: string | null
           web_view_link?: string | null
@@ -1082,11 +1769,39 @@ export type Database = {
             referencedRelation: "sources_google"
             referencedColumns: ["drive_id"]
           },
+        ]
+      }
+      speaker_profiles: {
+        Row: {
+          created_at: string | null
+          expert_id: string | null
+          id: string
+          name: string | null
+          updated_at: string | null
+          voice_characteristics: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          expert_id?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+          voice_characteristics?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          expert_id?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+          voice_characteristics?: Json | null
+        }
+        Relationships: [
           {
-            foreignKeyName: "sources_google_presentation_id_fkey"
-            columns: ["presentation_id"]
+            foreignKeyName: "speaker_profiles_expert_id_fkey"
+            columns: ["expert_id"]
             isOneToOne: false
-            referencedRelation: "presentations"
+            referencedRelation: "experts"
             referencedColumns: ["id"]
           },
         ]
@@ -1217,6 +1932,86 @@ export type Database = {
         }
         Relationships: []
       }
+      transcription_feedback: {
+        Row: {
+          corrected_text: string | null
+          created_at: string | null
+          id: string
+          original_text: string | null
+          segment_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          corrected_text?: string | null
+          created_at?: string | null
+          id?: string
+          original_text?: string | null
+          segment_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          corrected_text?: string | null
+          created_at?: string | null
+          id?: string
+          original_text?: string | null
+          segment_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcription_feedback_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "audio_segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_annotations: {
+        Row: {
+          asset_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          presentation_id: string | null
+          timestamp: number | null
+          user_id: string
+        }
+        Insert: {
+          asset_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          presentation_id?: string | null
+          timestamp?: number | null
+          user_id: string
+        }
+        Update: {
+          asset_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          presentation_id?: string | null
+          timestamp?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_annotations_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "presentation_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_annotations_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       batch_processing_status: {
@@ -1344,6 +2139,10 @@ export type Database = {
         }
         Returns: string
       }
+      get_all_foreign_keys: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_all_table_definitions: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1374,6 +2173,12 @@ export type Database = {
           foreign_column_name: string
         }[]
       }
+      get_foreign_keys: {
+        Args: {
+          schema_name: string
+        }
+        Returns: Json
+      }
       get_function_details: {
         Args: {
           p_name: string
@@ -1383,6 +2188,18 @@ export type Database = {
           relationships: Json
           history: Json
         }[]
+      }
+      get_functions: {
+        Args: {
+          schema_name: string
+        }
+        Returns: Json
+      }
+      get_schema_info: {
+        Args: {
+          schema_name: string
+        }
+        Returns: Json
       }
       get_table_columns: {
         Args: {
@@ -1474,6 +2291,12 @@ export type Database = {
           data_type: string
           check_constraint: string
         }[]
+      }
+      get_triggers: {
+        Args: {
+          schema_name: string
+        }
+        Returns: Json
       }
       get_user_uuid_by_email: {
         Args: {
