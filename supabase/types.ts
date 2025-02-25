@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           cost: number | null
           created_at: string | null
+          created_by: string | null
           duration_ms: number | null
           error_message: string | null
           expert_document_id: string | null
@@ -22,10 +23,13 @@ export type Database = {
           output_tokens: number | null
           prompt: string | null
           success: boolean | null
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           cost?: number | null
           created_at?: string | null
+          created_by?: string | null
           duration_ms?: number | null
           error_message?: string | null
           expert_document_id?: string | null
@@ -35,10 +39,13 @@ export type Database = {
           output_tokens?: number | null
           prompt?: string | null
           success?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           cost?: number | null
           created_at?: string | null
+          created_by?: string | null
           duration_ms?: number | null
           error_message?: string | null
           expert_document_id?: string | null
@@ -48,6 +55,8 @@ export type Database = {
           output_tokens?: number | null
           prompt?: string | null
           success?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -135,6 +144,7 @@ export type Database = {
           batch_id: string | null
           completed_at: string | null
           created_at: string | null
+          created_by: string | null
           error_message: string | null
           id: string
           metrics: Json | null
@@ -143,11 +153,14 @@ export type Database = {
           stage_name: string
           started_at: string | null
           status: string
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           batch_id?: string | null
           completed_at?: string | null
           created_at?: string | null
+          created_by?: string | null
           error_message?: string | null
           id?: string
           metrics?: Json | null
@@ -156,11 +169,14 @@ export type Database = {
           stage_name: string
           started_at?: string | null
           status: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           batch_id?: string | null
           completed_at?: string | null
           created_at?: string | null
+          created_by?: string | null
           error_message?: string | null
           id?: string
           metrics?: Json | null
@@ -169,6 +185,8 @@ export type Database = {
           stage_name?: string
           started_at?: string | null
           status?: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -197,6 +215,8 @@ export type Database = {
       audio_processor_steps: {
         Row: {
           config_id: string | null
+          created_at: string | null
+          created_by: string | null
           id: string
           is_required: boolean | null
           processor_type: string
@@ -205,9 +225,13 @@ export type Database = {
           settings: Json
           step_name: string
           timeout_seconds: number | null
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           config_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
           id?: string
           is_required?: boolean | null
           processor_type: string
@@ -216,9 +240,13 @@ export type Database = {
           settings: Json
           step_name: string
           timeout_seconds?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           config_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
           id?: string
           is_required?: boolean | null
           processor_type?: string
@@ -227,6 +255,8 @@ export type Database = {
           settings?: Json
           step_name?: string
           timeout_seconds?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -242,6 +272,7 @@ export type Database = {
         Row: {
           confidence: number | null
           created_at: string | null
+          created_by: string | null
           end_time: number
           expert_document_id: string | null
           id: string
@@ -251,10 +282,12 @@ export type Database = {
           start_time: number
           transcript: string
           updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           confidence?: number | null
           created_at?: string | null
+          created_by?: string | null
           end_time: number
           expert_document_id?: string | null
           id?: string
@@ -264,10 +297,12 @@ export type Database = {
           start_time: number
           transcript: string
           updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           confidence?: number | null
           created_at?: string | null
+          created_by?: string | null
           end_time?: number
           expert_document_id?: string | null
           id?: string
@@ -277,6 +312,7 @@ export type Database = {
           start_time?: number
           transcript?: string
           updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -1386,6 +1422,7 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
+          created_by: string | null
           error_details: string | null
           error_message: string | null
           id: string
@@ -1399,10 +1436,12 @@ export type Database = {
           total_duration_seconds: number | null
           total_files: number
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           completed_at?: string | null
           created_at?: string
+          created_by?: string | null
           error_details?: string | null
           error_message?: string | null
           id?: string
@@ -1416,10 +1455,12 @@ export type Database = {
           total_duration_seconds?: number | null
           total_files: number
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           completed_at?: string | null
           created_at?: string
+          created_by?: string | null
           error_details?: string | null
           error_message?: string | null
           id?: string
@@ -1433,6 +1474,7 @@ export type Database = {
           total_duration_seconds?: number | null
           total_files?: number
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -1774,26 +1816,32 @@ export type Database = {
       speaker_profiles: {
         Row: {
           created_at: string | null
+          created_by: string | null
           expert_id: string | null
           id: string
           name: string | null
           updated_at: string | null
+          updated_by: string | null
           voice_characteristics: Json | null
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           expert_id?: string | null
           id?: string
           name?: string | null
           updated_at?: string | null
+          updated_by?: string | null
           voice_characteristics?: Json | null
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           expert_id?: string | null
           id?: string
           name?: string | null
           updated_at?: string | null
+          updated_by?: string | null
           voice_characteristics?: Json | null
         }
         Relationships: [
@@ -1936,25 +1984,34 @@ export type Database = {
         Row: {
           corrected_text: string | null
           created_at: string | null
+          created_by: string | null
           id: string
           original_text: string | null
           segment_id: string | null
+          updated_at: string | null
+          updated_by: string | null
           user_id: string | null
         }
         Insert: {
           corrected_text?: string | null
           created_at?: string | null
+          created_by?: string | null
           id?: string
           original_text?: string | null
           segment_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
           user_id?: string | null
         }
         Update: {
           corrected_text?: string | null
           created_at?: string | null
+          created_by?: string | null
           id?: string
           original_text?: string | null
           segment_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -1972,27 +2029,36 @@ export type Database = {
           asset_id: string | null
           content: string
           created_at: string | null
+          created_by: string | null
           id: string
           presentation_id: string | null
           timestamp: number | null
+          updated_at: string | null
+          updated_by: string | null
           user_id: string
         }
         Insert: {
           asset_id?: string | null
           content: string
           created_at?: string | null
+          created_by?: string | null
           id?: string
           presentation_id?: string | null
           timestamp?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
           user_id: string
         }
         Update: {
           asset_id?: string | null
           content?: string
           created_at?: string | null
+          created_by?: string | null
           id?: string
           presentation_id?: string | null
           timestamp?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
           user_id?: string
         }
         Relationships: [
@@ -2094,6 +2160,12 @@ export type Database = {
           constraint_name: string
           deletion_rule: string
         }[]
+      }
+      create_audit_triggers: {
+        Args: {
+          p_table_name: string
+        }
+        Returns: undefined
       }
       drop_unique_constraint_created_by: {
         Args: Record<PropertyKey, never>
@@ -2325,6 +2397,13 @@ export type Database = {
           domain_id: string
         }
         Returns: undefined
+      }
+      table_exists: {
+        Args: {
+          p_schema_name: string
+          p_table_name: string
+        }
+        Returns: boolean
       }
       transfer_temp_experts_to_experts: {
         Args: Record<PropertyKey, never>
