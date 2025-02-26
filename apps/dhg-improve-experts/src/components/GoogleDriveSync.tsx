@@ -88,8 +88,14 @@ export const GoogleDriveSync: React.FC<GoogleDriveSyncProps> = ({ isTokenValid }
           </div>
           
           <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-            <div>Google Drive Files:</div>
+            <div>Google Drive Documents:</div>
             <div>{syncStats.totalGoogleDriveFiles}</div>
+            
+            <div>Google Drive Folders:</div>
+            <div>{syncStats.totalGoogleDriveFolders}</div>
+            
+            <div>Total Google Drive Items:</div>
+            <div>{syncStats.totalGoogleDriveFiles + syncStats.totalGoogleDriveFolders}</div>
             
             <div>Local Files:</div>
             <div>{syncStats.totalLocalFiles}</div>
@@ -104,30 +110,35 @@ export const GoogleDriveSync: React.FC<GoogleDriveSyncProps> = ({ isTokenValid }
             <div>{syncStats.localOnlyFiles.length}</div>
           </div>
           
-          {expanded && (
-            <>
-              {syncStats.newFiles.length > 0 && (
-                <div className="mb-3">
-                  <h4 className="font-medium mb-1">New Files on Google Drive:</h4>
-                  <ul className="text-xs bg-white p-2 rounded max-h-32 overflow-y-auto">
-                    {syncStats.newFiles.map((file: any) => (
-                      <li key={file.id} className="mb-1">{file.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              {syncStats.localOnlyFiles.length > 0 && (
-                <div className="mb-3">
-                  <h4 className="font-medium mb-1">Files Only in Local System:</h4>
-                  <ul className="text-xs bg-white p-2 rounded max-h-32 overflow-y-auto">
-                    {syncStats.localOnlyFiles.map((fileName: string) => (
-                      <li key={fileName} className="mb-1">{fileName}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </>
+          {/* Always show new files, they're important */}
+          {syncStats.newFiles.length > 0 && (
+            <div className="mb-3 bg-yellow-50 p-3 rounded border border-yellow-200">
+              <h4 className="font-medium mb-1 text-yellow-800">New Files on Google Drive:</h4>
+              <ul className="text-xs bg-white p-2 rounded max-h-40 overflow-y-auto">
+                {syncStats.newFiles.map((file: any) => (
+                  <li key={file.id} className="mb-1 flex justify-between">
+                    <span>{file.name}</span>
+                    <span className="text-gray-500">
+                      {new Date(file.modifiedTime).toLocaleDateString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-yellow-700 mt-2">
+                These files exist in Google Drive but not in your local database.
+              </p>
+            </div>
+          )}
+          
+          {syncStats.localOnlyFiles.length > 0 && (
+            <div className="mb-3">
+              <h4 className="font-medium mb-1">Files Only in Local System:</h4>
+              <ul className="text-xs bg-white p-2 rounded max-h-32 overflow-y-auto">
+                {syncStats.localOnlyFiles.map((fileName: string) => (
+                  <li key={fileName} className="mb-1">{fileName}</li>
+                ))}
+              </ul>
+            </div>
           )}
           
           {/* Add debug information */}
