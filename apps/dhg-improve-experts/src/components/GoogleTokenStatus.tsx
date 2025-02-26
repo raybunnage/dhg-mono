@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { checkGoogleTokenStatus, refreshGoogleToken, initiateGoogleAuth } from '@/services/googleAuth';
+import { toast } from 'react-hot-toast';
 
 interface TokenStatusProps {
   onTokenExpired?: () => void;
@@ -40,41 +41,47 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
           return;
         }
         
-        // Fetch token info from your Supabase or local storage
-        // This is a placeholder - you'll need to adapt this to your actual token storage method
-        const { data, error } = await supabase
-          .from('google_auth_tokens')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+        // Check token status using the service
+        const status = await checkGoogleTokenStatus();
         
-        if (error) throw error;
-        
-        if (data) {
-          // Convert expiration timestamp to Date object
-          const expiry = new Date(data.expires_at);
-          setExpiresAt(expiry);
+        if (status.isValid) {
+          setExpiresAt(status.expiresAt);
+          setIsValid(true);
           
-          // Check if token is still valid
-          const now = new Date();
-          const isTokenValid = expiry > now;
-          setIsValid(isTokenValid);
-          
-          // Notify parent component of status change
+          // Notify parent component
           if (onStatusChange) {
-            onStatusChange(isTokenValid);
+            onStatusChange(true);
           }
           
-          if (!isTokenValid && onTokenExpired) {
-            onTokenExpired();
+          // Check if token needs refresh
+          if (status.needsRefresh) {
+            console.log('Token needs refresh, refreshing...');
+            await handleRefreshToken();
           }
         } else {
           setIsValid(false);
+          
+          // Notify parent component
+          if (onStatusChange) {
+            onStatusChange(false);
+          }
+          
+          if (onTokenExpired) {
+            onTokenExpired();
+          }
         }
       } catch (err) {
         console.error('Error checking token status:', err);
         setIsValid(false);
+        
+        // Notify parent component
+        if (onStatusChange) {
+          onStatusChange(false);
+        }
+        
+        if (onTokenExpired) {
+          onTokenExpired();
+        }
       } finally {
         setLoading(false);
       }
@@ -122,36 +129,42 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
     try {
       setLoading(true);
       
-      // For mock data, just extend the token by another hour
-      if (useMockData) {
-        const newExpiryTime = new Date();
-        newExpiryTime.setHours(newExpiryTime.getHours() + 1);
-        
-        setExpiresAt(newExpiryTime);
-        setIsValid(true);
-        
-        if (onStatusChange) {
-          onStatusChange(true);
-        }
-        
-        setLoading(false);
+      // Use the service to refresh token
+      const result = await refreshGoogleToken();
+      if (!result.success) {
+        toast.error('Failed to refresh token. Please login again.');
+        setIsValid(false);
+        if (onStatusChange) onStatusChange(false);
         return;
       }
-      
-      // Call your token refresh endpoint/function
-      const { data, error } = await supabase.functions.invoke('refresh-google-token');
-      
-      if (error) throw error;
-      
-      if (data) {
+      if (result) {
         setIsValid(true);
-        setExpiresAt(new Date(data.expires_at));
+        setExpiresAt(new Date(result.expires_at));
+        toast.success('Token refreshed successfully');
+        if (onStatusChange) onStatusChange(true);
       }
     } catch (err) {
       console.error('Error refreshing token:', err);
+      toast.error('Error refreshing token');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle login button click
+  const handleLogin = () => {
+    if (useMockData) {
+      // For mock data, just simulate a successful login
+      const mockExpiryTime = new Date();
+      mockExpiryTime.setHours(mockExpiryTime.getHours() + 1);
+      setExpiresAt(mockExpiryTime);
+      setIsValid(true);
+      if (onStatusChange) onStatusChange(true);
+      return;
+    }
+    
+    // Initiate the Google OAuth flow
+    initiateGoogleAuth();
   };
 
   // Add a mock function to simulate token expiration for testing
@@ -190,7 +203,7 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
       
       {!loading && (
         <button
-          onClick={handleRefreshToken}
+          onClick={isValid ? handleRefreshToken : handleLogin}
           disabled={loading}
           className={`text-xs px-2 py-1 rounded ${
             isValid 
@@ -210,6 +223,21 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
         >
           Mock Expire
         </button>
+      )}
+      
+      {isValid && (
+        <div className="mt-2 text-xs text-gray-600 p-2 bg-gray-50 rounded">
+          <div><strong>Token Info:</strong></div>
+          <div>
+            Token: {localStorage.getItem('google_access_token')?.substring(0, 15)}...
+          </div>
+          <div>
+            Expires: {new Date(localStorage.getItem('google_token_expires_at') || '').toLocaleString()}
+          </div>
+          {localStorage.getItem('google_refresh_token') && (
+            <div>Refresh Token: Available</div>
+          )}
+        </div>
       )}
     </div>
   );
