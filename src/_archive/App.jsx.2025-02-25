@@ -1,0 +1,36 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import Viewer from './pages/Viewer';
+import Sources from './pages/Sources';
+import Buttons from './pages/Buttons';
+import Transcribe from './pages/Transcribe';
+import Supabase from './pages/Supabase';
+import Classify from './pages/Classify';
+import Analyze from './pages/Analyze';
+import Registry from './pages/Registry';
+import Navigation from './components/Navigation';
+
+function App() {
+  return (
+    <Router>
+      <div className="flex flex-col min-h-screen">
+        <Navigation />
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/viewer" element={<Viewer />} />
+            <Route path="/sources" element={<Sources />} />
+            <Route path="/buttons" element={<Buttons />} />
+            <Route path="/transcribe" element={<Transcribe />} />
+            <Route path="/supabase" element={<Supabase />} />
+            <Route path="/classify" element={<Classify />} />
+            <Route path="/analyze" element={<Analyze />} />
+            <Route path="/registry" element={<Registry />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  );
+}
+
+export default App; 

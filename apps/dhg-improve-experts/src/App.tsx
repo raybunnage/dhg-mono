@@ -22,6 +22,9 @@ import { Transcribe } from '@/pages/Transcribe';
 import { SupabasePage } from './pages/Supabase'
 import { FileTree } from './pages/FileTree';
 import { BatchProcessingMonitor } from './components/BatchProcessingMonitor';
+import Viewer from '@/pages/Viewer';
+import Dashboard from '@/pages/Dashboard';
+import Sync from '@/pages/Sync';
 
 // Component imports
 import { MainNavbar } from '@/components/MainNavbar';
@@ -66,7 +69,9 @@ function App() {
         <MainNavbar />
         <TestComponent />
         <Routes>
-          <Route path="/" element={<ExpertProfiles />} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/viewer" element={<Viewer />} />
+          <Route path="/sync" element={<Sync />} />
           <Route path="/registry" element={<RegistryViewer />} />
           <Route path="/document-testing" element={<DocumentTestingPage />} />
           <Route path="/expert-profiler" element={<ExpertProfilerPage />} />
