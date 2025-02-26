@@ -995,6 +995,42 @@ export type Database = {
           },
         ]
       }
+      google_auth_tokens: {
+        Row: {
+          access_token: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          refresh_token: string | null
+          scope: string | null
+          token_type: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_token: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       lionya_emails: {
         Row: {
           created_at: string
@@ -1714,12 +1750,16 @@ export type Database = {
           last_indexed: string | null
           metadata: Json | null
           mime_type: string
+          modified_time: string | null
           name: string
           parent_folder_id: string | null
+          parent_id: string | null
           parent_path: string | null
           path: string | null
+          size: number | null
           size_bytes: number | null
           sync_error: string | null
+          sync_id: string | null
           sync_status: string | null
           thumbnail_link: string | null
           updated_at: string
@@ -1747,12 +1787,16 @@ export type Database = {
           last_indexed?: string | null
           metadata?: Json | null
           mime_type: string
+          modified_time?: string | null
           name: string
           parent_folder_id?: string | null
+          parent_id?: string | null
           parent_path?: string | null
           path?: string | null
+          size?: number | null
           size_bytes?: number | null
           sync_error?: string | null
+          sync_id?: string | null
           sync_status?: string | null
           thumbnail_link?: string | null
           updated_at?: string
@@ -1780,12 +1824,16 @@ export type Database = {
           last_indexed?: string | null
           metadata?: Json | null
           mime_type?: string
+          modified_time?: string | null
           name?: string
           parent_folder_id?: string | null
+          parent_id?: string | null
           parent_path?: string | null
           path?: string | null
+          size?: number | null
           size_bytes?: number | null
           sync_error?: string | null
+          sync_id?: string | null
           sync_status?: string | null
           thumbnail_link?: string | null
           updated_at?: string
@@ -1813,6 +1861,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sources_google"
             referencedColumns: ["drive_id"]
+          },
+          {
+            foreignKeyName: "sources_google_sync_id_fkey"
+            columns: ["sync_id"]
+            isOneToOne: false
+            referencedRelation: "sync_history"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1856,6 +1911,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sync_history: {
+        Row: {
+          completed_at: string | null
+          created_by: string | null
+          error_message: string | null
+          folder_id: string
+          folder_name: string
+          id: string
+          items_processed: number | null
+          status: string
+          timestamp: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          folder_id: string
+          folder_name?: string
+          id?: string
+          items_processed?: number | null
+          status?: string
+          timestamp?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          folder_id?: string
+          folder_name?: string
+          id?: string
+          items_processed?: number | null
+          status?: string
+          timestamp?: string
+        }
+        Relationships: []
       }
       temp_sources: {
         Row: {

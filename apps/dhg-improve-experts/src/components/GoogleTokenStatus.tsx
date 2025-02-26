@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { checkGoogleTokenStatus, refreshGoogleToken, initiateGoogleAuth } from '@/services/googleAuth';
 import { toast } from 'react-hot-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TokenStatusProps {
   onTokenExpired?: () => void;
@@ -17,6 +18,9 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [tokenInfo, setTokenInfo] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Check token status
   useEffect(() => {
@@ -152,7 +156,7 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
   };
 
   // Handle login button click
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (useMockData) {
       // For mock data, just simulate a successful login
       const mockExpiryTime = new Date();
@@ -176,7 +180,109 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
       if (onStatusChange) onStatusChange(false);
     }
   };
+
+  const checkAndRefreshToken = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Get current token
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('google_auth_tokens')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (tokenError) throw tokenError;
+      
+      if (!tokenData) {
+        setIsAuthenticated(false);
+        if (onStatusChange) onStatusChange(false);
+        setError('No Google authentication found');
+        return;
+      }
+      
+      // Check if token is expired
+      const expiresAt = new Date(tokenData.expires_at);
+      const now = new Date();
+      const timeUntilExpiry = expiresAt.getTime() - now.getTime();
+      
+      // If token expires in less than 5 minutes, attempt to refresh it
+      if (timeUntilExpiry < 5 * 60 * 1000) {
+        console.log('Token expires soon, refreshing...');
+        
+        if (!tokenData.refresh_token) {
+          setError('No refresh token available');
+          setIsAuthenticated(false);
+          if (onStatusChange) onStatusChange(false);
+          if (onTokenExpired) onTokenExpired();
+          return;
+        }
+        
+        // Call token refresh endpoint
+        const { data: refreshData, error: refreshError } = await supabase.functions.invoke('refresh-google-token', {
+          body: { 
+            refreshToken: tokenData.refresh_token
+          }
+        });
+        
+        if (refreshError) {
+          console.error('Error refreshing token:', refreshError);
+          throw new Error('Failed to refresh token: ' + refreshError.message);
+        }
+        
+        // Update token in database
+        if (refreshData && refreshData.access_token) {
+          const { error: updateError } = await supabase
+            .from('google_auth_tokens')
+            .update({
+              access_token: refreshData.access_token,
+              expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', tokenData.id);
+          
+          if (updateError) throw updateError;
+          
+          setTokenInfo({
+            ...tokenData,
+            access_token: refreshData.access_token,
+            expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString()
+          });
+          
+          setIsAuthenticated(true);
+          if (onStatusChange) onStatusChange(true);
+        } else {
+          throw new Error('Failed to refresh token: No access token returned');
+        }
+      } else {
+        // Token is still valid
+        setTokenInfo(tokenData);
+        setIsAuthenticated(true);
+        if (onStatusChange) onStatusChange(true);
+      }
+    } catch (err) {
+      console.error('Error checking token:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error checking Google token');
+      setIsAuthenticated(false);
+      if (onStatusChange) onStatusChange(false);
+      if (onTokenExpired) onTokenExpired();
+    } finally {
+      setLoading(false);
+    }
+  };
   
+  // Check token on component mount and every 5 minutes
+  useEffect(() => {
+    checkAndRefreshToken();
+    
+    // Refresh check every 5 minutes
+    const interval = setInterval(checkAndRefreshToken, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex items-center space-x-2">
       <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100">
