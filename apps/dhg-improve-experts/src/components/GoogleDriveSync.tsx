@@ -1,0 +1,151 @@
+import React, { useState } from 'react';
+import { getDriveSyncStats } from '@/services/googleDriveService';
+import { toast } from 'react-hot-toast';
+
+interface GoogleDriveSyncProps {
+  isTokenValid: boolean;
+}
+
+export const GoogleDriveSync: React.FC<GoogleDriveSyncProps> = ({ isTokenValid }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [syncStats, setSyncStats] = useState<any>(null);
+  const [expanded, setExpanded] = useState(false);
+  
+  const handleSyncCheck = async () => {
+    if (!isTokenValid) {
+      toast.error('Please authenticate with Google Drive first');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      // Check if token is available and log it
+      const token = localStorage.getItem('google_access_token');
+      if (!token) {
+        console.error('No token in localStorage when trying to sync');
+        toast.error('Token not found in localStorage. Try refreshing the token.');
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log('Token before sync check (first 10 chars):', token.substring(0, 10) + '...');
+      
+      const stats = await getDriveSyncStats();
+      setSyncStats(stats);
+      
+      if (stats.isValid) {
+        toast.success('Successfully checked sync status');
+      } else {
+        toast.error(`Failed to check sync status: ${stats.error}`);
+      }
+    } catch (error) {
+      console.error('Error checking sync:', error);
+      toast.error(`Error checking sync: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  return (
+    <div className="mt-6 bg-white rounded-lg shadow p-4">
+      <h2 className="text-lg font-semibold mb-3">Google Drive Sync</h2>
+      
+      <div className="mb-4">
+        <button
+          onClick={handleSyncCheck}
+          disabled={!isTokenValid || isLoading}
+          className={`px-4 py-2 rounded ${
+            isTokenValid 
+              ? 'bg-blue-500 text-white hover:bg-blue-600' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          {isLoading ? (
+            <span className="flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Checking...
+            </span>
+          ) : (
+            'Check Sync Status'
+          )}
+        </button>
+      </div>
+      
+      {syncStats && (
+        <div className="border rounded p-3 bg-gray-50">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-medium">Sync Statistics</h3>
+            <button 
+              onClick={() => setExpanded(!expanded)}
+              className="text-blue-500 hover:text-blue-700 text-sm"
+            >
+              {expanded ? 'Show Less' : 'Show More'}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+            <div>Google Drive Files:</div>
+            <div>{syncStats.totalGoogleDriveFiles}</div>
+            
+            <div>Local Files:</div>
+            <div>{syncStats.totalLocalFiles}</div>
+            
+            <div>Matching Files:</div>
+            <div>{syncStats.matchingFiles.length}</div>
+            
+            <div>New Files:</div>
+            <div>{syncStats.newFiles.length}</div>
+            
+            <div>Local-only Files:</div>
+            <div>{syncStats.localOnlyFiles.length}</div>
+          </div>
+          
+          {expanded && (
+            <>
+              {syncStats.newFiles.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="font-medium mb-1">New Files on Google Drive:</h4>
+                  <ul className="text-xs bg-white p-2 rounded max-h-32 overflow-y-auto">
+                    {syncStats.newFiles.map((file: any) => (
+                      <li key={file.id} className="mb-1">{file.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {syncStats.localOnlyFiles.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="font-medium mb-1">Files Only in Local System:</h4>
+                  <ul className="text-xs bg-white p-2 rounded max-h-32 overflow-y-auto">
+                    {syncStats.localOnlyFiles.map((fileName: string) => (
+                      <li key={fileName} className="mb-1">{fileName}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+          
+          {/* Add debug information */}
+          <div className="mt-3 border-t pt-3">
+            <details className="text-xs text-gray-600">
+              <summary className="cursor-pointer font-medium">Debug Information</summary>
+              <div className="mt-2 p-2 bg-gray-100 rounded overflow-auto max-h-60">
+                <div><strong>Drive Folder ID:</strong> {import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID || 'Not set'}</div>
+                <div><strong>Token Status:</strong> {localStorage.getItem('google_access_token') ? 'Present in localStorage' : 'Missing from localStorage'}</div>
+                <div><strong>Request Time:</strong> {new Date().toISOString()}</div>
+                {syncStats.error && (
+                  <div className="text-red-600 mt-1"><strong>Error:</strong> {syncStats.error}</div>
+                )}
+              </div>
+            </details>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}; 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import { GoogleTokenStatus } from '@/components/GoogleTokenStatus';
+import { GoogleDriveSync } from '@/components/GoogleDriveSync';
 
 // Define types for document statistics
 interface DocumentTypeStats {
@@ -311,19 +312,25 @@ function Sync() {
   };
 
   // Update token status when GoogleTokenStatus reports changes
-  const handleTokenStatusChange = (valid: boolean) => {
-    setIsTokenValid(valid);
+  const handleTokenStatusChange = (isValid: boolean) => {
+    console.log('Token status changed:', isValid);
+    setIsTokenValid(isValid);
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Google Drive Sync</h1>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">Google Drive Sync</h1>
+      
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <h2 className="text-lg font-semibold mb-3">Google Authentication</h2>
         <GoogleTokenStatus 
           onTokenExpired={handleTokenExpired}
           onStatusChange={handleTokenStatusChange}
+          useMockData={false}
         />
       </div>
+      
+      <GoogleDriveSync isTokenValid={isTokenValid} />
       
       {/* Tabs */}
       <div className="flex mb-6">

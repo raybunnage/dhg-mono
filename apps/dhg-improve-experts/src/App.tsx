@@ -25,6 +25,7 @@ import { BatchProcessingMonitor } from './components/BatchProcessingMonitor';
 import Viewer from '@/pages/Viewer';
 import Dashboard from '@/pages/Dashboard';
 import Sync from '@/pages/Sync';
+import { GoogleAuthCallback } from './components/GoogleAuthCallback';
 
 // Component imports
 import { MainNavbar } from '@/components/MainNavbar';
@@ -89,6 +90,7 @@ function App() {
           <Route path="/supabase" element={<SupabasePage />} />
           <Route path="/file-tree" element={<FileTree />} />
           <Route path="/batches" element={<BatchProcessingMonitor />} />
+          <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
