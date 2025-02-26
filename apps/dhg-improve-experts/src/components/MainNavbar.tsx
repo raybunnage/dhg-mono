@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 export function MainNavbar() {
   const navigation = [
     { name: 'Home', href: '/' },
-    { name: 'Sources', href: '/source-management' },
-    { name: 'Buttons', href: '/source-buttons' },
+    { name: 'Viewer', href: '/viewer' },
+    { name: 'Sync', href: '/sync' },
     { name: 'Transcribe', href: '/transcribe' },
     { name: 'Supabase', href: '/supabase' },
     { name: 'Classify', href: '/classify' },

@@ -12,8 +12,8 @@ export type Database = {
       ai_processing_attempts: {
         Row: {
           cost: number | null
-          created_at: string | null
-          created_by: string | null
+          created_at: string
+          created_by: string
           duration_ms: number | null
           error_message: string | null
           expert_document_id: string
@@ -23,13 +23,13 @@ export type Database = {
           output_tokens: number | null
           prompt: string | null
           success: boolean | null
-          updated_at: string | null
-          updated_by: string | null
+          updated_at: string
+          updated_by: string
         }
         Insert: {
           cost?: number | null
-          created_at?: string | null
-          created_by?: string | null
+          created_at?: string
+          created_by: string
           duration_ms?: number | null
           error_message?: string | null
           expert_document_id: string
@@ -39,13 +39,13 @@ export type Database = {
           output_tokens?: number | null
           prompt?: string | null
           success?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
+          updated_at?: string
+          updated_by: string
         }
         Update: {
           cost?: number | null
-          created_at?: string | null
-          created_by?: string | null
+          created_at?: string
+          created_by?: string
           duration_ms?: number | null
           error_message?: string | null
           expert_document_id?: string
@@ -55,8 +55,8 @@ export type Database = {
           output_tokens?: number | null
           prompt?: string | null
           success?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
+          updated_at?: string
+          updated_by?: string
         }
         Relationships: [
           {
@@ -146,8 +146,8 @@ export type Database = {
         Row: {
           batch_id: string | null
           completed_at: string | null
-          created_at: string | null
-          created_by: string | null
+          created_at: string
+          created_by: string
           error_message: string | null
           id: string
           metrics: Json | null
@@ -156,14 +156,14 @@ export type Database = {
           stage_name: string
           started_at: string | null
           status: string
-          updated_at: string | null
-          updated_by: string | null
+          updated_at: string
+          updated_by: string
         }
         Insert: {
           batch_id?: string | null
           completed_at?: string | null
-          created_at?: string | null
-          created_by?: string | null
+          created_at?: string
+          created_by: string
           error_message?: string | null
           id?: string
           metrics?: Json | null
@@ -172,14 +172,14 @@ export type Database = {
           stage_name: string
           started_at?: string | null
           status: string
-          updated_at?: string | null
-          updated_by?: string | null
+          updated_at?: string
+          updated_by: string
         }
         Update: {
           batch_id?: string | null
           completed_at?: string | null
-          created_at?: string | null
-          created_by?: string | null
+          created_at?: string
+          created_by?: string
           error_message?: string | null
           id?: string
           metrics?: Json | null
@@ -188,8 +188,8 @@ export type Database = {
           stage_name?: string
           started_at?: string | null
           status?: string
-          updated_at?: string | null
-          updated_by?: string | null
+          updated_at?: string
+          updated_by?: string
         }
         Relationships: [
           {
@@ -1024,8 +1024,8 @@ export type Database = {
           asset_role: Database["public"]["Enums"]["asset_role_enum"] | null
           asset_type: Database["public"]["Enums"]["asset_type_enum"] | null
           asset_type_id: string | null
-          created_at: string | null
-          created_by: string | null
+          created_at: string
+          created_by: string
           expert_document_id: string | null
           id: string
           importance_level: number | null
@@ -1034,16 +1034,16 @@ export type Database = {
           source_id: string | null
           timestamp_end: number | null
           timestamp_start: number | null
-          updated_at: string | null
-          updated_by: string | null
+          updated_at: string
+          updated_by: string
           user_notes: string | null
         }
         Insert: {
           asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
           asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
           asset_type_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
+          created_at?: string
+          created_by: string
           expert_document_id?: string | null
           id?: string
           importance_level?: number | null
@@ -1052,16 +1052,16 @@ export type Database = {
           source_id?: string | null
           timestamp_end?: number | null
           timestamp_start?: number | null
-          updated_at?: string | null
-          updated_by?: string | null
+          updated_at?: string
+          updated_by: string
           user_notes?: string | null
         }
         Update: {
           asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
           asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
           asset_type_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
+          created_at?: string
+          created_by?: string
           expert_document_id?: string | null
           id?: string
           importance_level?: number | null
@@ -1070,8 +1070,8 @@ export type Database = {
           source_id?: string | null
           timestamp_end?: number | null
           timestamp_start?: number | null
-          updated_at?: string | null
-          updated_by?: string | null
+          updated_at?: string
+          updated_by?: string
           user_notes?: string | null
         }
         Relationships: [
