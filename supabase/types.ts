@@ -16,7 +16,7 @@ export type Database = {
           created_by: string | null
           duration_ms: number | null
           error_message: string | null
-          expert_document_id: string | null
+          expert_document_id: string
           id: string
           input_tokens: number | null
           model_name: string
@@ -32,7 +32,7 @@ export type Database = {
           created_by?: string | null
           duration_ms?: number | null
           error_message?: string | null
-          expert_document_id?: string | null
+          expert_document_id: string
           id?: string
           input_tokens?: number | null
           model_name: string
@@ -48,7 +48,7 @@ export type Database = {
           created_by?: string | null
           duration_ms?: number | null
           error_message?: string | null
-          expert_document_id?: string | null
+          expert_document_id?: string
           id?: string
           input_tokens?: number | null
           model_name?: string
@@ -106,6 +106,7 @@ export type Database = {
           is_default: boolean | null
           name: string
           updated_at: string | null
+          updated_by: string
         }
         Insert: {
           configuration: Json
@@ -117,6 +118,7 @@ export type Database = {
           is_default?: boolean | null
           name: string
           updated_at?: string | null
+          updated_by: string
         }
         Update: {
           configuration?: Json
@@ -128,6 +130,7 @@ export type Database = {
           is_default?: boolean | null
           name?: string
           updated_at?: string | null
+          updated_by?: string
         }
         Relationships: [
           {
@@ -639,7 +642,7 @@ export type Database = {
           queued_at: string | null
           raw_content: string | null
           retry_count: number | null
-          source_id: string | null
+          source_id: string
           status: string | null
           structure: Json | null
           summary_complete: boolean | null
@@ -686,7 +689,7 @@ export type Database = {
           queued_at?: string | null
           raw_content?: string | null
           retry_count?: number | null
-          source_id?: string | null
+          source_id: string
           status?: string | null
           structure?: Json | null
           summary_complete?: boolean | null
@@ -733,7 +736,7 @@ export type Database = {
           queued_at?: string | null
           raw_content?: string | null
           retry_count?: number | null
-          source_id?: string | null
+          source_id?: string
           status?: string | null
           structure?: Json | null
           summary_complete?: boolean | null
@@ -1018,8 +1021,8 @@ export type Database = {
       }
       presentation_assets: {
         Row: {
-          asset_role: string
-          asset_type: string
+          asset_role: Database["public"]["Enums"]["asset_role_enum"] | null
+          asset_type: Database["public"]["Enums"]["asset_type_enum"] | null
           asset_type_id: string | null
           created_at: string | null
           created_by: string | null
@@ -1036,8 +1039,8 @@ export type Database = {
           user_notes: string | null
         }
         Insert: {
-          asset_role: string
-          asset_type: string
+          asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
+          asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
           asset_type_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -1054,8 +1057,8 @@ export type Database = {
           user_notes?: string | null
         }
         Update: {
-          asset_role?: string
-          asset_type?: string
+          asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
+          asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
           asset_type_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -2113,6 +2116,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_fix_audio_processing_configs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       analyze_default_values: {
         Args: {
           p_table_name: string
@@ -2198,6 +2205,10 @@ export type Database = {
           orphaned_user_id: string
           row_count: number
         }[]
+      }
+      fix_expert_documents_nulls: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       generate_table_documentation: {
         Args: {
@@ -2411,6 +2422,25 @@ export type Database = {
       }
     }
     Enums: {
+      asset_role_enum:
+        | "main"
+        | "supplementary"
+        | "thumbnail"
+        | "preview"
+        | "background"
+        | "reference"
+        | "exhibit"
+        | "source"
+      asset_type_enum:
+        | "video"
+        | "audio"
+        | "image"
+        | "document"
+        | "slide"
+        | "transcript"
+        | "presentation"
+        | "chart"
+        | "diagram"
       batch_type:
         | "google_extraction"
         | "audio_extraction"
