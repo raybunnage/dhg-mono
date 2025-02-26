@@ -14,6 +14,7 @@ interface DriveFile {
   mimeType: string;
   modifiedTime: string;
   size?: string;
+  parents?: string[];
 }
 
 interface SyncStats {
@@ -21,13 +22,14 @@ interface SyncStats {
   newFiles: DriveFile[];
   localOnlyFiles: string[];
   totalGoogleDriveFiles: number;
+  totalGoogleDriveFolders: number;
   totalLocalFiles: number;
   isValid: boolean;
   error?: string;
 }
 
 /**
- * Lists files in the specified Google Drive folder
+ * Lists files in the specified Google Drive folder recursively
  */
 export const listDriveFiles = async (folderId = GOOGLE_DRIVE_FOLDER_ID): Promise<DriveFile[]> => {
   try {
@@ -50,22 +52,7 @@ export const listDriveFiles = async (folderId = GOOGLE_DRIVE_FOLDER_ID): Promise
     
     console.log('Using token (first 10 chars):', accessToken.substring(0, 10) + '...');
     
-    // Query for files in the specified folder
-    const query = `'${folderId}' in parents and trashed=false`;
-    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,modifiedTime,size)&pageSize=1000`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to list files: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return data.files || [];
+    return await listAllFilesRecursively(folderId, accessToken);
   } catch (error) {
     console.error('Error listing Drive files:', error);
     toast.error(`Failed to list Google Drive files: ${error.message}`);
@@ -74,47 +61,140 @@ export const listDriveFiles = async (folderId = GOOGLE_DRIVE_FOLDER_ID): Promise
 };
 
 /**
+ * Recursively list all files in a folder and its subfolders
+ */
+async function listAllFilesRecursively(folderId: string, accessToken: string): Promise<DriveFile[]> {
+  let allFiles: DriveFile[] = [];
+  let pageToken: string | null = null;
+  
+  // Create a queue of folder IDs to process
+  const folderQueue: string[] = [folderId];
+  const processedFolders = new Set<string>();
+  
+  // Process all folders in the queue
+  while (folderQueue.length > 0) {
+    const currentFolderId = folderQueue.shift()!;
+    
+    // Skip if we've already processed this folder
+    if (processedFolders.has(currentFolderId)) {
+      continue;
+    }
+    
+    processedFolders.add(currentFolderId);
+    console.log(`Processing folder: ${currentFolderId}`);
+    
+    // Keep fetching pages until there are no more
+    do {
+      // Query for files in the current folder
+      const query = `'${currentFolderId}' in parents and trashed=false`;
+      let url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)&pageSize=1000`;
+      
+      if (pageToken) {
+        url += `&pageToken=${pageToken}`;
+      }
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to list files: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const files = data.files || [];
+      
+      // Add all files to our results
+      allFiles = allFiles.concat(files);
+      
+      // Add any folders to our queue for processing
+      for (const file of files) {
+        if (file.mimeType === 'application/vnd.google-apps.folder') {
+          folderQueue.push(file.id);
+        }
+      }
+      
+      // Update page token for next page
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+  }
+  
+  console.log(`Found ${allFiles.length} total files in Drive (including folders)`);
+  return allFiles;
+}
+
+/**
  * Get statistics for syncing between local files and Google Drive
  */
 export const getDriveSyncStats = async (): Promise<SyncStats> => {
   try {
-    // Step 1: Get files from Google Drive
+    // Step 1: Get files from Google Drive recursively
     const driveFiles = await listDriveFiles();
     
-    // Step 2: Get local files from Supabase or local storage
-    // This is a placeholder - replace with actual local file listing
+    // Step 2: Get local files from Supabase
     const localFiles = await getLocalSourceFiles();
     
-    // Step 3: Compare files and generate statistics
-    const driveFileMap = new Map(driveFiles.map(file => [file.name, file]));
-    const localFileMap = new Map(localFiles.map(file => [file.name, file]));
+    // Separate folders and documents from Google Drive files
+    const driveFolders = driveFiles.filter(file => 
+      file.mimeType === 'application/vnd.google-apps.folder'
+    );
     
+    const driveDocuments = driveFiles.filter(file => 
+      file.mimeType !== 'application/vnd.google-apps.folder'
+    );
+    
+    console.log(`Found ${driveDocuments.length} documents and ${driveFolders.length} folders in Drive`);
+    
+    // Similarly filter local files to exclude any folder entries
+    const localDocuments = localFiles.filter(file => 
+      file.mime_type !== 'application/vnd.google-apps.folder'
+    );
+    
+    console.log(`Found ${localDocuments.length} documents in local database`);
+    
+    // Step 3: Compare files and generate statistics
+    // Use drive_id for matching if available, otherwise fall back to name
     const matchingFiles: DriveFile[] = [];
     const newFiles: DriveFile[] = [];
     const localOnlyFiles: string[] = [];
     
+    // Create maps for faster lookup
+    const localFileMap = new Map(
+      localDocuments.map(file => [file.drive_id || file.name, file])
+    );
+    
     // Find matching and new files
-    driveFiles.forEach(file => {
-      if (localFileMap.has(file.name)) {
+    for (const file of driveDocuments) {
+      if (localFileMap.has(file.id) || localFileMap.has(file.name)) {
         matchingFiles.push(file);
       } else {
         newFiles.push(file);
       }
-    });
+    }
     
     // Find local-only files
-    localFiles.forEach(file => {
-      if (!driveFileMap.has(file.name)) {
+    const driveFileIds = new Set(driveDocuments.map(file => file.id));
+    const driveFileNames = new Set(driveDocuments.map(file => file.name));
+    
+    for (const file of localDocuments) {
+      // If neither the drive_id nor name exists in the drive files
+      if (
+        (!file.drive_id || !driveFileIds.has(file.drive_id)) && 
+        !driveFileNames.has(file.name)
+      ) {
         localOnlyFiles.push(file.name);
       }
-    });
+    }
     
     return {
       matchingFiles,
       newFiles,
       localOnlyFiles,
-      totalGoogleDriveFiles: driveFiles.length,
-      totalLocalFiles: localFiles.length,
+      totalGoogleDriveFiles: driveDocuments.length,
+      totalGoogleDriveFolders: driveFolders.length,
+      totalLocalFiles: localDocuments.length,
       isValid: true
     };
   } catch (error) {
@@ -124,6 +204,7 @@ export const getDriveSyncStats = async (): Promise<SyncStats> => {
       newFiles: [],
       localOnlyFiles: [],
       totalGoogleDriveFiles: 0,
+      totalGoogleDriveFolders: 0,
       totalLocalFiles: 0,
       isValid: false,
       error: error.message
@@ -154,7 +235,8 @@ async function getLocalSourceFiles() {
       name: file.name,
       path: file.parent_path || '',
       id: file.id,
-      drive_id: file.drive_id
+      drive_id: file.drive_id,
+      mime_type: file.mime_type
     })) || [];
   } catch (error) {
     console.error('Error fetching local source files:', error);
