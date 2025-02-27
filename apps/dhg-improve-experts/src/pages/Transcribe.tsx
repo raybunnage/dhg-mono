@@ -7,6 +7,7 @@ import { toast } from 'react-hot-toast';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { processAudioFile } from '@/utils/audio-pipeline';
 import { processBatch } from '@/utils/batch-processor';
+import { v4 as uuidv4 } from 'uuid';
 
 type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];
 
@@ -39,6 +40,7 @@ export function Transcribe() {
     processed: number;
     total: number;
   } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     loadMP4Files();
@@ -632,6 +634,86 @@ export function Transcribe() {
     }
   }
 
+  const insertFileToSupabase = async (fileData: {
+    name: string;
+    drive_id: string;
+    mime_type: string;
+    parent_folder_id?: string | null;
+    path?: string | null;
+  }) => {
+    try {
+      // Use destructuring to ensure we have all required fields
+      const { name, drive_id, mime_type } = fileData;
+      
+      // Ensure required fields are present
+      if (!name || !drive_id || !mime_type) {
+        console.error("Missing required fields for sources_google insert");
+        return { error: "Missing required fields" };
+      }
+      
+      // Prepare insert data with only the fields we want to set
+      const insertData = {
+        name,
+        drive_id,
+        mime_type,
+        // Explicitly set parent_folder_id to null to avoid the constraint violation
+        parent_folder_id: null,
+        // Set some defaults that might be useful
+        is_root: false,
+        sync_status: 'synced',
+        content_extracted: false,
+        deleted: false,
+      };
+      
+      const { data, error } = await supabase
+        .from('sources_google')
+        .insert(insertData)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      console.log("File successfully inserted:", data);
+      return { data };
+    } catch (error) {
+      console.error("Error inserting file to Supabase:", error);
+      return { error };
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      setIsUploading(true);
+      
+      // For a single file, we can still use the simple approach
+      const fileMetadata = {
+        name: file.name,
+        drive_id: uuidv4(),
+        mime_type: file.type,
+        parent_folder_id: null, // No parent for manually uploaded files
+      };
+      
+      const { data, error } = await insertFileToSupabase(fileMetadata);
+      
+      if (error) {
+        toast.error("Failed to upload file");
+        console.error(error);
+        return;
+      }
+      
+      toast.success("File uploaded successfully!");
+      await loadMP4Files();
+      
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Upload failed");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (loading) {
     return <div className="container mx-auto p-4">Loading MP4 files...</div>;
   }
@@ -934,6 +1016,37 @@ export function Transcribe() {
           </div>
         </div>
       )}
+
+      <div className="mb-8 p-4 bg-white shadow rounded">
+        <h2 className="text-lg font-semibold mb-4">Upload New File</h2>
+        
+        <div className="flex items-center">
+          <label className="relative cursor-pointer bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">
+            <span>Select File</span>
+            <input 
+              type="file" 
+              className="hidden" 
+              onChange={handleFileUpload}
+              disabled={isUploading}
+              accept="video/mp4,audio/mp4,audio/m4a"
+            />
+          </label>
+          
+          {isUploading && (
+            <div className="ml-4 flex items-center">
+              <svg className="animate-spin h-5 w-5 text-blue-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="text-gray-600">Uploading...</span>
+            </div>
+          )}
+        </div>
+        
+        <p className="mt-2 text-sm text-gray-500">
+          Upload MP4 video or audio files to process them.
+        </p>
+      </div>
     </div>
   );
 } 

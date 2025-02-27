@@ -486,4 +486,116 @@ export async function fetchDriveFileMetadata(driveId: string): Promise<{
     size: parseInt(data.size, 10),
     id: data.id
   };
+}
+
+/**
+ * Fetches top-level folders from Google Drive
+ * Uses existing token authentication
+ */
+export async function fetchFolders() {
+  try {
+    const token = await getValidAccessToken(); // Assuming this function exists
+    
+    const response = await fetch(
+      'https://www.googleapis.com/drive/v3/files?q=mimeType%3D%27application%2Fvnd.google-apps.folder%27%20and%20trashed%3Dfalse&fields=files(id,name,mimeType,parents)',
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch folders: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data.files || [];
+  } catch (error) {
+    console.error('Error fetching folders:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetches all files within a specific folder
+ * @param folderId The Google Drive folder ID
+ */
+export async function fetchFilesInFolder(folderId: string) {
+  try {
+    const token = await getValidAccessToken(); // Assuming this function exists
+    
+    // Query for files that have the specified folder as parent
+    const query = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+    
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,mimeType,size,modifiedTime)`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch files: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data.files || [];
+  } catch (error) {
+    console.error('Error fetching files in folder:', error);
+    throw error;
+  }
+}
+
+/**
+ * Recursively fetches a folder and all its contents (sub-folders and files)
+ * @param folderId The Google Drive folder ID
+ */
+export async function fetchFolderTree(folderId: string) {
+  try {
+    // Get the folder info first
+    const token = await getValidAccessToken();
+    const folderResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,mimeType`,
+      {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }
+    );
+    
+    if (!folderResponse.ok) {
+      throw new Error(`Failed to fetch folder: ${folderResponse.status}`);
+    }
+    
+    const folder = await folderResponse.json();
+    
+    // Get all items in this folder
+    const files = await fetchFilesInFolder(folderId);
+    
+    // Separate folders and regular files
+    const subFolders = files.filter(file => file.mimeType === 'application/vnd.google-apps.folder');
+    const regularFiles = files.filter(file => file.mimeType !== 'application/vnd.google-apps.folder');
+    
+    // Recursively process subfolders
+    const subFolderTrees = await Promise.all(
+      subFolders.map(async subFolder => {
+        return await fetchFolderTree(subFolder.id);
+      })
+    );
+    
+    // Construct the tree
+    return {
+      ...folder,
+      files: regularFiles,
+      subFolders: subFolderTrees
+    };
+  } catch (error) {
+    console.error(`Error fetching folder tree for ${folderId}:`, error);
+    throw error;
+  }
 } 

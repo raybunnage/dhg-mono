@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { getDriveSyncStats, syncWithGoogleDrive, listFilesInFolder, authenticatedFetch } from '@/services/googleDriveService';
+import { getDriveSyncStats, syncWithGoogleDrive, listFilesInFolder, authenticatedFetch, insertGoogleFiles } from '@/services/googleDriveService';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { storeLatestSyncResult } from '@/services/syncHistoryService';
 
 interface GoogleDriveSyncProps {
   isTokenValid: boolean;
@@ -18,6 +19,9 @@ export const GoogleDriveSync: React.FC<GoogleDriveSyncProps> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<any>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<DriveFile[]>([]);
+  const [isInserting, setIsInserting] = useState(false);
+  const [insertResult, setInsertResult] = useState<{success: number, errors: number} | null>(null);
   
   const handleSyncCheck = async () => {
     if (!isTokenValid) {
@@ -73,6 +77,9 @@ export const GoogleDriveSync: React.FC<GoogleDriveSyncProps> = ({
       const result = await syncWithGoogleDrive();
       setSyncResult(result);
       
+      // Store the result for later retrieval
+      await storeLatestSyncResult(result);
+      
       if (result.synced.errors > 0) {
         toast.error(`Sync completed with ${result.synced.errors} errors`);
       } else {
@@ -114,6 +121,40 @@ export const GoogleDriveSync: React.FC<GoogleDriveSyncProps> = ({
       }
       
       updateSyncStatus('failed', { error_message: err.message });
+    }
+  };
+  
+  const handleFileSelection = (file: DriveFile, isSelected: boolean) => {
+    if (isSelected) {
+      setSelectedFiles(prev => [...prev, file]);
+    } else {
+      setSelectedFiles(prev => prev.filter(f => f.id !== file.id));
+    }
+  };
+  
+  const handleInsertSelected = async () => {
+    if (selectedFiles.length === 0) {
+      toast.error('Please select at least one file to insert');
+      return;
+    }
+    
+    try {
+      setIsInserting(true);
+      const result = await insertGoogleFiles(selectedFiles);
+      setInsertResult(result);
+      
+      // Clear selection after successful insert
+      setSelectedFiles([]);
+      
+      // Refresh sync stats to reflect the changes
+      handleSyncCheck();
+      
+      toast.success(`Successfully inserted ${result.success} files into the database`);
+    } catch (error) {
+      console.error('Error inserting files:', error);
+      toast.error(`Error inserting files: ${error.message}`);
+    } finally {
+      setIsInserting(false);
     }
   };
   
@@ -235,17 +276,87 @@ export const GoogleDriveSync: React.FC<GoogleDriveSyncProps> = ({
           {/* Always show new files, they're important */}
           {syncStats.newFiles.length > 0 && (
             <div className="mb-3 bg-yellow-50 p-3 rounded border border-yellow-200">
-              <h4 className="font-medium mb-1 text-yellow-800">New Files on Google Drive:</h4>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-medium text-yellow-800">New Files on Google Drive:</h4>
+                
+                {/* Add the insert button */}
+                <button
+                  onClick={handleInsertSelected}
+                  disabled={selectedFiles.length === 0 || isInserting}
+                  className={`px-3 py-1 text-xs rounded ${
+                    selectedFiles.length > 0 
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-gray-300 text-gray-600'
+                  }`}
+                >
+                  {isInserting
+                    ? 'Inserting...'
+                    : `Insert ${selectedFiles.length} Selected Files`}
+                </button>
+              </div>
+              
+              {/* Add selection controls */}
+              <div className="flex justify-between items-center mb-2 text-xs">
+                <div>
+                  <button
+                    onClick={() => setSelectedFiles(syncStats.newFiles)}
+                    className="text-blue-600 hover:text-blue-800 mr-3"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={() => setSelectedFiles([])}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+                <div className="text-gray-600">
+                  {selectedFiles.length} of {syncStats.newFiles.length} files selected
+                </div>
+              </div>
+              
+              {/* Show the list with checkboxes */}
               <ul className="text-xs bg-white p-2 rounded max-h-40 overflow-y-auto">
-                {syncStats.newFiles.map((file: any) => (
-                  <li key={file.id} className="mb-1 flex justify-between">
-                    <span>{file.name}</span>
-                    <span className="text-gray-500">
-                      {new Date(file.modifiedTime).toLocaleDateString()}
-                    </span>
-                  </li>
-                ))}
+                {syncStats.newFiles.map((file: any) => {
+                  const isSelected = selectedFiles.some(f => f.id === file.id);
+                  return (
+                    <li key={file.id} className="mb-1 flex items-center hover:bg-gray-50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => handleFileSelection(file, e.target.checked)}
+                        className="mr-2"
+                        id={`file-${file.id}`}
+                      />
+                      <label 
+                        htmlFor={`file-${file.id}`}
+                        className="flex justify-between w-full cursor-pointer"
+                      >
+                        <span className={isSelected ? 'font-medium text-blue-700' : ''}>
+                          {file.name}
+                        </span>
+                        <span className="text-gray-500">
+                          {new Date(file.modifiedTime).toLocaleDateString()}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
               </ul>
+              
+              {/* Show insert result if available */}
+              {insertResult && (
+                <div className={`mt-2 p-2 text-xs rounded ${
+                  insertResult.errors > 0 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+                }`}>
+                  <p>Insert result: {insertResult.success} files added successfully</p>
+                  {insertResult.errors > 0 && 
+                    <p>{insertResult.errors} files failed to insert</p>
+                  }
+                </div>
+              )}
+              
               <p className="text-xs text-yellow-700 mt-2">
                 These files exist in Google Drive but not in your local database.
               </p>

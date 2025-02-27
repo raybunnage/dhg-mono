@@ -7,3 +7,5 @@ export type Json =
   | Json[]
 
 export type { Database } from '../../../../supabase/types'
+
+export type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];

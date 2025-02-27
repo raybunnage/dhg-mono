@@ -2466,6 +2466,12 @@ export type Database = {
           check_constraint: string
         }[]
       }
+      get_table_metadata: {
+        Args: {
+          p_target_table: string
+        }
+        Returns: Json
+      }
       get_triggers: {
         Args: {
           schema_name: string
