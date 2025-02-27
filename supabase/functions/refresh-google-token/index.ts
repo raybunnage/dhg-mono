@@ -20,16 +20,38 @@ serve(async (req) => {
   }
 
   try {
-    const { refreshToken } = await req.json()
+    // Try to get refreshToken from request body
+    let { refreshToken } = await req.json().catch(() => ({}));
+    
+    // If no refresh token provided, get the most recent one from the database
+    if (!refreshToken) {
+      console.log('No refresh token provided, fetching from database');
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') || '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+      );
+      
+      const { data, error } = await supabase
+        .from('google_auth_tokens')
+        .select('refresh_token')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error || !data || data.length === 0) {
+        throw new Error('No refresh token found in database');
+      }
+      
+      refreshToken = data[0].refresh_token;
+    }
     
     if (!refreshToken) {
       return new Response(
-        JSON.stringify({ error: 'Refresh token is required' }),
+        JSON.stringify({ error: 'Refresh token is required and not found' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      )
+      );
     }
 
     // Create Google OAuth token URL
