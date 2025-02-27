@@ -191,20 +191,23 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
         .from('google_auth_tokens')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
       
-      if (tokenError) throw tokenError;
-      
-      if (!tokenData) {
+      // Handle the case when no tokens are found (don't use .single())
+      if (tokenError || !tokenData || tokenData.length === 0) {
+        console.log('No Google auth tokens found in database');
         setIsAuthenticated(false);
         if (onStatusChange) onStatusChange(false);
-        setError('No Google authentication found');
+        setError(tokenError?.message || 'No Google authentication found');
+        setLoading(false);
         return;
       }
       
+      // Use the first token from the result array
+      const token = tokenData[0];
+      
       // Check if token is expired
-      const expiresAt = new Date(tokenData.expires_at);
+      const expiresAt = new Date(token.expires_at);
       const now = new Date();
       const timeUntilExpiry = expiresAt.getTime() - now.getTime();
       
@@ -212,18 +215,19 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
       if (timeUntilExpiry < 5 * 60 * 1000) {
         console.log('Token expires soon, refreshing...');
         
-        if (!tokenData.refresh_token) {
+        if (!token.refresh_token) {
           setError('No refresh token available');
           setIsAuthenticated(false);
           if (onStatusChange) onStatusChange(false);
           if (onTokenExpired) onTokenExpired();
+          setLoading(false);
           return;
         }
         
         // Call token refresh endpoint
         const { data: refreshData, error: refreshError } = await supabase.functions.invoke('refresh-google-token', {
           body: { 
-            refreshToken: tokenData.refresh_token
+            refreshToken: token.refresh_token
           }
         });
         
@@ -241,12 +245,12 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
               expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
               updated_at: new Date().toISOString()
             })
-            .eq('id', tokenData.id);
+            .eq('id', token.id);
           
           if (updateError) throw updateError;
           
           setTokenInfo({
-            ...tokenData,
+            ...token,
             access_token: refreshData.access_token,
             expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString()
           });
@@ -258,7 +262,7 @@ export const GoogleTokenStatus: React.FC<TokenStatusProps> = ({
         }
       } else {
         // Token is still valid
-        setTokenInfo(tokenData);
+        setTokenInfo(token);
         setIsAuthenticated(true);
         if (onStatusChange) onStatusChange(true);
       }

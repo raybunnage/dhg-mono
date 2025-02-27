@@ -322,16 +322,23 @@ function Sync() {
   // Update fetchSyncHistory to get all fields
   const fetchSyncHistory = async () => {
     try {
+      console.log('Fetching sync history...');
       const { data, error } = await supabase
         .from('sync_history')
         .select('*')
         .order('timestamp', { ascending: false })
         .limit(10);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching sync history:', error);
+        throw error;
+      }
+      
+      console.log('Sync history retrieved:', data?.length || 0, 'records');
       setSyncHistory(data || []);
     } catch (err) {
       console.error('Error fetching sync history:', err);
+      toast.error('Failed to load sync history');
     }
   };
 
@@ -361,13 +368,10 @@ function Sync() {
         
       if (error) throw error;
       
-      // Here you could either display the files in a modal
-      // or navigate to a detail page showing the sync results
-      console.log('Sync files:', data);
+      // For now, just show a toast with the count
+      toast.success(`Found ${data?.length || 0} files from this sync operation`);
       
-      // For simplicity, we'll just show a toast for now
-      toast.success(`Found ${data.length} files from this sync operation`);
-      
+      // You could expand this to show a modal with detailed info
     } catch (err) {
       console.error('Error fetching sync details:', err);
       toast.error('Failed to load sync details');
@@ -391,6 +395,17 @@ function Sync() {
     
     toast.info('Ready to re-sync folder. Click "Start Sync" to begin.');
   };
+
+  // Add this to your existing useEffect or as a separate useEffect
+  useEffect(() => {
+    // Load sync history
+    fetchSyncHistory();
+    
+    // Set up a refresh interval (optional)
+    const interval = setInterval(fetchSyncHistory, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="container mx-auto p-4">
@@ -569,7 +584,7 @@ function Sync() {
                         {new Date(sync.timestamp).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {sync.folder_name}
+                        {sync.folder_name || 'Unknown folder'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -578,11 +593,11 @@ function Sync() {
                             sync.status === 'completed_with_errors' ? 'bg-yellow-100 text-yellow-800' :
                             sync.status === 'failed' ? 'bg-red-100 text-red-800' :
                             'bg-gray-100 text-gray-800'}`}>
-                          {sync.status}
+                          {sync.status || 'unknown'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {sync.items_processed}
+                        {sync.items_processed || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {duration}
@@ -594,7 +609,7 @@ function Sync() {
                         >
                           View Details
                         </button>
-                        {sync.status !== 'in_progress' && (
+                        {sync.status !== 'in_progress' && sync.folder_id && (
                           <button 
                             onClick={() => rerunSync(sync.folder_id)}
                             className="text-blue-600 hover:text-blue-900"
@@ -609,6 +624,16 @@ function Sync() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+      
+      {/* Debug information about sync history */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-4 p-3 bg-gray-100 rounded text-xs font-mono">
+          <details>
+            <summary className="cursor-pointer">Debug: Sync History Data ({syncHistory.length} items)</summary>
+            <pre>{JSON.stringify(syncHistory, null, 2)}</pre>
+          </details>
         </div>
       )}
     </div>

@@ -117,6 +117,26 @@ export const GoogleDriveSync: React.FC<GoogleDriveSyncProps> = ({
     }
   };
   
+  useEffect(() => {
+    console.log('GoogleDriveSync mounted, token valid:', isTokenValid);
+    
+    // Check if the sync history is populated
+    const checkSyncHistory = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('sync_history')
+          .select('*', { count: 'exact', head: true });
+        
+        console.log('Sync history count:', count);
+        if (error) console.error('Error checking sync history:', error);
+      } catch (err) {
+        console.error('Failed to check sync history:', err);
+      }
+    };
+    
+    checkSyncHistory();
+  }, [isTokenValid]);
+  
   return (
     <div className="mt-6 bg-white rounded-lg shadow p-4">
       <h2 className="text-lg font-semibold mb-3">Google Drive Sync</h2>
