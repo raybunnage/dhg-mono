@@ -4,17 +4,10 @@ import { drive_v3 } from '@googleapis/drive'
 
 export const sourcesGoogleService = {
   async upsertSource(source: SourceGoogleInsert) {
-    const session = await supabase.auth.getSession()
-    const userId = session.data.session?.user?.id
-
     const { data, error } = await supabase
       .from('sources_google')
       .upsert(
-        { 
-          ...source,
-          created_by: userId || null,
-          updated_by: userId || null
-        },
+        source,
         { onConflict: 'drive_id', ignoreDuplicates: false }
       )
       .select()
@@ -47,15 +40,9 @@ export const sourcesGoogleService = {
   },
 
   async updateSource(driveId: string, updates: SourceGoogleUpdate) {
-    const session = await supabase.auth.getSession()
-    const userId = session.data.session?.user?.id
-
     const { data, error } = await supabase
       .from('sources_google')
-      .update({
-        ...updates,
-        updated_by: userId || null
-      })
+      .update(updates)
       .eq('drive_id', driveId)
       .select()
       .single()

@@ -573,9 +573,7 @@ ${results.map(result => `
           category: 'Announcements',
           description: 'Documents announcing upcoming presentations, talks, or speaking engagements',
           created_at: new Date().toISOString(),
-          created_by: userId,
           updated_at: new Date().toISOString(),
-          updated_by: userId, // Explicitly set updated_by
           is_ai_generated: false,
           required_fields: {
             title: 'string',
@@ -633,7 +631,7 @@ ${results.map(result => `
       // Try to read document_types
       const { data: types, error: readError } = await supabase
         .from('document_types')
-        .select('id, document_type, created_by, updated_by')
+        .select('id, document_type')
         .limit(1);
 
       console.log('Document types read test:', {
@@ -642,13 +640,12 @@ ${results.map(result => `
         error: readError
       });
 
-      // Try a test update with explicit updated_by
+      // Try a test update
       if (session?.user?.id) {
         const { data: updateTest, error: updateError } = await supabase
           .from('document_types')
           .update({ 
-            updated_at: new Date().toISOString(),
-            updated_by: session.user.id 
+            updated_at: new Date().toISOString()
           })
           .eq('id', types?.[0]?.id)
           .select();
@@ -1317,6 +1314,101 @@ ${errors.map(e => `
     }
   };
 
+  // Helper function to validate Google Drive access token
+  const validateGoogleToken = async (): Promise<string> => {
+    try {
+      const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+      
+      if (!accessToken) {
+        throw new Error('No Google access token found in environment variables');
+      }
+      
+      // Log token (first few chars only for security)
+      console.log('Using access token:', accessToken.substring(0, 10) + '...');
+      console.log('Token length:', accessToken.length);
+      
+      // Verify token has expected format (rough check)
+      if (accessToken.length < 20) {
+        throw new Error('Access token appears invalid (too short)');
+      }
+      
+      // Test the token with a simple metadata request
+      const response = await fetch(
+        'https://www.googleapis.com/drive/v3/files?pageSize=1',
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        // Log the error response if not ok
+        const errorText = await response.text();
+        console.error('Token validation failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
+        
+        // Provide more helpful error messages based on status code
+        if (response.status === 401) {
+          throw new Error('Google Drive token is invalid or expired (401 Unauthorized)');
+        } else if (response.status === 403) {
+          throw new Error('Google Drive token lacks required permissions (403 Forbidden)');
+        } else {
+          throw new Error(`Token validation failed: ${response.status} - ${response.statusText}`);
+        }
+      }
+      
+      console.log('✅ Google Drive token validated successfully');
+      return accessToken;
+    } catch (error) {
+      console.error('Google Drive token validation error:', error);
+      // Add user-friendly toast
+      toast.error(`Google Drive authentication error: ${error.message}`);
+      throw error;
+    }
+  };
+  
+  // Helper function to fetch text content from Google Drive
+  const getTextFileContent = async (fileId: string): Promise<string> => {
+    try {
+      console.log(`🔄 Fetching text file content for ID: ${fileId}`);
+      const accessToken = await validateGoogleToken();
+      
+      // Get the file directly using alt=media parameter
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Accept': 'text/plain'
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('File fetch failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          fileId
+        });
+        throw new Error(`Google Drive API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const content = await response.text();
+      console.log(`✅ Successfully fetched text content (${content.length} chars)`);
+      
+      return content;
+    } catch (error) {
+      console.error(`❌ Text file fetch failed:`, error);
+      throw error;
+    }
+  };
+  
   // Add this helper function at the top level
   const cleanContent = (content: string): string => {
     if (!content) return '';
@@ -1368,6 +1460,449 @@ ${errors.map(e => `
     COMPLETED: 'completed',
     ERROR: 'error'
   } as const;
+
+  // Classify text files
+  const classifyTextFiles = async () => {
+    setLoading(true);
+    try {
+      console.log('🚀 Starting text file classification process...');
+      toast.success('Starting text file classification');
+      
+      // Load document types for reference
+      console.log('📚 Loading document types...');
+      const documentTypes = await loadDocumentTypes();
+      if (!documentTypes) {
+        console.error('❌ Failed to load document types');
+        throw new Error('Failed to load document types');
+      }
+      console.log(`✅ Loaded ${documentTypes.length} document types`);
+      
+      // Load the classification prompt
+      console.log('📜 Loading classification prompt...');
+      const prompt = await loadClassificationPrompt();
+      if (!prompt) {
+        console.error('❌ Failed to load classification prompt');
+        throw new Error('Failed to load classification prompt');
+      }
+      console.log(`✅ Loaded classification prompt (${prompt.length} chars)`);
+      console.log('Prompt preview:', prompt.slice(0, 200) + '...');
+      
+      // Get all unclassified text files
+      console.log('🔍 Searching for unclassified text files...');
+      const { data: textFiles, error: fetchError } = await supabase
+        .from('sources_google')
+        .select(`
+          id,
+          name,
+          mime_type,
+          extracted_content,
+          content_extracted,
+          document_type_id,
+          created_at,
+          drive_id
+        `)
+        .eq('mime_type', 'text/plain')
+        .is('document_type_id', null)
+        .order('created_at', { ascending: false });
+        
+      if (fetchError) {
+        console.error('❌ Database query failed:', fetchError);
+        throw fetchError;
+      }
+      
+      if (!textFiles?.length) {
+        console.log('ℹ️ No unclassified text files found');
+        toast.success('No unclassified text files found');
+        return;
+      }
+      
+      // Count files with content vs without content
+      const filesWithContent = textFiles.filter(f => f.extracted_content !== null);
+      const filesWithoutContent = textFiles.filter(f => f.extracted_content === null);
+      
+      console.log(`📊 Text File Statistics:`, {
+        total: textFiles.length,
+        withContent: filesWithContent.length,
+        withoutContent: filesWithoutContent.length,
+        firstFewNames: textFiles.slice(0, 3).map(f => f.name)
+      });
+      
+      toast.success(`Found ${textFiles.length} text files to classify`);
+      
+      // Process files that have content
+      console.log('\n📝 Processing text files with content');
+      let processedCount = 0;
+      let failedCount = 0;
+      const results = [];
+      
+      // Show first few files for debugging
+      console.log('Sample of files to process:', textFiles.slice(0, 3).map(f => ({
+        id: f.id,
+        name: f.name,
+        hasContent: !!f.extracted_content,
+        contentType: typeof f.extracted_content,
+        mimeType: f.mime_type,
+        driveId: f.drive_id
+      })));
+      
+      for (let i = 0; i < textFiles.length; i++) {
+        const file = textFiles[i];
+        
+        // Log progress
+        console.log(`\n🔄 Processing file ${i+1}/${textFiles.length}: ${file.name}`);
+        if (i > 0 && i % 5 === 0) {
+          toast.success(`Processed ${i}/${textFiles.length} files`);
+        }
+        
+        try {
+          // Check for content first - if not present, try to extract it
+          if (!file.extracted_content) {
+            console.log(`⚠️ No extracted content for ${file.name} - attempting to fetch content from Google Drive`);
+            
+            try {
+              // Check if we have a drive_id to fetch content
+              if (!file.drive_id) {
+                console.error(`❌ No drive_id available for ${file.name}`);
+                failedCount++;
+                continue;
+              }
+              
+              console.log(`🔄 Fetching content for ${file.name} from Google Drive (ID: ${file.drive_id})`);
+              
+              // Use the appropriate method to fetch text content from Google Drive
+              let textContent;
+              
+              // Use our helper function to get text content
+              console.log(`🔄 Fetching text content for ${file.name}...`);
+              try {
+                textContent = await getTextFileContent(file.drive_id);
+                
+                // Log a sample of the content for verification
+                console.log(`📄 Content sample: "${textContent.slice(0, 100)}..."`);
+              } catch (fetchError) {
+                console.error(`❌ Content fetch failed for ${file.name}:`, fetchError);
+                throw fetchError; // Re-throw to be caught by outer try-catch
+              }
+              
+              if (!textContent || textContent.length < 10) {
+                console.error(`❌ Retrieved empty or very short content for ${file.name}`);
+                failedCount++;
+                continue;
+              }
+              
+              // Save the extracted content back to the database
+              console.log(`💾 Saving extracted content to database...`);
+              const saveResult = await supabase
+                .from('sources_google')
+                .update({
+                  extracted_content: textContent,
+                  content_extracted: true,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', file.id);
+                
+              if (saveResult.error) {
+                console.error(`❌ Failed to save extracted content:`, saveResult.error);
+                // Continue with classification anyway using the fetched content
+              } else {
+                console.log(`✅ Content saved to database`);
+              }
+              
+              // Use the fetched content for classification
+              file.extracted_content = textContent;
+              
+            } catch (extractError) {
+              console.error(`❌ Failed to extract content for ${file.name}:`, extractError);
+              failedCount++;
+              continue;
+            }
+          }
+          
+          // Get content - handle both string and object formats
+          let content;
+          if (typeof file.extracted_content === 'string') {
+            content = file.extracted_content;
+            console.log(`📄 Found string content (${content.length} chars)`);
+          } else if (file.extracted_content?.text) {
+            content = file.extracted_content.text;
+            console.log(`📄 Found object.text content (${content.length} chars)`);
+          } else {
+            content = JSON.stringify(file.extracted_content);
+            console.log(`📄 Converted object content to string (${content.length} chars)`);
+          }
+          
+          // Log content sample
+          console.log('Content sample:', content.slice(0, 200) + '...');
+          
+          if (!content || content.length < 10) {
+            console.warn(`⚠️ Insufficient content for ${file.name}`);
+            failedCount++;
+            continue;
+          }
+          
+          // Create the AI request payload
+          const aiPayload = {
+            documentTypes: documentTypes.map(dt => ({
+              id: dt.id,
+              type: dt.document_type,
+              category: dt.category,
+              description: dt.description
+            })),
+            documentToClassify: {
+              name: file.name,
+              content: content.slice(0, 15000) // Limit content length
+            }
+          };
+          
+          console.log('🤖 Sending to AI for classification:', {
+            fileName: file.name,
+            contentLength: content.length,
+            promptLength: prompt.length,
+            docTypeCount: documentTypes.length
+          });
+          
+          // Process with AI using the same approach as classifyDocuments
+          const result = await processWithAI({
+            systemPrompt: prompt,
+            userMessage: JSON.stringify(aiPayload),
+            temperature: 0.1,
+            requireJsonOutput: true,
+            validateResponse: (response) => {
+              console.log('🔍 Validating AI response...');
+              const parsed = ClassificationResponseSchema.safeParse(response);
+              if (!parsed.success) {
+                console.error('❌ Invalid response format:', parsed.error.message);
+                throw new Error(`Invalid response format: ${parsed.error.message}`);
+              }
+              
+              // Verify typeId exists in document types
+              const validTypeId = documentTypes.some(dt => dt.id === parsed.data.typeId);
+              if (!validTypeId) {
+                console.error('❌ Invalid typeId:', parsed.data.typeId);
+                throw new Error('Invalid typeId: does not match any provided document type');
+              }
+              
+              console.log('✅ Valid AI response:', {
+                documentType: parsed.data.documentType,
+                typeId: parsed.data.typeId,
+                confidence: parsed.data.confidence
+              });
+              
+              return parsed.data;
+            }
+          });
+          
+          console.log('🎯 Classification result:', {
+            fileName: file.name,
+            documentType: result.documentType,
+            typeId: result.typeId,
+            confidence: result.confidence,
+            reasoning: result.reasoning?.slice(0, 100) + '...'
+          });
+          
+          // Update the document with classification results
+          const updateData = {
+            document_type_id: result.typeId,
+            updated_at: new Date().toISOString(),
+            metadata: {
+              ...file.metadata, // Preserve existing metadata if any
+              classification: {
+                confidence: result.confidence,
+                reasoning: result.reasoning,
+                classified_at: new Date().toISOString()
+              }
+            }
+          };
+          
+          console.log('💾 Updating database record:', {
+            fileId: file.id,
+            updateData: {
+              document_type_id: updateData.document_type_id,
+              hasMetadata: !!updateData.metadata,
+              updateTime: updateData.updated_at
+            }
+          });
+          
+          const { error: updateError } = await supabase
+            .from('sources_google')
+            .update(updateData)
+            .eq('id', file.id);
+            
+          if (updateError) {
+            console.error('❌ Failed to update database:', updateError);
+            failedCount++;
+            continue;
+          }
+          
+          console.log(`✅ Successfully classified and updated ${file.name}`);
+          processedCount++;
+          results.push({
+            fileName: file.name,
+            documentId: file.id,
+            documentType: result.documentType,
+            typeId: result.typeId,
+            confidence: result.confidence,
+            reasoning: result.reasoning
+          });
+          
+        } catch (error) {
+          console.error(`❌ Error processing ${file.name}:`, {
+            error,
+            message: error.message,
+            stack: error.stack
+          });
+          failedCount++;
+        }
+      }
+      
+      // Generate report
+      const markdown = `# Text File Classification Results
+${new Date().toISOString()}
+
+## Summary
+- Total Text Files: ${textFiles.length}
+- Successfully Classified: ${processedCount}
+- Failed: ${failedCount}
+
+## Detailed Results
+
+${results.map(result => `
+### ${result.fileName}
+- Document ID: ${result.documentId}
+- Assigned Type: ${result.documentType}
+- Document Type ID: \`${result.typeId}\`
+- Confidence: ${(result.confidence * 100).toFixed(1)}%
+- Reasoning: ${result.reasoning}
+`).join('\n')}
+`;
+
+      setClassificationResults(markdown);
+      toast.success(`Classified ${processedCount} text files (${failedCount} failed)`);
+      
+    } catch (error) {
+      console.error('Text file classification error:', error);
+      toast.error('Failed to classify text files');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate a report on sources_google by mime_type and document_type_id
+  const generateSourcesReport = async () => {
+    setLoading(true);
+    try {
+      console.log('Generating sources_google report...');
+      
+      // Define the mime types we want to check
+      const mimeTypes = {
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        pdf: 'application/pdf',
+        txt: 'text/plain'
+      };
+      
+      const report = {
+        docx: { classified: 0, unclassified: 0, types: {} },
+        pdf: { classified: 0, unclassified: 0, types: {} },
+        txt: { classified: 0, unclassified: 0, types: {} },
+        total: { classified: 0, unclassified: 0 }
+      };
+      
+      // Get all sources_google records
+      const { data: allSources, error: fetchError } = await supabase
+        .from('sources_google')
+        .select(`
+          mime_type,
+          document_type_id,
+          document_types (
+            document_type
+          )
+        `);
+        
+      if (fetchError) throw fetchError;
+      
+      if (!allSources?.length) {
+        toast.success('No sources_google records found');
+        return;
+      }
+      
+      console.log(`Found ${allSources.length} sources_google records`);
+      
+      // Process each record
+      allSources.forEach(source => {
+        let fileType = 'other';
+        
+        // Determine file type based on mime_type
+        if (source.mime_type === mimeTypes.docx) fileType = 'docx';
+        else if (source.mime_type === mimeTypes.pdf) fileType = 'pdf';
+        else if (source.mime_type === mimeTypes.txt) fileType = 'txt';
+        
+        // Skip if not one of our target types
+        if (fileType === 'other') return;
+        
+        // Count based on classification status
+        if (source.document_type_id) {
+          report[fileType].classified++;
+          report.total.classified++;
+          
+          // Count by document type
+          const docType = source.document_types?.document_type || 'Unknown';
+          report[fileType].types[docType] = (report[fileType].types[docType] || 0) + 1;
+        } else {
+          report[fileType].unclassified++;
+          report.total.unclassified++;
+        }
+      });
+      
+      // Generate markdown report
+      const markdown = `# Sources Google Report
+${new Date().toISOString()}
+
+## Summary
+- Total Sources: ${allSources.length}
+- Total Classified: ${report.total.classified}
+- Total Unclassified: ${report.total.unclassified}
+
+## By File Type
+
+### DOCX Files
+- Classified: ${report.docx.classified}
+- Unclassified: ${report.docx.unclassified}
+- Types:
+${Object.entries(report.docx.types)
+  .sort(([,a], [,b]) => (b as number) - (a as number))
+  .map(([type, count]) => `  - ${type}: ${count}`)
+  .join('\n')}
+
+### PDF Files
+- Classified: ${report.pdf.classified}
+- Unclassified: ${report.pdf.unclassified}
+- Types:
+${Object.entries(report.pdf.types)
+  .sort(([,a], [,b]) => (b as number) - (a as number))
+  .map(([type, count]) => `  - ${type}: ${count}`)
+  .join('\n')}
+
+### Text Files
+- Classified: ${report.txt.classified}
+- Unclassified: ${report.txt.unclassified}
+- Types:
+${Object.entries(report.txt.types)
+  .sort(([,a], [,b]) => (b as number) - (a as number))
+  .map(([type, count]) => `  - ${type}: ${count}`)
+  .join('\n')}
+`;
+
+      // Display the report
+      setClassificationResults(markdown);
+      toast.success('Generated sources_google report');
+      
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast.error('Failed to generate report');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Update the transfer function
   const transferToExpertDocuments = async () => {
@@ -1921,6 +2456,22 @@ AI Analysis: ${doc.processed_content?.ai_analysis
               disabled={loading}
             >
               <span>🎯</span> Check Processed Presentations
+            </button>
+
+            <button
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              onClick={generateSourcesReport}
+              disabled={loading}
+            >
+              <span>📊</span> Generate Sources Report
+            </button>
+            
+            <button
+              className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              onClick={classifyTextFiles}
+              disabled={loading}
+            >
+              <span>📝</span> Classify Text Files
             </button>
 
             {todaysClassifications.length > 0 && (

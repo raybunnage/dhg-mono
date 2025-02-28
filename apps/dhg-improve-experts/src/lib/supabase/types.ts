@@ -9,8 +9,6 @@ export interface SourceGoogle {
   path: string[]
   created_at: string
   updated_at: string
-  created_by?: string
-  updated_by?: string
   last_indexed?: string
   metadata: any
 }
