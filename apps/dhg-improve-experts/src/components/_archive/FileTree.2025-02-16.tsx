@@ -248,7 +248,7 @@ export function FileTree({ files, onSelectionChange }: FileTreeProps) {
       .filter(f => f && !f.content_extracted) as FileNode[]; // Only process unextracted files
 
     if (selectedFileNodes.length === 0) {
-      toast.info('No new files to process');
+      toast.success('No new files to process');
       return;
     }
 
