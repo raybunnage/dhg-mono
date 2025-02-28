@@ -13,7 +13,6 @@ export type Database = {
         Row: {
           cost: number | null
           created_at: string
-          created_by: string
           duration_ms: number | null
           error_message: string | null
           expert_document_id: string
@@ -24,12 +23,10 @@ export type Database = {
           prompt: string | null
           success: boolean | null
           updated_at: string
-          updated_by: string
         }
         Insert: {
           cost?: number | null
           created_at?: string
-          created_by: string
           duration_ms?: number | null
           error_message?: string | null
           expert_document_id: string
@@ -40,12 +37,10 @@ export type Database = {
           prompt?: string | null
           success?: boolean | null
           updated_at?: string
-          updated_by: string
         }
         Update: {
           cost?: number | null
           created_at?: string
-          created_by?: string
           duration_ms?: number | null
           error_message?: string | null
           expert_document_id?: string
@@ -56,7 +51,6 @@ export type Database = {
           prompt?: string | null
           success?: boolean | null
           updated_at?: string
-          updated_by?: string
         }
         Relationships: [
           {
@@ -99,38 +93,32 @@ export type Database = {
         Row: {
           configuration: Json
           created_at: string | null
-          created_by: string | null
           description: string | null
           document_type_id: string | null
           id: string
           is_default: boolean | null
           name: string
           updated_at: string | null
-          updated_by: string
         }
         Insert: {
           configuration: Json
           created_at?: string | null
-          created_by?: string | null
           description?: string | null
           document_type_id?: string | null
           id?: string
           is_default?: boolean | null
           name: string
           updated_at?: string | null
-          updated_by: string
         }
         Update: {
           configuration?: Json
           created_at?: string | null
-          created_by?: string | null
           description?: string | null
           document_type_id?: string | null
           id?: string
           is_default?: boolean | null
           name?: string
           updated_at?: string | null
-          updated_by?: string
         }
         Relationships: [
           {
@@ -147,7 +135,6 @@ export type Database = {
           batch_id: string | null
           completed_at: string | null
           created_at: string
-          created_by: string
           error_message: string | null
           id: string
           metrics: Json | null
@@ -157,13 +144,11 @@ export type Database = {
           started_at: string | null
           status: string
           updated_at: string
-          updated_by: string
         }
         Insert: {
           batch_id?: string | null
           completed_at?: string | null
           created_at?: string
-          created_by: string
           error_message?: string | null
           id?: string
           metrics?: Json | null
@@ -173,13 +158,11 @@ export type Database = {
           started_at?: string | null
           status: string
           updated_at?: string
-          updated_by: string
         }
         Update: {
           batch_id?: string | null
           completed_at?: string | null
           created_at?: string
-          created_by?: string
           error_message?: string | null
           id?: string
           metrics?: Json | null
@@ -189,7 +172,6 @@ export type Database = {
           started_at?: string | null
           status?: string
           updated_at?: string
-          updated_by?: string
         }
         Relationships: [
           {
@@ -219,7 +201,6 @@ export type Database = {
         Row: {
           config_id: string | null
           created_at: string | null
-          created_by: string | null
           id: string
           is_required: boolean | null
           processor_type: string
@@ -229,12 +210,10 @@ export type Database = {
           step_name: string
           timeout_seconds: number | null
           updated_at: string | null
-          updated_by: string | null
         }
         Insert: {
           config_id?: string | null
           created_at?: string | null
-          created_by?: string | null
           id?: string
           is_required?: boolean | null
           processor_type: string
@@ -244,12 +223,10 @@ export type Database = {
           step_name: string
           timeout_seconds?: number | null
           updated_at?: string | null
-          updated_by?: string | null
         }
         Update: {
           config_id?: string | null
           created_at?: string | null
-          created_by?: string | null
           id?: string
           is_required?: boolean | null
           processor_type?: string
@@ -259,7 +236,6 @@ export type Database = {
           step_name?: string
           timeout_seconds?: number | null
           updated_at?: string | null
-          updated_by?: string | null
         }
         Relationships: [
           {
@@ -275,7 +251,6 @@ export type Database = {
         Row: {
           confidence: number | null
           created_at: string | null
-          created_by: string | null
           end_time: number
           expert_document_id: string | null
           id: string
@@ -285,12 +260,10 @@ export type Database = {
           start_time: number
           transcript: string
           updated_at: string | null
-          updated_by: string | null
         }
         Insert: {
           confidence?: number | null
           created_at?: string | null
-          created_by?: string | null
           end_time: number
           expert_document_id?: string | null
           id?: string
@@ -300,12 +273,10 @@ export type Database = {
           start_time: number
           transcript: string
           updated_at?: string | null
-          updated_by?: string | null
         }
         Update: {
           confidence?: number | null
           created_at?: string | null
-          created_by?: string | null
           end_time?: number
           expert_document_id?: string | null
           id?: string
@@ -315,7 +286,6 @@ export type Database = {
           start_time?: number
           transcript?: string
           updated_at?: string | null
-          updated_by?: string | null
         }
         Relationships: [
           {
@@ -390,7 +360,6 @@ export type Database = {
           category: string
           content_schema: Json | null
           created_at: string
-          created_by: string
           current_num_of_type: number | null
           description: string | null
           document_type: string
@@ -402,7 +371,6 @@ export type Database = {
           mime_type: string | null
           required_fields: Json | null
           updated_at: string
-          updated_by: string
           validation_rules: Json | null
         }
         Insert: {
@@ -410,7 +378,6 @@ export type Database = {
           category: string
           content_schema?: Json | null
           created_at?: string
-          created_by: string
           current_num_of_type?: number | null
           description?: string | null
           document_type: string
@@ -422,7 +389,6 @@ export type Database = {
           mime_type?: string | null
           required_fields?: Json | null
           updated_at?: string
-          updated_by: string
           validation_rules?: Json | null
         }
         Update: {
@@ -430,7 +396,6 @@ export type Database = {
           category?: string
           content_schema?: Json | null
           created_at?: string
-          created_by?: string
           current_num_of_type?: number | null
           description?: string | null
           document_type?: string
@@ -442,7 +407,6 @@ export type Database = {
           mime_type?: string | null
           required_fields?: Json | null
           updated_at?: string
-          updated_by?: string
           validation_rules?: Json | null
         }
         Relationships: []
@@ -450,43 +414,36 @@ export type Database = {
       domains: {
         Row: {
           created_at: string
-          created_by: string
           description: string | null
           id: string
           is_active: boolean
           name: string
           owner_id: string
           updated_at: string
-          updated_by: string
         }
         Insert: {
           created_at?: string
-          created_by?: string
           description?: string | null
           id?: string
           is_active?: boolean
           name: string
           owner_id?: string
           updated_at?: string
-          updated_by?: string
         }
         Update: {
           created_at?: string
-          created_by?: string
           description?: string | null
           id?: string
           is_active?: boolean
           name?: string
           owner_id?: string
           updated_at?: string
-          updated_by?: string
         }
         Relationships: []
       }
       email_addresses: {
         Row: {
           created_at: string
-          created_by: string
           domain_id: string
           email_address: string
           id: string
@@ -494,12 +451,10 @@ export type Database = {
           is_primary: boolean | null
           last_used_at: string | null
           updated_at: string
-          updated_by: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
-          created_by?: string
           domain_id?: string
           email_address: string
           id?: string
@@ -507,12 +462,10 @@ export type Database = {
           is_primary?: boolean | null
           last_used_at?: string | null
           updated_at?: string
-          updated_by?: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
-          created_by?: string
           domain_id?: string
           email_address?: string
           id?: string
@@ -520,7 +473,6 @@ export type Database = {
           is_primary?: boolean | null
           last_used_at?: string | null
           updated_at?: string
-          updated_by?: string
           user_id?: string | null
         }
         Relationships: [
@@ -539,7 +491,6 @@ export type Database = {
           content: string | null
           contents_length: number | null
           created_at: string | null
-          created_by: string
           date: string | null
           domain_id: string
           email_id: number
@@ -552,7 +503,6 @@ export type Database = {
           subject: string | null
           to_recipients: string | null
           updated_at: string
-          updated_by: string
           url_cnt: number | null
         }
         Insert: {
@@ -560,7 +510,6 @@ export type Database = {
           content?: string | null
           contents_length?: number | null
           created_at?: string | null
-          created_by?: string
           date?: string | null
           domain_id?: string
           email_id: number
@@ -573,7 +522,6 @@ export type Database = {
           subject?: string | null
           to_recipients?: string | null
           updated_at?: string
-          updated_by?: string
           url_cnt?: number | null
         }
         Update: {
@@ -581,7 +529,6 @@ export type Database = {
           content?: string | null
           contents_length?: number | null
           created_at?: string | null
-          created_by?: string
           date?: string | null
           domain_id?: string
           email_id?: number
@@ -594,7 +541,6 @@ export type Database = {
           subject?: string | null
           to_recipients?: string | null
           updated_at?: string
-          updated_by?: string
           url_cnt?: number | null
         }
         Relationships: [
@@ -617,7 +563,6 @@ export type Database = {
           confidence_score: number | null
           content_type: string | null
           created_at: string
-          created_by: string | null
           diarization_complete: boolean | null
           document_type_id: string | null
           error_message: string | null
@@ -650,7 +595,6 @@ export type Database = {
           topics: string[] | null
           transcription_complete: boolean | null
           updated_at: string
-          updated_by: string | null
           version: number | null
           whisper_model_used: string | null
           word_count: number | null
@@ -664,7 +608,6 @@ export type Database = {
           confidence_score?: number | null
           content_type?: string | null
           created_at?: string
-          created_by?: string | null
           diarization_complete?: boolean | null
           document_type_id?: string | null
           error_message?: string | null
@@ -697,7 +640,6 @@ export type Database = {
           topics?: string[] | null
           transcription_complete?: boolean | null
           updated_at?: string
-          updated_by?: string | null
           version?: number | null
           whisper_model_used?: string | null
           word_count?: number | null
@@ -711,7 +653,6 @@ export type Database = {
           confidence_score?: number | null
           content_type?: string | null
           created_at?: string
-          created_by?: string | null
           diarization_complete?: boolean | null
           document_type_id?: string | null
           error_message?: string | null
@@ -744,7 +685,6 @@ export type Database = {
           topics?: string[] | null
           transcription_complete?: boolean | null
           updated_at?: string
-          updated_by?: string | null
           version?: number | null
           whisper_model_used?: string | null
           word_count?: number | null
@@ -798,7 +738,6 @@ export type Database = {
         Row: {
           bio: string | null
           created_at: string
-          created_by: string
           email_address: string | null
           experience_years: number | null
           expert_name: string
@@ -815,13 +754,11 @@ export type Database = {
           sync_error: string | null
           sync_status: string | null
           updated_at: string
-          updated_by: string
           user_id: string | null
         }
         Insert: {
           bio?: string | null
           created_at?: string
-          created_by?: string
           email_address?: string | null
           experience_years?: number | null
           expert_name: string
@@ -838,13 +775,11 @@ export type Database = {
           sync_error?: string | null
           sync_status?: string | null
           updated_at?: string
-          updated_by?: string
           user_id?: string | null
         }
         Update: {
           bio?: string | null
           created_at?: string
-          created_by?: string
           email_address?: string | null
           experience_years?: number | null
           expert_name?: string
@@ -861,7 +796,6 @@ export type Database = {
           sync_error?: string | null
           sync_status?: string | null
           updated_at?: string
-          updated_by?: string
           user_id?: string | null
         }
         Relationships: []
@@ -1034,21 +968,18 @@ export type Database = {
       lionya_emails: {
         Row: {
           created_at: string
-          created_by: string | null
           email_address: string | null
           email_count: number | null
           id: string
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
           email_address?: string | null
           email_count?: number | null
           id?: string
         }
         Update: {
           created_at?: string
-          created_by?: string | null
           email_address?: string | null
           email_count?: number | null
           id?: string
@@ -1061,7 +992,6 @@ export type Database = {
           asset_type: Database["public"]["Enums"]["asset_type_enum"] | null
           asset_type_id: string | null
           created_at: string
-          created_by: string
           expert_document_id: string | null
           id: string
           importance_level: number | null
@@ -1071,7 +1001,6 @@ export type Database = {
           timestamp_end: number | null
           timestamp_start: number | null
           updated_at: string
-          updated_by: string
           user_notes: string | null
         }
         Insert: {
@@ -1079,7 +1008,6 @@ export type Database = {
           asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
           asset_type_id?: string | null
           created_at?: string
-          created_by: string
           expert_document_id?: string | null
           id?: string
           importance_level?: number | null
@@ -1089,7 +1017,6 @@ export type Database = {
           timestamp_end?: number | null
           timestamp_start?: number | null
           updated_at?: string
-          updated_by: string
           user_notes?: string | null
         }
         Update: {
@@ -1097,7 +1024,6 @@ export type Database = {
           asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
           asset_type_id?: string | null
           created_at?: string
-          created_by?: string
           expert_document_id?: string | null
           id?: string
           importance_level?: number | null
@@ -1107,7 +1033,6 @@ export type Database = {
           timestamp_end?: number | null
           timestamp_start?: number | null
           updated_at?: string
-          updated_by?: string
           user_notes?: string | null
         }
         Relationships: [
@@ -1183,7 +1108,6 @@ export type Database = {
       presentation_collections: {
         Row: {
           created_at: string | null
-          created_by: string | null
           description: string | null
           id: string
           is_public: boolean | null
@@ -1192,7 +1116,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          created_by?: string | null
           description?: string | null
           id?: string
           is_public?: boolean | null
@@ -1201,7 +1124,6 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          created_by?: string | null
           description?: string | null
           id?: string
           is_public?: boolean | null
@@ -1461,7 +1383,6 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
-          created_by: string | null
           error_details: string | null
           error_message: string | null
           id: string
@@ -1475,12 +1396,10 @@ export type Database = {
           total_duration_seconds: number | null
           total_files: number
           updated_at: string
-          updated_by: string | null
         }
         Insert: {
           completed_at?: string | null
           created_at?: string
-          created_by?: string | null
           error_details?: string | null
           error_message?: string | null
           id?: string
@@ -1494,12 +1413,10 @@ export type Database = {
           total_duration_seconds?: number | null
           total_files: number
           updated_at?: string
-          updated_by?: string | null
         }
         Update: {
           completed_at?: string | null
           created_at?: string
-          created_by?: string | null
           error_details?: string | null
           error_message?: string | null
           id?: string
@@ -1513,7 +1430,6 @@ export type Database = {
           total_duration_seconds?: number | null
           total_files?: number
           updated_at?: string
-          updated_by?: string | null
         }
         Relationships: []
       }
@@ -1575,7 +1491,6 @@ export type Database = {
           cleaned_authors: string | null
           concept_count: number | null
           created_at: string
-          created_by: string | null
           date_text: string | null
           day: number | null
           domain_id: string
@@ -1607,7 +1522,6 @@ export type Database = {
           trust_level: number | null
           uni_document_type_id: string | null
           updated_at: string
-          updated_by: string | null
           url_id: string | null
           user_id: string | null
           year: number | null
@@ -1621,7 +1535,6 @@ export type Database = {
           cleaned_authors?: string | null
           concept_count?: number | null
           created_at?: string
-          created_by?: string | null
           date_text?: string | null
           day?: number | null
           domain_id?: string
@@ -1653,7 +1566,6 @@ export type Database = {
           trust_level?: number | null
           uni_document_type_id?: string | null
           updated_at?: string
-          updated_by?: string | null
           url_id?: string | null
           user_id?: string | null
           year?: number | null
@@ -1667,7 +1579,6 @@ export type Database = {
           cleaned_authors?: string | null
           concept_count?: number | null
           created_at?: string
-          created_by?: string | null
           date_text?: string | null
           day?: number | null
           domain_id?: string
@@ -1699,7 +1610,6 @@ export type Database = {
           trust_level?: number | null
           uni_document_type_id?: string | null
           updated_at?: string
-          updated_by?: string | null
           url_id?: string | null
           user_id?: string | null
           year?: number | null
@@ -1738,7 +1648,6 @@ export type Database = {
           audio_quality_metrics: Json | null
           content_extracted: boolean | null
           created_at: string
-          created_by: string | null
           deleted: boolean | null
           document_type_id: string | null
           drive_id: string
@@ -1763,7 +1672,6 @@ export type Database = {
           sync_status: string | null
           thumbnail_link: string | null
           updated_at: string
-          updated_by: string | null
           web_view_link: string | null
         }
         Insert: {
@@ -1775,7 +1683,6 @@ export type Database = {
           audio_quality_metrics?: Json | null
           content_extracted?: boolean | null
           created_at?: string
-          created_by?: string | null
           deleted?: boolean | null
           document_type_id?: string | null
           drive_id: string
@@ -1800,7 +1707,6 @@ export type Database = {
           sync_status?: string | null
           thumbnail_link?: string | null
           updated_at?: string
-          updated_by?: string | null
           web_view_link?: string | null
         }
         Update: {
@@ -1812,7 +1718,6 @@ export type Database = {
           audio_quality_metrics?: Json | null
           content_extracted?: boolean | null
           created_at?: string
-          created_by?: string | null
           deleted?: boolean | null
           document_type_id?: string | null
           drive_id?: string
@@ -1837,7 +1742,6 @@ export type Database = {
           sync_status?: string | null
           thumbnail_link?: string | null
           updated_at?: string
-          updated_by?: string | null
           web_view_link?: string | null
         }
         Relationships: [
@@ -1856,13 +1760,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "sources_google_parent_folder_id_fkey"
-            columns: ["parent_folder_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["drive_id"]
-          },
-          {
             foreignKeyName: "sources_google_sync_id_fkey"
             columns: ["sync_id"]
             isOneToOne: false
@@ -1874,32 +1771,26 @@ export type Database = {
       speaker_profiles: {
         Row: {
           created_at: string | null
-          created_by: string | null
           expert_id: string | null
           id: string
           name: string | null
           updated_at: string | null
-          updated_by: string | null
           voice_characteristics: Json | null
         }
         Insert: {
           created_at?: string | null
-          created_by?: string | null
           expert_id?: string | null
           id?: string
           name?: string | null
           updated_at?: string | null
-          updated_by?: string | null
           voice_characteristics?: Json | null
         }
         Update: {
           created_at?: string | null
-          created_by?: string | null
           expert_id?: string | null
           id?: string
           name?: string | null
           updated_at?: string | null
-          updated_by?: string | null
           voice_characteristics?: Json | null
         }
         Relationships: [
@@ -1915,36 +1806,99 @@ export type Database = {
       sync_history: {
         Row: {
           completed_at: string | null
-          created_by: string | null
+          duration_ms: number | null
           error_message: string | null
+          files_added: number | null
+          files_error: number | null
+          files_processed: number | null
+          files_skipped: number | null
+          files_total: number | null
+          files_updated: number | null
           folder_id: string
           folder_name: string
           id: string
-          items_processed: number | null
           status: string
           timestamp: string
         }
         Insert: {
           completed_at?: string | null
-          created_by?: string | null
+          duration_ms?: number | null
           error_message?: string | null
+          files_added?: number | null
+          files_error?: number | null
+          files_processed?: number | null
+          files_skipped?: number | null
+          files_total?: number | null
+          files_updated?: number | null
           folder_id: string
           folder_name?: string
           id?: string
-          items_processed?: number | null
           status?: string
           timestamp?: string
         }
         Update: {
           completed_at?: string | null
-          created_by?: string | null
+          duration_ms?: number | null
           error_message?: string | null
+          files_added?: number | null
+          files_error?: number | null
+          files_processed?: number | null
+          files_skipped?: number | null
+          files_total?: number | null
+          files_updated?: number | null
           folder_id?: string
           folder_name?: string
           id?: string
-          items_processed?: number | null
           status?: string
           timestamp?: string
+        }
+        Relationships: []
+      }
+      sync_statistics: {
+        Row: {
+          created_at: string | null
+          folder_id: string | null
+          folder_name: string | null
+          google_drive_documents: number | null
+          google_drive_folders: number | null
+          id: string
+          local_files: number | null
+          local_only_files: number | null
+          matching_files: number | null
+          mp4_files: number | null
+          mp4_total_size: string | null
+          new_files: number | null
+          total_google_drive_items: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          folder_id?: string | null
+          folder_name?: string | null
+          google_drive_documents?: number | null
+          google_drive_folders?: number | null
+          id?: string
+          local_files?: number | null
+          local_only_files?: number | null
+          matching_files?: number | null
+          mp4_files?: number | null
+          mp4_total_size?: string | null
+          new_files?: number | null
+          total_google_drive_items?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          folder_id?: string | null
+          folder_name?: string | null
+          google_drive_documents?: number | null
+          google_drive_folders?: number | null
+          id?: string
+          local_files?: number | null
+          local_only_files?: number | null
+          matching_files?: number | null
+          mp4_files?: number | null
+          mp4_total_size?: string | null
+          new_files?: number | null
+          total_google_drive_items?: number | null
         }
         Relationships: []
       }
@@ -2078,34 +2032,28 @@ export type Database = {
         Row: {
           corrected_text: string | null
           created_at: string | null
-          created_by: string | null
           id: string
           original_text: string | null
           segment_id: string | null
           updated_at: string | null
-          updated_by: string | null
           user_id: string | null
         }
         Insert: {
           corrected_text?: string | null
           created_at?: string | null
-          created_by?: string | null
           id?: string
           original_text?: string | null
           segment_id?: string | null
           updated_at?: string | null
-          updated_by?: string | null
           user_id?: string | null
         }
         Update: {
           corrected_text?: string | null
           created_at?: string | null
-          created_by?: string | null
           id?: string
           original_text?: string | null
           segment_id?: string | null
           updated_at?: string | null
-          updated_by?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -2123,36 +2071,30 @@ export type Database = {
           asset_id: string | null
           content: string
           created_at: string | null
-          created_by: string | null
           id: string
           presentation_id: string | null
           timestamp: number | null
           updated_at: string | null
-          updated_by: string | null
           user_id: string
         }
         Insert: {
           asset_id?: string | null
           content: string
           created_at?: string | null
-          created_by?: string | null
           id?: string
           presentation_id?: string | null
           timestamp?: number | null
           updated_at?: string | null
-          updated_by?: string | null
           user_id: string
         }
         Update: {
           asset_id?: string | null
           content?: string
           created_at?: string | null
-          created_by?: string | null
           id?: string
           presentation_id?: string | null
           timestamp?: number | null
           updated_at?: string | null
-          updated_by?: string | null
           user_id?: string
         }
         Relationships: [
@@ -2259,22 +2201,6 @@ export type Database = {
           deletion_rule: string
         }[]
       }
-      create_audit_triggers: {
-        Args: {
-          p_table_name: string
-        }
-        Returns: undefined
-      }
-      drop_unique_constraint_created_by: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      evaluate_table_constraints: {
-        Args: {
-          table_name: string
-        }
-        Returns: undefined
-      }
       find_mp4_files_in_folder: {
         Args: {
           folder_id: string
@@ -2321,6 +2247,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           create_statement: string
+        }[]
+      }
+      get_document_type_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          mime_type: string
+          count: number
         }[]
       }
       get_domain_id_by_name: {
