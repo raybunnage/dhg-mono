@@ -154,6 +154,19 @@ Clean transcription generation from MP4 files with comprehensive audio processin
 
 
 ## original code
+I need you to add a new experts page soon.  But before you do that I need you to sysematically go through my code and find references to previous work on experts - I think can just search for any thing that has the word expert in it.  I believe there are a lot of orphaned functions and ui dealing with example calls and previous attempts at managing experts. I will be wanting to archive and get rid of those.
+
+To help me do so  Generate a thorough report in markdown syntax that I can put into my docs folder that will assess all the experts code and make suggestikons about wht is needed and what can be removed - and even provide commands to do so I can paste into my terminal
+
+
+Now that I've cleaned up the experts code I need you to add a new experts page.  It will be a dashboard that will allow me to manage experts similar to all the other dashboards you created for me. I have an existing experts table and I have an existing experts_documents table.  I need to be able to add new experts, edit their information, and delete them.  I will also need to be able to see a list of all experts and select one to view their details.  I will also need to be able to add new expert documents and edit their information, and delete them.  I will also need to be able to see a list of all expert documents and select one to view their details.
+
+The thing about experts is the the information for them comes from many places. Some of it comes from the presentation announcement docx files which we are processing with ai and extracting out the unstructured information that comes from cvs and bios.  Some of it comes from their research papers. Some of it could come from the web sites that are extracted from some of these documents such as their lab page. Yes, we could even get their linked in profiles.  Basically the experts who crate t
+
+  We have to take all these sources and extract out the unstructureed (but mostly similar and consistent information )
+
+
+
 
 I need you to improve the supabase page.  It is all about the supabase design and how we can improve it to make it more efficient and easier to use.  It needs to be more intuitive and follow the steps required to get the job done.  
 
