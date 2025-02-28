@@ -2201,6 +2201,10 @@ export type Database = {
           deletion_rule: string
         }[]
       }
+      export_functions_audit: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       find_mp4_files_in_folder: {
         Args: {
           folder_id: string
