@@ -272,9 +272,6 @@ async function listAllFilesRecursively(folderId: string, accessToken: string): P
 /**
  * Sync with Google Drive - imports new files and updates existing ones
  */
-/**
- * Sync with Google Drive - imports new files and updates existing ones
- */
 export async function syncWithGoogleDrive(): Promise<SyncResult> {
   // Create a unique ID for this sync operation
   const syncId = uuidv4();
@@ -300,12 +297,7 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
       folder_name: folderName,
       timestamp: new Date().toISOString(),
       status: 'in_progress',
-      files_processed: 0,
-      files_total: 0,
-      files_added: 0,
-      files_updated: 0,
-      files_skipped: 0,
-      files_error: 0
+      processed_items: 0 // Changed from items_processed to processed_items
     });
     
     if (insertError) {
@@ -348,13 +340,7 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
       .update({
         completed_at: new Date().toISOString(),
         status: errors.length > 0 ? 'completed_with_errors' : 'completed',
-        files_processed: addedCount,
-        files_total: newFiles.length,
-        files_added: addedCount,
-        files_updated: 0,
-        files_skipped: newFiles.length - addedCount - errors.length,
-        files_error: errors.length,
-        duration_ms: Date.now() - new Date(syncStats.timestamp || Date.now()).getTime(),
+        processed_items: addedCount, // Changed from items_processed to processed_items
         error_message: errors.length > 0 ? JSON.stringify(errors) : null
       })
       .eq('id', syncId);
@@ -384,7 +370,7 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
       .update({
         completed_at: new Date().toISOString(),
         status: 'failed',
-        files_processed: 0,
+        processed_items: 0, // Added processed_items to be safe
         error_message: error.message
       })
       .eq('id', syncId);
@@ -392,6 +378,7 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
     throw error;
   }
 }
+
 /**
  * Get detailed metadata for a file
  */
@@ -580,21 +567,23 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
       import.meta.env.VITE_SUPABASE_URL,
       import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
     );
-
+    
     // Process files in batches to avoid overloading the database
-    const batchSize = 10; // Process in larger batches now that we don't need user validation
+    const batchSize = 1; // Process one at a time for better error tracking
     
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);
       
-      // Create records for insertion
+      // Create records for insertion - CRITICAL: NO USER REFERENCES!
       const records = batch.map(file => {
         // Extract parent folder from file.parents if available
         const parentFolderId = file.parents && file.parents.length > 0 
           ? file.parents[0] 
           : null;
-          
-        const record: any = {
+        
+        // Create record with absolute minimum required fields
+        // IMPORTANT: No created_by or updated_by fields
+        const record = {
           drive_id: file.id,
           name: file.name,
           mime_type: file.mimeType,
@@ -603,7 +592,6 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           parent_folder_id: parentFolderId,
-          parent_path: null,
           is_root: false,
           deleted: false,
           sync_status: 'pending',
@@ -611,14 +599,14 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
         };
         
         if (file.size) {
+          // @ts-ignore - Add size if available
           record.size = parseInt(file.size);
         }
         
         return record;
       });
       
-      // Don't log the entire record - it's too verbose
-      console.log(`Inserting batch of ${records.length} files`);
+      console.log('Attempting insert with simplified record (NO USER REFS):', JSON.stringify(records[0], null, 2));
       
       // Use the admin client to insert the batch
       const { data, error } = await supabaseAdmin
@@ -628,16 +616,16 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
         
       if (error) {
         console.error('Error inserting batch:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         errorCount += batch.length;
       } else {
-        console.log(`Successfully inserted ${data.length} files`);
+        console.log(`Successfully inserted ${data.length} files:`, data);
         successCount += data.length;
       }
     }
     
-    // Create a sync history record
+    // Create a sync history record - also with NO user references
     const syncId = uuidv4();
-    
     await supabaseAdmin.from('sync_history').insert({
       id: syncId,
       folder_id: import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID || '',
@@ -645,11 +633,9 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
       timestamp: new Date().toISOString(),
       completed_at: new Date().toISOString(),
       status: errorCount > 0 ? 'completed_with_errors' : 'completed',
-      files_processed: successCount + errorCount,
-      files_total: files.length,
-      files_added: successCount,
-      files_error: errorCount,
+      processed_items: successCount + errorCount, // Changed from items_processed to processed_items
       error_message: errorCount > 0 ? `Failed to insert ${errorCount} files` : null
+      // NO created_by field
     });
     
     // Return the results
@@ -665,6 +651,7 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
     };
   }
 }
+
 /**
  * Helper function to get database table structure
  */

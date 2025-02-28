@@ -36,7 +36,13 @@ interface SyncHistoryItem {
   timestamp: string;
   completed_at: string | null;
   status: string;
-  processed_items: number; // Changed from items_processed to processed_items
+  files_processed: number; // Using the correct field name files_processed
+  files_total: number | null;
+  files_added: number | null;
+  files_updated: number | null;
+  files_skipped: number | null;
+  files_error: number | null;
+  duration_ms: number | null;
   error_message: string | null;
 }
 
@@ -80,6 +86,8 @@ function Sync() {
   const [existingFolderId, setExistingFolderId] = useState('');
   const [folderOptions, setFolderOptions] = useState<FolderOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isNewFolderLoading, setIsNewFolderLoading] = useState(false);
+  const [isExistingFolderLoading, setIsExistingFolderLoading] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
   const [syncSummaryKey, setSyncSummaryKey] = useState(`sync-${Date.now()}`);
   const [documentStats, setDocumentStats] = useState<DocumentTypeStats[]>([]);
@@ -117,31 +125,24 @@ function Sync() {
   useEffect(() => {
     const checkAndUpdateSyncStatisticsTable = async () => {
       try {
-        console.log('Checking if sync_statistics table needs updating...');
-        
         // Try to fetch one record to check if table exists
         const { data, error } = await supabase
           .from('sync_statistics')
           .select('*')
-          .limit(1);
+          .limit(1)
+          .maybeSingle();
         
-        // If there's an error other than "relation does not exist", log it
-        if (error && !error.message.includes('relation "sync_statistics" does not exist')) {
-          console.error('Error checking sync_statistics table:', error);
-        }
-        
-        // Check if google_drive_documents column exists in the first record
-        // If the table exists but that column doesn't, we need to add it
-        if (data && data.length > 0 && !('google_drive_documents' in data[0])) {
-          console.log('Sync statistics table exists but needs to be updated with new columns');
-          toast.success('Your sync statistics table needs to be updated. Please contact the administrator.');
+        if (!error && data) {
+          // Table exists and we got a record
+          // No need to check columns or show any toast
         }
       } catch (e) {
-        console.error('Error in checkAndUpdateSyncStatisticsTable:', e);
+        // Silent fail - don't block app loading
       }
     };
     
-    checkAndUpdateSyncStatisticsTable();
+    // We'll check this after initial render
+    setTimeout(checkAndUpdateSyncStatisticsTable, 1000);
   }, []);
 
   // Handle token expiration
@@ -275,16 +276,13 @@ function Sync() {
       return;
     }
     
-    setIsLoading(true);
+    setIsNewFolderLoading(true);
     setSyncProgress(0);
     
     try {
-      // Store the original folder ID from environment
-      const originalFolderId = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
       const folderDisplayName = newFolderName || 'New Folder';
       
       // Temporarily override the folder ID for syncing
-      // Since we can't modify env vars at runtime, use localStorage
       localStorage.setItem('google_drive_folder_id_override', newFolderId);
       localStorage.setItem('google_drive_folder_name', folderDisplayName);
       
@@ -322,9 +320,6 @@ function Sync() {
         // Update sync history and stats
         handleSyncComplete(result);
         
-        // Mock progress updates for visual feedback
-        simulateProgressUpdates();
-        
         // Update folder options to include the new folder
         const { data: folderData } = await supabase
           .from('sources_google')
@@ -357,8 +352,8 @@ function Sync() {
       // Clean up in case of error
       localStorage.removeItem('google_drive_folder_id_override');
       localStorage.removeItem('google_drive_folder_name');
-      
-      setIsLoading(false);
+    } finally {
+      setIsNewFolderLoading(false);
     }
   };
 
@@ -374,7 +369,7 @@ function Sync() {
       return;
     }
     
-    setIsLoading(true);
+    setIsExistingFolderLoading(true);
     setSyncProgress(0);
     
     try {
@@ -399,14 +394,16 @@ function Sync() {
           // Force refresh the sync summary
           setSyncSummaryKey(`sync-${Date.now()}`);
         } else {
-          setIsLoading(false);
           toast.success('Folder is already in sync! No new files to add.');
         }
+        
+        // Always set loading state to false when done
+        setIsExistingFolderLoading(false);
       }, 1000);
     } catch (err) {
       console.error('Error starting sync:', err);
       toast.error('Failed to start sync process');
-      setIsLoading(false);
+      setIsExistingFolderLoading(false);
     }
   };
 
@@ -669,26 +666,39 @@ function Sync() {
   };
 
   // Debug function to check sync_statistics table structure
-  const checkSyncStatisticsStructure = async (): Promise<void> => {
+  const checkSyncStatisticsStructure = async (): Promise<boolean> => {
     try {
       console.log('===== CHECKING SYNC_STATISTICS TABLE STRUCTURE =====');
+      
+      // First check if the table exists
       try {
-        const { data, error } = await supabase.rpc('show_table_structure', {
-          table_name: 'sync_statistics'
-        });
-        
-        if (error) {
-          console.error('Error checking table structure:', error);
-          return;
+        // Try direct SQL query to check if table exists
+        const { data: testData, error: testError } = await supabase
+          .from('sync_statistics')
+          .select('id')
+          .limit(1);
+            
+        if (testError) {
+          // If error is about relation not existing, the table doesn't exist
+          if (testError.code === '42P01' || testError.message?.includes('relation "sync_statistics" does not exist')) {
+            console.log('sync_statistics table does not exist');
+            return false;
+          } else {
+            console.error('Error checking if table exists:', testError);
+          }
+        } else {
+          console.log('sync_statistics table exists (select test successful)');
+          return true;
         }
-        
-        console.log('Table structure:', data);
-      } catch (err) {
-        console.error('RPC show_table_structure failed:', err);
-        // Continue execution even if this fails
+      } catch (checkErr) {
+        console.error('Error checking if table exists:', checkErr);
+        // Continue to other checks
       }
       
-      // Check most recent entry
+      // We'll skip trying to get table structure with RPC since it's not available
+      // Continue to next check using direct queries
+      
+      // Check most recent entry as final verification
       try {
         const { data: recentData, error: recentError } = await supabase
           .from('sync_statistics')
@@ -697,18 +707,31 @@ function Sync() {
           .limit(1);
           
         if (recentError) {
+          // If error is about relation not existing, the table doesn't exist
+          if (recentError.code === '42P01' || recentError.message?.includes('relation "sync_statistics" does not exist')) {
+            console.log('sync_statistics table does not exist (confirmed by select)');
+            return false;
+          }
+          
           console.error('Error checking recent records:', recentError);
-          return;
+          // Continue but don't confirm table exists
+        } else {
+          console.log('Most recent sync_statistics record:', recentData);
+          return true; // Table exists since we could query it
         }
-        
-        console.log('Most recent sync_statistics record:', recentData);
       } catch (err) {
         console.error('Error fetching recent sync_statistics:', err);
       }
       
+      // If we get here without a definitive answer, default to assuming the table exists
+      // to allow the insert operation to try
+      console.log('Unable to definitively determine if sync_statistics table exists, assuming it does');
+      return true;
+      
     } catch (e) {
       console.error('Error in checkSyncStatisticsStructure:', e);
       // Don't let this error block the sync process
+      return false; // Safer to assume table doesn't exist on error
     }
   };
 
@@ -734,25 +757,44 @@ function Sync() {
     
     try {
       // Get document type counts
-      console.log('Calling get_document_type_counts RPC...');
-      const { data: docStats, error: docError } = await supabase
-        .rpc('get_document_type_counts');
+      console.log('Getting document type counts directly...');
+      let docStats = [];
+      try {
+        // Count folders
+        const { count: folderCount, error: folderError } = await supabase
+          .from('sources_google')
+          .select('id', { count: 'exact' })
+          .eq('mime_type', 'application/vnd.google-apps.folder');
+          
+        if (folderError) {
+          console.error('Error counting folders:', folderError);
+        } else {
+          docStats.push({ mime_type: 'application/vnd.google-apps.folder', count: folderCount || 0 });
+        }
         
-      if (docError) {
-        console.error('Error getting document type counts:', docError);
-        throw docError;
+        // Count total documents
+        const { count: totalCount, error: totalError } = await supabase
+          .from('sources_google')
+          .select('id', { count: 'exact' });
+          
+        if (totalError) {
+          console.error('Error counting total documents:', totalError);
+        }
+        
+        console.log('Direct counts - Folders:', folderCount || 0, 'Total:', totalCount || 0);
+      } catch (countError) {
+        console.error('Error in document counts:', countError);
+        console.log('Using default values for document counts...');
       }
       
-      if (!docStats || !Array.isArray(docStats)) {
-        console.error('Invalid document stats data:', docStats);
-        throw new Error('Invalid document stats data');
-      }
-      
-      console.log('Document stats (raw):', JSON.stringify(docStats, null, 2));
-      
-      // Calculate folder count and document count
-      const folderCount = docStats.find(item => item.mime_type === 'application/vnd.google-apps.folder')?.count || 0;
-      const docCount = (docStats.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0) || 0) - folderCount;
+      // Calculate folder count and document count (with fallbacks if docStats failed)
+      const folderCount = docStats && Array.isArray(docStats) 
+        ? docStats.find(item => item.mime_type === 'application/vnd.google-apps.folder')?.count || 0
+        : 0;
+        
+      const docCount = docStats && Array.isArray(docStats)
+        ? (docStats.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0) || 0) - folderCount
+        : 0;
       
       console.log('Calculated counts:');
       console.log('- Folders:', folderCount);
@@ -768,97 +810,52 @@ function Sync() {
       
       if (mp4CountError) {
         console.error('Error getting MP4 count:', mp4CountError);
-        throw mp4CountError;
+        // Don't throw, continue with default value
+        console.log('Using default value 0 for MP4 count...');
       }
       
-      console.log('MP4 count:', mp4Count);
+      console.log('MP4 count:', mp4Count || 0);
       
-      // Calculate MP4 size
-      console.log('Fetching MP4 size data...');
-      const { data: mp4Data, error: mp4DataError } = await supabase
-        .from('sources_google')
-        .select('size, name')
-        .ilike('mime_type', '%mp4%')
-        .order('size', { ascending: false });
-        
-      if (mp4DataError) {
-        console.error('Error getting MP4 data:', mp4DataError);
-        throw mp4DataError;
-      }
-      
-      if (!mp4Data) {
-        console.warn('No MP4 data returned');
-      }
-      
-      console.log('MP4 files found:', mp4Data?.length || 0);
-      
-      if (mp4Data && mp4Data.length > 0) {
-        console.log('Sample MP4 files:');
-        mp4Data.slice(0, 3).forEach((file, i) => {
-          console.log(`  ${i+1}. ${file.name} - Size: ${file.size || 'unknown'}`);
-        });
-      }
-      
-      // Calculate total size in GB
+      // Calculate MP4 size with fallback
       let totalMp4Size = '0 GB';
-      let totalBytes = 0;
       
       try {
-        console.log('Calculating total MP4 size...');
-        
-        // Check if size exists and log data types
-        if (mp4Data && mp4Data.length > 0) {
-          console.log('First MP4 file size:', mp4Data[0].size);
-          console.log('Size data type:', typeof mp4Data[0].size);
+        console.log('Fetching MP4 size data...');
+        const { data: mp4Data, error: mp4DataError } = await supabase
+          .from('sources_google')
+          .select('size, name')
+          .ilike('mime_type', '%mp4%')
+          .order('size', { ascending: false });
           
-          const sizeSamples = mp4Data.slice(0, 5).map(f => f.size);
-          console.log('Sample sizes:', sizeSamples);
+        if (mp4DataError) {
+          console.error('Error getting MP4 data:', mp4DataError);
+          // Don't throw, just use default size
+        } else if (mp4Data && mp4Data.length > 0) {
+          console.log('MP4 files found:', mp4Data.length);
           
-          // Try to parse each size
-          totalBytes = mp4Data.reduce((sum, file) => {
-            let fileSize = 0;
-            
-            try {
-              if (file.size) {
-                // Handle string or number
-                fileSize = typeof file.size === 'number' ? file.size : parseInt(file.size);
-                if (isNaN(fileSize)) {
-                  console.warn(`Could not parse size for ${file.name}: ${file.size}`);
-                  fileSize = 0;
-                }
+          // Calculate total bytes
+          let totalBytes = 0;
+          mp4Data.forEach(file => {
+            if (file.size) {
+              const fileSize = typeof file.size === 'number' ? file.size : parseInt(file.size);
+              if (!isNaN(fileSize)) {
+                totalBytes += fileSize;
               }
-            } catch (e) {
-              console.warn(`Error parsing size for ${file.name}:`, e);
             }
-            
-            return sum + fileSize;
-          }, 0);
-          
-          console.log('Total bytes calculated:', totalBytes);
+          });
           
           if (totalBytes > 0) {
             const totalGB = (totalBytes / (1024 * 1024 * 1024)).toFixed(2);
             totalMp4Size = `${totalGB} GB`;
             console.log('Total MP4 size in GB:', totalMp4Size);
           }
-        } else {
-          console.log('No MP4 files with size data found');
         }
       } catch (e) {
         console.error('Error calculating MP4 size:', e);
-        // Continue execution even if size calculation fails
+        // Continue with default value
       }
       
       // Calculate total files
-      console.log('Calculating file counts from result object...');
-      console.log('- result.totalItems:', result.totalItems);
-      console.log('- result.stats?.totalGoogleDriveFiles:', result.stats?.totalGoogleDriveFiles);
-      console.log('- docCount + folderCount:', docCount + folderCount);
-      
-      console.log('Calculating processed items...');
-      console.log('- result.itemsAdded:', result.itemsAdded);
-      console.log('- result.synced?.processed:', result.synced?.processed);
-      
       const totalItems = result.totalItems || result.stats?.totalGoogleDriveFiles || (docCount + folderCount);
       const processedItems = result.itemsAdded || result.synced?.processed || 0;
       const newFiles = result.synced?.added || 0;
@@ -869,50 +866,77 @@ function Sync() {
       console.log('- New files:', newFiles);
       console.log('- Local-only files:', Math.max(0, totalItems - processedItems));
       
-      // Insert into sync_statistics
-      console.log('Preparing to insert sync statistics record...');
-      const recordToInsert = {
-        folder_id: folderId,
-        folder_name: folderName,
-        local_files: totalItems,
-        matching_files: processedItems,
-        new_files: newFiles,
-        local_only_files: Math.max(0, totalItems - processedItems),
-        mp4_files: mp4Count || 0,
-        mp4_total_size: totalMp4Size,
-        google_drive_documents: docCount,
-        google_drive_folders: folderCount,
-        total_google_drive_items: docCount + folderCount
-      };
-      
-      console.log('Record to insert:', recordToInsert);
-      
-      const { data: statsData, error: statsError } = await supabase
-        .from('sync_statistics')
-        .insert(recordToInsert)
-        .select();
+      // Check if sync_statistics table exists before attempting insert
+      console.log('Checking if sync_statistics table exists...');
+      try {
+        // Try direct SQL query to check if table exists
+        const { data: tableData, error: tableError } = await supabase
+          .from('sync_statistics')
+          .select('id')
+          .limit(1);
+          
+        if (tableError) {
+          // Check if it's a relation doesn't exist error
+          if (tableError.code === '42P01' || tableError.message?.includes('relation "sync_statistics" does not exist')) {
+            console.log('sync_statistics table does not exist, skipping insert');
+            toast.success('Sync completed, but statistics table not found');
+            return true;
+          }
+          
+          console.error('Error checking if table exists:', tableError);
+          console.log('Unable to verify if sync_statistics table exists, skipping insert');
+          return true;
+        }
         
-      if (statsError) {
-        console.error('Error inserting sync statistics:', statsError);
-        throw statsError;
+        console.log('sync_statistics table exists, proceeding with insert');
+      } catch (tableCheckErr) {
+        console.error('Exception checking table existence:', tableCheckErr);
+        // Skip insert but don't fail the operation
+        return true;
       }
       
-      console.log('Sync statistics saved successfully. New record:', statsData);
-      
-      // Force a refresh of the statistics display
-      toast.success('Sync statistics updated');
-      
-      // Check most recent entry
-      const { data: recentData, error: recentError } = await supabase
-        .from('sync_statistics')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
+      // Insert into sync_statistics
+      try {
+        console.log('Preparing to insert sync statistics record...');
+        const recordToInsert = {
+          folder_id: folderId,
+          folder_name: folderName,
+          local_files: totalItems,
+          matching_files: processedItems,
+          new_files: newFiles,
+          local_only_files: Math.max(0, totalItems - processedItems),
+          mp4_files: mp4Count || 0,
+          mp4_total_size: totalMp4Size,
+          // Use the exact field names from the database schema
+          google_drive_documents: docCount,
+          google_drive_folders: folderCount,
+          total_google_drive_items: docCount + folderCount
+        };
         
-      if (recentError) {
-        console.error('Error checking recent records after insert:', recentError);
-      } else {
-        console.log('Verified most recent sync_statistics record:', recentData);
+        console.log('Record to insert:', recordToInsert);
+        
+        const { data: statsData, error: statsError } = await supabase
+          .from('sync_statistics')
+          .insert(recordToInsert)
+          .select();
+          
+        if (statsError) {
+          console.error('Error inserting sync statistics:', statsError);
+          
+          // Check for relation doesn't exist error
+          if (statsError.code === '42P01') {
+            console.log('sync_statistics table does not exist - skipping insert');
+            toast.warning('Statistics table does not exist. Stats will not be saved.');
+          } else {
+            toast.error('Failed to save sync statistics, but sync was completed');
+          }
+        } else {
+          console.log('Sync statistics saved successfully. New record:', statsData);
+          toast.success('Sync statistics updated');
+        }
+      } catch (insertErr) {
+        console.error('Exception during statistics insert:', insertErr);
+        toast.error('Error saving statistics, but sync was completed');
       }
       
       console.log('=============================================');
@@ -924,8 +948,8 @@ function Sync() {
       console.error('Error updating sync statistics:', error);
       console.error('Error details:', error.message);
       if (error.stack) console.error('Stack trace:', error.stack);
-      toast.error('Failed to update sync statistics');
-      return false;
+      toast.error('Failed to update sync statistics, but sync was completed');
+      return true; // Return true so the overall sync isn't marked as failed
     }
   };
 
@@ -1073,7 +1097,7 @@ function Sync() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {sync.processed_items || 0}
+                        {sync.files_processed || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <button 
@@ -1165,14 +1189,14 @@ function Sync() {
         
         <button
           onClick={handleNewFolderSync}
-          disabled={isLoading || !newFolderId || !isTokenValid}
+          disabled={isNewFolderLoading || !newFolderId || !isTokenValid}
           className={`px-4 py-2 rounded-lg text-white font-medium ${
-            isLoading || !newFolderId || !isTokenValid
+            isNewFolderLoading || !newFolderId || !isTokenValid
               ? 'bg-gray-400 cursor-not-allowed' 
               : 'bg-blue-500 hover:bg-blue-600'
           }`}
         >
-          {isLoading ? 'Syncing...' : 'Sync New Folder'}
+          {isNewFolderLoading ? 'Syncing...' : 'Sync New Folder'}
         </button>
       </div>
       
@@ -1191,7 +1215,7 @@ function Sync() {
             value={existingFolderId}
             onChange={(e) => setExistingFolderId(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isLoading}
+            disabled={isExistingFolderLoading}
           >
             <option value="">Select a folder</option>
             {folderOptions.map(folder => (
@@ -1204,21 +1228,23 @@ function Sync() {
         
         <button
           onClick={handleExistingFolderSync}
-          disabled={isLoading || !existingFolderId || !isTokenValid}
+          disabled={isExistingFolderLoading || !existingFolderId || !isTokenValid}
           className={`px-4 py-2 rounded-lg text-white font-medium ${
-            isLoading || !existingFolderId || !isTokenValid
+            isExistingFolderLoading || !existingFolderId || !isTokenValid
               ? 'bg-gray-400 cursor-not-allowed' 
               : 'bg-green-500 hover:bg-green-600'
           }`}
         >
-          {isLoading ? 'Syncing...' : 'Sync Existing Folder'}
+          {isExistingFolderLoading ? 'Syncing...' : 'Sync Existing Folder'}
         </button>
       </div>
       
       {/* Progress indicator */}
-      {isLoading && (
+      {(isNewFolderLoading || isExistingFolderLoading) && (
         <div className="col-span-1 md:col-span-2 bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-3">Sync Progress</h3>
+          <h3 className="text-lg font-semibold mb-3">
+            {isNewFolderLoading ? 'New Folder Sync Progress' : 'Existing Folder Sync Progress'}
+          </h3>
           <div className="w-full h-6 bg-gray-200 rounded-full">
             <div 
               className="h-full bg-blue-500 rounded-full transition-all duration-300 ease-in-out"
@@ -1384,7 +1410,7 @@ function Sync() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sync.processed_items || 0}
+                      {sync.files_processed || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {duration}

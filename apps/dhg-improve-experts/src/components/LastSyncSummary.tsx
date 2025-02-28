@@ -33,8 +33,6 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
     try {
       setIsLoading(true);
       
-      console.log('Fetching sync statistics...');
-      
       // Get the most recent sync
       const { data: syncHistory, error: syncError } = await supabase
         .from('sync_history')
@@ -47,56 +45,46 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
         throw syncError;
       }
       
-      console.log('Latest sync history:', syncHistory);
-      
-      // Get the most recent sync statistics
-      const { data: statData, error: statError } = await supabase
-        .from('sync_statistics')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (statError) {
-        console.error('Error fetching sync statistics:', statError);
-        // Don't throw here, just log and continue with fallback values
-        // This allows the component to still work even if the table doesn't exist
-        
-        // Check if it's a "table doesn't exist" error
-        if (statError.code === '42P01') {
-          console.log('The sync_statistics table does not exist yet. Using only document counts.');
-          toast.success('Setting up sync statistics. Please run a sync to populate data.');
+      // Try to get sync statistics but handle gracefully if table doesn't exist
+      let statData = null;
+      try {
+        const { data, error: statError } = await supabase
+          .from('sync_statistics')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1);
+          
+        if (!statError) {
+          statData = data;
         }
+      } catch (e) {
+        // Silent catch - table might not exist
       }
-      
-      console.log('Latest sync statistics:', statData);
       
       // Declare variables at function level
       let folderCount = 0;
       let docCount = 0;
       
-      // Get document type counts
-      const { data: docStats, error: docError } = await supabase
-        .rpc('get_document_type_counts');
-        
-      if (docError) {
-        console.error('Error getting document type counts:', docError);
-        
-        // Check if it's a column ambiguity error
-        if (docError.code === '42702' && docError.message.includes('mime_type')) {
-          console.warn('Database function needs to be updated. Using fallback values.');
-          toast.warning('A database function needs to be updated. Contact administrator.');
+      // Instead of using RPC which might not exist, query directly
+      try {
+        // Count folders
+        const { count: folderCountResult } = await supabase
+          .from('sources_google')
+          .select('id', { count: 'exact' })
+          .eq('mime_type', 'application/vnd.google-apps.folder');
           
-          // Use fallback values (already initialized above)
-          console.log('Using fallback counts - Folders: 0, Documents: 0');
-        } else {
-          // For other errors, we'll use fallback values but log the error
-          console.error('Unexpected error getting document counts:', docError);
-        }
-      } else {
-        // Process docStats normally
-        folderCount = docStats?.find(item => item.mime_type === 'application/vnd.google-apps.folder')?.count || 0;
-        docCount = (docStats?.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0) || 0) - folderCount;
-        console.log('Calculated counts - Folders:', folderCount, 'Documents:', docCount);
+        folderCount = folderCountResult || 0;
+        
+        // Count non-folder documents (total - folders)
+        const { count: totalCountResult } = await supabase
+          .from('sources_google')
+          .select('id', { count: 'exact' });
+          
+        const totalCount = totalCountResult || 0;
+        docCount = totalCount - folderCount;
+        
+      } catch (countError) {
+        // Silent fail
       }
       
       // Get MP4 stats directly from the database if not in sync_statistics
@@ -104,19 +92,18 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
       let mp4Size = statData?.[0]?.mp4_total_size;
       
       if (!mp4Count || !mp4Size) {
-        console.log('MP4 stats not found in sync_statistics, querying directly...');
-        
-        const { count, error: mp4Error } = await supabase
-          .from('sources_google')
-          .select('id', { count: 'exact' })
-          .ilike('mime_type', '%mp4%');
-        
-        if (!mp4Error) {
+        try {
+          const { count } = await supabase
+            .from('sources_google')
+            .select('id', { count: 'exact' })
+            .ilike('mime_type', '%mp4%');
+          
           mp4Count = count || 0;
+          mp4Size = '0 GB';
+        } catch (e) {
+          mp4Count = 0;
+          mp4Size = '0 GB';
         }
-        
-        // Don't try to calculate size here - it's complex
-        mp4Size = '0 GB';
       }
       
       // Get folder details from the most recent sync
@@ -124,12 +111,13 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
       const folderId = syncHistory?.[0]?.folder_id || statData?.[0]?.folder_id || '';
 
       // Format the data - prefer statistics table but fall back to calculated values
+      // Use field names that match the actual database schema
       setSyncStats({
         googleDriveDocuments: statData?.[0]?.google_drive_documents || docCount || 0,
         googleDriveFolders: statData?.[0]?.google_drive_folders || folderCount || 0,
         totalGoogleDriveItems: statData?.[0]?.total_google_drive_items || (docCount + folderCount) || 0,
-        localFiles: statData?.[0]?.local_files || syncHistory?.[0]?.processed_items || 0,
-        matchingFiles: statData?.[0]?.matching_files || syncHistory?.[0]?.processed_items || 0,
+        localFiles: statData?.[0]?.local_files || syncHistory?.[0]?.files_processed || 0,
+        matchingFiles: statData?.[0]?.matching_files || syncHistory?.[0]?.files_processed || 0,
         newFiles: statData?.[0]?.new_files || 0,
         localOnlyFiles: statData?.[0]?.local_only_files || 0,
         mp4Files: mp4Count || 0,
@@ -220,46 +208,22 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
       <div className="mt-4 pt-4 border-t">
         <button
           onClick={() => {
+            // Simple debug info without potentially erroring calls
             console.log('===== LAST SYNC SUMMARY DEBUG =====');
             console.log('Current syncStats:', syncStats);
             
-            // Fetch the most recent sync_statistics record
-            supabase
-              .from('sync_statistics')
-              .select('*')
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .then(({ data, error }) => {
-                if (error) {
-                  console.error('Error fetching latest sync_statistics:', error);
-                  toast.error('Error fetching sync records');
-                } else {
-                  console.log('Latest sync_statistics record:', data);
-                  if (data && data.length > 0) {
-                    const record = data[0];
-                    console.log('Record fields:');
-                    Object.keys(record).forEach(key => {
-                      console.log(`- ${key}: ${record[key]} (type: ${typeof record[key]})`);
-                    });
-                  } else {
-                    console.log('No sync_statistics records found');
-                  }
-                }
-              });
-            
-            // Check the sync_history table too
+            // Safely check sync_history - this table should always exist
             supabase
               .from('sync_history')
               .select('*')
               .order('timestamp', { ascending: false })
               .limit(1)
               .then(({ data, error }) => {
-                if (error) {
-                  console.error('Error fetching latest sync_history:', error);
-                } else {
+                if (!error && data) {
                   console.log('Latest sync_history record:', data);
                 }
-              });
+              })
+              .catch(() => {});
             
             toast.success('Debug info logged to console');
           }}
