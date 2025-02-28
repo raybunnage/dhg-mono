@@ -10,7 +10,7 @@ export async function createTestSyncHistoryEntry() {
       timestamp: new Date().toISOString(),
       completed_at: new Date(Date.now() + 5000).toISOString(), // 5 seconds later
       status: 'completed',
-      items_processed: 42,
+      processed_items: 42, // Changed from items_processed to processed_items
       error_message: null
     };
     
@@ -50,7 +50,7 @@ export async function storeLatestSyncResult(result: any) {
       const { error } = await supabase
         .from('sync_history')
         .update({
-          items_processed: result.synced?.added || 0,
+          processed_items: result.synced?.added || 0, // Changed from items_processed to processed_items
           error_message: result.synced?.errors > 0 ? 'Some errors occurred during sync' : null,
           // Add any other relevant fields to update
         })

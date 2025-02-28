@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 
-export function LastSyncSummary() {
+interface LastSyncSummaryProps {
+  refreshKey?: string; // Optional prop to force refresh
+}
+
+export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
   const [syncStats, setSyncStats] = useState({
     googleDriveDocuments: 0,
     googleDriveFolders: 0,
@@ -14,14 +18,16 @@ export function LastSyncSummary() {
     mp4Files: 0,
     totalMp4Size: '0 GB',
     lastSyncTime: null,
-    lastSyncFolder: ''
+    lastSyncFolder: '',
+    folderId: '',
+    folderName: ''
   });
   const [isLoading, setIsLoading] = useState(true);
   const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     fetchSyncStats();
-  }, []);
+  }, [refreshKey]); // Re-fetch when refreshKey changes
 
   const fetchSyncStats = async () => {
     try {
@@ -58,7 +64,7 @@ export function LastSyncSummary() {
         // Check if it's a "table doesn't exist" error
         if (statError.code === '42P01') {
           console.log('The sync_statistics table does not exist yet. Using only document counts.');
-          toast.info('Setting up sync statistics. Please run a sync to populate data.');
+          toast.success('Setting up sync statistics. Please run a sync to populate data.');
         }
       }
       
@@ -113,13 +119,17 @@ export function LastSyncSummary() {
         mp4Size = '0 GB';
       }
       
+      // Get folder details from the most recent sync
+      const folderName = syncHistory?.[0]?.folder_name || statData?.[0]?.folder_name || 'Unknown Folder';
+      const folderId = syncHistory?.[0]?.folder_id || statData?.[0]?.folder_id || '';
+
       // Format the data - prefer statistics table but fall back to calculated values
       setSyncStats({
         googleDriveDocuments: statData?.[0]?.google_drive_documents || docCount || 0,
         googleDriveFolders: statData?.[0]?.google_drive_folders || folderCount || 0,
         totalGoogleDriveItems: statData?.[0]?.total_google_drive_items || (docCount + folderCount) || 0,
-        localFiles: statData?.[0]?.local_files || syncHistory?.[0]?.files_total || 0,
-        matchingFiles: statData?.[0]?.matching_files || syncHistory?.[0]?.files_processed || 0,
+        localFiles: statData?.[0]?.local_files || syncHistory?.[0]?.processed_items || 0,
+        matchingFiles: statData?.[0]?.matching_files || syncHistory?.[0]?.processed_items || 0,
         newFiles: statData?.[0]?.new_files || 0,
         localOnlyFiles: statData?.[0]?.local_only_files || 0,
         mp4Files: mp4Count || 0,
@@ -127,7 +137,9 @@ export function LastSyncSummary() {
         lastSyncTime: syncHistory?.[0]?.timestamp 
           ? new Date(syncHistory[0].timestamp).toLocaleString() 
           : 'Never',
-        lastSyncFolder: syncHistory?.[0]?.folder_name || statData?.[0]?.folder_name || ''
+        lastSyncFolder: syncHistory?.[0]?.folder_name || statData?.[0]?.folder_name || '',
+        folderId: folderId,
+        folderName: folderName
       });
       
       console.log('Sync stats updated successfully');
@@ -186,7 +198,15 @@ export function LastSyncSummary() {
         
         <div className="col-span-2 mt-4 pt-4 border-t">
           <div className="font-medium">Last Sync: </div>
-          <div>{syncStats.lastSyncTime} {syncStats.lastSyncFolder ? `- ${syncStats.lastSyncFolder}` : ''}</div>
+          <div>{syncStats.lastSyncTime}</div>
+          
+          <div className="font-medium mt-2">Folder Name:</div>
+          <div>{syncStats.folderName || 'Unknown'}</div>
+          
+          <div className="font-medium mt-2">Folder ID:</div>
+          <div className="font-mono text-xs bg-gray-100 p-1 rounded overflow-auto">
+            {syncStats.folderId || 'N/A'}
+          </div>
         </div>
       </div>
       
@@ -241,7 +261,7 @@ export function LastSyncSummary() {
                 }
               });
             
-            toast.info('Debug info logged to console');
+            toast.success('Debug info logged to console');
           }}
           className="text-xs bg-gray-200 px-2 py-1 rounded"
         >

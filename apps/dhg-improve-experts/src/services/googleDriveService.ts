@@ -275,8 +275,17 @@ async function listAllFilesRecursively(folderId: string, accessToken: string): P
 export async function syncWithGoogleDrive(): Promise<SyncResult> {
   // Create a unique ID for this sync operation
   const syncId = uuidv4();
-  let folderId = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID || '';
-  let folderName = 'Google Drive Folder';
+  
+  // Check if we have a folder ID override in localStorage
+  const folderIdOverride = localStorage.getItem('google_drive_folder_id_override');
+  const folderNameOverride = localStorage.getItem('google_drive_folder_name');
+  
+  let folderId = folderIdOverride || import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID || '';
+  let folderName = folderNameOverride || 'Google Drive Folder';
+  
+  if (folderIdOverride) {
+    console.log(`Syncing with override folder ID: ${folderId} (${folderName})`);
+  }
   
   try {
     console.log('Starting sync operation with ID:', syncId);
@@ -288,7 +297,7 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
       folder_name: folderName,
       timestamp: new Date().toISOString(),
       status: 'in_progress',
-      items_processed: 0
+      processed_items: 0 // Changed from items_processed to processed_items
     });
     
     if (insertError) {
@@ -297,30 +306,41 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
       console.log('Created sync history record with ID:', syncId);
     }
     
-    // Get sync stats
+    // Get sync stats - the override will be used inside getDriveSyncStats
     const syncStats = await getDriveSyncStats();
     
-    // Here we would have your existing logic for syncing files
-    // This is a placeholder for the actual sync logic
     console.log('Processing files for sync...');
     
-    // Mock sync results for testing
-    const added = syncStats.newFiles || [];
-    const updated = [];
+    // Get the new files that need to be synced
+    const newFiles = syncStats.newFiles || [];
     const errors = [];
+    let addedCount = 0;
     
-    // Your actual file processing logic would go here
-    // For each new file in syncStats.newFiles:
-    // 1. Download or create reference
-    // 2. Insert into database
-    // 3. Track successes and errors
+    // Process each new file
+    if (newFiles.length > 0) {
+      console.log(`Found ${newFiles.length} new files to sync`);
+      
+      // Use the insertGoogleFiles function to add files to the database
+      const insertResult = await insertGoogleFiles(newFiles);
+      addedCount = insertResult.success;
+      
+      // Check for errors
+      if (insertResult.errors > 0) {
+        console.error(`Failed to insert ${insertResult.errors} files`);
+        for (let i = 0; i < insertResult.errors; i++) {
+          errors.push(`Failed to insert file ${i+1}`);
+        }
+      }
+    } else {
+      console.log('No new files to sync');
+    }
     
     // After sync completes, update the sync history record
     const { error: updateError } = await supabase.from('sync_history')
       .update({
         completed_at: new Date().toISOString(),
         status: errors.length > 0 ? 'completed_with_errors' : 'completed',
-        items_processed: added.length + updated.length,
+        processed_items: addedCount, // Changed from items_processed to processed_items
         error_message: errors.length > 0 ? JSON.stringify(errors) : null
       })
       .eq('id', syncId);
@@ -334,11 +354,13 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
     return {
       stats: syncStats,
       synced: {
-        added: added.length,
-        updated: updated.length,
+        added: addedCount,
+        updated: 0, // We're not updating files in this implementation
         errors: errors.length
       },
-      syncId
+      syncId,
+      folderId,
+      folderName
     };
   } catch (error) {
     console.error('Error during sync operation:', error);
@@ -348,6 +370,7 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
       .update({
         completed_at: new Date().toISOString(),
         status: 'failed',
+        processed_items: 0, // Added processed_items to be safe
         error_message: error.message
       })
       .eq('id', syncId);
@@ -385,8 +408,17 @@ async function getFileMetadata(fileId: string, token: string): Promise<DriveFile
  */
 export const getDriveSyncStats = async (): Promise<SyncStats> => {
   try {
+    // Check if we have a folder ID override in localStorage
+    const folderIdOverride = localStorage.getItem('google_drive_folder_id_override');
+    const folderNameOverride = localStorage.getItem('google_drive_folder_name');
+    
+    if (folderIdOverride) {
+      console.log(`Using override folder ID: ${folderIdOverride} (${folderNameOverride || 'No name provided'})`);
+    }
+    
     // Step 1: Get files from Google Drive recursively
-    const driveFiles = await listDriveFiles();
+    // Use the override folder ID if available
+    const driveFiles = await listDriveFiles(folderIdOverride || undefined);
     
     // Step 2: Get local files from Supabase
     const localFiles = await getLocalSourceFiles();
@@ -601,7 +633,7 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
       timestamp: new Date().toISOString(),
       completed_at: new Date().toISOString(),
       status: errorCount > 0 ? 'completed_with_errors' : 'completed',
-      items_processed: successCount + errorCount,
+      processed_items: successCount + errorCount, // Changed from items_processed to processed_items
       error_message: errorCount > 0 ? `Failed to insert ${errorCount} files` : null
       // NO created_by field
     });

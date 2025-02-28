@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import { GoogleTokenStatus } from '@/components/GoogleTokenStatus';
 import DatabaseInspector from '@/components/DatabaseInspector';
-import { createTestSyncHistoryEntry } from '@/services/syncHistoryService';
+import { createTestSyncHistoryEntry, storeLatestSyncResult } from '@/services/syncHistoryService';
 import { LastSyncSummary } from '@/components/LastSyncSummary';
 import DebugSyncHistory from '@/components/DebugSyncHistory';
 import GoogleDriveDebug from '@/components/GoogleDriveDebug';
@@ -23,6 +23,9 @@ interface SyncStats {
   updated: number;
   deleted: number;
   errors: number;
+  isValid?: boolean;
+  error?: string;
+  newFiles?: DriveFile[];
 }
 
 // Update the sync history interface to match our database
@@ -33,7 +36,7 @@ interface SyncHistoryItem {
   timestamp: string;
   completed_at: string | null;
   status: string;
-  items_processed: number;
+  processed_items: number; // Changed from items_processed to processed_items
   error_message: string | null;
 }
 
@@ -42,11 +45,31 @@ interface DriveFile {
   name: string;
   mimeType: string;
   modifiedTime: string;
+  size?: string;
+  parents?: string[];
+  webViewLink?: string;
 }
 
 interface FolderOption {
   id: string;
   name: string;
+}
+
+// Define SyncResult interface for updateSyncStats typing
+interface SyncResult {
+  totalItems?: number;
+  stats?: {
+    totalGoogleDriveFiles?: number;
+  };
+  synced?: {
+    added?: number;
+    updated?: number;
+    processed?: number;
+    errors?: number;
+  };
+  itemsAdded?: number;
+  folderId?: string;
+  folderName?: string;
 }
 
 // Main Sync component
@@ -58,6 +81,7 @@ function Sync() {
   const [folderOptions, setFolderOptions] = useState<FolderOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
+  const [syncSummaryKey, setSyncSummaryKey] = useState(`sync-${Date.now()}`);
   const [documentStats, setDocumentStats] = useState<DocumentTypeStats[]>([]);
   const [syncStats, setSyncStats] = useState<SyncStats | null>(null);
   const [syncHistory, setSyncHistory] = useState<SyncHistoryItem[]>([]);
@@ -110,7 +134,7 @@ function Sync() {
         // If the table exists but that column doesn't, we need to add it
         if (data && data.length > 0 && !('google_drive_documents' in data[0])) {
           console.log('Sync statistics table exists but needs to be updated with new columns');
-          toast.info('Your sync statistics table needs to be updated. Please contact the administrator.');
+          toast.success('Your sync statistics table needs to be updated. Please contact the administrator.');
         }
       } catch (e) {
         console.error('Error in checkAndUpdateSyncStatisticsTable:', e);
@@ -255,28 +279,85 @@ function Sync() {
     setSyncProgress(0);
     
     try {
-      // This would call a backend function to start the sync process
-      const { data, error } = await supabase.functions.invoke('sync-google-folder', {
-        body: { 
-          folderId: newFolderId,
-          folderName: newFolderName,
-          isNew: true 
+      // Store the original folder ID from environment
+      const originalFolderId = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
+      const folderDisplayName = newFolderName || 'New Folder';
+      
+      // Temporarily override the folder ID for syncing
+      // Since we can't modify env vars at runtime, use localStorage
+      localStorage.setItem('google_drive_folder_id_override', newFolderId);
+      localStorage.setItem('google_drive_folder_name', folderDisplayName);
+      
+      toast.success(`Checking status of folder: ${folderDisplayName}`);
+      
+      // Get stats for the new folder using the temporary override
+      const stats = await getDriveSyncStats();
+      setSyncStats(stats);
+      
+      if (!stats.isValid) {
+        throw new Error(`Failed to check sync status: ${stats.error}`);
+      }
+      
+      // Check if there are new files to sync
+      if (stats.newFiles && Array.isArray(stats.newFiles) && stats.newFiles.length > 0) {
+        toast.success(`Found ${stats.newFiles.length} new files to sync. Starting sync...`);
+        
+        // Perform the sync operation
+        const result = await syncWithGoogleDrive();
+        setSyncResult(result);
+        
+        // Store the result
+        await storeLatestSyncResult(result);
+        await storeLocalSyncResult(result);
+        
+        // Show appropriate messages
+        if (result.synced && result.synced.errors > 0) {
+          toast.error(`Sync completed with ${result.synced.errors} errors`);
+        } else if (result.synced) {
+          toast.success(`Successfully added ${result.synced.added} new files from Google Drive`);
+        } else {
+          toast.success('Sync completed successfully');
         }
-      });
+        
+        // Update sync history and stats
+        handleSyncComplete(result);
+        
+        // Mock progress updates for visual feedback
+        simulateProgressUpdates();
+        
+        // Update folder options to include the new folder
+        const { data: folderData } = await supabase
+          .from('sources_google')
+          .select('id, name, drive_id')
+          .is('parent_path', null)
+          .eq('mime_type', 'application/vnd.google-apps.folder')
+          .order('name');
+          
+        if (folderData) {
+          setFolderOptions(folderData.map(folder => ({
+            id: folder.drive_id || folder.id,
+            name: folder.name
+          })));
+        }
+      } else {
+        toast.success('Folder is already in sync! No new files to add.');
+      }
       
-      if (error) throw error;
+      // Clean up the temporary override
+      localStorage.removeItem('google_drive_folder_id_override');
+      localStorage.removeItem('google_drive_folder_name');
       
-      // Mock progress updates - in a real implementation, you'd use websockets or polling
-      simulateProgressUpdates();
-      
-      toast.success('Sync process started successfully');
-      
-      // Fetch updated stats once sync is complete
+      // Fetch document stats for the new folder
       fetchDocumentStats(newFolderId);
       
     } catch (err) {
       console.error('Error starting sync:', err);
-      toast.error('Failed to start sync process');
+      toast.error(`Failed to start sync process: ${err.message}`);
+      
+      // Clean up in case of error
+      localStorage.removeItem('google_drive_folder_id_override');
+      localStorage.removeItem('google_drive_folder_name');
+      
       setIsLoading(false);
     }
   };
@@ -297,24 +378,31 @@ function Sync() {
     setSyncProgress(0);
     
     try {
-      // This would call a backend function to start the sync process
-      const { data, error } = await supabase.functions.invoke('sync-google-folder', {
-        body: { 
-          folderId: existingFolderId,
-          isNew: false 
+      // Just directly use the existing sync functionality
+      // First check sync status to see if there are files to sync
+      await handleSyncCheck();
+      
+      // If we have new files, check sync status again after a moment
+      // to allow the state to update
+      setTimeout(async () => {
+        if (syncStats && syncStats.newFiles && Array.isArray(syncStats.newFiles) && syncStats.newFiles.length > 0) {
+          // If we have new files, perform the sync
+          await handleSync();
+          
+          // Simulate progress and show completion
+          simulateProgressUpdates();
+          toast.success('Sync process completed successfully');
+          
+          // Fetch updated stats once sync is complete
+          fetchDocumentStats(existingFolderId);
+          
+          // Force refresh the sync summary
+          setSyncSummaryKey(`sync-${Date.now()}`);
+        } else {
+          setIsLoading(false);
+          toast.success('Folder is already in sync! No new files to add.');
         }
-      });
-      
-      if (error) throw error;
-      
-      // Mock progress updates - in a real implementation, you'd use websockets or polling
-      simulateProgressUpdates();
-      
-      toast.success('Sync process started successfully');
-      
-      // Fetch updated stats once sync is complete
-      fetchDocumentStats(existingFolderId);
-      
+      }, 1000);
     } catch (err) {
       console.error('Error starting sync:', err);
       toast.error('Failed to start sync process');
@@ -348,6 +436,8 @@ function Sync() {
       
       if (stats.isValid) {
         toast.success('Successfully checked sync status');
+        // Force refresh the sync summary after checking sync status
+        setSyncSummaryKey(`sync-${Date.now()}`);
       } else {
         toast.error(`Failed to check sync status: ${stats.error}`);
       }
@@ -379,24 +469,28 @@ function Sync() {
       const result = await syncWithGoogleDrive();
       setSyncResult(result);
       
-      // Store the result for later retrieval
+      // Store the result both in service and locally
       await storeLatestSyncResult(result);
+      await storeLocalSyncResult(result);
       
-      if (result.synced.errors > 0) {
+      if (result.synced && result.synced.errors > 0) {
         toast.error(`Sync completed with ${result.synced.errors} errors`);
-      } else {
+      } else if (result.synced) {
         toast.success(`Successfully added ${result.synced.added} new files from Google Drive`);
+      } else {
+        toast.success('Sync completed successfully');
       }
       
-      // Notify parent component
-      if (handleSyncComplete) {
-        handleSyncComplete(result);
-      }
+      // Update internal state with result
+      handleSyncComplete(result);
       
       // Refresh stats
       const newStats = await getDriveSyncStats();
       setSyncStats(newStats);
       fetchFileStats();
+      
+      // Force refresh the sync summary
+      setSyncSummaryKey(`sync-${Date.now()}`);
     } catch (error) {
       console.error('Error syncing with Google Drive:', error);
       toast.error(`Sync failed: ${error.message}`);
@@ -430,10 +524,11 @@ function Sync() {
     
     // Force refresh the LastSyncSummary component
     console.log('Sync complete, statistics updated');
+    setSyncSummaryKey(`sync-${Date.now()}`); // This will trigger a re-fetch in LastSyncSummary
   };
 
   // Helper function to get folder name
-  const getFolderName = async (folderId) => {
+  const getFolderName = async (folderId: string): Promise<string> => {
     try {
       const { data, error } = await supabase
         .from('sources_google')
@@ -449,14 +544,14 @@ function Sync() {
     }
   };
 
-  // Helper function to store latest sync result
-  const storeLatestSyncResult = async (result: any) => {
+  // Helper function to store local copy of sync result
+  const storeLocalSyncResult = async (result: any) => {
     try {
       // Store in localStorage for easy access
       localStorage.setItem('latest_sync_result', JSON.stringify(result));
       return true;
     } catch (error) {
-      console.error('Error storing sync result:', error);
+      console.error('Error storing sync result in localStorage:', error);
       return false;
     }
   };
@@ -570,45 +665,59 @@ function Sync() {
       behavior: 'smooth'
     });
     
-    toast.info('Ready to re-sync folder. Click "Sync Existing Folder" to begin.');
+    toast.success('Ready to re-sync folder. Click "Sync Existing Folder" to begin.');
   };
 
   // Debug function to check sync_statistics table structure
-  const checkSyncStatisticsStructure = async () => {
+  const checkSyncStatisticsStructure = async (): Promise<void> => {
     try {
       console.log('===== CHECKING SYNC_STATISTICS TABLE STRUCTURE =====');
-      const { data, error } = await supabase.rpc('show_table_structure', {
-        table_name: 'sync_statistics'
-      });
-      
-      if (error) {
-        console.error('Error checking table structure:', error);
-        return;
+      try {
+        const { data, error } = await supabase.rpc('show_table_structure', {
+          table_name: 'sync_statistics'
+        });
+        
+        if (error) {
+          console.error('Error checking table structure:', error);
+          return;
+        }
+        
+        console.log('Table structure:', data);
+      } catch (err) {
+        console.error('RPC show_table_structure failed:', err);
+        // Continue execution even if this fails
       }
-      
-      console.log('Table structure:', data);
       
       // Check most recent entry
-      const { data: recentData, error: recentError } = await supabase
-        .from('sync_statistics')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
+      try {
+        const { data: recentData, error: recentError } = await supabase
+          .from('sync_statistics')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1);
+          
+        if (recentError) {
+          console.error('Error checking recent records:', recentError);
+          return;
+        }
         
-      if (recentError) {
-        console.error('Error checking recent records:', recentError);
-        return;
+        console.log('Most recent sync_statistics record:', recentData);
+      } catch (err) {
+        console.error('Error fetching recent sync_statistics:', err);
       }
-      
-      console.log('Most recent sync_statistics record:', recentData);
       
     } catch (e) {
       console.error('Error in checkSyncStatisticsStructure:', e);
+      // Don't let this error block the sync process
     }
   };
 
-  // Update sync statistics
-  const updateSyncStats = async (folderId, folderName, result) => {
+  // Update sync statistics with improved error handling and typing
+  const updateSyncStats = async (
+    folderId: string, 
+    folderName: string, 
+    result: SyncResult
+  ): Promise<boolean> => {
     console.log('=============================================');
     console.log('UPDATING SYNC STATISTICS - DETAILED DEBUG LOG');
     console.log('=============================================');
@@ -617,7 +726,11 @@ function Sync() {
     console.log('Full result object:', JSON.stringify(result, null, 2));
 
     // Check table structure before proceeding
-    await checkSyncStatisticsStructure();
+    try {
+      await checkSyncStatisticsStructure();
+    } catch (e) {
+      console.error('Failed to check table structure, but continuing:', e);
+    }
     
     try {
       // Get document type counts
@@ -630,11 +743,16 @@ function Sync() {
         throw docError;
       }
       
+      if (!docStats || !Array.isArray(docStats)) {
+        console.error('Invalid document stats data:', docStats);
+        throw new Error('Invalid document stats data');
+      }
+      
       console.log('Document stats (raw):', JSON.stringify(docStats, null, 2));
       
       // Calculate folder count and document count
-      const folderCount = docStats?.find(item => item.mime_type === 'application/vnd.google-apps.folder')?.count || 0;
-      const docCount = (docStats?.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0) || 0) - folderCount;
+      const folderCount = docStats.find(item => item.mime_type === 'application/vnd.google-apps.folder')?.count || 0;
+      const docCount = (docStats.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0) || 0) - folderCount;
       
       console.log('Calculated counts:');
       console.log('- Folders:', folderCount);
@@ -666,6 +784,10 @@ function Sync() {
       if (mp4DataError) {
         console.error('Error getting MP4 data:', mp4DataError);
         throw mp4DataError;
+      }
+      
+      if (!mp4Data) {
+        console.warn('No MP4 data returned');
       }
       
       console.log('MP4 files found:', mp4Data?.length || 0);
@@ -724,6 +846,7 @@ function Sync() {
         }
       } catch (e) {
         console.error('Error calculating MP4 size:', e);
+        // Continue execution even if size calculation fails
       }
       
       // Calculate total files
@@ -796,11 +919,13 @@ function Sync() {
       console.log('SYNC STATISTICS UPDATE COMPLETE');
       console.log('=============================================');
       
+      return true;
     } catch (error) {
       console.error('Error updating sync statistics:', error);
       console.error('Error details:', error.message);
       if (error.stack) console.error('Stack trace:', error.stack);
       toast.error('Failed to update sync statistics');
+      return false;
     }
   };
 
@@ -867,7 +992,7 @@ function Sync() {
               {isLoading ? 'Checking...' : 'Check Sync Status'}
             </button>
             
-            {syncStats && syncStats.newFiles && syncStats.newFiles.length > 0 && (
+            {syncStats && syncStats.newFiles && Array.isArray(syncStats.newFiles) && syncStats.newFiles.length > 0 && (
               <button
                 onClick={handleSync}
                 disabled={isSyncing}
@@ -884,7 +1009,7 @@ function Sync() {
         </div>
         
         <div>
-          <LastSyncSummary />
+          <LastSyncSummary refreshKey={syncSummaryKey} />
         </div>
       </div>
       
@@ -948,7 +1073,7 @@ function Sync() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {sync.items_processed || 0}
+                        {sync.processed_items || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <button 
@@ -1259,7 +1384,7 @@ function Sync() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sync.items_processed || 0}
+                      {sync.processed_items || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {duration}

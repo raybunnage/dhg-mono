@@ -136,7 +136,7 @@ export function GetContentButton({ onSuccess, onError }: GetContentButtonProps) 
           mimeType: doc.source.mime_type
         });
         
-        toast.info(`Document ${doc.source.name} needs content extraction first`, { id: toastId });
+        toast.success(`Document ${doc.source.name} needs content extraction first`, { id: toastId });
         
         // Skip to next document
         if (currentIndex < documents.length - 1) {
