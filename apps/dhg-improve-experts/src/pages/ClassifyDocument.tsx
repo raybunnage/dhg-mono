@@ -425,10 +425,34 @@ Check console for full details.
               throw new Error(`Invalid response format: ${parsed.error.message}`);
             }
             
-            // Verify typeId exists in document types
-            const validTypeId = documentTypes.some(dt => dt.id === parsed.data.typeId);
-            if (!validTypeId) {
-              throw new Error('Invalid typeId: does not match any provided document type');
+            // Check if the document type name exists, even if the ID doesn't match
+            const suggestedType = parsed.data.documentType;
+            const matchingTypeByName = documentTypes.find(dt => dt.document_type === suggestedType);
+            
+            // If we have a type name match but wrong ID, use the correct ID
+            if (matchingTypeByName) {
+              console.log('⚠️ Found type name match but with wrong ID, correcting ID:', {
+                suggestedType,
+                suggestedId: parsed.data.typeId,
+                correctId: matchingTypeByName.id 
+              });
+              parsed.data.typeId = matchingTypeByName.id;
+            } else {
+              // Verify typeId exists in document types
+              const validTypeId = documentTypes.some(dt => dt.id === parsed.data.typeId);
+              if (!validTypeId) {
+                // For better user experience, fall back to the most general document type
+                console.error('❌ Invalid typeId and no matching type name:', parsed.data.typeId);
+                const fallbackType = documentTypes.find(dt => dt.document_type === 'General Document') || documentTypes[0];
+                
+                if (fallbackType) {
+                  console.log('⚠️ Using fallback document type:', fallbackType.document_type);
+                  parsed.data.typeId = fallbackType.id;
+                  parsed.data.documentType = fallbackType.document_type;
+                } else {
+                  throw new Error('Invalid typeId: does not match any provided document type and no fallback available');
+                }
+              }
             }
 
             if (parsed.data.documentType === 'Presentation Announcement') {
@@ -564,11 +588,14 @@ ${results.map(result => `
       }
 
       console.log('Creating document type with user:', userId);
+      
+      const typeId = crypto.randomUUID();
+      console.log('Generated Presentation Announcement ID:', typeId);
 
       const { data, error } = await supabase
         .from('document_types')
         .insert({
-          id: crypto.randomUUID(),
+          id: typeId,
           document_type: 'Presentation Announcement',
           category: 'Announcements',
           description: 'Documents announcing upcoming presentations, talks, or speaking engagements',
@@ -608,7 +635,12 @@ ${results.map(result => `
       toast.success('Added Presentation Announcement document type');
       console.log('New document type:', data[0]);
 
+      // Remove this ID from localStorage to ensure it shows as new
+      localStorage.removeItem(`seen_doctype_${typeId}`);
+      
+      // Refresh the document types list and stats
       await loadDocumentTypes();
+      fetchDocumentStats();
     } catch (error) {
       console.error('Error adding document type:', error);
       toast.error('Failed to add document type');
@@ -780,6 +812,37 @@ ${results.map(result => `
             if (!parsed.success) {
               throw new Error(`Invalid response format: ${parsed.error.message}`);
             }
+            
+            // Check if the document type name exists, even if the ID doesn't match
+            const suggestedType = parsed.data.documentType;
+            const matchingTypeByName = documentTypes.find(dt => dt.document_type === suggestedType);
+            
+            // If we have a type name match but wrong ID, use the correct ID
+            if (matchingTypeByName) {
+              console.log('⚠️ Found type name match but with wrong ID, correcting ID:', {
+                suggestedType,
+                suggestedId: parsed.data.typeId,
+                correctId: matchingTypeByName.id 
+              });
+              parsed.data.typeId = matchingTypeByName.id;
+            } else {
+              // Verify typeId exists in document types
+              const validTypeId = documentTypes.some(dt => dt.id === parsed.data.typeId);
+              if (!validTypeId) {
+                // For better user experience, fall back to the most general document type
+                console.error('❌ Invalid typeId and no matching type name:', parsed.data.typeId);
+                const fallbackType = documentTypes.find(dt => dt.document_type === 'General Document') || documentTypes[0];
+                
+                if (fallbackType) {
+                  console.log('⚠️ Using fallback document type:', fallbackType.document_type);
+                  parsed.data.typeId = fallbackType.id;
+                  parsed.data.documentType = fallbackType.document_type;
+                } else {
+                  throw new Error('Invalid typeId: does not match any provided document type and no fallback available');
+                }
+              }
+            }
+            
             return parsed.data;
           }
         });
@@ -1211,6 +1274,37 @@ ${errors.map(e => `
               if (!parsed.success) {
                 throw new Error(`Invalid response format: ${parsed.error.message}`);
               }
+              
+              // Check if the document type name exists, even if the ID doesn't match
+              const suggestedType = parsed.data.documentType;
+              const matchingTypeByName = documentTypes.find(dt => dt.document_type === suggestedType);
+              
+              // If we have a type name match but wrong ID, use the correct ID
+              if (matchingTypeByName) {
+                console.log('⚠️ Found type name match but with wrong ID, correcting ID:', {
+                  suggestedType,
+                  suggestedId: parsed.data.typeId,
+                  correctId: matchingTypeByName.id 
+                });
+                parsed.data.typeId = matchingTypeByName.id;
+              } else {
+                // Verify typeId exists in document types
+                const validTypeId = documentTypes.some(dt => dt.id === parsed.data.typeId);
+                if (!validTypeId) {
+                  // For better user experience, fall back to the most general document type
+                  console.error('❌ Invalid typeId and no matching type name:', parsed.data.typeId);
+                  const fallbackType = documentTypes.find(dt => dt.document_type === 'General Document') || documentTypes[0];
+                  
+                  if (fallbackType) {
+                    console.log('⚠️ Using fallback document type:', fallbackType.document_type);
+                    parsed.data.typeId = fallbackType.id;
+                    parsed.data.documentType = fallbackType.document_type;
+                  } else {
+                    throw new Error('Invalid typeId: does not match any provided document type and no fallback available');
+                  }
+                }
+              }
+              
               return parsed.data;
             }
           });
@@ -1470,11 +1564,62 @@ ${errors.map(e => `
       
       // Load document types for reference
       console.log('📚 Loading document types...');
-      const documentTypes = await loadDocumentTypes();
+      let documentTypes = await loadDocumentTypes();
       if (!documentTypes) {
         console.error('❌ Failed to load document types');
         throw new Error('Failed to load document types');
       }
+      
+      // Check if "Chat Log" document type exists, if not create it
+      const chatLogType = documentTypes.find(dt => dt.document_type === 'Chat Log');
+      if (!chatLogType) {
+        console.log('🆕 Creating "Chat Log" document type...');
+        try {
+          const chatLogId = crypto.randomUUID();
+          console.log('Generated Chat Log ID:', chatLogId);
+          
+          const { data, error } = await supabase
+            .from('document_types')
+            .insert({
+              id: chatLogId,
+              document_type: 'Chat Log',
+              category: 'Communication',
+              description: 'Chat conversations, messaging logs, or text-based discussions between multiple participants',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              is_ai_generated: false,
+              required_fields: {
+                participants: 'array',
+                timestamp: 'date',
+                content: 'string'
+              },
+              validation_rules: {
+                content: { required: true }
+              },
+              ai_processing_rules: {
+                extractFields: ['participants', 'topics', 'key_points'],
+                confidenceThreshold: 0.7
+              }
+            })
+            .select();
+            
+          if (error) throw error;
+          console.log('✅ Created "Chat Log" document type:', data[0]);
+          
+          // Reload document types to include the new one
+          documentTypes = await loadDocumentTypes() || [];
+          
+          // Also update the stats display
+          fetchDocumentStats();
+          
+          // Remove this ID from localStorage to ensure it shows as new
+          localStorage.removeItem(`seen_doctype_${chatLogId}`);
+        } catch (error) {
+          console.error('❌ Failed to create "Chat Log" document type:', error);
+          // Continue with existing document types
+        }
+      }
+      
       console.log(`✅ Loaded ${documentTypes.length} document types`);
       
       // Load the classification prompt
@@ -1675,11 +1820,34 @@ ${errors.map(e => `
                 throw new Error(`Invalid response format: ${parsed.error.message}`);
               }
               
-              // Verify typeId exists in document types
-              const validTypeId = documentTypes.some(dt => dt.id === parsed.data.typeId);
-              if (!validTypeId) {
-                console.error('❌ Invalid typeId:', parsed.data.typeId);
-                throw new Error('Invalid typeId: does not match any provided document type');
+              // Check if the document type name exists, even if the ID doesn't match
+              const suggestedType = parsed.data.documentType;
+              const matchingTypeByName = documentTypes.find(dt => dt.document_type === suggestedType);
+              
+              // If we have a type name match but wrong ID, use the correct ID
+              if (matchingTypeByName) {
+                console.log('⚠️ Found type name match but with wrong ID, correcting ID:', {
+                  suggestedType,
+                  suggestedId: parsed.data.typeId,
+                  correctId: matchingTypeByName.id 
+                });
+                parsed.data.typeId = matchingTypeByName.id;
+              } else {
+                // Verify typeId exists in document types
+                const validTypeId = documentTypes.some(dt => dt.id === parsed.data.typeId);
+                if (!validTypeId) {
+                  // For better user experience, fall back to the most general document type
+                  console.error('❌ Invalid typeId and no matching type name:', parsed.data.typeId);
+                  const fallbackType = documentTypes.find(dt => dt.document_type === 'General Document') || documentTypes[0];
+                  
+                  if (fallbackType) {
+                    console.log('⚠️ Using fallback document type:', fallbackType.document_type);
+                    parsed.data.typeId = fallbackType.id;
+                    parsed.data.documentType = fallbackType.document_type;
+                  } else {
+                    throw new Error('Invalid typeId: does not match any provided document type and no fallback available');
+                  }
+                }
               }
               
               console.log('✅ Valid AI response:', {
@@ -2305,6 +2473,137 @@ AI Analysis: ${doc.processed_content?.ai_analysis
     }
   };
 
+  // New state variables for document stats
+  const [documentStats, setDocumentStats] = useState<{
+    byMimeType: Record<string, { total: number, classified: number, byType: Record<string, number> }>,
+    documentTypes: { id: string, document_type: string, category: string, count: number, isNew?: boolean }[]
+  }>({
+    byMimeType: {},
+    documentTypes: []
+  });
+  
+  // Function to fetch document stats
+  const fetchDocumentStats = async () => {
+    try {
+      console.log('Fetching document statistics...');
+      
+      // Get document type counts - using * to get all fields
+      const { data: types, error: typesError } = await supabase
+        .from('document_types')
+        .select('*')
+        .order('document_type');
+        
+      if (typesError) {
+        console.error('Error fetching document types:', typesError);
+        throw typesError;
+      }
+      
+      console.log(`Found ${types?.length || 0} document types`, types);
+      
+      // Count by mime type and document type
+      const { data: sources, error: sourcesError } = await supabase
+        .from('sources_google')
+        .select(`
+          mime_type,
+          document_type_id,
+          document_types (
+            id, document_type
+          )
+        `);
+        
+      if (sourcesError) {
+        console.error('Error fetching sources:', sourcesError);
+        throw sourcesError;
+      }
+      
+      console.log(`Found ${sources?.length || 0} source files`);
+      
+      // Process stats
+      const stats: Record<string, { total: number, classified: number, byType: Record<string, number> }> = {};
+      const typeCounts: Record<string, number> = {};
+      
+      // Initialize mime type stats
+      const mimeTypes = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'application/pdf'];
+      mimeTypes.forEach(type => {
+        const shortName = type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? 'docx' :
+                        type === 'text/plain' ? 'text' :
+                        type === 'application/pdf' ? 'pdf' : type;
+                        
+        stats[shortName] = { total: 0, classified: 0, byType: {} };
+      });
+      
+      // Count sources
+      sources.forEach(source => {
+        let mimeShort = 'other';
+        
+        if (source.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          mimeShort = 'docx';
+        } else if (source.mime_type === 'text/plain') {
+          mimeShort = 'text';
+        } else if (source.mime_type === 'application/pdf') {
+          mimeShort = 'pdf';
+        }
+        
+        // Initialize if not present
+        if (!stats[mimeShort]) {
+          stats[mimeShort] = { total: 0, classified: 0, byType: {} };
+        }
+        
+        stats[mimeShort].total++;
+        
+        if (source.document_type_id) {
+          stats[mimeShort].classified++;
+          
+          const docType = source.document_types?.document_type || 'Unknown';
+          stats[mimeShort].byType[docType] = (stats[mimeShort].byType[docType] || 0) + 1;
+          
+          // Track total counts per document type
+          typeCounts[source.document_type_id] = (typeCounts[source.document_type_id] || 0) + 1;
+        }
+      });
+      
+      // Combine with document types
+      const documentTypesWithCounts = types ? types.map(type => ({
+        id: type.id,
+        document_type: type.document_type,
+        category: type.category,
+        count: typeCounts[type.id] || 0,
+        isNew: localStorage.getItem(`seen_doctype_${type.id}`) ? false : true
+      })) : [];
+      
+      console.log('Document types with counts:', documentTypesWithCounts);
+      
+      // Mark all as seen
+      if (types) {
+        types.forEach(type => {
+          localStorage.setItem(`seen_doctype_${type.id}`, 'true');
+        });
+      }
+      
+      setDocumentStats({
+        byMimeType: stats,
+        documentTypes: documentTypesWithCounts
+      });
+      
+      console.log('Document stats updated successfully');
+      
+    } catch (error) {
+      console.error('Error fetching document stats:', error);
+      // Initialize with empty data in case of error
+      setDocumentStats({
+        byMimeType: {},
+        documentTypes: []
+      });
+    }
+  };
+  
+  // Fetch stats on initial load and when needed
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchDocumentStats();
+    }
+  }, [isAuthenticated]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-6">Document Classification</h1>
@@ -2328,6 +2627,77 @@ AI Analysis: ${doc.processed_content?.ai_analysis
                 onClick={addPresentationAnnouncementType}
               >
                 <span>➕</span> Add Presentation Type
+              </button>
+              
+              <button
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                onClick={async () => {
+                  // Check if "Chat Log" already exists
+                  const documentTypes = await loadDocumentTypes();
+                  const chatLogExists = documentTypes?.some(dt => dt.document_type === 'Chat Log');
+                  
+                  if (chatLogExists) {
+                    toast.success('Chat Log document type already exists');
+                    return;
+                  }
+                  
+                  try {
+                    const chatLogId = crypto.randomUUID();
+                    console.log('Generated Chat Log ID:', chatLogId);
+                    
+                    const { data, error } = await supabase
+                      .from('document_types')
+                      .insert({
+                        id: chatLogId,
+                        document_type: 'Chat Log',
+                        category: 'Communication',
+                        description: 'Chat conversations, messaging logs, or text-based discussions between multiple participants',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                        is_ai_generated: false,
+                        required_fields: {
+                          participants: 'array',
+                          timestamp: 'date',
+                          content: 'string'
+                        },
+                        validation_rules: {
+                          content: { required: true }
+                        },
+                        ai_processing_rules: {
+                          extractFields: ['participants', 'topics', 'key_points'],
+                          confidenceThreshold: 0.7
+                        }
+                      })
+                      .select();
+                      
+                    if (error) throw error;
+                    toast.success('Added Chat Log document type');
+                    console.log('New document type:', data[0]);
+                    
+                    // Remove this ID from localStorage to ensure it shows as new
+                    localStorage.removeItem(`seen_doctype_${chatLogId}`);
+                    
+                    // Refresh document types and stats
+                    await loadDocumentTypes();
+                    fetchDocumentStats();
+                  } catch (error) {
+                    console.error('Error adding document type:', error);
+                    toast.error('Failed to add Chat Log document type');
+                  }
+                }}
+              >
+                <span>➕</span> Add Chat Log Type
+              </button>
+              
+              <button
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                onClick={async () => {
+                  await loadDocumentTypes();
+                  fetchDocumentStats();
+                  toast.success('Document types refreshed');
+                }}
+              >
+                <span>📋</span> Load Document Types
               </button>
 
               <div className="relative">
@@ -2460,7 +2830,10 @@ AI Analysis: ${doc.processed_content?.ai_analysis
 
             <button
               className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-              onClick={generateSourcesReport}
+              onClick={() => {
+                generateSourcesReport();
+                fetchDocumentStats();
+              }}
               disabled={loading}
             >
               <span>📊</span> Generate Sources Report
@@ -2468,11 +2841,150 @@ AI Analysis: ${doc.processed_content?.ai_analysis
             
             <button
               className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-              onClick={classifyTextFiles}
+              onClick={() => {
+                classifyTextFiles();
+                // Refresh stats after classification is done
+                setTimeout(() => fetchDocumentStats(), 5000);
+              }}
               disabled={loading}
             >
               <span>📝</span> Classify Text Files
             </button>
+            
+            {/* Refresh Stats Button */}
+            <button
+              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              onClick={fetchDocumentStats}
+              disabled={loading}
+            >
+              <span>🔄</span> Refresh Stats
+            </button>
+
+            {/* Document Statistics Section */}
+            <div className="mt-8 p-6 bg-gray-50 rounded-lg">
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <span className="mr-2">📊</span> Document Statistics
+              </h2>
+              
+              {/* File Type Stats with Pills */}
+              <div className="mb-6">
+                <h3 className="text-lg font-medium mb-3">Files by Type</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {Object.entries(documentStats.byMimeType).map(([mimeType, stats]) => (
+                    <div key={mimeType} className="border rounded-lg p-4 bg-white shadow-sm">
+                      <h4 className="font-bold text-lg capitalize mb-2">
+                        {mimeType === 'docx' ? 'Word Documents' : 
+                         mimeType === 'text' ? 'Text Files' :
+                         mimeType === 'pdf' ? 'PDF Documents' : mimeType}
+                      </h4>
+                      
+                      <div className="flex items-center mb-2">
+                        <div className="text-sm font-medium">Total: {stats.total}</div>
+                        <div className="mx-2">|</div>
+                        <div className="text-sm font-medium">
+                          Classified: {stats.classified} 
+                          <span className="text-xs ml-1 text-gray-500">
+                            ({stats.total > 0 ? (stats.classified / stats.total * 100).toFixed(0) : 0}%)
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium mb-1">Document Types:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(stats.byType).length > 0 ? (
+                            Object.entries(stats.byType)
+                              .sort((a, b) => b[1] - a[1])
+                              .map(([type, count]) => (
+                                <div key={type} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {type} ({count})
+                                </div>
+                              ))
+                          ) : (
+                            <div className="text-sm text-gray-500">No classified documents</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Document Types Table */}
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-medium">Document Types</h3>
+                  <button 
+                    onClick={() => {
+                      console.log('Manual document types load triggered');
+                      runDebugQueries();
+                      fetchDocumentStats();
+                    }}
+                    className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded hover:bg-blue-200 flex items-center"
+                  >
+                    <span className="mr-1">🔄</span> Refresh Types
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Document Type
+                        </th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Category
+                        </th>
+                        <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Document Count
+                        </th>
+                        <th scope="col" className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {documentStats.documentTypes && documentStats.documentTypes.length > 0 ? (
+                        documentStats.documentTypes.map((type) => (
+                          <tr key={type.id} className={type.isNew ? "bg-yellow-50" : ""}>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {type.document_type}
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {type.category}
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 text-right">
+                              {type.count}
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 text-center">
+                              {type.isNew ? (
+                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                  New
+                                </span>
+                              ) : type.count > 0 ? (
+                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                  In Use
+                                </span>
+                              ) : (
+                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                  Unused
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="px-3 py-4 text-center text-sm text-gray-500">
+                            No document types found. Try clicking "Refresh Types" above.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
 
             {todaysClassifications.length > 0 && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
