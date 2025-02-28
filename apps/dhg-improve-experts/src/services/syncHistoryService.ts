@@ -10,7 +10,12 @@ export async function createTestSyncHistoryEntry() {
       timestamp: new Date().toISOString(),
       completed_at: new Date(Date.now() + 5000).toISOString(), // 5 seconds later
       status: 'completed',
-      processed_items: 42, // Changed from items_processed to processed_items
+      files_processed: 42, // Using the correct field name files_processed
+      files_total: 50,
+      files_added: 42,
+      files_updated: 0,
+      files_skipped: 8,
+      files_error: 0,
       error_message: null
     };
     
@@ -50,9 +55,14 @@ export async function storeLatestSyncResult(result: any) {
       const { error } = await supabase
         .from('sync_history')
         .update({
-          processed_items: result.synced?.added || 0, // Changed from items_processed to processed_items
+          files_processed: result.synced?.added || 0, // Using the correct field name files_processed
+          files_total: (result.synced?.added || 0) + (result.synced?.errors || 0),
+          files_added: result.synced?.added || 0,
+          files_updated: result.synced?.updated || 0,
+          files_error: result.synced?.errors || 0,
+          files_skipped: 0, // Default to 0 if not provided
           error_message: result.synced?.errors > 0 ? 'Some errors occurred during sync' : null,
-          // Add any other relevant fields to update
+          duration_ms: result.duration_ms || null,
         })
         .eq('id', result.syncId);
         

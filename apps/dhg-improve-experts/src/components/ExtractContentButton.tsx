@@ -166,7 +166,7 @@ export function ExtractContentButton({ onSuccess, onError }: ExtractContentButto
           .replace(/<li>/g, '• ')
           .replace(/<\/li>/g, '\n')
           .replace(/<[^>]*>/g, '')
-          .replace(/\n{3,}/g, '\n\n')
+          .replace(/\n{3}/g, '\n\n')
           .trim();
 
         // Validate cleaned content
@@ -202,7 +202,7 @@ export function ExtractContentButton({ onSuccess, onError }: ExtractContentButto
         .replace(/<li>/g, '• ')
         .replace(/<\/li>/g, '\n')
         .replace(/<[^>]*>/g, '')
-        .replace(/\n{3,}/g, '\n\n');
+        .replace(/\n{3}/g, '\n\n');
     }
 
     // Clean for PostgreSQL text compatibility

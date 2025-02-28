@@ -20,6 +20,7 @@ import ClassifyDocument from '@/pages/ClassifyDocument';
 import { Analyze } from '@/pages/Analyze';
 import { Transcribe } from '@/pages/Transcribe';
 import { SupabasePage } from './pages/Supabase'
+import SupabaseAdmin from './pages/SupabaseAdmin'
 import { FileTree } from './pages/FileTree';
 import { BatchProcessingMonitor } from './components/BatchProcessingMonitor';
 import Viewer from '@/pages/Viewer';
@@ -37,21 +38,25 @@ function TestComponent() {
   useEffect(() => {
     async function init() {
       try {
-        // Test Supabase connection
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: import.meta.env.VITE_TEST_USER_EMAIL,
-          password: import.meta.env.VITE_TEST_USER_PASSWORD || 'testpassword123'
-        });
-        if (authError) throw authError;
-
-        // Test a simple Supabase query
-        const { data, error } = await supabase
-          .from('experts')
-          .select('count');
-        console.log('Supabase test:', { data, error });
-
+        if (import.meta.env.VITE_TEST_USER_EMAIL && import.meta.env.VITE_TEST_USER_PASSWORD) {
+          // Test Supabase connection only if credentials exist
+          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: import.meta.env.VITE_TEST_USER_EMAIL,
+            password: import.meta.env.VITE_TEST_USER_PASSWORD
+          });
+          
+          if (!authError) {
+            // Only run this query if auth succeeded
+            const { data, error } = await supabase
+              .from('experts')
+              .select('count');
+            if (!error) {
+              console.log('Supabase test:', { data });
+            }
+          }
+        }
       } catch (err) {
-        console.error('Init error:', err);
+        // Silent fail - don't block app startup
       }
     }
     init();
@@ -87,7 +92,8 @@ function App() {
           <Route path="/classify" element={<ClassifyDocument />} />
           <Route path="/analyze" element={<Analyze />} />
           <Route path="/transcribe" element={<Transcribe />} />
-          <Route path="/supabase" element={<SupabasePage />} />
+          <Route path="/supabase" element={<SupabaseAdmin />} />
+          <Route path="/supabase/legacy" element={<SupabasePage />} />
           <Route path="/file-tree" element={<FileTree />} />
           <Route path="/batches" element={<BatchProcessingMonitor />} />
           <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />

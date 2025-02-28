@@ -5,26 +5,16 @@ import type { Database } from '@/types/supabase';
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-// Create a single instance
-let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
-
-export const getSupabaseClient = () => {
-  if (!supabaseInstance) {
-    supabaseInstance = createClient<Database>(
-      import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_ANON_KEY,
-      {
-        auth: {
-          storageKey: 'dhg-supabase-auth',
-          persistSession: true
-        }
-      }
-    );
-  }
-  return supabaseInstance;
-};
-
 const SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQxODkwMTMsImV4cCI6MjA0OTc2NTAxM30.035475oKIiE1pSsfQbRoje4-FRT9XDKAk6ScHYtaPsQ";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Create a single supabase instance
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    storageKey: 'dhg-supabase-auth',
+    persistSession: true
+  }
+});
+
+// For backwards compatibility
+export const getSupabaseClient = () => supabase;

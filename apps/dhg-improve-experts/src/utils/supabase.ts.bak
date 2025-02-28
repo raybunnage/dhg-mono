@@ -84,6 +84,15 @@ export async function testAuth() {
 } 
 
 // System user ID used across the codebase and database functions
+export const SYSTEM_USER_ID = 'f5972054-059e-4b1e-915e-268bcdcc94b9';
+
+/**
+ * Helper function to add user references to records when needed
+ * This standardizes how we handle user references across the application
+ */
+export async function addUserReferencesToRecord(record: any): Promise<any> {
+  // Make a copy of the record to avoid modifying the original
+  const recordWithUser = { ...record };
   
   try {
     // Try to get the current user session

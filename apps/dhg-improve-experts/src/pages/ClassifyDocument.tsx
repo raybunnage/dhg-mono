@@ -294,7 +294,7 @@ export function ClassifyDocument() {
         .replace(/<li>/g, '• ')
         .replace(/<\/li>/g, '\n')
         .replace(/<[^>]*>/g, '')
-        .replace(/\n{3,}/g, '\n\n');
+        .replace(/\n{3}/g, '\n\n');
     }
 
     // Clean for PostgreSQL text compatibility

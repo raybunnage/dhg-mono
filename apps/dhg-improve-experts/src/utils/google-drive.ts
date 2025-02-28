@@ -273,7 +273,7 @@ export async function getDocxContent(driveId: string) {
     const cleanedContent = result.value
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
       .replace(/\u0000/g, '')  // Remove null bytes
-      .replace(/\n{3,}/g, '\n\n')  // Normalize multiple line breaks
+      .replace(/\n{3}/g, '\n\n')  // Normalize multiple line breaks
       .replace(/\s+/g, ' ')  // Normalize whitespace
       .trim();
 

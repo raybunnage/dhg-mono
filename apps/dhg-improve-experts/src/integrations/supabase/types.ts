@@ -62,14 +62,14 @@ export type Database = {
       domains: {
         Row: {
           created_at: string
-          created_by: string
+          
           description: string | null
           id: string
           is_active: boolean
           name: string
           owner_id: string
           updated_at: string
-          updated_by: string
+          
         }
         Insert: {
           created_at?: string
@@ -98,7 +98,7 @@ export type Database = {
       email_addresses: {
         Row: {
           created_at: string
-          created_by: string
+          
           domain_id: string
           email_address: string
           id: string
@@ -106,7 +106,7 @@ export type Database = {
           is_primary: boolean | null
           last_used_at: string | null
           updated_at: string
-          updated_by: string
+          
           user_id: string | null
         }
         Insert: {
@@ -151,7 +151,7 @@ export type Database = {
           content: string | null
           contents_length: number | null
           created_at: string | null
-          created_by: string
+          
           date: string | null
           domain_id: string
           email_id: number
@@ -164,7 +164,7 @@ export type Database = {
           subject: string | null
           to_recipients: string | null
           updated_at: string
-          updated_by: string
+          
           url_cnt: number | null
         }
         Insert: {
@@ -223,7 +223,7 @@ export type Database = {
         Row: {
           bio: string | null
           created_at: string
-          created_by: string
+          
           domain_id: string
           email_address: string | null
           experience_years: number | null
@@ -235,7 +235,7 @@ export type Database = {
           legacy_expert_id: number | null
           starting_ref_id: number | null
           updated_at: string
-          updated_by: string
+          
           user_id: string | null
         }
         Insert: {
@@ -287,7 +287,7 @@ export type Database = {
       lionya_emails: {
         Row: {
           created_at: string
-          created_by: string | null
+          
           email_address: string | null
           email_count: number | null
           id: string
@@ -336,7 +336,7 @@ export type Database = {
           cleaned_authors: string | null
           concept_count: number | null
           created_at: string
-          created_by: string | null
+          
           date_text: string | null
           day: number | null
           domain_id: string
@@ -368,7 +368,7 @@ export type Database = {
           trust_level: number | null
           uni_document_type_id: string | null
           updated_at: string
-          updated_by: string | null
+          
           url_id: string | null
           user_id: string | null
           year: number | null
@@ -682,7 +682,7 @@ export type Database = {
         Row: {
           category: string
           created_at: string
-          created_by: string
+          
           current_num_of_type: number | null
           description: string | null
           document_type: string
@@ -695,7 +695,7 @@ export type Database = {
           mime_type: string | null
           required_fields: Json | null
           updated_at: string
-          updated_by: string
+          
         }
         Insert: {
           category: string
@@ -803,7 +803,7 @@ export type Database = {
           deletion_rule: string
         }[]
       }
-      drop_unique_constraint_created_by: {
+      drop_unique_constraint_
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
