@@ -20,10 +20,13 @@ import {
   ArrowRightLeft,
   Pencil,
   Layers,
-  Zap
+  Zap,
+  Database,
+  Activity
 } from "lucide-react";
 import { toast } from 'react-hot-toast';
 import { functionRegistry, getAllFunctions, getFunctionInfo, categories } from '@/utils/function-registry';
+import { GutsTracker } from '@/utils/gutsTracker';
 
 interface PageMetadata {
   id: string;
@@ -62,6 +65,9 @@ export default function CodeDashboard() {
   const [registrySearchTerm, setRegistrySearchTerm] = useState('');
   
   useEffect(() => {
+    // Initialize GutsTracker for this page
+    GutsTracker.initialize('/code', 'dhg-improve-experts');
+    
     fetchData();
     
     // Initialize registry data
@@ -131,6 +137,11 @@ export default function CodeDashboard() {
       console.error("Error in registry data setup:", error);
       setRegistryLoading(false);
     }
+    
+    // Cleanup GutsTracker on unmount
+    return () => {
+      GutsTracker.cleanup();
+    };
   }, []);
   
   // Filter registry functions when search term changes
@@ -153,13 +164,56 @@ export default function CodeDashboard() {
       await Promise.all([
         fetchFunctions(),
         fetchPages(),
-        fetchStats()
+        fetchStats(),
+        createInitialGutsTables() // Add function to create guts tables if they don't exist
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Function to create the guts tables if they don't exist
+  const createInitialGutsTables = async () => {
+    try {
+      // Record this action for tracking
+      GutsTracker.trackFunctionUsage('createInitialGutsTables', 'direct');
+      
+      // Check if the app_pages table exists
+      const { error: checkError, count } = await supabase
+        .from('app_pages')
+        .select('*', { count: 'exact', head: true });
+      
+      // If we get a specific error about the table not existing, create all required tables
+      if (checkError && (checkError.message.includes('relation "app_pages" does not exist') || checkError.code === '42P01')) {
+        console.log('Creating Guts tracking tables...');
+        
+        // Create app_pages table
+        await supabase.rpc('create_guts_tables');
+        
+        // If the tables were created successfully, create an initial entry
+        const { error: pageError } = await supabase
+          .from('app_pages')
+          .insert({
+            page_name: 'Code Dashboard',
+            page_path: '/code',
+            app_name: 'dhg-improve-experts',
+            description: 'Dashboard for code organization and tracking'
+          });
+          
+        if (pageError) {
+          console.error('Error creating initial page entry:', pageError);
+        } else {
+          console.log('Initial page entry created successfully');
+        }
+      } else {
+        // Track usage of the app_pages table
+        GutsTracker.trackTableUsage('app_pages', ['select'], true);
+      }
+    } catch (error) {
+      console.error('Error setting up Guts tables:', error);
     }
   };
   
@@ -1149,6 +1203,184 @@ export default function CodeDashboard() {
     );
   };
   
+  // Render Guts Dashboard Tab
+  const renderGutsTab = () => {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Guts Dashboard</CardTitle>
+              <CardDescription>View and manage internal page tracking for the application</CardDescription>
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={refreshData}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => window.open('/guts-example', '_blank')}
+              >
+                Open Guts Example
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <Database className="h-4 w-4 mr-2 text-blue-500" />
+                  Database Tables
+                </CardTitle>
+                <CardDescription>Tables tracking for pages</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">app_pages</span>
+                      <Badge>Core</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Stores information about pages in the application
+                    </p>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">page_table_usage</span>
+                      <Badge>Tracking</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Records which database tables are used by each page
+                    </p>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">page_function_usage</span>
+                      <Badge>Tracking</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Records which functions are used by each page
+                    </p>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">page_dependencies</span>
+                      <Badge>Tracking</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Records external dependencies used by each page
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <Activity className="h-4 w-4 mr-2 text-blue-500" />
+                  Usage Tracking
+                </CardTitle>
+                <CardDescription>Page-level usage capture</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm">
+                  <p className="mb-2">
+                    The GutsTracker utility helps capture usage information automatically:
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Table Usage</span>
+                      <Badge variant="outline">Automatic</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Captured via tracked Supabase client
+                    </p>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Function Usage</span>
+                      <Badge variant="outline">Manual</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Tracked with GutsTracker.trackFunctionUsage()
+                    </p>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Dependencies</span>
+                      <Badge variant="outline">Manual</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Tracked with GutsTracker.trackDependency()
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Getting Started with Guts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-1">1. Initialize the tracker</h4>
+                  <pre className="bg-gray-100 p-2 rounded text-xs">
+{`// In your component or page
+useEffect(() => {
+  // Initialize with page path and app name
+  GutsTracker.initialize('/your-page-path', 'app-name');
+  
+  // Cleanup when component unmounts
+  return () => {
+    GutsTracker.cleanup();
+  };
+}, []);`}
+                  </pre>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-1">2. Get a tracked Supabase client</h4>
+                  <pre className="bg-gray-100 p-2 rounded text-xs">
+{`// Use the tracked client to automatically record table usage
+const supabase = useTrackedSupabase();
+
+// Now use supabase as normal
+const { data } = await supabase.from('my_table').select('*');`}
+                  </pre>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-1">3. Track function usage</h4>
+                  <pre className="bg-gray-100 p-2 rounded text-xs">
+{`// Manually track a function
+GutsTracker.trackFunctionUsage('myFunction', 'direct');
+
+// Track dependency on external service
+GutsTracker.trackDependency('external-api', 'Payment Processing');`}
+                  </pre>
+                </div>
+                
+                <Button 
+                  className="w-full"
+                  onClick={() => window.open('/guts-example', '_blank')}
+                >
+                  View Complete Example
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold mb-6 flex items-center">
@@ -1157,7 +1389,7 @@ export default function CodeDashboard() {
       </h1>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="functions">Functions</TabsTrigger>
           <TabsTrigger value="pages">Pages</TabsTrigger>
@@ -1165,6 +1397,7 @@ export default function CodeDashboard() {
           <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="analyze">Analyze</TabsTrigger>
           <TabsTrigger value="registry">Registry</TabsTrigger>
+          <TabsTrigger value="guts">Guts</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview">{renderOverview()}</TabsContent>
@@ -1174,6 +1407,7 @@ export default function CodeDashboard() {
         <TabsContent value="organization">{renderOrganization()}</TabsContent>
         <TabsContent value="analyze">{renderAnalyzeTab()}</TabsContent>
         <TabsContent value="registry">{renderRegistryTab()}</TabsContent>
+        <TabsContent value="guts">{renderGutsTab()}</TabsContent>
       </Tabs>
     </div>
   );
