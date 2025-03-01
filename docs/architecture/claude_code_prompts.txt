@@ -4,6 +4,24 @@
 
 
 
+On the sync page, under the folders tab you can now choose different folders to sync.  This introduces the concept of "current sync folder" which now the sync dashboard needs to reflect everywhere.  Under the folders tab you can now choose which folder you want to sync - and even add new folders - whatever is last synced is the current folder. But perhaps you need to provide a way to select which folder you want to see the statistics for in the sync dashboard and then keep the statistics for that current folder showing the relevant facts for that folder.  
+
+ keeping the guts tables and architecture in mind, provide a way on the 
+  code dashboard to analyze all the functions on the viewer page and to add
+   them to the function_registry function - with proper formatting, you can
+   see one of my attempts in the markdown file: 
+  apps/dhg-improve-experts/public/prompts/enhanced-analysis-prompt.md and 
+  there are others in docs/prompts/react-component-analysis-prompt.md that 
+  tried to detailed ihnformtaionh about the functions. 
+  docs/prompts/enhanced-analysis-prompt.md - the main point of these was 
+  that when a function gets added to the function_registry we need to 
+  classify it according to whether it is for the dashboard, whether it is a
+   candidate for further refactoring because it could be part of a utils 
+  folder, we need the associatioh to the page it is in, we need to know if 
+  is a react function - if you need to use one of these prompts or create a
+   new one to help a sophisticated analysis, please reinstate one or more 
+  of these prompts to assist you.  Remeber then these functions in the 
+  function registry will be available to the guts tables 
 
 
 Move the Analyze and Registry page and functionality to the code dashboard page as new items across the top and display their respetive ui objects you did before only now under the code page tabs

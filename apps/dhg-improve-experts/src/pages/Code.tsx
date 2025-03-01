@@ -1054,15 +1054,16 @@ export default function CodeDashboard() {
   
   // Code Analysis Component
   const renderAnalyzeTab = () => {
+    // Import CodeFunctionAnalyzer component for analyzing code and registering functions
+    const CodeFunctionAnalyzer = React.lazy(() => import('@/components/CodeFunctionAnalyzer'));
 
-    // We'll implement a simplified version that matches the layout style
     return (
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Code Analysis</CardTitle>
-              <CardDescription>Analyze code structure and dependencies</CardDescription>
+              <CardTitle>Function Registry Analyzer</CardTitle>
+              <CardDescription>Analyze code files and add functions to the registry</CardDescription>
             </div>
             <div className="flex space-x-2">
               <Button
@@ -1077,60 +1078,14 @@ export default function CodeDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Component Analysis</h3>
-              <p className="mb-4 text-muted-foreground">
-                The code analysis tool examines your components to provide insights on structure, 
-                dependencies, and potential optimizations.
-              </p>
-              <div className="space-y-4">
-                <div className="p-4 border rounded-md">
-                  <h4 className="font-medium">React Component Analysis</h4>
-                  <ul className="list-disc list-inside mt-2 text-sm space-y-1">
-                    <li>Detects component structure and props</li>
-                    <li>Identifies hook usage patterns</li>
-                    <li>Analyzes rendering optimization opportunities</li>
-                    <li>Detects potential state management issues</li>
-                  </ul>
-                  <Button className="mt-4" onClick={() => window.open('/analyze', '_blank')}>
-                    Start Component Analysis
-                  </Button>
-                </div>
-                
-                <div className="p-4 border rounded-md">
-                  <h4 className="font-medium">Function Analysis</h4>
-                  <ul className="list-disc list-inside mt-2 text-sm space-y-1">
-                    <li>Extracts function signatures and dependencies</li>
-                    <li>Maps component relationships</li>
-                    <li>Analyzes code reuse opportunities</li>
-                  </ul>
-                  <Button className="mt-4" variant="outline" onClick={() => setActiveTab('functions')}>
-                    View Function Registry
-                  </Button>
-                </div>
-              </div>
+          <React.Suspense fallback={
+            <div className="p-8 text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500 mb-4" />
+              <p className="text-muted-foreground">Loading function analyzer...</p>
             </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Analysis Results</h3>
-              <div className="border rounded-md p-4 min-h-[300px] bg-muted flex items-center justify-center">
-                <div className="text-center">
-                  <CodeIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Select a component to analyze or visit the full Analysis page for more options
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => window.open('/analyze', '_blank')}
-                  >
-                    Open Analysis Dashboard
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+          }>
+            <CodeFunctionAnalyzer />
+          </React.Suspense>
         </CardContent>
       </Card>
     );
