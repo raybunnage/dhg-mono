@@ -232,14 +232,15 @@ export class GutsTracker {
       // Process each table usage in sequence
       for (const item of batchToProcess) {
         // Insert directly into the page_table_usage table
-      const { error } = await supabase
-        .from('page_table_usage')
-        .insert({
-          page_id: this.pageId,
-          table_name: item.table_name,
-          operation_type: item.operations[0], // Just use the first operation
-          is_primary: item.is_primary
-        });
+        const { error } = await supabase
+          .from('page_table_usage')
+          .insert({
+            page_id: this.pageId,
+            table_name: item.table_name,
+            operations: item.operations, // This should be an array of operations
+            success: true,
+            is_primary: item.is_primary
+          });
         
         if (error) {
           console.error(`Error tracking table usage for ${item.table_name}:`, error);
@@ -269,8 +270,9 @@ export class GutsTracker {
           .from('page_function_usage')
           .insert({
             page_id: this.pageId,
-            function_id: item.function_id,
-            usage_type: item.usage_type
+            function_name: item.function_id,
+            call_type: item.usage_type,
+            success: true
           });
         
         if (error) {
@@ -366,8 +368,8 @@ export class GutsTracker {
                 // If it's a query method we want to track
                 if (['select', 'insert', 'update', 'delete', 'upsert'].includes(methodProp)) {
                   return (...args: any[]) => {
-                    // Track the table usage
-                    this.trackTableUsage(tableName, [methodProp]);
+                    // Track the table usage - Make sure the operation is in an array format
+                    this.trackTableUsage(tableName, [methodProp], false);
                     
                     // Call the original method
                     return originalMethod.apply(methodTarget, args);
