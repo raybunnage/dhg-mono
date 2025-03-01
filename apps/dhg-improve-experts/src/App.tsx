@@ -32,7 +32,7 @@ import Write from '@/pages/Write';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
 
 // Component imports
-import { MainNavbar } from '@/components/MainNavbar';
+import { MainNavbar } from '@/components/MainNavbar'; 
 import { RegistryViewer } from '@/components/RegistryViewer';
 
 function TestComponent() {
@@ -93,7 +93,6 @@ function App() {
           <Route path="/pdf-research-portal" element={<PDFResearchPortal />} />
           <Route path="/mp4-test" element={<MP4Test />} />
           <Route path="/classify" element={<ClassifyDocument />} />
-          <Route path="/analyze" element={<Analyze />} />
           <Route path="/transcribe" element={<Transcribe />} />
           <Route path="/supabase" element={<SupabaseAdmin />} />
           <Route path="/supabase/legacy" element={<SupabasePage />} />
@@ -104,6 +103,8 @@ function App() {
           <Route path="/experts" element={<ExpertsDashboard />} />
           <Route path="/code" element={<CodeDashboard />} />
           <Route path="/write" element={<Write />} />
+          <Route path="/analyze" element={<Analyze />} />
+          <Route path="/registry" element={<RegistryViewer />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

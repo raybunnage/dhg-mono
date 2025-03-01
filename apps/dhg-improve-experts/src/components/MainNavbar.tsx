@@ -11,9 +11,7 @@ export function MainNavbar() {
     { name: 'Classify', href: '/classify' },
     { name: 'Transcribe', href: '/transcribe' },
     { name: 'Supabase', href: '/supabase' },
-    { name: 'Analyze', href: '/analyze' },
     { name: 'Write', href: '/write' },
-    { name: 'Registry', href: '/registry' },
     { name: 'Experts', href: '/experts' },
     { name: 'Code', href: '/code' },
   ]
