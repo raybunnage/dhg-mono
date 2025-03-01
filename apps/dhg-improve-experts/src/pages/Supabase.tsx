@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { toast } from 'react-hot-toast'
 import { supabase } from '@/integrations/supabase/client'
+import type { Database } from '@/integrations/supabase/types'
 
 export function SupabasePage() {
   const [schemaData, setSchemaData] = useState<any>(null)
@@ -9,6 +11,7 @@ export function SupabasePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<'json' | 'formatted'>('formatted')
+  const [tableData, setTableData] = useState<any[]>([])
   
   const commonTables = [
     'sources_google',
@@ -17,6 +20,105 @@ export function SupabasePage() {
     'experts',
     'expert_documents'
   ]
+
+  // Verify database connection on component mount
+  useEffect(() => {
+    verifyDatabaseConnection()
+  }, [])
+
+  // Verify that we can connect to Supabase
+  async function verifyDatabaseConnection() {
+    try {
+      // First attempt with proper count syntax
+      const { count, error } = await supabase
+        .from('sources_google')
+        .select('*', { count: 'exact', head: true })
+      
+      if (error) {
+        console.error('Database connection error:', error)
+        toast.error(`Database connection error: ${error.message}`)
+      } else {
+        // Log the count value to see what's being returned
+        console.log('Database connection successful, count result:', count)
+        
+        // If count wasn't returned, try a different approach
+        if (count === null || count === undefined) {
+          console.log('Count not returned, trying to fetch actual data')
+          const { data, error: dataError } = await supabase
+            .from('sources_google')
+            .select('*')
+            .limit(5)
+            
+          if (!dataError) {
+            console.log(`Successfully fetched ${data?.length} rows`)
+          }
+        }
+        
+        toast.success('Connected to database successfully')
+        // Load initial data for the default table
+        loadTableData(tableName)
+      }
+    } catch (err) {
+      console.error('Connection verification error:', err)
+    }
+  }
+
+  // Load table data
+  async function loadTableData(table: string) {
+    setLoading(true)
+    setError(null)
+    try {
+      // First log some info about what we're doing
+      console.log(`Attempting to fetch data from table: ${table}`);
+      
+      // Check that we have a valid table name
+      if (!table || table.trim() === '') {
+        throw new Error('Table name is empty');
+      }
+      
+      // Try to get count first to verify table exists
+      const { count, error: countError } = await supabase
+        .from(table)
+        .select('*', { count: 'exact', head: true });
+        
+      if (countError) {
+        console.warn(`Count query failed for table ${table}:`, countError);
+      } else {
+        console.log(`Table ${table} contains approximately ${count || 'unknown'} rows`);
+      }
+      
+      // Now fetch actual data
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .limit(10);
+      
+      if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        console.log(`No data retrieved from table ${table} (might be empty)`);
+        
+        // Try a more specific query just to validate the table exists
+        const { data: testData, error: testError } = await supabase
+          .from(table)
+          .select('*')
+          .limit(1);
+          
+        if (testError) {
+          throw new Error(`Table access error: ${testError.message}`);
+        }
+      }
+      
+      setTableData(data || []);
+      toast.success(`Loaded data from ${table} (${data?.length || 0} rows)`);
+    } catch (err) {
+      console.error(`Error loading table ${table}:`, err);
+      setError(err instanceof Error ? err.message : `Failed to load data from ${table}`);
+      toast.error(`Failed to load table: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function getCompleteSchema() {
     setLoading(true)
@@ -38,6 +140,17 @@ export function SupabasePage() {
       const tablesData = await Promise.all(
         commonTables.map(async (tableName) => {
           try {
+            // First try to get the count to check if the table exists
+            const { count, error: countError } = await supabase
+              .from(tableName)
+              .select('*', { count: 'exact', head: true });
+              
+            if (countError) {
+              console.log(`Error querying table ${tableName}:`, countError);
+              return null;
+            }
+            
+            // Then get actual data to determine columns
             const { data, error } = await supabase
               .from(tableName)
               .select('*')
@@ -48,11 +161,25 @@ export function SupabasePage() {
                 table_name: tableName,
                 table_schema: 'public',
                 table_type: 'BASE TABLE',
-                columns: data.length > 0 ? Object.keys(data[0]) : []
+                columns: data.length > 0 ? Object.keys(data[0]) : [],
+                row_count: count || (data ? data.length : 0)
               };
             }
+            
+            // If we got here but have a count, the table exists but is empty
+            if (count !== null && count !== undefined) {
+              return {
+                table_name: tableName,
+                table_schema: 'public',
+                table_type: 'BASE TABLE',
+                columns: [],
+                row_count: count
+              };
+            }
+            
             return null;
           } catch (e) {
+            console.error(`Exception querying ${tableName}:`, e);
             return null;
           }
         })
@@ -72,6 +199,7 @@ export function SupabasePage() {
       }
 
       setSchemaData(schema)
+      toast.success('Schema information retrieved')
 
       // Save to file
       const blob = new Blob([JSON.stringify(schema, null, 2)], { type: 'application/json' })
@@ -85,6 +213,7 @@ export function SupabasePage() {
     } catch (err) {
       console.error('Error fetching schema:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch schema')
+      toast.error(`Failed to fetch schema: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
     }
@@ -126,6 +255,7 @@ export function SupabasePage() {
     } catch (err) {
       console.error('Error fetching foreign keys:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch foreign keys');
+      toast.error(`Failed to fetch foreign keys: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -134,6 +264,7 @@ export function SupabasePage() {
   async function getTableMetadata() {
     if (!tableName.trim()) {
       setError('Please enter a table name')
+      toast.error('Please enter a table name')
       return
     }
     
@@ -155,8 +286,8 @@ export function SupabasePage() {
         metadata = Object.keys(sampleData[0]).map(columnName => ({
           column_name: columnName,
           data_type: typeof sampleData[0][columnName] === 'number' ? 'number' : 
-                     typeof sampleData[0][columnName] === 'boolean' ? 'boolean' :
-                     typeof sampleData[0][columnName] === 'object' ? 'object' : 'string',
+                   typeof sampleData[0][columnName] === 'boolean' ? 'boolean' :
+                   typeof sampleData[0][columnName] === 'object' ? 'object' : 'string',
           is_nullable: 'YES', // We don't know this for sure
           table_name: tableName,
           table_schema: 'public'
@@ -164,8 +295,7 @@ export function SupabasePage() {
       }
       
       setTableMetadata(metadata)
-      
-      console.log(`Using mock data for table ${tableName}`)
+      toast.success(`Table metadata retrieved for ${tableName}`)
       
       // Save to file
       const blob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' })
@@ -179,9 +309,16 @@ export function SupabasePage() {
     } catch (err) {
       console.error('Error fetching table metadata:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch table metadata')
+      toast.error(`Failed to fetch table metadata: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Handle table selection change
+  const handleTableChange = (newTable: string) => {
+    setTableName(newTable)
+    loadTableData(newTable)
   }
 
   return (
@@ -231,7 +368,7 @@ export function SupabasePage() {
           <div>
             <select
               value={tableName}
-              onChange={(e) => setTableName(e.target.value)}
+              onChange={(e) => handleTableChange(e.target.value)}
               className="h-10 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="">Select a table</option>
@@ -246,6 +383,39 @@ export function SupabasePage() {
       {error && (
         <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
           {error}
+        </div>
+      )}
+
+      {/* Display table data */}
+      {tableData.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Data Preview - {tableName}</h2>
+          <div className="overflow-auto max-h-[300px] bg-white shadow-md rounded">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {Object.keys(tableData[0]).map(column => (
+                    <th key={column} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {column}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {tableData.map((row, idx) => (
+                  <tr key={idx}>
+                    {Object.values(row).map((value, valueIdx) => (
+                      <td key={valueIdx} className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                        {typeof value === 'object' ? 
+                          JSON.stringify(value).substring(0, 30) + (JSON.stringify(value).length > 30 ? '...' : '') : 
+                          String(value).substring(0, 30) + (String(value).length > 30 ? '...' : '')}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -273,7 +443,7 @@ export function SupabasePage() {
         <div className="mt-8">
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xl font-semibold">Table: {tableMetadata.table_name}</h2>
+              <h2 className="text-xl font-semibold">Table Structure: {tableName}</h2>
               <div className="flex gap-2">
                 <div className="flex border rounded overflow-hidden">
                   <button
@@ -306,28 +476,9 @@ export function SupabasePage() {
               </pre>
             ) : (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="font-medium mb-2">Table Info</div>
-                    <div className="grid grid-cols-2 gap-1">
-                      <div className="text-gray-600">Size:</div>
-                      <div>{tableMetadata.size}</div>
-                      
-                      <div className="text-gray-600">Row Count:</div>
-                      <div>{tableMetadata.approximate_row_count || 'Unknown'}</div>
-                      
-                      <div className="text-gray-600">Last Vacuum:</div>
-                      <div>{tableMetadata.last_vacuum || 'Never'}</div>
-                      
-                      <div className="text-gray-600">Last Analyze:</div>
-                      <div>{tableMetadata.last_analyze || 'Never'}</div>
-                    </div>
-                  </div>
-                </div>
-                
                 <div>
-                  <h4 className="font-medium mb-2">Columns ({tableMetadata.columns?.length || 0})</h4>
-                  {tableMetadata.columns?.length > 0 ? (
+                  <h4 className="font-medium mb-2">Columns ({tableMetadata.length})</h4>
+                  {tableMetadata.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200 text-xs">
                         <thead className="bg-gray-100">
@@ -335,18 +486,16 @@ export function SupabasePage() {
                             <th className="px-2 py-1 text-left">Name</th>
                             <th className="px-2 py-1 text-left">Type</th>
                             <th className="px-2 py-1 text-left">Not Null</th>
-                            <th className="px-2 py-1 text-left">PK</th>
                             <th className="px-2 py-1 text-left">Default</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                          {tableMetadata.columns.map((col: any) => (
-                            <tr key={col.name}>
-                              <td className="px-2 py-1">{col.name}</td>
-                              <td className="px-2 py-1">{col.type}</td>
-                              <td className="px-2 py-1">{col.not_null ? '✅' : ''}</td>
-                              <td className="px-2 py-1">{col.is_primary_key ? '✅' : ''}</td>
-                              <td className="px-2 py-1">{col.default || ''}</td>
+                          {tableMetadata.map((col: any) => (
+                            <tr key={col.column_name}>
+                              <td className="px-2 py-1">{col.column_name}</td>
+                              <td className="px-2 py-1">{col.data_type}</td>
+                              <td className="px-2 py-1">{col.is_nullable === 'NO' ? '✅' : ''}</td>
+                              <td className="px-2 py-1">{col.column_default || ''}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -356,96 +505,6 @@ export function SupabasePage() {
                     <p className="text-sm text-gray-500">No columns found</p>
                   )}
                 </div>
-                
-                <div className="mt-4">
-                  <h4 className="font-medium mb-2">Indexes ({tableMetadata.indexes?.length || 0})</h4>
-                  {tableMetadata.indexes?.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 text-xs">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-2 py-1 text-left">Name</th>
-                            <th className="px-2 py-1 text-left">Type</th>
-                            <th className="px-2 py-1 text-left">Unique</th>
-                            <th className="px-2 py-1 text-left">Columns</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {tableMetadata.indexes.map((idx: any) => (
-                            <tr key={idx.name}>
-                              <td className="px-2 py-1">{idx.name}</td>
-                              <td className="px-2 py-1">{idx.type}</td>
-                              <td className="px-2 py-1">{idx.is_unique ? '✅' : ''}</td>
-                              <td className="px-2 py-1">{idx.columns}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No indexes found</p>
-                  )}
-                </div>
-                
-                <div className="mt-4">
-                  <h4 className="font-medium mb-2">Foreign Keys ({tableMetadata.foreign_keys?.length || 0})</h4>
-                  {tableMetadata.foreign_keys?.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 text-xs">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-2 py-1 text-left">Name</th>
-                            <th className="px-2 py-1 text-left">Source Column</th>
-                            <th className="px-2 py-1 text-left">Target Table</th>
-                            <th className="px-2 py-1 text-left">Target Column</th>
-                            <th className="px-2 py-1 text-left">On Delete</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {tableMetadata.foreign_keys.map((fk: any) => (
-                            <tr key={fk.name}>
-                              <td className="px-2 py-1">{fk.name}</td>
-                              <td className="px-2 py-1">{fk.source_column}</td>
-                              <td className="px-2 py-1">{fk.target_table}</td>
-                              <td className="px-2 py-1">{fk.target_column}</td>
-                              <td className="px-2 py-1">{fk.on_delete}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No foreign keys found</p>
-                  )}
-                </div>
-                
-                {tableMetadata.rls_policies?.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="font-medium mb-2">RLS Policies ({tableMetadata.rls_policies.length})</h4>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 text-xs">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-2 py-1 text-left">Name</th>
-                            <th className="px-2 py-1 text-left">Command</th>
-                            <th className="px-2 py-1 text-left">Using Expression</th>
-                            <th className="px-2 py-1 text-left">Roles</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {tableMetadata.rls_policies.map((policy: any) => (
-                            <tr key={policy.name}>
-                              <td className="px-2 py-1">{policy.name}</td>
-                              <td className="px-2 py-1">{policy.command_desc}</td>
-                              <td className="px-2 py-1">{policy.using_expression}</td>
-                              <td className="px-2 py-1">{policy.roles}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -453,4 +512,4 @@ export function SupabasePage() {
       )}
     </div>
   )
-} 
+}

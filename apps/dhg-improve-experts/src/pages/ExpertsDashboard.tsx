@@ -17,7 +17,7 @@ import { ExpertForm } from '@/components/experts/ExpertForm';
 import { ExpertDocumentForm } from '@/components/experts/ExpertDocumentForm';
 
 export default function ExpertsDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'experts' | 'documents' | 'detail'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'experts' | 'documents' | 'detail' | 'profiles'>('overview');
   const [loading, setLoading] = useState(true);
   const [experts, setExperts] = useState<ExpertInterface[]>([]);
   const [documents, setDocuments] = useState<ExpertDocument[]>([]);
@@ -412,6 +412,30 @@ export default function ExpertsDashboard() {
         doc.document_type.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : documents;
+    
+  const filteredProfiles = searchTerm
+    ? documents.filter(doc => 
+        doc.processing_status === 'completed' && 
+        doc.processed_content !== null &&
+        (
+          // Search in document title
+          (doc.title && doc.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          // Search in profile name
+          (doc.processed_content?.name && 
+           doc.processed_content.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          // Search in expertise
+          (doc.processed_content?.expertise && 
+           doc.processed_content.expertise.some((e: string) => 
+             e.toLowerCase().includes(searchTerm.toLowerCase())
+           )) ||
+          // Search in affiliations
+          (doc.processed_content?.affiliations && 
+           doc.processed_content.affiliations.some((a: string) => 
+             a.toLowerCase().includes(searchTerm.toLowerCase())
+           ))
+        )
+      )
+    : documents.filter(doc => doc.processing_status === 'completed' && doc.processed_content !== null);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -848,6 +872,116 @@ export default function ExpertsDashboard() {
     </Card>
   );
 
+  // Render Profiles Tab
+  const renderProfiles = () => {
+
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Expert Profiles</CardTitle>
+              <CardDescription>Processed expert profiles from documents</CardDescription>
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={refreshData}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="relative flex w-full max-w-sm items-center mb-4">
+            <Search className="absolute left-2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search profiles..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          {filteredProfiles.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              {searchTerm ? 'No profiles match your search' : 'No processed profiles found'}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredProfiles.map(document => {
+                const expertName = experts.find(e => e.id === document.expert_id)?.expert_name || 'Unknown Expert';
+                const profile = document.processed_content;
+                
+                // Skip if processed_content isn't a valid object
+                if (!profile || typeof profile !== 'object') return null;
+                
+                return (
+                  <Card key={document.id} className="overflow-hidden">
+                    <CardHeader className="pb-2 bg-gray-50">
+                      <CardTitle className="text-lg">{profile.name || document.title || 'Unnamed Profile'}</CardTitle>
+                      <CardDescription>
+                        {profile.title || expertName}
+                        {profile.affiliations && profile.affiliations.length > 0 && (
+                          <span> • {profile.affiliations[0]}</span>
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <ScrollArea className="h-80">
+                        <div className="space-y-4">
+                          {profile.expertise && profile.expertise.length > 0 && (
+                            <div>
+                              <div className="text-sm font-medium text-muted-foreground mb-1">Expertise</div>
+                              <div className="flex flex-wrap gap-1">
+                                {profile.expertise.map((item: string, i: number) => (
+                                  <Badge key={i} variant="outline">{item}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {profile.education && profile.education.length > 0 && (
+                            <div>
+                              <div className="text-sm font-medium text-muted-foreground mb-1">Education</div>
+                              {profile.education.map((edu: any, i: number) => (
+                                <div key={i} className="text-sm mb-2 pl-2 border-l-2 border-gray-200">
+                                  <div className="font-medium">{edu.degree} in {edu.field}</div>
+                                  <div>{edu.institution}, {edu.year}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {profile.bio && (
+                            <div>
+                              <div className="text-sm font-medium text-muted-foreground mb-1">Biography</div>
+                              <div className="text-sm">{profile.bio}</div>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <div className="text-sm font-medium text-muted-foreground mb-1">Raw JSON</div>
+                            <pre className="text-xs bg-gray-50 p-2 rounded overflow-auto max-h-40">
+                              {JSON.stringify(profile, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
   // Render Detail View
   const renderDetail = () => {
     // Expert Detail View
@@ -1175,10 +1309,11 @@ export default function ExpertsDashboard() {
       </h1>
       
       <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as any)} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="experts">Experts</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="profiles">Profiles</TabsTrigger>
           <TabsTrigger value="detail" disabled={!selectedExpert && !selectedDocument}>
             {selectedExpert ? 'Expert Detail' : selectedDocument ? 'Document Detail' : 'Detail View'}
           </TabsTrigger>
@@ -1187,6 +1322,7 @@ export default function ExpertsDashboard() {
         <TabsContent value="overview">{renderOverview()}</TabsContent>
         <TabsContent value="experts">{renderExperts()}</TabsContent>
         <TabsContent value="documents">{renderDocuments()}</TabsContent>
+        <TabsContent value="profiles">{renderProfiles()}</TabsContent>
         <TabsContent value="detail">{renderDetail()}</TabsContent>
       </Tabs>
       

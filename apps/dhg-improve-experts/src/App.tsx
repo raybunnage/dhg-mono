@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Page imports
 import ExpertProfiles from "@/pages/ExpertProfiles";
 import ExpertsDashboard from "@/pages/ExpertsDashboard";
+import CodeDashboard from "@/pages/Code";
 import DocumentTestingPage from './pages/document-testing';
 import ExpertProfilerPage from './app/experts/profiler/page';
 import SourceButtonsTest from '@/pages/source-buttons-test';
@@ -27,6 +28,7 @@ import { BatchProcessingMonitor } from './components/BatchProcessingMonitor';
 import Viewer from '@/pages/Viewer';
 import Dashboard from '@/pages/Dashboard';
 import Sync from '@/pages/Sync';
+import Write from '@/pages/Write';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
 
 // Component imports
@@ -95,10 +97,13 @@ function App() {
           <Route path="/transcribe" element={<Transcribe />} />
           <Route path="/supabase" element={<SupabaseAdmin />} />
           <Route path="/supabase/legacy" element={<SupabasePage />} />
+          <Route path="/supabase/explorer" element={<SupabasePage />} />
           <Route path="/file-tree" element={<FileTree />} />
           <Route path="/batches" element={<BatchProcessingMonitor />} />
           <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
           <Route path="/experts" element={<ExpertsDashboard />} />
+          <Route path="/code" element={<CodeDashboard />} />
+          <Route path="/write" element={<Write />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
