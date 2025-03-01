@@ -1,6 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 export function MainNavbar() {
+  const location = useLocation();
+  const currentPath = location.pathname;
+  
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Viewer', href: '/viewer' },
@@ -10,6 +13,7 @@ export function MainNavbar() {
     { name: 'Supabase', href: '/supabase' },
     { name: 'Analyze', href: '/analyze' },
     { name: 'Registry', href: '/registry' },
+    { name: 'Experts', href: '/experts' },
   ]
 
   return (
@@ -18,7 +22,11 @@ export function MainNavbar() {
         <div className="flex justify-between h-16">
           <div className="flex space-x-4 items-center">
             {navigation.map((item) => (
-              <Link key={item.name} to={item.href} className="text-gray-700 hover:text-gray-900">
+              <Link 
+                key={item.name} 
+                to={item.href} 
+                className={`${currentPath === item.href ? 'text-blue-600 font-medium' : 'text-gray-700'} hover:text-gray-900`}
+              >
                 {item.name}
               </Link>
             ))}
