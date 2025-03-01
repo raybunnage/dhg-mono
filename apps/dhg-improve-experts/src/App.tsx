@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Page imports
 import ExpertProfiles from "@/pages/ExpertProfiles";
+import ExpertsDashboard from "@/pages/ExpertsDashboard";
 import DocumentTestingPage from './pages/document-testing';
 import ExpertProfilerPage from './app/experts/profiler/page';
 import SourceButtonsTest from '@/pages/source-buttons-test';
@@ -97,6 +98,7 @@ function App() {
           <Route path="/file-tree" element={<FileTree />} />
           <Route path="/batches" element={<BatchProcessingMonitor />} />
           <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+          <Route path="/experts" element={<ExpertsDashboard />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

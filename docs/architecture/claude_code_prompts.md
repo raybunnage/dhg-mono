@@ -161,9 +161,80 @@ To help me do so  Generate a thorough report in markdown syntax that I can put i
 
 Now that I've cleaned up the experts code I need you to add a new experts page.  It will be a dashboard that will allow me to manage experts similar to all the other dashboards you created for me. I have an existing experts table and I have an existing experts_documents table.  I need to be able to add new experts, edit their information, and delete them.  I will also need to be able to see a list of all experts and select one to view their details.  I will also need to be able to add new expert documents and edit their information, and delete them.  I will also need to be able to see a list of all expert documents and select one to view their details.
 
-The thing about experts is the the information for them comes from many places. Some of it comes from the presentation announcement docx files which we are processing with ai and extracting out the unstructured information that comes from cvs and bios.  Some of it comes from their research papers. Some of it could come from the web sites that are extracted from some of these documents such as their lab page. Yes, we could even get their linked in profiles.  Basically the experts who create our content videos are the heart of our operation and keeping up to date information about them is crucial.  We also will be building an associated set of tables and ai processing around their research papers and content but that will be a later step.
+The thing about experts is the the information for them comes from many documents. Our goal is to build up and keep current important information about them and even update it periodically. We already have an "experts" table but we need to make it more robust.  Please add the fields you think are neceessary to do this.
 
-  We have to take all these sources and extract out the unstructureed (but mostly similar and consistent information )
+Some of our information comes from the presentation announcement docx files which we have in our sources_google table.  We are processing with ai and extracting out the unstructured information that comes from presentation documents that are cvs and bios.  Some of it comes from their research papers. Some of it could come from the web sites that are extracted from some of these documents such as their lab page. Yes, we could even get their linked in profiles.  Basically the experts who create our content videos are the heart of our operation and keeping up to date information about them is crucial.  We also will be building an associated set of tables and ai processing around their research papers and content but that will be a later step.
+
+  We have to take all these sources and extract out the unstructureed (but mostly similar and consistent information ) and put it into the experts table.  We also need to be able to add new experts and edit their information, and delete them.  I will also need to be able to see a list of all experts and select one to view their details.  I will also need to be able to add new expert documents and edit their information, and delete those files. 
+
+  here are the fields in the current experts table
+
+   experts: {
+        Row: {
+          bio: string | null
+          created_at: string
+          email_address: string | null
+          experience_years: number | null
+          expert_name: string
+          expertise_area: string | null
+          full_name: string | null
+          google_email: string | null
+          google_profile_data: Json | null
+          google_user_id: string | null
+          id: string
+          is_in_core_group: boolean
+          last_synced_at: string | null
+          legacy_expert_id: number | null
+          starting_ref_id: number | null
+          sync_error: string | null
+          sync_status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          email_address?: string | null
+          experience_years?: number | null
+          expert_name: string
+          expertise_area?: string | null
+          full_name?: string | null
+          google_email?: string | null
+          google_profile_data?: Json | null
+          google_user_id?: string | null
+          id?: string
+          is_in_core_group?: boolean
+          last_synced_at?: string | null
+          legacy_expert_id?: number | null
+          starting_ref_id?: number | null
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          email_address?: string | null
+          experience_years?: number | null
+          expert_name?: string
+          expertise_area?: string | null
+          full_name?: string | null
+          google_email?: string | null
+          google_profile_data?: Json | null
+          google_user_id?: string | null
+          id?: string
+          is_in_core_group?: boolean
+          last_synced_at?: string | null
+          legacy_expert_id?: number | null
+          starting_ref_id?: number | null
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
 
 
 
