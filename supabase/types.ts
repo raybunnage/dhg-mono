@@ -62,6 +62,36 @@ export type Database = {
           },
         ]
       }
+      app_pages: {
+        Row: {
+          app_name: string
+          created_at: string | null
+          description: string | null
+          id: string
+          page_name: string
+          page_path: string
+          updated_at: string | null
+        }
+        Insert: {
+          app_name: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          page_name: string
+          page_path: string
+          updated_at?: string | null
+        }
+        Update: {
+          app_name?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          page_name?: string
+          page_path?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       asset_types: {
         Row: {
           created_at: string | null
@@ -802,6 +832,7 @@ export type Database = {
       }
       function_registry: {
         Row: {
+          ai_prompts: Json | null
           app_name: string | null
           category: string
           code_signature: string | null
@@ -820,16 +851,20 @@ export type Database = {
           location: string
           name: string
           output_types: Json | null
+          refactor_candidate: boolean | null
           repository: string
           shared_package_status: boolean | null
           similar_functions: Json | null
+          specificity: string | null
           status: string | null
           supabase_operations: Json | null
           target_package: string | null
           updated_at: string | null
           used_in: string[] | null
+          uses_react: boolean | null
         }
         Insert: {
+          ai_prompts?: Json | null
           app_name?: string | null
           category: string
           code_signature?: string | null
@@ -848,16 +883,20 @@ export type Database = {
           location: string
           name: string
           output_types?: Json | null
+          refactor_candidate?: boolean | null
           repository: string
           shared_package_status?: boolean | null
           similar_functions?: Json | null
+          specificity?: string | null
           status?: string | null
           supabase_operations?: Json | null
           target_package?: string | null
           updated_at?: string | null
           used_in?: string[] | null
+          uses_react?: boolean | null
         }
         Update: {
+          ai_prompts?: Json | null
           app_name?: string | null
           category?: string
           code_signature?: string | null
@@ -876,14 +915,17 @@ export type Database = {
           location?: string
           name?: string
           output_types?: Json | null
+          refactor_candidate?: boolean | null
           repository?: string
           shared_package_status?: boolean | null
           similar_functions?: Json | null
+          specificity?: string | null
           status?: string | null
           supabase_operations?: Json | null
           target_package?: string | null
           updated_at?: string | null
           used_in?: string[] | null
+          uses_react?: boolean | null
         }
         Relationships: []
       }
@@ -921,11 +963,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "function_relationships_source_function_id_fkey"
+            columns: ["source_function_id"]
+            isOneToOne: false
+            referencedRelation: "page_guts_raw_data"
+            referencedColumns: ["function_id"]
+          },
+          {
             foreignKeyName: "function_relationships_target_function_id_fkey"
             columns: ["target_function_id"]
             isOneToOne: false
             referencedRelation: "function_registry"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "function_relationships_target_function_id_fkey"
+            columns: ["target_function_id"]
+            isOneToOne: false
+            referencedRelation: "page_guts_raw_data"
+            referencedColumns: ["function_id"]
           },
         ]
       }
@@ -985,6 +1041,152 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      page_dependencies: {
+        Row: {
+          created_at: string | null
+          dependency_name: string
+          dependency_type: string
+          details: Json | null
+          id: string
+          page_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dependency_name: string
+          dependency_type: string
+          details?: Json | null
+          id?: string
+          page_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dependency_name?: string
+          dependency_type?: string
+          details?: Json | null
+          id?: string
+          page_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_dependencies_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "app_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_dependencies_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page_guts_raw_data"
+            referencedColumns: ["page_id"]
+          },
+        ]
+      }
+      page_function_usage: {
+        Row: {
+          created_at: string | null
+          function_id: string
+          id: string
+          page_id: string
+          updated_at: string | null
+          usage_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          function_id: string
+          id?: string
+          page_id: string
+          updated_at?: string | null
+          usage_type: string
+        }
+        Update: {
+          created_at?: string | null
+          function_id?: string
+          id?: string
+          page_id?: string
+          updated_at?: string | null
+          usage_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_function_usage_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "function_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_function_usage_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "page_guts_raw_data"
+            referencedColumns: ["function_id"]
+          },
+          {
+            foreignKeyName: "page_function_usage_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "app_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_function_usage_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page_guts_raw_data"
+            referencedColumns: ["page_id"]
+          },
+        ]
+      }
+      page_table_usage: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          operation_type: string[]
+          page_id: string
+          table_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          operation_type: string[]
+          page_id: string
+          table_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          operation_type?: string[]
+          page_id?: string
+          table_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_table_usage_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "app_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_table_usage_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page_guts_raw_data"
+            referencedColumns: ["page_id"]
+          },
+        ]
       }
       presentation_assets: {
         Row: {
@@ -2143,6 +2345,32 @@ export type Database = {
         }
         Relationships: []
       }
+      page_guts_raw_data: {
+        Row: {
+          ai_prompts: Json | null
+          app_name: string | null
+          dependency_details: Json | null
+          dependency_id: string | null
+          dependency_name: string | null
+          dependency_type: string | null
+          function_id: string | null
+          function_location: string | null
+          function_name: string | null
+          function_usage_id: string | null
+          is_primary: boolean | null
+          page_id: string | null
+          page_name: string | null
+          page_path: string | null
+          refactor_candidate: boolean | null
+          specificity: string | null
+          table_name: string | null
+          table_operations: string[] | null
+          table_usage_id: string | null
+          usage_type: string | null
+          uses_react: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_unique_constraint: {
@@ -2189,6 +2417,15 @@ export type Database = {
           distinct_ratio: number
           recommendation: string
         }[]
+      }
+      batch_track_usage: {
+        Args: {
+          p_page_id: string
+          p_tables?: Json
+          p_functions?: Json
+          p_dependencies?: Json
+        }
+        Returns: boolean
       }
       check_user_id_foreign_keys: {
         Args: Record<PropertyKey, never>
@@ -2300,6 +2537,64 @@ export type Database = {
           schema_name: string
         }
         Returns: Json
+      }
+      get_or_create_page: {
+        Args: {
+          p_page_path: string
+          p_app_name: string
+          p_page_name?: string
+        }
+        Returns: string
+      }
+      get_page_basic_info: {
+        Args: {
+          p_page_path: string
+          p_app_name?: string
+        }
+        Returns: {
+          page_id: string
+          page_name: string
+          page_path: string
+          app_name: string
+        }[]
+      }
+      get_page_dependencies: {
+        Args: {
+          p_page_id: string
+        }
+        Returns: {
+          dependency_id: string
+          dependency_type: string
+          dependency_name: string
+          details: Json
+        }[]
+      }
+      get_page_functions: {
+        Args: {
+          p_page_id: string
+        }
+        Returns: {
+          function_usage_id: string
+          function_id: string
+          function_name: string
+          location: string
+          uses_react: boolean
+          ai_prompts: Json
+          refactor_candidate: boolean
+          specificity: string
+          usage_type: string
+        }[]
+      }
+      get_page_tables: {
+        Args: {
+          p_page_id: string
+        }
+        Returns: {
+          table_usage_id: string
+          table_name: string
+          operations: string[]
+          is_primary: boolean
+        }[]
       }
       get_schema_info: {
         Args: {

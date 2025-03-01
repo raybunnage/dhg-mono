@@ -14,6 +14,7 @@ export function MainNavbar() {
     { name: 'Write', href: '/write' },
     { name: 'Experts', href: '/experts' },
     { name: 'Code', href: '/code' },
+    { name: 'Guts Example', href: '/guts-example' },
   ]
 
   return (

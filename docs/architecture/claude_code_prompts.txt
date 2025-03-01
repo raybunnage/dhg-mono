@@ -3,6 +3,9 @@
 
 
 
+
+
+
 Move the Analyze and Registry page and functionality to the code dashboard page as new items across the top and display their respetive ui objects you did before only now under the code page tabs
 
 

@@ -30,6 +30,7 @@ import Dashboard from '@/pages/Dashboard';
 import Sync from '@/pages/Sync';
 import Write from '@/pages/Write';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
+import GutsExample from '@/pages/GutsExample';
 
 // Component imports
 import { MainNavbar } from '@/components/MainNavbar'; 
@@ -105,6 +106,7 @@ function App() {
           <Route path="/write" element={<Write />} />
           <Route path="/analyze" element={<Analyze />} />
           <Route path="/registry" element={<RegistryViewer />} />
+          <Route path="/guts-example" element={<GutsExample />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
