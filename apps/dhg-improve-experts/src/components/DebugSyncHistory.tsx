@@ -39,7 +39,32 @@ export const DebugSyncHistory: React.FC = () => {
           <div className="text-red-600">No records found in sync_history table!</div>
         ) : (
           <div className="max-h-60 overflow-y-auto bg-white p-2 rounded text-xs">
-            <pre>{JSON.stringify(syncHistory, null, 2)}</pre>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-2 py-1 text-left text-xs font-medium text-gray-500">ID</th>
+                  <th className="px-2 py-1 text-left text-xs font-medium text-gray-500">Timestamp</th>
+                  <th className="px-2 py-1 text-left text-xs font-medium text-gray-500">Folder Name</th>
+                  <th className="px-2 py-1 text-left text-xs font-medium text-gray-500">Files</th>
+                  <th className="px-2 py-1 text-left text-xs font-medium text-gray-500">Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {syncHistory.map((record) => (
+                  <tr key={record.id}>
+                    <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">{record.id.substring(0, 8)}...</td>
+                    <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">{new Date(record.timestamp).toLocaleString()}</td>
+                    <td className="px-2 py-1 whitespace-nowrap text-xs font-medium text-gray-900">{record.folder_name || 'Unknown'}</td>
+                    <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">{record.files_processed || 0}</td>
+                    <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">{record.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <details className="mt-2">
+              <summary className="cursor-pointer text-xs text-gray-500">Show Raw Data</summary>
+              <pre className="mt-2">{JSON.stringify(syncHistory, null, 2)}</pre>
+            </details>
           </div>
         )}
       </div>

@@ -123,6 +123,13 @@ export function BatchProcessingMonitor() {
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Batch Processing Monitor</h2>
       
+      <div className="mb-6 bg-blue-50 p-4 rounded-md border border-blue-200">
+        <p className="text-sm text-blue-800">
+          <strong>Note:</strong> Batch processing is primarily designed for audio/video files and other resource-intensive operations.
+          Regular Google Drive syncing does not require batching and processes all files efficiently.
+        </p>
+      </div>
+      
       {loading ? (
         <div className="text-center p-4">Loading...</div>
       ) : (

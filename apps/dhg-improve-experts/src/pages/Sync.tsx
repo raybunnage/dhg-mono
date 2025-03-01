@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import { GoogleTokenStatus } from '@/components/GoogleTokenStatus';
-import DatabaseInspector from '@/components/DatabaseInspector';
 import { createTestSyncHistoryEntry, storeLatestSyncResult } from '@/services/syncHistoryService';
 import { LastSyncSummary } from '@/components/LastSyncSummary';
 import DebugSyncHistory from '@/components/DebugSyncHistory';
@@ -80,7 +79,7 @@ interface SyncResult {
 
 // Main Sync component
 function Sync() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'folders' | 'batches' | 'history' | 'inspector'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'folders' | 'batches' | 'history'>('dashboard');
   const [newFolderId, setNewFolderId] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [existingFolderId, setExistingFolderId] = useState('');
@@ -1452,8 +1451,6 @@ function Sync() {
         return renderBatches();
       case 'history':
         return renderHistory();
-      case 'inspector':
-        return <DatabaseInspector />;
       default:
         return renderDashboard();
     }
@@ -1505,16 +1502,6 @@ function Sync() {
             }`}
           >
             Sync History
-          </button>
-          <button
-            onClick={() => setActiveTab('inspector')}
-            className={`mr-4 py-2 px-1 font-medium text-sm border-b-2 ${
-              activeTab === 'inspector'
-                ? 'text-blue-600 border-blue-600'
-                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Database Inspector
           </button>
         </nav>
       </div>

@@ -300,6 +300,7 @@ async function updateBasicBatchProgress(batchId: string, processed: number, tota
 
 // Retrieve batch items for a specific batch
 export async function getBatchItems(batchId: string) {
+  // First try to get batch items
   const { data, error } = await supabase
     .from('batch_items')
     .select(`
@@ -315,7 +316,56 @@ export async function getBatchItems(batchId: string) {
     return [];
   }
   
-  return data;
+  // If we have items, properly format them to include source data
+  if (data && data.length > 0) {
+    return data.map(item => {
+      // If source exists, flatten its properties into the item
+      if (item.source) {
+        return {
+          id: item.source.id,
+          name: item.source.name,
+          mime_type: item.source.mime_type,
+          size: item.source.size,
+          status: item.status,
+          stage: item.stage,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          batch_id: item.batch_id,
+          error_message: item.error_message
+        };
+      }
+      // Return with basic info if source is missing
+      return item;
+    });
+  }
+  
+  // If no batch items found, get the files directly from processing_batches
+  try {
+    const { data: batch, error: batchError } = await supabase
+      .from('processing_batches')
+      .select('parameters')
+      .eq('id', batchId)
+      .single();
+      
+    if (batchError || !batch?.parameters?.fileIds) {
+      return [];
+    }
+    
+    // Get the files from sources_google if they exist in parameters
+    const fileIds = batch.parameters.fileIds;
+    if (Array.isArray(fileIds) && fileIds.length > 0) {
+      const { data: filesData } = await supabase
+        .from('sources_google')
+        .select('id, name, mime_type, size, created_at, updated_at')
+        .in('id', fileIds);
+        
+      return filesData || [];
+    }
+  } catch (err) {
+    console.error('Error fetching batch files:', err);
+  }
+  
+  return [];
 }
 
 // Retry failed items in a batch

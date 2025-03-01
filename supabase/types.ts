@@ -1859,6 +1859,7 @@ export type Database = {
           created_at: string | null
           folder_id: string | null
           folder_name: string | null
+          google_drive_count: number | null
           google_drive_documents: number | null
           google_drive_folders: number | null
           id: string
@@ -1874,6 +1875,7 @@ export type Database = {
           created_at?: string | null
           folder_id?: string | null
           folder_name?: string | null
+          google_drive_count?: number | null
           google_drive_documents?: number | null
           google_drive_folders?: number | null
           id?: string
@@ -1889,6 +1891,7 @@ export type Database = {
           created_at?: string | null
           folder_id?: string | null
           folder_name?: string | null
+          google_drive_count?: number | null
           google_drive_documents?: number | null
           google_drive_folders?: number | null
           id?: string
@@ -2149,10 +2152,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      admin_fix_audio_processing_configs: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       analyze_default_values: {
         Args: {
           p_table_name: string
@@ -2226,10 +2225,6 @@ export type Database = {
           orphaned_user_id: string
           row_count: number
         }[]
-      }
-      fix_expert_documents_nulls: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
       }
       generate_table_documentation: {
         Args: {
@@ -2449,10 +2444,6 @@ export type Database = {
           p_table_name: string
         }
         Returns: boolean
-      }
-      transfer_temp_experts_to_experts: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
       }
     }
     Enums: {
