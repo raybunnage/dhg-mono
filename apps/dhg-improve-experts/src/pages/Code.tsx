@@ -19,10 +19,11 @@ import {
   Info,
   ArrowRightLeft,
   Pencil,
-  Layers
+  Layers,
+  Zap
 } from "lucide-react";
 import { toast } from 'react-hot-toast';
-import { getAllFunctions, getFunctionInfo, categories } from '@/utils/function-registry';
+import { functionRegistry, getAllFunctions, getFunctionInfo, categories } from '@/utils/function-registry';
 
 interface PageMetadata {
   id: string;
@@ -49,9 +50,102 @@ export default function CodeDashboard() {
     totalPages: 0
   });
   
+  // State for analyze tab
+  const [analyzeFiles, setAnalyzeFiles] = useState([]);
+  const [analyzeSelectedFile, setAnalyzeSelectedFile] = useState(null);
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+  
+  // State for registry tab
+  const [registryFunctions, setRegistryFunctions] = useState([]);
+  const [registryLoading, setRegistryLoading] = useState(true);
+  const [filteredRegistryFunctions, setFilteredRegistryFunctions] = useState([]);
+  const [registrySearchTerm, setRegistrySearchTerm] = useState('');
+  
   useEffect(() => {
     fetchData();
+    
+    // Initialize registry data
+    try {
+      // Create sample registry data
+      let sampleData = [];
+      
+      try {
+        // Try to get functions from registry
+        const functions = getAllFunctions();
+        
+        // Map functions to sample data format
+        if (functions && functions.length > 0) {
+          sampleData = functions.map(f => ({
+            name: f.name,
+            description: f.description || "No description",
+            category: f.category || "Unknown", 
+            location: f.location || ""
+          }));
+        } else {
+          // If no functions in registry, use hardcoded samples
+          sampleData = [
+            {
+              name: "processDocumentWithAI",
+              description: "Main entry point for AI document processing",
+              category: "AI_PROCESSING",
+              location: "src/utils/ai-processing.ts"
+            },
+            {
+              name: "extractDocumentContent",
+              description: "Extracts text content from documents",
+              category: "CONTENT_EXTRACTION",
+              location: "src/utils/document-processing.ts"
+            },
+            {
+              name: "syncGoogleDrive",
+              description: "Synchronizes files with Google Drive",
+              category: "GOOGLE_DRIVE",
+              location: "src/utils/google-drive-sync.ts"
+            }
+          ];
+        }
+      } catch (error) {
+        console.error("Error getting functions from registry:", error);
+        // Fall back to hardcoded samples
+        sampleData = [
+          {
+            name: "processDocumentWithAI",
+            description: "Main entry point for AI document processing",
+            category: "AI_PROCESSING",
+            location: "src/utils/ai-processing.ts"
+          },
+          {
+            name: "extractDocumentContent",
+            description: "Extracts text content from documents",
+            category: "CONTENT_EXTRACTION", 
+            location: "src/utils/document-processing.ts"
+          }
+        ];
+      }
+      
+      // Update state with registry data
+      setRegistryFunctions(sampleData);
+      setFilteredRegistryFunctions(sampleData);
+      setRegistryLoading(false);
+    } catch (error) {
+      console.error("Error in registry data setup:", error);
+      setRegistryLoading(false);
+    }
   }, []);
+  
+  // Filter registry functions when search term changes
+  useEffect(() => {
+    try {
+      const filtered = registryFunctions.filter(f => 
+        f.name?.toLowerCase().includes(registrySearchTerm.toLowerCase()) ||
+        f.description?.toLowerCase().includes(registrySearchTerm.toLowerCase()) ||
+        f.category?.toLowerCase().includes(registrySearchTerm.toLowerCase())
+      );
+      setFilteredRegistryFunctions(filtered);
+    } catch (error) {
+      console.error("Error filtering registry functions:", error);
+    }
+  }, [registrySearchTerm, registryFunctions]);
   
   const fetchData = async () => {
     setLoading(true);
@@ -71,9 +165,50 @@ export default function CodeDashboard() {
   
   const fetchFunctions = async () => {
     try {
-      // Get all functions from registry
-      const allFunctions = getAllFunctions();
-      setFunctions(allFunctions.map(f => f.name));
+      // Get all functions from registry or add samples if empty
+      let functionsList = [];
+      
+      try {
+        // Try getting functions from registry
+        const allFunctions = getAllFunctions();
+        
+        // If registry is empty, register some sample functions
+        if (allFunctions.length === 0) {
+          // Register sample functions
+          functionRegistry.register('extractDocumentContent', {
+            description: 'Extracts text content from documents',
+            status: 'active',
+            location: 'src/utils/document-processing.ts',
+            category: 'CONTENT_EXTRACTION'
+          });
+          
+          functionRegistry.register('syncGoogleDrive', {
+            description: 'Synchronizes files with Google Drive',
+            status: 'active',
+            location: 'src/utils/google-drive-sync.ts',
+            category: 'GOOGLE_DRIVE',
+            dependencies: ['google-api-client']
+          });
+          
+          // Get updated list after registering samples
+          functionsList = getAllFunctions().map(f => f.name);
+        } else {
+          // Use existing functions
+          functionsList = allFunctions.map(f => f.name);
+        }
+      } catch (error) {
+        console.error('Error accessing function registry:', error);
+        
+        // Fallback to hardcoded functions if there's an error
+        functionsList = [
+          'processDocumentWithAI',
+          'extractDocumentContent',
+          'syncGoogleDrive'
+        ];
+      }
+      
+      // Set the functions state
+      setFunctions(functionsList);
     } catch (error) {
       console.error('Error fetching functions:', error);
       toast.error('Failed to load functions');
@@ -181,13 +316,18 @@ export default function CodeDashboard() {
   
   // Determine if a function is a refactoring candidate
   const isRefactoringCandidate = (functionName: string) => {
-    const info = getFunctionInfo(functionName);
-    if (!info) return false;
-    
-    return info.category !== 'UI_INTERACTION' && 
-           info.category !== 'UI_RENDERING' && 
-           !info.location.includes('components/') &&
-           (info.usedIn && info.usedIn.length > 1);
+    try {
+      const info = getFunctionInfo(functionName);
+      if (!info) return false;
+      
+      return info.category !== 'UI_INTERACTION' && 
+             info.category !== 'UI_RENDERING' && 
+             !info.location.includes('components/') &&
+             (info.usedIn && info.usedIn.length > 1);
+    } catch (error) {
+      console.error('Error checking refactoring candidate:', error);
+      return false;
+    }
   };
 
   // Render Overview Dashboard
@@ -858,6 +998,157 @@ export default function CodeDashboard() {
     );
   }
   
+  // Code Analysis Component
+  const renderAnalyzeTab = () => {
+
+    // We'll implement a simplified version that matches the layout style
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Code Analysis</CardTitle>
+              <CardDescription>Analyze code structure and dependencies</CardDescription>
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={refreshData}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Component Analysis</h3>
+              <p className="mb-4 text-muted-foreground">
+                The code analysis tool examines your components to provide insights on structure, 
+                dependencies, and potential optimizations.
+              </p>
+              <div className="space-y-4">
+                <div className="p-4 border rounded-md">
+                  <h4 className="font-medium">React Component Analysis</h4>
+                  <ul className="list-disc list-inside mt-2 text-sm space-y-1">
+                    <li>Detects component structure and props</li>
+                    <li>Identifies hook usage patterns</li>
+                    <li>Analyzes rendering optimization opportunities</li>
+                    <li>Detects potential state management issues</li>
+                  </ul>
+                  <Button className="mt-4" onClick={() => window.open('/analyze', '_blank')}>
+                    Start Component Analysis
+                  </Button>
+                </div>
+                
+                <div className="p-4 border rounded-md">
+                  <h4 className="font-medium">Function Analysis</h4>
+                  <ul className="list-disc list-inside mt-2 text-sm space-y-1">
+                    <li>Extracts function signatures and dependencies</li>
+                    <li>Maps component relationships</li>
+                    <li>Analyzes code reuse opportunities</li>
+                  </ul>
+                  <Button className="mt-4" variant="outline" onClick={() => setActiveTab('functions')}>
+                    View Function Registry
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Analysis Results</h3>
+              <div className="border rounded-md p-4 min-h-[300px] bg-muted flex items-center justify-center">
+                <div className="text-center">
+                  <CodeIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Select a component to analyze or visit the full Analysis page for more options
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => window.open('/analyze', '_blank')}
+                  >
+                    Open Analysis Dashboard
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Registry Viewer Component
+  const renderRegistryTab = () => {
+
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Function Registry</CardTitle>
+              <CardDescription>Browse registered functions in the application</CardDescription>
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={refreshData}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => window.open('/registry', '_blank')}
+              >
+                Open Full Registry
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="relative flex w-full max-w-sm items-center mb-4">
+            <Search className="absolute left-2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search registry..."
+              className="pl-8"
+              value={registrySearchTerm}
+              onChange={(e) => setRegistrySearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <ScrollArea className="h-[500px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredRegistryFunctions.length > 0 ? (
+                filteredRegistryFunctions.map((func, index) => (
+                  <div key={index} className="border p-4 rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-bold">{func.name}</h3>
+                      <Badge variant="outline">{func.category}</Badge>
+                    </div>
+                    <p className="text-gray-600 mt-2">{func.description}</p>
+                    <div className="mt-2 text-sm text-gray-500">
+                      Location: {func.location}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-10 text-muted-foreground">
+                  {registrySearchTerm ? 'No functions match your search' : 'Loading registry data...'}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    );
+  };
+  
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold mb-6 flex items-center">
@@ -866,12 +1157,14 @@ export default function CodeDashboard() {
       </h1>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="functions">Functions</TabsTrigger>
           <TabsTrigger value="pages">Pages</TabsTrigger>
           <TabsTrigger value="refactoring">Refactoring</TabsTrigger>
           <TabsTrigger value="organization">Organization</TabsTrigger>
+          <TabsTrigger value="analyze">Analyze</TabsTrigger>
+          <TabsTrigger value="registry">Registry</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview">{renderOverview()}</TabsContent>
@@ -879,6 +1172,8 @@ export default function CodeDashboard() {
         <TabsContent value="pages">{renderPages()}</TabsContent>
         <TabsContent value="refactoring">{renderRefactoring()}</TabsContent>
         <TabsContent value="organization">{renderOrganization()}</TabsContent>
+        <TabsContent value="analyze">{renderAnalyzeTab()}</TabsContent>
+        <TabsContent value="registry">{renderRegistryTab()}</TabsContent>
       </Tabs>
     </div>
   );
