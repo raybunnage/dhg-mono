@@ -1,7 +1,5 @@
 in the process of developoment all kinds of markdown files are crated all over tghe place (since this is a mono repo.  I am trying to make things as consistent as possible, and keep things in one docs folder which is in the root dir but except for the special case of prompts - which I am tryhing to sort out - which is a folder underneat the docs root folder, I want things to be simpole, and because I am working on one particular monolithic tooling app which is just one of the apps in myu mono repo I end up with markdown documnentation files and readme files created by ai - all over the place.  What is the best practice in a mono repo - I want to keep everhthing in one root docs folder because in the future many of my apps will share code and I don't want duoplication.  On the other hand there are legimate reasons to have a docs folder within a project for poroject specific information - or is it necessary - ofen then it adds to confusion.  Help straighten my thinkikng out on this.  Also know that I am building tooling that mostly favors the root docs folder - and a dedicated dashboard that will display these markdown document files from my local development machine in a viewer that will read and display the files.  This is a factor in my question as well.  Please advise so I can sort through this.  Settling on my approach will help make my repository less messy.  
 
-Below is the plan that was created by ai to execute on my questions above.
-Figure out the best way to implement this plan and go for it
 
 HEre are your instructions:
 Okay imoplement this but follow my cursorrules for the agent
@@ -14,6 +12,8 @@ Okay imoplement this but follow my cursorrules for the agent
 7) create a report of what you find from scanning the tree command with regard to all the markdown files - I do want to have them in the local directory - but only following the riules you specified
 
 
+Below is the plan that was created by ai to execute on my questions above.
+Figure out the best way to implement this plan and go for it
 
 
 Documentation Organization in a Monorepo
