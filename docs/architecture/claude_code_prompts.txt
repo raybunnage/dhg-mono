@@ -1,11 +1,14 @@
 
 Make a new page called Show.
-It will be a dashboard similar to the other dashboards you've built for me. 
+It will NOT be a dashobard like the others, but rather built around the goal of helping users navigate, view and learn from related pdf and docx and ai documents associated with them.  So the viewer is only one component of this page.  It should look good.
 It is ultimately going to be a prototype of a dedciated application I will be building.
 It involves these 10 tables I am giving you the json for that are already in the datgabase but empty.
 The presentations table is the most important as there will be one for every MP4 we have in the system - which now is about 166.  This is the presentation we are building context around - so all of these assets are files that exist mostly on the google drive and are represented in the sources_google file.  In addition most of these files will have been processed by ai or other means and their json or summaries will be in the expert_documents table. 
+I am including the path to apps/dhg-improve-experts/src/components/FileViewer.tsx which is a file viewer that uses the drive extracted from the web link in sources_google to view the file using google reader.  It will be an integral part of your solution as ultimately we will be displaying the presetnatiopn.  But how we search for them, use the tagged assets and other presentations to give context (meaning related docx and pdf files and ai summaries associated with them) - that's part of what we want you to come up with.  
+Feel free to use the real mp4s, but after that you can mock up the objects that will be represented ihn the database tables, but you do not yet have to interact much with the database.  We just want to explore what it might look life before we go hooking things up.
 
-I am including the the exact types from the 
+
+I am including the the exact types from the 10 tables plus expert_documents and sources_google below.
 
 {
   "presentation_assets": {
