@@ -1,3 +1,39 @@
+cleanup markdown files:
+
+I've created a comprehensive solution for organizing documentation in
+  your monorepo. Here's what I've implemented:
+
+  1. Documentation Organization Scripts:
+    - consolidate-docs.sh: Moves markdown files to the appropriate
+  locations
+    - generate-docs-report.sh: Creates a report of all markdown files
+    - add-frontmatter.sh: Adds YAML frontmatter to documentation files
+    - tree-docs.sh: Shows tree structure of documentation files by app
+    - docs-index.js: Generates a JSON index of all docs for your
+  dashboard
+    - run-all.sh: Master script to run all the above in sequence
+  2. NPM Scripts in package.json:
+  "docs:report": "./scripts/docs-organization/generate-docs-report.sh",
+  "docs:tree": "./scripts/docs-organization/tree-docs.sh",
+  "docs:organize": "./scripts/docs-organization/run-all.sh",
+  "docs:consolidate": "./scripts/docs-organization/consolidate-docs.sh",
+  "docs:frontmatter": "./scripts/docs-organization/add-frontmatter.sh"
+  3. Documentation Standards:
+  Created a new file at docs/docs-organization.md with best practices and
+   guidelines.
+
+  To use these tools:
+
+  1. Run npm run docs:report to see the current state of documentation
+  2. Run npm run docs:tree [app-name] to view the document tree for a
+  specific app
+  3. Run npm run docs:organize to reorganize all documentation according
+  to standards
+
+  The scripts preserve original files while generating standardized
+  copies, so you can review changes before committing.
+
+
 in the process of developoment all kinds of markdown files are crated all over tghe place (since this is a mono repo.  I am trying to make things as consistent as possible, and keep things in one docs folder which is in the root dir but except for the special case of prompts - which I am tryhing to sort out - which is a folder underneat the docs root folder, I want things to be simpole, and because I am working on one particular monolithic tooling app which is just one of the apps in myu mono repo I end up with markdown documnentation files and readme files created by ai - all over the place.  What is the best practice in a mono repo - I want to keep everhthing in one root docs folder because in the future many of my apps will share code and I don't want duoplication.  On the other hand there are legimate reasons to have a docs folder within a project for poroject specific information - or is it necessary - ofen then it adds to confusion.  Help straighten my thinkikng out on this.  Also know that I am building tooling that mostly favors the root docs folder - and a dedicated dashboard that will display these markdown document files from my local development machine in a viewer that will read and display the files.  This is a factor in my question as well.  Please advise so I can sort through this.  Settling on my approach will help make my repository less messy.  
 
 
