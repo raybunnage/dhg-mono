@@ -1,5 +1,22 @@
+Make a new page called AI
+It will be a dashboard similar to the other dashboards you've built for me. 
+Its purpose is to help me write sophisticated prompts with sonnet 3.7 
+Here is what is working well for me that I need the dashboard to support:
+1) similar to the "Projects" of claude pro - I need to select quite a few files that give it context for building a prompt that will assist the ai in writing a very detailed prompt I then save as a markdown file (hopefully in my root directory) in the prompts folder that is this prompt in markdown format.  Sometimes dedicated JSON to fill the results for the ai is provided to the prompt to help it fill and make sense of unstrcutred data that it extracts from the file content.  I then load that up into a query to the claude sonnet 3.7 api and apply the prompt to a a file or one or more files.  The code that this is wrapped in is usually a functioh on one of my pages that retrieves the content, applies the prompt using the claude api and retrieveds the json data and stores it in an experts_document records in the processed_content field
+2) something that lists all the prompts based on their filenames - and maybe has the last associated date that the file was updated - but sopmethjing simople based on the stored file metadata on my local project.  This sits on top of a simple markdown viewer
+3) Other functions I need - a markdown viewer that will allow me to read the prompts. The viewer will alway be reading from a local version of the markdown file that is stored in my root docs folder in some subfolder - for now
+4) Other functions you can think of that would be helpful in using the claude api for sonnet 3.7 - for example - other properties such as temperature (whicih I almosrt always make 0 as I don't want the ai to make anything up).  These settings would be stored in localsttorage so the values would persist over multiple sessionhs (or eventually perhaps in the database - but not yet)
+
+
+
+
+
+
 
 Make a new page called Show.
+
+
+
 It will NOT be a dashobard like the others, but rather built around the goal of helping users navigate, view and learn from related pdf and docx and ai documents associated with them.  So the viewer is only one component of this page.  It should look good.
 It is ultimately going to be a prototype of a dedciated application I will be building.
 It involves these 10 tables I am giving you the json for that are already in the datgabase but empty.
