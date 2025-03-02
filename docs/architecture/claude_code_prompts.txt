@@ -1,6 +1,6 @@
 cleanup markdown files:
 
-Now be very careful and DO NOT BREAK the fileTree, or filetreeItem or the fileviewer on the "Viewer" page. But now that we have introduced the concept of a current sync folder the file viewer needs to be aware of that and load the folders and files associated with the high level folder.  Right now the view is hardwired to the Dynamic Healing Group Files but now there are already multiple high level folders to choose from and soon there wil be more.  Then the viewer should just display the folders and files from that cuirrenty selected high level folder.
+Now be very careful and DO NOT BREAK the fileTree, or filetreeItem or the fileviewer on the "Viewer" page. But now that we have introduced the concept of a current sync folder the file viewer needs to be aware of that and load the folders and files associated with the high level folder.  Right now the view is hardwired to the Dynamic Healing Group Files but now there are already multiple high level folders to choose from and soon there wil be more.  Then the viewer should just display the folders and files from that cuirrenty selected high level folder. You can store the currently selected folder from the folders page in local storage so when you start a new sessoin it will remember the folder it last synced. If the folder is changed in the viewer window then the current folder should be stored in local storage so the next time it loads it uses that folder to feed the viewer
 
 
 

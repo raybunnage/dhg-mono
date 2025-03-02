@@ -86,83 +86,27 @@ export async function generateMarkdownReport() {
 }
 
 /**
- * Parse the markdown report content into a tree structure
+ * Parse the markdown report content into a tree structure with proper nesting
  */
 function parseReportToTree(reportContent) {
+  // Process different sections in the report
+  const sections = extractSectionsFromReport(reportContent);
+
+  // Initialize the file tree
   const fileTree = [];
-  const map = {};
   
-  // Extract sections from the report
-  const sections = [];
-  
-  // Regex to find hierarchical entries with emoji markers
-  const fileRegex = /- (📄|📜) \[(.+?)\]\(\/(.+?)\) - (.+?) \((\d+) bytes\)( \[PROMPT\])?/g;
-  const folderRegex = /- 📁 \*\*(.+?)\/\*\*/g;
-  const indentPattern = /^(\s*)-/;
-  
-  // Process each line
-  const lines = reportContent.split('\n');
-  let currentIndentLevel = 0;
-  let currentParent = null;
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Check for file entries
-    const fileMatch = fileRegex.exec(line);
-    if (fileMatch) {
-      fileRegex.lastIndex = 0; // Reset regex index
-      
-      const emoji = fileMatch[1];
-      const name = fileMatch[2];
-      const path = fileMatch[3];
-      const lastModified = fileMatch[4];
-      const size = parseInt(fileMatch[5], 10);
-      const isPrompt = emoji === '📜' || !!fileMatch[6];
-      
-      const indent = line.match(indentPattern);
-      const indentLevel = indent ? indent[1].length / 2 : 0;
-      
-      const fileItem = {
-        id: `file_${path}`,
-        name,
-        type: 'file',
-        path,
-        isPrompt,
-        lastModified,
-        size
-      };
-      
-      // Add to tree based on indent level
-      addToTree(fileTree, map, fileItem, indentLevel);
-      
-      continue;
-    }
-    
-    // Check for folder entries
-    const folderMatch = folderRegex.exec(line);
-    if (folderMatch) {
-      folderRegex.lastIndex = 0; // Reset regex index
-      
-      const name = folderMatch[1];
-      const path = name;
-      
-      const indent = line.match(indentPattern);
-      const indentLevel = indent ? indent[1].length / 2 : 0;
-      
-      const folderItem = {
-        id: `folder_${path}`,
-        name,
-        type: 'folder',
-        path,
-        children: [],
-        isOpen: false
-      };
-      
-      // Add to tree based on indent level
-      addToTree(fileTree, map, folderItem, indentLevel);
-      
-      continue;
+  // Process each section
+  for (const section of sections) {
+    // For root-level files section, add directly to the root
+    if (section.title === "Root-Level Files") {
+      // Process the table format
+      const rootFiles = processRootFilesTable(section.content);
+      fileTree.push(...rootFiles);
+    } 
+    // For hierarchical sections, process the nested format
+    else if (section.title.includes("Directory") && section.title.includes("Hierarchical")) {
+      const dirTree = processHierarchicalView(section.content);
+      fileTree.push(...dirTree);
     }
   }
   
@@ -170,34 +114,196 @@ function parseReportToTree(reportContent) {
 }
 
 /**
- * Helper function to add an item to the tree at the correct level
+ * Extract different sections from the markdown report
  */
-function addToTree(tree, map, item, level) {
-  if (level === 0) {
-    // Root level item
-    tree.push(item);
-    if (item.type === 'folder') {
-      map[item.path] = item;
-    }
-  } else {
-    // Find parent at the right level
-    const parts = item.path.split('/');
-    const parentPath = parts.slice(0, -1).join('/');
+function extractSectionsFromReport(reportContent) {
+  const sections = [];
+  const lines = reportContent.split('\n');
+  
+  let currentSection = null;
+  let currentContent = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     
-    if (map[parentPath]) {
-      const parent = map[parentPath];
-      if (!parent.children) parent.children = [];
-      parent.children.push(item);
+    // Check for section headers (## Section Title)
+    if (line.startsWith('## ')) {
+      // Save previous section if exists
+      if (currentSection) {
+        sections.push({
+          title: currentSection,
+          content: currentContent.join('\n')
+        });
+      }
       
-      if (item.type === 'folder') {
-        map[item.path] = item;
-      }
-    } else {
-      // If parent not found, add to root as fallback
-      tree.push(item);
-      if (item.type === 'folder') {
-        map[item.path] = item;
-      }
+      // Start new section
+      currentSection = line.substring(3).trim();
+      currentContent = [];
+    } 
+    // Add content to current section
+    else if (currentSection) {
+      currentContent.push(line);
     }
   }
+  
+  // Add last section
+  if (currentSection) {
+    sections.push({
+      title: currentSection,
+      content: currentContent.join('\n')
+    });
+  }
+  
+  return sections;
+}
+
+/**
+ * Process the root files table format
+ */
+function processRootFilesTable(content) {
+  const items = [];
+  const lines = content.split('\n').filter(line => line.trim());
+  
+  // Skip header rows (first 2 lines are headers)
+  for (let i = 2; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.includes('|')) continue;
+    
+    const cells = line.split('|').map(cell => cell.trim()).filter(Boolean);
+    if (cells.length < 3) continue;
+    
+    const filename = cells[0];
+    const lastModified = cells[1];
+    const size = parseInt(cells[2].replace(/,/g, ''), 10) || 0;
+    const isPrompt = line.includes('📜') || line.includes('PROMPT');
+    
+    items.push({
+      id: `file_${filename}`,
+      name: filename,
+      type: 'file',
+      path: filename,
+      isPrompt,
+      lastModified,
+      size,
+      isOpen: false
+    });
+  }
+  
+  return items;
+}
+
+/**
+ * Process hierarchical view with proper nesting
+ */
+function processHierarchicalView(content) {
+  const tree = [];
+  const map = {};
+  const lines = content.split('\n').filter(line => line.trim());
+  
+  // Regular expressions to match different line types
+  const fileRegex = /^(\s*)- (📄|📜) \[(.+?)\]\(\/(.+?)\) - (.+?) \((\d+) bytes\)( \[PROMPT\])?/;
+  const folderRegex = /^(\s*)- 📁 \*\*(.+?)\/\*\*/;
+  
+  // Mapping to track parent-child relationships based on indentation
+  const levelMap = new Map();
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Try to match as a file
+    const fileMatch = line.match(fileRegex);
+    if (fileMatch) {
+      const indent = fileMatch[1] ? fileMatch[1].length : 0;
+      const level = indent / 2;
+      const emoji = fileMatch[2];
+      const filename = fileMatch[3];
+      const path = fileMatch[4];
+      const lastModified = fileMatch[5];
+      const size = parseInt(fileMatch[6], 10);
+      const isPrompt = emoji === '📜' || !!fileMatch[7];
+      
+      const item = {
+        id: `file_${path}`,
+        name: filename,
+        type: 'file',
+        path,
+        isPrompt,
+        lastModified,
+        size
+      };
+      
+      // Add to the appropriate parent based on indentation level
+      addItemWithProperNesting(tree, map, levelMap, item, level);
+      continue;
+    }
+    
+    // Try to match as a folder
+    const folderMatch = line.match(folderRegex);
+    if (folderMatch) {
+      const indent = folderMatch[1] ? folderMatch[1].length : 0;
+      const level = indent / 2;
+      const folderName = folderMatch[2];
+      const path = folderName;
+      
+      const item = {
+        id: `folder_${path}`,
+        name: folderName,
+        type: 'folder',
+        path,
+        children: [],
+        isOpen: false
+      };
+      
+      // Add to the appropriate parent based on indentation level
+      addItemWithProperNesting(tree, map, levelMap, item, level);
+      
+      // Store in map for path-based lookups
+      map[path] = item;
+      continue;
+    }
+  }
+  
+  return tree;
+}
+
+/**
+ * Add an item to the tree with proper nesting based on indentation level
+ */
+function addItemWithProperNesting(tree, map, levelMap, item, level) {
+  // Level 0 items go directly into the tree
+  if (level === 0) {
+    tree.push(item);
+    levelMap.set(0, item);
+    return;
+  }
+  
+  // For deeper levels, find the parent from the level map
+  const parentLevel = level - 1;
+  const parent = levelMap.get(parentLevel);
+  
+  if (parent && parent.type === 'folder') {
+    if (!parent.children) parent.children = [];
+    parent.children.push(item);
+  } else {
+    // Fallback: try to find parent by path
+    const pathParts = item.path.split('/');
+    if (pathParts.length > 1) {
+      const parentPath = pathParts.slice(0, -1).join('/');
+      const pathParent = map[parentPath];
+      
+      if (pathParent) {
+        if (!pathParent.children) pathParent.children = [];
+        pathParent.children.push(item);
+      } else {
+        // Last resort: add to root
+        tree.push(item);
+      }
+    } else {
+      // If no parent found, add to root
+      tree.push(item);
+    }
+  }
+  
+  // Update the level map for this level
+  levelMap.set(level, item);
 }
