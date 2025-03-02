@@ -31,6 +31,7 @@ import Docs from '@/pages/Docs';
 import Sync from '@/pages/Sync';
 import Write from '@/pages/Write';
 import Show from '@/pages/Show';
+import AI from '@/pages/AI';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
 import GutsExample from '@/pages/GutsExample';
 
@@ -109,6 +110,7 @@ function App() {
           <Route path="/analyze" element={<Analyze />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/show" element={<Show />} />
+          <Route path="/ai" element={<AI />} />
           <Route path="/registry" element={<RegistryViewer />} />
           <Route path="/guts-example" element={<GutsExample />} />
         </Routes>
