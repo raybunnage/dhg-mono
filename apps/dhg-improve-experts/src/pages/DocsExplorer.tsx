@@ -99,11 +99,12 @@ const TreeView: React.FC<TreeViewProps> = ({ items, onSelect, selectedPath }) =>
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 overflow-auto h-full">
-      <div className="mb-4 flex items-center">
-        <h3 className="text-lg font-semibold">Files</h3>
+    <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col h-full">
+      <div className="p-3 border-b bg-gray-50 flex justify-between items-center">
+        <h3 className="text-gray-700 font-medium">Files</h3>
+        <span className="text-xs text-gray-500">{treeItems.length} items</span>
       </div>
-      <div className="border-t pt-2">
+      <div className="overflow-auto flex-grow" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {treeItems.map(item => (
           <TreeItem 
             key={item.id} 
@@ -178,15 +179,23 @@ const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow h-full flex flex-col">
+    <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col h-full">
       {(title || filePath) && (
-        <div className="border-b p-4">
-          {title && <h2 className="text-xl font-bold mb-1">{title}</h2>}
-          {filePath && <p className="text-sm text-gray-500">{filePath}</p>}
-          {lastModified && <p className="text-xs text-gray-400 mt-1">Last modified: {lastModified}</p>}
+        <div className="border-b p-3 bg-gray-50">
+          <div className="flex justify-between items-start">
+            <div>
+              {title && <h2 className="text-lg font-bold">{title}</h2>}
+              {filePath && <p className="text-xs text-gray-500 mt-1">{filePath}</p>}
+            </div>
+            {lastModified && (
+              <span className="text-xs text-gray-400 bg-white px-2 py-1 rounded border">
+                {lastModified}
+              </span>
+            )}
+          </div>
         </div>
       )}
-      <div className="p-6 overflow-auto flex-1">
+      <div className="overflow-auto flex-grow p-6" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         <div className="prose max-w-none" dangerouslySetInnerHTML={getHtml()} />
       </div>
     </div>
@@ -432,40 +441,26 @@ function DocsExplorer() {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Documentation Explorer</h1>
-      
-      {/* Status Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-        <StatusCard 
-          title="Total Documents" 
-          value={stats.totalDocs} 
-          icon={ICONS.file} 
-        />
-        <StatusCard 
-          title="Prompt Files" 
-          value={stats.totalPrompts} 
-          icon={ICONS.prompt} 
-        />
-        <StatusCard 
-          title="Folders" 
-          value={stats.totalFolders} 
-          icon={ICONS.folder} 
-        />
+    <div className="container mx-auto px-4 py-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Documentation Explorer</h1>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">
+            {stats.totalDocs} docs ({stats.totalPrompts} prompts) • {stats.totalFolders} folders
+          </span>
+          <ActionButton 
+            label="Run Report" 
+            onClick={handleRunReport} 
+            icon="🔄"
+            color="bg-blue-500 hover:bg-blue-600 text-sm"
+          />
+        </div>
       </div>
       
       {/* Search Bar */}
-      <div className="mb-6">
+      <div className="mb-4">
         <SearchBar onSearch={handleSearch} />
-      </div>
-      
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-4 mb-6">
-        <ActionButton 
-          label="Run Markdown Report" 
-          onClick={handleRunReport} 
-          icon="🔄"
-        />
       </div>
       
       {/* Search Results (conditionally shown) */}
@@ -507,9 +502,9 @@ function DocsExplorer() {
       )}
       
       {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ minHeight: '60vh' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4" style={{ height: 'calc(100vh - 140px)' }}>
         {/* File Tree */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full">
           <TreeView 
             items={fileTree} 
             onSelect={handleFileSelect}
@@ -518,7 +513,7 @@ function DocsExplorer() {
         </div>
         
         {/* Markdown Viewer */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3 h-full">
           {selectedFile ? (
             <MarkdownViewer 
               markdown={selectedFile.content}
@@ -527,7 +522,7 @@ function DocsExplorer() {
               lastModified={selectedFile.lastModified}
             />
           ) : (
-            <div className="bg-white rounded-lg shadow p-6 h-full flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow h-full flex items-center justify-center">
               <div className="text-center text-gray-500">
                 <p className="text-xl mb-2">Select a document to view</p>
                 <p className="text-sm">Or use the search bar to find specific content</p>
