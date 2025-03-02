@@ -91,7 +91,7 @@ export class MarkdownFileService {
             size: 1500
           }
         ],
-        isOpen: false
+        isOpen: true
       },
       {
         id: 'folder_public',
@@ -115,10 +115,10 @@ export class MarkdownFileService {
                 size: 3500
               }
             ],
-            isOpen: false
+            isOpen: true
           }
         ],
-        isOpen: false
+        isOpen: true
       },
       {
         id: 'file_README.md',
@@ -194,7 +194,7 @@ export class MarkdownFileService {
               type: 'folder',
               path,
               children: [],
-              isOpen: false
+              isOpen: true // Start with folders expanded
             };
             
             map[path] = folderItem;

@@ -19,6 +19,8 @@ interface TreeItemProps {
   toggleFolder: (item: MarkdownTreeItem) => void;
   level?: number;
   selectedPath?: string;
+  searchQuery?: string;
+  searchResults?: string[];
 }
 
 const TreeItem: React.FC<TreeItemProps> = ({ 
@@ -26,14 +28,19 @@ const TreeItem: React.FC<TreeItemProps> = ({
   onSelect, 
   toggleFolder,
   level = 0,
-  selectedPath 
+  selectedPath,
+  searchQuery = '',
+  searchResults = []
 }) => {
   const isSelected = selectedPath === item.path;
+  const isSearchMatch = searchQuery && searchResults.includes(item.path);
   
   return (
     <div>
       <div 
-        className={`flex items-center py-1 px-2 rounded cursor-pointer hover:bg-gray-100 ${isSelected ? 'bg-blue-100' : ''}`}
+        className={`flex items-center py-1 px-2 rounded cursor-pointer hover:bg-gray-100 
+          ${isSelected ? 'bg-blue-100' : ''}
+          ${isSearchMatch ? 'bg-yellow-50 border border-yellow-200' : ''}`}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={() => item.type === 'file' ? onSelect(item) : toggleFolder(item)}
       >
@@ -47,7 +54,12 @@ const TreeItem: React.FC<TreeItemProps> = ({
             {item.isPrompt ? ICONS.prompt : ICONS.file}
           </span>
         )}
-        <span className={`${isSelected ? 'font-medium' : ''}`}>{item.name}</span>
+        <span className={`${isSelected ? 'font-medium' : ''}`}>
+          {item.name}
+          {isSearchMatch && (
+            <span className="ml-2 text-xs px-1 bg-yellow-200 text-yellow-800 rounded">match</span>
+          )}
+        </span>
       </div>
       
       {item.type === 'folder' && item.isOpen && item.children && (
@@ -60,6 +72,8 @@ const TreeItem: React.FC<TreeItemProps> = ({
               toggleFolder={toggleFolder}
               level={level + 1}
               selectedPath={selectedPath}
+              searchQuery={searchQuery}
+              searchResults={searchResults}
             />
           ))}
         </div>
@@ -73,9 +87,17 @@ interface TreeViewProps {
   items: MarkdownTreeItem[];
   onSelect: (item: MarkdownTreeItem) => void;
   selectedPath?: string;
+  searchQuery?: string;
+  searchResults?: string[];
 }
 
-const TreeView: React.FC<TreeViewProps> = ({ items, onSelect, selectedPath }) => {
+const TreeView: React.FC<TreeViewProps> = ({ 
+  items, 
+  onSelect, 
+  selectedPath,
+  searchQuery = '',
+  searchResults = [] 
+}) => {
   const [treeItems, setTreeItems] = useState<MarkdownTreeItem[]>(items);
 
   // Update when items change from parent
@@ -97,6 +119,38 @@ const TreeView: React.FC<TreeViewProps> = ({ items, onSelect, selectedPath }) =>
 
     setTreeItems(updateItems(treeItems));
   };
+  
+  // Auto-expand folders that contain search matches
+  useEffect(() => {
+    if (searchQuery && searchResults.length > 0) {
+      const expandFoldersWithSearchMatches = (items: MarkdownTreeItem[]): MarkdownTreeItem[] => {
+        return items.map(item => {
+          if (item.type === 'folder') {
+            // Check if this folder or any child has a match
+            const hasMatch = searchResults.some(path => 
+              path === item.path || 
+              path.startsWith(item.path + '/')
+            );
+            
+            // Recursively process children
+            const updatedChildren = item.children ? 
+              expandFoldersWithSearchMatches(item.children) : 
+              item.children;
+              
+            // Return updated item with open state set if it has matches
+            return { 
+              ...item, 
+              isOpen: hasMatch ? true : item.isOpen,
+              children: updatedChildren
+            };
+          }
+          return item;
+        });
+      };
+      
+      setTreeItems(expandFoldersWithSearchMatches(treeItems));
+    }
+  }, [searchQuery, searchResults]);
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col h-full">
@@ -112,6 +166,8 @@ const TreeView: React.FC<TreeViewProps> = ({ items, onSelect, selectedPath }) =>
             onSelect={onSelect}
             toggleFolder={toggleFolder}
             selectedPath={selectedPath}
+            searchQuery={searchQuery}
+            searchResults={searchResults}
           />
         ))}
       </div>
@@ -127,24 +183,56 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch, placeholder = "Search files..." }) => {
   const [query, setQuery] = useState('');
+  
+  // Debounce search to avoid excessive searches while typing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (query.trim()) {
+        onSearch(query);
+      }
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [query, onSearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(query);
+  };
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newQuery = e.target.value;
+    setQuery(newQuery);
+    
+    // Clear search if query is empty
+    if (!newQuery.trim()) {
+      onSearch('');
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="relative">
       <input
         type="text"
-        className="w-full px-4 py-2 pl-10 pr-4 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-4 py-2 pl-10 pr-20 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
         placeholder={placeholder}
         value={query}
-        onChange={e => setQuery(e.target.value)}
+        onChange={handleChange}
       />
       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
         <span className="text-gray-400">{ICONS.search}</span>
       </div>
+      {query && (
+        <button 
+          type="button"
+          onClick={() => {
+            setQuery('');
+            onSearch('');
+          }}
+          className="absolute inset-y-0 right-16 flex items-center px-2 text-gray-400 hover:text-gray-600"
+        >
+          ✕
+        </button>
+      )}
       <button 
         type="submit" 
         className="absolute inset-y-0 right-0 flex items-center px-4 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600"
@@ -248,6 +336,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
 function DocsExplorer() {
   const [fileTree, setFileTree] = useState<MarkdownTreeItem[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<{
     path: string;
     title: string;
@@ -351,6 +440,7 @@ function DocsExplorer() {
   const handleSearch = async (query: string) => {
     try {
       setLoading(true);
+      setSearchQuery(query); // Store the current search query
       
       if (!query.trim()) {
         setSearchResults([]);
@@ -358,8 +448,46 @@ function DocsExplorer() {
         return;
       }
       
+      // Get results from the search API
       const results = await markdownFileService.searchFiles(query);
       setSearchResults(results);
+      
+      // Also perform a client-side search in the file tree
+      const matchingFilePaths: string[] = [];
+      
+      // Recursive function to search in file tree
+      const searchInTree = (items: MarkdownTreeItem[], query: string) => {
+        for (const item of items) {
+          // Check if name matches search query
+          if (item.name.toLowerCase().includes(query.toLowerCase())) {
+            matchingFilePaths.push(item.path);
+          }
+          
+          // Recursively search in children if it's a folder
+          if (item.type === 'folder' && item.children) {
+            searchInTree(item.children, query);
+          }
+        }
+      };
+      
+      // Execute the search on the current file tree
+      searchInTree(fileTree, query);
+      
+      // Update UI with search results
+      const filePaths = results.map(result => result.filePath);
+      const allMatchingPaths = [...new Set([...matchingFilePaths, ...filePaths])];
+      
+      // Update the UI with search results
+      const searchResultElements = results.map(result => ({
+        id: result.id,
+        filePath: result.filePath,
+        title: result.title,
+        content: result.content,
+        lastModifiedAt: result.lastModifiedAt,
+        matchingPaths: allMatchingPaths
+      }));
+      
+      setSearchResults(searchResultElements);
       setLoading(false);
       
       // Select first result if available
@@ -464,15 +592,20 @@ function DocsExplorer() {
       </div>
       
       {/* Search Results (conditionally shown) */}
-      {searchResults.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-3">Search Results</h2>
-          <div className="bg-white rounded-lg shadow p-4">
+      {searchResults.length > 0 && searchQuery && (
+        <div className="mb-4 mt-2">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-lg font-semibold">Search Results</h2>
+            <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+              {searchResults.length} matches for "{searchQuery}"
+            </span>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4 border border-yellow-200">
             <ul className="divide-y">
               {searchResults.map(file => (
-                <li key={file.id} className="py-3">
+                <li key={file.id} className="py-2">
                   <button
-                    className="text-left w-full hover:bg-blue-50 p-2 rounded"
+                    className="text-left w-full hover:bg-blue-50 p-2 rounded flex items-start"
                     onClick={() => setSelectedFile({
                       path: file.filePath,
                       title: file.title,
@@ -480,9 +613,29 @@ function DocsExplorer() {
                       lastModified: file.lastModifiedAt?.toString()
                     })}
                   >
-                    <div className="font-medium">{file.title}</div>
-                    <div className="text-sm text-gray-500">{file.filePath}</div>
-                    {file.summary && <p className="text-sm mt-1">{file.summary}</p>}
+                    <span className="mr-2 text-yellow-800">{ICONS.file}</span>
+                    <div>
+                      <div className="font-medium">{file.title}</div>
+                      <div className="text-xs text-gray-500">{file.filePath}</div>
+                      {file.summary && <p className="text-sm mt-1">{file.summary}</p>}
+                      
+                      {/* Show an excerpt of content with match highlight if available */}
+                      {file.content && searchQuery && (
+                        <div className="mt-2 text-sm bg-gray-50 p-2 rounded border-l-2 border-yellow-400">
+                          {(() => {
+                            const content = file.content;
+                            const searchIndex = content.toLowerCase().indexOf(searchQuery.toLowerCase());
+                            if (searchIndex >= 0) {
+                              const startIndex = Math.max(0, searchIndex - 40);
+                              const endIndex = Math.min(content.length, searchIndex + searchQuery.length + 40);
+                              const excerpt = content.substring(startIndex, endIndex);
+                              return startIndex > 0 ? `...${excerpt}...` : `${excerpt}...`;
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      )}
+                    </div>
                   </button>
                 </li>
               ))}
@@ -509,6 +662,8 @@ function DocsExplorer() {
             items={fileTree} 
             onSelect={handleFileSelect}
             selectedPath={selectedFile?.path}
+            searchQuery={searchQuery}
+            searchResults={searchResults.map(result => result.filePath || '')}
           />
         </div>
         

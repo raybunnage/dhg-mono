@@ -251,7 +251,7 @@ function processHierarchicalView(content) {
         type: 'folder',
         path,
         children: [],
-        isOpen: false
+        isOpen: true // Start with folders expanded
       };
       
       // Add to the appropriate parent based on indentation level
