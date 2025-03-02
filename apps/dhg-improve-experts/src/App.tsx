@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -35,6 +35,7 @@ import AI from '@/pages/AI';
 import Cmds from '@/pages/Cmds';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
 import GutsExample from '@/pages/GutsExample';
+import DocsExplorer from '@/pages/DocsExplorer';
 
 // Component imports
 import { MainNavbar } from '@/components/MainNavbar'; 
@@ -79,44 +80,43 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster position="top-right" />
-      <BrowserRouter>
-        <MainNavbar />
-        <TestComponent />
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/viewer" element={<Viewer />} />
-          <Route path="/sync" element={<Sync />} />
-          <Route path="/registry" element={<RegistryViewer />} />
-          <Route path="/document-testing" element={<DocumentTestingPage />} />
-          <Route path="/expert-profiler" element={<ExpertProfilerPage />} />
-          <Route path="/source-buttons-test" element={<SourceButtonsTest />} />
-          <Route path="/source-management" element={<SourceManagementPage />} />
-          <Route path="/source-buttons" element={<SourceButtonsPage />} />
-          <Route path="/function-registry" element={<FunctionRegistryPage />} />
-          <Route path="/file-explorer" element={<FileExplorer />} />
-          <Route path="/pdf-test-extract" element={<PDFTestExtract />} />
-          <Route path="/pdf-research-portal" element={<PDFResearchPortal />} />
-          <Route path="/mp4-test" element={<MP4Test />} />
-          <Route path="/classify" element={<ClassifyDocument />} />
-          <Route path="/transcribe" element={<Transcribe />} />
-          <Route path="/supabase" element={<SupabaseAdmin />} />
-          <Route path="/supabase/legacy" element={<SupabasePage />} />
-          <Route path="/supabase/explorer" element={<SupabasePage />} />
-          <Route path="/file-tree" element={<FileTree />} />
-          <Route path="/batches" element={<BatchProcessingMonitor />} />
-          <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
-          <Route path="/experts" element={<ExpertsDashboard />} />
-          <Route path="/code" element={<CodeDashboard />} />
-          <Route path="/write" element={<Write />} />
-          <Route path="/analyze" element={<Analyze />} />
-          <Route path="/docs" element={<Docs />} />
-          <Route path="/show" element={<Show />} />
-          <Route path="/ai" element={<AI />} />
-          <Route path="/cmds" element={<Cmds />} />
-          <Route path="/registry" element={<RegistryViewer />} />
-          <Route path="/guts-example" element={<GutsExample />} />
-        </Routes>
-      </BrowserRouter>
+      <MainNavbar />
+      <TestComponent />
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/viewer" element={<Viewer />} />
+        <Route path="/sync" element={<Sync />} />
+        <Route path="/registry" element={<RegistryViewer />} />
+        <Route path="/document-testing" element={<DocumentTestingPage />} />
+        <Route path="/expert-profiler" element={<ExpertProfilerPage />} />
+        <Route path="/source-buttons-test" element={<SourceButtonsTest />} />
+        <Route path="/source-management" element={<SourceManagementPage />} />
+        <Route path="/source-buttons" element={<SourceButtonsPage />} />
+        <Route path="/function-registry" element={<FunctionRegistryPage />} />
+        <Route path="/file-explorer" element={<FileExplorer />} />
+        <Route path="/pdf-test-extract" element={<PDFTestExtract />} />
+        <Route path="/pdf-research-portal" element={<PDFResearchPortal />} />
+        <Route path="/mp4-test" element={<MP4Test />} />
+        <Route path="/classify" element={<ClassifyDocument />} />
+        <Route path="/transcribe" element={<Transcribe />} />
+        <Route path="/supabase" element={<SupabaseAdmin />} />
+        <Route path="/supabase/legacy" element={<SupabasePage />} />
+        <Route path="/supabase/explorer" element={<SupabasePage />} />
+        <Route path="/file-tree" element={<FileTree />} />
+        <Route path="/batches" element={<BatchProcessingMonitor />} />
+        <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+        <Route path="/experts" element={<ExpertsDashboard />} />
+        <Route path="/code" element={<CodeDashboard />} />
+        <Route path="/write" element={<Write />} />
+        <Route path="/analyze" element={<Analyze />} />
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/docs-explorer" element={<DocsExplorer />} />
+        <Route path="/show" element={<Show />} />
+        <Route path="/ai" element={<AI />} />
+        <Route path="/cmds" element={<Cmds />} />
+        <Route path="/registry" element={<RegistryViewer />} />
+        <Route path="/guts-example" element={<GutsExample />} />
+      </Routes>
     </QueryClientProvider>
   );
 }

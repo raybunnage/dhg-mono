@@ -1,5 +1,10 @@
 cleanup markdown files:
 
+Now be very careful and DO NOT BREAK the fileTree, or filetreeItem or the fileviewer on the "Viewer" page. But now that we have introduced the concept of a current sync folder the file viewer needs to be aware of that and load the folders and files associated with the high level folder.  Right now the view is hardwired to the Dynamic Healing Group Files but now there are already multiple high level folders to choose from and soon there wil be more.  Then the viewer should just display the folders and files from that cuirrenty selected high level folder.
+
+
+
+
 I've created a comprehensive solution for organizing documentation in
   your monorepo. Here's what I've implemented:
 

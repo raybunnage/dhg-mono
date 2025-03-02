@@ -1,18 +1,19 @@
 # Markdown Files Report
 
-Generated: Sun Mar  2 13:21:49 PST 2025
+Generated: Sun Mar  2 14:30:09 PST 2025
 
 ## Overview
 
 This report shows all markdown files found in the repository, organized hierarchically by directory.
+Prompt files are included and marked with 📜 emoji and [PROMPT] label.
 
 ## Summary
 
-- **Total markdown files:** 66
+- **Total markdown files:** 78
 - **README files:** 4
-- **Files in docs folders:** 53
-- **Files in other locations:** 9
-- **Prompt files:** 1
+- **Files in docs folders:** 64
+- **Files in other locations:** 10
+- **Prompt files:** 12 (included in total, marked with 📜)
 - **Root-level files:** 2
 
 ## Root-Level Files
@@ -26,8 +27,9 @@ This report shows all markdown files found in the repository, organized hierarch
 
 - 📄 [command-history-tracking.md](/docs/command-history-tracking.md) - 2025-03-02 11:14 (5007 bytes)
 - 📄 [documentation-management.md](/docs/documentation-management.md) - 2025-03-02 12:17 (4672 bytes)
-- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-02 13:21 (181 bytes)
+- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-02 14:30 (254 bytes)
 - 📁 **architecture/**
+  - 📜 [claude_code_prompts.md](/docs/architecture/claude_code_prompts.md) - 2025-03-01 05:13 (4262 bytes) [PROMPT]
   - 📁 **supabase_design/**
     - 📄 [ClassifyDocument_Explanation.md](/docs/architecture/supabase_design/ClassifyDocument_Explanation.md) - 2025-02-27 07:46 (5547 bytes)
     - 📄 [README.md](/docs/architecture/supabase_design/README.md) - 2025-02-28 06:15 (3649 bytes)
@@ -86,6 +88,15 @@ This report shows all markdown files found in the repository, organized hierarch
   - 📄 [supabase_types.md](/docs/project-structure/supabase_types.md) - 2025-02-17 17:41 (2571 bytes)
   - 📄 [vite-configuration-guide.md](/docs/project-structure/vite-configuration-guide.md) - 2025-02-10 17:31 (5301 bytes)
   - 📄 [vite-setup.md](/docs/project-structure/vite-setup.md) - 2025-02-10 17:31 (1345 bytes)
+- 📁 **prompts/**
+  - 📜 [code-analysis-prompt.md](/docs/prompts/code-analysis-prompt.md) - 2025-02-20 21:28 (5270 bytes) [PROMPT]
+  - 📜 [document-classification-prompt.md](/docs/prompts/document-classification-prompt.md) - 2025-02-19 17:38 (2899 bytes) [PROMPT]
+  - 📜 [document-type-analysis.md](/docs/prompts/document-type-analysis.md) - 2025-02-19 17:38 (8410 bytes) [PROMPT]
+  - 📜 [document-type-integration-guide.md](/docs/prompts/document-type-integration-guide.md) - 2025-02-19 17:38 (4473 bytes) [PROMPT]
+  - 📜 [enhanced-analysis-prompt.md](/docs/prompts/enhanced-analysis-prompt.md) - 2025-02-21 18:48 (11487 bytes) [PROMPT]
+  - 📜 [expert-extraction-prompt.md](/docs/prompts/expert-extraction-prompt.md) - 2025-02-17 17:41 (2347 bytes) [PROMPT]
+  - 📜 [expert-profiles.md](/docs/prompts/expert-profiles.md) - 2025-02-17 17:41 (5851 bytes) [PROMPT]
+  - 📜 [react-component-analysis-prompt.md](/docs/prompts/react-component-analysis-prompt.md) - 2025-02-21 22:08 (5990 bytes) [PROMPT]
 - 📁 **scripting/**
   - 📄 [shell-scripting-basics.md](/docs/scripting/shell-scripting-basics.md) - 2025-02-17 17:41 (4287 bytes)
 - 📁 **troubleshooting/**
@@ -94,6 +105,9 @@ This report shows all markdown files found in the repository, organized hierarch
   - 📄 [ai-processing.md](/docs/utils/ai-processing.md) - 2025-02-17 17:41 (5779 bytes)
   - 📄 [google-drive.md](/docs/utils/google-drive.md) - 2025-02-17 17:41 (5938 bytes)
   - 📄 [sync-file-metadata.md](/docs/utils/sync-file-metadata.md) - 2025-02-17 17:41 (4362 bytes)
+
+## Apps Directory (Hierarchical View)
+
 - 📁 **dhg-a/**
   - 📁 **apps/**
     - 📁 **dhg-a/**
@@ -157,6 +171,11 @@ This report shows all markdown files found in the repository, organized hierarch
     - 📄 [guts-dashboard.md](/apps/dhg-improve-experts/docs/guts-dashboard.md) - 2025-03-01 06:44 (4630 bytes)
   - 📁 **public/**
     - 📁 **docs/**
+      - 📁 **prompts/**
+        - 📜 [document-classification-prompt.md](/apps/dhg-improve-experts/public/docs/prompts/document-classification-prompt.md) - 2025-02-19 22:29 (4210 bytes) [PROMPT]
+        - 📜 [expert-extraction-prompt.md](/apps/dhg-improve-experts/public/docs/prompts/expert-extraction-prompt.md) - 2025-02-17 17:41 (2347 bytes) [PROMPT]
+    - 📁 **prompts/**
+      - 📜 [enhanced-analysis-prompt.md](/apps/dhg-improve-experts/public/prompts/enhanced-analysis-prompt.md) - 2025-02-20 21:51 (52 bytes) [PROMPT]
   - 📁 **scripts/**
     - 📁 **docs-organization/**
   - 📁 **src/**
@@ -197,23 +216,5 @@ This report shows all markdown files found in the repository, organized hierarch
 - 📁 **scripts/**
   - 📁 **whisper/**
 
-## Apps Directory (Hierarchical View)
-
-
 ## Packages Directory (Hierarchical View)
 
-
-## Prompt Files
-
-| File Path | Last Modified | Size (bytes) |
-|-----------|---------------|--------------|
-| apps/dhg-improve-experts/public/docs/prompts/document-classification-prompt.md | 2025-02-19 22:29 | 4210 |
-| apps/dhg-improve-experts/public/docs/prompts/expert-extraction-prompt.md | 2025-02-17 17:41 | 2347 |
-| docs/prompts/code-analysis-prompt.md | 2025-02-20 21:28 | 5270 |
-| docs/prompts/document-classification-prompt.md | 2025-02-19 17:38 | 2899 |
-| docs/prompts/document-type-analysis.md | 2025-02-19 17:38 | 8410 |
-| docs/prompts/document-type-integration-guide.md | 2025-02-19 17:38 | 4473 |
-| docs/prompts/enhanced-analysis-prompt.md | 2025-02-21 18:48 | 11487 |
-| docs/prompts/expert-extraction-prompt.md | 2025-02-17 17:41 | 2347 |
-| docs/prompts/expert-profiles.md | 2025-02-17 17:41 | 5851 |
-| docs/prompts/react-component-analysis-prompt.md | 2025-02-21 22:08 | 5990 |
