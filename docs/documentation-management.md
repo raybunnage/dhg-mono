@@ -1,147 +1,152 @@
-# Documentation Management System
+---
+title: "Documentation Management"
+date: 2025-03-02
+description: "Guide to managing documentation in the DHG monorepo"
+category: "development"
+status: "active"
+---
 
-This system helps manage markdown documentation files by tracking metadata, extracting content structure, and enhancing searchability through AI-powered summaries and tagging.
+# Documentation Management Guide
+
+This guide explains how to use the documentation management tools available in the DHG monorepo.
 
 ## Overview
 
-The Documentation Management System provides:
+The monorepo includes a set of tools to help maintain consistent documentation organization across all projects. These tools follow these key principles:
 
-1. **Metadata Tracking**: Store and manage metadata about markdown files without modifying the files themselves
-2. **AI-Enhanced Summaries**: Generate concise summaries of documents using AI
-3. **Automatic Tagging**: Extract relevant tags from document content
-4. **Relationship Detection**: Identify and track relationships between documents
-5. **Full-Text Search**: Search across all documentation with relevance ranking
-6. **Section Navigation**: Track document structure for easy navigation
+1. **Single Source of Truth**: Keep shared documentation in a centralized location.
+2. **Avoid Duplication**: Link to existing documentation instead of duplicating content.
+3. **Project-Specific Content**: Only keep project-specific documentation within individual app folders.
+4. **Prompts Separation**: Keep AI prompts in designated prompts folders.
 
-## Database Structure
+## Available Commands
 
-The system uses the following database tables:
+All documentation management commands can be run using pnpm from the root of the monorepo:
 
-- `documentation_files`: Stores metadata about markdown files
-- `documentation_sections`: Tracks sections within documents
-- `documentation_relations`: Manages relationships between documents
-- `documentation_processing_queue`: Manages the AI processing queue
+| Command | Description |
+|---------|-------------|
+| `pnpm docs:report` | Generate a report of all markdown files in the repository |
+| `pnpm docs:tree [app-name]` | Display a tree view of documentation files for a specific app |
+| `pnpm docs:consolidate` | Move markdown files to their appropriate locations based on best practices |
+| `pnpm docs:frontmatter` | Add YAML frontmatter to documentation files to improve organization |
+| `pnpm docs:organize` | Run all documentation organization scripts in sequence |
 
-## Getting Started
+## When to Use
 
-### Prerequisites
+### Generating a Documentation Report
 
-1. Ensure your Supabase project is set up
-2. Run the migration files in the Supabase UI:
-   - `20240517000000_create_documentation_tables.sql`
-   - `20240517000001_create_documentation_functions.sql`
-   - `20240517000002_create_documentation_search.sql`
-
-### Directory Structure
-
-Place your markdown documentation files in a directory structure of your choice. The system will maintain the relative paths in the database.
-
-Example structure:
-```
-docs/
-  ├── guides/
-  │   ├── getting-started.md
-  │   └── advanced-usage.md
-  ├── api/
-  │   ├── endpoints.md
-  │   └── authentication.md
-  └── README.md
-```
-
-### Processing Documentation
-
-Use the provided script to process your documentation:
+Use `pnpm docs:report` to get a clear picture of how documentation is currently organized:
 
 ```bash
-# Install dependencies
-pnpm add marked crypto
-
-# Process all markdown files in the docs directory
-ts-node scripts/process-documentation.ts scan --docs-dir ./docs
-
-# Process a specific file
-ts-node scripts/process-documentation.ts process guides/getting-started.md --docs-dir ./docs
-
-# Process files in the AI queue
-ts-node scripts/process-documentation.ts process-queue
-
-# Process all files in the AI queue
-ts-node scripts/process-documentation.ts process-all --limit 10
+pnpm docs:report
 ```
 
-## Markdown Format
+This creates a `documentation-report.md` file in the app's docs folder with:
+- A list of all markdown files
+- File locations, types, and sizes
+- Summary statistics and recommendations
 
-The system supports standard markdown files with optional YAML frontmatter:
+### Viewing Documentation Structure
 
-```markdown
+Use `pnpm docs:tree` to see a tree representation of documentation files:
+
+```bash
+# View documentation for a specific app
+pnpm docs:tree dhg-improve-experts
+
+# View documentation for the current app (if no app specified)
+pnpm docs:tree
+```
+
+### Consolidating Documentation
+
+Use `pnpm docs:consolidate` to automatically reorganize documentation files according to best practices:
+
+```bash
+pnpm docs:consolidate
+```
+
+This script:
+- Keeps README.md files in place
+- Moves README-*.md files to the docs folder
+- Moves other markdown files to appropriate locations
+- Creates references to the new locations
+
+### Adding Frontmatter
+
+Use `pnpm docs:frontmatter` to add or update YAML frontmatter in documentation files:
+
+```bash
+pnpm docs:frontmatter
+```
+
+Frontmatter provides metadata that helps organize and filter documentation:
+
+```yaml
 ---
-title: Getting Started
-description: A guide to get started with our product
-tags: beginner, setup, configuration
-author: John Doe
-date: 2024-05-17
+title: "Feature Name"
+date: 2025-03-02
+description: "Short description"
+app: "app-name"  # if applicable
+category: "documentation"
+status: "active"
 ---
-
-# Getting Started
-
-This guide will help you get started with our product...
 ```
 
-If frontmatter is not provided, the system will extract metadata from the content:
-- Title: First heading or filename
-- Summary: First paragraph
-- Tags: Generated by AI based on content
+### Complete Documentation Organization
 
-## AI Processing
+Use `pnpm docs:organize` to run all documentation scripts in sequence:
 
-The system uses a simple AI approach to:
-
-1. Generate document summaries
-2. Extract relevant tags
-3. Identify potential relationships between documents
-
-In the current implementation, the AI functionality is simulated:
-- Summaries are extracted from the first paragraph
-- Tags are generated based on word frequency
-- Relationships are detected through markdown links
-
-This can be enhanced with actual AI services in the future.
-
-## Searching Documentation
-
-The system provides several search functions:
-
-```typescript
-// Search by query text
-const results = await documentationService.searchDocumentation('getting started');
-
-// Search by tag
-const tagResults = await documentationService.searchDocumentsByTag('configuration');
-
-// Find related documents
-const relatedDocs = await documentationService.findRelatedDocuments(documentId);
+```bash
+pnpm docs:organize
 ```
 
-## Future Enhancements
+This comprehensive process:
+1. Generates a report of the current state
+2. Shows the documentation tree
+3. Consolidates documentation
+4. Adds frontmatter
+5. Generates a documentation index
+6. Creates a final report and tree view
 
-Potential enhancements to the system:
+## Documentation Standards
 
-1. **UI Integration**: Build a documentation viewer/browser
-2. **Real AI Integration**: Connect to OpenAI or other AI services
-3. **Version Tracking**: Track changes to documentation over time
-4. **User Annotations**: Allow users to add notes and annotations
-5. **Export Functionality**: Export documentation in different formats
-6. **Collaboration Features**: Add commenting and collaboration tools
+For consistency across the monorepo, follow these standards:
 
-## Technical Details
+1. **Location**:
+   - Shared documentation in the root `/docs` folder
+   - Project-specific documentation in each app's `docs` folder
+   - Brief project overview in each app's `README.md`
 
-The system consists of:
+2. **Structure**:
+   - Use clear, descriptive filenames
+   - Use frontmatter for metadata
+   - Follow a consistent heading structure
 
-1. **Database Schema**: Tables and functions in Supabase
-2. **TypeScript Service**: `DocumentationService` class for interacting with the system
-3. **Command-Line Tool**: Script for processing documentation files
+3. **Cross-linking**:
+   - Link to shared documentation rather than duplicating content
+   - Use relative links when referring to other documents
 
-For more details, see the implementation in:
-- `apps/dhg-improve-experts/src/services/documentationService.ts`
-- `scripts/process-documentation.ts`
-- Supabase migration files 
+4. **Prompts**:
+   - Keep AI prompts in designated prompts folders
+   - Do not move or consolidate prompt files
+
+## Documentation Index
+
+When you run the organization scripts, a `docs-index.json` file is created in the root docs folder. This index can be used by documentation viewers and dashboards to:
+
+- Display documents by category
+- Filter by project or app
+- Show related documentation
+- Track document status and modifications
+
+## Implementation Details
+
+The documentation tools are implemented as shell scripts in the `apps/dhg-improve-experts/scripts/docs-organization/` directory. These scripts:
+
+- Are non-destructive (preserving original files)
+- Skip files in prompts folders
+- Generate detailed reports of their actions
+- Can be run individually or as a complete process
+
+The documentation index is generated using JavaScript and the gray-matter package to parse frontmatter.
