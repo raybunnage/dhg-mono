@@ -1,3 +1,11 @@
+Make a new page called Cmds 
+It will be a dashboard similar to the other dashboards you've built for me. 
+It needs to solve these problems
+It will be a manager for all the commands I use in the terminal
+It should possibly track the history of commands to see 
+
+
+
 Make a new page called AI
 It will be a dashboard similar to the other dashboards you've built for me. 
 Its purpose is to help me write sophisticated prompts with sonnet 3.7 
