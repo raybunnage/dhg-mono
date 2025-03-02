@@ -32,6 +32,7 @@ interface SyncStats {
   totalMP4SizeGB: number;
   isValid: boolean;
   error?: string;
+  timestamp?: string; // ISO string timestamp
 }
 
 interface SyncResult {
@@ -49,18 +50,42 @@ interface SyncResult {
  */
 export const getAccessToken = async (): Promise<string | null> => {
   try {
-    // Get the most recent token from the database
+    // First try to get token from localStorage (which we might have from successful auth)
+    const localToken = localStorage.getItem('google_access_token');
+    if (localToken) {
+      console.log('Using token from localStorage');
+      return localToken;
+    }
+    
+    // Try to get the most recent token from the database
     const { data, error } = await supabase
       .from('google_auth_tokens')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
       
-    if (error) throw error;
-    if (!data) return null;
+    // Note: Removed .single() to handle empty result set more gracefully
     
-    return data.access_token;
+    if (error) {
+      console.error('Database error fetching token:', error);
+      return null;
+    }
+    
+    // Check if we have data and it has at least one record
+    if (!data || data.length === 0) {
+      console.log('No access token found in database');
+      return null;
+    }
+    
+    // We should have the most recent token as the first item
+    const token = data[0].access_token;
+    
+    // Store it in localStorage for future use
+    if (token) {
+      localStorage.setItem('google_access_token', token);
+    }
+    
+    return token;
   } catch (err) {
     console.error('Error getting access token:', err);
     return null;
@@ -177,6 +202,36 @@ export const listFilesInFolder = async (
  */
 export const listDriveFiles = async (folderId = GOOGLE_DRIVE_FOLDER_ID): Promise<DriveFile[]> => {
   try {
+    // Check if we're in development mode with validation skipped
+    const skipValidation = import.meta.env.DEV && localStorage.getItem('skip_token_validation') === 'true';
+    
+    if (skipValidation) {
+      console.log('DEV MODE: Using dummy data for listDriveFiles since token validation is skipped');
+      // Return dummy data in dev mode when skipping validation
+      return [
+        {
+          id: 'dummy-folder-1',
+          name: 'Example Folder 1',
+          mimeType: 'application/vnd.google-apps.folder',
+          modifiedTime: new Date().toISOString()
+        },
+        {
+          id: 'dummy-doc-1',
+          name: 'Example Document 1.docx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          modifiedTime: new Date().toISOString(),
+          size: '1024'
+        },
+        {
+          id: 'dummy-doc-2',
+          name: 'Example PDF.pdf',
+          mimeType: 'application/pdf',
+          modifiedTime: new Date().toISOString(),
+          size: '2048'
+        }
+      ];
+    }
+    
     // First try from localStorage
     let accessToken = localStorage.getItem('google_access_token');
     
@@ -196,6 +251,18 @@ export const listDriveFiles = async (folderId = GOOGLE_DRIVE_FOLDER_ID): Promise
     
     console.log('Using token (first 10 chars):', accessToken.substring(0, 10) + '...');
     
+    // If folderId is provided but is empty string, use default
+    if (folderId === '') {
+      folderId = GOOGLE_DRIVE_FOLDER_ID;
+      console.log('Empty folder ID provided, using default:', folderId);
+    }
+    
+    // If no folderId still, throw error
+    if (!folderId) {
+      throw new Error('No Google Drive folder ID available. Please select a folder first.');
+    }
+    
+    console.log('Listing files in folder ID:', folderId);
     return await listAllFilesRecursively(folderId, accessToken);
   } catch (error) {
     console.error('Error listing Drive files:', error);
@@ -425,8 +492,67 @@ export const getDriveSyncStats = async (): Promise<SyncStats> => {
     const folderIdOverride = localStorage.getItem('google_drive_folder_id_override');
     const folderNameOverride = localStorage.getItem('google_drive_folder_name');
     
+    // Check if we're in development mode with validation skipped
+    const skipValidation = import.meta.env.DEV && localStorage.getItem('skip_token_validation') === 'true';
+    
     if (folderIdOverride) {
       console.log(`Using override folder ID: ${folderIdOverride} (${folderNameOverride || 'No name provided'})`);
+    } else {
+      console.log('No folder ID override found - using default folder ID');
+    }
+    
+    // Add timestamp for tracking
+    const timestamp = new Date().toISOString();
+    
+    // For dev mode, check if we should use mock data
+    if (skipValidation) {
+      console.log('DEV MODE: Using mock data for sync stats');
+      
+      return {
+        matchingFiles: [],
+        newFiles: [
+          {
+            id: 'dummy-doc-3',
+            name: 'New Document.docx',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            modifiedTime: new Date().toISOString(),
+            size: '15360'
+          },
+          {
+            id: 'dummy-pdf-1',
+            name: 'New PDF File.pdf',
+            mimeType: 'application/pdf',
+            modifiedTime: new Date().toISOString(), 
+            size: '25600'
+          }
+        ],
+        localOnlyFiles: ['local-only-file.txt'],
+        totalGoogleDriveFiles: 5,
+        totalGoogleDriveFolders: 2,
+        totalLocalFiles: 3,
+        totalMP4Files: 1,
+        totalMP4SizeGB: 0.25,
+        isValid: true,
+        timestamp
+      };
+    }
+    
+    // Validate we have a folder ID to use
+    if (!folderIdOverride && !GOOGLE_DRIVE_FOLDER_ID) {
+      console.error('No folder ID available - neither override nor default');
+      return {
+        matchingFiles: [],
+        newFiles: [],
+        localOnlyFiles: [],
+        totalGoogleDriveFiles: 0,
+        totalGoogleDriveFolders: 0,
+        totalLocalFiles: 0,
+        totalMP4Files: 0,
+        totalMP4SizeGB: 0,
+        isValid: false,
+        error: 'No folder ID selected. Please select a folder first.',
+        timestamp
+      };
     }
     
     // Step 1: Get files from Google Drive recursively
@@ -510,7 +636,8 @@ export const getDriveSyncStats = async (): Promise<SyncStats> => {
       totalLocalFiles: localDocuments.length,
       totalMP4Files: mp4Files.length,
       totalMP4SizeGB: parseFloat(totalSizeGB.toFixed(2)),
-      isValid: true
+      isValid: true,
+      timestamp
     };
   } catch (error) {
     console.error('Error getting sync stats:', error);
@@ -524,7 +651,8 @@ export const getDriveSyncStats = async (): Promise<SyncStats> => {
       totalMP4Files: 0,
       totalMP4SizeGB: 0,
       isValid: false,
-      error: error.message
+      error: error.message,
+      timestamp: new Date().toISOString()
     };
   }
 };
@@ -568,9 +696,12 @@ async function getLocalSourceFiles() {
  * Insert selected Google Drive files into the database
  * With adjusted approach to avoid user references that cause permission errors
  */
-export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: number, errors: number}> {
+export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: number, errors: number, details: {newFiles: string[], updatedFiles: string[], errorFiles: string[]}}> {
   let successCount = 0;
   let errorCount = 0;
+  const newFiles: string[] = [];
+  const updatedFiles: string[] = [];
+  const errorFiles: string[] = [];
   
   try {
     console.log(`Inserting ${files.length} Google Drive files into the database`);
@@ -586,14 +717,34 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
     
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);
+      console.log(`Processing batch ${i/batchSize + 1} of ${Math.ceil(files.length/batchSize)}`);
       
-      // Create records for insertion
+      // First check which files already exist in the database
+      const fileIds = batch.map(file => file.id);
+      const { data: existingFiles } = await supabaseAdmin
+        .from('sources_google')
+        .select('drive_id')
+        .in('drive_id', fileIds);
+        
+      const existingFileIds = new Set(existingFiles?.map(f => f.drive_id) || []);
+      console.log(`Found ${existingFileIds.size} existing files in this batch`);
+      
+      // Create records for insertion or update
       const records = batch.map(file => {
         // Extract parent folder from file.parents if available
         const parentFolderId = file.parents && file.parents.length > 0 
           ? file.parents[0] 
           : null;
           
+        // Calculate file path based on parent folders
+        let fullPath = null;
+        if (parentFolderId) {
+          // For simplicity, just use parent ID as path for now
+          // In a real implementation, you might want to build the full path
+          fullPath = `/folders/${parentFolderId}`;
+        }
+        
+        // Build a simplified record with basic metadata to avoid errors with missing fields
         const record: any = {
           drive_id: file.id,
           name: file.name,
@@ -603,15 +754,28 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           parent_folder_id: parentFolderId,
-          parent_path: null,
-          is_root: false,
+          parent_path: fullPath,
+          is_root: parentFolderId === null, // Mark as root if no parent
           deleted: false,
-          sync_status: 'pending',
-          metadata: file
+          sync_status: 'synced', // Mark as synced since we're directly inserting
+          metadata: JSON.stringify(file) // Store whatever metadata we have as JSON
         };
         
+        // Convert size to number if available
         if (file.size) {
           record.size = parseInt(file.size);
+        }
+        
+        // If the file has a description, add it
+        if (file.description) {
+          record.description = file.description;
+        }
+        
+        // Track which files are new vs. updates
+        if (existingFileIds.has(file.id)) {
+          updatedFiles.push(file.id);
+        } else {
+          newFiles.push(file.id);
         }
         
         return record;
@@ -619,19 +783,66 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
       
       // Don't log the entire record - it's too verbose
       console.log(`Inserting batch of ${records.length} files`);
+
+      // Split into new records and updates
+      const newRecords = records.filter(record => !existingFileIds.has(record.drive_id));
+      const updateRecords = records.filter(record => existingFileIds.has(record.drive_id));
       
-      // Use the admin client to insert the batch
-      const { data, error } = await supabaseAdmin
-        .from('sources_google')
-        .insert(records)
-        .select();
+      // Insert new records
+      if (newRecords.length > 0) {
+        console.log(`Inserting ${newRecords.length} new files`);
+        const { data: insertedData, error: insertError } = await supabaseAdmin
+          .from('sources_google')
+          .insert(newRecords)
+          .select();
+          
+        if (insertError) {
+          console.error('Error inserting new files:', insertError);
+          errorCount += newRecords.length;
+          // Track which files had errors
+          newRecords.forEach(record => errorFiles.push(record.drive_id));
+        } else {
+          console.log(`Successfully inserted ${insertedData?.length || 0} new files`);
+          successCount += insertedData?.length || 0;
+        }
+      }
+      
+      // Update existing records
+      if (updateRecords.length > 0) {
+        console.log(`Updating ${updateRecords.length} existing files`);
         
-      if (error) {
-        console.error('Error inserting batch:', error);
-        errorCount += batch.length;
-      } else {
-        console.log(`Successfully inserted ${data.length} files`);
-        successCount += data.length;
+        // We need to update one by one since Supabase doesn't support bulk upsert
+        for (const record of updateRecords) {
+          try {
+            const { error: updateError } = await supabaseAdmin
+              .from('sources_google')
+              .update({
+                name: record.name,
+                mime_type: record.mime_type,
+                web_view_link: record.web_view_link,
+                modified_time: record.modified_time,
+                updated_at: record.updated_at,
+                parent_folder_id: record.parent_folder_id,
+                parent_path: record.parent_path,
+                sync_status: 'synced',
+                metadata: record.metadata,
+                size: record.size
+              })
+              .eq('drive_id', record.drive_id);
+              
+            if (updateError) {
+              console.error(`Error updating file ${record.drive_id}:`, updateError);
+              errorCount++;
+              errorFiles.push(record.drive_id);
+            } else {
+              successCount++;
+            }
+          } catch (updateErr) {
+            console.error(`Exception updating file ${record.drive_id}:`, updateErr);
+            errorCount++;
+            errorFiles.push(record.drive_id);
+          }
+        }
       }
     }
     
@@ -640,28 +851,39 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
     
     await supabaseAdmin.from('sync_history').insert({
       id: syncId,
-      folder_id: import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID || '',
-      folder_name: 'Manual File Selection',
+      folder_id: files.find(f => f.parents === undefined || f.parents.length === 0)?.id || '', // Try to find the root folder
+      folder_name: files.find(f => f.parents === undefined || f.parents.length === 0)?.name || 'Manual File Selection',
       timestamp: new Date().toISOString(),
       completed_at: new Date().toISOString(),
       status: errorCount > 0 ? 'completed_with_errors' : 'completed',
       files_processed: successCount + errorCount,
       files_total: files.length,
-      files_added: successCount,
+      files_added: newFiles.length - errorFiles.filter(id => newFiles.includes(id)).length,
+      files_updated: updatedFiles.length - errorFiles.filter(id => updatedFiles.includes(id)).length,
       files_error: errorCount,
-      error_message: errorCount > 0 ? `Failed to insert ${errorCount} files` : null
+      error_message: errorCount > 0 ? `Failed to process ${errorCount} files` : null
     });
     
-    // Return the results
+    // Return the results with detailed information
     return {
       success: successCount,
-      errors: errorCount
+      errors: errorCount,
+      details: {
+        newFiles,
+        updatedFiles,
+        errorFiles
+      }
     };
   } catch (error) {
     console.error('Error in insertGoogleFiles:', error);
     return {
       success: successCount,
-      errors: errorCount + (files.length - successCount - errorCount)
+      errors: errorCount + (files.length - successCount - errorCount),
+      details: {
+        newFiles,
+        updatedFiles,
+        errorFiles
+      }
     };
   }
 }
@@ -709,5 +931,415 @@ export async function getTableStructure(tableName: string) {
   } catch (error) {
     console.error('Error in getTableStructure:', error);
     return null;
+  }
+}
+
+/**
+ * Recursively search files and folders in a specific Google Drive folder
+ * Robust version with detailed logging to help debug search issues
+ */
+export async function searchSpecificFolder(folderId: string): Promise<{
+  files: DriveFile[],
+  totalCount: number, 
+  hasExceededLimit: boolean
+}> {
+  try {
+    console.log(`=======================================`);
+    console.log(`STARTING RECURSIVE SEARCH FOR FOLDER: ${folderId}`);
+    console.log(`=======================================`);
+    
+    // Get access token (either from localStorage or try using authenticatedFetch helper)
+    let accessToken = localStorage.getItem('google_access_token');
+    if (!accessToken) {
+      console.log('No token in localStorage, will try using authenticatedFetch');
+    } else {
+      console.log('Using token from localStorage');
+    }
+    
+    // Create holders for our results
+    let allFiles: DriveFile[] = [];
+    let hasExceededLimit = false;
+    const MAX_FILES = 5000; // Increased limit to allow finding all files and folders in the hierarchy
+    
+    // 1. First, verify the folder exists by fetching its details directly
+    console.log(`Step 1: Verifying folder ${folderId} exists...`);
+    try {
+      // Try two different approaches to get folder info
+      // First with direct fetch (if we have token)
+      if (accessToken) {
+        try {
+          const rootUrl = `https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,mimeType,modifiedTime,size,parents,webViewLink`;
+          const rootResponse = await fetch(rootUrl, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          
+          if (rootResponse.ok) {
+            const rootFolder = await rootResponse.json();
+            
+            // Skip if this is a shortcut
+            if (rootFolder.mimeType === 'application/vnd.google-apps.shortcut') {
+              console.warn(`⚠️ Warning: The root folder ID ${folderId} is a shortcut, not a real folder. Recursive search may not work as expected.`);
+            }
+            
+            console.log(`✓ Found root folder: "${rootFolder.name}" (${rootFolder.id}) - Type: ${rootFolder.mimeType}`);
+            
+            // Normalize the parents field
+            if (!rootFolder.parents) {
+              rootFolder.parents = [];
+            }
+            
+            // Add to our results only if not a shortcut
+            if (rootFolder.mimeType !== 'application/vnd.google-apps.shortcut') {
+              allFiles.push(rootFolder);
+            }
+          } else {
+            console.warn(`× Failed to get folder via direct fetch: ${rootResponse.status} ${rootResponse.statusText}`);
+            throw new Error('Direct fetch failed, will try authenticatedFetch');
+          }
+        } catch (directFetchError) {
+          console.warn('Error with direct fetch, will try authenticatedFetch:', directFetchError.message);
+          // Fall through to authenticatedFetch approach
+        }
+      }
+      
+      // If direct fetch failed or we had no token, try with authenticatedFetch
+      if (allFiles.length === 0) {
+        console.log('Trying authenticatedFetch to get folder details...');
+        const rootUrl = `https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,mimeType,modifiedTime,size,parents,webViewLink`;
+        const rootResponse = await authenticatedFetch(rootUrl);
+        
+        if (rootResponse.ok) {
+          const rootFolder = await rootResponse.json();
+          
+          // Skip if this is a shortcut
+          if (rootFolder.mimeType === 'application/vnd.google-apps.shortcut') {
+            console.warn(`⚠️ Warning: The root folder ID ${folderId} is a shortcut, not a real folder.`);
+            
+            // For shortcut, try to resolve the target folder
+            try {
+              // If it's a shortcut, try to find the target
+              const shortcutTargetUrl = `https://www.googleapis.com/drive/v3/files/${folderId}?fields=shortcutDetails`;
+              const shortcutResponse = await authenticatedFetch(shortcutTargetUrl);
+              
+              if (shortcutResponse.ok) {
+                const shortcutData = await shortcutResponse.json();
+                if (shortcutData.shortcutDetails && shortcutData.shortcutDetails.targetId) {
+                  console.log(`Shortcut resolves to target ID: ${shortcutData.shortcutDetails.targetId}`);
+                  // Replace the folder ID with the target ID
+                  folderId = shortcutData.shortcutDetails.targetId;
+                  
+                  // Get the target folder info
+                  const targetUrl = `https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,mimeType,modifiedTime,size,parents,webViewLink`;
+                  const targetResponse = await authenticatedFetch(targetUrl);
+                  
+                  if (targetResponse.ok) {
+                    rootFolder = await targetResponse.json();
+                    console.log(`✓ Using shortcut target: "${rootFolder.name}" (${rootFolder.id}) - Type: ${rootFolder.mimeType}`);
+                  }
+                }
+              }
+            } catch (shortcutError) {
+              console.error('Error resolving shortcut:', shortcutError);
+            }
+          } else {
+            console.log(`✓ Found root folder with authenticatedFetch: "${rootFolder.name}" (${rootFolder.id}) - Type: ${rootFolder.mimeType}`);
+          }
+          
+          // Normalize the parents field
+          if (!rootFolder.parents) {
+            rootFolder.parents = [];
+          }
+          
+          // Add to our results if not already added and not a shortcut
+          if (!allFiles.some(f => f.id === rootFolder.id) && rootFolder.mimeType !== 'application/vnd.google-apps.shortcut') {
+            allFiles.push(rootFolder);
+          }
+        } else {
+          const errorText = await rootResponse.text();
+          console.error(`× Failed to find folder with both methods: ${rootResponse.status} ${errorText}`);
+          throw new Error(`Folder ID ${folderId} not found or not accessible`);
+        }
+      }
+    } catch (rootFolderError) {
+      console.error('Error getting root folder:', rootFolderError);
+      throw rootFolderError; // Re-throw to stop the process
+    }
+    
+    // 2. Now do a recursive traversal starting from the root folder
+    console.log(`Step 2: Starting recursive traversal from folder ${folderId}...`);
+    
+    // Create a queue of folders to process and a set to track processed folders
+    const folderQueue: string[] = [folderId];
+    const processedFolders = new Set<string>();
+    
+    // Track the allowed folder hierarchy to prevent following shortcuts
+    // This is the whitelist of folder IDs that are directly part of the hierarchy
+    // starting with the root folder
+    const allowedFolderIds = new Set<string>([folderId]);
+    
+    // Process all folders in the queue using a breadth-first approach
+    while (folderQueue.length > 0 && allFiles.length < MAX_FILES) {
+      const currentFolderId = folderQueue.shift()!;
+      
+      // Skip if we've already processed this folder
+      if (processedFolders.has(currentFolderId)) {
+        console.log(`Skipping already processed folder: ${currentFolderId}`);
+        continue;
+      }
+      
+      processedFolders.add(currentFolderId);
+      console.log(`Processing folder contents: ${currentFolderId}`);
+      
+      // Process all pages of results for this folder
+      let pageToken: string | null = null;
+      let pageCount = 0;
+      
+      do {
+        pageCount++;
+        try {
+          // Build the query to find all files and folders with this parent
+          const query = `'${currentFolderId}' in parents and trashed=false`;
+          let url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=nextPageToken,files(id,name,mimeType,modifiedTime,size,parents,webViewLink)&pageSize=100`;
+          
+          if (pageToken) {
+            url += `&pageToken=${pageToken}`;
+          }
+          
+          // Use authenticatedFetch which handles token refreshing
+          console.log(`Fetching page ${pageCount} of folder ${currentFolderId}...`);
+          const response = await authenticatedFetch(url);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`× Failed to list files in folder ${currentFolderId}: ${response.status} ${errorText}`);
+            // Continue to next folder rather than failing completely
+            break;
+          }
+          
+          const data = await response.json();
+          const files = data.files || [];
+          pageToken = data.nextPageToken || null;
+          
+          console.log(`✓ Found ${files.length} items in folder ${currentFolderId} (page ${pageCount})${pageToken ? ' with more pages available' : ''}`);
+          
+          if (files.length === 0) {
+            console.log(`Empty folder or no access to contents of ${currentFolderId}`);
+            continue;
+          }
+          
+          // Filter out shortcuts and normalize remaining files
+          const normalizedFiles = files
+            .filter(file => {
+              // Skip shortcuts
+              if (file.mimeType === 'application/vnd.google-apps.shortcut') {
+                return false;
+              }
+              
+              // Also skip any files that are not in the folder we're currently processing
+              // This should already be handled by the query, but just to be sure
+              if (file.parents && !file.parents.includes(currentFolderId)) {
+                console.log(`Skipping file ${file.name} (${file.id}) - not in current folder`);
+                return false;
+              }
+              
+              return true;
+            })
+            .map(file => {
+              if (!file.parents) {
+                return { ...file, parents: [] };
+              }
+              return file;
+            });
+            
+          // Log if any shortcuts were skipped
+          const shortcutsCount = files.filter(file => file.mimeType === 'application/vnd.google-apps.shortcut').length;
+          if (shortcutsCount > 0) {
+            console.log(`Skipped ${shortcutsCount} shortcuts in folder ${currentFolderId}`);
+          }
+          
+          // Check if we'll exceed our file limit
+          if (allFiles.length + normalizedFiles.length > MAX_FILES) {
+            console.log(`Will exceed limit of ${MAX_FILES} files, taking partial results`);
+            const remainingSlots = MAX_FILES - allFiles.length;
+            allFiles = allFiles.concat(normalizedFiles.slice(0, remainingSlots));
+            hasExceededLimit = true;
+            console.log(`Reached max file limit of ${MAX_FILES}. Stopping search.`);
+            break;
+          }
+          
+          // Add all files to our results
+          allFiles = allFiles.concat(normalizedFiles);
+          
+          // Queue up subfolders for processing, but check carefully
+          const foldersFound = normalizedFiles.filter(f => {
+            // Only include actual folders, not shortcuts
+            if (f.mimeType !== 'application/vnd.google-apps.folder') {
+              return false;
+            }
+            
+            // Skip any "Shared with me" folders and folders with "shortcut" in the name
+            if (f.name.toLowerCase().includes('shortcut') || 
+                f.name.toLowerCase().includes('shared with me')) {
+              console.log(`🚫 Skipping potential shortcut folder: ${f.name} (${f.id})`);
+              return false;
+            }
+            
+            // Make sure it's a direct child of the current folder
+            if (f.parents && !f.parents.includes(currentFolderId)) {
+              console.log(`Skipping folder ${f.name} (${f.id}) - not a direct child of current folder`);
+              return false;
+            }
+            
+            // Add to our allowed folder whitelist
+            allowedFolderIds.add(f.id);
+            return true;
+          });
+          
+          console.log(`Found ${foldersFound.length} valid subfolders in ${currentFolderId}`);
+          
+          for (const folder of foldersFound) {
+            if (!processedFolders.has(folder.id)) {
+              console.log(`Adding subfolder to queue: ${folder.name} (${folder.id})`);
+              folderQueue.push(folder.id);
+            } else {
+              console.log(`Skipping already processed subfolder: ${folder.name} (${folder.id})`);
+            }
+          }
+        } catch (pageError) {
+          console.error(`Error processing page ${pageCount} for folder ${currentFolderId}:`, pageError);
+          // Continue with next folder rather than failing the whole operation
+          break;
+        }
+      } while (pageToken && allFiles.length < MAX_FILES);
+      
+      // Break out if we've hit the limit
+      if (hasExceededLimit) {
+        console.log(`Hit file limit of ${MAX_FILES}, stopping traversal`);
+        break;
+      }
+    }
+    
+    // 3. Final filtering - make sure we only include items that are truly part of this folder hierarchy
+    console.log(`=======================================`);
+    console.log(`PERFORMING FINAL FILTER TO ENSURE WE ONLY HAVE ITEMS FROM THE RIGHT FOLDER HIERARCHY`);
+    
+    // ⚠️ IMPORTANT - We will only use the explicitly allowed folder IDs that we verified
+    // during traversal, not all folders that were found (which might include shortcuts)
+    // This is more restrictive than building from allFiles
+    console.log(`Number of verified folder IDs in allowed whitelist: ${allowedFolderIds.size}`);
+    
+    // Print the list of allowed folders for debugging
+    console.log('Verified folder IDs:');
+    allowedFolderIds.forEach(id => {
+      const folder = allFiles.find(f => f.id === id);
+      if (folder) {
+        console.log(`- ${folder.name} (${folder.id})`);
+      } else {
+        console.log(`- Unknown folder (${id})`);
+      }
+    });
+    
+    // Only keep files that have a parent in our ALLOWED folder hierarchy
+    const filteredFiles = allFiles.filter(file => {
+      // Always keep the root folder
+      if (file.id === folderId) {
+        return true;
+      }
+      
+      // If it's a folder, only keep it if it's in our allowed list
+      if (file.mimeType === 'application/vnd.google-apps.folder') {
+        const isAllowed = allowedFolderIds.has(file.id);
+        if (!isAllowed) {
+          console.log(`🧹 Filtering out folder that's not in allowed list: ${file.name} (${file.id})`);
+        }
+        return isAllowed;
+      }
+      
+      // For all other files, check if they have a parent in our ALLOWED folder hierarchy
+      const hasAllowedParent = file.parents && file.parents.some(parentId => allowedFolderIds.has(parentId));
+      if (!hasAllowedParent) {
+        console.log(`🧹 Filtering out file that's outside our hierarchy: ${file.name} (${file.id})`);
+      }
+      return hasAllowedParent;
+    });
+    
+    // See if our filtering removed any files
+    if (filteredFiles.length < allFiles.length) {
+      console.log(`Filtered out ${allFiles.length - filteredFiles.length} files that weren't part of the hierarchy`);
+      allFiles = filteredFiles;
+    } else {
+      console.log(`No files needed to be filtered out - all items are part of the correct hierarchy`);
+    }
+    
+    // ADDITIONAL FILTERING - Hard exclude any items that have certain keywords
+    // that indicate they might be shortcuts or outside our intended hierarchy
+    const excludeKeywords = [
+      'dynamic healing group', 
+      'mp4s',
+      'shared with me'
+    ];
+    
+    const beforeCount = allFiles.length;
+    allFiles = allFiles.filter(file => {
+      const nameLower = file.name.toLowerCase();
+      for (const keyword of excludeKeywords) {
+        if (nameLower.includes(keyword.toLowerCase())) {
+          console.log(`🚫 Excluding file with banned keyword "${keyword}": ${file.name} (${file.id})`);
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    if (allFiles.length < beforeCount) {
+      console.log(`Excluded ${beforeCount - allFiles.length} files with banned keywords`);
+    }
+    
+    // 4. Final reporting
+    console.log(`=======================================`);
+    console.log(`RECURSIVE SEARCH SUMMARY:`);
+    console.log(`Total files & folders found: ${allFiles.length}`);
+    
+    const folders = allFiles.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
+    console.log(`Folders: ${folders.length}`);
+    
+    const files = allFiles.filter(f => f.mimeType !== 'application/vnd.google-apps.folder');
+    console.log(`Files: ${files.length}`);
+    
+    // Count by file type
+    const fileTypes: Record<string, number> = {};
+    allFiles.forEach(file => {
+      const type = file.mimeType || 'unknown';
+      fileTypes[type] = (fileTypes[type] || 0) + 1;
+    });
+    console.log('File types:', fileTypes);
+    
+    // Verify no shortcuts in final results
+    const shortcutCount = allFiles.filter(file => file.mimeType === 'application/vnd.google-apps.shortcut').length;
+    if (shortcutCount > 0) {
+      console.warn(`WARNING: ${shortcutCount} shortcuts were found in results - removing them now`);
+      // Remove any shortcuts that might have slipped through
+      allFiles = allFiles.filter(file => file.mimeType !== 'application/vnd.google-apps.shortcut');
+    } else {
+      console.log('✓ No shortcuts in results (correctly filtered)');
+    }
+    
+    // Check if root folder is in results
+    const rootInResults = allFiles.some(f => f.id === folderId);
+    console.log(`Root folder in results: ${rootInResults ? 'Yes' : 'No'}`);
+    console.log(`=======================================`);
+    
+    return {
+      files: allFiles,
+      totalCount: allFiles.length,
+      hasExceededLimit
+    };
+  } catch (error) {
+    console.error('Error in searchSpecificFolder:', error);
+    return {
+      files: [],
+      totalCount: 0,
+      hasExceededLimit: false
+    };
   }
 } 

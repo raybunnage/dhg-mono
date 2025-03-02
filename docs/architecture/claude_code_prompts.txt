@@ -1,6 +1,11 @@
 
 
-
+Make a new page called "Docs".
+It will be a dashboard similar to the other dashboards you've built for me. 
+Its purpose is to help  me manage my markedown documentation files that are in my docs folder in the root of the mono repo.  Here's some of the problems it should help me with
+1) many new markdown files are created and they are all over the place - in the apps folder, in the root folder, in other folders - I need to consoldiate the strays
+2) my prompt markdown files.  These are very important files as they are loaded and applied to my code to guide ai sessions.  The obvious choice wouold be to have the prompts folder be the only source of truth for these files, but I found out that they needed to be with an apps folder in the public folder for it to work, so on therre is a symlink to the public file in my local apps prompt folder. I need a better way to handle this as it makes having a source of truth difficult
+3) then there is the problem of know when the markdown file was created
 
 
 
