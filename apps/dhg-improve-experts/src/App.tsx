@@ -32,6 +32,7 @@ import Sync from '@/pages/Sync';
 import Write from '@/pages/Write';
 import Show from '@/pages/Show';
 import AI from '@/pages/AI';
+import Cmds from '@/pages/Cmds';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
 import GutsExample from '@/pages/GutsExample';
 
@@ -111,6 +112,7 @@ function App() {
           <Route path="/docs" element={<Docs />} />
           <Route path="/show" element={<Show />} />
           <Route path="/ai" element={<AI />} />
+          <Route path="/cmds" element={<Cmds />} />
           <Route path="/registry" element={<RegistryViewer />} />
           <Route path="/guts-example" element={<GutsExample />} />
         </Routes>
