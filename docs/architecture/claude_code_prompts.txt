@@ -6,6 +6,171 @@ Here is what is working well for me that I need the dashboard to support:
 2) something that lists all the prompts based on their filenames - and maybe has the last associated date that the file was updated - but sopmethjing simople based on the stored file metadata on my local project.  This sits on top of a simple markdown viewer
 3) Other functions I need - a markdown viewer that will allow me to read the prompts. The viewer will alway be reading from a local version of the markdown file that is stored in my root docs folder in some subfolder - for now
 4) Other functions you can think of that would be helpful in using the claude api for sonnet 3.7 - for example - other properties such as temperature (whicih I almosrt always make 0 as I don't want the ai to make anything up).  These settings would be stored in localsttorage so the values would persist over multiple sessionhs (or eventually perhaps in the database - but not yet)
+Here are some paths to prompts I am buidling or have built so far: docs/prompts/code-analysis-prompt.md
+docs/prompts/document-classification-prompt.md
+docs/prompts/react-component-analysis-prompt.md
+docs/prompts/expert-extraction-prompt.md
+These prompt are very effective in extracting the content from the source files they are applied to.
+One more thing to consider is that applying the prompts will be based most likely on what document type a file is classified as - below is what the json is for that table.  This should somehow be integrated into your design.  In the future there will be a relationship between the prompt and the document type - I will probably be building them out by document type - so now that I think about it if you listed the files by document types - I could select a certain of number of them to improve the prompt generation.  In fact as I build out new prompts I may want to create a new document type (problably of json mime type - and then I can apply that to the expert_documents after the ai processing on the content has finished - perhaps I can then even view prompts by input and output document tyes)
+
+-- types of primary tables in the database involved in prompts extraction are shown below
+
+{
+  "document_types": {
+    "Row": {
+      "ai_processing_rules": "Json | null",
+      "category": "string",
+      "content_schema": "Json | null",
+      "created_at": "string",
+      "current_num_of_type": "number | null",
+      "description": "string | null",
+      "document_type": "string",
+      "document_type_counts": "number | null",
+      "file_extension": "string | null",
+      "id": "string",
+      "is_ai_generated": "boolean",
+      "legacy_document_type_id": "number | null",
+      "mime_type": "string | null",
+      "required_fields": "Json | null",
+      "updated_at": "string",
+      "validation_rules": "Json | null"
+    },
+    "Relationships": []
+  }
+}
+
+{
+  "sources_google": {
+    "Row": {
+      "created_at": "string",
+      "created_by": "string | null",
+      "drive_id": "string",
+      "file_extension": "string | null",
+      "file_hash": "string | null",
+      "file_size": "number | null",
+      "folder_path": "string | null",
+      "id": "string",
+      "is_folder": "boolean | null",
+      "is_google_doc": "boolean | null",
+      "is_google_sheet": "boolean | null",
+      "is_google_slide": "boolean | null",
+      "is_processed": "boolean | null",
+      "is_trashed": "boolean | null",
+      "last_modified": "string | null",
+      "last_modified_by": "string | null",
+      "mime_type": "string | null",
+      "name": "string",
+      "parent_folder_id": "string | null",
+      "processing_error": "string | null",
+      "processing_status": "string | null",
+      "shared_with": "string[] | null",
+      "updated_at": "string",
+      "updated_by": "string | null",
+      "web_view_link": "string | null"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "sources_google_parent_folder_id_fkey",
+        "columns": ["parent_folder_id"],
+        "isOneToOne": false,
+        "referencedRelation": "sources_google",
+        "referencedColumns": ["id"]
+      }
+    ]
+  },
+  "expert_documents": {
+    "Row": {
+      "ai_analysis": "Json | null",
+      "ai_processing_details": "Json | null",
+      "batch_id": "string | null",
+      "classification_confidence": "number | null",
+      "classification_metadata": "Json | null",
+      "confidence_score": "number | null",
+      "content_type": "string | null",
+      "created_at": "string",
+      "diarization_complete": "boolean | null",
+      "document_type_id": "string | null",
+      "error_message": "string | null",
+      "expert_id": "string | null",
+      "id": "string",
+      "is_latest": "boolean | null",
+      "key_insights": "string[] | null",
+      "language": "string | null",
+      "last_error_at": "string | null",
+      "last_processed_at": "string | null",
+      "last_viewed_at": "string | null",
+      "model_used": "string | null",
+      "previous_version_id": "string | null",
+      "processed_at": "string | null",
+      "processed_content": "Json | null",
+      "processing_completed_at": "string | null",
+      "processing_error": "string | null",
+      "processing_started_at": "string | null",
+      "processing_stats": "Json | null",
+      "processing_status": "string | null",
+      "prompt_used": "string | null",
+      "queued_at": "string | null",
+      "raw_content": "string | null",
+      "retry_count": "number | null",
+      "source_id": "string",
+      "status": "string | null",
+      "structure": "Json | null",
+      "summary_complete": "boolean | null",
+      "token_count": "number | null",
+      "topics": "string[] | null",
+      "transcription_complete": "boolean | null",
+      "updated_at": "string",
+      "version": "number | null",
+      "whisper_model_used": "string | null",
+      "word_count": "number | null"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "expert_documents_batch_id_fkey",
+        "columns": ["batch_id"],
+        "isOneToOne": false,
+        "referencedRelation": "batch_processing_status",
+        "referencedColumns": ["batch_id"]
+      },
+      {
+        "foreignKeyName": "expert_documents_batch_id_fkey",
+        "columns": ["batch_id"],
+        "isOneToOne": false,
+        "referencedRelation": "processing_batches",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "expert_documents_document_type_id_fkey",
+        "columns": ["document_type_id"],
+        "isOneToOne": false,
+        "referencedRelation": "document_types",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "expert_documents_expert_id_fkey",
+        "columns": ["expert_id"],
+        "isOneToOne": false,
+        "referencedRelation": "experts",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "expert_documents_previous_version_id_fkey",
+        "columns": ["previous_version_id"],
+        "isOneToOne": false,
+        "referencedRelation": "expert_documents",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "expert_documents_source_id_fkey",
+        "columns": ["source_id"],
+        "isOneToOne": false,
+        "referencedRelation": "sources_google",
+        "referencedColumns": ["id"]
+      }
+    ]
+  }
+}
+
 
 
 
