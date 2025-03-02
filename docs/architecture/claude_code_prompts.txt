@@ -1,6 +1,387 @@
 
+Make a new page called Show.
+It will be a dashboard similar to the other dashboards you've built for me. 
+It is ultimately going to be a prototype of a dedciated application I will be building.
+It involves these 10 tables I am giving you the json for that are already in the datgabase but empty.
+The presentations table is the most important as there will be one for every MP4 we have in the system - which now is about 166.  This is the presentation we are building context around - so all of these assets are files that exist mostly on the google drive and are represented in the sources_google file.  In addition most of these files will have been processed by ai or other means and their json or summaries will be in the expert_documents table. 
+
+I am including the the exact types from the 
+
+{
+  "presentation_assets": {
+    "Row": {
+      "asset_role": "asset_role_enum | null",
+      "asset_type": "asset_type_enum | null",
+      "asset_type_id": "string | null",
+      "created_at": "string",
+      "expert_document_id": "string | null",
+      "id": "string",
+      "importance_level": "number | null",
+      "metadata": "Json | null",
+      "presentation_id": "string | null",
+      "source_id": "string | null",
+      "timestamp_end": "number | null",
+      "timestamp_start": "number | null",
+      "updated_at": "string",
+      "user_notes": "string | null"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "presentation_assets_asset_type_id_fkey",
+        "columns": ["asset_type_id"],
+        "referencedRelation": "asset_types",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "presentation_assets_expert_document_id_fkey",
+        "columns": ["expert_document_id"],
+        "referencedRelation": "expert_documents",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "presentation_assets_presentation_id_fkey",
+        "columns": ["presentation_id"],
+        "referencedRelation": "presentations",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "presentation_assets_source_id_fkey",
+        "columns": ["source_id"],
+        "referencedRelation": "sources_google",
+        "referencedColumns": ["id"]
+      }
+    ]
+  },
+  "presentation_collection_items": {
+    "Row": {
+      "collection_id": "string",
+      "created_at": "string | null",
+      "notes": "string | null",
+      "position": "number",
+      "presentation_id": "string"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "presentation_collection_items_collection_id_fkey",
+        "columns": ["collection_id"],
+        "referencedRelation": "presentation_collections",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "presentation_collection_items_presentation_id_fkey",
+        "columns": ["presentation_id"],
+        "referencedRelation": "sources_google",
+        "referencedColumns": ["id"]
+      }
+    ]
+  },
+  "presentation_collections": {
+    "Row": {
+      "created_at": "string | null",
+      "description": "string | null",
+      "id": "string",
+      "is_public": "boolean | null",
+      "name": "string",
+      "updated_at": "string | null"
+    },
+    "Relationships": []
+  },
+  "presentation_relationships": {
+    "Row": {
+      "created_at": "string | null",
+      "relationship_type": "string",
+      "source_presentation_id": "string",
+      "strength": "number | null",
+      "target_presentation_id": "string"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "presentation_relationships_source_presentation_id_fkey",
+        "columns": ["source_presentation_id"],
+        "referencedRelation": "presentations",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "presentation_relationships_target_presentation_id_fkey",
+        "columns": ["target_presentation_id"],
+        "referencedRelation": "presentations",
+        "referencedColumns": ["id"]
+      }
+    ]
+  },
+  "presentation_search_index": {
+    "Row": {
+      "content_vector": "unknown | null",
+      "presentation_id": "string",
+      "title_vector": "unknown | null",
+      "updated_at": "string | null"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "presentation_search_index_presentation_id_fkey",
+        "columns": ["presentation_id"],
+        "isOneToOne": true,
+        "referencedRelation": "sources_google",
+        "referencedColumns": ["id"]
+      }
+    ]
+  },
+  "presentation_tag_links": {
+    "Row": {
+      "created_at": "string | null",
+      "presentation_id": "string",
+      "tag_id": "string"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "presentation_tag_links_presentation_id_fkey",
+        "columns": ["presentation_id"],
+        "referencedRelation": "sources_google",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "presentation_tag_links_tag_id_fkey",
+        "columns": ["tag_id"],
+        "referencedRelation": "presentation_tags",
+        "referencedColumns": ["id"]
+      }
+    ]
+  },
+  "presentation_tags": {
+    "Row": {
+      "color": "string | null",
+      "created_at": "string | null",
+      "id": "string",
+      "name": "string"
+    },
+    "Relationships": []
+  },
+  "presentation_theme_links": {
+    "Row": {
+      "created_at": "string | null",
+      "presentation_id": "string",
+      "relevance_score": "number | null",
+      "theme_id": "string"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "presentation_theme_links_presentation_id_fkey",
+        "columns": ["presentation_id"],
+        "referencedRelation": "sources_google",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "presentation_theme_links_theme_id_fkey",
+        "columns": ["theme_id"],
+        "referencedRelation": "presentation_themes",
+        "referencedColumns": ["id"]
+      }
+    ]
+  },
+  "presentation_themes": {
+    "Row": {
+      "ai_confidence": "number | null",
+      "created_at": "string | null",
+      "description": "string | null",
+      "id": "string",
+      "name": "string"
+    },
+    "Relationships": []
+  },
+  "presentations": {
+    "Row": {
+      "created_at": "string | null",
+      "duration": "unknown | null",
+      "duration_seconds": "number | null",
+      "filename": "string",
+      "folder_path": "string",
+      "id": "string",
+      "is_public": "boolean | null",
+      "main_video_id": "string | null",
+      "metadata": "Json | null",
+      "presenter_name": "string | null",
+      "recorded_date": "string | null",
+      "title": "string | null",
+      "transcript": "string | null",
+      "transcript_status": "string | null",
+      "updated_at": "string | null",
+      "view_count": "number | null"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "presentations_main_video_id_fkey",
+        "columns": ["main_video_id"],
+        "referencedRelation": "sources_google",
+        "referencedColumns": ["id"]
+      }
+    ]
+  }
+}
+
+Here are the types for the two crucial tables that the presentation tables are built on top of: 
+{
+  "expert_documents": {
+    "Row": {
+      "ai_analysis": "Json | null",
+      "ai_processing_details": "Json | null",
+      "batch_id": "string | null",
+      "classification_confidence": "number | null",
+      "classification_metadata": "Json | null",
+      "confidence_score": "number | null",
+      "content_type": "string | null",
+      "created_at": "string",
+      "diarization_complete": "boolean | null",
+      "document_type_id": "string | null",
+      "error_message": "string | null",
+      "expert_id": "string | null",
+      "id": "string",
+      "is_latest": "boolean | null",
+      "key_insights": "string[] | null",
+      "language": "string | null",
+      "last_error_at": "string | null",
+      "last_processed_at": "string | null",
+      "last_viewed_at": "string | null",
+      "model_used": "string | null",
+      "previous_version_id": "string | null",
+      "processed_at": "string | null",
+      "processed_content": "Json | null",
+      "processing_completed_at": "string | null",
+      "processing_error": "string | null",
+      "processing_started_at": "string | null",
+      "processing_stats": "Json | null",
+      "processing_status": "string | null",
+      "prompt_used": "string | null",
+      "queued_at": "string | null",
+      "raw_content": "string | null",
+      "retry_count": "number | null",
+      "source_id": "string",
+      "status": "string | null",
+      "structure": "Json | null",
+      "summary_complete": "boolean | null",
+      "token_count": "number | null",
+      "topics": "string[] | null",
+      "transcription_complete": "boolean | null",
+      "updated_at": "string",
+      "version": "number | null",
+      "whisper_model_used": "string | null",
+      "word_count": "number | null"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "expert_documents_batch_id_fkey",
+        "columns": ["batch_id"],
+        "isOneToOne": false,
+        "referencedRelation": "batch_processing_status",
+        "referencedColumns": ["batch_id"]
+      },
+      {
+        "foreignKeyName": "expert_documents_batch_id_fkey",
+        "columns": ["batch_id"],
+        "isOneToOne": false,
+        "referencedRelation": "processing_batches",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "expert_documents_document_type_id_fkey",
+        "columns": ["document_type_id"],
+        "isOneToOne": false,
+        "referencedRelation": "document_types",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "expert_documents_expert_id_fkey",
+        "columns": ["expert_id"],
+        "isOneToOne": false,
+        "referencedRelation": "experts",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "expert_documents_previous_version_id_fkey",
+        "columns": ["previous_version_id"],
+        "isOneToOne": false,
+        "referencedRelation": "expert_documents",
+        "referencedColumns": ["id"]
+      },
+      {
+        "foreignKeyName": "expert_documents_source_id_fkey",
+        "columns": ["source_id"],
+        "isOneToOne": false,
+        "referencedRelation": "sources_google",
+        "referencedColumns": ["id"]
+      }
+    ]
+  },
+  "sources_google": {
+    "Row": {
+      "created_at": "string",
+      "created_by": "string | null",
+      "drive_id": "string",
+      "file_extension": "string | null",
+      "file_hash": "string | null",
+      "file_size": "number | null",
+      "folder_path": "string | null",
+      "id": "string",
+      "is_folder": "boolean | null",
+      "is_google_doc": "boolean | null",
+      "is_google_sheet": "boolean | null",
+      "is_google_slide": "boolean | null",
+      "is_processed": "boolean | null",
+      "is_trashed": "boolean | null",
+      "last_modified": "string | null",
+      "last_modified_by": "string | null",
+      "mime_type": "string | null",
+      "name": "string",
+      "parent_folder_id": "string | null",
+      "processing_error": "string | null",
+      "processing_status": "string | null",
+      "shared_with": "string[] | null",
+      "updated_at": "string",
+      "updated_by": "string | null",
+      "web_view_link": "string | null"
+    },
+    "Relationships": [
+      {
+        "foreignKeyName": "sources_google_parent_folder_id_fkey",
+        "columns": ["parent_folder_id"],
+        "isOneToOne": false,
+        "referencedRelation": "sources_google",
+        "referencedColumns": ["id"]
+      }
+    ]
+  }
+}
+
+
 
 Make a new page called "Docs".
+
+-- claude code:
+1. Fixed the Supabase import path in Docs.tsx
+  2. Modified database query methods to work even if the documentation tables
+  don't exist yet
+  3. Added mock data and error handling for file tree display
+  4. Improved file content loading with fallbacks to local content
+  5. Created a comprehensive script (process-documentation.ts) to help manage
+  documentation files
+
+  The Docs dashboard page is now ready to use and includes:
+  - File tree navigation
+  - Markdown content viewer
+  - Search functionality
+  - Tag-based filtering
+  - Document statistics
+
+  The script in scripts/process-documentation.ts helps solve your problems by:
+  1. Scanning and consolidating markdown files from different locations
+  2. Managing prompt files between apps and public folders
+  3. Tracking document metadata including creation/modification dates
+  4. Creating a central database for all documentation
+
+  You can start using the page at http://localhost:5174/docs
+
+
+
+
 It will be a dashboard similar to the other dashboards you've built for me. 
 Its purpose is to help  me manage my markdown documentation files that are in my docs folder in the root of the mono repo.  Here's some of the problems it should help me with
 1) many new markdown files are created and they are all over the place - in the apps folder, in the root folder, in other folders - I need to consoldiate the strays

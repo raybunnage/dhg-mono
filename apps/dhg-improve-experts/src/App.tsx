@@ -27,6 +27,7 @@ import { FileTree } from './pages/FileTree';
 import { BatchProcessingMonitor } from './components/BatchProcessingMonitor';
 import Viewer from '@/pages/Viewer';
 import Dashboard from '@/pages/Dashboard';
+import Docs from '@/pages/Docs';
 import Sync from '@/pages/Sync';
 import Write from '@/pages/Write';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
@@ -105,6 +106,7 @@ function App() {
           <Route path="/code" element={<CodeDashboard />} />
           <Route path="/write" element={<Write />} />
           <Route path="/analyze" element={<Analyze />} />
+          <Route path="/docs" element={<Docs />} />
           <Route path="/registry" element={<RegistryViewer />} />
           <Route path="/guts-example" element={<GutsExample />} />
         </Routes>
