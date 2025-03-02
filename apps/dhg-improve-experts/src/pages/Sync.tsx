@@ -1641,14 +1641,26 @@ function Sync() {
                   
                   <div className="bg-white p-3 rounded-lg shadow-sm">
                     <h4 className="font-medium text-gray-800 mb-2">File Type Distribution</h4>
-                    <ul className="text-sm">
-                      {specificFolderStats && Object.entries(specificFolderStats.fileTypes || {}).map(([type, count]) => (
-                        <li key={type} className="mb-1 flex justify-between">
-                          <span className="truncate max-w-[200px]">{type}</span>
-                          <span className="font-medium">{count}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="overflow-x-auto max-h-[300px]">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr>
+                            <th className="text-left font-medium text-gray-500 pb-2">MIME Type</th>
+                            <th className="text-right font-medium text-gray-500 pb-2">Count</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {specificFolderStats && Object.entries(specificFolderStats.fileTypes || {})
+                            .sort((a, b) => b[1] - a[1]) // Sort by count descending
+                            .map(([type, count]) => (
+                              <tr key={type} className="border-t border-gray-100">
+                                <td className="py-1 pr-4 break-all">{type}</td>
+                                <td className="py-1 text-right font-medium">{count}</td>
+                              </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
                 
@@ -1685,56 +1697,154 @@ function Sync() {
               </div>
             
               <h3 className="text-lg font-medium mb-2">Files and Folders Found ({specificFolderFiles.length})</h3>
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Parent
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {specificFolderFiles.map((file) => (
-                    <tr key={file.id}>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                        {file.mimeType === 'application/vnd.google-apps.folder' ? (
-                          <span className="flex items-center">
-                            <span className="mr-2">📂</span> {file.name}
-                          </span>
-                        ) : (
-                          <span className="flex items-center">
-                            <span className="mr-2">📄</span> {file.name}
-                          </span>
+              
+              {/* Hierarchical Tree View */}
+              <div className="bg-white p-5 rounded-lg shadow-sm mb-6 overflow-x-auto">
+                <h4 className="font-medium text-gray-800 mb-3">Hierarchical View</h4>
+                
+                {/* Root folder first */}
+                {specificFolderFiles.find(f => f.id === specificFolderId) && (
+                  <div className="mb-3">
+                    <div className="font-medium flex items-start text-base">
+                      <span className="mr-2 text-lg">📂</span> 
+                      <span>{specificFolderFiles.find(f => f.id === specificFolderId)?.name}</span>
+                    </div>
+                    
+                    {/* Direct children of root */}
+                    <div className="ml-8 mt-2 border-l-2 border-gray-200">
+                      {/* First show subfolders */}
+                      {specificFolderFiles
+                        .filter(f => f.mimeType === 'application/vnd.google-apps.folder' && 
+                                 f.id !== specificFolderId && 
+                                 f.parents && 
+                                 f.parents.includes(specificFolderId))
+                        .map(folder => (
+                          <div key={folder.id} className="mb-4 pl-4 -ml-px border-l border-transparent hover:border-blue-300">
+                            <div className="font-medium flex items-center">
+                              <span className="mr-2">📂</span> {folder.name}
+                              <span className="ml-2 text-xs text-gray-500">({
+                                specificFolderFiles.filter(f => f.parents && f.parents.includes(folder.id)).length
+                              } items)</span>
+                            </div>
+                            
+                            {/* Files in this subfolder */}
+                            <div className="ml-6 mt-1">
+                              {specificFolderFiles
+                                .filter(f => f.mimeType !== 'application/vnd.google-apps.folder' && 
+                                         f.parents && 
+                                         f.parents.includes(folder.id))
+                                .slice(0, 5) // Limit to first 5 files per folder
+                                .map(file => (
+                                  <div key={file.id} className="text-sm py-1 flex items-center text-gray-700">
+                                    <span className="mr-2">📄</span> {file.name}
+                                  </div>
+                                ))}
+                              
+                              {/* Show count if there are more files */}
+                              {specificFolderFiles.filter(f => 
+                                f.mimeType !== 'application/vnd.google-apps.folder' && 
+                                f.parents && 
+                                f.parents.includes(folder.id)
+                              ).length > 5 && (
+                                <div className="text-xs text-gray-500 mt-1 italic">
+                                  ...and {specificFolderFiles.filter(f => 
+                                    f.mimeType !== 'application/vnd.google-apps.folder' && 
+                                    f.parents && 
+                                    f.parents.includes(folder.id)
+                                  ).length - 5} more files
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      
+                      {/* Then show root-level files */}
+                      <div className="mt-2">
+                        {specificFolderFiles
+                          .filter(f => f.mimeType !== 'application/vnd.google-apps.folder' && 
+                                   f.parents && 
+                                   f.parents.includes(specificFolderId))
+                          .slice(0, 10) // Limit to first 10 files
+                          .map(file => (
+                            <div key={file.id} className="py-1 pl-4 -ml-px flex items-center text-gray-700 border-l border-transparent hover:border-blue-300">
+                              <span className="mr-2">📄</span> {file.name}
+                            </div>
+                          ))}
+                        
+                        {/* Show count if there are more files */}
+                        {specificFolderFiles.filter(f => 
+                          f.mimeType !== 'application/vnd.google-apps.folder' && 
+                          f.parents && 
+                          f.parents.includes(specificFolderId)
+                        ).length > 10 && (
+                          <div className="text-sm text-gray-500 mt-1 pl-4 italic">
+                            ...and {specificFolderFiles.filter(f => 
+                              f.mimeType !== 'application/vnd.google-apps.folder' && 
+                              f.parents && 
+                              f.parents.includes(specificFolderId)
+                            ).length - 10} more files
+                          </div>
                         )}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 truncate" style={{maxWidth: '200px'}}>
-                        {file.mimeType}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-mono">
-                        {file.id.substring(0, 10)}...
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {file.parents && Array.isArray(file.parents) && file.parents.length > 0 ? (
-                          <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                            {file.parents[0].substring(0, 8)}...
-                          </span>
-                        ) : (
-                          <span className="text-xs">No parent</span>
-                        )}
-                      </td>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Flat Table View (Original) */}
+              <div className="mt-6">
+                <h4 className="font-medium text-gray-800 mb-3">Complete File List</h4>
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ID
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Parent
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {specificFolderFiles.map((file) => (
+                      <tr key={file.id}>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                          {file.mimeType === 'application/vnd.google-apps.folder' ? (
+                            <span className="flex items-center">
+                              <span className="mr-2">📂</span> {file.name}
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              <span className="mr-2">📄</span> {file.name}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 break-all" style={{maxWidth: '300px'}}>
+                          {file.mimeType}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-mono">
+                          {file.id.substring(0, 10)}...
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {file.parents && Array.isArray(file.parents) && file.parents.length > 0 ? (
+                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                              {file.parents[0].substring(0, 8)}...
+                            </span>
+                          ) : (
+                            <span className="text-xs">No parent</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
