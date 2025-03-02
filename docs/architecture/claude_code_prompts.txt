@@ -2,10 +2,384 @@
 
 Make a new page called "Docs".
 It will be a dashboard similar to the other dashboards you've built for me. 
-Its purpose is to help  me manage my markedown documentation files that are in my docs folder in the root of the mono repo.  Here's some of the problems it should help me with
+Its purpose is to help  me manage my markdown documentation files that are in my docs folder in the root of the mono repo.  Here's some of the problems it should help me with
 1) many new markdown files are created and they are all over the place - in the apps folder, in the root folder, in other folders - I need to consoldiate the strays
 2) my prompt markdown files.  These are very important files as they are loaded and applied to my code to guide ai sessions.  The obvious choice wouold be to have the prompts folder be the only source of truth for these files, but I found out that they needed to be with an apps folder in the public folder for it to work, so on therre is a symlink to the public file in my local apps prompt folder. I need a better way to handle this as it makes having a source of truth difficult
-3) then there is the problem of know when the markdown file was created
+3) then there is the problem of know when the markdown file was created - for that I have created these objects in sql to help manage the process - which you can use in your solution
+4) I have settled on a hybrid approach to handling the markdown docs
+First you'll see the database metadata I hope to fill - below
+Second you have the database functions that have been created that work with these tables
+Third - you have instrudtions below here that describes the hybrid approach - note that I have installed the 2 depencides of "marked" and "crypto" that the code depends on
+Fourth - hhere is the link to apps/dhg-improve-experts/src/services/documentationService.ts which contains the matching front end code
+Fifth - I am sharing the script utility path that is designed to drive the updates: scripts/process-documentation.ts
+Sixth - this docs folder will need a markdown viewer integrated into it that will allow me to view the nicely formatted markdown files and there needs to be a tree type of control that will help me choose the file to view easily
+Seventh there needs to be a search window that will narrow down the choices of what to view
+Eighth - just having the dagte of the update or creation of the markdown file in some ui based element could be very helpful because then I could use history to find them - or a combination
+Okay - lets see what you create on these specs
+
+
+---------- HERE ARE THE VARIOUS OBJECTS INVOLVED - IF THAT HELPS
+Summary of Implementation
+I've implemented a comprehensive documentation management system according to your requirements. Here's what I've created:
+Database Structure
+Migration Files:
+Created SQL migration files for tables, functions, and search capabilities
+Included corresponding down migrations for each file
+These files are ready to be run in the Supabase UI
+Backend Implementation
+DocumentationService:
+Created a TypeScript service that handles:
+Processing markdown files (extracting frontmatter, sections)
+Registering files in the database
+Generating summaries and tags (with placeholder AI functionality)
+Detecting relationships between documents
+Searching and retrieving documentation
+Command-Line Tool:
+Created a script to process documentation files
+Supports scanning directories, processing individual files, and batch processing
+Documentation
+Usage Guide:
+Created a comprehensive markdown guide explaining the system
+Includes instructions for setup, usage, and future enhancements
+Key Features
+Metadata Tracking: Stores metadata about markdown files without modifying them
+AI Integration: Placeholder implementation for AI-powered summaries and tagging
+Search Functionality: Full-text search with relevance ranking
+Relationship Detection: Identifies links between documents
+Section Navigation: Tracks document structure for easy navigation
+Next Steps
+As requested, I've focused on the database structure and backend implementation without modifying the UI. The next steps would be:
+Run the migration files in the Supabase UI
+Install the required dependencies (marked and crypto)
+Create a docs directory and add some markdown files
+Run the processing script to populate the database
+Implement a UI for browsing and searching documentation
+Would you like me to make any adjustments to the implementation or explain any part in more detail?
+
+
+
+here are the tables and objects created for managing the document files as metadata
+-- Migration: Create Documentation Management System Tables
+-- Description: Sets up tables for tracking markdown documentation files and their metadata
+
+-- Documentation files table - stores metadata about markdown files
+CREATE TABLE documentation_files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_path TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  summary TEXT,
+  ai_generated_tags TEXT[],
+  manual_tags TEXT[],
+  last_modified_at TIMESTAMPTZ NOT NULL,
+  last_indexed_at TIMESTAMPTZ NOT NULL,
+  file_hash TEXT, -- For detecting changes
+  metadata JSONB, -- Extracted frontmatter, headings, etc.
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Documentation relations table - tracks relationships between documents
+CREATE TABLE documentation_relations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source_id UUID REFERENCES documentation_files(id) ON DELETE CASCADE NOT NULL,
+  target_id UUID REFERENCES documentation_files(id) ON DELETE CASCADE NOT NULL,
+  relation_type TEXT NOT NULL, -- 'reference', 'related', etc.
+  created_at TIMESTAMPTZ DEFAULT now(),
+  -- Prevent duplicate relations
+  CONSTRAINT unique_documentation_relation UNIQUE (source_id, target_id, relation_type)
+);
+
+-- Documentation sections table - tracks sections within documents
+CREATE TABLE documentation_sections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_id UUID REFERENCES documentation_files(id) ON DELETE CASCADE NOT NULL,
+  heading TEXT NOT NULL,
+  level INTEGER NOT NULL, -- h1, h2, etc.
+  position INTEGER NOT NULL, -- Order in document
+  anchor_id TEXT NOT NULL, -- For direct linking
+  summary TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  -- Ensure unique anchors within a document
+  CONSTRAINT unique_section_anchor UNIQUE (file_id, anchor_id)
+);
+
+-- Documentation processing queue - tracks files that need AI processing
+CREATE TABLE documentation_processing_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_id UUID REFERENCES documentation_files(id) ON DELETE CASCADE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'processing', 'completed', 'failed'
+  priority INTEGER NOT NULL DEFAULT 1,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_attempt_at TIMESTAMPTZ,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_documentation_files_path ON documentation_files (file_path);
+CREATE INDEX idx_documentation_files_tags ON documentation_files USING GIN (ai_generated_tags, manual_tags);
+CREATE INDEX idx_documentation_sections_file_id ON documentation_sections (file_id);
+CREATE INDEX idx_documentation_processing_queue_status ON documentation_processing_queue (status, priority);
+
+-- Create a function to update the updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.updated_at = now();
+   RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create triggers to automatically update the updated_at column
+CREATE TRIGGER update_documentation_files_updated_at
+BEFORE UPDATE ON documentation_files
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_documentation_sections_updated_at
+BEFORE UPDATE ON documentation_sections
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_documentation_processing_queue_updated_at
+BEFORE UPDATE ON documentation_processing_queue
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Create a function to add a file to the processing queue
+CREATE OR REPLACE FUNCTION queue_documentation_file_for_processing(file_id UUID, priority INTEGER DEFAULT 1)
+RETURNS UUID AS $$
+DECLARE
+  queue_id UUID;
+BEGIN
+  -- Check if file is already in queue
+  SELECT id INTO queue_id FROM documentation_processing_queue 
+  WHERE file_id = queue_documentation_file_for_processing.file_id AND status IN ('pending', 'processing');
+  
+  IF queue_id IS NULL THEN
+    -- Add to queue if not already there
+    INSERT INTO documentation_processing_queue (file_id, priority)
+    VALUES (file_id, priority)
+    RETURNING id INTO queue_id;
+  ELSE
+    -- Update priority if already in queue
+    UPDATE documentation_processing_queue
+    SET priority = GREATEST(priority, queue_documentation_file_for_processing.priority)
+    WHERE id = queue_id;
+  END IF;
+  
+  RETURN queue_id;
+END;
+$$ LANGUAGE plpgsql;
+
+here are the sql fuunctions available:
+-- Migration: Create Documentation Processing Functions
+-- Description: Functions for processing markdown files and managing documentation metadata
+
+-- Function to extract a filename from a path
+CREATE OR REPLACE FUNCTION extract_filename(file_path TEXT)
+RETURNS TEXT AS $$
+BEGIN
+  RETURN substring(file_path from '([^/]+)(?:\.[^.]+)?$');
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to register a markdown file in the system
+CREATE OR REPLACE FUNCTION register_markdown_file(
+  p_file_path TEXT,
+  p_title TEXT DEFAULT NULL,
+  p_file_hash TEXT DEFAULT NULL,
+  p_metadata JSONB DEFAULT '{}'::JSONB
+)
+RETURNS UUID AS $$
+DECLARE
+  v_file_id UUID;
+  v_title TEXT;
+BEGIN
+  -- Determine title if not provided
+  IF p_title IS NULL THEN
+    v_title := extract_filename(p_file_path);
+  ELSE
+    v_title := p_title;
+  END IF;
+
+  -- Check if file already exists
+  SELECT id INTO v_file_id FROM documentation_files WHERE file_path = p_file_path;
+  
+  IF v_file_id IS NULL THEN
+    -- Insert new file record
+    INSERT INTO documentation_files (
+      file_path,
+      title,
+      last_modified_at,
+      last_indexed_at,
+      file_hash,
+      metadata
+    ) VALUES (
+      p_file_path,
+      v_title,
+      now(),
+      now(),
+      p_file_hash,
+      p_metadata
+    )
+    RETURNING id INTO v_file_id;
+  ELSE
+    -- Update existing file record
+    UPDATE documentation_files
+    SET
+      title = v_title,
+      last_modified_at = now(),
+      last_indexed_at = now(),
+      file_hash = COALESCE(p_file_hash, file_hash),
+      metadata = COALESCE(p_metadata, metadata)
+    WHERE id = v_file_id;
+  END IF;
+  
+  -- Queue for AI processing
+  PERFORM queue_documentation_file_for_processing(v_file_id);
+  
+  RETURN v_file_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to register a section within a document
+CREATE OR REPLACE FUNCTION register_document_section(
+  p_file_id UUID,
+  p_heading TEXT,
+  p_level INTEGER,
+  p_position INTEGER,
+  p_anchor_id TEXT,
+  p_summary TEXT DEFAULT NULL
+)
+RETURNS UUID AS $$
+DECLARE
+  v_section_id UUID;
+BEGIN
+  -- Check if section already exists
+  SELECT id INTO v_section_id 
+  FROM documentation_sections 
+  WHERE file_id = p_file_id AND anchor_id = p_anchor_id;
+  
+  IF v_section_id IS NULL THEN
+    -- Insert new section
+    INSERT INTO documentation_sections (
+      file_id,
+      heading,
+      level,
+      position,
+      anchor_id,
+      summary
+    ) VALUES (
+      p_file_id,
+      p_heading,
+      p_level,
+      p_position,
+      p_anchor_id,
+      p_summary
+    )
+    RETURNING id INTO v_section_id;
+  ELSE
+    -- Update existing section
+    UPDATE documentation_sections
+    SET
+      heading = p_heading,
+      level = p_level,
+      position = p_position,
+      summary = COALESCE(p_summary, summary)
+    WHERE id = v_section_id;
+  END IF;
+  
+  RETURN v_section_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to register a relationship between documents
+CREATE OR REPLACE FUNCTION register_document_relation(
+  p_source_id UUID,
+  p_target_id UUID,
+  p_relation_type TEXT
+)
+RETURNS UUID AS $$
+DECLARE
+  v_relation_id UUID;
+BEGIN
+  -- Check if relation already exists
+  SELECT id INTO v_relation_id 
+  FROM documentation_relations 
+  WHERE source_id = p_source_id AND target_id = p_target_id AND relation_type = p_relation_type;
+  
+  IF v_relation_id IS NULL THEN
+    -- Insert new relation
+    INSERT INTO documentation_relations (
+      source_id,
+      target_id,
+      relation_type
+    ) VALUES (
+      p_source_id,
+      p_target_id,
+      p_relation_type
+    )
+    RETURNING id INTO v_relation_id;
+  END IF;
+  
+  RETURN v_relation_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to update document AI-generated metadata
+CREATE OR REPLACE FUNCTION update_document_ai_metadata(
+  p_file_id UUID,
+  p_summary TEXT,
+  p_ai_generated_tags TEXT[]
+)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE documentation_files
+  SET
+    summary = p_summary,
+    ai_generated_tags = p_ai_generated_tags
+  WHERE id = p_file_id;
+  
+  -- Mark processing as complete
+  UPDATE documentation_processing_queue
+  SET
+    status = 'completed',
+    updated_at = now()
+  WHERE file_id = p_file_id AND status = 'processing';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get the next file for AI processing
+CREATE OR REPLACE FUNCTION get_next_file_for_processing()
+RETURNS TABLE (
+  queue_id UUID,
+  file_id UUID,
+  file_path TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  WITH next_file AS (
+    SELECT 
+      dpq.id as queue_id,
+      dpq.file_id,
+      df.file_path
+    FROM documentation_processing_queue dpq
+    JOIN documentation_files df ON dpq.file_id = df.id
+    WHERE dpq.status = 'pending'
+    ORDER BY dpq.priority DESC, dpq.created_at ASC
+    LIMIT 1
+    FOR UPDATE SKIP LOCKED
+  )
+  UPDATE documentation_processing_queue dpq
+  SET 
+    status = 'processing',
+    attempts = attempts + 1,
+    last_attempt_at = now()
+  FROM next_file
+  WHERE dpq.id = next_file.queue_id
+  RETURNING next_file.queue_id, next_file.file_id, next_file.file_path;
+END;
+$$ LANGUAGE plpgsql;
 
 
 
