@@ -24,10 +24,17 @@ export const initiateGoogleAuth = () => {
       localStorage.setItem('google_refresh_token', refreshToken);
     }
     
-    // Set expiration (1 hour from now as default)
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1);
+    // Set acquisition time to now
+    const acquiredAt = new Date();
+    localStorage.setItem('google_token_acquired_at', acquiredAt.toISOString());
+    
+    // Set expiration (60 minutes from now to account for token validity)
+    const expiresAt = new Date(acquiredAt);
+    expiresAt.setMinutes(expiresAt.getMinutes() + 60);
     localStorage.setItem('google_token_expires_at', expiresAt.toISOString());
+    
+    console.log('Token acquired at:', acquiredAt.toLocaleTimeString());
+    console.log('Token expires at:', expiresAt.toLocaleTimeString());
     
     // Reload to reflect token state
     window.location.reload();
@@ -39,10 +46,17 @@ export const initiateGoogleAuth = () => {
   if (newToken) {
     localStorage.setItem('google_access_token', newToken);
     
-    // Set expiration (1 hour from now)
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1);
+    // Set acquisition time to now
+    const acquiredAt = new Date();
+    localStorage.setItem('google_token_acquired_at', acquiredAt.toISOString());
+    
+    // Set expiration (60 minutes from acquisition time)
+    const expiresAt = new Date(acquiredAt);
+    expiresAt.setMinutes(expiresAt.getMinutes() + 60);
     localStorage.setItem('google_token_expires_at', expiresAt.toISOString());
+    
+    console.log('Token entered manually at:', acquiredAt.toLocaleTimeString());
+    console.log('Token expires at:', expiresAt.toLocaleTimeString());
     
     // Force reload to apply the new token
     window.location.reload();
@@ -58,7 +72,7 @@ export const handleGoogleAuthCallback = async (code: string) => {
 };
 
 /**
- * Check if the user has a valid Google token
+ * Check if the user has a valid Google token and test it actually works
  */
 export const checkGoogleTokenStatus = async () => {
   try {
@@ -79,10 +93,14 @@ export const checkGoogleTokenStatus = async () => {
           localStorage.setItem('google_refresh_token', refreshToken);
         }
         
-        // Set expiration (1 hour from now as a fallback)
+        // Set expiration (59.5 minutes from now as a fallback)
         const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 1);
+        expiresAt.setMinutes(expiresAt.getMinutes() + 59);
+        expiresAt.setSeconds(expiresAt.getSeconds() + 30);
         localStorage.setItem('google_token_expires_at', expiresAt.toISOString());
+        // Also store the token acquisition time
+        localStorage.setItem('google_token_acquired_at', new Date().toISOString());
+        console.log('Using token from environment, expires at:', expiresAt.toLocaleTimeString());
       }
     }
     
@@ -90,51 +108,122 @@ export const checkGoogleTokenStatus = async () => {
       return { isValid: false, error: 'No access token available' };
     }
     
-    // Get expiration time (from localStorage or set a default)
+    // Get expiration time from localStorage
     let expiresAt;
     const expiresAtStr = localStorage.getItem('google_token_expires_at');
+    // Get token acquisition time from localStorage
+    let acquiredAt;
+    const acquiredAtStr = localStorage.getItem('google_token_acquired_at');
+    
     if (expiresAtStr) {
       expiresAt = new Date(expiresAtStr);
     } else {
-      // Default expiration is 1 hour from now
-      expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 1);
+      // If no expiration time is stored, we need to set one
+      // But first check if we have acquisition time
+      if (acquiredAtStr) {
+        acquiredAt = new Date(acquiredAtStr);
+        // If we have acquisition time, set expiration to 1 hour after acquisition
+        expiresAt = new Date(acquiredAt);
+        expiresAt.setHours(expiresAt.getHours() + 1);
+      } else {
+        // If no acquisition time, set both to now
+        acquiredAt = new Date();
+        expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1);
+        // Store the acquisition time
+        localStorage.setItem('google_token_acquired_at', acquiredAt.toISOString());
+      }
+      // Store the expiration time
       localStorage.setItem('google_token_expires_at', expiresAt.toISOString());
     }
     
-    // Verify the token is actually valid by making a test call to Google Drive API
-    try {
-      const response = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=1', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
+    // Check if we should skip validation in dev mode
+    const skipValidation = import.meta.env.DEV && localStorage.getItem('skip_token_validation') === 'true';
+    
+    if (skipValidation) {
+      console.log('DEV MODE: Skipping token validation for better development experience');
+      // In dev mode with skip_token_validation = true, we'll assume the token is valid
+      // This helps during development when you don't have a real token
       
-      if (!response.ok) {
-        // Token might be invalid, try to refresh it
-        const refreshResult = await refreshGoogleToken();
-        if (!refreshResult.success) {
-          return { isValid: false, error: 'Token validation failed' };
+      // Set acquisition time if needed
+      if (!acquiredAtStr) {
+        acquiredAt = new Date();
+        localStorage.setItem('google_token_acquired_at', acquiredAt.toISOString());
+      } else {
+        acquiredAt = new Date(acquiredAtStr);
+      }
+    } else {
+      // Normal mode - verify the token is actually valid with a test API call
+      try {
+        const response = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=1', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          console.log('Token validation failed with status:', response.status);
+          
+          // Token is invalid, try to refresh it
+          const refreshResult = await refreshGoogleToken();
+          if (!refreshResult.success) {
+            return { isValid: false, error: 'Token validation failed and refresh failed' };
+          }
+          
+          // Token refreshed successfully
+          expiresAt = new Date(refreshResult.expires_at);
+          // Set acquisition time to now
+          acquiredAt = new Date();
+          localStorage.setItem('google_token_acquired_at', acquiredAt.toISOString());
+          
+          return {
+            isValid: true,
+            expiresAt,
+            acquiredAt,
+            needsRefresh: false,
+            wasRefreshed: true
+          };
         }
         
-        // Token refreshed successfully
-        expiresAt = new Date(refreshResult.expires_at);
-        return {
-          isValid: true,
-          expiresAt,
-          needsRefresh: false
+        // Token is valid - if we don't have acquisition time, set it now
+        if (!acquiredAtStr) {
+          acquiredAt = new Date();
+          localStorage.setItem('google_token_acquired_at', acquiredAt.toISOString());
+        } else {
+          acquiredAt = new Date(acquiredAtStr);
+        }
+      } catch (error) {
+        console.error('Error validating token:', error);
+        return { 
+          isValid: false, 
+          error: 'Token validation request failed',
+          details: error.message 
         };
       }
-    } catch (error) {
-      return { isValid: false, error: 'Token validation failed' };
     }
     
     const now = new Date();
+    
+    // Calculate time elapsed since token acquisition
+    const elapsedMs = acquiredAt ? now.getTime() - acquiredAt.getTime() : 0;
+    const elapsedMinutes = Math.floor(elapsedMs / 60000);
+    
+    // Google tokens typically expire after 60 minutes
+    const totalValidityMinutes = 60;
+    const remainingMinutes = totalValidityMinutes - elapsedMinutes;
+    
+    // Calculate the remaining percentage
+    const remainingPercentage = Math.max(0, Math.min(100, (remainingMinutes / totalValidityMinutes) * 100));
+    
     return {
       isValid: expiresAt > now,
       expiresAt,
-      // Consider refresh if less than 5 minutes remaining
-      needsRefresh: (expiresAt.getTime() - now.getTime()) < 5 * 60 * 1000
+      acquiredAt,
+      elapsedMinutes,
+      remainingMinutes,
+      remainingPercentage,
+      // Consider refresh if less than 5 minutes remaining or if remaining percentage is less than 10%
+      needsRefresh: remainingMinutes < 5 || remainingPercentage < 10
     };
   } catch (error) {
     console.error('Error checking token status:', error);
@@ -180,15 +269,54 @@ export const refreshGoogleToken = async () => {
       // Update localStorage
       localStorage.setItem('google_access_token', freshToken);
       
-      // Set new expiration (1 hour from now)
+      // Set new expiration (59.5 minutes from now for simulated refresh)
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 1);
+      expiresAt.setMinutes(expiresAt.getMinutes() + 59);
+      expiresAt.setSeconds(expiresAt.getSeconds() + 30);
       localStorage.setItem('google_token_expires_at', expiresAt.toISOString());
+      
+      // Store the token acquisition time
+      const acquiredAt = new Date();
+      localStorage.setItem('google_token_acquired_at', acquiredAt.toISOString());
+      
+      console.log('Simulated token refresh, expires at:', expiresAt.toLocaleTimeString());
+      
+      // Now verify the token actually works with a test API call - unless we're skipping validation
+      const skipValidation = import.meta.env.DEV && localStorage.getItem('skip_token_validation') === 'true';
+      
+      if (skipValidation) {
+        console.log('DEV MODE: Skipping token validation test during refresh');
+      } else {
+        try {
+          const testResponse = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=1', {
+            headers: {
+              'Authorization': `Bearer ${freshToken}`
+            }
+          });
+          
+          if (!testResponse.ok) {
+            console.error('Token validation failed after refresh with status:', testResponse.status);
+            return {
+              success: false,
+              error: `Token validation failed after refresh: ${testResponse.status}`
+            };
+          }
+          
+          console.log('Token is valid - API test successful');
+        } catch (testError) {
+          console.error('Error testing refreshed token:', testError);
+          return {
+            success: false,
+            error: `Error testing refreshed token: ${testError.message}`
+          };
+        }
+      }
       
       return {
         success: true,
         access_token: freshToken,
-        expires_at: expiresAt.toISOString()
+        expires_at: expiresAt.toISOString(),
+        acquired_at: acquiredAt.toISOString()
       };
     }
     
@@ -221,14 +349,47 @@ export const refreshGoogleToken = async () => {
     const expiresAt = new Date();
     expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
     
+    // Store acquisition time
+    const acquiredAt = new Date();
+    
     // Store the new token
     localStorage.setItem('google_access_token', data.access_token);
     localStorage.setItem('google_token_expires_at', expiresAt.toISOString());
+    localStorage.setItem('google_token_acquired_at', acquiredAt.toISOString());
+    
+    // Test the refreshed token - unless we're skipping validation
+    const skipValidation = import.meta.env.DEV && localStorage.getItem('skip_token_validation') === 'true';
+    
+    if (skipValidation) {
+      console.log('DEV MODE: Skipping token validation test after OAuth refresh');
+    } else {
+      try {
+        const testResponse = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=1', {
+          headers: {
+            'Authorization': `Bearer ${data.access_token}`
+          }
+        });
+        
+        if (!testResponse.ok) {
+          console.error('Token validation failed after refresh with status:', testResponse.status);
+          return {
+            success: false,
+            error: `Token validation failed after refresh: ${testResponse.status}`
+          };
+        }
+        
+        console.log('Refreshed token is valid - API test successful');
+      } catch (testError) {
+        console.error('Error testing refreshed token:', testError);
+        // Don't fail here - the token might still work for other APIs
+      }
+    }
     
     return {
       success: true,
       access_token: data.access_token,
-      expires_at: expiresAt.toISOString()
+      expires_at: expiresAt.toISOString(),
+      acquired_at: acquiredAt.toISOString()
     };
   } catch (error) {
     console.error('Error refreshing token:', error);
