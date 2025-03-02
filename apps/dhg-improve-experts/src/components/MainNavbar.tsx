@@ -8,6 +8,7 @@ export function MainNavbar() {
     { name: 'Home', href: '/' },
     { name: 'Viewer', href: '/viewer' },
     { name: 'Sync', href: '/sync' },
+    { name: 'Docs', href: '/docs' },
     { name: 'Classify', href: '/classify' },
     { name: 'Transcribe', href: '/transcribe' },
     { name: 'Supabase', href: '/supabase' },
