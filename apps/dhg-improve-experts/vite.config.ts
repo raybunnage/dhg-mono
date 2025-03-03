@@ -60,18 +60,105 @@ export default defineConfig(({ mode }) => {
         configureServer(server: ViteDevServer) {
           console.log('🔧 Configuring API routes...');
           
-          server.middlewares.use('/api/source-files', async (req: IncomingMessage, res: ServerResponse) => {
+          // Register specific middleware for docs-sync since that's what DocsExplorer uses
+          server.middlewares.use('/api/docs-sync', async (req: IncomingMessage, res: ServerResponse) => {
+            if (req.method === 'POST') {
+              try {
+                console.log('POST request to /api/docs-sync received');
+                // Import dynamically to avoid circular dependencies
+                const { syncDocumentationToDatabase } = await import('./src/api/markdown-report');
+                const result = await syncDocumentationToDatabase();
+                
+                console.log('Sync result:', result);
+                res.statusCode = result.success ? 200 : 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify(result));
+              } catch (error) {
+                console.error('Error in docs-sync middleware:', error);
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({
+                  success: false,
+                  message: `Error syncing documentation: ${(error as Error).message || 'Unknown error'}`
+                }));
+              }
+              return;
+            }
+            
+            res.statusCode = 405; // Method Not Allowed
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Method not allowed' }));
+          });
+          
+          // Main API handler for all other server-side routes
+          server.middlewares.use('/api', async (req: IncomingMessage, res: ServerResponse) => {
+            // Create a proper request object
+            const request = new Request(`http://localhost${req.url}`, {
+              method: req.method,
+              headers: req.headers as HeadersInit,
+              // We don't handle body here as we don't need it for these endpoints
+            });
+            
             try {
-              const files = await getSourceFiles();
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ files }));
+              console.log(`[API] ${req.method} ${req.url}`);
+              
+              // Source-files endpoint - special case
+              if (req.url?.endsWith('/source-files') && req.method === 'GET') {
+                try {
+                  const files = await getSourceFiles();
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ files }));
+                  return;
+                } catch (error) {
+                  console.error('API Error:', error);
+                  res.statusCode = 500;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: (error as Error).message }));
+                  return;
+                }
+              }
+              
+              // Import the server-side handler
+              const { POST, GET } = await import('./src/server/api/documentation');
+              
+              let response: Response;
+              
+              // Route to appropriate handler based on method
+              if (req.method === 'GET') {
+                response = await GET(request);
+              } else if (req.method === 'POST') {
+                response = await POST(request);
+              } else {
+                // Method not supported
+                response = new Response(JSON.stringify({ error: 'Method not supported' }), {
+                  status: 405,
+                  headers: { 'Content-Type': 'application/json' }
+                });
+              }
+              
+              // Transfer the response to the server response
+              res.statusCode = response.status;
+              
+              // Copy headers
+              response.headers.forEach((value, key) => {
+                res.setHeader(key, value);
+              });
+              
+              // Send body
+              const body = await response.text();
+              res.end(body);
+              
             } catch (error) {
-              console.error('API Error:', error);
+              console.error('Unhandled API error:', error);
               res.statusCode = 500;
               res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ error: (error as Error).message }));
+              res.end(JSON.stringify({
+                success: false,
+                message: `Server error: ${(error as Error).message || 'Unknown error'}`
+              }));
             }
           });
+          
           console.log('✅ API routes configured');
         }
       },

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
