@@ -2,6 +2,73 @@ e know which ones to keep, read, delete or ujpdate.
 
 How to Use the Documentation System
 
+on the classify page under the dpocument types tab there is an add new type button which when pressed expands out a set of 3 fields - Document Type Name, Category and description
+
+Here is the table for the document_types that is in supabase.  I need you to add or revise the  options for the add new type  button in addition to the 3 that you have  
+1) has a choice for toggling is_ai_generated
+2) has a dropdown for category based on all the categories in the document_types so far
+3) has a dropdown for mime_type based on what is available so far in the document_types so far
+
+{
+  "Row": {
+    "ai_processing_rules": "Json | null",
+    "category": "string",
+    "content_schema": "Json | null",
+    "created_at": "string",
+    "current_num_of_type": "number | null",
+    "description": "string | null",
+    "document_type": "string",
+    "document_type_counts": "number | null",
+    "file_extension": "string | null",
+    "id": "string",
+    "is_ai_generated": "boolean",
+    "legacy_document_type_id": "number | null",
+    "mime_type": "string | null",
+    "required_fields": "Json | null",
+    "updated_at": "string",
+    "validation_rules": "Json | null"
+  },
+  "Insert": {
+    "ai_processing_rules": "Json | null",
+    "category": "string",
+    "content_schema": "Json | null", 
+    "created_at": "string (optional)",
+    "current_num_of_type": "number | null",
+    "description": "string | null",
+    "document_type": "string",
+    "document_type_counts": "number | null",
+    "file_extension": "string | null",
+    "id": "string (optional)",
+    "is_ai_generated": "boolean (optional)",
+    "legacy_document_type_id": "number | null",
+    "mime_type": "string | null",
+    "required_fields": "Json | null",
+    "updated_at": "string (optional)",
+    "validation_rules": "Json | null"
+  },
+  "Update": {
+    "ai_processing_rules": "Json | null",
+    "category": "string (optional)",
+    "content_schema": "Json | null",
+    "created_at": "string (optional)", 
+    "current_num_of_type": "number | null",
+    "description": "string | null",
+    "document_type": "string (optional)",
+    "document_type_counts": "number | null",
+    "file_extension": "string | null",
+    "id": "string (optional)",
+    "is_ai_generated": "boolean (optional)",
+    "legacy_document_type_id": "number | null",
+    "mime_type": "string | null",
+    "required_fields": "Json | null",
+    "updated_at": "string (optional)",
+    "validation_rules": "Json | null"
+  },
+  "Relationships": []
+}
+
+
+
   Now you have everything set up to test the documentation system.
    Here's how to use it:
 

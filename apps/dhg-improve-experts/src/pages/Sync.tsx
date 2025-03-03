@@ -2169,98 +2169,103 @@ function Sync() {
 
   // Render history view
   const renderHistory = () => (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Sync History</h3>
-        <button
-          onClick={fetchSyncHistory}
-          className="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded flex items-center gap-1"
-        >
-          <span>🔄</span> Refresh
-        </button>
+    <div>
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Sync History</h3>
+          <button
+            onClick={fetchSyncHistory}
+            className="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded flex items-center gap-1"
+          >
+            <span>🔄</span> Refresh
+          </button>
+        </div>
+        
+        {syncHistory.length === 0 ? (
+          <p className="text-gray-500">No sync history found.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Folder
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Files Processed
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {syncHistory.map((sync) => {
+                  // Calculate duration if completed
+                  const startDate = new Date(sync.timestamp);
+                  const endDate = sync.completed_at ? new Date(sync.completed_at) : null;
+                  const duration = endDate ? ((endDate.getTime() - startDate.getTime()) / 1000).toFixed(1) + 's' : 'In progress';
+                  
+                  return (
+                    <tr key={sync.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(sync.timestamp).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {sync.folder_name || 'Unknown folder'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                          ${sync.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                            sync.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                            sync.status === 'completed_with_errors' ? 'bg-yellow-100 text-yellow-800' :
+                            sync.status === 'failed' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'}`}>
+                          {sync.status || 'unknown'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {sync.files_processed || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {duration}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button 
+                          onClick={() => viewSyncDetails(sync.id)}
+                          className="text-indigo-600 hover:text-indigo-900 mr-2"
+                        >
+                          View Details
+                        </button>
+                        {sync.status !== 'in_progress' && sync.folder_id && (
+                          <button 
+                            onClick={() => rerunSync(sync.folder_id)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Re-sync
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
       
-      {syncHistory.length === 0 ? (
-        <p className="text-gray-500">No sync history found.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Folder
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Files Processed
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Duration
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {syncHistory.map((sync) => {
-                // Calculate duration if completed
-                const startDate = new Date(sync.timestamp);
-                const endDate = sync.completed_at ? new Date(sync.completed_at) : null;
-                const duration = endDate ? ((endDate.getTime() - startDate.getTime()) / 1000).toFixed(1) + 's' : 'In progress';
-                
-                return (
-                  <tr key={sync.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(sync.timestamp).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {sync.folder_name || 'Unknown folder'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${sync.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                          sync.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                          sync.status === 'completed_with_errors' ? 'bg-yellow-100 text-yellow-800' :
-                          sync.status === 'failed' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'}`}>
-                        {sync.status || 'unknown'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sync.files_processed || 0}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {duration}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <button 
-                        onClick={() => viewSyncDetails(sync.id)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-2"
-                      >
-                        View Details
-                      </button>
-                      {sync.status !== 'in_progress' && sync.folder_id && (
-                        <button 
-                          onClick={() => rerunSync(sync.folder_id)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Re-sync
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* Debug Sync History with detailed view */}
+      <DebugSyncHistory />
     </div>
   );
 
