@@ -53,7 +53,11 @@
     "docs:tree": "./apps/dhg-improve-experts/scripts/docs-organization/tree-docs.sh",
     "docs:organize": "./apps/dhg-improve-experts/scripts/docs-organization/run-all.sh",
     "docs:consolidate": "./apps/dhg-improve-experts/scripts/docs-organization/consolidate-docs.sh",
-    "docs:frontmatter": "./apps/dhg-improve-experts/scripts/docs-organization/add-frontmatter.sh"
+    "docs:frontmatter": "./apps/dhg-improve-experts/scripts/docs-organization/add-frontmatter.sh",
+    "db:export-functions": "./scripts/export-db-functions.js",
+    "db:search-functions": "./scripts/search-db-functions.js",
+    "db:generate-function-types": "./scripts/generate-function-types.js",
+    "db:check-export-function": "./scripts/check-export-function.js"
   },
   "bin": {
     "dhg-tree": "./scripts/show-tree.js"

@@ -363,6 +363,110 @@ export type Database = {
           },
         ]
       }
+      command_categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      command_history: {
+        Row: {
+          category_id: string | null
+          command_text: string
+          duration_ms: number | null
+          executed_at: string | null
+          exit_code: number | null
+          id: string
+          notes: string | null
+          sanitized_command: string
+          success: boolean | null
+          tags: string[] | null
+        }
+        Insert: {
+          category_id?: string | null
+          command_text: string
+          duration_ms?: number | null
+          executed_at?: string | null
+          exit_code?: number | null
+          id?: string
+          notes?: string | null
+          sanitized_command: string
+          success?: boolean | null
+          tags?: string[] | null
+        }
+        Update: {
+          category_id?: string | null
+          command_text?: string
+          duration_ms?: number | null
+          executed_at?: string | null
+          exit_code?: number | null
+          id?: string
+          notes?: string | null
+          sanitized_command?: string
+          success?: boolean | null
+          tags?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_history_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "command_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      command_patterns: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          pattern: string
+          replacement: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          pattern: string
+          replacement: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          pattern?: string
+          replacement?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       document_type_aliases: {
         Row: {
           alias_name: string
@@ -440,6 +544,178 @@ export type Database = {
           validation_rules?: Json | null
         }
         Relationships: []
+      }
+      documentation_files: {
+        Row: {
+          ai_generated_tags: string[] | null
+          created_at: string | null
+          file_hash: string | null
+          file_path: string
+          id: string
+          last_indexed_at: string
+          last_modified_at: string
+          manual_tags: string[] | null
+          metadata: Json | null
+          summary: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_generated_tags?: string[] | null
+          created_at?: string | null
+          file_hash?: string | null
+          file_path: string
+          id?: string
+          last_indexed_at: string
+          last_modified_at: string
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          summary?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_generated_tags?: string[] | null
+          created_at?: string | null
+          file_hash?: string | null
+          file_path?: string
+          id?: string
+          last_indexed_at?: string
+          last_modified_at?: string
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          summary?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      documentation_processing_queue: {
+        Row: {
+          attempts: number
+          created_at: string | null
+          error_message: string | null
+          file_id: string
+          id: string
+          last_attempt_at: string | null
+          priority: number
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string | null
+          error_message?: string | null
+          file_id: string
+          id?: string
+          last_attempt_at?: string | null
+          priority?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string | null
+          error_message?: string | null
+          file_id?: string
+          id?: string
+          last_attempt_at?: string | null
+          priority?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentation_processing_queue_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "documentation_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documentation_relations: {
+        Row: {
+          created_at: string | null
+          id: string
+          relation_type: string
+          source_id: string
+          target_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          relation_type: string
+          source_id: string
+          target_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          relation_type?: string
+          source_id?: string
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentation_relations_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "documentation_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentation_relations_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "documentation_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documentation_sections: {
+        Row: {
+          anchor_id: string
+          created_at: string | null
+          file_id: string
+          heading: string
+          id: string
+          level: number
+          position: number
+          summary: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          anchor_id: string
+          created_at?: string | null
+          file_id: string
+          heading: string
+          id?: string
+          level: number
+          position: number
+          summary?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          anchor_id?: string
+          created_at?: string | null
+          file_id?: string
+          heading?: string
+          id?: string
+          level?: number
+          position?: number
+          summary?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentation_sections_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "documentation_files"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       domains: {
         Row: {
@@ -829,6 +1105,53 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      favorite_commands: {
+        Row: {
+          category_id: string | null
+          command_text: string
+          created_at: string | null
+          description: string | null
+          id: string
+          last_used_at: string | null
+          name: string
+          tags: string[] | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          command_text: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_used_at?: string | null
+          name: string
+          tags?: string[] | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          command_text?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          tags?: string[] | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorite_commands_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "command_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       function_registry: {
         Row: {
@@ -2345,6 +2668,17 @@ export type Database = {
         }
         Relationships: []
       }
+      command_suggestions: {
+        Row: {
+          category_name: string | null
+          last_used: string | null
+          recommendation_strength: string | null
+          sanitized_command: string | null
+          success_rate: number | null
+          usage_count: number | null
+        }
+        Relationships: []
+      }
       page_guts_raw_data: {
         Row: {
           ai_prompts: Json | null
@@ -2441,6 +2775,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      extract_filename: {
+        Args: {
+          file_path: string
+        }
+        Returns: string
+      }
       find_mp4_files_in_folder: {
         Args: {
           folder_id: string
@@ -2483,6 +2823,37 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           create_statement: string
+        }[]
+      }
+      get_command_history: {
+        Args: {
+          category_filter?: string
+          success_filter?: boolean
+          search_term?: string
+          page_size?: number
+          page_number?: number
+        }
+        Returns: {
+          id: string
+          command_text: string
+          sanitized_command: string
+          category_name: string
+          executed_at: string
+          duration_ms: number
+          exit_code: number
+          success: boolean
+          notes: string
+          tags: string[]
+        }[]
+      }
+      get_command_usage_by_category: {
+        Args: {
+          time_period?: unknown
+        }
+        Returns: {
+          category_name: string
+          usage_count: number
+          success_rate: number
         }[]
       }
       get_document_type_counts: {
@@ -2537,6 +2908,26 @@ export type Database = {
           schema_name: string
         }
         Returns: Json
+      }
+      get_most_used_commands: {
+        Args: {
+          time_period?: unknown
+          limit_count?: number
+        }
+        Returns: {
+          command_text: string
+          category_name: string
+          usage_count: number
+          success_rate: number
+        }[]
+      }
+      get_next_file_for_processing: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          queue_id: string
+          file_id: string
+          file_path: string
+        }[]
       }
       get_or_create_page: {
         Args: {
@@ -2711,6 +3102,12 @@ export type Database = {
         }
         Returns: string
       }
+      increment_favorite_command_usage: {
+        Args: {
+          favorite_id: string
+        }
+        Returns: undefined
+      }
       list_function_comments: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -2727,6 +3124,47 @@ export type Database = {
         }
         Returns: undefined
       }
+      queue_documentation_file_for_processing: {
+        Args: {
+          file_id: string
+          priority?: number
+        }
+        Returns: string
+      }
+      register_document_relation: {
+        Args: {
+          p_source_id: string
+          p_target_id: string
+          p_relation_type: string
+        }
+        Returns: string
+      }
+      register_document_section: {
+        Args: {
+          p_file_id: string
+          p_heading: string
+          p_level: number
+          p_position: number
+          p_anchor_id: string
+          p_summary?: string
+        }
+        Returns: string
+      }
+      register_markdown_file: {
+        Args: {
+          p_file_path: string
+          p_title?: string
+          p_file_hash?: string
+          p_metadata?: Json
+        }
+        Returns: string
+      }
+      sanitize_command: {
+        Args: {
+          command_text: string
+        }
+        Returns: string
+      }
       set_current_domain: {
         Args: {
           domain_id: string
@@ -2739,6 +3177,14 @@ export type Database = {
           p_table_name: string
         }
         Returns: boolean
+      }
+      update_document_ai_metadata: {
+        Args: {
+          p_file_id: string
+          p_summary: string
+          p_ai_generated_tags: string[]
+        }
+        Returns: undefined
       }
     }
     Enums: {
