@@ -2,8 +2,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
-import { markdownFileService } from '@/services/markdownFileService';
-import { supabase } from '@/integrations/supabase/client';
+import { markdownFileService } from '../services/markdownFileService';
+// Remove the import for supabase since it's not used in this file
 
 const execPromise = promisify(exec);
 
@@ -50,10 +50,16 @@ export async function generateMarkdownReport() {
     console.log('Report will be generated at:', reportPath);
     
     // Run the script
-    const { stdout, stderr } = await execPromise(`bash ${scriptPath}`);
-    
-    if (stderr) {
-      console.error('Error running markdown report script:', stderr);
+    try {
+      const { stdout, stderr } = await execPromise(`bash ${scriptPath}`);
+      
+      if (stderr) {
+        console.error('Error running markdown report script:', stderr);
+      }
+    } catch (execError) {
+      console.error('Exception running markdown report script:', execError);
+      // Continue execution even if script fails
+      // This will allow fallback to reading existing report file
     }
     
     // Try to read the report content

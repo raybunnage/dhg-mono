@@ -103,7 +103,9 @@ export function ClassifyDocument() {
   const [newDocumentType, setNewDocumentType] = useState({
     name: '',
     category: '',
-    description: ''
+    description: '',
+    mime_type: '',
+    file_extension: ''
   });
   
   const [todaysClassifications, setTodaysClassifications] = useState<{
@@ -574,7 +576,7 @@ export function ClassifyDocument() {
   }, [isAuthenticated]);
 
   // Function to handle creating a new document type
-  const handleNewDocumentTypeSubmit = async (e: React.FormEvent) => {
+  const handleNewDocumentTypeSubmit = async (e: React.FormEvent | any) => {
     e.preventDefault();
     
     if (!newDocumentType.name || !newDocumentType.category) {
@@ -586,6 +588,35 @@ export function ClassifyDocument() {
     try {
       const typeId = crypto.randomUUID();
       
+      // Get values from the form - default to state values
+      let mimeType = newDocumentType.mime_type || null;
+      let fileExtension = newDocumentType.file_extension || null;
+      let isAiGenerated = false;
+      
+      // Extract values from event target if available (for custom form submission)
+      if (e.target) {
+        // Try to get AI generated flag from form
+        const aiGeneratedElement = e.target.querySelector ? 
+          e.target.querySelector('#is_ai_generated') : 
+          e.target.isAiGenerated;
+        
+        if (aiGeneratedElement) {
+          // Handle both checkbox and custom value object patterns
+          isAiGenerated = aiGeneratedElement.checked !== undefined ? 
+            aiGeneratedElement.checked : 
+            (aiGeneratedElement.value !== undefined ? 
+              aiGeneratedElement.value : false);
+        }
+      }
+      
+      console.log('Creating document type with values:', {
+        name: newDocumentType.name,
+        category: newDocumentType.category,
+        mimeType,
+        fileExtension,
+        isAiGenerated
+      });
+      
       const { data, error } = await supabase
         .from('document_types')
         .insert({
@@ -593,9 +624,11 @@ export function ClassifyDocument() {
           document_type: newDocumentType.name,
           category: newDocumentType.category,
           description: newDocumentType.description,
+          mime_type: mimeType,
+          file_extension: fileExtension,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          is_ai_generated: false,
+          is_ai_generated: isAiGenerated,
           required_fields: {},
           validation_rules: {},
           ai_processing_rules: {}
@@ -608,7 +641,7 @@ export function ClassifyDocument() {
       console.log('New document type created:', data[0]);
       
       // Clear form and hide it
-      setNewDocumentType({ name: '', category: '', description: '' });
+      setNewDocumentType({ name: '', category: '', description: '', mime_type: '', file_extension: '' });
       setShowNewDocumentTypeForm(false);
       
       // Remove this ID from localStorage to ensure it shows as new
@@ -1205,65 +1238,223 @@ Use this exact structure, with empty arrays [] for missing information:
   };
 
   // Add a new document type form
-  const renderDocumentTypeForm = () => (
-    <div className="bg-white p-4 rounded-lg shadow mb-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Add New Document Type</h3>
-        <button
-          onClick={() => setShowNewDocumentTypeForm(false)}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          ✕
-        </button>
-      </div>
+  const renderDocumentTypeForm = () => {
+    // Load categories and mime types for dropdown options
+    const [categories, setCategories] = useState<string[]>([]);
+    const [mimeTypes, setMimeTypes] = useState<string[]>([]);
+    const [isAiGenerated, setIsAiGenerated] = useState(false);
+    
+    // Fetch categories and mime types on form render
+    useEffect(() => {
+      const fetchOptions = async () => {
+        try {
+          // Fetch categories
+          const { data: categoryData, error: categoryError } = await supabase
+            .from("document_types")
+            .select("category")
+            .not("category", "is", null);
+          
+          if (categoryError) throw categoryError;
+          
+          // Fetch mime types
+          const { data: mimeTypeData, error: mimeTypeError } = await supabase
+            .from("document_types")
+            .select("mime_type")
+            .not("mime_type", "is", null);
+          
+          if (mimeTypeError) throw mimeTypeError;
+          
+          // Extract unique values
+          const uniqueCategories = Array.from(
+            new Set(categoryData.map(item => item.category))
+          ).filter(Boolean).sort();
+          
+          const uniqueMimeTypes = Array.from(
+            new Set(mimeTypeData.map(item => item.mime_type))
+          ).filter(Boolean).sort();
+          
+          console.log("Form options loaded - Categories:", uniqueCategories.length, "MIME types:", uniqueMimeTypes.length);
+          
+          // Set default values if none found
+          setCategories(uniqueCategories.length > 0 ? uniqueCategories : 
+            ["Research", "Communication", "Documentation", "Legal"]);
+            
+          setMimeTypes(uniqueMimeTypes.length > 0 ? uniqueMimeTypes : 
+            ["application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]);
+          
+        } catch (error) {
+          console.error("Error loading form options:", error);
+          // Set default values on error
+          setCategories(["Research", "Communication", "Documentation", "Legal"]);
+          setMimeTypes([
+            "application/pdf", 
+            "text/plain", 
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          ]);
+        }
+      };
       
-      <form onSubmit={handleNewDocumentTypeSubmit} className="space-y-3">
-        <div>
-          <label className="block text-sm font-medium mb-1">Document Type Name</label>
-          <input
-            type="text"
-            value={newDocumentType.name}
-            onChange={(e) => setNewDocumentType({...newDocumentType, name: e.target.value})}
-            className="w-full px-3 py-2 border rounded-md"
-            required
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-1">Category</label>
-          <input
-            type="text"
-            value={newDocumentType.category}
-            onChange={(e) => setNewDocumentType({...newDocumentType, category: e.target.value})}
-            className="w-full px-3 py-2 border rounded-md"
-            required
-            placeholder="e.g. Research, Communication, Legal"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-1">Description</label>
-          <textarea
-            value={newDocumentType.description}
-            onChange={(e) => setNewDocumentType({...newDocumentType, description: e.target.value})}
-            className="w-full px-3 py-2 border rounded-md"
-            rows={3}
-            placeholder="Brief description of this document type"
-          />
-        </div>
-        
-        <div className="flex justify-end">
+      fetchOptions();
+    }, []);
+    
+    return (
+      <div className="bg-white p-4 rounded-lg shadow mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Add New Document Type</h3>
           <button
-            type="submit"
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-            disabled={loading}
+            onClick={() => setShowNewDocumentTypeForm(false)}
+            className="text-gray-500 hover:text-gray-700"
           >
-            {loading ? 'Creating...' : 'Create Document Type'}
+            ✕
           </button>
         </div>
-      </form>
-    </div>
-  );
+        
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          // Update the document type object with AI generated flag
+          handleNewDocumentTypeSubmit({
+            ...e,
+            preventDefault: () => {},
+            // Include isAiGenerated in the form submission
+            target: {
+              ...e.target,
+              isAiGenerated: { value: isAiGenerated }
+            }
+          });
+        }} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium mb-1">Document Type Name</label>
+            <input
+              type="text"
+              value={newDocumentType.name}
+              onChange={(e) => setNewDocumentType({...newDocumentType, name: e.target.value})}
+              className="w-full px-3 py-2 border rounded-md"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1">Category</label>
+            <div className="relative">
+              <select
+                value={newDocumentType.category}
+                onChange={(e) => setNewDocumentType({...newDocumentType, category: e.target.value})}
+                className="w-full px-3 py-2 border rounded-md appearance-none"
+                required
+              >
+                <option value="" disabled>Select a category</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+                <option value="new">-- Enter new category --</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                </svg>
+              </div>
+            </div>
+            
+            {newDocumentType.category === 'new' && (
+              <input
+                type="text"
+                placeholder="Enter new category name"
+                className="w-full px-3 py-2 border rounded-md mt-2"
+                onChange={(e) => setNewDocumentType({...newDocumentType, category: e.target.value})}
+                required
+              />
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <textarea
+              value={newDocumentType.description}
+              onChange={(e) => setNewDocumentType({...newDocumentType, description: e.target.value})}
+              className="w-full px-3 py-2 border rounded-md"
+              rows={3}
+              placeholder="Brief description of this document type"
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">MIME Type</label>
+              <div className="relative">
+                <select
+                  name="mime_type"
+                  value={newDocumentType.mime_type}
+                  onChange={(e) => {
+                    console.log("Selected MIME type:", e.target.value);
+                    setNewDocumentType({...newDocumentType, mime_type: e.target.value});
+                    
+                    // Auto-suggest file extension based on MIME type
+                    if (e.target.value === 'application/pdf') {
+                      setNewDocumentType(prev => ({...prev, mime_type: e.target.value, file_extension: '.pdf'}));
+                    } else if (e.target.value === 'text/plain') {
+                      setNewDocumentType(prev => ({...prev, mime_type: e.target.value, file_extension: '.txt'}));
+                    } else if (e.target.value === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                      setNewDocumentType(prev => ({...prev, mime_type: e.target.value, file_extension: '.docx'}));
+                    }
+                  }}
+                  className="w-full px-3 py-2 border rounded-md appearance-none"
+                >
+                  <option value="">Select a MIME type (optional)</option>
+                  {mimeTypes.map((mimeType) => (
+                    <option key={mimeType} value={mimeType}>
+                      {mimeType}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">File Extension</label>
+              <input
+                type="text"
+                name="file_extension"
+                value={newDocumentType.file_extension}
+                onChange={(e) => setNewDocumentType({...newDocumentType, file_extension: e.target.value})}
+                placeholder=".pdf, .doc, .txt, etc."
+                className="w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="is_ai_generated"
+              checked={isAiGenerated}
+              onChange={(e) => setIsAiGenerated(e.target.checked)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="is_ai_generated" className="text-sm font-medium text-gray-700">
+              AI Generated
+            </label>
+          </div>
+          
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+              disabled={loading}
+            >
+              {loading ? 'Creating...' : 'Create Document Type'}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  };
 
   // Render the pipeline section
   const renderPipeline = () => (
