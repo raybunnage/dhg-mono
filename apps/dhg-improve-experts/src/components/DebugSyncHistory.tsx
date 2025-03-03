@@ -1,33 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { deleteSyncHistoryRecord } from '@/services/syncHistoryService';
+import { Button } from './ui/button';
 
 export const DebugSyncHistory: React.FC = () => {
   const [syncHistory, setSyncHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  
+  const fetchData = async () => {
+    try {
+      console.log('DebugSyncHistory: Fetching data...');
+      // Get sync history
+      const { data: historyData, error: historyError } = await supabase
+        .from('sync_history')
+        .select('*')
+        .order('timestamp', { ascending: false });
+        
+      if (historyError) throw historyError;
+      
+      console.log('DebugSyncHistory: Data received, records:', historyData?.length || 0);
+      setSyncHistory(historyData || []);
+    } catch (err) {
+      console.error('Error fetching debug data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Get sync history
-        const { data: historyData, error: historyError } = await supabase
-          .from('sync_history')
-          .select('*')
-          .order('timestamp', { ascending: false });
-          
-        if (historyError) throw historyError;
-        
-        setSyncHistory(historyData || []);
-      } catch (err) {
-        console.error('Error fetching debug data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
+    console.log('DebugSyncHistory: Component mounted');
     fetchData();
+    
+    // Return cleanup function
+    return () => {
+      console.log('DebugSyncHistory: Component unmounted');
+    };
   }, []);
   
+  const handleDelete = async (id: string) => {
+    try {
+      console.log('DebugSyncHistory: Deleting record', id);
+      setDeleting(id);
+      const result = await deleteSyncHistoryRecord(id);
+      if (result.success) {
+        console.log('DebugSyncHistory: Successfully deleted record', id);
+        // Refresh the data after successful deletion
+        await fetchData();
+      } else {
+        console.error('Failed to delete sync history record:', result.error);
+      }
+    } catch (err) {
+      console.error('Error deleting sync history record:', err);
+    } finally {
+      setDeleting(null);
+    }
+  };
+  
   if (loading) return <div>Loading debug data...</div>;
+  
+  console.log('DebugSyncHistory: Rendering with', syncHistory.length, 'records');
   
   return (
     <div className="mt-8 p-4 bg-gray-100 rounded border">
@@ -47,6 +79,7 @@ export const DebugSyncHistory: React.FC = () => {
                   <th className="px-2 py-1 text-left text-xs font-medium text-gray-500">Folder Name</th>
                   <th className="px-2 py-1 text-left text-xs font-medium text-gray-500">Files</th>
                   <th className="px-2 py-1 text-left text-xs font-medium text-gray-500">Status</th>
+                  <th className="px-2 py-1 text-left text-xs font-medium text-gray-500">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -57,6 +90,17 @@ export const DebugSyncHistory: React.FC = () => {
                     <td className="px-2 py-1 whitespace-nowrap text-xs font-medium text-gray-900">{record.folder_name || 'Unknown'}</td>
                     <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">{record.files_processed || 0}</td>
                     <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">{record.status}</td>
+                    <td className="px-2 py-1 whitespace-nowrap">
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className="text-xs py-0 px-2 h-6"
+                        onClick={() => handleDelete(record.id)}
+                        disabled={deleting === record.id}
+                      >
+                        {deleting === record.id ? 'Deleting...' : 'Delete'}
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

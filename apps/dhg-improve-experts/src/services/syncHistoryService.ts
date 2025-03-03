@@ -92,4 +92,23 @@ export function getLatestSyncResult() {
     console.error('Error retrieving latest sync result:', err);
     return null;
   }
+}
+
+/**
+ * Delete a sync history record by ID
+ */
+export async function deleteSyncHistoryRecord(id: string) {
+  try {
+    const { error } = await supabase
+      .from('sync_history')
+      .delete()
+      .eq('id', id);
+      
+    if (error) throw error;
+    
+    return { success: true };
+  } catch (err) {
+    console.error('Error deleting sync history record:', err);
+    return { success: false, error: err };
+  }
 } 
