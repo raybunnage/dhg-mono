@@ -2,6 +2,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
+import { markdownFileService } from '@/services/markdownFileService';
+import { supabase } from '@/integrations/supabase/client';
 
 const execPromise = promisify(exec);
 
@@ -80,6 +82,42 @@ export async function generateMarkdownReport() {
     return {
       success: false,
       error: 'Error generating markdown report',
+      details: error.message
+    };
+  }
+}
+
+/**
+ * API handler to sync documentation files to the database
+ */
+export async function syncDocumentationToDatabase() {
+  try {
+    console.log('syncDocumentationToDatabase called from markdown-report.ts');
+    const result = await markdownFileService.syncDocumentationFiles();
+    console.log('Result from markdownFileService.syncDocumentationFiles():', result);
+    return result;
+  } catch (error) {
+    console.error('Error in documentation sync API handler:', error);
+    return {
+      success: false,
+      message: `Error syncing documentation files to database: ${error.message}`,
+      details: error.stack
+    };
+  }
+}
+
+/**
+ * API handler to process the next documentation queue item
+ */
+export async function processNextDocumentationQueueItem() {
+  try {
+    const result = await markdownFileService.processNextQueueItem();
+    return result;
+  } catch (error) {
+    console.error('Error processing documentation queue item:', error);
+    return {
+      success: false,
+      error: 'Error processing documentation queue item',
       details: error.message
     };
   }

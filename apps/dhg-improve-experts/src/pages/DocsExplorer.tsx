@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { marked } from 'marked';
 import { markdownFileService, MarkdownTreeItem } from '@/services/markdownFileService';
+import { supabase } from '@/lib/supabase/client';
+import { toast } from 'react-hot-toast';
 
 // Icons for UI
 const ICONS = {
@@ -395,14 +397,9 @@ function DocsExplorer() {
       try {
         setLoading(true);
         
-        // Show debug info in console
-        console.log('Attempting to load file:', item);
-        
         const fileData = await markdownFileService.getFileContent(item.path);
         
         if (fileData) {
-          console.log('File content loaded successfully:', fileData);
-          
           setSelectedFile({
             path: item.path,
             title: fileData.title,
@@ -410,8 +407,6 @@ function DocsExplorer() {
             lastModified: fileData.lastModifiedAt || item.lastModified
           });
         } else {
-          console.warn('No file data returned for path:', item.path);
-          
           setSelectedFile({
             path: item.path,
             title: item.name,
@@ -422,12 +417,11 @@ function DocsExplorer() {
         
         setLoading(false);
       } catch (error) {
-        console.error('Error loading file content:', error);
-        
+        // Handle error gracefully
         setSelectedFile({
           path: item.path,
           title: item.name,
-          content: `# Error Loading File\n\nAn error occurred while loading the file: \`${item.path}\`\n\n## Details\n\`${error}\`\n\n## Troubleshooting\n1. Check if the file exists at the expected path\n2. Check server console for more detailed errors\n3. Ensure the file is readable by the server process`,
+          content: `# Error Loading File\n\nAn error occurred while loading the file: \`${item.path}\`\n\n## Troubleshooting\n1. Check if the file exists at the expected path\n2. Check server console for more detailed errors\n3. Ensure the file is readable by the server process`,
           lastModified: item.lastModified
         });
         
@@ -448,8 +442,10 @@ function DocsExplorer() {
         return;
       }
       
-      // Get results from the search API
-      const results = await markdownFileService.searchFiles(query);
+      // Let the markdownFileService handle the search and fallback logic
+      // It will internally decide whether to use database or file-based search
+      const results = await markdownFileService.searchDocumentation(query);
+      
       setSearchResults(results);
       
       // Also perform a client-side search in the file tree
@@ -484,6 +480,9 @@ function DocsExplorer() {
         title: result.title,
         content: result.content,
         lastModifiedAt: result.lastModifiedAt,
+        summary: result.summary,
+        aiGeneratedTags: result.aiGeneratedTags,
+        manualTags: result.manualTags,
         matchingPaths: allMatchingPaths
       }));
       
@@ -492,21 +491,35 @@ function DocsExplorer() {
       
       // Select first result if available
       if (results.length > 0) {
+        // If the result doesn't have content yet, fetch it
+        let content = results[0].content;
+        if (!content) {
+          try {
+            const fileData = await markdownFileService.getFileContent(results[0].filePath);
+            if (fileData && fileData.content) {
+              content = fileData.content;
+            }
+          } catch (fetchError) {
+            // Handle fetch error silently
+            content = '# Content Unavailable\n\nCould not load file content.';
+          }
+        }
+        
         setSelectedFile({
           path: results[0].filePath,
           title: results[0].title,
-          content: results[0].content || '# File content unavailable',
+          content: content || '# File content unavailable',
           lastModified: results[0].lastModifiedAt?.toString()
         });
       }
     } catch (error) {
-      console.error('Error searching files:', error);
+      // Handle search error gracefully
       setSearchResults([]);
       setLoading(false);
     }
   };
 
-  // Handle running the markdown report script
+  // Handle running the markdown report script and sync to database
   const handleRunReport = async () => {
     try {
       setLoading(true);
@@ -542,9 +555,8 @@ function DocsExplorer() {
           totalPrompts,
           totalFolders
         });
-        
-        // Show success message
-        alert("Markdown report generated successfully!");
+        // Report was generated successfully
+        alert("Markdown report generated successfully! Use the 'Sync Database' button to sync the data to the database.");
       } else {
         // If API failed, fall back to local method
         await loadFileTree();
@@ -553,9 +565,7 @@ function DocsExplorer() {
       
       setLoading(false);
     } catch (error) {
-      console.error('Error running markdown report:', error);
-      
-      // Fall back to local method
+      // Handle error silently
       await loadFileTree();
       alert("Using local fallback data - server API failed");
       
@@ -568,6 +578,103 @@ function DocsExplorer() {
     loadFileTree();
   }, []);
 
+  // Fetch database statistics
+  const [dbStats, setDbStats] = useState({
+    totalFiles: 0,
+    indexedFiles: 0,
+    pendingQueue: 0,
+    processingQueue: 0,
+    completedQueue: 0,
+    failedQueue: 0,
+    lastUpdated: null
+  });
+
+  // Check if Supabase is properly configured and usable
+  const isSupabaseUsable = (): boolean => {
+    // We're now using the correct Supabase client from integrations,
+    // which already has proper credentials
+    return true;
+  };
+
+  // Function to fetch database stats
+  const fetchDatabaseStats = async () => {
+    try {
+      console.log('Fetching database stats...');
+      
+      // Get total files count
+      const { data: filesData, error: filesError } = await supabase
+        .from('documentation_files')
+        .select('id, summary', { count: 'exact' });
+      
+      if (filesError) {
+        console.error('Could not fetch documentation files:', filesError.message, filesError.code, filesError.details);
+        // If we can't fetch files, use empty data
+        setDbStats({
+          ...dbStats,
+          lastUpdated: new Date()
+        });
+        return;
+      }
+      
+      console.log('Documentation files fetched:', filesData?.length || 0, 'files found');
+      
+      // Count indexed files (those with summaries)
+      const indexedFiles = filesData?.filter(file => file.summary !== null).length || 0;
+      
+      // Get queue counts
+      const { data: queueData, error: queueError } = await supabase
+        .from('documentation_processing_queue')
+        .select('status');
+      
+      if (queueError) {
+        console.error('Could not fetch queue data:', queueError.message, queueError.code, queueError.details);
+      } else {
+        console.log('Queue data fetched:', queueData?.length || 0, 'queue items found');
+      }
+      
+      // Initialize counts
+      let pendingCount = 0;
+      let processingCount = 0;
+      let completedCount = 0;
+      let failedCount = 0;
+      
+      // Only count if we have queue data
+      if (!queueError && queueData) {
+        pendingCount = queueData.filter(item => item.status === 'pending').length || 0;
+        processingCount = queueData.filter(item => item.status === 'processing').length || 0;
+        completedCount = queueData.filter(item => item.status === 'completed').length || 0;
+        failedCount = queueData.filter(item => item.status === 'failed').length || 0;
+      }
+      
+      setDbStats({
+        totalFiles: filesData?.length || 0,
+        indexedFiles,
+        pendingQueue: pendingCount,
+        processingQueue: processingCount,
+        completedQueue: completedCount,
+        failedQueue: failedCount,
+        lastUpdated: new Date()
+      });
+    } catch (error) {
+      // Silent failure - just keep existing stats
+      setDbStats({
+        ...dbStats,
+        lastUpdated: new Date()
+      });
+    }
+  };
+
+  // Fetch database stats initially and after actions
+  useEffect(() => {
+    fetchDatabaseStats();
+    // Set up interval to refresh stats
+    const intervalId = setInterval(() => {
+      fetchDatabaseStats();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
     <div className="container mx-auto px-4 py-4">
       <div className="flex justify-between items-center mb-4">
@@ -577,12 +684,117 @@ function DocsExplorer() {
           <span className="text-sm text-gray-500">
             {stats.totalDocs} docs ({stats.totalPrompts} prompts) • {stats.totalFolders} folders
           </span>
-          <ActionButton 
-            label="Run Report" 
-            onClick={handleRunReport} 
-            icon="🔄"
-            color="bg-blue-500 hover:bg-blue-600 text-sm"
-          />
+          <div className="flex gap-2">
+            <ActionButton 
+              label="Run Report" 
+              onClick={handleRunReport} 
+              icon="🔄"
+              color="bg-blue-500 hover:bg-blue-600 text-sm"
+            />
+            <ActionButton 
+              label="Process Queue" 
+              onClick={async () => {
+                
+                try {
+                  setLoading(true);
+                  const loadingToast = toast.loading('Processing queue item...');
+                  
+                  // Call the service function directly instead of using the API
+                  const result = await markdownFileService.processNextQueueItem();
+                  
+                  // Dismiss the loading toast
+                  toast.dismiss(loadingToast);
+                  
+                  if (result.success) {
+                    toast.success(`Processed queue item: ${result.message}`);
+                    // Refresh stats after processing
+                    fetchDatabaseStats();
+                  } else {
+                    toast.error(`No queue item to process or error: ${result.message}`);
+                  }
+                  
+                  setLoading(false);
+                } catch (error) {
+                  console.error('Error processing queue item:', error);
+                  toast.error('Error processing queue item. Please try again.');
+                  toast.dismiss(); // Dismiss any loading toasts
+                  setLoading(false);
+                }
+              }} 
+              icon="⚙️"
+              color="bg-purple-500 hover:bg-purple-600 text-sm"
+            />
+            <ActionButton 
+              label="Sync Database" 
+              onClick={async () => {
+                try {
+                  console.log('Database sync button clicked');
+                  setLoading(true);
+                  const loadingToast = toast.loading('Syncing documentation files to database...');
+                  
+                  // Use the simplified direct method
+                  const result = await markdownFileService.syncDocumentationFiles();
+                  console.log('Sync result:', result);
+                  
+                  // Dismiss the loading toast
+                  toast.dismiss(loadingToast);
+                  
+                  if (result && result.success) {
+                    toast.success(`Database sync completed: ${result.message}`);
+                    // Refresh stats after sync
+                    fetchDatabaseStats();
+                  } else {
+                    toast.error(`Database sync failed: ${result?.message || 'Unknown error'}`);
+                  }
+                  
+                  setLoading(false);
+                } catch (error) {
+                  console.error('Error in database sync:', error);
+                  toast.error(`Sync error: ${error.message || 'Unknown error'}`);
+                  toast.dismiss(); // Dismiss any loading toasts
+                  setLoading(false);
+                }
+              }} 
+              icon="📊"
+              color="bg-green-500 hover:bg-green-600 text-sm"
+            />
+          </div>
+        </div>
+      </div>
+      
+      {/* Database Stats Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <StatusCard 
+          title="Indexed Files" 
+          value={`${dbStats.indexedFiles} / ${dbStats.totalFiles}`} 
+          icon="📝" 
+        />
+        <StatusCard 
+          title="Queue Status" 
+          value={`${dbStats.pendingQueue} pending • ${dbStats.processingQueue} processing`} 
+          icon="⏳" 
+        />
+        <StatusCard 
+          title="Processed" 
+          value={`${dbStats.completedQueue} completed • ${dbStats.failedQueue} failed`} 
+          icon="✓" 
+        />
+        <div className="bg-white rounded-lg shadow p-6 flex flex-col justify-between">
+          <div className="flex justify-between items-center">
+            <h3 className="text-gray-700 font-medium">Last Updated</h3>
+            <div className="p-2 rounded-full bg-gray-100">🕒</div>
+          </div>
+          <div className="flex items-end">
+            <span className="text-sm">
+              {dbStats.lastUpdated ? new Date(dbStats.lastUpdated).toLocaleTimeString() : 'Never'}
+            </span>
+            <button 
+              onClick={fetchDatabaseStats} 
+              className="ml-2 text-blue-500 hover:underline text-sm"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
       
@@ -614,10 +826,30 @@ function DocsExplorer() {
                     })}
                   >
                     <span className="mr-2 text-yellow-800">{ICONS.file}</span>
-                    <div>
+                    <div className="w-full">
                       <div className="font-medium">{file.title}</div>
                       <div className="text-xs text-gray-500">{file.filePath}</div>
-                      {file.summary && <p className="text-sm mt-1">{file.summary}</p>}
+                      
+                      {/* Display database-generated summary if available */}
+                      {file.summary && (
+                        <p className="text-sm mt-1 text-gray-700">{file.summary}</p>
+                      )}
+                      
+                      {/* Display tags if available */}
+                      {(file.aiGeneratedTags || file.manualTags) && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {file.manualTags?.map(tag => (
+                            <span key={tag} className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                              {tag}
+                            </span>
+                          ))}
+                          {file.aiGeneratedTags?.map(tag => (
+                            <span key={tag} className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       
                       {/* Show an excerpt of content with match highlight if available */}
                       {file.content && searchQuery && (
@@ -635,6 +867,16 @@ function DocsExplorer() {
                           })()}
                         </div>
                       )}
+                      
+                      {/* Show last modified date */}
+                      <div className="mt-2 flex justify-between items-center">
+                        <div className="flex-grow"></div>
+                        <span className="text-xs text-gray-400">
+                          {file.lastModifiedAt 
+                            ? new Date(file.lastModifiedAt).toLocaleDateString() 
+                            : "Unknown date"}
+                        </span>
+                      </div>
                     </div>
                   </button>
                 </li>
