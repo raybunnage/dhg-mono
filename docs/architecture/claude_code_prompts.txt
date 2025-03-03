@@ -1,3 +1,75 @@
+e know which ones to keep, read, delete or ujpdate.  
+
+How to Use the Documentation System
+
+  Now you have everything set up to test the documentation system.
+   Here's how to use it:
+
+  1. Start the application:
+  npm run dev
+  2. Access the Documentation Test page:
+  Navigate to http://localhost:3000/documentation-test (or
+  whichever port your application is running on).
+  3. Test the Documentation System:
+    - The test page will show the current state of your
+  documentation tables
+    - Click "Sync Test File" to process the test-documentation.md
+  file
+    - Verify that the file appears in the "Files" tab
+    - Check the "Sections" tab to see extracted headings from the
+  document
+    - Look at the "Queue" tab to see the file in the processing
+  queue
+    - Click "Process Next Queue Item" to run the AI processing on
+  the file
+    - Check the "Files" tab again to see the updated summary and
+  AI-generated tags
+    - Check the "Relations" tab to see detected relationships
+  between documents
+  4. Observe Hash-Based Updates:
+    - If you run the sync process again without changing the test
+  file, it should detect that the file is unchanged (based on the
+  file hash) and not create duplicate entries
+    - If you modify the test file and run the sync again, it
+  should detect the change and update the existing record
+  5. Explore All Tables:
+    - The UI allows you to switch between viewing all four
+  documentation tables:
+        - documentation_files - Main table for document metadata
+      - documentation_sections - Document structure with headings
+  and summaries
+      - documentation_relations - Both explicit and conceptual
+  relationships between documents
+      - documentation_processing_queue - Queue for AI processing
+  of documents
+
+  This implementation demonstrates the full documentation system
+  workflow:
+  1. Files are discovered and indexed with basic metadata
+  2. Sections (headings) are extracted from each file
+  3. Files are added to a processing queue
+  4. An AI-like process extracts summaries, tags, and
+  relationships
+  5. Relationships between documents are detected and stored
+
+  The system is designed to be efficient with change detection
+  using file hashes to only update records when files have
+  changed.
+
+
+Finallhy with regard to getting help from the ai - I was going to apply this documeent tpye analysis as a sophistidated ai prompt to each markdown file in turn and then read all the ai summaries to do some analysiss.  but i'm wonderikng since mot of the markdown files are not very big and I can skip the prompts markdowns since I knmow I want them and what they are for, could I load up all the markdown files into one ste of json which I submit to the ai, and wojuld it be able to do the evaluation of those fields I mentioned all at once - and come back with a suggestion abou twhat to do with each of these files - that I could then associate with the markdown metadata I will be redcording in the database - woud this approach work, because I coujld bypass dealing the markdown files individuall and deal with them all at once.  These are my questions.
+
+
+
+I want you to implement what you suggested only carefully follow my .cursorulres for agent
+1) do no harm to existing ui and code
+2) writte out a migration file but let me run it in supabase
+3) write out scripts as necessary - but don't run them uless you ask me first 
+4) don't make changes to the ui unless you confirm them first with me
+5) first let me make the new document type before you go doing this
+6) also the metadata documentation database tables now have datat that you can query and use if that changes how your implmentation works - 
+
+
 cleanup markdown files:
 
 Now be very careful and DO NOT BREAK the fileTree, or filetreeItem or the fileviewer on the "Viewer" page. But now that we have introduced the concept of a current sync folder the file viewer needs to be aware of that and load the folders and files associated with the high level folder.  Right now the view is hardwired to the Dynamic Healing Group Files but now there are already multiple high level folders to choose from and soon there wil be more.  Then the viewer should just display the folders and files from that cuirrenty selected high level folder. You can store the currently selected folder from the folders page in local storage so when you start a new sessoin it will remember the folder it last synced. If the folder is changed in the viewer window then the current folder should be stored in local storage so the next time it loads it uses that folder to feed the viewer

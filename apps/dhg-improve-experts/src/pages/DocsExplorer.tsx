@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { marked } from 'marked';
 import { markdownFileService, MarkdownTreeItem } from '@/services/markdownFileService';
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 
 // Icons for UI
@@ -352,11 +352,27 @@ function DocsExplorer() {
     totalFolders: 0
   });
 
-  // Load file tree
+  // Load file tree with enhanced extraction
   const loadFileTree = async () => {
     try {
       setLoading(true);
+      console.log('Loading file tree with enhanced extraction...');
+      
       const tree = await markdownFileService.getFileTree();
+      console.log(`Got file tree with ${tree.length} root items`);
+      
+      // Log the first few entries for debugging
+      if (tree.length > 0) {
+        console.log('First few entries in file tree:');
+        tree.slice(0, 3).forEach((item, i) => {
+          if (item.type === 'folder') {
+            console.log(`${i+1}. Folder: ${item.name} with ${item.children?.length || 0} children`);
+          } else {
+            console.log(`${i+1}. File: ${item.name} (${item.path})`);
+          }
+        });
+      }
+      
       setFileTree(tree);
       
       // Count stats
@@ -377,6 +393,7 @@ function DocsExplorer() {
       };
       
       countItems(tree);
+      console.log(`Counted stats: ${totalDocs} docs, ${totalPrompts} prompts, ${totalFolders} folders`);
       
       setStats({
         totalDocs,
@@ -618,6 +635,16 @@ function DocsExplorer() {
       
       console.log('Documentation files fetched:', filesData?.length || 0, 'files found');
       
+      // Log the files found for easier debugging
+      if (filesData && filesData.length > 0) {
+        console.log('Files in database:');
+        filesData.forEach((file, index) => {
+          console.log(`${index + 1}. ID: ${file.id}, Has summary: ${file.summary ? 'Yes' : 'No'}`);
+        });
+      } else {
+        console.warn('No files found in the database');
+      }
+      
       // Count indexed files (those with summaries)
       const indexedFiles = filesData?.filter(file => file.summary !== null).length || 0;
       
@@ -740,11 +767,62 @@ function DocsExplorer() {
                   toast.dismiss(loadingToast);
                   
                   if (result && result.success) {
-                    toast.success(`Database sync completed: ${result.message}`);
+                    const successMessage = `Database sync completed: ${result.message}`;
+                    console.log(successMessage);
+                    toast.success(successMessage);
+                    
+                    // Log detailed information if available
+                    if (result.details) {
+                      console.log('Detailed sync results:', result.details);
+                      
+                      if (result.details.totalFound) {
+                        console.log(`Files found: ${result.details.totalFound}`);
+                      }
+                      
+                      if (result.details.filesPaths && result.details.filesPaths.length > 0) {
+                        console.log('Processed files:');
+                        result.details.filesPaths.forEach((path, index) => {
+                          console.log(`${index + 1}. ${path}`);
+                        });
+                      }
+                    }
+                    
+                    // Log detailed counts of what happened
+                    const counts = result.message.match(/(\d+) added, (\d+) updated, (\d+) unchanged, (\d+) failed/);
+                    if (counts) {
+                      const [_, added, updated, unchanged, failed] = counts;
+                      console.log(`
+Sync completed with detailed results:
+- Added: ${added} files
+- Updated: ${updated} files
+- Unchanged: ${unchanged} files
+- Failed: ${failed} files
+                      `);
+                      
+                      // Show a more detailed toast if there were issues
+                      if (parseInt(failed) > 0) {
+                        toast.error(`Warning: Failed to process ${failed} files. Check console for details.`);
+                      }
+                      
+                      // Show warning if low number of files processed
+                      if ((parseInt(added) + parseInt(updated)) < 5) {
+                        toast(`Note: Only ${parseInt(added) + parseInt(updated)} files were processed. Expected at least 9 files.`, {
+                          icon: '⚠️',
+                          style: {
+                            borderRadius: '10px',
+                            background: '#FFF9C4',
+                            color: '#6D4C41',
+                          },
+                        });
+                      }
+                    }
+                    
                     // Refresh stats after sync
                     fetchDatabaseStats();
                   } else {
-                    toast.error(`Database sync failed: ${result?.message || 'Unknown error'}`);
+                    const errorMessage = `Database sync failed: ${result?.message || 'Unknown error'}`;
+                    console.error(errorMessage);
+                    toast.error(errorMessage);
                   }
                   
                   setLoading(false);
