@@ -1312,51 +1312,18 @@ Documentation for auditing expert profiles and data.`
   }
 
   /**
-   * Detect relationships between markdown files
-   * (Links, references, etc.)
+   * Note: This original detectRelationships method was removed to eliminate duplication.
+   * The newer, more robust implementation is used below around line 2469.
+   * @deprecated Use the enhanced detectRelationships method with filePathToId parameter instead
    */
   private detectRelationships(
     content: string, 
     fileId: string, 
-    allFilePaths: string[]
+    allFilePaths: string[],
+    filePathToId?: Map<string, string>
   ): DocumentationRelation[] {
-    const relations: DocumentationRelation[] = [];
-    
-    // Look for markdown links
-    const linkRegex = /\[.+?\]\((.+?)\)/g;
-    let match;
-    
-    while ((match = linkRegex.exec(content)) !== null) {
-      const targetPath = match[1];
-      
-      // Skip external links
-      if (targetPath.startsWith('http://') || targetPath.startsWith('https://')) {
-        continue;
-      }
-      
-      // Normalize path
-      const normalizedPath = targetPath.startsWith('/') 
-        ? targetPath.substring(1) 
-        : targetPath;
-      
-      // Find matching file in our db
-      const matchingFile = allFilePaths.find(path => 
-        path === normalizedPath || 
-        path.endsWith(normalizedPath)
-      );
-      
-      if (matchingFile) {
-        relations.push({
-          // Generate our own ID
-          id: uuidv4(),
-          source_id: fileId,
-          target_id: matchingFile,
-          relation_type: 'link'
-        });
-      }
-    }
-    
-    return relations;
+    // Delegate to the more complete implementation below
+    return this.detectRelationshipsFull(content, fileId, allFilePaths, filePathToId);
   }
 
   /**
@@ -2466,7 +2433,7 @@ Documentation for auditing expert profiles and data.`
    * Detect relationships between markdown files based on links
    * This creates 'link' type relationships when a markdown file references another one
    */
-  private detectRelationships(
+  private detectRelationshipsFull(
     content: string,
     fileId: string,
     allFilePaths: string[],

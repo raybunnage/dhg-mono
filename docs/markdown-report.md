@@ -1,6 +1,6 @@
 # Markdown Files Report
 
-Generated: Sun Mar  2 14:30:09 PST 2025
+Generated: Mon Mar  3 15:36:29 PST 2025
 
 ## Overview
 
@@ -9,10 +9,10 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
 
 ## Summary
 
-- **Total markdown files:** 78
+- **Total markdown files:** 83
 - **README files:** 4
 - **Files in docs folders:** 64
-- **Files in other locations:** 10
+- **Files in other locations:** 15
 - **Prompt files:** 12 (included in total, marked with 📜)
 - **Root-level files:** 2
 
@@ -27,7 +27,7 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
 
 - 📄 [command-history-tracking.md](/docs/command-history-tracking.md) - 2025-03-02 11:14 (5007 bytes)
 - 📄 [documentation-management.md](/docs/documentation-management.md) - 2025-03-02 12:17 (4672 bytes)
-- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-02 14:30 (254 bytes)
+- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-03 15:36 (254 bytes)
 - 📁 **architecture/**
   - 📜 [claude_code_prompts.md](/docs/architecture/claude_code_prompts.md) - 2025-03-01 05:13 (4262 bytes) [PROMPT]
   - 📁 **supabase_design/**
@@ -154,8 +154,11 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
       - 📁 **supabase/**
   - 📁 **supabase/**
 - 📁 **dhg-improve-experts/**
+  - 📄 [DocumentTypeArchiveNotes.md](/apps/dhg-improve-experts/DocumentTypeArchiveNotes.md) - 2025-03-03 09:15 (2372 bytes)
   - 📄 [README-guts-dashboard.md](/apps/dhg-improve-experts/README-guts-dashboard.md) - 2025-03-01 06:46 (4625 bytes)
   - 📄 [README.md](/apps/dhg-improve-experts/README.md) - 2025-02-10 17:31 (2303 bytes)
+  - 📄 [SUPABASE_CONNECTION.md](/apps/dhg-improve-experts/SUPABASE_CONNECTION.md) - 2025-03-03 00:43 (3884 bytes)
+  - 📄 [SUPABASE_TYPES_MIGRATION.md](/apps/dhg-improve-experts/SUPABASE_TYPES_MIGRATION.md) - 2025-03-03 00:35 (3707 bytes)
   - 📄 [experts-audit.md](/apps/dhg-improve-experts/experts-audit.md) - 2025-02-28 06:48 (4895 bytes)
   - 📁 **apps/**
     - 📁 **dhg-improve-experts/**
@@ -169,6 +172,8 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
     - 📄 [docs-organization.md](/apps/dhg-improve-experts/docs/docs-organization.md) - 2025-03-02 12:06 (3222 bytes)
     - 📄 [documentation-report.md](/apps/dhg-improve-experts/docs/documentation-report.md) - 2025-03-02 13:20 (4593 bytes)
     - 📄 [guts-dashboard.md](/apps/dhg-improve-experts/docs/guts-dashboard.md) - 2025-03-01 06:44 (4630 bytes)
+    - 📄 [markdown-report.md](/apps/dhg-improve-experts/docs/markdown-report.md) - 2025-03-03 02:35 (1576 bytes)
+    - 📄 [test-documentation.md](/apps/dhg-improve-experts/docs/test-documentation.md) - 2025-03-03 02:26 (2249 bytes)
   - 📁 **public/**
     - 📁 **docs/**
       - 📁 **prompts/**
@@ -186,22 +191,34 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
       - 📁 **types/**
     - 📁 **api/**
     - 📁 **app/**
+      - 📁 **api/**
+        - 📁 **docs-process-queue/**
+        - 📁 **docs-sync/**
+        - 📁 **markdown-report/**
       - 📁 **experts/**
         - 📁 **profiler/**
     - 📁 **components/**
       - 📁 **_archive/**
+        - 📁 **document-types/**
       - 📁 **document-types/**
+      - 📁 **examples/**
       - 📁 **experts/**
       - 📁 **layout/**
       - 📁 **pdf/**
       - 📁 **ui/**
     - 📁 **config/**
+    - 📁 **hooks/**
     - 📁 **integrations/**
+      - 📁 **_archive/**
       - 📁 **supabase/**
     - 📁 **lib/**
+      - 📁 **_archive/**
+        - 📁 **supabase.2025-03-03/**
       - 📁 **google-drive/**
-      - 📁 **supabase/**
     - 📁 **pages/**
+      - 📁 **_archive/**
+        - 📁 **document-types/**
+      - 📁 **document-types/**
       - 📁 **documents/**
     - 📁 **schemas/**
     - 📁 **server/**
@@ -213,6 +230,12 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
     - 📁 **utils/**
       - 📁 **code-analysis/**
       - 📁 **registrations/**
+- 📁 **dhg-platform-admin/**
+  - 📁 **src/**
+    - 📁 **pages/**
+      - 📁 **api/**
+        - 📁 **sync-history/**
+      - 📁 **google-drive/**
 - 📁 **scripts/**
   - 📁 **whisper/**
 

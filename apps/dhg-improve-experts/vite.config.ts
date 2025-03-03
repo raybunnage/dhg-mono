@@ -66,7 +66,7 @@ export default defineConfig(({ mode }) => {
               try {
                 console.log('POST request to /api/docs-sync received');
                 // Import dynamically to avoid circular dependencies
-                const { syncDocumentationToDatabase } = await import('./src/api/markdown-report');
+                const { syncDocumentationToDatabase } = await import('./src/api/markdown-report.ts');
                 const result = await syncDocumentationToDatabase();
                 
                 console.log('Sync result:', result);
