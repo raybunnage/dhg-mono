@@ -641,21 +641,33 @@ async function getLocalSourceFiles() {
  * Insert selected Google Drive files into the database
  * With adjusted approach to avoid user references that cause permission errors
  */
-export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: number, errors: number, details: {newFiles: string[], updatedFiles: string[], errorFiles: string[]}}> {
+export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: number, errors: number, details: {newFiles: string[], updatedFiles: string[], errorFiles: string[]}}>  {
   let successCount = 0;
   let errorCount = 0;
   const newFiles: string[] = [];
   const updatedFiles: string[] = [];
   const errorFiles: string[] = [];
+  const errorDetails: {id: string, message: string}[] = [];
   
   try {
-    console.log(`Inserting ${files.length} Google Drive files into the database`);
+    console.log(`INSERTING FILES: Starting to insert ${files.length} Google Drive files into the database`);
+    
+    // Check if we have valid environment variables for Supabase connection
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('ERROR: Missing Supabase URL or service role key in environment variables');
+      throw new Error('Missing required environment variables for database connection');
+    }
+    
+    console.log(`INSERTING FILES: Connecting to Supabase at ${supabaseUrl.substring(0, 20)}...`);
     
     // Create a supabase admin client with service role key to bypass RLS
     // Use a different storage key to avoid the warning about multiple clients
     const supabaseAdmin = createClient<Database>(
-      import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+      supabaseUrl,
+      serviceRoleKey,
       {
         auth: {
           storageKey: 'dhg-supabase-admin-auth',
@@ -664,22 +676,49 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
       }
     );
 
+    // Test the connection first
+    try {
+      const { data: testData, error: testError } = await supabaseAdmin
+        .from('sources_google')
+        .select('id')
+        .limit(1);
+      
+      if (testError) {
+        console.error('ERROR: Failed to connect to sources_google table:', testError);
+        throw new Error(`Database connection test failed: ${testError.message}`);
+      } else {
+        console.log('INSERTING FILES: Database connection test successful');
+      }
+    } catch (testErr) {
+      console.error('ERROR: Exception during connection test:', testErr);
+      throw new Error(`Failed to establish database connection: ${testErr.message}`);
+    }
+
     // Process files in batches to avoid overloading the database
-    const batchSize = 10; // Process in larger batches now that we don't need user validation
+    const batchSize = 5; // Process in smaller batches to be more careful
     
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);
-      console.log(`Processing batch ${i/batchSize + 1} of ${Math.ceil(files.length/batchSize)}`);
+      console.log(`INSERTING FILES: Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(files.length/batchSize)}`);
       
       // First check which files already exist in the database
       const fileIds = batch.map(file => file.id);
-      const { data: existingFiles } = await supabaseAdmin
+      
+      // Log the file IDs we're checking
+      console.log(`INSERTING FILES: Checking existing files with these IDs: ${fileIds.join(', ')}`);
+      
+      const { data: existingFiles, error: existingError } = await supabaseAdmin
         .from('sources_google')
         .select('drive_id')
         .in('drive_id', fileIds);
+      
+      if (existingError) {
+        console.error('ERROR: Failed to check existing files:', existingError);
+        throw new Error(`Failed to check existing files: ${existingError.message}`);
+      }
         
       const existingFileIds = new Set(existingFiles?.map(f => f.drive_id) || []);
-      console.log(`Found ${existingFileIds.size} existing files in this batch`);
+      console.log(`INSERTING FILES: Found ${existingFileIds.size} existing files in this batch of ${batch.length}`);
       
       // Create records for insertion or update
       const records = batch.map(file => {
@@ -692,7 +731,6 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
         let fullPath = null;
         if (parentFolderId) {
           // For simplicity, just use parent ID as path for now
-          // In a real implementation, you might want to build the full path
           fullPath = `/folders/${parentFolderId}`;
         }
         
@@ -733,40 +771,120 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
         return record;
       });
       
-      // Don't log the entire record - it's too verbose
-      console.log(`Inserting batch of ${records.length} files`);
+      console.log(`INSERTING FILES: Prepared ${records.length} records for database (${newFiles.length - (newFiles.length - records.filter(r => !existingFileIds.has(r.drive_id)).length)} new, ${updatedFiles.length - (updatedFiles.length - records.filter(r => existingFileIds.has(r.drive_id)).length)} updates)`);
 
       // Split into new records and updates
       const newRecords = records.filter(record => !existingFileIds.has(record.drive_id));
       const updateRecords = records.filter(record => existingFileIds.has(record.drive_id));
       
+      // Log a sample record structure (with sensitive fields omitted)
+      if (newRecords.length > 0) {
+        const sampleRecord = { ...newRecords[0] };
+        delete sampleRecord.metadata; // Too verbose
+        console.log('INSERTING FILES: Sample record structure:', JSON.stringify(sampleRecord));
+      }
+      
       // Insert new records
       if (newRecords.length > 0) {
-        console.log(`Inserting ${newRecords.length} new files`);
-        const { data: insertedData, error: insertError } = await supabaseAdmin
-          .from('sources_google')
-          .insert(newRecords)
-          .select();
-          
-        if (insertError) {
-          console.error('Error inserting new files:', insertError);
+        console.log(`INSERTING FILES: Inserting ${newRecords.length} new files into sources_google table`);
+        try {
+          const { data: insertedData, error: insertError } = await supabaseAdmin
+            .from('sources_google')
+            .insert(newRecords)
+            .select();
+            
+          if (insertError) {
+            console.error('ERROR: Error inserting new files:', insertError);
+            
+            // If the error is related to RLS policies, try to diagnose
+            if (insertError.message.includes('policy')) {
+              console.error('ERROR: This appears to be an RLS policy error. Check that you are using the service role key correctly.');
+            }
+            
+            errorCount += newRecords.length;
+            // Track which files had errors
+            newRecords.forEach(record => {
+              errorFiles.push(record.drive_id);
+              errorDetails.push({
+                id: record.drive_id,
+                message: insertError.message
+              });
+            });
+          } else {
+            if (!insertedData || insertedData.length === 0) {
+              console.warn('WARNING: Insert succeeded but no data was returned. This may indicate a partial success.');
+              console.log('INSERTING FILES: Verifying insertions by querying...');
+              
+              // Verify the insertions were successful by querying for the records
+              const newDriveIds = newRecords.map(record => record.drive_id);
+              const { data: verificationData, error: verificationError } = await supabaseAdmin
+                .from('sources_google')
+                .select('id, drive_id, name')
+                .in('drive_id', newDriveIds);
+                
+              if (verificationError) {
+                console.error('ERROR: Failed to verify insertions:', verificationError);
+              } else {
+                console.log(`INSERTING FILES: Verification found ${verificationData?.length || 0} of ${newDriveIds.length} expected records`);
+                
+                // Use verification data to count successes
+                if (verificationData) {
+                  const verifiedIds = new Set(verificationData.map(f => f.drive_id));
+                  let verifiedSuccess = 0;
+                  let verifiedMissing = 0;
+                  
+                  for (const driveId of newDriveIds) {
+                    if (verifiedIds.has(driveId)) {
+                      verifiedSuccess++;
+                    } else {
+                      verifiedMissing++;
+                      errorFiles.push(driveId);
+                      errorDetails.push({
+                        id: driveId,
+                        message: 'Insert appeared to succeed but record was not found on verification'
+                      });
+                    }
+                  }
+                  
+                  console.log(`INSERTING FILES: Verification results: ${verifiedSuccess} confirmed, ${verifiedMissing} missing`);
+                  successCount += verifiedSuccess;
+                  errorCount += verifiedMissing;
+                }
+              }
+            } else {
+              console.log(`INSERTING FILES: Successfully inserted ${insertedData?.length || 0} new files`);
+              successCount += insertedData?.length || 0;
+              
+              // Log the first few inserted IDs for verification
+              if (insertedData && insertedData.length > 0) {
+                console.log(`INSERTING FILES: First few inserted IDs: ${insertedData.slice(0, 3).map(d => d.id).join(', ')}`);
+              }
+            }
+          }
+        } catch (insertException) {
+          console.error('ERROR: Exception during insert operation:', insertException);
           errorCount += newRecords.length;
-          // Track which files had errors
-          newRecords.forEach(record => errorFiles.push(record.drive_id));
-        } else {
-          console.log(`Successfully inserted ${insertedData?.length || 0} new files`);
-          successCount += insertedData?.length || 0;
+          // Track which files had exceptions
+          newRecords.forEach(record => {
+            errorFiles.push(record.drive_id);
+            errorDetails.push({
+              id: record.drive_id,
+              message: insertException.message || 'Unknown error during insert'
+            });
+          });
         }
       }
       
       // Update existing records
       if (updateRecords.length > 0) {
-        console.log(`Updating ${updateRecords.length} existing files`);
+        console.log(`INSERTING FILES: Updating ${updateRecords.length} existing files`);
         
         // We need to update one by one since Supabase doesn't support bulk upsert
         for (const record of updateRecords) {
           try {
-            const { error: updateError } = await supabaseAdmin
+            console.log(`INSERTING FILES: Updating file ${record.drive_id} (${record.name})`);
+            
+            const { data: updateData, error: updateError } = await supabaseAdmin
               .from('sources_google')
               .update({
                 name: record.name,
@@ -780,26 +898,49 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
                 metadata: record.metadata,
                 size: record.size
               })
-              .eq('drive_id', record.drive_id);
+              .eq('drive_id', record.drive_id)
+              .select();
               
             if (updateError) {
-              console.error(`Error updating file ${record.drive_id}:`, updateError);
+              console.error(`ERROR: Error updating file ${record.drive_id}:`, updateError);
               errorCount++;
               errorFiles.push(record.drive_id);
+              errorDetails.push({
+                id: record.drive_id,
+                message: updateError.message
+              });
             } else {
               successCount++;
+              console.log(`INSERTING FILES: Successfully updated ${record.drive_id}`);
             }
           } catch (updateErr) {
-            console.error(`Exception updating file ${record.drive_id}:`, updateErr);
+            console.error(`ERROR: Exception updating file ${record.drive_id}:`, updateErr);
             errorCount++;
             errorFiles.push(record.drive_id);
+            errorDetails.push({
+              id: record.drive_id,
+              message: updateErr.message || 'Unknown error during update'
+            });
           }
         }
       }
+      
+      // Add a small delay between batches to reduce database load
+      if (i + batchSize < files.length) {
+        console.log('INSERTING FILES: Pausing briefly between batches...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
     
-    // Sync history tracking is disabled
-    console.log(`Completed insertion: ${successCount} successful, ${errorCount} errors`);
+    console.log(`INSERTING FILES: Completed insertion: ${successCount} successful, ${errorCount} errors`);
+    
+    // If we have error details, log them
+    if (errorDetails.length > 0) {
+      console.error('ERROR DETAILS:');
+      errorDetails.forEach(err => {
+        console.error(`File ${err.id}: ${err.message}`);
+      });
+    }
     
     // Return the results with detailed information
     return {
@@ -812,7 +953,7 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
       }
     };
   } catch (error) {
-    console.error('Error in insertGoogleFiles:', error);
+    console.error('ERROR: Exception in insertGoogleFiles:', error);
     return {
       success: successCount,
       errors: errorCount + (files.length - successCount - errorCount),
