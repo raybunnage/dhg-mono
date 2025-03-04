@@ -37,7 +37,81 @@
     ]
   }
 }
-4) The email s
+4) There is another element after that that I do in the processing. It extracts the content from the body of the email into the following table:
+CREATE TABLE "email_contents" (
+            email_content_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email_id INTEGER,
+            how_many_participants INTEGER,
+            participants TEXT,
+            summary_of_the_email TEXT,
+            is_science_discussion INTEGER,
+            is_science_material INTEGER,
+            is_meeting_focused INTEGER,
+            good_quotes TEXT
+        )
+It references the original email table through the email_id but it adds the important fiels above
+5) to geneerate this file I use ai to get the summary and analyze the flags
+6) another file I generate from this are all the urls I find in the email content 
+
+I've made significant improvements to the folder preview and insertion
+  functionality:
+
+  1. Enhanced the insertGoogleFiles function:
+    - Added comprehensive error handling and detailed logging
+    - Added connection testing to catch configuration issues early
+    - Reduced batch size from 10 to 5 files for more reliable processing
+    - Added verification of successful insertions
+    - Improved error reporting with specific error messages
+    - Added pauses between batches to reduce database load
+  2. Improved error handling in the handleInsertFiles function:
+    - Added checks for required environment variables
+    - Better user feedback with more detailed error messages
+    - Proper error handling when no files are successfully inserted
+    - Clear indicators showing whether operations are in preview mode or database
+  insertion mode
+  3. Added configuration validation and troubleshooting:
+    - Early warning if the Service Role Key is missing
+    - Added a Database Configuration Status section to the Auth tab
+    - Added a "Test Database Connection" button for easy verification
+    - Added a troubleshooting section with common issues and solutions
+
+  The root cause of the problem is likely a missing or invalid
+  VITE_SUPABASE_SERVICE_ROLE_KEY in your environment variables. This key is needed to
+   bypass Row Level Security in Supabase when inserting records. Without it, the
+  insertion appears to work but actually silently fails, resulting in no records
+  being added to the database.
+
+  To fix the issue:
+  1. Make sure your .env file has a valid VITE_SUPABASE_SERVICE_ROLE_KEY (should
+  start with "eyJh...")
+  2. Restart your development server after adding the key
+  3. Use the "Test Database Connection" button in the Auth tab to verify the
+  connection works
+  4. Try the Preview and Add Files functionality again
+
+  If issues persist, the detailed logging I've added to the console (open F12
+  developer tools) will provide more information about what's going wrong.
+
+
+Great! I've now added a button on the Sync page to preview folder contents before
+  adding them to the database. Here's what I did:
+
+  1. Created a new handlePreviewFolder function that:
+    - Fetches and analyzes all files and folders in a Google Drive folder
+    - Marks them with an _isPreview flag
+    - Displays the counts and hierarchical structure
+    - Doesn't insert anything into the database
+  2. Added "Preview Contents" buttons:
+    - In the Add New Folder section
+    - In the Existing Folder section
+  3. Added the ability to convert a preview to actual database entries:
+    - Shows a clear "Preview Mode" indicator
+    - Added a "Add Files to Database" button that inserts the previewed files
+  4. Updated the UI to clearly indicate when files are just being analyzed vs
+  actually inserted
+
+  The user can now analyze folders to see what they will be getting without
+  committing to adding them to the database.
  
 Great! The error has been fixed by replacing toast.info() with toast.success().
 

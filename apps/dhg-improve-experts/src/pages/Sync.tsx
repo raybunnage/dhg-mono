@@ -34,6 +34,7 @@ interface DriveFile {
   size?: string;
   parents?: string[];
   webViewLink?: string;
+  _isPreview?: boolean; // Flag for files that are only for preview
 }
 
 interface FolderOption {
@@ -112,8 +113,23 @@ function Sync() {
   const syncingRef = useRef<boolean>(false);
   const extractionRef = useRef<boolean>(false);
 
-  // Check if the sync_statistics table has the required structure
+  // Check essential configuration on component mount
   useEffect(() => {
+    // Check for service role key
+    const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      console.error("CRITICAL ERROR: Missing VITE_SUPABASE_SERVICE_ROLE_KEY environment variable");
+      toast.error(
+        <div>
+          <p className="font-bold">Missing Service Role Key</p>
+          <p className="text-sm mt-1">Database additions will not work without a service role key</p>
+          <p className="text-xs mt-2">Add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env file</p>
+        </div>,
+        { duration: 10000, id: 'missing-service-role-key' }
+      );
+    }
+    
+    // Check if the sync_statistics table has the required structure
     const checkAndUpdateSyncStatisticsTable = async () => {
       try {
         // Try to fetch one record to check if table exists
@@ -709,9 +725,224 @@ function Sync() {
       setIsInserting(false);
     }
   };
+  
+  // Handle inserting files from preview
+  const handleInsertFiles = async (files: DriveFile[]) => {
+    if (files.length === 0) {
+      toast.error('No files to insert');
+      return;
+    }
+    
+    try {
+      setIsInserting(true);
+      const toastId = toast.loading(`Inserting ${files.length} files into database...`);
+      
+      console.log(`Preparing to insert ${files.length} files from preview`);
+      
+      // Verify Supabase URL and service role key are set
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+        toast.dismiss(toastId);
+        toast.error('Missing Supabase credentials. Please check your environment variables.');
+        console.error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_SERVICE_ROLE_KEY environment variables');
+        return;
+      }
+      
+      // Insert the files
+      const result = await insertGoogleFiles(files);
+      
+      toast.dismiss(toastId);
+      
+      // Check if any files were actually inserted
+      if (result.success === 0) {
+        // No successful insertions, show a more detailed error
+        toast.error(
+          <div>
+            <p>Failed to insert files into database!</p>
+            <p className="text-sm mt-1">Check console for details (F12)</p>
+            <p className="text-xs mt-1 text-gray-300">
+              Common issues: missing service role key or permissions
+            </p>
+          </div>,
+          { duration: 6000 }
+        );
+        
+        console.error('Insertion failed - no records were inserted successfully. Check your Supabase service role key and permissions.');
+        
+        // Keep the _isPreview flag so the user can try again
+        return;
+      }
+      
+      // Clear the _isPreview flag on all files
+      const updatedFiles = specificFolderFiles.map(file => ({
+        ...file,
+        _isPreview: false
+      }));
+      setSpecificFolderFiles(updatedFiles);
+      
+      // Update file stats
+      fetchFileStats();
+      
+      // Show successful toast
+      toast.success(
+        <div>
+          <p>Successfully inserted {result.success} files</p>
+          <p className="text-sm mt-1">
+            {result.details.newFiles.length} new, {result.details.updatedFiles.length} updated
+          </p>
+        </div>,
+        { duration: 5000 }
+      );
+      
+      // Show error toast if there were any errors
+      if (result.errors > 0) {
+        toast.error(
+          <div>
+            <p>There were {result.errors} errors during insertion</p>
+            <p className="text-sm mt-1">Check console for details (F12)</p>
+          </div>,
+          { duration: 5000 }
+        );
+        
+        console.error('Error details for failed insertions:', result.details.errorFiles);
+      }
+    } catch (error) {
+      console.error('Error inserting files:', error);
+      toast.error(
+        <div>
+          <p>Error inserting files: {error.message}</p>
+          <p className="text-sm mt-1">Check console for details (F12)</p>
+        </div>,
+        { duration: 6000 }
+      );
+    } finally {
+      setIsInserting(false);
+    }
+  };
 
   // These functions have been deprecated with removal of sync history
   
+  // Handle preview of folder contents without inserting
+  const handlePreviewFolder = async (folderId: string) => {
+    if (!folderId || folderId.trim() === '') {
+      toast.error('Please enter a valid Google Drive folder ID');
+      return;
+    }
+    
+    if (!isTokenValid) {
+      toast.error('Please authenticate with Google Drive first');
+      return;
+    }
+    
+    try {
+      setIsSearchingFolder(true);
+      const toastId = toast.loading('Analyzing folder contents...');
+      
+      // Call the search function - it uses authenticatedFetch internally which handles token validation and refresh
+      const result = await searchSpecificFolder(folderId);
+      
+      if (result.files.length === 0) {
+        toast.error('No files found in the specified folder');
+        setIsSearchingFolder(false);
+        toast.dismiss(toastId);
+        return;
+      }
+      
+      // Mark all files as preview mode
+      const previewFiles = result.files.map(file => ({
+        ...file,
+        _isPreview: true // Add marker to indicate this is preview mode
+      }));
+      
+      // Store the marked files
+      setSpecificFolderFiles(previewFiles);
+      
+      // Calculate stats
+      const folderCount = result.files.filter(file => 
+        file.mimeType === 'application/vnd.google-apps.folder'
+      ).length;
+      
+      const fileCount = result.files.length - folderCount;
+      
+      // Count file types
+      const fileTypes: Record<string, number> = {};
+      result.files.forEach(file => {
+        const type = file.mimeType || 'unknown';
+        fileTypes[type] = (fileTypes[type] || 0) + 1;
+      });
+      
+      // Set stats
+      setSpecificFolderStats({
+        totalCount: result.totalCount,
+        folderCount,
+        fileCount,
+        fileTypes,
+        hasExceededLimit: result.hasExceededLimit
+      });
+      
+      toast.dismiss(toastId);
+      toast.success(`Analysis complete: Found ${result.totalCount} files and folders`);
+      
+      // Set active tab to dashboard to show results
+      setActiveTab('dashboard');
+      
+      // Scroll to the folder analysis section
+      setTimeout(() => {
+        const folderAnalysisSection = document.getElementById('folder-analysis-section');
+        if (folderAnalysisSection) {
+          folderAnalysisSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+      
+      // DEBUG OUTPUT: Log details about files found
+      console.log('==== FOLDER PREVIEW DETAILS ====');
+      console.log(`Total count: ${result.files.length}`);
+      console.log('First 10 files:'); 
+      result.files.slice(0, 10).forEach(file => {
+        console.log(`- ${file.name} (${file.id}) - Type: ${file.mimeType}`);
+      });
+      
+      // Count file types and folders
+      const fileTypeCounter: Record<string, number> = {};
+      result.files.forEach(file => {
+        const type = file.mimeType || 'unknown';
+        fileTypeCounter[type] = (fileTypeCounter[type] || 0) + 1;
+      });
+      
+      // Safely count folders at each level
+      const foldersByParent: Record<string, number> = {};
+      result.files.forEach(file => {
+        if (file.parents && Array.isArray(file.parents) && file.parents.length > 0) {
+          const parentId = file.parents[0];
+          foldersByParent[parentId] = (foldersByParent[parentId] || 0) + 1;
+        }
+      });
+      
+      console.log('File types found:', fileTypeCounter);
+      console.log('Files by parent folder:', foldersByParent);
+      
+      // Find the root folder
+      const rootFolder = result.files.find(f => f.id === folderId);
+      const foldersFound = result.files.filter(f => f.mimeType === 'application/vnd.google-apps.folder').length;
+      const filesFound = result.files.length - foldersFound;
+      
+      // Add a more detailed toast with stats
+      toast.success(
+        `Folder contents: ${result.files.length} items\n` +
+        `- ${foldersFound} folders\n` + 
+        `- ${filesFound} files\n` +
+        `Root folder: ${rootFolder?.name || 'Unknown'}`
+      );
+      
+      console.log('=========================')
+    } catch (error) {
+      console.error('Error previewing folder:', error);
+      toast.dismiss();
+      toast.error(`Error: ${error.message}`);
+    } finally {
+      setIsSearchingFolder(false);
+    }
+  };
+
   // Handle search for specific folder (using user-provided ID)
   const handleSpecificFolderSearch = async () => {
     // Use the folder ID from state
@@ -1073,9 +1304,9 @@ function Sync() {
       </div>
       
       {/* Specific Folder Search */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
+      <div id="folder-analysis-section" className="bg-white rounded-lg shadow p-6 mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Specific Folder Analysis</h2>
+          <h2 className="text-xl font-semibold">Folder Content Analysis</h2>
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -1101,10 +1332,11 @@ function Sync() {
         
         <div className="mb-2 text-sm">
           <p>
-            Enter a Google Drive folder ID to recursively search all files and folders within it
+            Enter a Google Drive folder ID to analyze or search contents
           </p>
           <p className="text-gray-500 text-xs mt-1">
-            This scan will find up to 100 files and folders, skipping shortcuts to other folders
+            <strong>Preview:</strong> Count files and folders without adding to database<br/>
+            <strong>Search:</strong> Find and insert files into the database (up to 5000 items)
           </p>
         </div>
         
@@ -1112,7 +1344,14 @@ function Sync() {
         {specificFolderStats && (
           <div className="mt-4">
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4">
-              <h3 className="text-lg font-medium text-blue-800 mb-2">Search Results</h3>
+              <h3 className="text-lg font-medium text-blue-800 mb-2">
+                Analysis Results
+                {specificFolderFiles.some(f => f.id === specificFolderId) && (
+                  <span className="ml-2 text-sm bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
+                    Preview Mode - Not Added to Database
+                  </span>
+                )}
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                 <div className="bg-white rounded-lg p-3 shadow-sm">
                   <div className="text-sm text-gray-500">Total Items</div>
@@ -1157,9 +1396,40 @@ function Sync() {
               <div>
                 <span className="text-gray-700 font-medium">Folder ID: </span>
                 <code className="bg-gray-100 px-2 py-1 rounded">{specificFolderId}</code>
-                <span className="ml-4 text-green-600 font-medium">
-                  ✓ Files automatically added to database
-                </span>
+                
+                {/* Conditionally display the file status */}
+                {specificFolderFiles.some(f => f.id === specificFolderId) && (
+                  <div className="flex items-center">
+                    <span className={`ml-4 ${
+                      specificFolderFiles[0]._isPreview 
+                        ? 'text-amber-600'
+                        : 'text-green-600'
+                    } font-medium`}>
+                      {specificFolderFiles[0]._isPreview 
+                        ? '📊 Preview Analysis Only - Not Added to Database'
+                        : '✓ Files automatically added to database'}
+                    </span>
+                    
+                    {/* Add button to actually insert the files if this was just a preview */}
+                    {specificFolderFiles[0]._isPreview && (
+                      <button
+                        onClick={() => {
+                          const originalFiles = specificFolderFiles.map(({_isPreview, ...file}) => file);
+                          handleInsertFiles(originalFiles);
+                        }}
+                        disabled={isInserting}
+                        className="ml-4 px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 flex items-center"
+                      >
+                        {isInserting ? 'Inserting...' : (
+                          <>
+                            <span className="mr-1">Add Files to Database</span>
+                            <span>→</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             
@@ -1446,17 +1716,34 @@ function Sync() {
           </p>
         </div>
         
-        <button
-          onClick={handleNewFolderSync}
-          disabled={isNewFolderLoading || !newFolderId || !isTokenValid}
-          className={`w-full px-4 py-2 rounded-lg text-white font-medium ${
-            isNewFolderLoading || !newFolderId || !isTokenValid
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-blue-500 hover:bg-blue-600'
-          }`}
-        >
-          {isNewFolderLoading ? 'Adding New Folder...' : 'Add & Sync New Folder'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleNewFolderSync}
+            disabled={isNewFolderLoading || !newFolderId || !isTokenValid}
+            className={`flex-1 px-4 py-2 rounded-lg text-white font-medium ${
+              isNewFolderLoading || !newFolderId || !isTokenValid
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+          >
+            {isNewFolderLoading ? 'Adding New Folder...' : 'Add & Sync New Folder'}
+          </button>
+          
+          <button
+            onClick={() => {
+              setSpecificFolderId(newFolderId);
+              handlePreviewFolder(newFolderId);
+            }}
+            disabled={isSearchingFolder || !newFolderId || !isTokenValid}
+            className={`px-4 py-2 rounded-lg text-white font-medium ${
+              isSearchingFolder || !newFolderId || !isTokenValid
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-amber-500 hover:bg-amber-600'
+            }`}
+          >
+            {isSearchingFolder ? 'Analyzing...' : 'Preview Contents'}
+          </button>
+        </div>
       </div>
       
       {/* Update Existing Folder */}
@@ -1486,17 +1773,34 @@ function Sync() {
           </select>
         </div>
         
-        <button
-          onClick={handleExistingFolderSync}
-          disabled={isExistingFolderLoading || !existingFolderId || !isTokenValid}
-          className={`w-full px-4 py-2 rounded-lg text-white font-medium ${
-            isExistingFolderLoading || !existingFolderId || !isTokenValid
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-green-500 hover:bg-green-600'
-          }`}
-        >
-          {isExistingFolderLoading ? 'Syncing...' : 'Sync Selected Folder'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExistingFolderSync}
+            disabled={isExistingFolderLoading || !existingFolderId || !isTokenValid}
+            className={`flex-1 px-4 py-2 rounded-lg text-white font-medium ${
+              isExistingFolderLoading || !existingFolderId || !isTokenValid
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-green-500 hover:bg-green-600'
+            }`}
+          >
+            {isExistingFolderLoading ? 'Syncing...' : 'Sync Selected Folder'}
+          </button>
+          
+          <button
+            onClick={() => {
+              setSpecificFolderId(existingFolderId);
+              handlePreviewFolder(existingFolderId);
+            }}
+            disabled={isSearchingFolder || !existingFolderId || !isTokenValid}
+            className={`px-4 py-2 rounded-lg text-white font-medium ${
+              isSearchingFolder || !existingFolderId || !isTokenValid
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-amber-500 hover:bg-amber-600'
+            }`}
+          >
+            {isSearchingFolder ? 'Analyzing...' : 'Preview Contents'}
+          </button>
+        </div>
         
         {existingFolderId && (
           <div className="mt-4 pt-4 border-t">
@@ -1777,6 +2081,129 @@ function Sync() {
           >
             Load Token from .env
           </button>
+        </div>
+      </div>
+      
+      {/* Database Configuration Status */}
+      <div className="mt-6 p-4 border rounded-lg">
+        <h3 className="text-lg font-medium mb-4">Database Configuration Status</h3>
+        
+        <div className="space-y-4">
+          {/* Service Role Key */}
+          <div className="p-3 rounded-lg bg-gray-50">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <div className={`w-3 h-3 rounded-full mr-2 ${
+                  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ? 'bg-green-500' : 'bg-red-500'
+                }`}></div>
+                <span className="font-medium text-sm">Supabase Service Role Key</span>
+              </div>
+              
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY 
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ? 'Present' : 'Missing'}
+              </span>
+            </div>
+            
+            {!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY && (
+              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
+                <p className="font-medium">Missing VITE_SUPABASE_SERVICE_ROLE_KEY!</p>
+                <p className="mt-1">
+                  The service role key is required for database operations like adding files.
+                  Without this key, insertions will fail despite appearing to work in the UI.
+                </p>
+                <p className="mt-2 font-bold">
+                  Add this key to your .env file to enable database operations.
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {/* Supabase URL */}
+          <div className="p-3 rounded-lg bg-gray-50">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <div className={`w-3 h-3 rounded-full mr-2 ${
+                  import.meta.env.VITE_SUPABASE_URL ? 'bg-green-500' : 'bg-red-500'
+                }`}></div>
+                <span className="font-medium text-sm">Supabase URL</span>
+              </div>
+              
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                import.meta.env.VITE_SUPABASE_URL 
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {import.meta.env.VITE_SUPABASE_URL ? 'Present' : 'Missing'}
+              </span>
+            </div>
+          </div>
+          
+          {/* Connection Test */}
+          <div className="mt-3">
+            <button
+              onClick={async () => {
+                const toastId = toast.loading('Testing database connection...');
+                try {
+                  // Check if we have the necessary environment variables
+                  if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+                    toast.dismiss(toastId);
+                    toast.error('Missing environment variables. Check your .env file.');
+                    return;
+                  }
+                  
+                  // Create a supabase admin client
+                  const supabaseAdmin = createClient(
+                    import.meta.env.VITE_SUPABASE_URL,
+                    import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+                    {
+                      auth: {
+                        storageKey: 'dhg-supabase-admin-auth-test',
+                        persistSession: false
+                      }
+                    }
+                  );
+                  
+                  // Test the connection
+                  const { data, error } = await supabaseAdmin
+                    .from('sources_google')
+                    .select('id')
+                    .limit(1);
+                  
+                  toast.dismiss(toastId);
+                  
+                  if (error) {
+                    console.error('Database connection test failed:', error);
+                    toast.error(`Connection test failed: ${error.message}`);
+                  } else {
+                    console.log('Database connection test successful:', data);
+                    toast.success('Successfully connected to database!');
+                  }
+                } catch (err) {
+                  toast.dismiss(toastId);
+                  console.error('Error testing database connection:', err);
+                  toast.error(`Connection error: ${err.message}`);
+                }
+              }}
+              className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+            >
+              Test Database Connection
+            </button>
+          </div>
+        </div>
+        
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+          <h4 className="font-medium text-yellow-800">Troubleshooting Database Issues</h4>
+          <ul className="mt-2 list-disc pl-5 text-yellow-700 space-y-1">
+            <li>Make sure your .env file has the VITE_SUPABASE_SERVICE_ROLE_KEY</li>
+            <li>The service role key should start with "eyJh..." and be very long</li>
+            <li>If insertions show success but no records appear, it's almost certainly a service role key issue</li>
+            <li>Check console logs (F12) for detailed error messages during operations</li>
+            <li>Try the "Test Database Connection" button to verify your credentials</li>
+          </ul>
         </div>
       </div>
     </div>
