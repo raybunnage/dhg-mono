@@ -9,8 +9,8 @@ export function MainNavbar() {
     { name: 'Viewer', href: '/viewer' },
     { name: 'Show', href: '/show' },
     { name: 'Sync', href: '/sync' },
-    // { name: 'Docs', href: '/docs' }, // Archived on 2025-03-04
-    { name: 'Docs Explorer', href: '/docs-explorer' },
+    { name: 'Docs', href: '/docs' },
+    // { name: 'Docs Explorer', href: '/docs-explorer' }, // Replaced by Docs
     // { name: 'Doc Tables Test', href: '/documentation-test' }, // Archived on 2025-03-04
     { name: 'AI', href: '/ai' },
     { name: 'Classify', href: '/classify' },
