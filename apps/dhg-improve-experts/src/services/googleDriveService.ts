@@ -360,26 +360,8 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
   try {
     console.log('Starting sync operation with ID:', syncId);
     
-    // First create a sync history record
-    const { error: insertError } = await supabase.from('sync_history').insert({
-      id: syncId,
-      folder_id: folderId,
-      folder_name: folderName,
-      timestamp: new Date().toISOString(),
-      status: 'in_progress',
-      files_processed: 0,
-      files_total: 0,
-      files_added: 0,
-      files_updated: 0,
-      files_skipped: 0,
-      files_error: 0
-    });
-    
-    if (insertError) {
-      console.error('Error creating sync history record:', insertError);
-    } else {
-      console.log('Created sync history record with ID:', syncId);
-    }
+    // Sync history is disabled - recording only locally
+    console.log('Starting sync operation with ID:', syncId);
     
     // Get sync stats - the override will be used inside getDriveSyncStats
     const syncStats = await getDriveSyncStats();
@@ -410,27 +392,8 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
       console.log('No new files to sync');
     }
     
-    // After sync completes, update the sync history record
-    const { error: updateError } = await supabase.from('sync_history')
-      .update({
-        completed_at: new Date().toISOString(),
-        status: errors.length > 0 ? 'completed_with_errors' : 'completed',
-        files_processed: addedCount,
-        files_total: newFiles.length,
-        files_added: addedCount,
-        files_updated: 0,
-        files_skipped: newFiles.length - addedCount - errors.length,
-        files_error: errors.length,
-        duration_ms: Date.now() - new Date(syncStats.timestamp || Date.now()).getTime(),
-        error_message: errors.length > 0 ? JSON.stringify(errors) : null
-      })
-      .eq('id', syncId);
-    
-    if (updateError) {
-      console.error('Error updating sync history record:', updateError);
-    } else {
-      console.log('Updated sync history record for ID:', syncId);
-    }
+    // Sync history tracking disabled
+    console.log('Sync completed with ID:', syncId, 'Added:', addedCount, 'Errors:', errors.length);
     
     return {
       stats: syncStats,
@@ -446,15 +409,8 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
   } catch (error) {
     console.error('Error during sync operation:', error);
     
-    // Update sync history to indicate failure
-    await supabase.from('sync_history')
-      .update({
-        completed_at: new Date().toISOString(),
-        status: 'failed',
-        files_processed: 0,
-        error_message: error.message
-      })
-      .eq('id', syncId);
+    // Sync history tracking disabled
+    console.error('Sync failed with ID:', syncId, 'Error:', error.message);
     
     throw error;
   }
@@ -846,23 +802,8 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
       }
     }
     
-    // Create a sync history record
-    const syncId = uuidv4();
-    
-    await supabaseAdmin.from('sync_history').insert({
-      id: syncId,
-      folder_id: files.find(f => f.parents === undefined || f.parents.length === 0)?.id || '', // Try to find the root folder
-      folder_name: files.find(f => f.parents === undefined || f.parents.length === 0)?.name || 'Manual File Selection',
-      timestamp: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-      status: errorCount > 0 ? 'completed_with_errors' : 'completed',
-      files_processed: successCount + errorCount,
-      files_total: files.length,
-      files_added: newFiles.length - errorFiles.filter(id => newFiles.includes(id)).length,
-      files_updated: updatedFiles.length - errorFiles.filter(id => updatedFiles.includes(id)).length,
-      files_error: errorCount,
-      error_message: errorCount > 0 ? `Failed to process ${errorCount} files` : null
-    });
+    // Sync history tracking is disabled
+    console.log(`Completed insertion: ${successCount} successful, ${errorCount} errors`);
     
     // Return the results with detailed information
     return {

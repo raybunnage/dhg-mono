@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getDriveSyncStats, syncWithGoogleDrive, listFilesInFolder, authenticatedFetch, insertGoogleFiles } from '@/services/googleDriveService';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { storeLatestSyncResult } from '@/services/syncHistoryService';
+// sync history service removed
 
 interface GoogleDriveSyncProps {
   isTokenValid: boolean;
@@ -77,8 +77,8 @@ export const GoogleDriveSync: React.FC<GoogleDriveSyncProps> = ({
       const result = await syncWithGoogleDrive();
       setSyncResult(result);
       
-      // Store the result for later retrieval
-      await storeLatestSyncResult(result);
+      // Store the result locally only
+      localStorage.setItem('latest_sync_result', JSON.stringify(result));
       
       if (result.synced.errors > 0) {
         toast.error(`Sync completed with ${result.synced.errors} errors`);
@@ -161,21 +161,8 @@ export const GoogleDriveSync: React.FC<GoogleDriveSyncProps> = ({
   useEffect(() => {
     console.log('GoogleDriveSync mounted, token valid:', isTokenValid);
     
-    // Check if the sync history is populated
-    const checkSyncHistory = async () => {
-      try {
-        const { count, error } = await supabase
-          .from('sync_history')
-          .select('*', { count: 'exact', head: true });
-        
-        console.log('Sync history count:', count);
-        if (error) console.error('Error checking sync history:', error);
-      } catch (err) {
-        console.error('Failed to check sync history:', err);
-      }
-    };
-    
-    checkSyncHistory();
+    // No longer checking sync history
+    console.log('Sync history tracking has been disabled');
   }, [isTokenValid]);
   
   return (
