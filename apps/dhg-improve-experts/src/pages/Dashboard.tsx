@@ -1,10 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 
 // Icons for the dashboard
 const ProcessingIcon = () => <span className="text-blue-500 text-xl">⚙️</span>;
 const SyncIcon = () => <span className="text-green-500 text-xl">🔄</span>;
 const ContentIcon = () => <span className="text-purple-500 text-xl">📄</span>;
 const AIIcon = () => <span className="text-yellow-500 text-xl">🤖</span>;
+
+// Interface for folder options
+interface FolderOption {
+  id: string;
+  name: string;
+}
 
 // Status Card Component
 interface StatusCardProps {
@@ -112,6 +127,10 @@ const ActionButton: React.FC<ActionButtonProps> = ({
 
 // Dashboard Page Component
 function Dashboard() {
+  // State for folders
+  const [folderOptions, setFolderOptions] = useState<FolderOption[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string>('');
+
   // Mock data
   const activeJobs = 12;
   const syncStatus = "Healthy";
@@ -145,6 +164,58 @@ function Dashboard() {
     }
   ];
 
+  // Fetch root folders from sources_google
+  useEffect(() => {
+    async function fetchRootFolders() {
+      try {
+        const { data, error } = await supabase
+          .from('sources_google')
+          .select('id, name, drive_id')
+          .is('parent_path', null)
+          .eq('mime_type', 'application/vnd.google-apps.folder')
+          .order('name');
+          
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          // Create unique folder options
+          const folders = new Map<string, FolderOption>();
+          
+          data.forEach(folder => {
+            const folderId = folder.drive_id || folder.id;
+            folders.set(folderId, {
+              id: folderId,
+              name: folder.name
+            });
+          });
+          
+          // Convert map to array
+          const folderArray = Array.from(folders.values());
+          
+          // Sort by name
+          folderArray.sort((a, b) => a.name.localeCompare(b.name));
+          
+          setFolderOptions(folderArray);
+        }
+      } catch (err) {
+        console.error('Error fetching root folders:', err);
+      }
+    }
+    
+    fetchRootFolders();
+  }, []);
+
+  // Handle folder selection change
+  const handleFolderChange = (folderId: string) => {
+    setSelectedFolderId(folderId);
+    
+    // Find the folder name for the toast
+    const selectedFolder = folderOptions.find(folder => folder.id === folderId);
+    if (selectedFolder) {
+      toast.success(`Selected folder: ${selectedFolder.name}\nFolder ID: ${folderId}`);
+    }
+  };
+
   // Mock handlers
   const handleNewSync = () => console.log('New sync initiated');
   const handleProcessAudio = () => console.log('Process audio clicked');
@@ -154,6 +225,30 @@ function Dashboard() {
   return (
     <div className="container mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      
+      {/* Folder Selector */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <div className="mb-2">
+          <label htmlFor="folder-select" className="block text-sm font-medium text-gray-700 mb-2">
+            Select a Root Folder
+          </label>
+          <Select
+            value={selectedFolderId}
+            onValueChange={handleFolderChange}
+          >
+            <SelectTrigger className="w-96" id="folder-select">
+              <SelectValue placeholder="Select a folder" />
+            </SelectTrigger>
+            <SelectContent>
+              {folderOptions.map((folder) => (
+                <SelectItem key={folder.id} value={folder.id}>
+                  {folder.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
       
       {/* Status Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
