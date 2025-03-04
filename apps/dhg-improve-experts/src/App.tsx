@@ -36,7 +36,7 @@ import Cmds from '@/pages/Cmds';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
 import GutsExample from '@/pages/GutsExample';
 import DocsExplorer from '@/pages/DocsExplorer';
-import DocumentationTest from '@/pages/DocumentationTest';
+// import DocumentationTest from '@/pages/DocumentationTest'; // Archived on 2025-03-04
 
 // Component imports
 import { MainNavbar } from '@/components/MainNavbar'; 
@@ -112,7 +112,7 @@ function App() {
         <Route path="/analyze" element={<Analyze />} />
         {/* <Route path="/docs" element={<Docs />} /> <!-- Archived on 2025-03-04 --> */}
         <Route path="/docs-explorer" element={<DocsExplorer />} />
-        <Route path="/documentation-test" element={<DocumentationTest />} />
+        {/* <Route path="/documentation-test" element={<DocumentationTest />} /> <!-- Archived on 2025-03-04 --> */}
         <Route path="/show" element={<Show />} />
         <Route path="/ai" element={<AI />} />
         <Route path="/cmds" element={<Cmds />} />
