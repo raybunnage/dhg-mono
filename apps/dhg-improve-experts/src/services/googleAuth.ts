@@ -72,7 +72,95 @@ export const handleGoogleAuthCallback = async (code: string) => {
 };
 
 /**
+ * Simple function to check if the Google token is valid
+ * Returns a boolean indicating if the token is valid
+ */
+/**
+ * Validates a Google access token by making a test API call
+ * 
+ * @param forceFromEnv If true, will always get the token from env vars (ignoring localStorage)
+ * @returns boolean indicating if token is valid
+ */
+export const isGoogleTokenValid = async (forceFromEnv: boolean = true): Promise<boolean> => {
+  try {
+    let accessToken: string | undefined;
+    let tokenSource: string;
+    
+    // Prioritize environment variables if forceFromEnv is true
+    if (forceFromEnv) {
+      accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+      tokenSource = 'env vars (forced)';
+      
+      // If no token in env vars, try localStorage as fallback
+      if (!accessToken) {
+        accessToken = localStorage.getItem('google_access_token') || undefined;
+        tokenSource = 'localStorage (fallback)';
+      }
+    } else {
+      // Standard flow: check localStorage first, then env vars
+      accessToken = localStorage.getItem('google_access_token') || undefined;
+      tokenSource = 'localStorage';
+      
+      if (!accessToken) {
+        accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+        tokenSource = 'env vars';
+      }
+    }
+    
+    // If we got a token from env vars, store it in localStorage for future use
+    if (accessToken && tokenSource.includes('env vars')) {
+      localStorage.setItem('google_access_token', accessToken);
+      console.log('Stored token from env vars in localStorage');
+    }
+    
+    // If no token available from either source, return false
+    if (!accessToken) {
+      console.log('No Google token available');
+      return false;
+    }
+    
+    // Log token details for debugging (safely, not showing the whole token)
+    console.log(`Using token from ${tokenSource}`);
+    console.log(`Token length: ${accessToken.length}`);
+    console.log(`Token starts with: ${accessToken.substring(0, 10)}...`);
+    console.log(`Token ends with: ...${accessToken.substring(accessToken.length - 10)}`);
+    
+    // Make a simple API call to verify the token works
+    console.log('Making API test call to Google Drive...');
+    const response = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=1', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    
+    // If response is ok, token is valid
+    if (response.ok) {
+      console.log('Google token is valid');
+      // If token is valid, update localStorage to ensure it has the correct token
+      localStorage.setItem('google_access_token', accessToken);
+      return true;
+    } else {
+      console.log('Google token validation failed with status:', response.status);
+      
+      // Try to get more error details
+      try {
+        const errorData = await response.json();
+        console.error('Error details:', errorData);
+      } catch (e) {
+        console.log('Could not parse error response');
+      }
+      
+      return false;
+    }
+  } catch (error) {
+    console.error('Error validating Google token:', error);
+    return false;
+  }
+};
+
+/**
  * Check if the user has a valid Google token and test it actually works
+ * @deprecated Use isGoogleTokenValid() instead for a simpler approach
  */
 export const checkGoogleTokenStatus = async () => {
   try {

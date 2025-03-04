@@ -280,36 +280,64 @@ export function SourceButtons() {
   const handleTestEnvironment = async () => {
     setLoading(true);
     try {
-      // Test Google token
-      const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
-      console.log('Access token starts with:', accessToken.substring(0, 10) + '...');
-      console.log('Full token length:', accessToken.length);
+      // Clear localStorage and get token directly from env vars
+      localStorage.removeItem('google_access_token');
+      console.log('Cleared token from localStorage to test direct from .env');
       
-      // Log the full request details
-      const url = 'https://www.googleapis.com/drive/v3/files?pageSize=1';
-      const headers = {
-        'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/json'
-      };
-      
-      console.log('Making request to:', url);
-      console.log('With headers:', {
-        ...headers,
-        'Authorization': 'Bearer ' + accessToken.substring(0, 10) + '...'
-      });
-
-      const response = await fetch(url, { headers });
-      
-      console.log('Response status:', response.status);
-      const data = await response.json();
-      console.log('Full response:', data);
-
-      if (response.ok) {
-        toast.success('Google token is valid!');
-      } else {
-        toast.error(`Token error: ${data.error?.message || 'Unknown error'}`);
+      // Get token directly from env
+      const envToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
+      if (!envToken) {
+        console.error('VITE_GOOGLE_ACCESS_TOKEN is not set in .env.development!');
+        toast.error('VITE_GOOGLE_ACCESS_TOKEN is missing in .env.development!');
+        setLoading(false);
+        return;
       }
-
+      
+      console.log('VITE_GOOGLE_ACCESS_TOKEN is set');
+      console.log(`Token length: ${envToken.length}`);
+      console.log(`Token starts with: ${envToken.substring(0, 10)}...`);
+      console.log(`Token ends with: ...${envToken.substring(envToken.length - 10)}`);
+      
+      // DIRECTLY test the token from env - bypass all middleware
+      console.log('Testing token validity DIRECTLY from .env...');
+      
+      try {
+        // Make a direct API call to Google Drive with the env token
+        const response = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=1', {
+          headers: {
+            'Authorization': `Bearer ${envToken}`
+          }
+        });
+        
+        console.log('Direct test response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Direct test successful!', data);
+          toast.success('Token from .env.development is VALID!');
+          
+          // Save the working token to localStorage
+          localStorage.setItem('google_access_token', envToken);
+          toast.success('Saved working token to localStorage');
+          
+          return;
+        } else {
+          // Try to get error details
+          try {
+            const errorData = await response.json();
+            console.error('API error details:', errorData);
+          } catch (e) {
+            console.log('Could not parse error response');
+          }
+          
+          toast.error(`Direct test failed with status: ${response.status}`);
+        }
+      } catch (directError) {
+        console.error('Direct test failed with error:', directError);
+        toast.error('Direct test failed with error');
+      }
+      
+      toast.error('Token validation failed - please check your .env.development file');
     } catch (error) {
       console.error('Environment test failed:', error);
       toast.error('Environment test failed');
@@ -321,12 +349,30 @@ export function SourceButtons() {
   const handleTestGoogleDrive = async () => {
     setLoading(true);
     try {
+      // First clear localStorage to ensure we're getting fresh token from .env
+      localStorage.removeItem('google_access_token');
+      
+      // Get token directly from env vars
       const accessToken = import.meta.env.VITE_GOOGLE_ACCESS_TOKEN;
       const folderId = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
       
+      if (!accessToken) {
+        toast.error('VITE_GOOGLE_ACCESS_TOKEN is not set in .env.development');
+        setLoading(false);
+        return;
+      }
+      
+      if (!folderId) {
+        toast.error('VITE_GOOGLE_DRIVE_FOLDER_ID is not set in .env.development');
+        setLoading(false);
+        return;
+      }
+      
       // Log what we're using
+      console.log('Using token directly from environment variables:');
       console.log('Token starts with:', accessToken?.substring(0, 15) + '...');
       console.log('Token length:', accessToken?.length);
+      console.log('Token ends with: ...', accessToken?.substring(accessToken.length - 15));
       
       // Make a simpler test request first
       const testUrl = 'https://www.googleapis.com/drive/v3/about?fields=user';
@@ -340,15 +386,26 @@ export function SourceButtons() {
       });
 
       console.log('Response status:', response.status);
-      const data = await response.json();
-      console.log('Response data:', data);
-
+      
       if (response.ok) {
+        const data = await response.json();
+        console.log('Response data:', data);
         toast.success('Successfully connected to Google Drive!');
+        
+        // Store the working token in localStorage
+        localStorage.setItem('google_access_token', accessToken);
+        console.log('Saved working token to localStorage');
+        
         // Only try folder listing if basic test works
         await listFolderContents(accessToken, folderId);
       } else {
-        toast.error(`Drive error: ${data.error?.message || 'Unknown error'}`);
+        try {
+          const errorData = await response.json();
+          console.error('Error data:', errorData);
+          toast.error(`Drive error: ${errorData.error?.message || 'Unknown error'}`);
+        } catch (e) {
+          toast.error(`Drive error: Status ${response.status}`);
+        }
       }
 
     } catch (error) {
