@@ -81,6 +81,8 @@ function Sync() {
   const [selectedFiles, setSelectedFiles] = useState<DriveFile[]>([]);
   const [isInserting, setIsInserting] = useState(false);
   const [insertResult, setInsertResult] = useState<{success: number, errors: number} | null>(null);
+  const [tokenExpiryKey, setTokenExpiryKey] = useState(`token-expiry-${Date.now()}`);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [fileStats, setFileStats] = useState<{
     totalFiles: number,
     docxFiles: number,
@@ -224,6 +226,50 @@ function Sync() {
     // Clean up interval on unmount
     return () => clearInterval(interval);
   }, []);
+  
+  // Token timer effect
+  useEffect(() => {
+    // Check if there's a saved expiry timestamp
+    const expiryTime = localStorage.getItem('google_token_expiry');
+    
+    if (expiryTime) {
+      // Function to update time remaining
+      const updateTimeRemaining = () => {
+        const expiry = parseInt(expiryTime, 10);
+        const now = new Date().getTime();
+        const diff = expiry - now;
+        
+        if (diff <= 0) {
+          // Timer expired
+          setTimeRemaining(0);
+          localStorage.removeItem('google_token_expiry');
+          // Clear interval if we're at 0
+          if (intervalId) {
+            clearInterval(intervalId);
+          }
+        } else {
+          // Convert milliseconds to minutes
+          const minutesRemaining = Math.ceil(diff / (60 * 1000));
+          setTimeRemaining(minutesRemaining);
+        }
+      };
+      
+      // Initial update
+      updateTimeRemaining();
+      
+      // Set interval to update every minute
+      const intervalId = setInterval(updateTimeRemaining, 60 * 1000);
+      
+      // Clean up
+      return () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+      };
+    } else {
+      setTimeRemaining(null);
+    }
+  }, [tokenExpiryKey]); // Re-run when the key changes (reset timer)
 
   // Check token validity at intervals
   const checkTokenValidity = async () => {
@@ -1197,21 +1243,21 @@ function Sync() {
         <div className="bg-white rounded-lg shadow p-4">
           <h2 className="text-lg font-semibold mb-3">Google Authentication</h2>
           
-          <div className="flex items-center space-x-2 px-3 py-2 rounded-full bg-gray-100 mb-4">
-            <span className="font-medium text-xs text-gray-800">Google Auth:</span>
+          <div className="flex items-center flex-wrap px-3 py-2 rounded-full bg-gray-100 mb-4">
+            <span className="font-medium text-xs text-gray-800 mr-2">Google Auth:</span>
             
             {isTokenValid ? (
               <>
-                <span className="flex h-2 w-2 relative">
+                <span className="flex h-2 w-2 relative mr-1">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
-                <span className="text-xs text-green-700">Valid</span>
+                <span className="text-xs text-green-700 mr-4">Valid</span>
               </>
             ) : (
               <>
-                <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                <span className="text-xs text-red-700">Invalid</span>
+                <span className="h-2 w-2 rounded-full bg-red-500 mr-1"></span>
+                <span className="text-xs text-red-700 mr-4">Invalid</span>
               </>
             )}
             
@@ -1230,25 +1276,54 @@ function Sync() {
                   toast.error('Google token in .env file is invalid.');
                 }
               }}
-              className="ml-2 text-xs px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
+              className="text-xs px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
             >
               Test Token from .env
             </button>
+            
+            <button
+              onClick={() => {
+                // Get current timer value or set a new one
+                const now = new Date().getTime();
+                const expiry = localStorage.getItem('google_token_expiry');
+                
+                if (expiry) {
+                  // If timer exists, just refresh UI
+                  toast.success('Token timer active');
+                } else {
+                  // Set a new 60-minute timer
+                  const expiryTime = now + (60 * 60 * 1000); // 60 minutes
+                  localStorage.setItem('google_token_expiry', expiryTime.toString());
+                  toast.success('60-minute token timer started');
+                }
+                
+                // Force refresh of the timer display
+                setTokenExpiryKey(`token-expiry-${Date.now()}`);
+              }}
+              className="ml-2 text-xs px-2 py-1 rounded bg-amber-500 text-white hover:bg-amber-600"
+            >
+              Timer
+            </button>
+            
+            {/* Token Timer Display */}
+            {timeRemaining !== null && (
+              <div className={`ml-3 inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                ${timeRemaining > 10 
+                  ? 'bg-green-50 text-green-800 border border-green-200' 
+                  : timeRemaining > 5 
+                    ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                    : 'bg-red-50 text-red-800 border border-red-200'
+                }`}
+              >
+                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {timeRemaining === 0 ? 'Token expired' : `${timeRemaining}m`}
+              </div>
+            )}
           </div>
           
           <div className="mt-4 flex flex-wrap space-x-2">
-            <button
-              onClick={handleSyncCheck}
-              disabled={!isTokenValid || isLoading}
-              className={`px-4 py-2 mb-2 rounded ${
-                isTokenValid 
-                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {isLoading ? 'Checking...' : 'Check Sync Status'}
-            </button>
-            
             {syncStats && syncStats.newFiles && Array.isArray(syncStats.newFiles) && syncStats.newFiles.length > 0 && (
               <button
                 onClick={handleSync}
@@ -1262,13 +1337,6 @@ function Sync() {
                 {isSyncing ? 'Syncing...' : `Sync ${syncStats.newFiles.length} New Files`}
               </button>
             )}
-            
-            <button
-              onClick={() => setActiveTab('folders')}
-              className="px-4 py-2 mb-2 rounded bg-purple-500 text-white hover:bg-purple-600"
-            >
-              Manage Sync Folders
-            </button>
           </div>
           
           {/* Current sync folder indicator */}
@@ -1305,29 +1373,8 @@ function Sync() {
       
       {/* Specific Folder Search */}
       <div id="folder-analysis-section" className="bg-white rounded-lg shadow p-6 mb-8">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4">
           <h2 className="text-xl font-semibold">Folder Content Analysis</h2>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={specificFolderId}
-              onChange={(e) => setSpecificFolderId(e.target.value)}
-              placeholder="Enter Google Drive Folder ID"
-              className="border px-3 py-2 rounded w-64 text-sm"
-              disabled={isSearchingFolder}
-            />
-            <button
-              onClick={handleSpecificFolderSearch}
-              disabled={isSearchingFolder || !isTokenValid || !specificFolderId}
-              className={`px-4 py-2 rounded ${
-                isSearchingFolder || !isTokenValid || !specificFolderId
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                  : 'bg-indigo-500 text-white hover:bg-indigo-600'
-              }`}
-            >
-              {isSearchingFolder ? 'Searching...' : 'Search Folder'}
-            </button>
-          </div>
         </div>
         
         <div className="mb-2 text-sm">

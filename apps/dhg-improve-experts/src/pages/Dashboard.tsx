@@ -226,29 +226,6 @@ function Dashboard() {
     <div className="container mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
       
-      {/* Folder Selector */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <div className="mb-2">
-          <label htmlFor="folder-select" className="block text-sm font-medium text-gray-700 mb-2">
-            Select a Root Folder
-          </label>
-          <Select
-            value={selectedFolderId}
-            onValueChange={handleFolderChange}
-          >
-            <SelectTrigger className="w-96" id="folder-select">
-              <SelectValue placeholder="Select a folder" />
-            </SelectTrigger>
-            <SelectContent>
-              {folderOptions.map((folder) => (
-                <SelectItem key={folder.id} value={folder.id}>
-                  {folder.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
       
       {/* Status Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
