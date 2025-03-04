@@ -2,7 +2,9 @@
 
  Archive the "Doc Tables Test" Page and excise it from the routing. Then test that it is properly archived.
 
- On the "Docs Explorer Page" rename the Page to Docs now that you have ardchived the other versions which weree confusing us.  Keep the "Sync Database" button and functionality as it seems to be working correctly.  Remove the "Run Report" button but not change the underlying script that is located at scripts/markdown-report.sh
+ On the "Docs Explorer Page" rename the Page to "Docs" now that you have ardchived the other versions which weree confusing us.  Keep the "Sync Database" button and functionality as it seems to be working correctly.  Remove the "Run Report" button but not change the underlying script that is located at scripts/markdown-report.sh.  "Remove the "Process Queue" button and its functionality since I don't understand what it does. Remove the 4 dashboard elements below that that are called "Indexed Files", "Queue Status", "Processed" and "Last Updated". Then below that where you have a hierarchical view of the markdown folders and files in the app (based on what is in the database after the "sync database" functionality updated the database - keep that file navigation and when you click on any of the markdown files - have it open up and display the actual markdown file in the viewer on the right - make that work properly please.  
+
+
  
  On the "Classify" page under the "Document Types" tab there is a light green button that says "+ Add New Type" - remove that button and its associated code and instead add a new tab to the right of the "Reulsts" table called "Document Types" and create a crud ui under that tab to manage the database table "document_types" table. If you find multiple instances of "document_types" funtionality already note that as I know there is some duplicate code. Let me know whether you keep all of this in the "Classify" page code or have  to import it from other places.  Be very careful about this because you could get tripped up by the multiple instances of older or unfnished code for document_types that may be on other pages. What you are building on the "Classify" page should be the source of truth code for managing documnent types. 
  
@@ -81,6 +83,29 @@ CREATE TABLE "email_contents" (
 It references the original email table through the email_id but it adds the important fiels above
 5) to geneerate this file I use ai to get the summary and analyze the flags
 6) another file I generate from this are all the urls I find in the email content 
+
+
+I have successfully archived the "Doc Tables Test" page:
+
+  1. Created archive copies of both files:
+    - /src/pages/DocumentationTest.tsx →
+  /src/pages/_archive/DocumentationTest.2025-03-04.tsx
+    - /src/components/DocumentationTableViewer.tsx →
+  /src/components/_archive/DocumentationTableViewer.2025-03-04.tsx
+  2. Removed the DocumentationTest import from App.tsx (commented it out with a note)
+  3. Removed the DocumentationTest route from App.tsx (commented it out with a note)
+  4. Removed the "Doc Tables Test" link from MainNavbar.tsx (commented it out with a
+  note)
+  5. Deleted the original DocumentationTest.tsx file
+
+  The "Doc Tables Test" page has been properly archived with a datestamp. It's no
+  longer accessible through the navigation or routing, but the code is preserved in
+  the archive directory for future reference.
+
+  Please note that I didn't delete the DocumentationTableViewer.tsx component since
+  it might be used by other parts of the application. If you want to completely
+  remove it as well, just let me know.
+
 
 
 

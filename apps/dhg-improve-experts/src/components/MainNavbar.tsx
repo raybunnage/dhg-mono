@@ -11,7 +11,7 @@ export function MainNavbar() {
     { name: 'Sync', href: '/sync' },
     // { name: 'Docs', href: '/docs' }, // Archived on 2025-03-04
     { name: 'Docs Explorer', href: '/docs-explorer' },
-    { name: 'Doc Tables Test', href: '/documentation-test' },
+    // { name: 'Doc Tables Test', href: '/documentation-test' }, // Archived on 2025-03-04
     { name: 'AI', href: '/ai' },
     { name: 'Classify', href: '/classify' },
     { name: 'Transcribe', href: '/transcribe' },
