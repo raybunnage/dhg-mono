@@ -260,7 +260,10 @@ I want you to implement what you suggested only carefully follow my .cursorulres
 
 cleanup markdown files:
 
-Now be very careful and DO NOT BREAK the fileTree, or filetreeItem or the fileviewer on the "Viewer" page. But now that we have introduced the concept of a current sync folder the file viewer needs to be aware of that and load the folders and files associated with the high level folder.  Right now the view is hardwired to the Dynamic Healing Group Files but now there are already multiple high level folders to choose from and soon there wil be more.  Then the viewer should just display the folders and files from that cuirrenty selected high level folder. You can store the currently selected folder from the folders page in local storage so when you start a new sessoin it will remember the folder it last synced. If the folder is changed in the viewer window then the current folder should be stored in local storage so the next time it loads it uses that folder to feed the viewer
+Now be very careful and make a very careful change on the Viewer Page.  DO NOT BREAK the fileTree, or filetreeItem or the fileviewer on the "Viewer". Put a combobox right below the  pills that lets the user choose which folder they want to view the files for in the viewer. It should populate the combobox using the same logic that obtains the values in the combobox to the right of the sync statistics section on the sync page - which currently shows the two folders that have been successfully synced to the sources_google records. when the dropdown is selected it should load up all the folders and files associated with that folder_id in our sources_google database. Does this make sense to you?  Do you know exactly what to do or do you want more clarifcation?
+
+
+  Right now the view is hardwired to the Dynamic Healing Group Files but now there are already multiple high level folders to choose from and soon there wil be more.  Then the viewer should just display the folders and files from that cuirrenty selected high level folder. You can store the currently selected folder from the folders page in local storage so when you start a new sessoin it will remember the folder it last synced. If the folder is changed in the viewer window then the current folder should be stored in local storage so the next time it loads it uses that folder to feed the viewer
 
 
 
