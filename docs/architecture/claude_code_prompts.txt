@@ -2,6 +2,10 @@
 
  Archive the "Doc Tables Test" Page and excise it from the routing. Then test that it is properly archived.
 
+ Rename the "Guts Example" page to "Guts"
+
+ On the "Sync" page under the "Folders" tab archive the code that is called when you click the "Add & Sync New Folder" button and then once it is safely archived remove that code. Keep the "Preview Contents" button as it is working beautifully. Search through the "Sync" page for code that inserts the synced google drive data into the sources_google table.  I know it is there and has recently worked. Temporarily add a button that will just insert 1 record into the sources_google table using the logic that worked before so we can see the insert actually working. 
+
  On the "Docs Explorer Page" rename the Page to "Docs" now that you have ardchived the other versions which weree confusing us.  Keep the "Sync Database" button and functionality as it seems to be working correctly.  Remove the "Run Report" button but not change the underlying script that is located at scripts/markdown-report.sh.  "Remove the "Process Queue" button and its functionality since I don't understand what it does. Remove the 4 dashboard elements below that that are called "Indexed Files", "Queue Status", "Processed" and "Last Updated". Then below that where you have a hierarchical view of the markdown folders and files in the app (based on what is in the database after the "sync database" functionality updated the database - keep that file navigation and when you click on any of the markdown files - have it open up and display the actual markdown file in the viewer on the right - make that work properly please.  
 
 
@@ -83,6 +87,47 @@ CREATE TABLE "email_contents" (
 It references the original email table through the email_id but it adds the important fiels above
 5) to geneerate this file I use ai to get the summary and analyze the flags
 6) another file I generate from this are all the urls I find in the email content 
+Most of the heavy lifthing of the processing will be done by a python service locally but the ui to manage all of this we need from you
+
+1. Removed the height limitation in the MarkdownViewer component by removing the
+  maxHeight style property which was restricting the display area.
+  2. Removed the height limitation in the TreeView component to make sure all files
+  can be viewed without scrolling restrictions.
+  3. Modified the loadFileTree function to explicitly open all folders by default.
+  This ensures all 91 markdown files are visible in the hierarchical view without
+  requiring users to manually expand each folder.
+
+  These changes make both the file tree and the markdown content display with their
+  full content, without artificial restrictions on height or content display. The
+  markdown content will now display completely, taking up the full available height
+  of the viewer.
+
+
+
+Let's verify the changes we made:
+
+  1. Renamed the page component from "DocsExplorer" to "Docs"
+  2. Changed the page title from "Documentation Explorer" to "Docs"
+  3. Kept the "Sync Database" button and its functionality
+  4. Removed the "Run Report" button
+  5. Removed the "Process Queue" button and its functionality
+  6. Removed the 4 dashboard elements (Indexed Files, Queue Status, Processed, Last
+  Updated)
+  7. Changed the routing so that /docs now points to this page instead of
+  /docs-explorer
+  8. Updated the navigation menu to use "Docs" instead of "Docs Explorer"
+
+  The file navigation and markdown viewer functionality should now work properly,
+  allowing users to:
+  1. Browse through the hierarchical view of markdown folders and files in the app
+  based on what's in the database
+  2. Search for specific content
+  3. Click on markdown files to view them in the viewer on the right
+  4. Sync the database to update the file navigation with the latest files
+
+  These changes preserve the core functionality of the page while simplifying the
+  interface and making it more focused on document browsing and viewing.  th
+
 
 
 I have successfully archived the "Doc Tables Test" page:
