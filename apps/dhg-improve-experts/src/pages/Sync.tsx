@@ -2,9 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import { GoogleTokenStatus } from '@/components/GoogleTokenStatus';
-import { createTestSyncHistoryEntry, storeLatestSyncResult } from '@/services/syncHistoryService';
-import { LastSyncSummary } from '@/components/LastSyncSummary';
-import DebugSyncHistory from '@/components/DebugSyncHistory';
 import GoogleDriveDebug from '@/components/GoogleDriveDebug';
 import { BatchManager } from '@/components/BatchManager';
 import { BatchProcessingMonitor } from '@/components/BatchProcessingMonitor';
@@ -28,23 +25,7 @@ interface SyncStats {
   newFiles?: DriveFile[];
 }
 
-// Update the sync history interface to match our database
-interface SyncHistoryItem {
-  id: string;
-  folder_id: string;
-  folder_name: string;
-  timestamp: string;
-  completed_at: string | null;
-  status: string;
-  files_processed: number; // Using the correct field name files_processed
-  files_total: number | null;
-  files_added: number | null;
-  files_updated: number | null;
-  files_skipped: number | null;
-  files_error: number | null;
-  duration_ms: number | null;
-  error_message: string | null;
-}
+// We're no longer using sync history interface
 
 interface DriveFile {
   id: string;
@@ -80,7 +61,7 @@ interface SyncResult {
 
 // Main Sync component
 function Sync() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'folders' | 'batches' | 'history' | 'auth'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'folders' | 'batches' | 'auth'>('dashboard');
   const [newFolderId, setNewFolderId] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [existingFolderId, setExistingFolderId] = useState('');
@@ -92,7 +73,6 @@ function Sync() {
   const [syncSummaryKey, setSyncSummaryKey] = useState(`sync-${Date.now()}`);
   const [documentStats, setDocumentStats] = useState<DocumentTypeStats[]>([]);
   const [syncStats, setSyncStats] = useState<SyncStats | null>(null);
-  const [syncHistory, setSyncHistory] = useState<SyncHistoryItem[]>([]);
   const [isTokenValid, setIsTokenValid] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<any>(null);
@@ -178,18 +158,7 @@ function Sync() {
         
       if (error) throw error;
       
-      // Also fetch folder data from sync_history to include any folders not in sources_google
-      const { data: syncHistoryData, error: syncHistoryError } = await supabase
-        .from('sync_history')
-        .select('folder_id, folder_name')
-        .not('folder_id', 'is', null)
-        .order('timestamp', { ascending: false });
-        
-      if (syncHistoryError) {
-        console.error('Error fetching folders from sync history:', syncHistoryError);
-      }
-      
-      // Combine both sources, ensuring no duplicates
+          // Only get folders from sources_google
       const folders = new Map<string, FolderOption>();
       
       // Add folders from sources_google
@@ -203,18 +172,6 @@ function Sync() {
         });
       }
       
-      // Add folders from sync_history
-      if (syncHistoryData) {
-        syncHistoryData.forEach(syncRecord => {
-          if (syncRecord.folder_id && !folders.has(syncRecord.folder_id)) {
-            folders.set(syncRecord.folder_id, {
-              id: syncRecord.folder_id,
-              name: syncRecord.folder_name || 'Unknown Folder'
-            });
-          }
-        });
-      }
-      
       // Convert map to array
       const folderArray = Array.from(folders.values());
       
@@ -223,12 +180,9 @@ function Sync() {
       
       setFolderOptions(folderArray);
       
-      // If we have a current folder from sync_history but no selected folder, select it
-      if (folderArray.length > 0 && !existingFolderId && syncHistoryData && syncHistoryData.length > 0) {
-        const mostRecentSyncedFolderId = syncHistoryData[0].folder_id;
-        if (mostRecentSyncedFolderId) {
-          setExistingFolderId(mostRecentSyncedFolderId);
-        }
+      // If we have folders but no selected folder, select the first one
+      if (folderArray.length > 0 && !existingFolderId) {
+        setExistingFolderId(folderArray[0].id);
       }
       
       return folderArray;
@@ -242,7 +196,6 @@ function Sync() {
   // Fetch data on component mount
   useEffect(() => {
     fetchRootFolders();
-    fetchSyncHistory();
     fetchFileStats();
   }, []);
 
@@ -389,27 +342,10 @@ function Sync() {
     }
   };
 
-  // Fetch sync history
+  // Placeholder for fetch sync history (removed)
   const fetchSyncHistory = async () => {
-    try {
-      console.log('Fetching sync history...');
-      const { data, error } = await supabase
-        .from('sync_history')
-        .select('*')
-        .order('timestamp', { ascending: false })
-        .limit(10);
-        
-      if (error) {
-        console.error('Error fetching sync history:', error);
-        throw error;
-      }
-      
-      console.log('Sync history retrieved:', data?.length || 0, 'records');
-      setSyncHistory(data || []);
-    } catch (err) {
-      console.error('Error fetching sync history:', err);
-      toast.error('Failed to load sync history');
-    }
+    // Functionality removed
+    return;
   };
 
   // Handle new folder sync
@@ -452,8 +388,7 @@ function Sync() {
         const result = await syncWithGoogleDrive();
         setSyncResult(result);
         
-        // Store the result
-        await storeLatestSyncResult(result);
+        // Store the result locally only
         await storeLocalSyncResult(result);
         
         // Show appropriate messages
@@ -675,8 +610,7 @@ function Sync() {
       const result = await syncWithGoogleDrive();
       setSyncResult(result);
       
-      // Store the result both in service and locally
-      await storeLatestSyncResult(result);
+      // Store the result locally only
       await storeLocalSyncResult(result);
       
       // Clear any temporary folder override
@@ -733,9 +667,6 @@ function Sync() {
 
   // Handle sync complete
   const handleSyncComplete = async (result: any) => {
-    // Refresh sync history
-    fetchSyncHistory();
-    
     // Update stats display
     setSyncStats({
       total: result.stats?.totalGoogleDriveFiles || 0,
@@ -745,16 +676,9 @@ function Sync() {
       errors: result.synced?.errors || 0
     });
 
-    // Get the folder name from the result object or use a default
-    const folderId = result.folderId || existingFolderId;
-    const folderName = result.folderName || await getFolderName(folderId);
-    
-    // Update sync statistics with proper folder name
-    await updateSyncStats(folderId, folderName, result);
-    
-    // Force refresh the LastSyncSummary component
+    // Force refresh the UI with new sync summary key
     console.log('Sync complete, statistics updated');
-    setSyncSummaryKey(`sync-${Date.now()}`); // This will trigger a re-fetch in LastSyncSummary
+    setSyncSummaryKey(`sync-${Date.now()}`);
   };
 
   // Helper function to get folder name
@@ -863,40 +787,7 @@ function Sync() {
     }
   };
 
-  // View sync details
-  const viewSyncDetails = async (syncId: string) => {
-    try {
-      // Fetch files related to this sync operation
-      const { data, error } = await supabase
-        .from('sources_google')
-        .select('*')
-        .eq('sync_id', syncId)
-        .order('name', { ascending: true });
-        
-      if (error) throw error;
-      
-      // For now, just show a toast with the count
-      toast.success(`Found ${data?.length || 0} files from this sync operation`);
-    } catch (err) {
-      console.error('Error fetching sync details:', err);
-      toast.error('Failed to load sync details');
-    }
-  };
-
-  // Rerun sync
-  const rerunSync = (folderId: string) => {
-    // Set the folder ID and switch to folders tab
-    setExistingFolderId(folderId);
-    setActiveTab('folders');
-    
-    // Scroll to the form
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-    
-    toast.success('Ready to re-sync folder. Click "Sync Existing Folder" to begin.');
-  };
+  // These functions have been deprecated with removal of sync history
   
   // Handle search for specific folder (using user-provided ID)
   const handleSpecificFolderSearch = async () => {
@@ -1093,222 +984,17 @@ function Sync() {
     }
   };
 
-  // Update sync statistics with improved error handling and typing
+  // Simplified function since we're not using sync history
   const updateSyncStats = async (
     folderId: string, 
     folderName: string, 
     result: SyncResult
   ): Promise<boolean> => {
-    console.log('=============================================');
-    console.log('UPDATING SYNC STATISTICS - DETAILED DEBUG LOG');
-    console.log('=============================================');
-    console.log('Folder ID:', folderId);
-    console.log('Folder Name:', folderName);
-    console.log('Full result object:', JSON.stringify(result, null, 2));
-
-    // Check table structure before proceeding
-    try {
-      await checkSyncStatisticsStructure();
-    } catch (e) {
-      console.error('Failed to check table structure, but continuing:', e);
-    }
+    console.log('Sync completed for folder:', folderName);
+    console.log('Sync results:', result);
     
-    try {
-      // Get document type counts
-      console.log('Getting document type counts directly...');
-      let docStats = [];
-      try {
-        // Count folders
-        const { count: folderCount, error: folderError } = await supabase
-          .from('sources_google')
-          .select('id', { count: 'exact' })
-          .eq('mime_type', 'application/vnd.google-apps.folder');
-          
-        if (folderError) {
-          console.error('Error counting folders:', folderError);
-        } else {
-          docStats.push({ mime_type: 'application/vnd.google-apps.folder', count: folderCount || 0 });
-        }
-        
-        // Count total documents
-        const { count: totalCount, error: totalError } = await supabase
-          .from('sources_google')
-          .select('id', { count: 'exact' });
-          
-        if (totalError) {
-          console.error('Error counting total documents:', totalError);
-        }
-        
-        console.log('Direct counts - Folders:', folderCount || 0, 'Total:', totalCount || 0);
-      } catch (countError) {
-        console.error('Error in document counts:', countError);
-        console.log('Using default values for document counts...');
-      }
-      
-      // Calculate folder count and document count (with fallbacks if docStats failed)
-      const folderCount = docStats && Array.isArray(docStats) 
-        ? docStats.find(item => item.mime_type === 'application/vnd.google-apps.folder')?.count || 0
-        : 0;
-        
-      const docCount = docStats && Array.isArray(docStats)
-        ? (docStats.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0) || 0) - folderCount
-        : 0;
-      
-      console.log('Calculated counts:');
-      console.log('- Folders:', folderCount);
-      console.log('- Documents:', docCount);
-      console.log('- Total Items:', docCount + folderCount);
-      
-      // Get MP4 stats
-      console.log('Querying MP4 files...');
-      const { count: mp4Count, error: mp4CountError } = await supabase
-        .from('sources_google')
-        .select('id', { count: 'exact' })
-        .ilike('mime_type', '%mp4%');
-      
-      if (mp4CountError) {
-        console.error('Error getting MP4 count:', mp4CountError);
-        // Don't throw, continue with default value
-        console.log('Using default value 0 for MP4 count...');
-      }
-      
-      console.log('MP4 count:', mp4Count || 0);
-      
-      // Calculate MP4 size with fallback
-      let totalMp4Size = '0 GB';
-      
-      try {
-        console.log('Fetching MP4 size data...');
-        const { data: mp4Data, error: mp4DataError } = await supabase
-          .from('sources_google')
-          .select('size, name')
-          .ilike('mime_type', '%mp4%')
-          .order('size', { ascending: false });
-          
-        if (mp4DataError) {
-          console.error('Error getting MP4 data:', mp4DataError);
-          // Don't throw, just use default size
-        } else if (mp4Data && mp4Data.length > 0) {
-          console.log('MP4 files found:', mp4Data.length);
-          
-          // Calculate total bytes
-          let totalBytes = 0;
-          mp4Data.forEach(file => {
-            if (file.size) {
-              const fileSize = typeof file.size === 'number' ? file.size : parseInt(file.size);
-              if (!isNaN(fileSize)) {
-                totalBytes += fileSize;
-              }
-            }
-          });
-          
-          if (totalBytes > 0) {
-            const totalGB = (totalBytes / (1024 * 1024 * 1024)).toFixed(2);
-            totalMp4Size = `${totalGB} GB`;
-            console.log('Total MP4 size in GB:', totalMp4Size);
-          }
-        }
-      } catch (e) {
-        console.error('Error calculating MP4 size:', e);
-        // Continue with default value
-      }
-      
-      // Calculate total files
-      const totalItems = result.totalItems || result.stats?.totalGoogleDriveFiles || (docCount + folderCount);
-      const processedItems = result.itemsAdded || result.synced?.processed || 0;
-      const newFiles = result.synced?.added || 0;
-      
-      console.log('Final calculated values:');
-      console.log('- Total items:', totalItems);
-      console.log('- Processed items:', processedItems);
-      console.log('- New files:', newFiles);
-      console.log('- Local-only files:', Math.max(0, totalItems - processedItems));
-      
-      // Check if sync_statistics table exists before attempting insert
-      console.log('Checking if sync_statistics table exists...');
-      try {
-        // Try direct SQL query to check if table exists
-        const { data: tableData, error: tableError } = await supabase
-          .from('sync_statistics')
-          .select('id')
-          .limit(1);
-          
-        if (tableError) {
-          // Check if it's a relation doesn't exist error
-          if (tableError.code === '42P01' || tableError.message?.includes('relation "sync_statistics" does not exist')) {
-            console.log('sync_statistics table does not exist, skipping insert');
-            toast.success('Sync completed, but statistics table not found');
-            return true;
-          }
-          
-          console.error('Error checking if table exists:', tableError);
-          console.log('Unable to verify if sync_statistics table exists, skipping insert');
-          return true;
-        }
-        
-        console.log('sync_statistics table exists, proceeding with insert');
-      } catch (tableCheckErr) {
-        console.error('Exception checking table existence:', tableCheckErr);
-        // Skip insert but don't fail the operation
-        return true;
-      }
-      
-      // Insert into sync_statistics
-      try {
-        console.log('Preparing to insert sync statistics record...');
-        const recordToInsert = {
-          folder_id: folderId,
-          folder_name: folderName,
-          local_files: totalItems,
-          matching_files: processedItems,
-          new_files: newFiles,
-          local_only_files: Math.max(0, totalItems - processedItems),
-          mp4_files: mp4Count || 0,
-          mp4_total_size: totalMp4Size,
-          // Use the exact field names from the database schema
-          google_drive_documents: docCount,
-          google_drive_folders: folderCount,
-          total_google_drive_items: docCount + folderCount
-        };
-        
-        console.log('Record to insert:', recordToInsert);
-        
-        const { data: statsData, error: statsError } = await supabase
-          .from('sync_statistics')
-          .insert(recordToInsert)
-          .select();
-          
-        if (statsError) {
-          console.error('Error inserting sync statistics:', statsError);
-          
-          // Check for relation doesn't exist error
-          if (statsError.code === '42P01') {
-            console.log('sync_statistics table does not exist - skipping insert');
-            toast.warning('Statistics table does not exist. Stats will not be saved.');
-          } else {
-            toast.error('Failed to save sync statistics, but sync was completed');
-          }
-        } else {
-          console.log('Sync statistics saved successfully. New record:', statsData);
-          toast.success('Sync statistics updated');
-        }
-      } catch (insertErr) {
-        console.error('Exception during statistics insert:', insertErr);
-        toast.error('Error saving statistics, but sync was completed');
-      }
-      
-      console.log('=============================================');
-      console.log('SYNC STATISTICS UPDATE COMPLETE');
-      console.log('=============================================');
-      
-      return true;
-    } catch (error) {
-      console.error('Error updating sync statistics:', error);
-      console.error('Error details:', error.message);
-      if (error.stack) console.error('Stack trace:', error.stack);
-      toast.error('Failed to update sync statistics, but sync was completed');
-      return true; // Return true so the overall sync isn't marked as failed
-    }
+    // Return success without updating any sync history
+    return true;
   };
 
   // Render dashboard view
@@ -1411,124 +1097,23 @@ function Sync() {
         </div>
         
         {/* Sync Summary Panel */}
-        <div>
-          <LastSyncSummary refreshKey={syncSummaryKey} />
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-lg font-semibold mb-3">Sync Statistics</h2>
+          <p className="text-sm text-gray-500">Sync history tracking has been temporarily disabled.</p>
         </div>
       </div>
       
-      {/* Recent Sync History */}
-      {syncHistory.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Recent Sync Operations</h3>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={fetchSyncHistory}
-                className="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded flex items-center gap-1"
-              >
-                <span>🔄</span> Refresh
-              </button>
-              <button
-                onClick={() => setActiveTab('history')}
-                className="text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded"
-              >
-                View All History
-              </button>
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Folder
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Files
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {syncHistory.slice(0, 5).map((sync) => {
-                  // Calculate duration if completed
-                  const startDate = new Date(sync.timestamp);
-                  const endDate = sync.completed_at ? new Date(sync.completed_at) : null;
-                  const duration = endDate ? ((endDate.getTime() - startDate.getTime()) / 1000).toFixed(1) + 's' : 'In progress';
-                  
-                  // Determine if this is the current sync folder
-                  const isCurrentFolder = sync.folder_id === existingFolderId;
-                  
-                  return (
-                    <tr key={sync.id} className={isCurrentFolder ? 'bg-blue-50' : ''}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(sync.timestamp).toLocaleString()}
-                        {isCurrentFolder && (
-                          <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded">
-                            Current
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {sync.folder_name || 'Unknown folder'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                          ${sync.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                            sync.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                            sync.status === 'completed_with_errors' ? 'bg-yellow-100 text-yellow-800' :
-                            sync.status === 'failed' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'}`}>
-                          {sync.status || 'unknown'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {sync.files_processed || 0}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button 
-                          onClick={() => viewSyncDetails(sync.id)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-2"
-                        >
-                          View
-                        </button>
-                        {sync.status !== 'in_progress' && sync.folder_id && (
-                          <button 
-                            onClick={() => rerunSync(sync.folder_id)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Re-sync
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          
-          {syncHistory.length > 5 && (
-            <div className="text-center mt-4">
-              <button
-                onClick={() => setActiveTab('history')}
-                className="text-blue-600 hover:text-blue-800 text-sm"
-              >
-                View All Sync History
-              </button>
-            </div>
-          )}
+      {/* Recent Sync History - disabled */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Recent Sync Operations</h3>
         </div>
-      )}
+        
+        <div className="p-6 bg-gray-50 rounded-lg text-center">
+          <p className="text-gray-500 mb-4">Sync history tracking has been temporarily disabled.</p>
+          <p className="text-sm text-gray-400">History will be re-enabled once sync functionality is properly working.</p>
+        </div>
+      </div>
       
       {/* Specific Folder Search */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
@@ -2145,99 +1730,13 @@ function Sync() {
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Sync History</h3>
-          <button
-            onClick={fetchSyncHistory}
-            className="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded flex items-center gap-1"
-          >
-            <span>🔄</span> Refresh
-          </button>
         </div>
         
-        {syncHistory.length === 0 ? (
-          <p className="text-gray-500">No sync history found.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Folder
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Files Processed
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Duration
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {syncHistory.map((sync) => {
-                  // Calculate duration if completed
-                  const startDate = new Date(sync.timestamp);
-                  const endDate = sync.completed_at ? new Date(sync.completed_at) : null;
-                  const duration = endDate ? ((endDate.getTime() - startDate.getTime()) / 1000).toFixed(1) + 's' : 'In progress';
-                  
-                  return (
-                    <tr key={sync.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(sync.timestamp).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {sync.folder_name || 'Unknown folder'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                          ${sync.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                            sync.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                            sync.status === 'completed_with_errors' ? 'bg-yellow-100 text-yellow-800' :
-                            sync.status === 'failed' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'}`}>
-                          {sync.status || 'unknown'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {sync.files_processed || 0}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {duration}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button 
-                          onClick={() => viewSyncDetails(sync.id)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-2"
-                        >
-                          View Details
-                        </button>
-                        {sync.status !== 'in_progress' && sync.folder_id && (
-                          <button 
-                            onClick={() => rerunSync(sync.folder_id)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Re-sync
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="p-6 bg-gray-50 rounded-lg text-center">
+          <p className="text-gray-500 mb-4">Sync history tracking has been temporarily disabled.</p>
+          <p className="text-sm text-gray-400">History will be re-enabled once sync functionality is properly working.</p>
+        </div>
       </div>
-      
-      {/* Debug Sync History with detailed view */}
-      <DebugSyncHistory />
     </div>
   );
 
@@ -2361,8 +1860,9 @@ function Sync() {
         return renderFolders();
       case 'batches':
         return renderBatches();
+      // History tab is disabled
       case 'history':
-        return renderHistory();
+        return renderDashboard();
       case 'auth':
         return renderAuth();
       default:
@@ -2408,14 +1908,17 @@ function Sync() {
             Batch Processing
           </button>
           <button
-            onClick={() => setActiveTab('history')}
+            onClick={() => setActiveTab('auth')}
             className={`mr-4 py-2 px-1 font-medium text-sm border-b-2 ${
-              activeTab === 'history'
+              false // This tab is disabled
                 ? 'text-blue-600 border-blue-600'
-                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                : 'text-gray-300 border-transparent cursor-not-allowed'
             }`}
           >
-            Sync History
+            <div className="flex items-center">
+              Sync History
+              <span className="ml-1.5 px-1 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">Disabled</span>
+            </div>
           </button>
           <button
             onClick={() => setActiveTab('auth')}
