@@ -27,7 +27,7 @@ import { FileTree } from './pages/FileTree';
 import { BatchProcessingMonitor } from './components/BatchProcessingMonitor';
 import Viewer from '@/pages/Viewer';
 import Dashboard from '@/pages/Dashboard';
-import Docs from '@/pages/Docs';
+// import Docs from '@/pages/Docs'; // Archived on 2025-03-04
 import Sync from '@/pages/Sync';
 import Write from '@/pages/Write';
 import Show from '@/pages/Show';
@@ -110,7 +110,7 @@ function App() {
         <Route path="/code" element={<CodeDashboard />} />
         <Route path="/write" element={<Write />} />
         <Route path="/analyze" element={<Analyze />} />
-        <Route path="/docs" element={<Docs />} />
+        {/* <Route path="/docs" element={<Docs />} /> <!-- Archived on 2025-03-04 --> */}
         <Route path="/docs-explorer" element={<DocsExplorer />} />
         <Route path="/documentation-test" element={<DocumentationTest />} />
         <Route path="/show" element={<Show />} />

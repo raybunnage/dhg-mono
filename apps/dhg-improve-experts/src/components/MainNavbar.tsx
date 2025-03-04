@@ -9,7 +9,7 @@ export function MainNavbar() {
     { name: 'Viewer', href: '/viewer' },
     { name: 'Show', href: '/show' },
     { name: 'Sync', href: '/sync' },
-    { name: 'Docs', href: '/docs' },
+    // { name: 'Docs', href: '/docs' }, // Archived on 2025-03-04
     { name: 'Docs Explorer', href: '/docs-explorer' },
     { name: 'Doc Tables Test', href: '/documentation-test' },
     { name: 'AI', href: '/ai' },
