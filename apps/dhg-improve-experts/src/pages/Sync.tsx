@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
-import { GoogleTokenStatus } from '@/components/GoogleTokenStatus';
 import GoogleDriveDebug from '@/components/GoogleDriveDebug';
 import { BatchManager } from '@/components/BatchManager';
 import { BatchProcessingMonitor } from '@/components/BatchProcessingMonitor';
 import { getDriveSyncStats, syncWithGoogleDrive, listFilesInFolder, authenticatedFetch, insertGoogleFiles, searchSpecificFolder } from '@/services/googleDriveService';
-import { refreshGoogleToken } from '@/services/googleAuth';
+import { isGoogleTokenValid, refreshGoogleToken } from '@/services/googleAuth';
 
 // Define types for document statistics
 interface DocumentTypeStats {
@@ -197,98 +196,26 @@ function Sync() {
   useEffect(() => {
     fetchRootFolders();
     fetchFileStats();
+    
+    // Check token validity on mount
+    checkTokenValidity();
+    
+    // Set up an interval to check token validity every 5 minutes
+    const interval = setInterval(() => {
+      checkTokenValidity();
+    }, 5 * 60 * 1000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(interval);
   }, []);
 
-  // Handle token status change from GoogleTokenStatus
-  const handleTokenStatusChange = (isValid: boolean, token?: string) => {
-    console.log('Token status changed:', isValid);
-    setIsTokenValid(isValid);
-    
-    // Log the token change event
-    try {
-      const events = JSON.parse(localStorage.getItem('google_token_events') || '[]');
-      events.unshift({
-        type: isValid ? 'TOKEN_VALID' : 'TOKEN_INVALID',
-        message: isValid ? 'Token is now valid' : 'Token is now invalid',
-        timestamp: new Date().toISOString()
-      });
-      localStorage.setItem('google_token_events', JSON.stringify(events.slice(0, 20)));
-    } catch (e) {
-      console.error('Error logging token event:', e);
-    }
-    
-    // If we have a valid token, store it in localStorage for our search function to use
-    if (isValid && token) {
-      localStorage.setItem('google_access_token', token);
-      console.log('Stored new access token in localStorage');
-      
-      // Also store the expiration time if it's available in the localStorage
-      const expiresAt = localStorage.getItem('google_token_expires_at');
-      if (expiresAt) {
-        // Parse the expiration time to see if it's valid
-        try {
-          const expiration = new Date(expiresAt);
-          const now = new Date();
-          const timeUntilExpiry = expiration.getTime() - now.getTime();
-          
-          // If the token is about to expire (less than 5 minutes), refresh it
-          if (timeUntilExpiry < 5 * 60 * 1000) {
-            console.log('Token is about to expire. Refreshing...');
-            
-            // Log the automatic refresh attempt
-            const refreshEvents = JSON.parse(localStorage.getItem('google_token_events') || '[]');
-            refreshEvents.unshift({
-              type: 'AUTO_REFRESH',
-              message: 'Token is about to expire, auto-refreshing',
-              timestamp: new Date().toISOString()
-            });
-            localStorage.setItem('google_token_events', JSON.stringify(refreshEvents.slice(0, 20)));
-            
-            refreshGoogleToken()
-              .then(result => {
-                if (result.success && result.access_token) {
-                  localStorage.setItem('google_access_token', result.access_token);
-                  console.log('Token refreshed successfully');
-                  
-                  // Log successful refresh
-                  const successEvents = JSON.parse(localStorage.getItem('google_token_events') || '[]');
-                  successEvents.unshift({
-                    type: 'AUTO_REFRESH_SUCCESS',
-                    message: 'Token automatically refreshed',
-                    timestamp: new Date().toISOString()
-                  });
-                  localStorage.setItem('google_token_events', JSON.stringify(successEvents.slice(0, 20)));
-                } else {
-                  console.warn('Failed to refresh token:', result.error);
-                  
-                  // Log failed refresh
-                  const failEvents = JSON.parse(localStorage.getItem('google_token_events') || '[]');
-                  failEvents.unshift({
-                    type: 'AUTO_REFRESH_FAIL',
-                    message: `Failed: ${result.error}`,
-                    timestamp: new Date().toISOString()
-                  });
-                  localStorage.setItem('google_token_events', JSON.stringify(failEvents.slice(0, 20)));
-                }
-              })
-              .catch(err => {
-                console.error('Error refreshing token:', err);
-                
-                // Log error
-                const errorEvents = JSON.parse(localStorage.getItem('google_token_events') || '[]');
-                errorEvents.unshift({
-                  type: 'AUTO_REFRESH_ERROR',
-                  message: err.message,
-                  timestamp: new Date().toISOString()
-                });
-                localStorage.setItem('google_token_events', JSON.stringify(errorEvents.slice(0, 20)));
-              });
-          }
-        } catch (e) {
-          console.error('Error parsing token expiration:', e);
-        }
-      }
-    }
+  // Check token validity at intervals
+  const checkTokenValidity = async () => {
+    // Force the token to be read from env variables, not localStorage
+    const valid = await isGoogleTokenValid(true);
+    console.log('Token validity check:', valid ? 'valid' : 'invalid');
+    setIsTokenValid(valid);
+    return valid;
   };
 
   // Fetch summary stats for files
@@ -492,7 +419,7 @@ function Sync() {
 
   // Handle checking sync status
   const handleSyncCheck = async () => {
-    if (!isTokenValid && localStorage.getItem('skip_token_validation') !== 'true') {
+    if (!isTokenValid) {
       toast.error('Please authenticate with Google Drive first');
       return;
     }
@@ -511,14 +438,12 @@ function Sync() {
       // Get the selected folder name
       const folderName = folderOptions.find(f => f.id === existingFolderId)?.name || 'Selected Folder';
       
-      // In development mode, make sure we have token validation skip enabled
-      if (process.env.NODE_ENV === 'development') {
-        localStorage.setItem('skip_token_validation', 'true');
-      }
+      // We no longer automatically enable skip_token_validation in development mode
+      // A valid token is always required
       
       // Check if token is available and log it
       const token = localStorage.getItem('google_access_token');
-      if (!token && localStorage.getItem('skip_token_validation') !== 'true') {
+      if (!token) {
         console.error('No token in localStorage when trying to sync');
         toast.error('Token not found in localStorage. Try refreshing the token.');
         setIsLoading(false);
@@ -572,7 +497,7 @@ function Sync() {
 
   // Handle synchronizing with Google Drive
   const handleSync = async () => {
-    if (!isTokenValid && localStorage.getItem('skip_token_validation') !== 'true') {
+    if (!isTokenValid) {
       toast.error('Please authenticate with Google Drive first');
       return;
     }
@@ -602,10 +527,8 @@ function Sync() {
       
       toast.loading(`Syncing ${folderName} with Google Drive...`);
       
-      // In development mode, make sure we have token validation skip enabled
-      if (process.env.NODE_ENV === 'development') {
-        localStorage.setItem('skip_token_validation', 'true');
-      }
+      // We no longer automatically enable skip_token_validation in development mode
+      // A valid token is always required
       
       const result = await syncWithGoogleDrive();
       setSyncResult(result);
@@ -1042,11 +965,45 @@ function Sync() {
         {/* Authentication Panel */}
         <div className="bg-white rounded-lg shadow p-4">
           <h2 className="text-lg font-semibold mb-3">Google Authentication</h2>
-          <GoogleTokenStatus 
-            onTokenExpired={handleTokenExpired}
-            onStatusChange={handleTokenStatusChange}
-            useMockData={false}
-          />
+          
+          <div className="flex items-center space-x-2 px-3 py-2 rounded-full bg-gray-100 mb-4">
+            <span className="font-medium text-xs text-gray-800">Google Auth:</span>
+            
+            {isTokenValid ? (
+              <>
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span className="text-xs text-green-700">Valid</span>
+              </>
+            ) : (
+              <>
+                <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                <span className="text-xs text-red-700">Invalid</span>
+              </>
+            )}
+            
+            <button
+              onClick={async () => {
+                // Clear localStorage first to ensure we're using the token from .env
+                localStorage.removeItem('google_access_token');
+                toast.success('Cleared localStorage, testing token from .env directly...');
+                
+                // Use the updated function with forceFromEnv = true
+                const valid = await isGoogleTokenValid(true);
+                
+                if (valid) {
+                  toast.success('Google token from .env is valid!');
+                } else {
+                  toast.error('Google token in .env file is invalid.');
+                }
+              }}
+              className="ml-2 text-xs px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
+            >
+              Test Token from .env
+            </button>
+          </div>
           
           <div className="mt-4 flex flex-wrap space-x-2">
             <button
@@ -1755,98 +1712,72 @@ function Sync() {
           </span>
         </div>
         
-        <div className="mb-6">
-          <GoogleTokenStatus 
-            onTokenExpired={handleTokenExpired}
-            onStatusChange={handleTokenStatusChange}
-            useMockData={false}
-          />
+        <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center">
+            <div className={`w-3 h-3 rounded-full mr-2 ${isTokenValid ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="font-medium text-sm">{isTokenValid ? 'Token is valid' : 'Token is invalid'}</span>
+          </div>
+          
+          <button 
+            onClick={async () => {
+              const valid = await checkTokenValidity();
+              if (valid) {
+                toast.success('Google token is valid!');
+              } else {
+                toast.error('Google token is invalid. Check your .env file.');
+              }
+            }}
+            className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+          >
+            Test Token
+          </button>
         </div>
         
         <div className="mt-4 space-y-2 text-sm text-gray-600">
           <p>A valid Google token is required to perform sync operations with Google Drive.</p>
-          <p>The token typically expires after 1 hour, but it will be automatically refreshed when needed.</p>
-          <p>If you're having issues with authentication, try clicking the "Refresh" button above.</p>
+          <p>The token typically expires after 1 hour. To update your token:</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Get a new access token from Google</li>
+            <li>Update the VITE_GOOGLE_ACCESS_TOKEN in your .env.development file</li>
+            <li>Click "Test Token" to validate it</li>
+          </ol>
         </div>
       </div>
       
-      <div className="border-t pt-4 mt-4">
-        <h3 className="text-lg font-medium mb-3">Recent Authentication Events</h3>
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <pre className="text-xs overflow-auto" style={{ maxHeight: '200px' }}>
-            {/* Display last few token events from localStorage */}
-            {(() => {
-              try {
-                const tokenEvents = JSON.parse(localStorage.getItem('google_token_events') || '[]');
-                return tokenEvents.length > 0 
-                  ? tokenEvents.map((event: any, i: number) => 
-                      `[${new Date(event.timestamp).toLocaleString()}] ${event.type}: ${event.message}`
-                    ).join('\n')
-                  : 'No recent authentication events.';
-              } catch (e) {
-                return 'Error loading authentication events.';
+      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+        <h3 className="text-md font-medium mb-2 text-blue-800">Token Information</h3>
+        <div className="text-sm">
+          {isTokenValid ? (
+            <>
+              <p>Token is currently valid and ready for API operations.</p>
+              <p className="mt-2">Last verified: {new Date().toLocaleTimeString()}</p>
+              {localStorage.getItem('google_access_token') && (
+                <p className="mt-2 font-mono bg-white p-2 rounded border border-gray-200 text-xs overflow-x-auto">
+                  {localStorage.getItem('google_access_token')?.substring(0, 20)}...
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-red-600">No valid token available. Please update your .env.development file with a valid token.</p>
+          )}
+        </div>
+        
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={async () => {
+              localStorage.removeItem('google_access_token');
+              const valid = await checkTokenValidity();
+              if (valid) {
+                toast.success('Token validated from .env file!');
+              } else {
+                toast.error('Token in .env file is invalid.');
               }
-            })()}
-          </pre>
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          >
+            Load Token from .env
+          </button>
         </div>
-      </div>
-      
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={() => {
-            // Log token refresh attempt
-            const events = JSON.parse(localStorage.getItem('google_token_events') || '[]');
-            events.unshift({
-              type: 'MANUAL_REFRESH',
-              message: 'User requested manual token refresh',
-              timestamp: new Date().toISOString()
-            });
-            localStorage.setItem('google_token_events', JSON.stringify(events.slice(0, 20)));
-            
-            // Attempt to refresh token
-            refreshGoogleToken()
-              .then(result => {
-                if (result.success) {
-                  toast.success('Token refreshed successfully.');
-                  
-                  // Update events log
-                  const updatedEvents = JSON.parse(localStorage.getItem('google_token_events') || '[]');
-                  updatedEvents.unshift({
-                    type: 'REFRESH_SUCCESS',
-                    message: 'Token refreshed successfully',
-                    timestamp: new Date().toISOString()
-                  });
-                  localStorage.setItem('google_token_events', JSON.stringify(updatedEvents.slice(0, 20)));
-                } else {
-                  toast.error(`Failed to refresh token: ${result.error}`);
-                  
-                  // Update events log
-                  const updatedEvents = JSON.parse(localStorage.getItem('google_token_events') || '[]');
-                  updatedEvents.unshift({
-                    type: 'REFRESH_ERROR',
-                    message: `Failed: ${result.error}`,
-                    timestamp: new Date().toISOString()
-                  });
-                  localStorage.setItem('google_token_events', JSON.stringify(updatedEvents.slice(0, 20)));
-                }
-              })
-              .catch(error => {
-                toast.error('Error refreshing token.');
-                
-                // Update events log
-                const updatedEvents = JSON.parse(localStorage.getItem('google_token_events') || '[]');
-                updatedEvents.unshift({
-                  type: 'REFRESH_EXCEPTION',
-                  message: error.message,
-                  timestamp: new Date().toISOString()
-                });
-                localStorage.setItem('google_token_events', JSON.stringify(updatedEvents.slice(0, 20)));
-              });
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Force Token Refresh
-        </button>
       </div>
     </div>
   );

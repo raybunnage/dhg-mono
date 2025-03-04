@@ -460,37 +460,26 @@ export const getDriveSyncStats = async (): Promise<SyncStats> => {
     // Add timestamp for tracking
     const timestamp = new Date().toISOString();
     
-    // For dev mode, check if we should use mock data
+    // No longer using mock data, even in dev mode
     if (skipValidation) {
-      console.log('DEV MODE: Using mock data for sync stats');
+      console.log('DEV MODE: Token validation is skipped, but we still need valid data');
       
-      return {
-        matchingFiles: [],
-        newFiles: [
-          {
-            id: 'dummy-doc-3',
-            name: 'New Document.docx',
-            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            modifiedTime: new Date().toISOString(),
-            size: '15360'
-          },
-          {
-            id: 'dummy-pdf-1',
-            name: 'New PDF File.pdf',
-            mimeType: 'application/pdf',
-            modifiedTime: new Date().toISOString(), 
-            size: '25600'
-          }
-        ],
-        localOnlyFiles: ['local-only-file.txt'],
-        totalGoogleDriveFiles: 5,
-        totalGoogleDriveFolders: 2,
-        totalLocalFiles: 3,
-        totalMP4Files: 1,
-        totalMP4SizeGB: 0.25,
-        isValid: true,
-        timestamp
-      };
+      // Even in dev mode with skip_token_validation, we need a proper token
+      if (!localStorage.getItem('google_access_token')) {
+        return {
+          matchingFiles: [],
+          newFiles: [],
+          localOnlyFiles: [],
+          totalGoogleDriveFiles: 0,
+          totalGoogleDriveFolders: 0,
+          totalLocalFiles: 0,
+          totalMP4Files: 0,
+          totalMP4SizeGB: 0,
+          isValid: false,
+          error: 'No valid Google token found. Please authenticate with Google first.',
+          timestamp
+        };
+      }
     }
     
     // Validate we have a folder ID to use
@@ -663,9 +652,16 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
     console.log(`Inserting ${files.length} Google Drive files into the database`);
     
     // Create a supabase admin client with service role key to bypass RLS
+    // Use a different storage key to avoid the warning about multiple clients
     const supabaseAdmin = createClient<Database>(
       import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          storageKey: 'dhg-supabase-admin-auth',
+          persistSession: false  // Don't persist admin sessions
+        }
+      }
     );
 
     // Process files in batches to avoid overloading the database
@@ -835,7 +831,13 @@ export async function getTableStructure(tableName: string) {
   try {
     const supabaseAdmin = createClient<Database>(
       import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          storageKey: 'dhg-supabase-admin-auth',
+          persistSession: false  // Don't persist admin sessions
+        }
+      }
     );
     
     // First try with get_table_metadata RPC
