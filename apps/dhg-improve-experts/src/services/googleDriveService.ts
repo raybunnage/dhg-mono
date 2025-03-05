@@ -1093,10 +1093,10 @@ export async function searchSpecificFolder(folderId: string): Promise<{
         const rootResponse = await authenticatedFetch(rootUrl);
         
         if (rootResponse.ok) {
-          const rootFolder = await rootResponse.json();
+          let folderData = await rootResponse.json();
           
           // Skip if this is a shortcut
-          if (rootFolder.mimeType === 'application/vnd.google-apps.shortcut') {
+          if (folderData.mimeType === 'application/vnd.google-apps.shortcut') {
             console.warn(`⚠️ Warning: The root folder ID ${folderId} is a shortcut, not a real folder.`);
             
             // For shortcut, try to resolve the target folder
@@ -1117,8 +1117,8 @@ export async function searchSpecificFolder(folderId: string): Promise<{
                   const targetResponse = await authenticatedFetch(targetUrl);
                   
                   if (targetResponse.ok) {
-                    rootFolder = await targetResponse.json();
-                    console.log(`✓ Using shortcut target: "${rootFolder.name}" (${rootFolder.id}) - Type: ${rootFolder.mimeType}`);
+                    folderData = await targetResponse.json();
+                    console.log(`✓ Using shortcut target: "${folderData.name}" (${folderData.id}) - Type: ${folderData.mimeType}`);
                   }
                 }
               }
@@ -1126,17 +1126,17 @@ export async function searchSpecificFolder(folderId: string): Promise<{
               console.error('Error resolving shortcut:', shortcutError);
             }
           } else {
-            console.log(`✓ Found root folder with authenticatedFetch: "${rootFolder.name}" (${rootFolder.id}) - Type: ${rootFolder.mimeType}`);
+            console.log(`✓ Found root folder with authenticatedFetch: "${folderData.name}" (${folderData.id}) - Type: ${folderData.mimeType}`);
           }
           
           // Normalize the parents field
-          if (!rootFolder.parents) {
-            rootFolder.parents = [];
+          if (!folderData.parents) {
+            folderData.parents = [];
           }
           
           // Add to our results if not already added and not a shortcut
-          if (!allFiles.some(f => f.id === rootFolder.id) && rootFolder.mimeType !== 'application/vnd.google-apps.shortcut') {
-            allFiles.push(rootFolder);
+          if (!allFiles.some(f => f.id === folderData.id) && folderData.mimeType !== 'application/vnd.google-apps.shortcut') {
+            allFiles.push(folderData);
           }
         } else {
           const errorText = await rootResponse.text();

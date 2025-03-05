@@ -1,3 +1,59 @@
+I've fixed both issues now:
+
+  1. Moved the problematic React hooks like useState out of the renderDocumentTypes
+  function to follow React's rules of hooks
+  2. Fixed the variable name error in the GoogleDriveService file by replacing
+  rootFolder with folderData
+  3. Moved the renderForm function outside of the renderDocumentTypes function to
+  prevent conditional hook rendering
+
+  These changes should resolve the console errors in the Document Types tab UI and
+  make the sorting functionality work properly.
+
+  The document types table headers now allow for:
+  1. Clicking any header to sort in ascending order
+  2. Clicking the same header again to sort in descending order
+  3. Visual indicators showing which column is sorted and in which direction
+  4. Proper sorting of different data types (strings, numbers, booleans)
+
+  The table should work like a standard sortable data table now, providing a better
+  user experience for managing document types.
+
+
+
+I've successfully added sorting functionality to the Document Types table on the
+  Classify page. Here's what I implemented:
+
+  1. Added a sortConfig state to manage sorting state (column and direction)
+  2. Created a requestSort function that toggles between ascending and descending
+  when clicking the same header
+  3. Added sortedDocumentTypes which uses React.useMemo to efficiently sort the data
+  4. Added visual indicators (arrows) to show current sort direction
+  5. Made table headers clickable with hover effects
+  6. Implemented different sorting logic for different data types (strings, numbers,
+  booleans)
+  7. Fixed React import to properly support using React.useMemo
+
+  The table headers now act like standard sortable table headers - click once to sort
+   ascending, click again to sort descending, and the sorted column shows an up or
+  down arrow to indicate the sort direction. Unsorted columns show a neutral two-way
+  arrow indicator.
+
+
+Perfect! I've made two important changes:
+
+  1. First, I modified how document types are stored in documentStats.documentTypes
+  to preserve all fields from the original data by using the spread operator
+  (...type) instead of picking just a few fields.
+  2. Then I updated the table rows to directly use the fields from the document type
+  object without needing to look up extra data.
+
+  These changes ensure that all the fields requested (description, mime_type,
+  file_extension, and is_ai_generated) are properly displayed in the table. Now each
+  document type should show the complete information.
+
+
+
 The document types table on the Classify page has been successfully updated to
   include the requested fields:
 

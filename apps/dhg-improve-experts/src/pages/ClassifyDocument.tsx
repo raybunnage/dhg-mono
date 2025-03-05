@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import type { Database } from '@/integrations/supabase/types';
@@ -524,11 +524,9 @@ export function ClassifyDocument() {
         }
       });
       
-      // Combine with document types
+      // Combine with document types, preserving all fields
       const documentTypesWithCounts = types ? types.map(type => ({
-        id: type.id,
-        document_type: type.document_type,
-        category: type.category,
+        ...type, // Keep all original fields
         count: typeCounts[type.id] || 0,
         isNew: localStorage.getItem(`seen_doctype_${type.id}`) ? false : true
       })) : [];
@@ -1564,142 +1562,207 @@ Use this exact structure, with empty arrays [] for missing information:
     </div>
   );
 
-  // Render document types section
-  const renderDocumentTypes = () => {
-    // Form UI for adding/editing document types
-    const renderForm = () => (
-      <div className="bg-white p-5 rounded-lg shadow mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">
-            {selectedType ? "Edit Document Type" : "Add New Document Type"}
-          </h3>
-          <button
-            onClick={() => setIsEditing(false)}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            ✕
-          </button>
+  // State for sorting - moved outside render function to follow React Hook rules
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'ascending' | 'descending';
+  } | null>(null);
+
+  // Sorting function
+  const requestSort = (key: string) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === 'ascending'
+    ) {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Apply sorting to document types
+  const sortedDocumentTypes = React.useMemo(() => {
+    let sortableItems = [...filteredDocumentTypes];
+    if (sortConfig !== null) {
+      sortableItems.sort((a: any, b: any) => {
+        // Handle null values
+        const aValue = a[sortConfig.key] ?? '';
+        const bValue = b[sortConfig.key] ?? '';
+        
+        // Special handling for count which is numeric
+        if (sortConfig.key === 'count') {
+          return sortConfig.direction === 'ascending'
+            ? (a.count || 0) - (b.count || 0)
+            : (b.count || 0) - (a.count || 0);
+        }
+        
+        // Handle boolean values
+        if (typeof aValue === 'boolean') {
+          return sortConfig.direction === 'ascending'
+            ? aValue === bValue ? 0 : aValue ? -1 : 1
+            : aValue === bValue ? 0 : aValue ? 1 : -1;
+        }
+        
+        // String comparison for other values
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredDocumentTypes, sortConfig]);
+
+  // Helper for sort indicator
+  const getSortDirectionIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <span className="text-gray-400 ml-1">↕</span>;
+    }
+    return sortConfig.direction === 'ascending' ? 
+      <span className="text-blue-600 ml-1">↑</span> : 
+      <span className="text-blue-600 ml-1">↓</span>;
+  };
+
+  // Form UI for adding/editing document types
+  const renderForm = () => (
+    <div className="bg-white p-5 rounded-lg shadow mb-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">
+          {selectedType ? "Edit Document Type" : "Add New Document Type"}
+        </h3>
+        <button
+          onClick={() => setIsEditing(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={handleFormSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Document Type *</label>
+          <input
+            type="text"
+            name="document_type"
+            value={formData.document_type}
+            onChange={handleFormChange}
+            className="w-full px-3 py-2 border rounded-md"
+            required
+          />
         </div>
 
-        <form onSubmit={handleFormSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Document Type *</label>
+        <div>
+          <label className="block text-sm font-medium mb-1">Category *</label>
+          <select
+            name="category"
+            value={formData.category}
+            onChange={handleFormChange}
+            className="w-full px-3 py-2 border rounded-md appearance-none"
+            required
+          >
+            <option value="" disabled>Select a category</option>
+            {formCategories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+            <option value="new">-- Enter new category --</option>
+          </select>
+          
+          {formData.category === 'new' && (
             <input
               type="text"
-              name="document_type"
-              value={formData.document_type}
+              name="category"
+              placeholder="Enter new category name"
+              className="w-full px-3 py-2 border rounded-md mt-2"
               onChange={handleFormChange}
-              className="w-full px-3 py-2 border rounded-md"
               required
             />
-          </div>
+          )}
+        </div>
 
+        <div>
+          <label className="block text-sm font-medium mb-1">Description</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleFormChange}
+            className="w-full px-3 py-2 border rounded-md"
+            rows={3}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Category *</label>
+            <label className="block text-sm font-medium mb-1">MIME Type</label>
             <select
-              name="category"
-              value={formData.category}
+              name="mime_type"
+              value={formData.mime_type}
               onChange={handleFormChange}
               className="w-full px-3 py-2 border rounded-md appearance-none"
-              required
             >
-              <option value="" disabled>Select a category</option>
-              {formCategories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+              <option value="">Select a MIME type (optional)</option>
+              {formMimeTypes.map((mimeType) => (
+                <option key={mimeType} value={mimeType}>
+                  {mimeType}
                 </option>
               ))}
-              <option value="new">-- Enter new category --</option>
             </select>
-            
-            {formData.category === 'new' && (
-              <input
-                type="text"
-                name="category"
-                placeholder="Enter new category name"
-                className="w-full px-3 py-2 border rounded-md mt-2"
-                onChange={handleFormChange}
-                required
-              />
-            )}
           </div>
-
+          
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleFormChange}
-              className="w-full px-3 py-2 border rounded-md"
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">MIME Type</label>
-              <select
-                name="mime_type"
-                value={formData.mime_type}
-                onChange={handleFormChange}
-                className="w-full px-3 py-2 border rounded-md appearance-none"
-              >
-                <option value="">Select a MIME type (optional)</option>
-                {formMimeTypes.map((mimeType) => (
-                  <option key={mimeType} value={mimeType}>
-                    {mimeType}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">File Extension</label>
-              <input
-                type="text"
-                name="file_extension"
-                value={formData.file_extension}
-                onChange={handleFormChange}
-                placeholder=".pdf, .doc, .txt, etc."
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 mt-4">
+            <label className="block text-sm font-medium mb-1">File Extension</label>
             <input
-              type="checkbox"
-              id="is_ai_generated"
-              name="is_ai_generated"
-              checked={formData.is_ai_generated}
-              onChange={(e) => setFormData({...formData, is_ai_generated: e.target.checked})}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              type="text"
+              name="file_extension"
+              value={formData.file_extension}
+              onChange={handleFormChange}
+              placeholder=".pdf, .doc, .txt, etc."
+              className="w-full px-3 py-2 border rounded-md"
             />
-            <label htmlFor="is_ai_generated" className="text-sm font-medium text-gray-700">
-              AI Generated
-            </label>
           </div>
+        </div>
 
-          <div className="flex justify-end mt-6">
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md mr-2"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-              disabled={isFormSubmitting}
-            >
-              {isFormSubmitting ? 'Saving...' : selectedType ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-    
+        <div className="flex items-center space-x-2 mt-4">
+          <input
+            type="checkbox"
+            id="is_ai_generated"
+            name="is_ai_generated"
+            checked={formData.is_ai_generated}
+            onChange={(e) => setFormData({...formData, is_ai_generated: e.target.checked})}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label htmlFor="is_ai_generated" className="text-sm font-medium text-gray-700">
+            AI Generated
+          </label>
+        </div>
+
+        <div className="flex justify-end mt-6">
+          <button
+            type="button"
+            onClick={() => setIsEditing(false)}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md mr-2"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+            disabled={isFormSubmitting}
+          >
+            {isFormSubmitting ? 'Saving...' : selectedType ? 'Update' : 'Create'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+
+  // Render document types section
+  const renderDocumentTypes = () => {
     return (
       <div>
         <div className="flex justify-between items-center mb-4">
@@ -1751,26 +1814,61 @@ Use this exact structure, with empty arrays [] for missing information:
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Document Type
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => requestSort('document_type')}
+                >
+                  <div className="flex items-center">
+                    Document Type {getSortDirectionIcon('document_type')}
+                  </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => requestSort('category')}
+                >
+                  <div className="flex items-center">
+                    Category {getSortDirectionIcon('category')}
+                  </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => requestSort('description')}
+                >
+                  <div className="flex items-center">
+                    Description {getSortDirectionIcon('description')}
+                  </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  MIME Type
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => requestSort('mime_type')}
+                >
+                  <div className="flex items-center">
+                    MIME Type {getSortDirectionIcon('mime_type')}
+                  </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  File Extension
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => requestSort('file_extension')}
+                >
+                  <div className="flex items-center">
+                    File Extension {getSortDirectionIcon('file_extension')}
+                  </div>
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  AI Generated
+                <th 
+                  className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => requestSort('is_ai_generated')}
+                >
+                  <div className="flex items-center justify-center">
+                    AI Generated {getSortDirectionIcon('is_ai_generated')}
+                  </div>
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Usage Count
+                <th 
+                  className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => requestSort('count')}
+                >
+                  <div className="flex items-center justify-center">
+                    Usage Count {getSortDirectionIcon('count')}
+                  </div>
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -1781,10 +1879,8 @@ Use this exact structure, with empty arrays [] for missing information:
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredDocumentTypes.length > 0 ? (
-                filteredDocumentTypes.map((type) => {
-                  // Find the full document type data to access additional fields
-                  const fullTypeData = documentTypesData.find(dt => dt.id === type.id);
+              {sortedDocumentTypes.length > 0 ? (
+                sortedDocumentTypes.map((type) => {
                   return (
                     <tr key={type.id} className={type.isNew ? "bg-yellow-50" : ""}>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -1794,16 +1890,16 @@ Use this exact structure, with empty arrays [] for missing information:
                         {type.category}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 max-w-xs overflow-hidden text-ellipsis">
-                        {fullTypeData?.description || ''}
+                        {type.description || ''}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 max-w-[200px] overflow-hidden text-ellipsis">
-                        {fullTypeData?.mime_type || ''}
+                        {type.mime_type || ''}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {fullTypeData?.file_extension || ''}
+                        {type.file_extension || ''}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                        {fullTypeData?.is_ai_generated ? 'Yes' : 'No'}
+                        {type.is_ai_generated ? 'Yes' : 'No'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
                         {type.count}
