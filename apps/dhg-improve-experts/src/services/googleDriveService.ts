@@ -1041,6 +1041,13 @@ export async function searchSpecificFolder(folderId: string): Promise<{
     console.log(`STARTING RECURSIVE SEARCH FOR FOLDER: ${folderId}`);
     console.log(`=======================================`);
     
+    // Clear any possible folder ID override in localStorage to ensure we use exactly the folder ID provided
+    localStorage.removeItem('google_drive_folder_id_override');
+    localStorage.removeItem('google_drive_folder_name');
+    
+    console.log(`SEARCH: Explicitly cleared folder ID overrides from localStorage`);
+    console.log(`SEARCH: Will search ONLY the exact folder ID provided: ${folderId}`);
+    
     // Get access token (either from localStorage or try using authenticatedFetch helper)
     let accessToken = localStorage.getItem('google_access_token');
     if (!accessToken) {
@@ -1052,7 +1059,8 @@ export async function searchSpecificFolder(folderId: string): Promise<{
     // Create holders for our results
     let allFiles: DriveFile[] = [];
     let hasExceededLimit = false;
-    const MAX_FILES = 5000; // Increased limit to allow finding all files and folders in the hierarchy
+    const MAX_FILES = 1000; // Reduced limit to prevent excessive searching
+    const MAX_FOLDER_DEPTH = 3; // Limit how deep we go into folder hierarchies
     
     // 1. First, verify the folder exists by fetching its details directly
     console.log(`Step 1: Verifying folder ${folderId} exists...`);
@@ -1162,7 +1170,8 @@ export async function searchSpecificFolder(folderId: string): Promise<{
     console.log(`Step 2: Starting recursive traversal from folder ${folderId}...`);
     
     // Create a queue of folders to process and a set to track processed folders
-    const folderQueue: string[] = [folderId];
+    // Each queue entry will be an object with the folder ID and its depth in the hierarchy
+    const folderQueue: Array<{id: string, depth: number}> = [{id: folderId, depth: 0}];
     const processedFolders = new Set<string>();
     
     // Track the allowed folder hierarchy to prevent following shortcuts
@@ -1172,7 +1181,9 @@ export async function searchSpecificFolder(folderId: string): Promise<{
     
     // Process all folders in the queue using a breadth-first approach
     while (folderQueue.length > 0 && allFiles.length < MAX_FILES) {
-      const currentFolderId = folderQueue.shift()!;
+      const folderItem = folderQueue.shift()!;
+      const currentFolderId = folderItem.id;
+      const currentDepth = folderItem.depth;
       
       // Skip if we've already processed this folder
       if (processedFolders.has(currentFolderId)) {
@@ -1180,8 +1191,14 @@ export async function searchSpecificFolder(folderId: string): Promise<{
         continue;
       }
       
+      // Skip if we've exceeded our max depth
+      if (currentDepth > MAX_FOLDER_DEPTH) {
+        console.log(`⚠️ Skipping folder at depth ${currentDepth} (exceeds max depth of ${MAX_FOLDER_DEPTH}): ${currentFolderId}`);
+        continue;
+      }
+      
       processedFolders.add(currentFolderId);
-      console.log(`Processing folder contents: ${currentFolderId}`);
+      console.log(`Processing folder contents: ${currentFolderId} (depth: ${currentDepth}/${MAX_FOLDER_DEPTH})`);
       
       // Process all pages of results for this folder
       let pageToken: string | null = null;
@@ -1292,8 +1309,13 @@ export async function searchSpecificFolder(folderId: string): Promise<{
           
           for (const folder of foldersFound) {
             if (!processedFolders.has(folder.id)) {
-              console.log(`Adding subfolder to queue: ${folder.name} (${folder.id})`);
-              folderQueue.push(folder.id);
+              const nextDepth = currentDepth + 1;
+              if (nextDepth <= MAX_FOLDER_DEPTH) {
+                console.log(`Adding subfolder to queue: ${folder.name} (${folder.id}) at depth ${nextDepth}`);
+                folderQueue.push({id: folder.id, depth: nextDepth});
+              } else {
+                console.log(`📂 Not adding subfolder (exceeds max depth): ${folder.name} (${folder.id})`);
+              }
             } else {
               console.log(`Skipping already processed subfolder: ${folder.name} (${folder.id})`);
             }
@@ -1398,6 +1420,53 @@ export async function searchSpecificFolder(folderId: string): Promise<{
     
     const files = allFiles.filter(f => f.mimeType !== 'application/vnd.google-apps.folder');
     console.log(`Files: ${files.length}`);
+    
+    // Display extra info about limits used for this search
+    console.log(`Search settings: MAX_FILES=${MAX_FILES}, MAX_FOLDER_DEPTH=${MAX_FOLDER_DEPTH}`);
+    console.log(`Reached file limit? ${hasExceededLimit ? 'Yes' : 'No'}`);
+    
+    // Display depth statistics
+    console.log(`Folder hierarchy depth statistics:`);
+    const folderDepths = new Map<string, number>();
+    
+    // Start with root folder at depth 0
+    folderDepths.set(folderId, 0);
+    
+    // Calculate depths for all other folders
+    let anyUpdated = true;
+    // Iterate until no more depths are updated
+    while (anyUpdated) {
+      anyUpdated = false;
+      for (const folder of folders) {
+        if (folder.id === folderId) continue; // Skip root
+        
+        // If we already know this folder's depth, skip it
+        if (folderDepths.has(folder.id)) continue;
+        
+        // If we know the parent's depth, we can calculate this folder's depth
+        if (folder.parents && folder.parents.length > 0) {
+          const parentId = folder.parents[0];
+          if (folderDepths.has(parentId)) {
+            folderDepths.set(folder.id, folderDepths.get(parentId)! + 1);
+            anyUpdated = true;
+          }
+        }
+      }
+    }
+    
+    // Count folders at each depth
+    const depthCounts = new Map<number, number>();
+    folderDepths.forEach((depth) => {
+      depthCounts.set(depth, (depthCounts.get(depth) || 0) + 1);
+    });
+    
+    // Display the counts
+    console.log(`Folder depth distribution:`);
+    Array.from(depthCounts.entries())
+      .sort((a, b) => a[0] - b[0])
+      .forEach(([depth, count]) => {
+        console.log(`  Depth ${depth}: ${count} folders`);
+      });
     
     // Count by file type
     const fileTypes: Record<string, number> = {};

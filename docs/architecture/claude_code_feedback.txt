@@ -1,3 +1,42 @@
+I've made significant improvements to the folder search functionality
+  to prevent excessive searching while still finding all relevant files:
+
+  1. Added depth limiting:
+    - Introduced a MAX_FOLDER_DEPTH parameter (set to 3) to limit how
+  deep into subfolders the search will go
+    - This prevents the search from traversing extremely deep folder
+  hierarchies
+  2. Reduced maximum file limit:
+    - Changed MAX_FILES from 5000 to a more reasonable 1000
+    - This prevents the search from going on indefinitely in large Drive
+   structures
+  3. Improved folder queue management:
+    - Modified the folder queue to track each folder's depth in the
+  hierarchy
+    - Before adding subfolders to the queue, it now checks if they
+  exceed max depth
+  4. Added detailed depth statistics:
+    - The function now calculates and displays how many folders exist at
+   each depth level
+    - This provides useful information about the structure of the folder
+   hierarchy
+  5. Enhanced logging:
+    - Added clear indicators when folders are skipped due to depth
+  limits
+    - Added depth information to folder processing logs
+    - Added summary of search parameters at the end
+
+  These changes will make the Preview function much more efficient by:
+  1. Only searching the immediate folder structure (no deeper than 3
+  levels)
+  2. Stopping after finding 1000 items instead of 5000
+  3. Better focusing on the relevant content under the selected folder
+
+  This should significantly speed up the preview process while still
+  providing all the important files and folders directly related to the
+  selected folder.
+
+
 I've fixed the timestamp issue in the code. The problem was related to
    timezone differences:
 
