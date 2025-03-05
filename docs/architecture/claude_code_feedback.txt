@@ -1,3 +1,30 @@
+
+Great! It looks like we've removed all the localStorage references for
+   folder IDs in the active code. All of the remaining occurrences are
+  in archive or backup files, which is fine.
+
+  Let's summarize what we've done:
+
+  1. Updated fetchRootFolders to use the same logic from the Roots tab
+  to query for folders with is_root = true or is_root = 1
+  2. Updated getDriveSyncStats in GoogleDriveService to accept folder ID
+   and name as parameters instead of using localStorage
+  3. Updated syncWithGoogleDrive in GoogleDriveService to accept folder
+  ID and name as parameters
+  4. Updated handleSyncCheck to pass folder ID directly to
+  getDriveSyncStats instead of using localStorage
+  5. Updated handleSync to pass folder ID directly to
+  syncWithGoogleDrive instead of using localStorage
+  6. Updated handleNewFolderSync to pass folder ID directly to service
+  functions instead of using localStorage
+  7. Updated other functions like handlePreviewFolder and the Test
+  Insert button to remove localStorage usage
+
+  These changes will make the Folders tab combobox work the same as the
+  Roots tab, and eliminate reliance on localStorage which was causing
+  problems.
+
+  
 I've implemented two significant improvements to the Roots tab:
 
   1. Added File and Folder Counts for Root Records:

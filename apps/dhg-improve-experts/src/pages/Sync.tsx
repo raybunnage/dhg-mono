@@ -167,16 +167,48 @@ function Sync() {
   // Fetch existing root folders
   const fetchRootFolders = async () => {
     try {
-      const { data, error } = await supabase
+      // First check if we have the Service Role Key for admin operations
+      if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+        toast.error('Service Role Key is required for this operation');
+        return [];
+      }
+      
+      // Create admin client to bypass RLS
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            storageKey: 'dhg-supabase-admin-auth',
+            persistSession: false
+          }
+        }
+      );
+      
+      // Supabase may store booleans differently in the database, try both true and 1
+      const { data: data1, error: error1 } = await supabaseAdmin
         .from('sources_google')
-        .select('id, name, drive_id')
-        .is('parent_path', null)
-        .eq('mime_type', 'application/vnd.google-apps.folder')
+        .select('id, drive_id, name, mime_type')
+        .eq('is_root', true)
         .order('name');
         
-      if (error) throw error;
+      if (error1) {
+        console.error('Error with is_root=true query:', error1);
+      }
       
-          // Only get folders from sources_google
+      // Try with is_root = 1 as well
+      const { data: data2, error: error2 } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, mime_type')
+        .eq('is_root', 1)
+        .order('name');
+        
+      if (error2) {
+        console.error('Error with is_root=1 query:', error2);
+      }
+      
+      // Combine both result sets, removing duplicates by id
+      const data = [...(data1 || []), ...(data2 || [])];
       const folders = new Map<string, FolderOption>();
       
       // Add folders from sources_google
@@ -196,6 +228,7 @@ function Sync() {
       // Sort by name
       folderArray.sort((a, b) => a.name.localeCompare(b.name));
       
+      console.log('Root folders for combobox:', folderArray);
       setFolderOptions(folderArray);
       
       // If we have folders but no selected folder, select the first one
@@ -361,14 +394,10 @@ function Sync() {
     try {
       const folderDisplayName = newFolderName || 'New Folder';
       
-      // Temporarily override the folder ID for syncing
-      localStorage.setItem('google_drive_folder_id_override', newFolderId);
-      localStorage.setItem('google_drive_folder_name', folderDisplayName);
-      
       toast.success(`Checking status of folder: ${folderDisplayName}`);
       
-      // Get stats for the new folder using the temporary override
-      const stats = await getDriveSyncStats();
+      // Get stats for the new folder by passing ID and name directly
+      const stats = await getDriveSyncStats(newFolderId, folderDisplayName);
       setSyncStats(stats);
       
       if (!stats.isValid) {
@@ -380,7 +409,7 @@ function Sync() {
         toast.success(`Found ${stats.newFiles.length} new files to sync. Starting sync...`);
         
         // Perform the sync operation
-        const result = await syncWithGoogleDrive();
+        const result = await syncWithGoogleDrive(newFolderId, folderDisplayName);
         setSyncResult(result);
         
         // Store the result locally only
@@ -399,26 +428,10 @@ function Sync() {
         handleSyncComplete(result);
         
         // Update folder options to include the new folder
-        const { data: folderData } = await supabase
-          .from('sources_google')
-          .select('id, name, drive_id')
-          .is('parent_path', null)
-          .eq('mime_type', 'application/vnd.google-apps.folder')
-          .order('name');
-          
-        if (folderData) {
-          setFolderOptions(folderData.map(folder => ({
-            id: folder.drive_id || folder.id,
-            name: folder.name
-          })));
-        }
+        fetchRootFolders();
       } else {
         toast.success('Folder is already in sync! No new files to add.');
       }
-      
-      // Clean up the temporary override
-      localStorage.removeItem('google_drive_folder_id_override');
-      localStorage.removeItem('google_drive_folder_name');
       
       // Fetch document stats for the new folder
       fetchDocumentStats(newFolderId);
@@ -426,10 +439,6 @@ function Sync() {
     } catch (err) {
       console.error('Error starting sync:', err);
       toast.error(`Failed to start sync process: ${err.message}`);
-      
-      // Clean up in case of error
-      localStorage.removeItem('google_drive_folder_id_override');
-      localStorage.removeItem('google_drive_folder_name');
     } finally {
       setIsNewFolderLoading(false);
     }
@@ -522,17 +531,9 @@ function Sync() {
       console.log(`Checking sync status for folder: ${folderName} (${existingFolderId})`);
       toast.loading(`Checking sync status for ${folderName}...`);
       
-      // Set the folder override in localStorage
-      localStorage.setItem('google_drive_folder_id_override', existingFolderId);
-      localStorage.setItem('google_drive_folder_name', folderName);
-      
-      // Get the sync stats
-      const stats = await getDriveSyncStats();
+      // Get the sync stats - pass folder ID and name directly
+      const stats = await getDriveSyncStats(existingFolderId, folderName);
       setSyncStats(stats);
-      
-      // Clear any temporary folder override
-      localStorage.removeItem('google_drive_folder_id_override');
-      localStorage.removeItem('google_drive_folder_name');
       
       // Dismiss all toasts
       toast.dismiss();
@@ -554,10 +555,6 @@ function Sync() {
       console.error('Error checking sync:', error);
       toast.dismiss();
       toast.error(`Error checking sync: ${error.message || 'Unknown error'}`);
-      
-      // Make sure to clean up temporary overrides in case of error
-      localStorage.removeItem('google_drive_folder_id_override');
-      localStorage.removeItem('google_drive_folder_name');
     } finally {
       setIsLoading(false);
     }
@@ -589,24 +586,16 @@ function Sync() {
       // Get the selected folder name
       const folderName = folderOptions.find(f => f.id === existingFolderId)?.name || 'Selected Folder';
       
-      // Set the folder override in localStorage
-      localStorage.setItem('google_drive_folder_id_override', existingFolderId);
-      localStorage.setItem('google_drive_folder_name', folderName);
-      
       toast.loading(`Syncing ${folderName} with Google Drive...`);
       
       // We no longer automatically enable skip_token_validation in development mode
       // A valid token is always required
       
-      const result = await syncWithGoogleDrive();
+      const result = await syncWithGoogleDrive(existingFolderId, folderName);
       setSyncResult(result);
       
       // Store the result locally only
       await storeLocalSyncResult(result);
-      
-      // Clear any temporary folder override
-      localStorage.removeItem('google_drive_folder_id_override');
-      localStorage.removeItem('google_drive_folder_name');
       
       // Dismiss all toasts
       toast.dismiss();
@@ -625,16 +614,8 @@ function Sync() {
       // Refresh stats
       toast.loading('Refreshing stats...');
       
-      // Re-set the folder override to get stats for this folder
-      localStorage.setItem('google_drive_folder_id_override', existingFolderId);
-      localStorage.setItem('google_drive_folder_name', folderName);
-      
-      const newStats = await getDriveSyncStats();
+      const newStats = await getDriveSyncStats(existingFolderId, folderName);
       setSyncStats(newStats);
-      
-      // Clear folder override again
-      localStorage.removeItem('google_drive_folder_id_override');
-      localStorage.removeItem('google_drive_folder_name');
       
       fetchFileStats();
       
@@ -646,10 +627,6 @@ function Sync() {
       console.error('Error syncing with Google Drive:', error);
       toast.dismiss();
       toast.error(`Sync failed: ${error.message || 'Unknown error'}`);
-      
-      // Make sure to clean up temporary overrides in case of error
-      localStorage.removeItem('google_drive_folder_id_override');
-      localStorage.removeItem('google_drive_folder_name');
     } finally {
       setIsSyncing(false);
       syncingRef.current = false;
@@ -886,14 +863,10 @@ function Sync() {
     }
     
     try {
-      // First, ensure we don't have any cached folder ID in localStorage
-      localStorage.removeItem('google_drive_folder_id_override');
-      localStorage.removeItem('google_drive_folder_name');
-            
       setIsSearchingFolder(true);
       const toastId = toast.loading(`Analyzing folder contents for ID: ${folderId}...`);
       
-      console.log(`PREVIEW: Explicitly searching folder ${folderId} without localStorage overrides`);
+      console.log(`PREVIEW: Explicitly searching folder ${folderId}`);
       
       // Call the search function - it uses authenticatedFetch internally which handles token validation and refresh
       const result = await searchSpecificFolder(folderId);
@@ -1778,10 +1751,6 @@ function Sync() {
         <div className="flex gap-2">
           <button
             onClick={() => {
-              // Clear any existing folder ID overrides in localStorage
-              localStorage.removeItem('google_drive_folder_id_override');
-              localStorage.removeItem('google_drive_folder_name');
-              
               console.log("Preview using folder ID:", newFolderId);
               
               setSpecificFolderId(newFolderId);
@@ -1801,10 +1770,6 @@ function Sync() {
             onClick={async () => {
               try {
                 setIsInserting(true);
-                
-                // Clear any existing folder ID overrides in localStorage
-                localStorage.removeItem('google_drive_folder_id_override');
-                localStorage.removeItem('google_drive_folder_name');
                 
                 // Log the folder ID being used
                 console.log("Test insert using current folder ID:", newFolderId);
@@ -1827,18 +1792,8 @@ function Sync() {
                   webViewLink: "https://example.com"
                 };
                 
-                // Set the folder override ONLY for this operation
-                if (newFolderId) {
-                  localStorage.setItem('google_drive_folder_id_override', newFolderId);
-                  localStorage.setItem('google_drive_folder_name', "Test Insert Folder");
-                }
-                
                 // Use the insertGoogleFiles function to insert a test record
                 const result = await insertGoogleFiles([mockFile]);
-                
-                // Clean up - IMPORTANT: Always clear the override after using it
-                localStorage.removeItem('google_drive_folder_id_override');
-                localStorage.removeItem('google_drive_folder_name');
                 
                 toast.dismiss();
                 if (result.success > 0) {
@@ -1851,10 +1806,6 @@ function Sync() {
               } catch (error) {
                 console.error("Error in test insert:", error);
                 toast.error(`Test insert failed: ${error.message}`);
-                
-                // Make sure to clean up localStorage even if there's an error
-                localStorage.removeItem('google_drive_folder_id_override');
-                localStorage.removeItem('google_drive_folder_name');
               } finally {
                 setIsInserting(false);
               }
@@ -1923,7 +1874,7 @@ function Sync() {
                 : 'bg-amber-500 hover:bg-amber-600'
             }`}
           >
-            {isSearchingFolder ? 'Analyzing...' : 'Preview Contents'}
+            {isSearchingFolder ? 'Analyzing...' : 'View Folder Structure'}
           </button>
         </div>
         
