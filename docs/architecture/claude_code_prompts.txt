@@ -1,5 +1,8 @@
 
-add anothe text search box on the Roots tab further down that where I can paste the name of a sources_google record - hit a button and get the 
+On the "Sync" page under the "Folders" tab there is a "Select Folder" and below that a combobox that lists names to select from.  That combobox should use the logic from the "Roots" tab ui that finds all the sources_google that have the is_root = 1.  Also, if there is local storage associated with this dropdown, please remove it and simply query it to populate it with the folders that are the root folders.  I think the "current folder" in local storage and previous local storage on this dropdown was messing things up. 
+
+
+add anothe text search box on the Roots tab further down that where I can paste the name of a sources_google record - hit a button and get the id back that I can paste into another text edit box.  Also add to the json output for each of the roots folder - a count of how many files and folders are associated with that root
 
 on tne sync page add a new tab called Roots 
 And write a query that will show the these fields just for the rows that have the is_root set and then display a window where I see the json of these fields.  Also provide a text box where I can paste in a unique identifer for a sources_google row and it will set the is_root field to 1 or true for that record

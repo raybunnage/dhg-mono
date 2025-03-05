@@ -2340,6 +2340,9 @@ function Sync() {
   const [isRootUpdateLoading, setIsRootUpdateLoading] = useState(false);
   const [rootUpdateStatus, setRootUpdateStatus] = useState<{success?: boolean, message: string} | null>(null);
   const [rootsTabSelected, setRootsTabSelected] = useState(false); // Track if Roots tab is selected
+  const [nameToSearch, setNameToSearch] = useState(''); // State for name search
+  const [isSearchingByName, setIsSearchingByName] = useState(false); // Loading state for name search
+  const [nameSearchResults, setNameSearchResults] = useState<any[]>([]); // Results for name search
   
   // Fetch root records
   const fetchRootRecords = async () => {
@@ -2393,10 +2396,56 @@ function Sync() {
         return true;
       });
       
+      // For each root folder, count associated files and folders
+      const rootDataWithCounts = await Promise.all(
+        uniqueData.map(async (root) => {
+          try {
+            // Count files linked to this root (where parent_folder_id equals root's drive_id)
+            const { count: filesCount, error: filesError } = await supabaseAdmin
+              .from('sources_google')
+              .select('*', { count: 'exact', head: true })
+              .eq('parent_folder_id', root.drive_id)
+              .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
+              
+            if (filesError) {
+              console.error(`Error counting files for root ${root.id}:`, filesError);
+            }
+            
+            // Count folders linked to this root
+            const { count: foldersCount, error: foldersError } = await supabaseAdmin
+              .from('sources_google')
+              .select('*', { count: 'exact', head: true })
+              .eq('parent_folder_id', root.drive_id)
+              .eq('mime_type', 'application/vnd.google-apps.folder');
+              
+            if (foldersError) {
+              console.error(`Error counting folders for root ${root.id}:`, foldersError);
+            }
+            
+            // Return the root with counts added
+            return {
+              ...root,
+              filesCount: filesCount || 0,
+              foldersCount: foldersCount || 0,
+              totalItems: (filesCount || 0) + (foldersCount || 0)
+            };
+          } catch (err) {
+            console.error(`Error enriching root ${root.id} with counts:`, err);
+            return {
+              ...root,
+              filesCount: 0,
+              foldersCount: 0,
+              totalItems: 0,
+              countError: err.message
+            };
+          }
+        })
+      );
+      
       // Log the raw results for debugging
       console.log('is_root=true query results:', data1);
       console.log('is_root=1 query results:', data2);
-      console.log('Combined unique results:', uniqueData);
+      console.log('Combined results with item counts:', rootDataWithCounts);
       
       // If both queries failed, create an error
       const error = error1 && error2 ? { message: `${error1.message} AND ${error2.message}` } : null;
@@ -2407,9 +2456,9 @@ function Sync() {
         return;
       }
       
-      console.log('Setting root records to:', uniqueData);
-      setRootRecords(uniqueData || []);
-      toast.success(`Found ${uniqueData?.length || 0} root records`);
+      console.log('Setting root records to:', rootDataWithCounts);
+      setRootRecords(rootDataWithCounts || []);
+      toast.success(`Found ${rootDataWithCounts?.length || 0} root records with item counts`);
     } catch (err) {
       console.error('Error in fetchRootRecords:', err);
       toast.error(`Error fetching root records: ${err.message}`);
@@ -2541,6 +2590,70 @@ function Sync() {
     }
   };
   
+  // Function to search for records by name
+  const searchRecordsByName = async () => {
+    if (!nameToSearch) {
+      toast.error('Please enter a name to search for');
+      return;
+    }
+    
+    try {
+      setIsSearchingByName(true);
+      setNameSearchResults([]);
+      
+      // First check if we have the Service Role Key for admin operations
+      if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+        toast.error('Service Role Key is required for this operation');
+        return;
+      }
+      
+      // Create admin client to bypass RLS
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            storageKey: 'dhg-supabase-admin-auth',
+            persistSession: false
+          }
+        }
+      );
+      
+      // Search for records with a name that contains the search string
+      const { data, error } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, mime_type')
+        .ilike('name', `%${nameToSearch}%`)
+        .limit(10);
+        
+      if (error) {
+        console.error('Error searching records by name:', error);
+        toast.error(`Search failed: ${error.message}`);
+        return;
+      }
+      
+      console.log('Name search results:', data);
+      setNameSearchResults(data || []);
+      
+      if (data && data.length > 0) {
+        toast.success(`Found ${data.length} records matching "${nameToSearch}"`);
+      } else {
+        toast.info(`No records found matching "${nameToSearch}"`);
+      }
+    } catch (err) {
+      console.error('Error in searchRecordsByName:', err);
+      toast.error(`Search error: ${err.message}`);
+    } finally {
+      setIsSearchingByName(false);
+    }
+  };
+  
+  // Handler to copy ID to the set root input
+  const copyIdToRootInput = (id: string) => {
+    setRootIdToSet(id);
+    toast.success(`ID copied to input: ${id}`);
+  };
+
   // Render Roots tab
   const renderRoots = () => (
     <div className="space-y-6">
@@ -2560,6 +2673,36 @@ function Sync() {
           These are the records marked as root folders in the sources_google table.
           Root folders are top-level folders that are directly synced from Google Drive.
         </p>
+        
+        {rootRecords.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-2">Root Folders Summary</h3>
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Files</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Folders</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {rootRecords.map((record) => (
+                    <tr key={record.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{record.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{record.drive_id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.filesCount}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.foldersCount}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{record.totalItems}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
         
         <div className="mb-6 overflow-hidden border border-gray-200 rounded-lg">
           <div className="max-h-[400px] overflow-auto bg-gray-50 p-4">
@@ -2600,6 +2743,67 @@ function Sync() {
             <p className={rootUpdateStatus.success ? 'text-green-800' : 'text-red-800'}>
               {rootUpdateStatus.message}
             </p>
+          </div>
+        )}
+      </div>
+      
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold mb-4">Find Record ID by Name</h2>
+        
+        <p className="mb-4 text-gray-600">
+          Enter a record name to search for matching records and get their IDs.
+        </p>
+        
+        <div className="flex space-x-2 mb-4">
+          <input
+            type="text"
+            value={nameToSearch}
+            onChange={(e) => setNameToSearch(e.target.value)}
+            placeholder="Enter record name to search"
+            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          
+          <button
+            onClick={searchRecordsByName}
+            disabled={isSearchingByName || !nameToSearch}
+            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-400"
+          >
+            {isSearchingByName ? 'Searching...' : 'Search by Name'}
+          </button>
+        </div>
+        
+        {nameSearchResults.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-lg font-medium mb-2">Search Results</h3>
+            <div className="border rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {nameSearchResults.map((record) => (
+                    <tr key={record.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{record.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{record.mime_type}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{record.id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => copyIdToRootInput(record.id)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Use ID
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

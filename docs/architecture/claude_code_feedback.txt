@@ -1,3 +1,73 @@
+I've implemented two significant improvements to the Roots tab:
+
+  1. Added File and Folder Counts for Root Records:
+    - Each root record now displays:
+        - The number of files directly associated with the root folder
+      - The number of folders directly associated with the root folder
+      - A total item count combining both files and folders
+    - This data is fetched when loading root records using additional
+  database queries
+    - The counts are displayed in a clear table above the JSON display
+  for quick reference
+    - The full details including counts are still available in the JSON
+  view
+  2. Improved Data Display:
+    - Added a tabular view of all root records with:
+        - Name column
+      - ID column (drive_id)
+      - Files count column
+      - Folders count column
+      - Total items column
+    - This provides an at-a-glance view of your root folders and how
+  many items they contain
+    - The JSON display is still available below for detailed viewing
+
+  The counts provide valuable information about how many items are
+  attached to each root folder, which helps you understand the size and
+  structure of your data. The table format makes it easier to scan
+  through all root folders and their associated data without having to
+  parse through the raw JSON.
+
+  This enhancement gives you better visibility into your root folders
+  and their contents, making it easier to manage and understand your
+  data structure.
+
+I've added a new name search feature to the Roots tab with the
+  following functionality:
+
+  1. New Search Box Section:
+    - Added a third section titled "Find Record ID by Name"
+    - Created a text input field where you can enter part of a record
+  name
+    - Added a "Search by Name" button that triggers the search
+  2. Search Functionality:
+    - Implemented a searchRecordsByName function that queries the
+  sources_google table
+    - Uses case-insensitive partial matching (with ILIKE) to find
+  records containing the search term
+    - Returns up to 10 matching records with their IDs, names, and mime
+  types
+  3. Results Display:
+    - Shows search results in a clean, formatted table with:
+        - Name column
+      - Type column (mime_type)
+      - ID column
+      - Actions column with a "Use ID" button
+  4. ID Transfer Feature:
+    - Added a "Use ID" button for each result that:
+        - Copies the record ID to the "Set Record as Root" input field
+      - Shows a confirmation toast message
+      - Allows you to quickly set any found record as a root record
+  5. Error Handling and Loading States:
+    - Proper loading state during search
+    - Error handling for failed searches
+    - Feedback when no results are found
+
+  This feature makes it easy to find a record by name, get its ID, and
+  then use that ID to set the record as a root record - all without
+  having to manually copy and paste between different screens or
+  applications.
+
 I've made significant improvements to the folder search functionality
   to prevent excessive searching while still finding all relevant files:
 
