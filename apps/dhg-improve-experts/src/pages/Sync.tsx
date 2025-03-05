@@ -6,6 +6,7 @@ import { BatchManager } from '@/components/BatchManager';
 import { BatchProcessingMonitor } from '@/components/BatchProcessingMonitor';
 import { getDriveSyncStats, syncWithGoogleDrive, listFilesInFolder, authenticatedFetch, insertGoogleFiles, searchSpecificFolder } from '@/services/googleDriveService';
 import { isGoogleTokenValid, refreshGoogleToken } from '@/services/googleAuth';
+import { createClient } from '@supabase/supabase-js';
 
 // Define types for document statistics
 interface DocumentTypeStats {
