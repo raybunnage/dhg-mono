@@ -881,8 +881,14 @@ function Sync() {
     }
     
     try {
+      // First, ensure we don't have any cached folder ID in localStorage
+      localStorage.removeItem('google_drive_folder_id_override');
+      localStorage.removeItem('google_drive_folder_name');
+            
       setIsSearchingFolder(true);
-      const toastId = toast.loading('Analyzing folder contents...');
+      const toastId = toast.loading(`Analyzing folder contents for ID: ${folderId}...`);
+      
+      console.log(`PREVIEW: Explicitly searching folder ${folderId} without localStorage overrides`);
       
       // Call the search function - it uses authenticatedFetch internally which handles token validation and refresh
       const result = await searchSpecificFolder(folderId);
@@ -1767,6 +1773,12 @@ function Sync() {
         <div className="flex gap-2">
           <button
             onClick={() => {
+              // Clear any existing folder ID overrides in localStorage
+              localStorage.removeItem('google_drive_folder_id_override');
+              localStorage.removeItem('google_drive_folder_name');
+              
+              console.log("Preview using folder ID:", newFolderId);
+              
               setSpecificFolderId(newFolderId);
               handlePreviewFolder(newFolderId);
             }}
