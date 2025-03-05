@@ -10,9 +10,6 @@ export function MainNavbar() {
     { name: 'Show', href: '/show' },
     { name: 'Sync', href: '/sync' },
     { name: 'Docs', href: '/docs' },
-    { name: 'Docs New', href: '/docs-new' },
-    // { name: 'Docs Explorer', href: '/docs-explorer' }, // Replaced by Docs
-    // { name: 'Doc Tables Test', href: '/documentation-test' }, // Archived on 2025-03-04
     { name: 'AI', href: '/ai' },
     { name: 'Classify', href: '/classify' },
     { name: 'Transcribe', href: '/transcribe' },
@@ -22,7 +19,7 @@ export function MainNavbar() {
     { name: 'Gmail', href: '/gmail' },
     { name: 'Code', href: '/code' },
     { name: 'Cmds', href: '/cmds' },
-    { name: 'Guts Example', href: '/guts-example' },
+    { name: 'Guts', href: '/guts' },
   ]
 
   return (

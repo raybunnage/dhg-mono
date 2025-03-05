@@ -19,8 +19,8 @@ interface FileNode {
   isExpanded: boolean;
 }
 
-// Main component for the DocsNew page
-function DocsNew() {
+// Main component for the Docs page
+function Docs() {
   const [documentationFiles, setDocumentationFiles] = useState<DocumentationFile[]>([]);
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -410,4 +410,4 @@ function DocsNew() {
   );
 }
 
-export default DocsNew;
+export default Docs;
