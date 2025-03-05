@@ -1,3 +1,11 @@
+
+on the "Sync" page under the "Folders" tabs 
+there is a button called "Add & Sync New Folder" 
+plase archive the code supporting that button
+then remove that button for the ui and move the button called "Preview Contents" in it's place
+then add a new temporary button called "Test Insert" that will look through the code on the Sync page for code that was successfully used before to insert new records into the sources_ggogle table. Make this a test button to see that we can insert one mock record into the database table.
+
+
 TASK: Implement a hybrid search system for markdown documentation files
 
 CONTEXT:

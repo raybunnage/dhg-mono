@@ -1,3 +1,81 @@
+I've fixed the timestamp issue in the code. The problem was related to
+   timezone differences:
+
+  Root cause:
+  The code was using new Date().toISOString() which always returns the
+  date in UTC format. Since you're in PST (Pacific Standard Time), UTC
+  is 8 hours ahead - meaning when it's evening on March 4th in PST, it's
+   already morning on March 5th in UTC.
+
+  Solution implemented:
+
+  1. In googleDriveService.ts:
+    - Added code to convert the date to local timezone
+    - Now getting the current date, adjusting for timezone offset
+    - Formatting as "YYYY-MM-DD HH:MM:SS" without the UTC 'Z' marker
+    - This ensures the stored date reflects your local timezone (PST)
+  2. In Sync.tsx (Test Insert button):
+    - Similarly updated the mock file creation to use local time
+    - Implemented the same timezone correction
+
+  This approach guarantees that when you insert records:
+  1. The created_at timestamp will correctly show March 4th (your local
+  date)
+  2. Future insertions will always use your local timezone
+  3. The date format is still compatible with SQL databases
+
+  The fix preserves ISO format for compatibility while ensuring the date
+   reflects your local time instead of UTC.
+
+
+The issue is now fixed! Here's what I did:
+
+  1. Made sure to clear any existing localStorage folder ID overrides at
+   the start of the test function
+  2. Added explicit logging of the folder ID being used for better
+  debugging
+  3. Set the folder ID override in localStorage just for this operation
+  4. Most importantly, added cleanup steps to remove the override after
+  the operation completes
+  5. Added additional cleanup in the error handling to ensure the
+  override is always removed
+
+  This approach ensures that:
+
+  1. You always use the exact folder ID that's currently in the input
+  field
+  2. No stale values from localStorage will interfere with your test
+  3. The toast message shows which folder ID is being used for
+  transparency
+  4. The folder ID override is properly cleaned up, preventing future
+  issues
+
+  This pattern of "clear before use, set for the operation, clean up
+  after" is the right way to use localStorage for temporary overrides.
+  The issue was that sometimes these values weren't being properly
+  cleaned up or were being set elsewhere, causing confusion.
+
+
+I've successfully completed the requested changes:
+
+  1. Archived the original Sync.tsx file to
+  /Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/s
+  rc/pages/_archive/Sync.2025-03-04.tsx
+  2. Removed the "Add & Sync New Folder" button from the UI
+  3. Moved the "Preview Contents" button to take its place (now it spans
+   the full width)
+  4. Added a new "Test Insert" button that:
+    - Creates a mock record with a timestamp-based ID
+    - Uses the existing insertGoogleFiles function to insert it into the
+   database
+    - Shows a success or error toast message based on the result
+    - Logs the complete result to the console
+
+  The "Test Insert" button uses the same code pattern found elsewhere in
+   the file for inserting Google Drive records into the sources_google
+  table.
+
+
 The issues have been fixed. I identified and resolved the main
   problem:
 

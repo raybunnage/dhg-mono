@@ -734,15 +734,24 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
           fullPath = `/folders/${parentFolderId}`;
         }
         
+        // Get the current date in local time (not UTC)
+        const now = new Date();
+        
+        // Format date as YYYY-MM-DD HH:MM:SS in local timezone
+        const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+          .toISOString()
+          .replace('T', ' ')
+          .replace(/\.\d+Z$/, '');
+          
         // Build a simplified record with basic metadata to avoid errors with missing fields
         const record: any = {
           drive_id: file.id,
           name: file.name,
           mime_type: file.mimeType,
           web_view_link: file.webViewLink || null,
-          modified_time: file.modifiedTime || new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          modified_time: file.modifiedTime || localDate,
+          created_at: localDate,
+          updated_at: localDate,
           parent_folder_id: parentFolderId,
           parent_path: fullPath,
           is_root: parentFolderId === null, // Mark as root if no parent

@@ -1766,90 +1766,30 @@ function Sync() {
         
         <div className="flex gap-2">
           <button
+            onClick={handleNewFolderSync}
+            disabled={isNewFolderLoading || !newFolderId || !isTokenValid}
+            className={`flex-1 px-4 py-2 rounded-lg text-white font-medium ${
+              isNewFolderLoading || !newFolderId || !isTokenValid
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+          >
+            {isNewFolderLoading ? 'Adding New Folder...' : 'Add & Sync New Folder'}
+          </button>
+          
+          <button
             onClick={() => {
               setSpecificFolderId(newFolderId);
               handlePreviewFolder(newFolderId);
             }}
             disabled={isSearchingFolder || !newFolderId || !isTokenValid}
-            className={`flex-1 px-4 py-2 rounded-lg text-white font-medium ${
+            className={`px-4 py-2 rounded-lg text-white font-medium ${
               isSearchingFolder || !newFolderId || !isTokenValid
                 ? 'bg-gray-400 cursor-not-allowed' 
                 : 'bg-amber-500 hover:bg-amber-600'
             }`}
           >
             {isSearchingFolder ? 'Analyzing...' : 'Preview Contents'}
-          </button>
-          
-          <button
-            onClick={async () => {
-              try {
-                setIsInserting(true);
-                
-                // Clear any existing folder ID overrides in localStorage
-                localStorage.removeItem('google_drive_folder_id_override');
-                localStorage.removeItem('google_drive_folder_name');
-                
-                // Log the folder ID being used
-                console.log("Test insert using current folder ID:", newFolderId);
-                toast.loading(`Testing record insertion with folder ID: ${newFolderId}...`);
-                
-                // Create a mock file record with the proper date format
-                // Get the current date in local time format (not UTC)
-                const now = new Date();
-                const localTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
-                  .toISOString()
-                  .replace('Z', ''); // Remove Z to indicate it's not UTC
-                
-                const mockFile = {
-                  id: `test-file-${Date.now()}`,
-                  name: "Test File Record",
-                  mimeType: "application/pdf",
-                  modifiedTime: localTime,
-                  size: "1024",
-                  parents: [newFolderId || "root"],
-                  webViewLink: "https://example.com"
-                };
-                
-                // Set the folder override ONLY for this operation
-                if (newFolderId) {
-                  localStorage.setItem('google_drive_folder_id_override', newFolderId);
-                  localStorage.setItem('google_drive_folder_name', "Test Insert Folder");
-                }
-                
-                // Use the insertGoogleFiles function to insert a test record
-                const result = await insertGoogleFiles([mockFile]);
-                
-                // Clean up - IMPORTANT: Always clear the override after using it
-                localStorage.removeItem('google_drive_folder_id_override');
-                localStorage.removeItem('google_drive_folder_name');
-                
-                toast.dismiss();
-                if (result.success > 0) {
-                  toast.success(`Successfully inserted test record! Success: ${result.success}, Errors: ${result.errors}`);
-                } else {
-                  toast.error(`Failed to insert test record. Errors: ${result.errors}`);
-                }
-                
-                console.log("Insert test result:", result);
-              } catch (error) {
-                console.error("Error in test insert:", error);
-                toast.error(`Test insert failed: ${error.message}`);
-                
-                // Make sure to clean up localStorage even if there's an error
-                localStorage.removeItem('google_drive_folder_id_override');
-                localStorage.removeItem('google_drive_folder_name');
-              } finally {
-                setIsInserting(false);
-              }
-            }}
-            disabled={isInserting || !isTokenValid}
-            className={`px-4 py-2 rounded-lg text-white font-medium ${
-              isInserting || !isTokenValid
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-purple-500 hover:bg-purple-600'
-            }`}
-          >
-            {isInserting ? 'Inserting...' : 'Test Insert'}
           </button>
         </div>
       </div>
