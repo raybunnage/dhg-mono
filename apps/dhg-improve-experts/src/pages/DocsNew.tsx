@@ -276,41 +276,46 @@ function DocsNew() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* Search section */}
-      <div className="mb-4 flex gap-2">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyPress={handleSearchKeyPress}
-          placeholder="Search documentation files..."
-          className="border rounded px-3 py-2 w-1/2"
-        />
-        <button
-          onClick={handleSearch}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Search
-        </button>
-        <button
-          onClick={syncDatabase}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-        >
-          Sync Database
-        </button>
-      </div>
-      
       {/* Main content section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left side - Hierarchical tree viewer */}
-        <div className="col-span-1 bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-lg font-semibold">Documentation Files</h2>
-            <div className="text-sm text-gray-500">Total: {totalRecords}</div>
+        <div className="col-span-1 flex flex-col bg-white rounded-lg shadow">
+          {/* Search and Actions section */}
+          <div className="p-4 border-b">
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Search
+              </button>
+              <button
+                onClick={syncDatabase}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                Sync Database
+              </button>
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={handleSearchKeyPress}
+              placeholder="Search documentation files..."
+              className="border rounded px-3 py-2 w-full"
+            />
           </div>
           
-          {/* Files tree */}
-          <div className="overflow-auto max-h-[700px]">
+          {/* Files tree header */}
+          <div className="px-4 pt-3 pb-2 border-b">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold">Documentation Files</h2>
+              <div className="text-sm text-gray-500">Total: {totalRecords}</div>
+            </div>
+          </div>
+          
+          {/* Files tree content */}
+          <div className="p-4 overflow-auto flex-grow" style={{ maxHeight: 'calc(100vh - 250px)' }}>
             {renderFileTree(fileTree)}
           </div>
         </div>
@@ -320,69 +325,67 @@ function DocsNew() {
           {selectedFile ? (
             <>
               {/* Collapsible summary section */}
-              <div className="border-b">
-                <div 
-                  className="p-3 bg-gray-100 flex justify-between items-center cursor-pointer"
-                  onClick={() => setShowFileSummary(!showFileSummary)}
-                >
-                  <h2 className="text-lg font-semibold">{selectedFile.title || selectedFile.file_path.split('/').pop()}</h2>
-                  <div className="flex items-center">
-                    <span className="text-sm text-gray-500 mr-2">{selectedFile.file_path}</span>
-                    <span>{showFileSummary ? '▲' : '▼'}</span>
-                  </div>
+              <div 
+                className="p-3 bg-gray-100 flex justify-between items-center cursor-pointer border-b"
+                onClick={() => setShowFileSummary(!showFileSummary)}
+              >
+                <h2 className="text-lg font-semibold">{selectedFile.title || selectedFile.file_path.split('/').pop()}</h2>
+                <div className="flex items-center">
+                  <span className="text-sm text-gray-500 mr-2">{selectedFile.file_path}</span>
+                  <span>{showFileSummary ? '▲' : '▼'}</span>
                 </div>
-                
-                {showFileSummary && (
-                  <div className="p-4 bg-gray-50">
-                    <div className="bg-white p-3 rounded border mb-2">
-                      <h3 className="text-sm font-medium mb-2">File Summary:</h3>
-                      <p className="text-sm">{selectedFile.summary || 'No summary available for this file.'}</p>
-                    </div>
-                    
-                    {/* Detailed metadata */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">File Metadata:</h3>
-                        <ul className="text-xs text-gray-600">
-                          <li>Size: {formatFileSize(selectedFile.metadata?.size)}</li>
-                          <li>Created: {formatDate(selectedFile.created_at)}</li>
-                          <li>Updated: {formatDate(selectedFile.updated_at)}</li>
-                          <li>Last Modified: {formatDate(selectedFile.last_modified_at)}</li>
-                          <li>Last Indexed: {formatDate(selectedFile.last_indexed_at)}</li>
-                        </ul>
-                      </div>
-                      
-                      {/* Tags section */}
-                      {selectedFile.ai_generated_tags && selectedFile.ai_generated_tags.length > 0 && (
-                        <div>
-                          <h3 className="text-sm font-medium mb-1">Tags:</h3>
-                          <div className="flex flex-wrap gap-1">
-                            {selectedFile.ai_generated_tags.map((tag: string, index: number) => (
-                              <span 
-                                key={index} 
-                                className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* JSON preview */}
-                      <div className="col-span-2">
-                        <h3 className="text-sm font-medium mb-1">Raw JSON:</h3>
-                        <pre className="text-xs bg-gray-900 text-gray-200 p-2 rounded overflow-auto max-h-24">
-                          {JSON.stringify(selectedFile, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
               
-              {/* Markdown viewer section */}
-              <div className="flex-1 overflow-auto p-4">
+              {showFileSummary && (
+                <div className="p-4 bg-gray-50 border-b">
+                  <div className="bg-white p-3 rounded border mb-2">
+                    <h3 className="text-sm font-medium mb-2">File Summary:</h3>
+                    <p className="text-sm">{selectedFile.summary || 'No summary available for this file.'}</p>
+                  </div>
+                  
+                  {/* Detailed metadata */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">File Metadata:</h3>
+                      <ul className="text-xs text-gray-600">
+                        <li>Size: {formatFileSize(selectedFile.metadata?.size)}</li>
+                        <li>Created: {formatDate(selectedFile.created_at)}</li>
+                        <li>Updated: {formatDate(selectedFile.updated_at)}</li>
+                        <li>Last Modified: {formatDate(selectedFile.last_modified_at)}</li>
+                        <li>Last Indexed: {formatDate(selectedFile.last_indexed_at)}</li>
+                      </ul>
+                    </div>
+                    
+                    {/* Tags section */}
+                    {selectedFile.ai_generated_tags && selectedFile.ai_generated_tags.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Tags:</h3>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedFile.ai_generated_tags.map((tag: string, index: number) => (
+                            <span 
+                              key={index} 
+                              className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* JSON preview */}
+                    <div className="col-span-2">
+                      <h3 className="text-sm font-medium mb-1">Raw JSON:</h3>
+                      <pre className="text-xs bg-gray-900 text-gray-200 p-2 rounded overflow-auto max-h-24">
+                        {JSON.stringify(selectedFile, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Markdown viewer section - directly below collapsible section */}
+              <div className="flex-1 overflow-auto">
                 <MarkdownViewer documentId={selectedFile.id} />
               </div>
             </>
