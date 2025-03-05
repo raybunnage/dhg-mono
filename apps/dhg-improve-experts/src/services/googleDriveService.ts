@@ -206,30 +206,13 @@ export const listDriveFiles = async (folderId = GOOGLE_DRIVE_FOLDER_ID): Promise
     const skipValidation = import.meta.env.DEV && localStorage.getItem('skip_token_validation') === 'true';
     
     if (skipValidation) {
-      console.log('DEV MODE: Using dummy data for listDriveFiles since token validation is skipped');
-      // Return dummy data in dev mode when skipping validation
-      return [
-        {
-          id: 'dummy-folder-1',
-          name: 'Example Folder 1',
-          mimeType: 'application/vnd.google-apps.folder',
-          modifiedTime: new Date().toISOString()
-        },
-        {
-          id: 'dummy-doc-1',
-          name: 'Example Document 1.docx',
-          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          modifiedTime: new Date().toISOString(),
-          size: '1024'
-        },
-        {
-          id: 'dummy-doc-2',
-          name: 'Example PDF.pdf',
-          mimeType: 'application/pdf',
-          modifiedTime: new Date().toISOString(),
-          size: '2048'
-        }
-      ];
+      console.log('DEV MODE: Token validation is skipped, but we still need actual data');
+      // Don't use dummy data even in dev mode - this was causing ghost records to appear
+      // Instead, just check for a token and fail if none exists
+      if (!localStorage.getItem('google_access_token') && !import.meta.env.VITE_GOOGLE_ACCESS_TOKEN) {
+        console.error('No access token available, even with skip_token_validation');
+        throw new Error('No access token available. Please authenticate with Google first.');
+      }
     }
     
     // First try from localStorage
@@ -450,26 +433,22 @@ export const getDriveSyncStats = async (folderId?: string, folderName?: string):
     // Add timestamp for tracking
     const timestamp = new Date().toISOString();
     
-    // No longer using mock data, even in dev mode
-    if (skipValidation) {
-      console.log('DEV MODE: Token validation is skipped, but we still need valid data');
-      
-      // Even in dev mode with skip_token_validation, we need a proper token
-      if (!localStorage.getItem('google_access_token')) {
-        return {
-          matchingFiles: [],
-          newFiles: [],
-          localOnlyFiles: [],
-          totalGoogleDriveFiles: 0,
-          totalGoogleDriveFolders: 0,
-          totalLocalFiles: 0,
-          totalMP4Files: 0,
-          totalMP4SizeGB: 0,
-          isValid: false,
-          error: 'No valid Google token found. Please authenticate with Google first.',
-          timestamp
-        };
-      }
+    // Ensure we have a valid token in all cases, even in dev mode
+    if (!localStorage.getItem('google_access_token') && !import.meta.env.VITE_GOOGLE_ACCESS_TOKEN) {
+      console.error('No access token available for sync stats');
+      return {
+        matchingFiles: [],
+        newFiles: [],
+        localOnlyFiles: [],
+        totalGoogleDriveFiles: 0,
+        totalGoogleDriveFolders: 0,
+        totalLocalFiles: 0,
+        totalMP4Files: 0,
+        totalMP4SizeGB: 0,
+        isValid: false,
+        error: 'No valid Google token found. Please authenticate with Google first.',
+        timestamp
+      };
     }
     
     // Validate we have a folder ID to use
