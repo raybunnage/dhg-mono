@@ -647,9 +647,9 @@ export function ClassifyDocument() {
     }
   };
 
-  // Fetch document types and options when the active tab changes to document-types-manager
+  // Fetch document types and options when the active tab changes to document-types
   useEffect(() => {
-    if (activeTab === 'document-types-manager') {
+    if (activeTab === 'document-types') {
       fetchDocumentTypesForManager();
       fetchFormOptions();
     }
@@ -680,11 +680,15 @@ export function ClassifyDocument() {
   
   // Document Type Manager handlers
   const handleEditClick = (docType: DocumentType) => {
+    // Fetch latest categories when editing to ensure dropdown is up-to-date
+    fetchFormOptions();
     setSelectedType(docType);
     setIsEditing(true);
   };
 
   const handleAddNewClick = () => {
+    // Fetch latest categories when adding new item
+    fetchFormOptions();
     setSelectedType(null);
     setIsEditing(true);
   };
@@ -1659,17 +1663,21 @@ Use this exact structure, with empty arrays [] for missing information:
           <label className="block text-sm font-medium mb-1">Category *</label>
           <select
             name="category"
-            value={formData.category}
+            value={formData.category || ''}
             onChange={handleFormChange}
             className="w-full px-3 py-2 border rounded-md appearance-none"
             required
           >
             <option value="" disabled>Select a category</option>
-            {formCategories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
+            {formCategories && formCategories.length > 0 ? (
+              formCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))
+            ) : (
+              <option value="" disabled>Loading categories...</option>
+            )}
             <option value="new">-- Enter new category --</option>
           </select>
           

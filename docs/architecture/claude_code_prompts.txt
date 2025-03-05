@@ -1,3 +1,8 @@
+On the "Classify" page under the edit mode of the "Document Types" tab where there are editable fields for updating redcords in the documnent_types field - there is a "Category" field with a wide dropdown right below it - can you make that dropdown populated with the existing categories that are found across all the docunment types so far. I want to select a new cateogry to apply to an existing docunent type - we can leave aside for the moment what do you do to create new categories. We can tackle that later.
+
+
+
+
 TASK: Implement a local markdown file viewer for development environment only
 
 CONTEXT:
