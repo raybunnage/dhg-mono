@@ -25,7 +25,7 @@ class ExampleService {
   }
 }
 
-export default function GutsExample() {
+export default function Guts() {
   const [input, setInput] = useState('');
   const [processedData, setProcessedData] = useState('');
   const [externalData, setExternalData] = useState<string[]>([]);

@@ -1,3 +1,284 @@
+TASK: Implement a hybrid search system for markdown documentation files
+
+CONTEXT:
+- Local development environment
+- Searching both Supabase metadata and local markdown files
+- Need to handle both quick metadata searches and full content searches
+- Using TypeScript with React
+- Files stored locally, metadata in Supabase documentation_files table
+
+DATABASE STRUCTURE:
+documentation_files table:
+{
+  "id": "string",
+  "title": "string",
+  "file_path": "string", 
+  "file_hash": "string | null",
+  "last_indexed_at": "string",
+  "last_modified_at": "string",
+  "summary": "string | null",
+  "metadata": "Json | null",
+  "manual_tags": "string[] | null",
+  "ai_generated_tags": "string[] | null",
+  "created_at": "string | null",
+  "updated_at": "string | null"
+}
+
+REQUIRED TYPES:
+
+```typescript
+interface SearchResult {
+  id: string;
+  title: string;
+  file_path: string;
+  matchType: 'metadata' | 'content';
+  context?: string;
+  tags?: string[];
+  summary?: string;
+  relevance: number;
+}
+
+interface SearchOptions {
+  includeTags?: boolean;
+  includeContent?: boolean;
+  maxResults?: number;
+  fuzzyMatch?: boolean;
+}
+
+interface UseDocSearchReturn {
+  search: (term: string, options?: SearchOptions) => Promise<SearchResult[]>;
+  isSearching: boolean;
+  error: Error | null;
+}
+```
+
+IMPLEMENTATION REQUIREMENTS:
+
+1. Custom Hook (useDocSearch.ts):
+```typescript
+function useDocSearch(): UseDocSearchReturn {
+  const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  
+  const search = async (
+    searchTerm: string, 
+    options: SearchOptions = {}
+  ): Promise<SearchResult[]> => {
+    setIsSearching(true);
+    setError(null);
+    
+    try {
+      // Parallel execution of metadata and content search
+      const [metadataResults, contentResults] = await Promise.all([
+        searchMetadata(searchTerm, options),
+        options.includeContent ? searchContent(searchTerm, options) : []
+      ]);
+      
+      // Combine and sort results by relevance
+      return sortAndDedupResults([...metadataResults, ...contentResults]);
+    } catch (err) {
+      setError(err as Error);
+      return [];
+    } finally {
+      setIsSearching(false);
+    }
+  };
+  
+  return { search, isSearching, error };
+}
+```
+
+2. Metadata Search Function:
+```typescript
+async function searchMetadata(
+  term: string,
+  options: SearchOptions
+): Promise<SearchResult[]> {
+  const { data, error } = await supabase
+    .from('documentation_files')
+    .select('*')
+    .or(`
+      title.ilike.%${term}%,
+      summary.ilike.%${term}%,
+      manual_tags.cs.{${term}}
+    `)
+    .limit(options.maxResults || 20);
+
+  if (error) throw error;
+
+  return data.map(doc => ({
+    id: doc.id,
+    title: doc.title,
+    file_path: doc.file_path,
+    matchType: 'metadata',
+    tags: doc.manual_tags,
+    summary: doc.summary,
+    relevance: calculateMetadataRelevance(doc, term)
+  }));
+}
+```
+
+3. Content Search Function:
+```typescript
+async function searchContent(
+  term: string,
+  options: SearchOptions
+): Promise<SearchResult[]> {
+  const { data: files } = await supabase
+    .from('documentation_files')
+    .select('id, title, file_path')
+    .limit(options.maxResults || 50);
+
+  const results = await Promise.all(
+    files.map(async (file) => {
+      try {
+        const content = await fs.readFile(file.file_path, 'utf-8');
+        const matches = options.fuzzyMatch 
+          ? fuzzyMatch(content, term)
+          : content.toLowerCase().includes(term.toLowerCase());
+
+        if (matches) {
+          return {
+            id: file.id,
+            title: file.title,
+            file_path: file.file_path,
+            matchType: 'content',
+            context: getSearchContext(content, term),
+            relevance: calculateContentRelevance(content, term)
+          };
+        }
+      } catch (error) {
+        console.error(`Error reading ${file.file_path}:`, error);
+      }
+      return null;
+    })
+  );
+
+  return results.filter(Boolean) as SearchResult[];
+}
+```
+
+4. Helper Functions:
+```typescript
+function getSearchContext(content: string, term: string): string {
+  const index = content.toLowerCase().indexOf(term.toLowerCase());
+  const start = Math.max(0, index - 100);
+  const end = Math.min(content.length, index + term.length + 100);
+  return content.slice(start, end) + '...';
+}
+
+function calculateMetadataRelevance(doc: any, term: string): number {
+  let score = 0;
+  if (doc.title.toLowerCase().includes(term.toLowerCase())) score += 10;
+  if (doc.summary?.toLowerCase().includes(term.toLowerCase())) score += 5;
+  if (doc.manual_tags?.includes(term)) score += 3;
+  return score;
+}
+
+function calculateContentRelevance(content: string, term: string): number {
+  const matches = content.toLowerCase().split(term.toLowerCase()).length - 1;
+  return matches;
+}
+
+function sortAndDedupResults(results: SearchResult[]): SearchResult[] {
+  const seen = new Set<string>();
+  return results
+    .filter(result => {
+      if (seen.has(result.id)) return false;
+      seen.add(result.id);
+      return true;
+    })
+    .sort((a, b) => b.relevance - a.relevance);
+}
+```
+
+5. Usage Component:
+```typescript
+function DocSearch() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const { search, isSearching, error } = useDocSearch();
+
+  const handleSearch = async () => {
+    const searchResults = await search(searchTerm, {
+      includeTags: true,
+      includeContent: true,
+      maxResults: 20,
+      fuzzyMatch: true
+    });
+    setResults(searchResults);
+  };
+
+  return (
+    <div className="doc-search">
+      <div className="search-input">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search documentation..."
+        />
+        <button 
+          onClick={handleSearch}
+          disabled={isSearching}
+        >
+          {isSearching ? 'Searching...' : 'Search'}
+        </button>
+      </div>
+
+      {error && (
+        <div className="error-message">
+          Error: {error.message}
+        </div>
+      )}
+
+      <div className="search-results">
+        {results.map(result => (
+          <SearchResultCard
+            key={result.id}
+            result={result}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+VALIDATION REQUIREMENTS:
+1. Verify search works with empty string
+2. Check handling of non-existent files
+3. Test performance with large number of files
+4. Verify deduplication of results
+5. Test fuzzy matching accuracy
+6. Verify error handling
+7. Check relevance sorting accuracy
+
+ERROR HANDLING:
+1. File read errors
+2. Database query errors
+3. Invalid search terms
+4. Missing file paths
+5. Malformed markdown content
+
+ADDITIONAL NOTES:
+- Keep search operations cancelable
+- Consider debouncing search input
+- Cache recent search results
+- Add loading states for better UX
+- Consider implementing pagination
+- Add keyboard shortcuts for search
+- Include search analytics for future optimization
+
+Please implement this search system following these specifications. The implementation should be efficient for local development use while maintaining extensibility for future enhancements.
+
+
+
+
+
+
+
+
 a fee more changes are needed on the "Docs New" page
 
 1) move the "Search" button and the "Sync Database" to the far left

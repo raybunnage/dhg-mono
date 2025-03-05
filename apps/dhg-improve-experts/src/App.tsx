@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -27,16 +27,14 @@ import { FileTree } from './pages/FileTree';
 import { BatchProcessingMonitor } from './components/BatchProcessingMonitor';
 import Viewer from '@/pages/Viewer';
 import Dashboard from '@/pages/Dashboard';
-// import Docs from '@/pages/Docs'; // Archived on 2025-03-04
+import Docs from '@/pages/Docs';
 import Sync from '@/pages/Sync';
 import Write from '@/pages/Write';
 import Show from '@/pages/Show';
 import AI from '@/pages/AI';
 import Cmds from '@/pages/Cmds';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
-import GutsExample from '@/pages/GutsExample';
-import DocsExplorer from '@/pages/DocsExplorer';
-import DocsNew from '@/pages/DocsNew';
+import Guts from '@/pages/Guts';
 import Gmail from '@/pages/Gmail';
 // import DocumentationTest from '@/pages/DocumentationTest'; // Archived on 2025-03-04
 
@@ -112,15 +110,15 @@ function App() {
         <Route path="/code" element={<CodeDashboard />} />
         <Route path="/write" element={<Write />} />
         <Route path="/analyze" element={<Analyze />} />
-        <Route path="/docs" element={<DocsExplorer />} />
-        <Route path="/docs-new" element={<DocsNew />} />
-        {/* <Route path="/docs-explorer" element={<DocsExplorer />} /> <!-- Replaced by /docs route --> */}
-        {/* <Route path="/documentation-test" element={<DocumentationTest />} /> <!-- Archived on 2025-03-04 --> */}
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/docs-new" element={<Navigate to="/docs" replace />} />
+        <Route path="/docs-explorer" element={<Navigate to="/docs" replace />} />
         <Route path="/show" element={<Show />} />
         <Route path="/ai" element={<AI />} />
         <Route path="/cmds" element={<Cmds />} />
         <Route path="/registry" element={<RegistryViewer />} />
-        <Route path="/guts-example" element={<GutsExample />} />
+        <Route path="/guts" element={<Guts />} />
+        <Route path="/guts-example" element={<Navigate to="/guts" replace />} />
         <Route path="/gmail" element={<Gmail />} />
       </Routes>
     </QueryClientProvider>
