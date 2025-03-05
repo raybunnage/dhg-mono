@@ -1,3 +1,7 @@
+on tne sync page add a new tab called Roots 
+under
+
+
 
 on the "Sync" page under the "Folders" tabs 
 there is a button called "Add & Sync New Folder" 
