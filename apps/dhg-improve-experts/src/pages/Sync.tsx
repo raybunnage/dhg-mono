@@ -62,7 +62,7 @@ interface SyncResult {
 
 // Main Sync component
 function Sync() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'folders' | 'batches' | 'auth'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'folders' | 'batches' | 'auth' | 'roots'>('dashboard');
   const [newFolderId, setNewFolderId] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [existingFolderId, setExistingFolderId] = useState('');
@@ -2334,6 +2334,295 @@ function Sync() {
     </div>
   );
 
+  // State for Roots tab
+  const [rootRecords, setRootRecords] = useState<any[]>([]);
+  const [rootIdToSet, setRootIdToSet] = useState('');
+  const [isRootUpdateLoading, setIsRootUpdateLoading] = useState(false);
+  const [rootUpdateStatus, setRootUpdateStatus] = useState<{success?: boolean, message: string} | null>(null);
+  const [rootsTabSelected, setRootsTabSelected] = useState(false); // Track if Roots tab is selected
+  
+  // Fetch root records
+  const fetchRootRecords = async () => {
+    try {
+      setIsLoading(true);
+      
+      // First check if we have the Service Role Key for admin operations
+      if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+        toast.error('Service Role Key is required for this operation');
+        return;
+      }
+      
+      // Create admin client to bypass RLS
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            storageKey: 'dhg-supabase-admin-auth',
+            persistSession: false
+          }
+        }
+      );
+      
+      // Supabase may store booleans differently in the database, try both true and 1
+      const { data: data1, error: error1 } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, mime_type, parent_path, is_root, sync_status, modified_time, created_at')
+        .eq('is_root', true);
+        
+      if (error1) {
+        console.error('Error with is_root=true query:', error1);
+      }
+      
+      // Try with is_root = 1 as well
+      const { data: data2, error: error2 } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, mime_type, parent_path, is_root, sync_status, modified_time, created_at')
+        .eq('is_root', 1);
+        
+      if (error2) {
+        console.error('Error with is_root=1 query:', error2);
+      }
+      
+      // Combine both result sets, removing duplicates by drive_id
+      const data = [...(data1 || []), ...(data2 || [])];
+      const seen = new Set();
+      const uniqueData = data.filter(record => {
+        if (seen.has(record.id)) return false;
+        seen.add(record.id);
+        return true;
+      });
+      
+      // Log the raw results for debugging
+      console.log('is_root=true query results:', data1);
+      console.log('is_root=1 query results:', data2);
+      console.log('Combined unique results:', uniqueData);
+      
+      // If both queries failed, create an error
+      const error = error1 && error2 ? { message: `${error1.message} AND ${error2.message}` } : null;
+        
+      if (error) {
+        console.error('Error fetching root records:', error);
+        toast.error(`Failed to fetch root records: ${error.message}`);
+        return;
+      }
+      
+      console.log('Setting root records to:', uniqueData);
+      setRootRecords(uniqueData || []);
+      toast.success(`Found ${uniqueData?.length || 0} root records`);
+    } catch (err) {
+      console.error('Error in fetchRootRecords:', err);
+      toast.error(`Error fetching root records: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Set a record as root
+  const setRecordAsRoot = async () => {
+    if (!rootIdToSet) {
+      toast.error('Please enter a record ID');
+      return;
+    }
+    
+    try {
+      setIsRootUpdateLoading(true);
+      setRootUpdateStatus(null);
+      
+      // First check if we have the Service Role Key for admin operations
+      if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+        toast.error('Service Role Key is required for this operation');
+        return;
+      }
+      
+      // Create admin client to bypass RLS
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            storageKey: 'dhg-supabase-admin-auth',
+            persistSession: false
+          }
+        }
+      );
+      
+      // First check if record exists - use proper parameter binding
+      let query = supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, is_root');
+        
+      // Try to determine if this is a UUID or a string
+      if (rootIdToSet.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        // This looks like a UUID, likely the internal ID
+        query = query.eq('id', rootIdToSet);
+      } else {
+        // This is probably a drive_id
+        query = query.eq('drive_id', rootIdToSet);
+      }
+      
+      const { data: recordData, error: recordError } = await query.limit(1);
+        
+      if (recordError) {
+        console.error('Error finding record:', recordError);
+        setRootUpdateStatus({
+          success: false,
+          message: `Failed to find record: ${recordError.message}`
+        });
+        return;
+      }
+      
+      if (!recordData || recordData.length === 0) {
+        setRootUpdateStatus({
+          success: false,
+          message: `No record found with ID or drive_id: ${rootIdToSet}`
+        });
+        return;
+      }
+      
+      const recordToUpdate = recordData[0];
+      
+      // Update the record - try with both true and 1 to make sure it works
+      let updateResult;
+      
+      try {
+        // First try with boolean true
+        const { data, error } = await supabaseAdmin
+          .from('sources_google')
+          .update({ is_root: true })
+          .eq('id', recordToUpdate.id)
+          .select('id, drive_id, name, is_root');
+          
+        if (error) {
+          console.error('Error updating with is_root=true:', error);
+          throw error;
+        }
+        
+        updateResult = { data, error };
+      } catch (err) {
+        console.log('Trying alternative update with is_root=1');
+        // If the first approach fails, try with numeric 1
+        const { data, error } = await supabaseAdmin
+          .from('sources_google')
+          .update({ is_root: 1 })
+          .eq('id', recordToUpdate.id)
+          .select('id, drive_id, name, is_root');
+          
+        updateResult = { data, error };
+      }
+      
+      const { data, error } = updateResult;
+        
+      if (error) {
+        console.error('Error updating record:', error);
+        setRootUpdateStatus({
+          success: false,
+          message: `Failed to update record: ${error.message}`
+        });
+        return;
+      }
+      
+      setRootUpdateStatus({
+        success: true,
+        message: `Successfully set record "${recordToUpdate.name}" as root`
+      });
+      
+      // Refresh root records
+      fetchRootRecords();
+      
+    } catch (err) {
+      console.error('Error in setRecordAsRoot:', err);
+      setRootUpdateStatus({
+        success: false,
+        message: `Error setting record as root: ${err.message}`
+      });
+    } finally {
+      setIsRootUpdateLoading(false);
+    }
+  };
+  
+  // Render Roots tab
+  const renderRoots = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Root Records</h2>
+          <button
+            onClick={fetchRootRecords}
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+          >
+            {isLoading ? 'Loading...' : 'Refresh Records'}
+          </button>
+        </div>
+        
+        <p className="mb-4 text-gray-600">
+          These are the records marked as root folders in the sources_google table.
+          Root folders are top-level folders that are directly synced from Google Drive.
+        </p>
+        
+        <div className="mb-6 overflow-hidden border border-gray-200 rounded-lg">
+          <div className="max-h-[400px] overflow-auto bg-gray-50 p-4">
+            <pre className="text-sm whitespace-pre-wrap break-words font-mono">
+              {JSON.stringify(rootRecords, null, 2)}
+            </pre>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold mb-4">Set Record as Root</h2>
+        
+        <p className="mb-4 text-gray-600">
+          Enter a record ID or drive_id to mark it as a root folder.
+        </p>
+        
+        <div className="flex space-x-2 mb-4">
+          <input
+            type="text"
+            value={rootIdToSet}
+            onChange={(e) => setRootIdToSet(e.target.value)}
+            placeholder="Enter record ID or drive_id"
+            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          
+          <button
+            onClick={setRecordAsRoot}
+            disabled={isRootUpdateLoading || !rootIdToSet}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
+          >
+            {isRootUpdateLoading ? 'Setting...' : 'Set as Root'}
+          </button>
+        </div>
+        
+        {rootUpdateStatus && (
+          <div className={`p-3 rounded-lg ${rootUpdateStatus.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+            <p className={rootUpdateStatus.success ? 'text-green-800' : 'text-red-800'}>
+              {rootUpdateStatus.message}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+  
+  // Track when the Roots tab is selected
+  useEffect(() => {
+    if (activeTab === 'roots') {
+      setRootsTabSelected(true);
+      fetchRootRecords();
+    } else {
+      setRootsTabSelected(false);
+    }
+  }, [activeTab]);
+  
+  // Debug logging for Roots tab
+  useEffect(() => {
+    if (rootsTabSelected) {
+      console.log('Roots tab is active, rootRecords:', rootRecords);
+    }
+  }, [rootsTabSelected, rootRecords]);
+  
   // Render the active tab content
   const renderTabContent = () => {
     switch (activeTab) {
@@ -2343,6 +2632,8 @@ function Sync() {
         return renderFolders();
       case 'batches':
         return renderBatches();
+      case 'roots':
+        return renderRoots();
       // History tab is disabled
       case 'history':
         return renderDashboard();
@@ -2389,6 +2680,16 @@ function Sync() {
             }`}
           >
             Batch Processing
+          </button>
+          <button
+            onClick={() => setActiveTab('roots')}
+            className={`mr-4 py-2 px-1 font-medium text-sm border-b-2 ${
+              activeTab === 'roots'
+                ? 'text-blue-600 border-blue-600'
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Roots
           </button>
           <button
             onClick={() => setActiveTab('auth')}

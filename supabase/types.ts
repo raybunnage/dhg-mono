@@ -92,6 +92,45 @@ export type Database = {
         }
         Relationships: []
       }
+      app_state: {
+        Row: {
+          category: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          key_name: string
+          last_updated_at: string | null
+          last_updated_by: string | null
+          metadata: Json | null
+          value_data: Json
+          value_type: string
+        }
+        Insert: {
+          category: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_name: string
+          last_updated_at?: string | null
+          last_updated_by?: string | null
+          metadata?: Json | null
+          value_data: Json
+          value_type: string
+        }
+        Update: {
+          category?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_name?: string
+          last_updated_at?: string | null
+          last_updated_by?: string | null
+          metadata?: Json | null
+          value_data?: Json
+          value_type?: string
+        }
+        Relationships: []
+      }
       asset_types: {
         Row: {
           created_at: string | null
@@ -2284,14 +2323,115 @@ export type Database = {
             referencedRelation: "experts"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "sources_google_sync_id_fkey"
-            columns: ["sync_id"]
-            isOneToOne: false
-            referencedRelation: "sync_history"
-            referencedColumns: ["id"]
-          },
         ]
+      }
+      sources_google_backup: {
+        Row: {
+          audio_bitrate: number | null
+          audio_channels: number | null
+          audio_duration_seconds: number | null
+          audio_extracted: boolean | null
+          audio_extraction_path: string | null
+          audio_quality_metrics: Json | null
+          content_extracted: boolean | null
+          created_at: string | null
+          deleted: boolean | null
+          document_type_id: string | null
+          drive_id: string | null
+          expert_id: string | null
+          extracted_content: Json | null
+          extraction_error: string | null
+          id: string | null
+          is_root: boolean | null
+          last_indexed: string | null
+          metadata: Json | null
+          mime_type: string | null
+          modified_time: string | null
+          name: string | null
+          parent_folder_id: string | null
+          parent_id: string | null
+          parent_path: string | null
+          path: string | null
+          size: number | null
+          size_bytes: number | null
+          sync_error: string | null
+          sync_id: string | null
+          sync_status: string | null
+          thumbnail_link: string | null
+          updated_at: string | null
+          web_view_link: string | null
+        }
+        Insert: {
+          audio_bitrate?: number | null
+          audio_channels?: number | null
+          audio_duration_seconds?: number | null
+          audio_extracted?: boolean | null
+          audio_extraction_path?: string | null
+          audio_quality_metrics?: Json | null
+          content_extracted?: boolean | null
+          created_at?: string | null
+          deleted?: boolean | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          expert_id?: string | null
+          extracted_content?: Json | null
+          extraction_error?: string | null
+          id?: string | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_time?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          parent_id?: string | null
+          parent_path?: string | null
+          path?: string | null
+          size?: number | null
+          size_bytes?: number | null
+          sync_error?: string | null
+          sync_id?: string | null
+          sync_status?: string | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Update: {
+          audio_bitrate?: number | null
+          audio_channels?: number | null
+          audio_duration_seconds?: number | null
+          audio_extracted?: boolean | null
+          audio_extraction_path?: string | null
+          audio_quality_metrics?: Json | null
+          content_extracted?: boolean | null
+          created_at?: string | null
+          deleted?: boolean | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          expert_id?: string | null
+          extracted_content?: Json | null
+          extraction_error?: string | null
+          id?: string | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_time?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          parent_id?: string | null
+          parent_path?: string | null
+          path?: string | null
+          size?: number | null
+          size_bytes?: number | null
+          sync_error?: string | null
+          sync_id?: string | null
+          sync_status?: string | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Relationships: []
       }
       speaker_profiles: {
         Row: {
@@ -2376,6 +2516,57 @@ export type Database = {
           id?: string
           status?: string
           timestamp?: string
+        }
+        Relationships: []
+      }
+      sync_history_backup: {
+        Row: {
+          completed_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          files_added: number | null
+          files_error: number | null
+          files_processed: number | null
+          files_skipped: number | null
+          files_total: number | null
+          files_updated: number | null
+          folder_id: string | null
+          folder_name: string | null
+          id: string | null
+          status: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          files_added?: number | null
+          files_error?: number | null
+          files_processed?: number | null
+          files_skipped?: number | null
+          files_total?: number | null
+          files_updated?: number | null
+          folder_id?: string | null
+          folder_name?: string | null
+          id?: string | null
+          status?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          files_added?: number | null
+          files_error?: number | null
+          files_processed?: number | null
+          files_skipped?: number | null
+          files_total?: number | null
+          files_updated?: number | null
+          folder_id?: string | null
+          folder_name?: string | null
+          id?: string | null
+          status?: string | null
+          timestamp?: string | null
         }
         Relationships: []
       }
@@ -2770,6 +2961,10 @@ export type Database = {
           constraint_name: string
           deletion_rule: string
         }[]
+      }
+      export_all_functions_to_json: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       export_functions_audit: {
         Args: Record<PropertyKey, never>

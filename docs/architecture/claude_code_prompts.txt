@@ -1,7 +1,32 @@
+
+add anothe text search box on the Roots tab further down that where I can paste the name of a sources_google record - hit a button and get the 
+
 on tne sync page add a new tab called Roots 
-under
+And write a query that will show the these fields just for the rows that have the is_root set and then display a window where I see the json of these fields.  Also provide a text box where I can paste in a unique identifer for a sources_google row and it will set the is_root field to 1 or true for that record
 
-
+sources_google: {
+        Row: {
+          id: string
+          document_type_id: string | null
+          drive_id: string
+          expert_id: string | null
+          is_root: boolean | null
+          last_indexed: string | null
+          mime_type: string
+          modified_time: string | null
+          name: string
+          parent_folder_id: string | null
+          parent_id: string | null
+          parent_path: string | null
+          path: string | null
+          size: number | null
+          size_bytes: number | null
+          sync_error: string | null
+          sync_id: string | null
+          sync_status: string | null
+          updated_at: string
+          web_view_link: string | null
+        }
 
 on the "Sync" page under the "Folders" tabs 
 there is a button called "Add & Sync New Folder" 
