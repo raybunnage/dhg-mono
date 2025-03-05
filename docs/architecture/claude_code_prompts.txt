@@ -1,3 +1,11 @@
+a fee more changes are needed on the "Docs New" page
+
+1) move the "Search" button and the "Sync Database" to the far left
+2) make the text search window underneath these buttons only go up to the viewer - so it will be shorter
+3) move the  collapsible summary section on the right up as high as you can and put the markdown viewer right below - it don't change any of their funtionalityh
+
+
+
 Now on the "Docs New" page - remove "Documentation Explorer" on the top left to make more rooom for the viewer. Then on the right above the viewer make the file summary and json short viewer collapsible, starting out with it being collapsed, but you can open it up to see the content it you want.  Toggle it closed or open as you click on it.
 
 Then on the left where you are showing the meta data and the files that are in the documentation_files dataase - I need you to now display them in a hierarchical fashion - underneath their nested folders.  I think you have what you need to do this in the file_path of the meta data files, but it will require some parsing and recursive processing to extract the folders from the path that is in the file and display files underneat that path.  
