@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { marked } from 'marked';
 import { supabase } from '@/integrations/supabase/client';
 import { markdownFileService } from '@/services/markdownFileService';
+import MarkdownViewer from '@/components/MarkdownViewer';
+// Import correct types
+import { Database } from '@/integrations/supabase/types';
+
+// Type for documentation files
+type DocumentationFile = Database['public']['Tables']['documentation_files']['Row'];
 
 // Main component for the DocsNew page
 function DocsNew() {
-  const [documentationFiles, setDocumentationFiles] = useState<any[]>([]);
+  const [documentationFiles, setDocumentationFiles] = useState<DocumentationFile[]>([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [fileContent, setFileContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState<DocumentationFile | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Fetch documentation files from the database
@@ -52,6 +56,13 @@ function DocsNew() {
     }
   };
 
+  // Handle Enter key for search
+  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   // Sync database using the markdownFileService
   const syncDatabase = async () => {
     setLoading(true);
@@ -71,25 +82,9 @@ function DocsNew() {
     }
   };
 
-  // Load file content when a file is selected
-  const loadFileContent = async (file: any) => {
-    setLoading(true);
+  // Select a file to view
+  const selectFile = (file: any) => {
     setSelectedFile(file);
-    try {
-      // Try to load the actual file from disk
-      const fileData = await markdownFileService.getFileContent(file.file_path);
-      if (fileData && fileData.content) {
-        setFileContent(fileData.content);
-      } else {
-        // If file cannot be loaded, show a message
-        setFileContent('# File Not Found\n\nThe file could not be loaded from disk.');
-      }
-    } catch (error) {
-      console.error('Error loading file content:', error);
-      setFileContent('# Error\n\nAn error occurred while loading the file content.');
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Initial data load
@@ -100,7 +95,7 @@ function DocsNew() {
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Header section */}
-      <h1 className="text-2xl font-bold mb-6">Docs New</h1>
+      <h1 className="text-2xl font-bold mb-6">Documentation Explorer</h1>
       
       {/* Search section */}
       <div className="mb-4 flex gap-2">
@@ -108,6 +103,7 @@ function DocsNew() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyPress={handleSearchKeyPress}
           placeholder="Search documentation files..."
           className="border rounded px-3 py-2 w-1/2"
         />
@@ -138,7 +134,7 @@ function DocsNew() {
               <div 
                 key={file.id}
                 className={`p-2 cursor-pointer hover:bg-gray-100 rounded ${selectedFile?.id === file.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
-                onClick={() => loadFileContent(file)}
+                onClick={() => selectFile(file)}
               >
                 <div className="font-medium">{file.title || file.file_path.split('/').pop()}</div>
                 <div className="text-xs text-gray-500">{file.file_path}</div>
@@ -159,14 +155,28 @@ function DocsNew() {
                   <h3 className="text-sm font-medium mb-2">File Summary:</h3>
                   <p className="text-sm">{selectedFile.summary || 'No summary available for this file.'}</p>
                 </div>
+                
+                {/* Additional metadata section */}
+                {selectedFile.ai_generated_tags && selectedFile.ai_generated_tags.length > 0 && (
+                  <div className="mt-2">
+                    <h3 className="text-sm font-medium mb-1">Tags:</h3>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedFile.ai_generated_tags.map((tag: string, index: number) => (
+                        <span 
+                          key={index} 
+                          className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               
-              {/* Bottom section - Markdown viewer */}
+              {/* Bottom section - Markdown viewer (using our new component) */}
               <div className="flex-1 overflow-auto p-4">
-                <div 
-                  className="prose max-w-none" 
-                  dangerouslySetInnerHTML={{ __html: marked.parse(fileContent) }} 
-                />
+                <MarkdownViewer documentId={selectedFile.id} />
               </div>
             </>
           ) : (
@@ -181,6 +191,7 @@ function DocsNew() {
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded-lg shadow">
+            <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mr-2 inline-block"></div>
             Loading...
           </div>
         </div>

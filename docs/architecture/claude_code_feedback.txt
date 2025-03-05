@@ -1,3 +1,169 @@
+I've updated all the necessary files to create a dark theme with white
+   text for your markdown viewer:
+
+  1. Modified the HTML test page with a dark background and
+  high-contrast text colors
+  2. Updated the React MarkdownViewer component with dark backgrounds
+  and proper text contrast
+  3. Updated the MarkdownViewerExample to use dark theme containers
+  4. Added comprehensive dark mode styles in globals.css for:
+    - Container backgrounds
+    - Text colors with proper contrast
+    - Code blocks and syntax highlighting
+    - Links, headings, tables and other elements
+
+  The changes use VS Code-like dark theme colors with white/light gray
+  text. Try running your markdown server again to see the new dark theme
+   in action.
+
+╭──────────
+
+
+
+⏺ I've completely rewritten the solution to be much simpler:
+
+  1. Created a Simple Markdown Server (simple-md-server.js) that:
+    - Uses only native Node.js modules (no dependencies)
+    - Works with CommonJS (older Node.js versions)
+    - Has minimal complexity
+    - Clear error reporting
+  2. Created a Test HTML Page (markdown-viewer-test.html) that:
+    - Directly accesses the server
+    - Lets you test reading files without the React app
+    - Shows which paths were tried
+  3. Updated the start script to use the simpler version:
+    - ./start-markdown-server.sh now runs the simple server
+
+  How to Use
+
+  1. Start the server:
+  ./start-markdown-server.sh
+  2. Either:
+    - Open the test page in a browser:
+    open markdown-viewer-test.html
+    - Or use your existing MarkdownViewer component with the DocsNew
+  page
+
+  Why This Should Work
+
+  1. Maximum Compatibility: Uses CommonJS, which works in all Node.js
+  versions
+  2. Zero Dependencies: No need for npm/pnpm
+  3. Minimal Code: Simple enough that there's little risk of bugs
+  4. Direct File Access: Reads files directly from disk
+  5. Multiple Path Resolution: Tries several paths to find files
+
+  This approach strips away all the complexity and focuses solely on
+  serving markdown files directly from disk, which should solve your
+  core problem.
+
+
+
+What I've Created:
+
+  1. Standalone Markdown Server (md-server.mjs):
+    - A simple Express server that reads markdown files directly from
+  disk
+    - No reliance on complex APIs or Supabase queries
+    - Supports ES modules and runs independently
+    - Multiple file path resolution strategies to find files across the
+  monorepo
+  2. Updated MarkdownViewer Component:
+    - Works with the local markdown server
+    - Falls back to other methods when server isn't available
+    - More robust error handling
+    - Shows useful fallback content if files can't be loaded
+  3. Startup Script (start-markdown-server.sh):
+    - Easy to run with ./start-markdown-server.sh
+    - Checks for dependencies
+    - Self-contained solution
+
+  How to Use This:
+
+  1. Start the Markdown Server:
+  # In one terminal:
+  ./start-markdown-server.sh
+  2. Run Your Application:
+  # In another terminal:
+  npm run dev
+  3. View Files:
+    - Navigate to the "Docs New" page
+    - Select files from the list
+    - The markdown viewer will load content directly from disk
+
+  Why This Works Better:
+
+  1. Simplicity: Direct file reading is the most reliable approach for
+  local development
+  2. Independence: Server runs separately, avoiding framework
+  constraints
+  3. Flexibility: Multiple file path resolution strategies to find files
+   in complex repos
+  4. Robustness: Fallbacks ensure something always displays
+
+  This solution gives you exactly what you need: a reliable way to view
+  local markdown files in development without the complexity of API
+  routes or database queries.
+
+
+The issue should now be fixed. We've made several improvements:
+
+  1. Added a proper fetchMarkdownById method to the markdownFileService for reliable
+  client-side fetching
+  2. Updated the MarkdownViewer component to use this new service method
+  3. Fixed the /api/markdown/[id] route to properly redirect to the documentation API
+  4. Added better error handling and logging throughout
+
+  The error was likely occurring because the Next.js app router wasn't properly
+  handling the /api/markdown/[id] route, resulting in HTML errors instead of JSON.
+  Our solution handles this by:
+
+  1. Adding proper fallbacks in the component
+  2. Using a service method to abstract the fetching logic
+  3. Redirecting the route to our working API endpoint
+
+  This should resolve the "Unexpected token '<', '<!DOCTYPE '... is not valid JSON"
+  error you were seeing.
+
+╭───────────────────────
+
+
+We've successfully implemented a clean local markdown file viewer with the
+  following components:
+
+  1. Enhanced API Endpoints:
+    - /api/markdown/[id] route for fetching markdown by ID
+    - Security measures for file path validation
+  2. MarkdownViewer Component:
+    - Clean, reusable React component
+    - Handles loading and error states
+    - Uses the API to fetch markdown content
+  3. Integration with DocsNew Page:
+    - Updated the existing page to use our new component
+    - Added better UI feedback for the user
+  4. Example Component:
+    - A standalone MarkdownViewerExample component
+    - Can be used anywhere in the application
+  5. Security Utilities:
+    - Added file-utils.ts with security functions
+    - Path validation to prevent directory traversal attacks
+    - Extension checking to limit to markdown files
+
+  The implementation follows the requirements, with a few improvements:
+
+  1. We used marked.js that was already available in the project instead of adding
+  react-markdown
+  2. We integrated with the existing markdownFileService rather than creating a
+  duplicate implementation
+  3. We added a more reusable structure with separate components
+  4. We improved error handling and loading states
+  5. We added security measures to prevent potential vulnerabilities
+
+  The solution should work well in a development environment and properly integrates
+  with the Supabase database that stores file information.
+
+
+
 I've made several changes to improve the Category dropdown in the Document Types
   edit form:
 
@@ -23,7 +189,7 @@ I've made several changes to improve the Category dropdown in the Document Types
   found across the document types in the database, allowing users to select a
   consistent category when editing document types.
 
-  
+
 
 I've fixed both issues now:
 

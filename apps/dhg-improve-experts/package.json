@@ -17,7 +17,9 @@
     "docs:tree": "./scripts/docs-organization/tree-docs.sh",
     "docs:organize": "./scripts/docs-organization/run-all.sh",
     "docs:consolidate": "./scripts/docs-organization/consolidate-docs.sh",
-    "docs:frontmatter": "./scripts/docs-organization/add-frontmatter.sh"
+    "docs:frontmatter": "./scripts/docs-organization/add-frontmatter.sh",
+    "markdown-server": "node md-server.mjs",
+    "dev:with-markdown": "npm run markdown-server"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.2",

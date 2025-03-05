@@ -1,5 +1,8 @@
 import { markdownFileService } from '@/services/markdownFileService';
 import { supabase } from '@/integrations/supabase/client';
+import path from 'path';
+import { readFile } from 'fs/promises';
+import { getSafePath, getProjectRoot } from '@/utils/file-utils';
 import { 
   generateMarkdownReport, 
   syncDocumentationToDatabase,
@@ -9,27 +12,97 @@ import {
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const path = url.searchParams.get('path');
+    const pathParam = url.searchParams.get('path');
+    const id = url.searchParams.get('id');
     
-    if (!path) {
-      return new Response(JSON.stringify({ error: 'Path parameter is required' }), {
-        status: 400,
+    // Handle markdown file API request by ID (new endpoint)
+    if (url.pathname.includes('/api/markdown/') || id) {
+      const documentId = id || url.pathname.split('/api/markdown/')[1];
+      
+      if (!documentId) {
+        return new Response(JSON.stringify({ error: 'Document ID is required' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      console.log(`Fetching document by ID: ${documentId}`);
+      
+      try {
+        // Get file path from database
+        const { data: doc, error } = await supabase
+          .from('documentation_files')
+          .select('file_path, title')
+          .eq('id', documentId)
+          .single();
+        
+        if (error) {
+          console.error('Supabase error fetching document:', error);
+          return new Response(JSON.stringify({ error: 'Document not found in database' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
+        if (!doc) {
+          return new Response(JSON.stringify({ error: 'Document not found' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
+        console.log(`Found document in database: ${doc.file_path}`);
+        
+        // Read file content using the existing service
+        const fileData = await markdownFileService.getFileContent(doc.file_path);
+        
+        if (!fileData || !fileData.content) {
+          console.error(`Could not read file content for ${doc.file_path}`);
+          return new Response(JSON.stringify({ error: 'Could not read file content' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Success - return the content
+        return new Response(JSON.stringify({ 
+          id: documentId,
+          title: doc.title || doc.file_path.split('/').pop(),
+          file_path: doc.file_path,
+          content: fileData.content 
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (e) {
+        console.error('Error reading markdown by ID:', e);
+        return new Response(JSON.stringify({ error: 'Failed to read markdown file' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
+    // Original path-based file content endpoint
+    if (pathParam) {
+      // Get the file content
+      const fileData = await markdownFileService.getFileContent(pathParam);
+      
+      if (!fileData) {
+        return new Response(JSON.stringify({ error: 'File not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      return new Response(JSON.stringify(fileData), {
+        status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
     }
     
-    // Get the file content
-    const fileData = await markdownFileService.getFileContent(path);
-    
-    if (!fileData) {
-      return new Response(JSON.stringify({ error: 'File not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
-    return new Response(JSON.stringify(fileData), {
-      status: 200,
+    return new Response(JSON.stringify({ error: 'Path or ID parameter is required' }), {
+      status: 400,
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
