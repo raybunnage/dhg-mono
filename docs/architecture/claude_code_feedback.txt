@@ -1,3 +1,32 @@
+Here's a summary of the changes I've made to remove dummy records and
+  fix the sync functionality:
+
+  1. Removed the default folder ID that was hardcoded in the
+  specificFolderId state.
+  2. Replaced mock document stats with a real implementation that
+  fetches actual document types from the sources_google table.
+  3. Removed the mock progress simulation that was inserting fake sync
+  stats and replaced it with a simple progress completion function.
+  4. Removed the "Test Insert" button that was adding dummy records, and
+   replaced it with a "Verify Folder" button that just checks if a
+  folder exists.
+  5. Modified the handlePreviewFolder function to return a
+  success/failure boolean to work with the new verify function.
+  6. Removed dummy data from the GoogleDriveService that was causing
+  ghost records to appear:
+    - Removed dummy folder and file data from listDriveFiles
+    - Updated error handling to require valid tokens in all cases
+    - Removed any remaining mock data references
+
+  These changes should ensure that the sync functionality only works
+  with real Google Drive files and the sources_google table, without any
+   dummy or mock records appearing in the UI or being inserted into the
+  database.
+
+  The "Sync Selected Folder" process should now only show and sync
+  actual files from Google Drive, without any dummy records appearing.
+
+
 
 Great! It looks like we've removed all the localStorage references for
    folder IDs in the active code. All of the remaining occurrences are
@@ -24,7 +53,7 @@ Great! It looks like we've removed all the localStorage references for
   Roots tab, and eliminate reliance on localStorage which was causing
   problems.
 
-  
+
 I've implemented two significant improvements to the Roots tab:
 
   1. Added File and Folder Counts for Root Records:

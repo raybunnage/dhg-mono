@@ -103,7 +103,7 @@ function Sync() {
   // State for specific folder search
   const [isSearchingFolder, setIsSearchingFolder] = useState(false);
   const [specificFolderFiles, setSpecificFolderFiles] = useState<DriveFile[]>([]);
-  const [specificFolderId, setSpecificFolderId] = useState('1CTs-XEEE_LQGoyEhO0p6hixaEJBcV8hP'); // Default ID but can be changed
+  const [specificFolderId, setSpecificFolderId] = useState(''); // No default ID, must be selected by user
   const [specificFolderStats, setSpecificFolderStats] = useState<{
     totalCount: number;
     folderCount: number;
@@ -478,8 +478,8 @@ function Sync() {
           // If we have new files, perform the sync
           await handleSync();
           
-          // Simulate progress and show completion
-          simulateProgressUpdates();
+          // Update progress to show completion
+          updateProgressToComplete();
           toast.success('Sync process completed successfully');
           
           // Fetch updated stats once sync is complete
@@ -688,42 +688,55 @@ function Sync() {
     }
   };
 
-  // Simulate progress updates for testing
-  const simulateProgressUpdates = () => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.floor(Math.random() * 10) + 1;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        setIsLoading(false);
-        
-        // Mock sync stats after completion
-        setSyncStats({
-          total: 324,
-          new: 15,
-          updated: 42,
-          deleted: 3,
-          errors: 1
-        });
-      }
-      setSyncProgress(progress);
-    }, 800);
+  // Update progress
+  const updateProgressToComplete = () => {
+    // Simply set progress to 100% when sync is complete
+    setSyncProgress(100);
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
   };
 
   // Fetch document stats for a folder
   const fetchDocumentStats = async (folderId: string) => {
     try {
-      // In a real implementation, you'd fetch this data from your database
-      // For now, we'll use mock data
-      setDocumentStats([
-        { document_type: 'Transcript', count: 56 },
-        { document_type: 'Report', count: 43 },
-        { document_type: 'Presentation', count: 29 },
-        { document_type: 'Research Paper', count: 18 },
-        { document_type: 'Meeting Notes', count: 64 },
-        { document_type: 'Email', count: 114 }
-      ]);
+      // Get actual stats from the database instead of mock data
+      const { data, error } = await supabase
+        .from('sources_google')
+        .select('mime_type')
+        .eq('parent_folder_id', folderId);
+      
+      if (error) {
+        console.error('Error fetching document stats:', error);
+        return;
+      }
+      
+      // Count document types based on mime types
+      const typeCounts: Record<string, number> = {};
+      data.forEach(item => {
+        const mimeType = item.mime_type || 'unknown';
+        // Create a more user-friendly document type from mime type
+        let docType = 'Other';
+        
+        if (mimeType.includes('pdf')) docType = 'PDF';
+        else if (mimeType.includes('word') || mimeType.includes('docx')) docType = 'Document';
+        else if (mimeType.includes('text')) docType = 'Text';
+        else if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('xlsx')) docType = 'Spreadsheet';
+        else if (mimeType.includes('presentation') || mimeType.includes('powerpoint') || mimeType.includes('pptx')) docType = 'Presentation';
+        else if (mimeType.includes('audio') || mimeType.includes('m4a')) docType = 'Audio';
+        else if (mimeType.includes('video') || mimeType.includes('mp4')) docType = 'Video';
+        else if (mimeType.includes('image')) docType = 'Image';
+        
+        typeCounts[docType] = (typeCounts[docType] || 0) + 1;
+      });
+      
+      // Convert to array format needed for state
+      const statsArray = Object.entries(typeCounts).map(([document_type, count]) => ({
+        document_type,
+        count
+      }));
+      
+      setDocumentStats(statsArray);
     } catch (err) {
       console.error('Error fetching document stats:', err);
     }
@@ -861,15 +874,15 @@ function Sync() {
   // These functions have been deprecated with removal of sync history
   
   // Handle preview of folder contents without inserting
-  const handlePreviewFolder = async (folderId: string) => {
+  const handlePreviewFolder = async (folderId: string): Promise<boolean> => {
     if (!folderId || folderId.trim() === '') {
       toast.error('Please enter a valid Google Drive folder ID');
-      return;
+      return false;
     }
     
     if (!isTokenValid) {
       toast.error('Please authenticate with Google Drive first');
-      return;
+      return false;
     }
     
     try {
@@ -885,7 +898,7 @@ function Sync() {
         toast.error('No files found in the specified folder');
         setIsSearchingFolder(false);
         toast.dismiss(toastId);
-        return;
+        return false;
       }
       
       // Mark all files as preview mode
@@ -975,10 +988,12 @@ function Sync() {
       );
       
       console.log('=========================')
+      return true; // Success
     } catch (error) {
       console.error('Error previewing folder:', error);
       toast.dismiss();
       toast.error(`Error: ${error.message}`);
+      return false; // Failed
     } finally {
       setIsSearchingFolder(false);
     }
@@ -1781,41 +1796,33 @@ function Sync() {
               try {
                 setIsInserting(true);
                 
-                // Log the folder ID being used
-                console.log("Test insert using current folder ID:", newFolderId);
-                toast.loading(`Testing record insertion with folder ID: ${newFolderId}...`);
-                
-                // Create a mock file record with the proper date format
-                // Get the current date in local time format (not UTC)
-                const now = new Date();
-                const localTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
-                  .toISOString()
-                  .replace('Z', ''); // Remove Z to indicate it's not UTC
-                
-                const mockFile = {
-                  id: `test-file-${Date.now()}`,
-                  name: "Test File Record",
-                  mimeType: "application/pdf",
-                  modifiedTime: localTime,
-                  size: "1024",
-                  parents: [newFolderId || "root"],
-                  webViewLink: "https://example.com"
-                };
-                
-                // Use the insertGoogleFiles function to insert a test record
-                const result = await insertGoogleFiles([mockFile]);
-                
-                toast.dismiss();
-                if (result.success > 0) {
-                  toast.success(`Successfully inserted test record! Success: ${result.success}, Errors: ${result.errors}`);
-                } else {
-                  toast.error(`Failed to insert test record. Errors: ${result.errors}`);
+                // Check if folder ID is provided
+                if (!newFolderId) {
+                  toast.error('Please enter a Google Drive folder ID first');
+                  setIsInserting(false);
+                  return;
                 }
                 
-                console.log("Insert test result:", result);
+                // Instead of creating a mock file, perform an actual folder check to see if it's valid
+                toast.loading(`Checking folder ID: ${newFolderId}...`);
+                
+                // Use Google Drive API to check if folder exists
+                const result = await handlePreviewFolder(newFolderId);
+                
+                toast.dismiss();
+                if (result) {
+                  toast.success(`Folder verified successfully! Ready for sync.`);
+                  // Set this as the current folder for sync
+                  setExistingFolderId(newFolderId);
+                  setActiveTab('folders');
+                  
+                  // Update the folder options if needed
+                  fetchRootFolders();
+                }
+                
               } catch (error) {
-                console.error("Error in test insert:", error);
-                toast.error(`Test insert failed: ${error.message}`);
+                console.error("Error checking folder:", error);
+                toast.error(`Folder check failed: ${error.message}`);
               } finally {
                 setIsInserting(false);
               }
@@ -1827,7 +1834,7 @@ function Sync() {
                 : 'bg-purple-500 hover:bg-purple-600'
             }`}
           >
-            {isInserting ? 'Inserting...' : 'Test Insert'}
+            {isInserting ? 'Checking...' : 'Verify Folder'}
           </button>
         </div>
       </div>
