@@ -1,3 +1,10 @@
+Now on the "Docs New" page - remove "Documentation Explorer" on the top left to make more rooom for the viewer. Then on the right above the viewer make the file summary and json short viewer collapsible, starting out with it being collapsed, but you can open it up to see the content it you want.  Toggle it closed or open as you click on it.
+
+Then on the left where you are showing the meta data and the files that are in the documentation_files dataase - I need you to now display them in a hierarchical fashion - underneath their nested folders.  I think you have what you need to do this in the file_path of the meta data files, but it will require some parsing and recursive processing to extract the folders from the path that is in the file and display files underneat that path.  
+Also now, display the metadat about the file - the created date, upated date, and file size would be a start - Lets see what you come up with. Ideally you would start with everything expanded - but then you could collapse folders if you needed to and then expand thme if needed. 
+
+
+
 On the "Classify" page under the edit mode of the "Document Types" tab where there are editable fields for updating redcords in the documnent_types field - there is a "Category" field with a wide dropdown right below it - can you make that dropdown populated with the existing categories that are found across all the docunment types so far. I want to select a new cateogry to apply to an existing docunent type - we can leave aside for the moment what do you do to create new categories. We can tackle that later.
 
 
