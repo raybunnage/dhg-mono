@@ -2775,6 +2775,140 @@ function Sync() {
           </div>
         )}
       </div>
+      
+      {/* Purge Dummy Records */}
+      <div className="bg-white rounded-lg shadow p-6 mt-6 border-t-4 border-red-500">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <span className="mr-2 text-red-500">⚠️</span>
+          Purge Dummy Records
+        </h2>
+        
+        <p className="mb-4 text-gray-600">
+          This will search for and delete any test or dummy records from the sources_google table.
+        </p>
+        
+        <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-lg mb-4">
+          <h3 className="text-md font-medium text-yellow-800 mb-2">What will be removed:</h3>
+          <ul className="list-disc pl-5 text-sm text-yellow-700">
+            <li>Records with "dummy" or "test" in the name or ID</li>
+            <li>Records with invalid or test-generated IDs</li>
+            <li>Records with example.com URLs</li>
+            <li>Any other detected test data</li>
+          </ul>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <button
+            onClick={async () => {
+              // First just find the dummy records
+              const toastId = toast.loading('Searching for dummy records...');
+              
+              try {
+                // Check if we have the Service Role Key for admin operations
+                if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+                  toast.dismiss(toastId);
+                  toast.error('Service Role Key is required for this operation');
+                  return;
+                }
+                
+                // Create admin client to bypass RLS
+                const supabaseAdmin = createClient(
+                  import.meta.env.VITE_SUPABASE_URL,
+                  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+                  {
+                    auth: {
+                      storageKey: 'dhg-supabase-admin-auth',
+                      persistSession: false
+                    }
+                  }
+                );
+                
+                // Search for dummy records using various criteria
+                const { data: dummyRecords, error: searchError } = await supabaseAdmin
+                  .from('sources_google')
+                  .select('id, name, drive_id, web_view_link')
+                  .or('name.ilike.%dummy%, name.ilike.%test%, drive_id.ilike.%dummy%, drive_id.ilike.%test%, drive_id.ilike.%example%, web_view_link.ilike.%example.com%');
+                
+                if (searchError) {
+                  console.error('Error searching for dummy records:', searchError);
+                  toast.dismiss(toastId);
+                  toast.error(`Error searching: ${searchError.message}`);
+                  return;
+                }
+                
+                // Also look for records with a test- prefix in the ID
+                const { data: testRecords, error: testError } = await supabaseAdmin
+                  .from('sources_google')
+                  .select('id, name, drive_id, web_view_link')
+                  .or('drive_id.ilike.test-%');
+                
+                if (testError) {
+                  console.error('Error searching for test prefix records:', testError);
+                }
+                
+                // Combine both result sets
+                const allDummyRecords = [
+                  ...(dummyRecords || []), 
+                  ...(testRecords || [])
+                ];
+                
+                // Remove duplicates by ID
+                const uniqueDummyRecords = Array.from(
+                  new Map(allDummyRecords.map(record => [record.id, record])).values()
+                );
+                
+                toast.dismiss(toastId);
+                
+                if (uniqueDummyRecords.length === 0) {
+                  toast.success('Good news! No dummy records found.');
+                  return;
+                }
+                
+                // Show the results
+                toast.success(`Found ${uniqueDummyRecords.length} dummy records.`);
+                
+                // Show a confirm dialog
+                if (window.confirm(`Found ${uniqueDummyRecords.length} dummy records. Do you want to delete them?`)) {
+                  const deleteToastId = toast.loading('Deleting dummy records...');
+                  
+                  // Get all the IDs
+                  const idsToDelete = uniqueDummyRecords.map(record => record.id);
+                  
+                  // Delete all dummy records
+                  const { error: deleteError } = await supabaseAdmin
+                    .from('sources_google')
+                    .delete()
+                    .in('id', idsToDelete);
+                  
+                  toast.dismiss(deleteToastId);
+                  
+                  if (deleteError) {
+                    console.error('Error deleting dummy records:', deleteError);
+                    toast.error(`Error deleting records: ${deleteError.message}`);
+                  } else {
+                    toast.success(`Successfully deleted ${uniqueDummyRecords.length} dummy records!`);
+                    // Refresh folder options
+                    fetchRootFolders();
+                    fetchFileStats();
+                  }
+                }
+                
+              } catch (err) {
+                console.error('Error in purge dummy records:', err);
+                toast.dismiss(toastId);
+                toast.error(`Error: ${err.message}`);
+              }
+            }}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Find & Purge Dummy Records
+          </button>
+          
+          <div className="text-sm text-gray-500">
+            This operation requires admin privileges
+          </div>
+        </div>
+      </div>
     </div>
   );
   
