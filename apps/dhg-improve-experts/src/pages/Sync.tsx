@@ -234,6 +234,9 @@ function Sync() {
     const expiryTime = localStorage.getItem('google_token_expiry');
     
     if (expiryTime) {
+      // Declare intervalId variable first
+      let intervalId: number | null = null;
+      
       // Function to update time remaining
       const updateTimeRemaining = () => {
         const expiry = parseInt(expiryTime, 10);
@@ -247,6 +250,7 @@ function Sync() {
           // Clear interval if we're at 0
           if (intervalId) {
             clearInterval(intervalId);
+            intervalId = null;
           }
         } else {
           // Convert milliseconds to minutes
@@ -259,12 +263,13 @@ function Sync() {
       updateTimeRemaining();
       
       // Set interval to update every minute
-      const intervalId = setInterval(updateTimeRemaining, 60 * 1000);
+      intervalId = window.setInterval(updateTimeRemaining, 60 * 1000);
       
       // Clean up
       return () => {
         if (intervalId) {
           clearInterval(intervalId);
+          intervalId = null;
         }
       };
     } else {
