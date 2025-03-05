@@ -794,250 +794,6 @@ export function ClassifyDocument() {
     }
   };
   
-  // Document Types Manager component
-  const renderDocumentTypesManager = () => {
-
-    const renderForm = () => (
-      <div className="bg-white p-5 rounded-lg shadow mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">
-            {selectedType ? "Edit Document Type" : "Add New Document Type"}
-          </h3>
-          <button
-            onClick={() => setIsEditing(false)}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            ✕
-          </button>
-        </div>
-
-        <form onSubmit={handleFormSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Document Type *</label>
-            <input
-              type="text"
-              name="document_type"
-              value={formData.document_type}
-              onChange={handleFormChange}
-              className="w-full px-3 py-2 border rounded-md"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Category *</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleFormChange}
-              className="w-full px-3 py-2 border rounded-md appearance-none"
-              required
-            >
-              <option value="" disabled>Select a category</option>
-              {formCategories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-              <option value="new">-- Enter new category --</option>
-            </select>
-            
-            {formData.category === 'new' && (
-              <input
-                type="text"
-                name="category"
-                placeholder="Enter new category name"
-                className="w-full px-3 py-2 border rounded-md mt-2"
-                onChange={handleFormChange}
-                required
-              />
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleFormChange}
-              className="w-full px-3 py-2 border rounded-md"
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">MIME Type</label>
-              <select
-                name="mime_type"
-                value={formData.mime_type}
-                onChange={handleFormChange}
-                className="w-full px-3 py-2 border rounded-md appearance-none"
-              >
-                <option value="">Select a MIME type (optional)</option>
-                {formMimeTypes.map((mimeType) => (
-                  <option key={mimeType} value={mimeType}>
-                    {mimeType}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">File Extension</label>
-              <input
-                type="text"
-                name="file_extension"
-                value={formData.file_extension}
-                onChange={handleFormChange}
-                placeholder=".pdf, .doc, .txt, etc."
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 mt-4">
-            <input
-              type="checkbox"
-              id="is_ai_generated"
-              name="is_ai_generated"
-              checked={formData.is_ai_generated}
-              onChange={(e) => setFormData({...formData, is_ai_generated: e.target.checked})}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label htmlFor="is_ai_generated" className="text-sm font-medium text-gray-700">
-              AI Generated
-            </label>
-          </div>
-
-          <div className="flex justify-end mt-6">
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md mr-2"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-              disabled={isFormSubmitting}
-            >
-              {isFormSubmitting ? 'Saving...' : selectedType ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-
-    const renderTable = () => (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Document Type
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                MIME Type
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                File Ext.
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                AI Generated
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {documentTypesData.length > 0 ? (
-              documentTypesData.map((docType) => (
-                <tr key={docType.id}>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                    <div className="flex flex-col">
-                      <span>{docType.document_type}</span>
-                      {docType.description && (
-                        <span className="text-xs text-gray-500 mt-1">{docType.description}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      {docType.category}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{docType.mime_type || "-"}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{docType.file_extension || "-"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-center">
-                    {docType.is_ai_generated ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Yes
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        No
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => handleEditClick(docType)}
-                        className="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 p-1 rounded"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(docType.id)}
-                        className="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 p-1 rounded"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={6} className="px-4 py-4 text-center text-sm text-gray-500">
-                  No document types found. Add your first one!
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    );
-
-    return (
-      <div>
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Document Types Management</h1>
-          {!isEditing && (
-            <button
-              onClick={handleAddNewClick}
-              className="flex items-center gap-2 bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded"
-            >
-              <PlusCircle size={16} />
-              Add New Type
-            </button>
-          )}
-        </div>
-
-        {isEditing ? (
-          renderForm()
-        ) : (
-          renderTable()
-        )}
-      </div>
-    );
-  };
 
   // Add this function near your other handlers
   const addPresentationAnnouncementType = async () => {
@@ -1809,110 +1565,268 @@ Use this exact structure, with empty arrays [] for missing information:
   );
 
   // Render document types section
-  const renderDocumentTypes = () => (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Document Types</h2>
-        
-        <div className="flex gap-2">
+  const renderDocumentTypes = () => {
+    // Form UI for adding/editing document types
+    const renderForm = () => (
+      <div className="bg-white p-5 rounded-lg shadow mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">
+            {selectedType ? "Edit Document Type" : "Add New Document Type"}
+          </h3>
           <button
-            onClick={async () => {
-              await loadDocumentTypes();
-              fetchDocumentStats();
-            }}
-            className="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded flex items-center gap-1"
+            onClick={() => setIsEditing(false)}
+            className="text-gray-500 hover:text-gray-700"
           >
-            <span>🔄</span> Refresh
-          </button>
-          <button
-            onClick={handleAddNewClick}
-            className="flex items-center gap-2 bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded"
-          >
-            <PlusCircle size={16} />
-            Add New Type
+            ✕
           </button>
         </div>
-      </div>
-      
-      <div className="mb-4">
-        <div className="text-sm font-medium mb-2">Filter by Category:</div>
-        <div className="flex flex-wrap gap-2">
-          {categories.map(category => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-3 py-1 rounded text-sm font-medium ${
-                selectedCategory === category
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-              }`}
+
+        <form onSubmit={handleFormSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Document Type *</label>
+            <input
+              type="text"
+              name="document_type"
+              value={formData.document_type}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border rounded-md"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Category *</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border rounded-md appearance-none"
+              required
             >
-              {category === 'all' ? 'All Categories' : category}
+              <option value="" disabled>Select a category</option>
+              {formCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+              <option value="new">-- Enter new category --</option>
+            </select>
+            
+            {formData.category === 'new' && (
+              <input
+                type="text"
+                name="category"
+                placeholder="Enter new category name"
+                className="w-full px-3 py-2 border rounded-md mt-2"
+                onChange={handleFormChange}
+                required
+              />
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border rounded-md"
+              rows={3}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">MIME Type</label>
+              <select
+                name="mime_type"
+                value={formData.mime_type}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded-md appearance-none"
+              >
+                <option value="">Select a MIME type (optional)</option>
+                {formMimeTypes.map((mimeType) => (
+                  <option key={mimeType} value={mimeType}>
+                    {mimeType}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">File Extension</label>
+              <input
+                type="text"
+                name="file_extension"
+                value={formData.file_extension}
+                onChange={handleFormChange}
+                placeholder=".pdf, .doc, .txt, etc."
+                className="w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 mt-4">
+            <input
+              type="checkbox"
+              id="is_ai_generated"
+              name="is_ai_generated"
+              checked={formData.is_ai_generated}
+              onChange={(e) => setFormData({...formData, is_ai_generated: e.target.checked})}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="is_ai_generated" className="text-sm font-medium text-gray-700">
+              AI Generated
+            </label>
+          </div>
+
+          <div className="flex justify-end mt-6">
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md mr-2"
+            >
+              Cancel
             </button>
-          ))}
-        </div>
+            <button
+              type="submit"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+              disabled={isFormSubmitting}
+            >
+              {isFormSubmitting ? 'Saving...' : selectedType ? 'Update' : 'Create'}
+            </button>
+          </div>
+        </form>
       </div>
-      
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Document Type
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Usage Count
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredDocumentTypes.length > 0 ? (
-              filteredDocumentTypes.map((type) => (
-                <tr key={type.id} className={type.isNew ? "bg-yellow-50" : ""}>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {type.document_type}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                    {type.category}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                    {type.count}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-center">
-                    {type.isNew ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        New
-                      </span>
-                    ) : type.count > 0 ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        In Use
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        Unused
-                      </span>
-                    )}
+    );
+    
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Document Types</h2>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                await loadDocumentTypes();
+                fetchDocumentStats();
+              }}
+              className="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded flex items-center gap-1"
+            >
+              <span>🔄</span> Refresh
+            </button>
+            <button
+              onClick={handleAddNewClick}
+              className="flex items-center gap-2 bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded"
+            >
+              <PlusCircle size={16} />
+              Add New Type
+            </button>
+          </div>
+        </div>
+        
+        {/* Display the form when isEditing is true */}
+        {isEditing && renderForm()}
+        
+        <div className="mb-4">
+          <div className="text-sm font-medium mb-2">Filter by Category:</div>
+          <div className="flex flex-wrap gap-2">
+            {categories.map(category => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-3 py-1 rounded text-sm font-medium ${
+                  selectedCategory === category
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                }`}
+              >
+                {category === 'all' ? 'All Categories' : category}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Document Type
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Usage Count
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredDocumentTypes.length > 0 ? (
+                filteredDocumentTypes.map((type) => (
+                  <tr key={type.id} className={type.isNew ? "bg-yellow-50" : ""}>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {type.document_type}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                      {type.category}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                      {type.count}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      {type.isNew ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          New
+                        </span>
+                      ) : type.count > 0 ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          In Use
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          Unused
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleEditClick(type)}
+                          className="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 p-1 rounded"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(type.id)}
+                          className="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 p-1 rounded"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-4 py-4 text-center text-sm text-gray-500">
+                    No document types found in this category.
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500">
-                  No document types found in this category.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -1966,16 +1880,6 @@ Use this exact structure, with empty arrays [] for missing information:
               >
                 Results
               </button>
-              <button
-                onClick={() => setActiveTab('document-types-manager')}
-                className={`mr-4 py-2 px-1 font-medium text-sm border-b-2 ${
-                  activeTab === 'document-types-manager'
-                    ? 'text-blue-600 border-blue-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Document Types
-              </button>
             </nav>
           </div>
           
@@ -1990,7 +1894,6 @@ Use this exact structure, with empty arrays [] for missing information:
             
             {activeTab === 'document-types' && renderDocumentTypes()}
             
-            {activeTab === 'document-types-manager' && renderDocumentTypesManager()}
             
             {activeTab === 'utilities' && (
               <div className="space-y-8">
