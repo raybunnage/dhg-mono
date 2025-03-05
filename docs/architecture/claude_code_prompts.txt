@@ -1,3 +1,193 @@
+TASK: Implement a local markdown file viewer for development environment only
+
+CONTEXT:
+- Using React with TypeScript
+- Files stored locally in project root
+- File paths stored in Supabase 'documentation_files' table
+- For local development only, not production
+- Keep implementation simple and direct
+
+DATABASE STRUCTURE:
+documentation_files table:
+{
+  "id": "string",
+  "title": "string",
+  "file_path": "string",
+  "file_hash": "string | null",
+  "last_indexed_at": "string",
+  "last_modified_at": "string",
+  "created_at": "string | null",
+  "updated_at": "string | null",
+  "summary": "string | null",
+  "metadata": "Json | null",
+  "manual_tags": "string[] | null",
+  "ai_generated_tags": "string[] | null"
+}
+
+REQUIRED PACKAGES:
+- express
+- cors
+- react-markdown
+- fs/promises (Node.js built-in)
+- path (Node.js built-in)
+
+IMPLEMENTATION REQUIREMENTS:
+
+1. Backend Endpoint:
+- Create Express route to read markdown files
+- Use fs/promises for file reading
+- Handle file path validation
+- Implement proper error handling
+- Return markdown content as JSON response
+
+2. Frontend Component:
+- Create React component for markdown display
+- Implement file content fetching
+- Handle loading and error states
+- Render markdown content
+- Update when document ID changes
+
+3. File Structure:
+project_root/
+├── docs/                   # Markdown files location
+├── src/
+│   ├── components/
+│   │   └── MarkdownViewer.tsx
+│   ├── api/
+│   │   └── markdown.ts
+│   └── types/
+│       └── supabase.ts
+└── package.json
+
+REQUIRED CODE:
+
+1. Backend (markdown.ts):
+```typescript
+import { readFile } from 'fs/promises'
+import path from 'path'
+import express from 'express'
+import cors from 'cors'
+
+app.get('/api/markdown/:id', async (req, res) => {
+  try {
+    // Get file path from database
+    const { data: doc } = await supabase
+      .from('documentation_files')
+      .select('file_path')
+      .eq('id', req.params.id)
+      .single()
+
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' })
+    }
+
+    // Read file content
+    const fullPath = path.join(process.cwd(), doc.file_path)
+    const content = await readFile(fullPath, 'utf-8')
+    res.json({ content })
+  } catch (error) {
+    console.error('Error reading markdown:', error)
+    res.status(500).json({ error: 'Failed to read markdown file' })
+  }
+})
+```
+
+2. Frontend Component (MarkdownViewer.tsx):
+```typescript
+import { useEffect, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import { Database } from '../types/supabase'
+
+type DocumentFile = Database['public']['Tables']['documentation_files']['Row']
+
+interface MarkdownViewerProps {
+  documentId: string
+}
+
+function MarkdownViewer({ documentId }: MarkdownViewerProps) {
+  const [content, setContent] = useState<string>('')
+  const [error, setError] = useState<string>('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchContent() {
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/markdown/${documentId}`)
+        const data = await response.json()
+        
+        if (!response.ok) throw new Error(data.error)
+        setContent(data.content)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchContent()
+  }, [documentId])
+
+  if (loading) return <div>Loading...</div>
+  if (error) return <div>Error: {error}</div>
+  
+  return (
+    <div className="markdown-container">
+      <ReactMarkdown>{content}</ReactMarkdown>
+    </div>
+  )
+}
+
+export default MarkdownViewer
+```
+
+3. Usage Example:
+```typescript
+function DocumentPage() {
+  return (
+    <div>
+      <h1>Document Viewer</h1>
+      <MarkdownViewer documentId="123" />
+    </div>
+  )
+}
+```
+
+VALIDATION REQUIREMENTS:
+1. Verify file reading works correctly
+2. Ensure markdown renders properly
+3. Confirm error handling works
+4. Test loading states
+5. Verify path handling is secure
+
+ERROR HANDLING:
+1. File not found
+2. Invalid file path
+3. File read errors
+4. Database query errors
+5. Network request failures
+
+SECURITY CONSIDERATIONS:
+1. Validate file paths
+2. Only allow .md extensions
+3. Ensure paths stay within project directory
+4. Sanitize file content before rendering
+
+ADDITIONAL NOTES:
+- This is for development only
+- Keep implementation simple
+- Use direct file system access
+- Assume trusted environment
+- No need for authentication
+- Focus on functionality over security
+
+Please implement this markdown viewer following these specifications. The implementation should be simple, direct, and suitable for local development use only.
+
+
+
+
+
+
 Remove the "Docs" page and archive the code that was supporting it.  Once that code is archived, please Rename the "Docs New" page to "Docs" 
   
   
