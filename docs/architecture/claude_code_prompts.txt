@@ -1,6 +1,6 @@
 
 
-I am giving you a markdown folder - even though the "Dynamic Healing Discussion Group" is acting like a 
+I am giving you a markdown folder - even though the "Dynamic Healing Discussion Group" is acting like a root folder on the "Viewer" page, the table 
 
 | NAME | ID | FILES | FOLDERS | TOTAL |
 |------|----|----|------|----|
