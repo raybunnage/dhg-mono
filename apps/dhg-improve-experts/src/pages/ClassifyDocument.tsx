@@ -1824,6 +1824,13 @@ Use this exact structure, with empty arrays [] for missing information:
           >
             <span>🔄</span> Refresh
           </button>
+          <button
+            onClick={handleAddNewClick}
+            className="flex items-center gap-2 bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded"
+          >
+            <PlusCircle size={16} />
+            Add New Type
+          </button>
         </div>
       </div>
       

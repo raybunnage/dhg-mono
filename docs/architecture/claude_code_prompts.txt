@@ -1,5 +1,6 @@
+ I think I created some new duplicate code accidently - I noticde on the "Classify" page therre are now two tabs that say "Document Types"  The first one is pretty good - I like the filtering by the pills and showing the records below as you click on different pills so let's keep that one, but move the button from the second tab that sayhs "+ Add New Type" - it is light green and move it onto the first "Document Types" in the same location as it is on the other page. be careful because of the duplicate coded that surely must be there to manage nearly identical ui displays - don't get mixed up.  Once I see the button is moved correctlY I wil likely archive the second "Document Types:" page display and remove it from the page - but not yet, I want to see the firsts docuiment types tab working correctly with the new button before I can do that.
  
- 
+  
  
  
  

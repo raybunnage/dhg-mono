@@ -36,6 +36,7 @@ import Cmds from '@/pages/Cmds';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
 import GutsExample from '@/pages/GutsExample';
 import DocsExplorer from '@/pages/DocsExplorer';
+import DocsNew from '@/pages/DocsNew';
 import Gmail from '@/pages/Gmail';
 // import DocumentationTest from '@/pages/DocumentationTest'; // Archived on 2025-03-04
 
@@ -112,6 +113,7 @@ function App() {
         <Route path="/write" element={<Write />} />
         <Route path="/analyze" element={<Analyze />} />
         <Route path="/docs" element={<DocsExplorer />} />
+        <Route path="/docs-new" element={<DocsNew />} />
         {/* <Route path="/docs-explorer" element={<DocsExplorer />} /> <!-- Replaced by /docs route --> */}
         {/* <Route path="/documentation-test" element={<DocumentationTest />} /> <!-- Archived on 2025-03-04 --> */}
         <Route path="/show" element={<Show />} />
