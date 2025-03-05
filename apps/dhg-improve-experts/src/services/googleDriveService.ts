@@ -339,22 +339,16 @@ async function listAllFilesRecursively(folderId: string, accessToken: string): P
 /**
  * Sync with Google Drive - imports new files and updates existing ones
  */
-/**
- * Sync with Google Drive - imports new files and updates existing ones
- */
-export async function syncWithGoogleDrive(): Promise<SyncResult> {
+export async function syncWithGoogleDrive(folderId?: string, folderName?: string): Promise<SyncResult> {
   // Create a unique ID for this sync operation
   const syncId = uuidv4();
   
-  // Check if we have a folder ID override in localStorage
-  const folderIdOverride = localStorage.getItem('google_drive_folder_id_override');
-  const folderNameOverride = localStorage.getItem('google_drive_folder_name');
+  // Use provided folder ID or fall back to default
+  const effectiveFolderId = folderId || import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID || '';
+  const effectiveFolderName = folderName || 'Google Drive Folder';
   
-  let folderId = folderIdOverride || import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID || '';
-  let folderName = folderNameOverride || 'Google Drive Folder';
-  
-  if (folderIdOverride) {
-    console.log(`Syncing with override folder ID: ${folderId} (${folderName})`);
+  if (folderId) {
+    console.log(`Syncing with provided folder ID: ${effectiveFolderId} (${effectiveFolderName})`);
   }
   
   try {
@@ -363,8 +357,8 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
     // Sync history is disabled - recording only locally
     console.log('Starting sync operation with ID:', syncId);
     
-    // Get sync stats - the override will be used inside getDriveSyncStats
-    const syncStats = await getDriveSyncStats();
+    // Get sync stats using the provided folder ID
+    const syncStats = await getDriveSyncStats(effectiveFolderId, effectiveFolderName);
     
     console.log('Processing files for sync...');
     
@@ -403,8 +397,8 @@ export async function syncWithGoogleDrive(): Promise<SyncResult> {
         errors: errors.length
       },
       syncId,
-      folderId,
-      folderName
+      folderId: effectiveFolderId,
+      folderName: effectiveFolderName
     };
   } catch (error) {
     console.error('Error during sync operation:', error);
@@ -442,19 +436,15 @@ async function getFileMetadata(fileId: string, token: string): Promise<DriveFile
 /**
  * Get statistics for syncing between local files and Google Drive
  */
-export const getDriveSyncStats = async (): Promise<SyncStats> => {
+export const getDriveSyncStats = async (folderId?: string, folderName?: string): Promise<SyncStats> => {
   try {
-    // Check if we have a folder ID override in localStorage
-    const folderIdOverride = localStorage.getItem('google_drive_folder_id_override');
-    const folderNameOverride = localStorage.getItem('google_drive_folder_name');
-    
     // Check if we're in development mode with validation skipped
     const skipValidation = import.meta.env.DEV && localStorage.getItem('skip_token_validation') === 'true';
     
-    if (folderIdOverride) {
-      console.log(`Using override folder ID: ${folderIdOverride} (${folderNameOverride || 'No name provided'})`);
+    if (folderId) {
+      console.log(`Using provided folder ID: ${folderId} (${folderName || 'No name provided'})`);
     } else {
-      console.log('No folder ID override found - using default folder ID');
+      console.log('No folder ID provided - using default folder ID');
     }
     
     // Add timestamp for tracking
@@ -483,8 +473,8 @@ export const getDriveSyncStats = async (): Promise<SyncStats> => {
     }
     
     // Validate we have a folder ID to use
-    if (!folderIdOverride && !GOOGLE_DRIVE_FOLDER_ID) {
-      console.error('No folder ID available - neither override nor default');
+    if (!folderId && !GOOGLE_DRIVE_FOLDER_ID) {
+      console.error('No folder ID available - neither provided nor default');
       return {
         matchingFiles: [],
         newFiles: [],
@@ -501,8 +491,8 @@ export const getDriveSyncStats = async (): Promise<SyncStats> => {
     }
     
     // Step 1: Get files from Google Drive recursively
-    // Use the override folder ID if available
-    const driveFiles = await listDriveFiles(folderIdOverride || undefined);
+    // Use the provided folder ID if available
+    const driveFiles = await listDriveFiles(folderId || undefined);
     
     // Step 2: Get local files from Supabase
     const localFiles = await getLocalSourceFiles();
@@ -1041,12 +1031,7 @@ export async function searchSpecificFolder(folderId: string): Promise<{
     console.log(`STARTING RECURSIVE SEARCH FOR FOLDER: ${folderId}`);
     console.log(`=======================================`);
     
-    // Clear any possible folder ID override in localStorage to ensure we use exactly the folder ID provided
-    localStorage.removeItem('google_drive_folder_id_override');
-    localStorage.removeItem('google_drive_folder_name');
-    
-    console.log(`SEARCH: Explicitly cleared folder ID overrides from localStorage`);
-    console.log(`SEARCH: Will search ONLY the exact folder ID provided: ${folderId}`);
+      console.log(`SEARCH: Will search ONLY the exact folder ID provided: ${folderId}`);
     
     // Get access token (either from localStorage or try using authenticatedFetch helper)
     let accessToken = localStorage.getItem('google_access_token');

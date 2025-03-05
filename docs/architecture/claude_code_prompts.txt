@@ -1,4 +1,20 @@
 
+
+I am giving you a markdown folder - even though the "Dynamic Healing Discussion Group" is acting like a 
+
+| NAME | ID | FILES | FOLDERS | TOTAL |
+|------|----|----|------|----|
+| RUTs Book | 1fuItvn1UAdAnsrz8-BSkBuGGlHwf-kH4 | 0 | 18 | 18 |
+| Dynamic Healing Discussion Group | 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV | 0 | 0 | 0 |
+| References.RUTs | 12-zEMUDy5xaZmbza5nWB1wFjgFBP0JHR | 5 | 12 | 17 |
+| Polyvagal Steering Group | 1T_kdfI00RbYfrGCIXSDomP2WTI53EKVW | 2 | 48 | 50 |
+
+
+
+On the "Sync" page on the right side there are two buttons: "Sync Selected Folder" and "Preview Contents". Can you change the name of this "Preview Contents" to not conflict with the other "Preview Contents" button and make the preview work with the contents from the results that is returned after the "Sync Selected Folder" is finished.  
+
+
+
 On the "Sync" page under the "Folders" tab there is a "Select Folder" and below that a combobox that lists names to select from.  That combobox should use the logic from the "Roots" tab ui that finds all the sources_google that have the is_root = 1.  Also, if there is local storage associated with this dropdown, please remove it and simply query it to populate it with the folders that are the root folders.  I think the "current folder" in local storage and previous local storage on this dropdown was messing things up. 
 
 
