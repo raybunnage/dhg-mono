@@ -231,11 +231,7 @@ function Sync() {
       console.log('Root folders for combobox:', folderArray);
       setFolderOptions(folderArray);
       
-      // If we have folders but no selected folder, select the first one
-      if (folderArray.length > 0 && !existingFolderId) {
-        setExistingFolderId(folderArray[0].id);
-      }
-      
+      // Return the array for further processing
       return folderArray;
     } catch (err) {
       console.error('Error fetching root folders:', err);
@@ -246,7 +242,18 @@ function Sync() {
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchRootFolders();
+    // Fetch root folders and then set first folder as selected if none is set
+    const loadFolders = async () => {
+      const folders = await fetchRootFolders();
+      
+      // If we have folders but no selected folder, select the first one
+      if (folders.length > 0 && !existingFolderId) {
+        console.log('Auto-selecting first folder:', folders[0].id);
+        setExistingFolderId(folders[0].id);
+      }
+    };
+    
+    loadFolders();
     fetchFileStats();
     
     // Check token validity on mount
@@ -480,6 +487,9 @@ function Sync() {
           
           // Force refresh the sync summary
           setSyncSummaryKey(`sync-${Date.now()}`);
+          
+          // After sync completes, set the active tab to dashboard to show the results
+          setActiveTab('dashboard');
         } else {
           toast.success('Folder is already in sync! No new files to add.');
         }
