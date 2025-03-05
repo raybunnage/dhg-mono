@@ -1,15 +1,25 @@
+  
+  
+  
+  On the "Sync" page under the "Folders" tab archive the code that is called when you click the "Add & Sync New Folder" button and then once it is safely archived remove that code. Keep the "Preview Contents" button as it is working beautifully. Search through the "Sync" page for code that inserts the synced google drive data into the sources_google table.  I know it is there and has recently worked. Temporarily add a button that will just insert 1 record into the sources_google table using the logic that worked before so we can see the insert actually working. 
+ 
+ 
+ On the "Docs Explorer Page" rename the Page to "Docs" now that you have ardchived the other versions which weree confusing us.  Keep the "Sync Database" button and functionality as it seems to be working correctly.  Remove the "Run Report" button but not change the underlying script that is located at scripts/markdown-report.sh.  "Remove the "Process Queue" button and its functionality since I don't understand what it does. Remove the 4 dashboard elements below that that are called "Indexed Files", "Queue Status", "Processed" and "Last Updated". Then below that where you have a hierarchical view of the markdown folders and files in the app (based on what is in the database after the "sync database" functionality updated the database - keep that file navigation and when you click on any of the markdown files - have it open up and display the actual markdown file in the viewer on the right - make that work properly please.  
+
+
+ 
+
+
+
+ 
  Archive the "Docs" page code and excise it from the routing. then test that it is properly archived.
 
  Archive the "Doc Tables Test" Page and excise it from the routing. Then test that it is properly archived.
 
  Rename the "Guts Example" page to "Guts"
 
- On the "Sync" page under the "Folders" tab archive the code that is called when you click the "Add & Sync New Folder" button and then once it is safely archived remove that code. Keep the "Preview Contents" button as it is working beautifully. Search through the "Sync" page for code that inserts the synced google drive data into the sources_google table.  I know it is there and has recently worked. Temporarily add a button that will just insert 1 record into the sources_google table using the logic that worked before so we can see the insert actually working. 
-
- On the "Docs Explorer Page" rename the Page to "Docs" now that you have ardchived the other versions which weree confusing us.  Keep the "Sync Database" button and functionality as it seems to be working correctly.  Remove the "Run Report" button but not change the underlying script that is located at scripts/markdown-report.sh.  "Remove the "Process Queue" button and its functionality since I don't understand what it does. Remove the 4 dashboard elements below that that are called "Indexed Files", "Queue Status", "Processed" and "Last Updated". Then below that where you have a hierarchical view of the markdown folders and files in the app (based on what is in the database after the "sync database" functionality updated the database - keep that file navigation and when you click on any of the markdown files - have it open up and display the actual markdown file in the viewer on the right - make that work properly please.  
 
 
- 
  On the "Classify" page under the "Document Types" tab there is a light green button that says "+ Add New Type" - remove that button and its associated code and instead add a new tab to the right of the "Reulsts" table called "Document Types" and create a crud ui under that tab to manage the database table "document_types" table. If you find multiple instances of "document_types" funtionality already note that as I know there is some duplicate code. Let me know whether you keep all of this in the "Classify" page code or have  to import it from other places.  Be very careful about this because you could get tripped up by the multiple instances of older or unfnished code for document_types that may be on other pages. What you are building on the "Classify" page should be the source of truth code for managing documnent types. 
  
   Here are the fields wer care about manipulating {
@@ -88,6 +98,28 @@ It references the original email table through the email_id but it adds the impo
 5) to geneerate this file I use ai to get the summary and analyze the flags
 6) another file I generate from this are all the urls I find in the email content 
 Most of the heavy lifthing of the processing will be done by a python service locally but the ui to manage all of this we need from you
+
+I've created a new Gmail dashboard page that will help you manage your Gmail
+  analysis workflow. The page includes:
+
+  1. A search interface to find emails from the last time you searched
+  2. Controls to import new emails into your database
+  3. Tabs to view and manage:
+    - Email table data with key fields from your database
+    - Email content extraction results
+    - URLs extracted from emails
+
+  The dashboard shows key statistics like total emails, processed emails, extracted
+  URLs, and pending analysis items. It also includes a activity timeline to track
+  recent operations.
+
+  The UI is set up to connect to your Python backend service that will handle the
+  heavy lifting of email processing, content extraction, and URL analysis.
+
+  To access the new page, click on the "Gmail" link in the navigation bar.
+
+
+
 
 1. Removed the height limitation in the MarkdownViewer component by removing the
   maxHeight style property which was restricting the display area.

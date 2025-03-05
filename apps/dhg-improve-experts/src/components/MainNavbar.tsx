@@ -18,6 +18,7 @@ export function MainNavbar() {
     { name: 'Supabase', href: '/supabase' },
     { name: 'Write', href: '/write' },
     { name: 'Experts', href: '/experts' },
+    { name: 'Gmail', href: '/gmail' },
     { name: 'Code', href: '/code' },
     { name: 'Cmds', href: '/cmds' },
     { name: 'Guts Example', href: '/guts-example' },
