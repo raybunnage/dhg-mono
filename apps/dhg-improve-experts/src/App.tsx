@@ -36,6 +36,7 @@ import Cmds from '@/pages/Cmds';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
 import GutsExample from '@/pages/GutsExample';
 import DocsExplorer from '@/pages/DocsExplorer';
+import Gmail from '@/pages/Gmail';
 // import DocumentationTest from '@/pages/DocumentationTest'; // Archived on 2025-03-04
 
 // Component imports
@@ -118,6 +119,7 @@ function App() {
         <Route path="/cmds" element={<Cmds />} />
         <Route path="/registry" element={<RegistryViewer />} />
         <Route path="/guts-example" element={<GutsExample />} />
+        <Route path="/gmail" element={<Gmail />} />
       </Routes>
     </QueryClientProvider>
   );
