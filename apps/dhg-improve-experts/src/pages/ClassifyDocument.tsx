@@ -1757,6 +1757,18 @@ Use this exact structure, with empty arrays [] for missing information:
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Category
                 </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Description
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  MIME Type
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  File Extension
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  AI Generated
+                </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Usage Count
                 </th>
@@ -1770,53 +1782,69 @@ Use this exact structure, with empty arrays [] for missing information:
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredDocumentTypes.length > 0 ? (
-                filteredDocumentTypes.map((type) => (
-                  <tr key={type.id} className={type.isNew ? "bg-yellow-50" : ""}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {type.document_type}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                      {type.category}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                      {type.count}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-center">
-                      {type.isNew ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          New
-                        </span>
-                      ) : type.count > 0 ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          In Use
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          Unused
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleEditClick(type)}
-                          className="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 p-1 rounded"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(type.id)}
-                          className="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 p-1 rounded"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filteredDocumentTypes.map((type) => {
+                  // Find the full document type data to access additional fields
+                  const fullTypeData = documentTypesData.find(dt => dt.id === type.id);
+                  return (
+                    <tr key={type.id} className={type.isNew ? "bg-yellow-50" : ""}>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {type.document_type}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {type.category}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500 max-w-xs overflow-hidden text-ellipsis">
+                        {fullTypeData?.description || ''}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500 max-w-[200px] overflow-hidden text-ellipsis">
+                        {fullTypeData?.mime_type || ''}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {fullTypeData?.file_extension || ''}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                        {fullTypeData?.is_ai_generated ? 'Yes' : 'No'}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                        {type.count}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                        {type.isNew ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            New
+                          </span>
+                        ) : type.count > 0 ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            In Use
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            Unused
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEditClick(type)}
+                            className="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 p-1 rounded"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(type.id)}
+                            className="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 p-1 rounded"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-4 py-4 text-center text-sm text-gray-500">
+                  <td colSpan={9} className="px-4 py-4 text-center text-sm text-gray-500">
                     No document types found in this category.
                   </td>
                 </tr>

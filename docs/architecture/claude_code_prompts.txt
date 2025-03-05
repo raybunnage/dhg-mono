@@ -1,3 +1,17 @@
+Remove the "Docs" page and archive the code that was supporting it.  Once that code is archived, please Rename the "Docs New" page to "Docs" 
+  
+  
+  
+   on the "Classify" page under the "Document Types" tab there are displays of each document_type records shwon as a filtered list.   Please add the following fields from the document_types to each records' display. 
+  
+       "description": "string | null",                                             │
+│         "mime_type": "string | null",                                                 │
+│         "file_extension": "string | null",                                            │
+│         "is_ai_generated": "boolean", 
+
+Keep everhting else ais is if possible. It's okay if you want to word wrap the description or mime_type field. 
+ 
+ 
  I think I created some new duplicate code accidently - I noticde on the "Classify" page therre are now two tabs that say "Document Types"  The first one is pretty good - I like the filtering by the pills and showing the records below as you click on different pills so let's keep that one, but move the button from the second tab that sayhs "+ Add New Type" - it is light green and move it onto the first "Document Types" in the same location as it is on the other page. be careful because of the duplicate coded that surely must be there to manage nearly identical ui displays - don't get mixed up.  Once I see the button is moved correctlY I wil likely archive the second "Document Types:" page display and remove it from the page - but not yet, I want to see the firsts docuiment types tab working correctly with the new button before I can do that.
  
   

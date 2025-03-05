@@ -1,3 +1,22 @@
+The document types table on the Classify page has been successfully updated to
+  include the requested fields:
+
+  1. Description (string | null)
+  2. MIME Type (string | null)
+  3. File Extension (string | null)
+  4. Is AI Generated (boolean)
+
+  The changes include:
+  - Added new column headers for each field
+  - Added the fields to the table row display, with appropriate styling
+  - Used the fullTypeData lookup to access the complete record information
+  - Added overflow handling for longer text fields (description and MIME type)
+  - Updated the "No document types found" message to span all 9 columns
+
+  All other functionality should remain the same as it was.
+
+
+
 I've successfully updated the page to:
 
   1. Remove the second "Document Types" tab from the navigation
