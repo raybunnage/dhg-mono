@@ -1,3 +1,35 @@
+on the "Docs" page the "Sync database" perhaps has 2 issues:
+1) it seems to be processing more than 91 files - which is all it says it finds.
+2) I jiust 
+
+
+
+on the "sync" page under the "roots" tab there is a list box right below a title called: "Roots Folder Summary".  on the list add a checkox column and when checked display a list of all the files and folders associated with that folder below this list. You can also remove the button and code associated with "Purge Dummy Records".  Also move the "Find Record Id by Name" and associated text box up to the same line level as "Set Record by Root" and it's associated text box - make them share the line by making them half as wide.
+
+
+
+Looking over the 12 or so pages I've had you build latetly, provide me with an in-depth description, summary, spec / context  of the process we are using to design, build and iterate now.  Please include all the dependencies and tools being used. Create a new markdown file that I can feed to an ai prompt evaluating my current 90 documentation files against my new process.  I will be using it to feed to an ai prompt that summarizes and evaluates my documentationh against this spec, so that I can focus on just the most important documentation. 
+
+The "Supabase" page has 0 couhnts for the "Tables" and "Objects". Obviously thius is incorrect, can you check why the query that is doiung this is not correct because now there are about 30 tables in the database that should be returns.  
+
+
+
+Current Development Context:
+The project is a React-based web application for content management with Supabase as the backend. We're currently focused on implementing the command history tracking system and improving documentation organization. Key technologies include TypeScript, React, Supabase, and PostgreSQL functions. The team is prioritizing improvements to the file metadata synchronization system and document processing workflows. We're actively refactoring code to improve reusability and reduce duplication.
+
+
+Build a "Viewer2" page that is based on the "Viewer" page with these key differences
+1) It is the fileTree node I am most interested in
+2) Right now it is hardcoded to dispay the Files and Folders from the "Dynamic Healing Discussion Group" and it works Great
+3) Right now it also fortunately drawing from the entire sources_google table
+4) Currently there are 4 "Root" folders in the sources_google that are the high level folder under which all folders and files are hierarchically nested. I want you to Rebuild the filetree - so create a newfiletree without and don't touch the original file tree.
+5) I want you to deliberately exclude the folders and files that are under the "Dynamic Healing Discussion Group" - as well as exclude it.
+6) But I want you to display the other 3 root folders in a collapsible fashion with all their respective nested folders and files under each of the root folder - in the same collapsible fashion.  You can find these root folders by querying on is_root = 1 
+7) For now on this new page we don't need the pills on the left and we don't need the filew viewer on the right.  I am just trying to make sure the new tree node can successfully display these 3 root folders and their files and folders
+
+
+
+
 
 
 I am giving you a markdown folder - even though the "Dynamic Healing Discussion Group" is acting like a root folder on the "Viewer" page, the table 

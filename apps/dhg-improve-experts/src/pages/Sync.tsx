@@ -2311,6 +2311,9 @@ function Sync() {
   const [nameToSearch, setNameToSearch] = useState(''); // State for name search
   const [isSearchingByName, setIsSearchingByName] = useState(false); // Loading state for name search
   const [nameSearchResults, setNameSearchResults] = useState<any[]>([]); // Results for name search
+  const [selectedRoots, setSelectedRoots] = useState<string[]>([]); // Track checked roots by ID
+  const [rootContents, setRootContents] = useState<Record<string, any[]>>({}); // Files and folders for each root
+  const [isLoadingRootContents, setIsLoadingRootContents] = useState<Record<string, boolean>>({}); // Loading state for root contents
   
   // Fetch root records
   const fetchRootRecords = async () => {
@@ -2649,6 +2652,9 @@ function Sync() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      View
+                    </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Files</th>
@@ -2658,7 +2664,21 @@ function Sync() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {rootRecords.map((record) => (
-                    <tr key={record.id}>
+                    <tr key={record.id} className={selectedRoots.includes(record.id) ? "bg-blue-50" : ""}>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedRoots.includes(record.id)}
+                          onChange={() => {
+                            if (selectedRoots.includes(record.id)) {
+                              setSelectedRoots(selectedRoots.filter(id => id !== record.id));
+                            } else {
+                              setSelectedRoots([...selectedRoots, record.id]);
+                            }
+                          }}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{record.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{record.drive_id}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.filesCount}</td>
@@ -2672,6 +2692,65 @@ function Sync() {
           </div>
         )}
         
+        {selectedRoots.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-2">Selected Root Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {selectedRoots.map(selectedId => {
+                const record = rootRecords.find(r => r.id === selectedId);
+                if (!record) return null;
+                
+                return (
+                  <div key={`details-${record.id}`} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <h4 className="text-base font-medium mb-2 flex items-center">
+                      <span className="mr-2">📂</span> {record.name}
+                    </h4>
+                    
+                    <div className="mb-3 text-sm text-gray-500">
+                      <div><span className="font-medium">ID:</span> {record.drive_id}</div>
+                      <div><span className="font-medium">Type:</span> {record.mime_type}</div>
+                      <div><span className="font-medium">Items:</span> {record.totalItems} ({record.filesCount} files, {record.foldersCount} folders)</div>
+                    </div>
+                    
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <h5 className="text-sm font-medium mb-1">Files and Folders</h5>
+                      {isLoadingRootContents[record.id] ? (
+                        <div className="text-xs text-gray-600 py-2 flex items-center">
+                          <svg className="animate-spin h-4 w-4 text-blue-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Loading files and folders...
+                        </div>
+                      ) : rootContents[record.id] && rootContents[record.id].length > 0 ? (
+                        <div className="text-xs text-gray-600 max-h-[200px] overflow-y-auto border rounded p-2">
+                          <div className="pl-2 border-l-2 border-blue-200">
+                            {rootContents[record.id].map((item) => (
+                              <div key={item.id} className="py-1 flex items-start">
+                                <span className="mr-1 mt-0.5">
+                                  {item.mime_type === 'application/vnd.google-apps.folder' ? '📂' : '📄'}
+                                </span>
+                                <span className="truncate">{item.name}</span>
+                              </div>
+                            ))}
+                            {rootContents[record.id].length < record.totalItems && (
+                              <div className="py-1 text-gray-400 italic">
+                                ... and {record.totalItems - rootContents[record.id].length} more items
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-500 italic">No files or folders found</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
         <div className="mb-6 overflow-hidden border border-gray-200 rounded-lg">
           <div className="max-h-[400px] overflow-auto bg-gray-50 p-4">
             <pre className="text-sm whitespace-pre-wrap break-words font-mono">
@@ -2681,63 +2760,69 @@ function Sync() {
         </div>
       </div>
       
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Set Record as Root</h2>
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Root Management</h2>
         
-        <p className="mb-4 text-gray-600">
-          Enter a record ID or drive_id to mark it as a root folder.
-        </p>
-        
-        <div className="flex space-x-2 mb-4">
-          <input
-            type="text"
-            value={rootIdToSet}
-            onChange={(e) => setRootIdToSet(e.target.value)}
-            placeholder="Enter record ID or drive_id"
-            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          
-          <button
-            onClick={setRecordAsRoot}
-            disabled={isRootUpdateLoading || !rootIdToSet}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
-          >
-            {isRootUpdateLoading ? 'Setting...' : 'Set as Root'}
-          </button>
-        </div>
-        
-        {rootUpdateStatus && (
-          <div className={`p-3 rounded-lg ${rootUpdateStatus.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-            <p className={rootUpdateStatus.success ? 'text-green-800' : 'text-red-800'}>
-              {rootUpdateStatus.message}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-lg font-medium mb-2">Set Record as Root</h3>
+            
+            <p className="mb-3 text-gray-600 text-sm">
+              Enter a record ID or drive_id to mark it as a root folder.
             </p>
+            
+            <div className="flex space-x-2 mb-4">
+              <input
+                type="text"
+                value={rootIdToSet}
+                onChange={(e) => setRootIdToSet(e.target.value)}
+                placeholder="Enter record ID or drive_id"
+                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              
+              <button
+                onClick={setRecordAsRoot}
+                disabled={isRootUpdateLoading || !rootIdToSet}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
+              >
+                {isRootUpdateLoading ? 'Setting...' : 'Set as Root'}
+              </button>
+            </div>
+            
+            {rootUpdateStatus && (
+              <div className={`p-3 rounded-lg ${rootUpdateStatus.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                <p className={rootUpdateStatus.success ? 'text-green-800' : 'text-red-800'}>
+                  {rootUpdateStatus.message}
+                </p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Find Record ID by Name</h2>
-        
-        <p className="mb-4 text-gray-600">
-          Enter a record name to search for matching records and get their IDs.
-        </p>
-        
-        <div className="flex space-x-2 mb-4">
-          <input
-            type="text"
-            value={nameToSearch}
-            onChange={(e) => setNameToSearch(e.target.value)}
-            placeholder="Enter record name to search"
-            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
           
-          <button
-            onClick={searchRecordsByName}
-            disabled={isSearchingByName || !nameToSearch}
-            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-400"
-          >
-            {isSearchingByName ? 'Searching...' : 'Search by Name'}
-          </button>
+          <div>
+            <h3 className="text-lg font-medium mb-2">Find Record ID by Name</h3>
+            
+            <p className="mb-3 text-gray-600 text-sm">
+              Enter a record name to search for matching records and get their IDs.
+            </p>
+            
+            <div className="flex space-x-2 mb-4">
+              <input
+                type="text"
+                value={nameToSearch}
+                onChange={(e) => setNameToSearch(e.target.value)}
+                placeholder="Enter record name to search"
+                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              
+              <button
+                onClick={searchRecordsByName}
+                disabled={isSearchingByName || !nameToSearch}
+                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-400"
+              >
+                {isSearchingByName ? 'Searching...' : 'Search by Name'}
+              </button>
+            </div>
+          </div>
         </div>
         
         {nameSearchResults.length > 0 && (
@@ -2776,139 +2861,6 @@ function Sync() {
         )}
       </div>
       
-      {/* Purge Dummy Records */}
-      <div className="bg-white rounded-lg shadow p-6 mt-6 border-t-4 border-red-500">
-        <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <span className="mr-2 text-red-500">⚠️</span>
-          Purge Dummy Records
-        </h2>
-        
-        <p className="mb-4 text-gray-600">
-          This will search for and delete any test or dummy records from the sources_google table.
-        </p>
-        
-        <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-lg mb-4">
-          <h3 className="text-md font-medium text-yellow-800 mb-2">What will be removed:</h3>
-          <ul className="list-disc pl-5 text-sm text-yellow-700">
-            <li>Records with "dummy" or "test" in the name or ID</li>
-            <li>Records with invalid or test-generated IDs</li>
-            <li>Records with example.com URLs</li>
-            <li>Any other detected test data</li>
-          </ul>
-        </div>
-        
-        <div className="flex justify-between items-center">
-          <button
-            onClick={async () => {
-              // First just find the dummy records
-              const toastId = toast.loading('Searching for dummy records...');
-              
-              try {
-                // Check if we have the Service Role Key for admin operations
-                if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
-                  toast.dismiss(toastId);
-                  toast.error('Service Role Key is required for this operation');
-                  return;
-                }
-                
-                // Create admin client to bypass RLS
-                const supabaseAdmin = createClient(
-                  import.meta.env.VITE_SUPABASE_URL,
-                  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-                  {
-                    auth: {
-                      storageKey: 'dhg-supabase-admin-auth',
-                      persistSession: false
-                    }
-                  }
-                );
-                
-                // Search for dummy records using various criteria
-                const { data: dummyRecords, error: searchError } = await supabaseAdmin
-                  .from('sources_google')
-                  .select('id, name, drive_id, web_view_link')
-                  .or('name.ilike.%dummy%, name.ilike.%test%, drive_id.ilike.%dummy%, drive_id.ilike.%test%, drive_id.ilike.%example%, web_view_link.ilike.%example.com%');
-                
-                if (searchError) {
-                  console.error('Error searching for dummy records:', searchError);
-                  toast.dismiss(toastId);
-                  toast.error(`Error searching: ${searchError.message}`);
-                  return;
-                }
-                
-                // Also look for records with a test- prefix in the ID
-                const { data: testRecords, error: testError } = await supabaseAdmin
-                  .from('sources_google')
-                  .select('id, name, drive_id, web_view_link')
-                  .or('drive_id.ilike.test-%');
-                
-                if (testError) {
-                  console.error('Error searching for test prefix records:', testError);
-                }
-                
-                // Combine both result sets
-                const allDummyRecords = [
-                  ...(dummyRecords || []), 
-                  ...(testRecords || [])
-                ];
-                
-                // Remove duplicates by ID
-                const uniqueDummyRecords = Array.from(
-                  new Map(allDummyRecords.map(record => [record.id, record])).values()
-                );
-                
-                toast.dismiss(toastId);
-                
-                if (uniqueDummyRecords.length === 0) {
-                  toast.success('Good news! No dummy records found.');
-                  return;
-                }
-                
-                // Show the results
-                toast.success(`Found ${uniqueDummyRecords.length} dummy records.`);
-                
-                // Show a confirm dialog
-                if (window.confirm(`Found ${uniqueDummyRecords.length} dummy records. Do you want to delete them?`)) {
-                  const deleteToastId = toast.loading('Deleting dummy records...');
-                  
-                  // Get all the IDs
-                  const idsToDelete = uniqueDummyRecords.map(record => record.id);
-                  
-                  // Delete all dummy records
-                  const { error: deleteError } = await supabaseAdmin
-                    .from('sources_google')
-                    .delete()
-                    .in('id', idsToDelete);
-                  
-                  toast.dismiss(deleteToastId);
-                  
-                  if (deleteError) {
-                    console.error('Error deleting dummy records:', deleteError);
-                    toast.error(`Error deleting records: ${deleteError.message}`);
-                  } else {
-                    toast.success(`Successfully deleted ${uniqueDummyRecords.length} dummy records!`);
-                    // Refresh folder options
-                    fetchRootFolders();
-                    fetchFileStats();
-                  }
-                }
-                
-              } catch (err) {
-                console.error('Error in purge dummy records:', err);
-                toast.dismiss(toastId);
-                toast.error(`Error: ${err.message}`);
-              }
-            }}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-          >
-            Find & Purge Dummy Records
-          </button>
-          
-          <div className="text-sm text-gray-500">
-            This operation requires admin privileges
-          </div>
-        </div>
-      </div>
     </div>
   );
   
@@ -2928,6 +2880,86 @@ function Sync() {
       console.log('Roots tab is active, rootRecords:', rootRecords);
     }
   }, [rootsTabSelected, rootRecords]);
+  
+  // Fetch contents for selected roots when they change
+  useEffect(() => {
+    // Only run if the Roots tab is selected
+    if (!rootsTabSelected) return;
+    
+    // For each newly selected root, fetch its contents
+    selectedRoots.forEach(rootId => {
+      if (!rootContents[rootId] && !isLoadingRootContents[rootId]) {
+        fetchRootContents(rootId);
+      }
+    });
+  }, [selectedRoots, rootsTabSelected]);
+  
+  // Function to fetch contents for a specific root
+  const fetchRootContents = async (rootId: string) => {
+    try {
+      // Mark this root as loading
+      setIsLoadingRootContents(prev => ({
+        ...prev,
+        [rootId]: true
+      }));
+      
+      // Find the root record to get its drive_id
+      const record = rootRecords.find(r => r.id === rootId);
+      if (!record) {
+        console.error(`Root record not found for ID: ${rootId}`);
+        return;
+      }
+      
+      // First check if we have the Service Role Key for admin operations
+      if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+        toast.error('Service Role Key is required for this operation');
+        return;
+      }
+      
+      // Create admin client to bypass RLS
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            storageKey: 'dhg-supabase-admin-auth',
+            persistSession: false
+          }
+        }
+      );
+      
+      // Get files and folders that have this root as parent_folder_id
+      const { data, error } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, mime_type, parent_folder_id')
+        .eq('parent_folder_id', record.drive_id)
+        .order('name', { ascending: true })
+        .limit(50); // Limit to avoid performance issues
+      
+      if (error) {
+        console.error(`Error fetching contents for root ${rootId}:`, error);
+        toast.error(`Failed to fetch contents: ${error.message}`);
+        return;
+      }
+      
+      // Update the rootContents state with the fetched data
+      setRootContents(prev => ({
+        ...prev,
+        [rootId]: data || []
+      }));
+      
+      console.log(`Fetched ${data?.length || 0} items for root ${record.name}`);
+    } catch (err) {
+      console.error(`Error fetching contents for root ${rootId}:`, err);
+      toast.error(`Error fetching contents: ${err.message}`);
+    } finally {
+      // Mark this root as no longer loading
+      setIsLoadingRootContents(prev => ({
+        ...prev,
+        [rootId]: false
+      }));
+    }
+  };
   
   // Render the active tab content
   const renderTabContent = () => {

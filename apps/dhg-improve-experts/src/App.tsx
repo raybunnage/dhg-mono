@@ -26,6 +26,7 @@ import SupabaseAdmin from './pages/SupabaseAdmin'
 import { FileTree } from './pages/FileTree';
 import { BatchProcessingMonitor } from './components/BatchProcessingMonitor';
 import Viewer from '@/pages/Viewer';
+import Viewer2 from '@/pages/Viewer2';
 import Dashboard from '@/pages/Dashboard';
 import Docs from '@/pages/Docs';
 import Sync from '@/pages/Sync';
@@ -86,6 +87,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/viewer" element={<Viewer />} />
+        <Route path="/viewer2" element={<Viewer2 />} />
         <Route path="/sync" element={<Sync />} />
         <Route path="/registry" element={<RegistryViewer />} />
         <Route path="/document-testing" element={<DocumentTestingPage />} />
