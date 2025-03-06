@@ -62,7 +62,7 @@ interface SyncResult {
 
 // Main Sync component
 function Sync() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'folders' | 'batches' | 'auth' | 'roots'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'folders' | 'batches' | 'auth' | 'roots' | 'cleanup'>('dashboard');
   const [newFolderId, setNewFolderId] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [existingFolderId, setExistingFolderId] = useState('');
@@ -174,16 +174,7 @@ function Sync() {
       }
       
       // Create admin client to bypass RLS
-      const supabaseAdmin = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-        {
-          auth: {
-            storageKey: 'dhg-supabase-admin-auth',
-            persistSession: false
-          }
-        }
-      );
+      const supabaseAdmin = createSupabaseAdmin();
       
       // Supabase may store booleans differently in the database, try both true and 1
       const { data: data1, error: error1 } = await supabaseAdmin
@@ -657,6 +648,22 @@ function Sync() {
     // Force refresh the UI with new sync summary key
     console.log('Sync complete, statistics updated');
     setSyncSummaryKey(`sync-${Date.now()}`);
+  };
+  
+  // Helper function to safely handle execute_sql errors
+  const handleExecuteSqlError = (error: any, fallbackMessage: string = "Error executing SQL"): boolean => {
+    if (error.message.includes('Could not find the function') || 
+        error.message.includes('not found') || 
+        error.code === '42883') {
+      console.error('The execute_sql function is not available:', error);
+      toast.error(
+        'The execute_sql function is not available in this database. Some database operations may fail.',
+        { duration: 10000 }
+      );
+      return true; // Was an execute_sql specific error
+    }
+    console.error(fallbackMessage, error);
+    return false; // Was not an execute_sql specific error
   };
 
   // Helper function to get folder name
@@ -2314,6 +2321,9 @@ function Sync() {
   const [selectedRoots, setSelectedRoots] = useState<string[]>([]); // Track checked roots by ID
   const [rootContents, setRootContents] = useState<Record<string, any[]>>({}); // Files and folders for each root
   const [isLoadingRootContents, setIsLoadingRootContents] = useState<Record<string, boolean>>({}); // Loading state for root contents
+  const [expandedFolders, setExpandedFolders] = useState<string[]>([]); // Track expanded folders by ID
+  const [folderContents, setFolderContents] = useState<Record<string, any[]>>({}); // Files and folders for each expanded folder
+  const [isLoadingFolderContents, setIsLoadingFolderContents] = useState<Record<string, boolean>>({}); // Loading state for folder contents
   
   // Fetch root records
   const fetchRootRecords = async () => {
@@ -2674,6 +2684,13 @@ function Sync() {
                               setSelectedRoots(selectedRoots.filter(id => id !== record.id));
                             } else {
                               setSelectedRoots([...selectedRoots, record.id]);
+                              // Fetch contents for the root folder similar to "Preview Contents"
+                              fetchRootContents(record.id);
+                              
+                              // If user checks a root, set active tab to 'roots' to show the result
+                              if (activeTab !== 'roots') {
+                                setActiveTab('roots');
+                              }
                             }
                           }}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
@@ -2723,15 +2740,10 @@ function Sync() {
                           Loading files and folders...
                         </div>
                       ) : rootContents[record.id] && rootContents[record.id].length > 0 ? (
-                        <div className="text-xs text-gray-600 max-h-[200px] overflow-y-auto border rounded p-2">
+                        <div className="text-xs text-gray-600 max-h-[300px] overflow-y-auto border rounded p-2">
                           <div className="pl-2 border-l-2 border-blue-200">
                             {rootContents[record.id].map((item) => (
-                              <div key={item.id} className="py-1 flex items-start">
-                                <span className="mr-1 mt-0.5">
-                                  {item.mime_type === 'application/vnd.google-apps.folder' ? '📂' : '📄'}
-                                </span>
-                                <span className="truncate">{item.name}</span>
-                              </div>
+                              <FolderItem key={item.id} item={item} level={0} />
                             ))}
                             {rootContents[record.id].length < record.totalItems && (
                               <div className="py-1 text-gray-400 italic">
@@ -2872,6 +2884,11 @@ function Sync() {
     } else {
       setRootsTabSelected(false);
     }
+    
+    // If cleanup tab is selected, fetch date groups
+    if (activeTab === 'cleanup') {
+      fetchRecordsByDate();
+    }
   }, [activeTab]);
   
   // Debug logging for Roots tab
@@ -2894,6 +2911,26 @@ function Sync() {
     });
   }, [selectedRoots, rootsTabSelected]);
   
+  // Function to create Supabase admin client
+  const createSupabaseAdmin = () => {
+    // Check if we have the Service Role Key for admin operations
+    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Service Role Key is required for this operation');
+    }
+    
+    // Create admin client to bypass RLS
+    return createClient(
+      import.meta.env.VITE_SUPABASE_URL,
+      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+  };
+  
   // Function to fetch contents for a specific root
   const fetchRootContents = async (rootId: string) => {
     try {
@@ -2910,29 +2947,14 @@ function Sync() {
         return;
       }
       
-      // First check if we have the Service Role Key for admin operations
-      if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
-        toast.error('Service Role Key is required for this operation');
-        return;
-      }
-      
-      // Create admin client to bypass RLS
-      const supabaseAdmin = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-        {
-          auth: {
-            storageKey: 'dhg-supabase-admin-auth',
-            persistSession: false
-          }
-        }
-      );
+      const supabaseAdmin = createSupabaseAdmin();
       
       // Get files and folders that have this root as parent_folder_id
       const { data, error } = await supabaseAdmin
         .from('sources_google')
         .select('id, drive_id, name, mime_type, parent_folder_id')
         .eq('parent_folder_id', record.drive_id)
+        .order('mime_type', { ascending: false }) // Folders first
         .order('name', { ascending: true })
         .limit(50); // Limit to avoid performance issues
       
@@ -2961,6 +2983,1293 @@ function Sync() {
     }
   };
   
+  // Function to fetch contents for a specific folder
+  const fetchFolderContents = async (folderId: string, folderDriveId: string) => {
+    try {
+      // Mark this folder as loading
+      setIsLoadingFolderContents(prev => ({
+        ...prev,
+        [folderId]: true
+      }));
+      
+      const supabaseAdmin = createSupabaseAdmin();
+      
+      // Get files and folders that have this folder as parent_folder_id
+      const { data, error } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, mime_type, parent_folder_id')
+        .eq('parent_folder_id', folderDriveId)
+        .order('mime_type', { ascending: false }) // Folders first
+        .order('name', { ascending: true })
+        .limit(50); // Limit to avoid performance issues
+      
+      if (error) {
+        console.error(`Error fetching contents for folder ${folderId}:`, error);
+        toast.error(`Failed to fetch folder contents: ${error.message}`);
+        return;
+      }
+      
+      // Update the folderContents state with the fetched data
+      setFolderContents(prev => ({
+        ...prev,
+        [folderId]: data || []
+      }));
+      
+      console.log(`Fetched ${data?.length || 0} items for folder ${folderId}`);
+    } catch (err) {
+      console.error(`Error fetching contents for folder ${folderId}:`, err);
+      toast.error(`Error fetching folder contents: ${err.message}`);
+    } finally {
+      // Mark this folder as no longer loading
+      setIsLoadingFolderContents(prev => ({
+        ...prev,
+        [folderId]: false
+      }));
+    }
+  };
+  
+  // Handle toggling folder expansion
+  const toggleFolderExpansion = (folderId: string, folderDriveId: string) => {
+    if (expandedFolders.includes(folderId)) {
+      // Collapse folder
+      setExpandedFolders(expandedFolders.filter(id => id !== folderId));
+    } else {
+      // Expand folder and fetch contents if not already loaded
+      setExpandedFolders([...expandedFolders, folderId]);
+      if (!folderContents[folderId] && !isLoadingFolderContents[folderId]) {
+        fetchFolderContents(folderId, folderDriveId);
+      }
+    }
+  };
+  
+  // Helper component for recursive folder view
+  const FolderItem = ({ item, level = 0 }) => {
+    const isFolder = item.mime_type === 'application/vnd.google-apps.folder';
+    const isExpanded = expandedFolders.includes(item.id);
+    const isLoading = isLoadingFolderContents[item.id];
+    const hasContents = folderContents[item.id] && folderContents[item.id].length > 0;
+    
+    const handleToggle = (e) => {
+      e.stopPropagation();
+      toggleFolderExpansion(item.id, item.drive_id);
+    };
+    
+    return (
+      <div>
+        {isFolder ? (
+          <div>
+            <div 
+              className="py-1 flex items-start cursor-pointer hover:bg-gray-100 rounded px-1"
+              onClick={handleToggle}
+            >
+              <span className="mr-1 mt-0.5">
+                {isExpanded ? '📂' : '📁'}
+              </span>
+              <span className={`truncate ${level === 0 ? 'font-medium' : ''}`}>
+                {item.name}
+              </span>
+              {isLoading && (
+                <svg className="animate-spin h-3 w-3 text-blue-500 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+            </div>
+            
+            {isExpanded && (
+              <div className={`${level === 0 ? 'pl-4' : 'pl-3'} ml-2 border-l border-gray-200`}>
+                {isLoading ? (
+                  <div className="py-1 text-gray-400">Loading...</div>
+                ) : hasContents ? (
+                  folderContents[item.id].map(childItem => (
+                    <FolderItem 
+                      key={childItem.id} 
+                      item={childItem} 
+                      level={Math.min(level + 1, 4)} 
+                    />
+                  ))
+                ) : (
+                  <div className="py-1 text-gray-400 italic">Empty folder</div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="py-1 flex items-start hover:bg-gray-100 rounded px-1">
+            <span className="mr-1 mt-0.5">📄</span>
+            <span className="truncate">{item.name}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // State for the cleanup tab
+  const [isCleanupLoading, setIsCleanupLoading] = useState(false);
+  const [cleanupStats, setCleanupStats] = useState<{
+    totalRecords: number;
+    recordsMissingPath: number;
+    recordsFixed: number;
+    recordsWithErrors: number;
+    details: string;
+  }>({
+    totalRecords: 0,
+    recordsMissingPath: 0,
+    recordsFixed: 0,
+    recordsWithErrors: 0,
+    details: '',
+  });
+  const [cleanupResults, setCleanupResults] = useState<{
+    success: boolean;
+    message: string;
+    details?: string[];
+  } | null>(null);
+  
+  // State for date-based cleanup
+  const [dateGroups, setDateGroups] = useState<{
+    date: string; 
+    count: number;
+    isSelected: boolean;
+  }[]>([]);
+  const [isLoadingDateGroups, setIsLoadingDateGroups] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteResults, setDeleteResults] = useState<{
+    success: boolean;
+    message: string;
+    deletedCount: number;
+  } | null>(null);
+
+  // Function to fix parent_path issues
+  const fixParentPaths = async () => {
+    try {
+      setIsCleanupLoading(true);
+      setCleanupResults(null);
+      const detailsLog: string[] = [];
+      
+      // First check if we have the Service Role Key for admin operations
+      if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+        toast.error('Service Role Key is required for this operation');
+        return;
+      }
+      
+      // Create admin client to bypass RLS
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            storageKey: 'dhg-supabase-admin-auth',
+            persistSession: false
+          }
+        }
+      );
+      
+      // 1. Get statistics on current state
+      detailsLog.push("Step 1: Analyzing current database state...");
+      const { count: totalCount } = await supabaseAdmin
+        .from('sources_google')
+        .select('*', { count: 'exact', head: true });
+      
+      const { data: missingPathData, error: missingPathError } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, parent_folder_id, parent_path')
+        .is('parent_path', null)
+        .not('parent_folder_id', 'is', null);
+        
+      if (missingPathError) {
+        throw new Error(`Error checking for missing paths: ${missingPathError.message}`);
+      }
+      
+      const recordsMissingPath = missingPathData?.length || 0;
+      detailsLog.push(`Found ${totalCount} total records in sources_google`);
+      detailsLog.push(`Found ${recordsMissingPath} records with missing parent_path but valid parent_folder_id`);
+      
+      // Set initial stats
+      setCleanupStats({
+        totalRecords: totalCount || 0,
+        recordsMissingPath,
+        recordsFixed: 0,
+        recordsWithErrors: 0,
+        details: detailsLog.join('\n')
+      });
+      
+      // 2. First create a map of drive_id to path for all folders
+      detailsLog.push("\nStep 2: Building folder path map...");
+      const { data: folderData, error: folderError } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, parent_folder_id, path')
+        .eq('mime_type', 'application/vnd.google-apps.folder');
+        
+      if (folderError) {
+        throw new Error(`Error fetching folders: ${folderError.message}`);
+      }
+      
+      // Create a map of drive_id to folder path
+      const folderPathMap = new Map<string, string>();
+      // Also create a map of folder names by drive_id for better path construction
+      const folderNameMap = new Map<string, string>();
+      
+      // Add entries to maps
+      folderData?.forEach(folder => {
+        if (folder.path) {
+          folderPathMap.set(folder.drive_id, folder.path);
+        }
+        if (folder.name) {
+          folderNameMap.set(folder.drive_id, folder.name);
+        }
+      });
+      
+      detailsLog.push(`Built path map for ${folderPathMap.size} folders`);
+      detailsLog.push(`Built name map for ${folderNameMap.size} folders`);
+      
+      // 3. Fix records with missing parent_path
+      detailsLog.push("\nStep 3: Fixing records with missing parent_path...");
+      
+      let recordsFixed = 0;
+      let recordsWithErrors = 0;
+      
+      // Process in batches for large datasets
+      const BATCH_SIZE = 50;
+      
+      for (let i = 0; i < missingPathData.length; i += BATCH_SIZE) {
+        const batch = missingPathData.slice(i, i + BATCH_SIZE);
+        detailsLog.push(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(missingPathData.length/BATCH_SIZE)} (${batch.length} records)`);
+        
+        // Process each record in the batch
+        const updates = await Promise.all(batch.map(async record => {
+          try {
+            // Skip if we don't have parent_folder_id
+            if (!record.parent_folder_id) {
+              return null;
+            }
+            
+            // Case 1: We already have the parent folder's path
+            let parentPath = folderPathMap.get(record.parent_folder_id);
+            
+            // Case 2: We have the parent name but no path, construct a simple path
+            if (!parentPath && folderNameMap.has(record.parent_folder_id)) {
+              const parentName = folderNameMap.get(record.parent_folder_id);
+              parentPath = `/folders/${record.parent_folder_id}`;
+              
+              // Also update the folderPathMap for future references
+              folderPathMap.set(record.parent_folder_id, parentPath);
+              
+              detailsLog.push(`Created new path for folder: ${parentName} (${record.parent_folder_id}): ${parentPath}`);
+            }
+            
+            // If we have a parent path, update the record
+            if (parentPath) {
+              return {
+                id: record.id,
+                parent_path: parentPath,
+                updated_at: new Date().toISOString()
+              };
+            }
+            
+            // We couldn't determine the parent path
+            detailsLog.push(`Could not determine parent path for record: ${record.name} (${record.id}), parent ID: ${record.parent_folder_id}`);
+            return null;
+          } catch (err) {
+            recordsWithErrors++;
+            detailsLog.push(`Error processing record ${record.id}: ${err.message}`);
+            return null;
+          }
+        }));
+        
+        // Filter out null updates
+        const validUpdates = updates.filter(Boolean);
+        
+        if (validUpdates.length > 0) {
+          // Update the records in bulk
+          const { data: updateData, error: updateError } = await supabaseAdmin
+            .from('sources_google')
+            .upsert(validUpdates);
+            
+          if (updateError) {
+            recordsWithErrors += validUpdates.length;
+            detailsLog.push(`Error updating batch: ${updateError.message}`);
+          } else {
+            recordsFixed += validUpdates.length;
+            detailsLog.push(`Successfully updated ${validUpdates.length} records in batch`);
+          }
+        }
+        
+        // Update stats as we go
+        setCleanupStats(prev => ({
+          ...prev,
+          recordsFixed,
+          recordsWithErrors,
+          details: detailsLog.join('\n')
+        }));
+        
+        // Small delay to prevent overwhelming the database
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      // 4. Final summary
+      detailsLog.push("\nStep 4: Cleanup complete!");
+      detailsLog.push(`Total records processed: ${missingPathData.length}`);
+      detailsLog.push(`Records fixed: ${recordsFixed}`);
+      detailsLog.push(`Records with errors: ${recordsWithErrors}`);
+      
+      // Set final stats
+      setCleanupStats({
+        totalRecords: totalCount || 0,
+        recordsMissingPath,
+        recordsFixed,
+        recordsWithErrors,
+        details: detailsLog.join('\n')
+      });
+      
+      // Set results
+      setCleanupResults({
+        success: recordsFixed > 0,
+        message: `Fixed ${recordsFixed} records with missing parent_path values`,
+        details: detailsLog
+      });
+      
+      toast.success(`Successfully fixed ${recordsFixed} records`);
+      
+    } catch (err) {
+      console.error('Error fixing parent paths:', err);
+      toast.error(`Error: ${err.message}`);
+      
+      setCleanupResults({
+        success: false,
+        message: `Error: ${err.message}`,
+      });
+    } finally {
+      setIsCleanupLoading(false);
+    }
+  };
+  
+  // Function to create a separate Viewer-compatible path column
+  const createViewerPathColumn = async () => {
+    try {
+      setIsCleanupLoading(true);
+      setCleanupResults(null);
+      const detailsLog: string[] = [];
+      
+      // First check if we have the Service Role Key for admin operations
+      if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+        toast.error('Service Role Key is required for this operation');
+        return;
+      }
+      
+      // Create admin client to bypass RLS
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            storageKey: 'dhg-supabase-admin-auth',
+            persistSession: false
+          }
+        }
+      );
+      
+      // 1. Check if path column exists
+      detailsLog.push("Step 1: Checking if path column exists...");
+      
+      // Try to check if column exists with direct query first (more compatible)
+      let pathColumnExists = false;
+      
+      try {
+        // First try direct method using Supabase's metadata API
+        const { data: columnData, error: metadataError } = await supabaseAdmin
+          .from('information_schema.columns')
+          .select('column_name')
+          .eq('table_name', 'sources_google')
+          .eq('column_name', 'path')
+          .limit(1);
+        
+        if (metadataError) {
+          console.error("Error using metadata API:", metadataError);
+          // Continue to fallback
+        } else {
+          pathColumnExists = columnData && columnData.length > 0;
+          detailsLog.push(`Checked for path column using direct query: ${pathColumnExists ? 'exists' : 'does not exist'}`);
+          // Successfully determined column existence
+          return;
+        }
+      } catch (directQueryErr) {
+        console.error("Error with direct query method:", directQueryErr);
+        // Continue to fallback
+      }
+      
+      // Fallback to RPC method
+      try {
+        const { data: columnData, error: columnError } = await supabaseAdmin.rpc(
+          'execute_sql', 
+          { 
+            sql_query: "SELECT column_name FROM information_schema.columns WHERE table_name = 'sources_google' AND column_name = 'path'" 
+          }
+        );
+        
+        if (columnError) {
+          // If execute_sql function doesn't exist, show a more helpful error
+          if (columnError.message.includes('Could not find the function') || 
+              columnError.message.includes('not found') || 
+              columnError.code === '42883') {
+            detailsLog.push("The execute_sql function is not available. Assuming column doesn't exist and proceeding to create it.");
+            pathColumnExists = false;
+          } else {
+            throw new Error(`Error checking for path column: ${columnError.message}`);
+          }
+        } else {
+          pathColumnExists = columnData && columnData.length > 0;
+          detailsLog.push(`Checked for path column using execute_sql: ${pathColumnExists ? 'exists' : 'does not exist'}`);
+        }
+      } catch (rpcErr) {
+        console.error("Error with RPC method:", rpcErr);
+        detailsLog.push("All methods to check column existence failed. Assuming column doesn't exist.");
+        pathColumnExists = false;
+      }
+      
+      if (!pathColumnExists) {
+        detailsLog.push("Path column does not exist. Need to add it.");
+        
+        // Try to add the path column
+        try {
+          // First try using direct SQL via RPC
+          const { error: alterError } = await supabaseAdmin.rpc(
+            'execute_sql', 
+            { 
+              sql_query: "ALTER TABLE sources_google ADD COLUMN IF NOT EXISTS path TEXT" 
+            }
+          );
+          
+          if (alterError) {
+            // If execute_sql function doesn't exist, show error but don't fail
+            if (alterError.message.includes('Could not find the function') || 
+                alterError.message.includes('not found') || 
+                alterError.code === '42883') {
+              detailsLog.push("The execute_sql function is not available. Cannot add path column automatically.");
+              detailsLog.push("Please manually add a 'path' column of type TEXT to the sources_google table.");
+              
+              // Alert the user with a toast
+              toast.error("Cannot add path column automatically. Please add it manually.", { duration: 10000 });
+            } else {
+              throw new Error(`Error adding path column: ${alterError.message}`);
+            }
+          } else {
+            detailsLog.push("Successfully added path column");
+          }
+        } catch (err) {
+          console.error("Error adding path column:", err);
+          detailsLog.push(`Failed to add path column: ${err.message}`);
+          
+          // Continue anyway since other operations may work
+          detailsLog.push("Continuing with other operations...");
+        }
+      } else {
+        detailsLog.push("Path column already exists");
+      }
+      
+      // 2. Get statistics on current state
+      detailsLog.push("\nStep 2: Analyzing current database state...");
+      
+      // Count total records
+      const { count: totalCount } = await supabaseAdmin
+        .from('sources_google')
+        .select('*', { count: 'exact', head: true });
+      
+      // Count records with null path
+      const { count: nullPathCount } = await supabaseAdmin
+        .from('sources_google')
+        .select('*', { count: 'exact', head: true })
+        .is('path', null);
+      
+      detailsLog.push(`Found ${totalCount} total records in sources_google`);
+      detailsLog.push(`Found ${nullPathCount} records with null path`);
+      
+      // 3. First handle folders - set their paths correctly
+      detailsLog.push("\nStep 3: Setting folder paths...");
+      
+      // Get all folders
+      const { data: folderData, error: folderError } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, parent_folder_id, parent_path')
+        .eq('mime_type', 'application/vnd.google-apps.folder');
+        
+      if (folderError) {
+        throw new Error(`Error fetching folders: ${folderError.message}`);
+      }
+      
+      detailsLog.push(`Found ${folderData?.length || 0} folders to process`);
+      
+      // Create a helper map of parent folder_id to child folders
+      const foldersByParent = new Map<string | null, any[]>();
+      
+      // Group folders by parent_folder_id
+      folderData?.forEach(folder => {
+        const parentId = folder.parent_folder_id || null;
+        if (!foldersByParent.has(parentId)) {
+          foldersByParent.set(parentId, []);
+        }
+        foldersByParent.get(parentId)?.push(folder);
+      });
+      
+      // Recursively build paths for all folders starting with root folders
+      const rootFolders = foldersByParent.get(null) || [];
+      detailsLog.push(`Found ${rootFolders.length} root folders`);
+      
+      // Generate paths for all folders
+      let processedFolders = 0;
+      let errorFolders = 0;
+      
+      // Process folders level by level
+      const processedFolderIds = new Set<string>();
+      const folderPaths = new Map<string, string>();
+      
+      // Function to generate path for a folder
+      const generateFolderPath = (folder: any, parentPath: string | null = null): string => {
+        const path = parentPath 
+          ? `${parentPath}/${folder.name}` 
+          : `/${folder.name}`;
+          
+        return path;
+      };
+      
+      // Start with root folders (no parent)
+      rootFolders.forEach(folder => {
+        try {
+          const path = generateFolderPath(folder);
+          folderPaths.set(folder.drive_id, path);
+          processedFolderIds.add(folder.drive_id);
+          processedFolders++;
+        } catch (err) {
+          errorFolders++;
+          detailsLog.push(`Error processing root folder ${folder.name}: ${err.message}`);
+        }
+      });
+      
+      detailsLog.push(`Set paths for ${processedFolders} root folders`);
+      
+      // Process subsequent levels
+      let currentLevel = [...rootFolders];
+      let nextLevel: any[] = [];
+      let level = 0;
+      const MAX_LEVELS = 10; // Safety limit
+      
+      while (currentLevel.length > 0 && level < MAX_LEVELS) {
+        level++;
+        detailsLog.push(`Processing level ${level} with ${currentLevel.length} folders`);
+        
+        nextLevel = [];
+        
+        // For each folder in current level, process its children
+        for (const folder of currentLevel) {
+          const childFolders = foldersByParent.get(folder.drive_id) || [];
+          const parentPath = folderPaths.get(folder.drive_id);
+          
+          if (!parentPath) continue;
+          
+          // Process each child folder
+          for (const childFolder of childFolders) {
+            if (processedFolderIds.has(childFolder.drive_id)) continue;
+            
+            try {
+              const childPath = generateFolderPath(childFolder, parentPath);
+              folderPaths.set(childFolder.drive_id, childPath);
+              processedFolderIds.add(childFolder.drive_id);
+              processedFolders++;
+              nextLevel.push(childFolder);
+            } catch (err) {
+              errorFolders++;
+              detailsLog.push(`Error processing child folder ${childFolder.name}: ${err.message}`);
+            }
+          }
+        }
+        
+        currentLevel = nextLevel;
+      }
+      
+      detailsLog.push(`Set paths for total of ${processedFolders} folders across ${level} levels`);
+      
+      // 4. Update all folder paths in the database
+      detailsLog.push("\nStep 4: Updating folder paths in database...");
+      
+      let updatedFolders = 0;
+      let folderErrors = 0;
+      
+      // Process in batches
+      const folderEntries = Array.from(folderPaths.entries());
+      for (let i = 0; i < folderEntries.length; i += 50) {
+        const batch = folderEntries.slice(i, i + 50);
+        
+        // Create update objects
+        const updates = batch.map(([drive_id, path]) => ({
+          drive_id,
+          path,
+          updated_at: new Date().toISOString()
+        }));
+        
+        // Perform update
+        const { data, error } = await supabaseAdmin
+          .from('sources_google')
+          .upsert(updates, { onConflict: 'drive_id' });
+          
+        if (error) {
+          folderErrors += batch.length;
+          detailsLog.push(`Error updating folder batch: ${error.message}`);
+        } else {
+          updatedFolders += batch.length;
+        }
+      }
+      
+      detailsLog.push(`Updated ${updatedFolders} folder paths in database`);
+      
+      // 5. Update file paths
+      detailsLog.push("\nStep 5: Setting file paths based on parent folders...");
+      
+      // Get all files (non-folders)
+      const { data: fileData, error: fileError } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, parent_folder_id, path')
+        .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
+        
+      if (fileError) {
+        throw new Error(`Error fetching files: ${fileError.message}`);
+      }
+      
+      detailsLog.push(`Found ${fileData?.length || 0} files to process`);
+      
+      // Update file paths
+      let updatedFiles = 0;
+      let fileErrors = 0;
+      
+      // Process files in batches
+      for (let i = 0; i < fileData.length; i += 100) {
+        const batch = fileData.slice(i, i + 100);
+        
+        // Create update objects
+        const updates = batch.map(file => {
+          // Skip if no parent folder ID
+          if (!file.parent_folder_id) return null;
+          
+          // Get parent folder path
+          const parentPath = folderPaths.get(file.parent_folder_id);
+          if (!parentPath) return null;
+          
+          // Generate file path
+          const filePath = `${parentPath}/${file.name}`;
+          
+          return {
+            drive_id: file.drive_id,
+            path: filePath,
+            updated_at: new Date().toISOString()
+          };
+        }).filter(Boolean); // Remove nulls
+        
+        if (updates.length === 0) continue;
+        
+        // Perform update
+        const { data, error } = await supabaseAdmin
+          .from('sources_google')
+          .upsert(updates, { onConflict: 'drive_id' });
+          
+        if (error) {
+          fileErrors += updates.length;
+          detailsLog.push(`Error updating file batch: ${error.message}`);
+        } else {
+          updatedFiles += updates.length;
+        }
+      }
+      
+      detailsLog.push(`Updated ${updatedFiles} file paths in database`);
+      
+      // 6. Final summary
+      detailsLog.push("\nStep 6: File path generation complete!");
+      detailsLog.push(`Total folders processed: ${processedFolders}`);
+      detailsLog.push(`Total files processed: ${updatedFiles}`);
+      detailsLog.push(`Total errors: ${errorFolders + fileErrors}`);
+      
+      // Set results
+      setCleanupResults({
+        success: true,
+        message: `Successfully updated paths for ${updatedFolders} folders and ${updatedFiles} files`,
+        details: detailsLog
+      });
+      
+      toast.success(`Successfully updated paths for ${updatedFolders + updatedFiles} records`);
+      
+    } catch (err) {
+      console.error('Error creating viewer path column:', err);
+      toast.error(`Error: ${err.message}`);
+      
+      setCleanupResults({
+        success: false,
+        message: `Error: ${err.message}`,
+      });
+    } finally {
+      setIsCleanupLoading(false);
+    }
+  };
+  
+  // Function to check if execute_sql function exists
+  const checkExecuteSqlExists = async (supabaseAdmin) => {
+    try {
+      // Try to get the function definition
+      const { data, error } = await supabaseAdmin
+        .from('pg_proc')
+        .select('*')
+        .eq('proname', 'execute_sql')
+        .limit(1);
+      
+      if (error) {
+        console.log('Error checking for execute_sql function:', error);
+        return false;
+      }
+      
+      return data && data.length > 0;
+    } catch (err) {
+      console.error('Error checking for execute_sql function:', err);
+      return false;
+    }
+  };
+  
+  // Function to get counts of records by date
+  const fetchRecordsByDate = async () => {
+    try {
+      setIsLoadingDateGroups(true);
+      setDeleteResults(null);
+      
+      // First check if we have the Service Role Key for admin operations
+      if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+        toast.error('Service Role Key is required for this operation');
+        return;
+      }
+      
+      // Use the helper function to create admin client
+      const supabaseAdmin = createSupabaseAdmin();
+      
+      try {
+        // First try the direct query method - more compatible
+        const { data, error } = await supabaseAdmin
+          .from('sources_google')
+          .select('created_at')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          throw new Error(`Error fetching records for date grouping: ${error.message}`);
+        }
+
+        // Process the data client-side to get date groups
+        const dateMap = new Map();
+        
+        if (data) {
+          data.forEach(record => {
+            const date = new Date(record.created_at).toISOString().split('T')[0];
+            dateMap.set(date, (dateMap.get(date) || 0) + 1);
+          });
+        }
+
+        // Convert to array format for UI
+        const dateGroupsData = Array.from(dateMap.entries())
+          .map(([date, count]) => ({
+            date,
+            count: Number(count),
+            isSelected: false
+          }))
+          .sort((a, b) => b.date.localeCompare(a.date));
+
+        setDateGroups(dateGroupsData);
+        toast.success(`Found ${dateGroupsData.length} date groups`);
+        return;
+      } catch (directQueryErr) {
+        console.error('Error with direct query method:', directQueryErr);
+        // Continue to try RPC method as fallback
+      }
+      
+      // Fallback: Try RPC method
+      const { data, error } = await supabaseAdmin.rpc(
+        'execute_sql',
+        {
+          sql_query: `
+            SELECT 
+              TO_CHAR(created_at::date, 'YYYY-MM-DD') as date,
+              COUNT(*) as count
+            FROM 
+              sources_google
+            GROUP BY 
+              TO_CHAR(created_at::date, 'YYYY-MM-DD')
+            ORDER BY 
+              date DESC
+          `
+        }
+      );
+      
+      if (error) {
+        // If execute_sql function doesn't exist, show a more helpful error
+        if (error.message.includes('Could not find the function') || 
+            error.message.includes('not found') || 
+            error.code === '42883') {
+          throw new Error('The execute_sql function is not available in this database. Please contact your administrator to install it, or use the direct query method.');
+        }
+        throw new Error(`Error fetching date groups: ${error.message}`);
+      }
+      
+      // Transform data for UI
+      const dateGroupsData = (data || []).map(group => ({
+        date: group.date,
+        count: parseInt(group.count, 10),
+        isSelected: false
+      }));
+      
+      setDateGroups(dateGroupsData);
+      
+      toast.success(`Found ${dateGroupsData.length} date groups`);
+    } catch (err) {
+      console.error('Error fetching date groups:', err);
+      toast.error(`Error: ${err.message}`);
+    } finally {
+      setIsLoadingDateGroups(false);
+    }
+  };
+  
+  // Function to toggle selection of a date group
+  const toggleDateGroupSelection = (date: string) => {
+    setDateGroups(dateGroups.map(group => 
+      group.date === date 
+        ? { ...group, isSelected: !group.isSelected } 
+        : group
+    ));
+  };
+  
+  // Function to delete records for selected dates
+  const deleteRecordsByDate = async () => {
+    try {
+      setIsDeleting(true);
+      setDeleteResults(null);
+      
+      // First check if we have the Service Role Key for admin operations
+      if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+        toast.error('Service Role Key is required for this operation');
+        return;
+      }
+      
+      // Get selected dates
+      const selectedDates = dateGroups
+        .filter(group => group.isSelected)
+        .map(group => group.date);
+      
+      if (selectedDates.length === 0) {
+        toast.error('Please select at least one date group to delete');
+        return;
+      }
+      
+      // Create admin client to bypass RLS
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            storageKey: 'dhg-supabase-admin-auth',
+            persistSession: false
+          }
+        }
+      );
+      
+      // Calculate total number of records to delete
+      const totalToDelete = dateGroups
+        .filter(group => group.isSelected)
+        .reduce((sum, group) => sum + group.count, 0);
+      
+      // Process each date one by one to avoid timeouts with large deletes
+      let totalDeleted = 0;
+      
+      for (const date of selectedDates) {
+        // First get IDs of records to delete
+        const { data: recordsToDelete, error: fetchError } = await supabaseAdmin
+          .from('sources_google')
+          .select('id')
+          .filter('created_at', 'gte', `${date}T00:00:00`)
+          .filter('created_at', 'lt', `${date}T23:59:59.999`);
+          
+        if (fetchError) {
+          console.error(`Error fetching records for date ${date}:`, fetchError);
+          continue;
+        }
+        
+        const idsToDelete = recordsToDelete?.map(r => r.id) || [];
+        
+        if (idsToDelete.length === 0) {
+          console.log(`No records found for date ${date}`);
+          continue;
+        }
+        
+        // Delete in batches to avoid request size limitations
+        const BATCH_SIZE = 100;
+        
+        for (let i = 0; i < idsToDelete.length; i += BATCH_SIZE) {
+          const batchIds = idsToDelete.slice(i, i + BATCH_SIZE);
+          
+          // Delete the batch
+          const { error: deleteError } = await supabaseAdmin
+            .from('sources_google')
+            .delete()
+            .in('id', batchIds);
+            
+          if (deleteError) {
+            console.error(`Error deleting records for date ${date} (batch ${i/BATCH_SIZE + 1}):`, deleteError);
+            continue;
+          }
+          
+          totalDeleted += batchIds.length;
+        }
+      }
+      
+      // Refresh the date groups
+      await fetchRecordsByDate();
+      
+      // Set results
+      setDeleteResults({
+        success: totalDeleted > 0,
+        message: `Successfully deleted ${totalDeleted} records from ${selectedDates.length} date groups`,
+        deletedCount: totalDeleted
+      });
+      
+      toast.success(`Successfully deleted ${totalDeleted} records from ${selectedDates.length} date groups`);
+      
+    } catch (err) {
+      console.error('Error deleting records:', err);
+      toast.error(`Error: ${err.message}`);
+      
+      setDeleteResults({
+        success: false,
+        message: `Error: ${err.message}`,
+        deletedCount: 0
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  // Render the cleanup tab
+  const renderCleanup = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold mb-4">Database Cleanup Tools</h2>
+        
+        <div className="prose prose-sm mb-6">
+          <p>
+            These tools help fix issues with the database to ensure proper compatibility between the "Preview Contents" functionality
+            and the FileTree viewer component.
+          </p>
+          <p className="text-amber-600 font-medium">
+            Warning: These operations modify database records directly. Consider making a backup first.
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="border rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-medium mb-2">Fix Missing Parent Paths</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              This function repairs records that have a parent_folder_id but no parent_path,
+              which prevents them from showing up correctly in hierarchical views.
+            </p>
+            <button
+              onClick={fixParentPaths}
+              disabled={isCleanupLoading}
+              className={`w-full py-2 px-4 rounded ${
+                isCleanupLoading 
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+              }`}
+            >
+              {isCleanupLoading ? 'Processing...' : 'Fix Missing Parent Paths'}
+            </button>
+          </div>
+          
+          <div className="border rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-medium mb-2">Create Viewer-Compatible Paths</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              This function adds and populates the 'path' field required by the FileTree component,
+              creating proper hierarchical paths for all files and folders.
+            </p>
+            <button
+              onClick={createViewerPathColumn}
+              disabled={isCleanupLoading}
+              className={`w-full py-2 px-4 rounded ${
+                isCleanupLoading 
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-green-500 hover:bg-green-600 text-white'
+              }`}
+            >
+              {isCleanupLoading ? 'Processing...' : 'Create Viewer Paths'}
+            </button>
+          </div>
+        </div>
+        
+        {isCleanupLoading && (
+          <div className="mt-6 p-4 border rounded-lg bg-blue-50">
+            <h3 className="text-lg font-medium text-blue-800 mb-2">Processing...</h3>
+            <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-600 rounded-full animate-pulse"></div>
+            </div>
+            
+            <div className="mt-4 max-h-48 overflow-y-auto bg-white p-3 rounded border text-xs font-mono whitespace-pre">
+              {cleanupStats.details}
+            </div>
+          </div>
+        )}
+        
+        {cleanupResults && (
+          <div className={`mt-6 p-4 border rounded-lg ${
+            cleanupResults.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+          }`}>
+            <h3 className={`text-lg font-medium mb-2 ${
+              cleanupResults.success ? 'text-green-800' : 'text-red-800'
+            }`}>
+              {cleanupResults.success ? 'Operation Successful' : 'Operation Failed'}
+            </h3>
+            <p className="mb-2">{cleanupResults.message}</p>
+            
+            {cleanupResults.details && (
+              <div className="mt-4">
+                <button
+                  onClick={() => {
+                    // Toggle showing details
+                    const detailsEl = document.getElementById('cleanup-details');
+                    if (detailsEl) {
+                      detailsEl.classList.toggle('hidden');
+                    }
+                  }}
+                  className="text-sm underline"
+                >
+                  Show/Hide Details
+                </button>
+                <div id="cleanup-details" className="hidden mt-2 max-h-48 overflow-y-auto bg-white p-3 rounded border text-xs font-mono whitespace-pre">
+                  {cleanupResults.details.join('\n')}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Date-based Record Deletion */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold mb-4">Delete Records by Created Date</h2>
+        
+        <div className="prose prose-sm mb-6">
+          <p>
+            This tool allows you to delete records from the <code>sources_google</code> table based on their creation date.
+            This is useful for cleaning up records before re-importing them with proper path information.
+          </p>
+          <p className="text-red-600 font-medium">
+            Warning: This operation permanently deletes records from the database. This action cannot be undone.
+          </p>
+        </div>
+        
+        <div className="mb-4">
+          <button
+            onClick={fetchRecordsByDate}
+            disabled={isLoadingDateGroups}
+            className={`px-4 py-2 rounded ${
+              isLoadingDateGroups 
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600 text-white'
+            }`}
+          >
+            {isLoadingDateGroups ? 'Loading...' : 'Fetch Records by Date'}
+          </button>
+        </div>
+        
+        {/* Date Groups */}
+        {dateGroups.length > 0 && (
+          <div className="mt-4">
+            <div className="border rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Select
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Record Count
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {dateGroups.map((group) => (
+                    <tr key={group.date} className={group.isSelected ? 'bg-red-50' : ''}>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <input 
+                          type="checkbox" 
+                          checked={group.isSelected}
+                          onChange={() => toggleDateGroupSelection(group.date)}
+                          className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                        />
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {group.date}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {group.count.toLocaleString()} records
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Delete Selected Button */}
+            <div className="mt-4">
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isDeleting || dateGroups.filter(g => g.isSelected).length === 0}
+                className={`px-4 py-2 rounded ${
+                  isDeleting || dateGroups.filter(g => g.isSelected).length === 0
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-red-500 hover:bg-red-600 text-white'
+                }`}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Selected Records'}
+              </button>
+              
+              {/* Selection summary */}
+              {dateGroups.some(g => g.isSelected) && (
+                <div className="mt-2 text-sm text-gray-600">
+                  Selected: {dateGroups.filter(g => g.isSelected).length} date groups,{' '}
+                  {dateGroups
+                    .filter(g => g.isSelected)
+                    .reduce((sum, g) => sum + g.count, 0).toLocaleString()}{' '}
+                  records
+                </div>
+              )}
+            </div>
+            
+            {/* Confirmation Modal */}
+            {showDeleteConfirm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+                  <h3 className="text-lg font-medium text-red-600 mb-4">Confirm Deletion</h3>
+                  <p className="mb-4">
+                    Are you sure you want to delete{' '}
+                    <span className="font-bold">
+                      {dateGroups
+                        .filter(g => g.isSelected)
+                        .reduce((sum, g) => sum + g.count, 0).toLocaleString()}
+                    </span>{' '}
+                    records from{' '}
+                    <span className="font-bold">
+                      {dateGroups.filter(g => g.isSelected).length}
+                    </span>{' '}
+                    date groups?
+                  </p>
+                  <p className="text-sm text-red-500 mb-4">
+                    This action cannot be undone.
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={deleteRecordsByDate}
+                      className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded"
+                    >
+                      Delete Records
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Delete Results */}
+            {deleteResults && (
+              <div className={`mt-4 p-4 border rounded-lg ${
+                deleteResults.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+              }`}>
+                <h3 className={`text-lg font-medium mb-2 ${
+                  deleteResults.success ? 'text-green-800' : 'text-red-800'
+                }`}>
+                  {deleteResults.success ? 'Deletion Successful' : 'Deletion Failed'}
+                </h3>
+                <p className="mb-2">{deleteResults.message}</p>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Loading State */}
+        {isLoadingDateGroups && !dateGroups.length && (
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <span className="ml-2">Loading date groups...</span>
+          </div>
+        )}
+      </div>
+      
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold mb-4">Viewer Component Explanation</h2>
+        
+        <div className="prose prose-sm">
+          <h3>Understanding the FileTree and Viewer Components</h3>
+          
+          <p>
+            The <code>FileTree</code> component and <code>Viewer</code> page were designed to show files stored in the <code>sources_google</code> table.
+            They rely on specific fields:
+          </p>
+          
+          <ul>
+            <li><code>path</code>: Used to build the hierarchical folder structure</li>
+            <li><code>parent_path</code>: Used to determine parent-child relationships</li>
+          </ul>
+          
+          <p>
+            When files are added via "Preview Contents", they might not have these fields populated
+            correctly, causing them to not appear in the hierarchy.
+          </p>
+          
+          <h3>The expert_documents Coupling Issue</h3>
+          
+          <p>
+            The current <code>Viewer</code> component joins the <code>sources_google</code> table with the <code>expert_documents</code> table
+            to show processing status information. This creates tight coupling between the two tables.
+          </p>
+          
+          <p>
+            This design works well when most files will be processed by experts, but creates issues when:
+          </p>
+          
+          <ul>
+            <li>You have files that will never be processed by experts</li>
+            <li>You want to view files that haven't been processed yet</li>
+            <li>You add source files from different Google Drive folders</li>
+          </ul>
+          
+          <h3>FileTree Component and expert_documents Records</h3>
+          
+          <p>
+            The current <code>Viewer</code> page will successfully show files that don't have associated <code>expert_documents</code> records.
+            The left join query used in the component handles this gracefully, making the <code>expertDocument</code> property <code>null</code>
+            when no matching record exists.
+          </p>
+          
+          <p>
+            This allows you to view all files in the <code>sources_google</code> table in the file hierarchy, even if they don't have
+            expert document processing, as long as they have proper <code>path</code> and <code>parent_path</code> values.
+          </p>
+          
+          <p>
+            The cleanup tools on this page help ensure that all files have the proper path fields, making them visible in the Viewer
+            regardless of their expert document status.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   // Render the active tab content
   const renderTabContent = () => {
     switch (activeTab) {
@@ -2972,6 +4281,8 @@ function Sync() {
         return renderBatches();
       case 'roots':
         return renderRoots();
+      case 'cleanup':
+        return renderCleanup();
       // History tab is disabled
       case 'history':
         return renderDashboard();
@@ -3028,6 +4339,19 @@ function Sync() {
             }`}
           >
             Roots
+          </button>
+          <button
+            onClick={() => setActiveTab('cleanup')}
+            className={`mr-4 py-2 px-1 font-medium text-sm border-b-2 ${
+              activeTab === 'cleanup'
+                ? 'text-blue-600 border-blue-600'
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center">
+              Cleanup
+              <span className="ml-1.5 px-1 py-0.5 text-xs bg-green-200 text-green-800 rounded">New</span>
+            </div>
           </button>
           <button
             onClick={() => setActiveTab('auth')}

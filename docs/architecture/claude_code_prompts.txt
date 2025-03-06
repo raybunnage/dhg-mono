@@ -1,11 +1,32 @@
+
+I think I am getting closer to my ideal solution. I'll tell you what I want and you let me know the safe way to accomplish this and I'll propose my method and see if they line up. Then we'll take action to implement it. 
+
+1) I want to keep the tight coupling between the sources_google file and the expert_document associated with. In the end I think most files will have an assoiated expert_dcoument - but I want to make sure the "Viewer" and the Filetree node will still work if I click on a file to show something in the fileviewer on the "Viewer" page and I believe they do. As long as the filetree on the "viewer" doesn't require an expert_documents redord to be created or associated with an expert_document then I think the "Viewer" is good as is.  Can you check this for me.
+
+THen my problem is that the existing files and folders that have a missing parent_path simply need to be deleted from the database and readded with an inserted sources_google record that does have the proper parent_path in it and then if what you are saying is true I should be able to view all my files in sources_google in the "viewer" properly.
+
+Under the "Cleanup" tab can you add ui to delete records based on created_at date - since the original files I want to keep have just 2 dates in february where I added them, and all the other files I want to delete will have later created_at dates.  Can you build a simpole list that queries sources_google for all files and writes out the createt_at date and a count of file sthat have that date.  IF you also put a checkbox on each line and add a delete button with confirmatin then I think I can easily clean up the newer files. 
+
+
+On the "sync" page where tabs are add a new tab called "Cleanup" 
+Your job is to write a new function and put on a button that fixes the function that is called 
+by "Preview Contents" to ensure the parent_path is being set correctly in a way that will make the sources_google inserted files that are inserted by googleDriveService are able to be viewed in the by the viewer. At same time I am concerned about the tight coupling of the "Viewer" pages filetree code that has a tight coupling between the expert_documents records and the sources_google table.  I know why it was added so we could display in the ui info from the associated expert_documents record, but going forward I need to think through whether this is a good idea as some sources_google may never have an associated expert_document once I have a lot of root folders files and folders added.  What do you think aabout this issue.   While I am figuring this out I do not want to break any existing funtionality that's why I am asking you to write new code for it under the "Cleanup" tab.
+
+
+   when files are inserted from Preview. 
+
+
+
 on the "Docs" page the "Sync database" perhaps has 2 issues:
 1) it seems to be processing more than 91 files - which is all it says it finds.
-2) I jiust 
+2) I just added two new files undereath the docs folder that is off the root. The file I added is on the path: docs/development-process-specification.md   but I don't think your "Sync Database" function is finding these new files - perhaps it was using another way to get the file information, but now it needs to live scan my local mono repo directoy to identify all the markdown files across the project - it probably needs to go up to 5 levels deep to jmake sure it identifes all the files as some of them are under specifie
+
+
+I now believe there are two different ways you are parsing folders and files underneath a root folder id.  There is the way you are doing it under the "Preview Contents" button and there is the way you are doing it for filetree under the "Viewer". Could you compare these two methods and explain to me the difference and determine which is the better way.  I think it is the way you are doing the "Preview Contents" but I need to know.
 
 
 
-on the "sync" page under the "roots" tab there is a list box right below a title called: "Roots Folder Summary".  on the list add a checkox column and when checked display a list of all the files and folders associated with that folder below this list. You can also remove the button and code associated with "Purge Dummy Records".  Also move the "Find Record Id by Name" and associated text box up to the same line level as "Set Record by Root" and it's associated text box - make them share the line by making them half as wide.
-
+on the "sync" page under the "roots" tab there is a list box right below a title called: "Roots Folder Summary".  You have successfully added the checkboxes. Now when you click on them use the logic that is on the "Preview Contents" when you click it. It receives a folder_id from the "Google Drive Folder ID" text box, but instead you can hand off the folder_id that is on the checked line in the list under the "Roots" tab under "Root Folders Summary". And just like the "Preview Contents" button show the folders and files associated with the folder_id just as you did on the "Folders" tab ui
 
 
 Looking over the 12 or so pages I've had you build latetly, provide me with an in-depth description, summary, spec / context  of the process we are using to design, build and iterate now.  Please include all the dependencies and tools being used. Create a new markdown file that I can feed to an ai prompt evaluating my current 90 documentation files against my new process.  I will be using it to feed to an ai prompt that summarizes and evaluates my documentationh against this spec, so that I can focus on just the most important documentation. 

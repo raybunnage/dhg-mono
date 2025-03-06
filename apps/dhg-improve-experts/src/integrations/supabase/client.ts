@@ -8,11 +8,13 @@ import type { Database } from '@/types/supabase';
 const SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQxODkwMTMsImV4cCI6MjA0OTc2NTAxM30.035475oKIiE1pSsfQbRoje4-FRT9XDKAk6ScHYtaPsQ";
 
-// Create a single supabase instance
+// Create a single supabase instance with specific storage key
+// Note: autoRefreshToken is true by default, but explicitly stated for clarity
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storageKey: 'dhg-supabase-auth',
-    persistSession: true
+    persistSession: true,
+    autoRefreshToken: true
   }
 });
 
