@@ -1,3 +1,34 @@
+Great! The build is successful. Here's a summary of the changes we've made:
+
+  1. Added a robust path builder function (buildProperFilePaths) that creates
+  proper hierarchical paths for the FileTree component.
+  2. Improved the root folder detection in the insertion process:
+    - Added multiple methods to identify which folder should be the root
+    - Explicit marking from searchSpecificFolder with a _isRootFolder property
+    - Intelligent inference from parent-child relationships
+    - Various fallbacks to ensure we always select a root folder
+  3. Fixed the database records:
+    - Set both parent_path and path for FileTree compatibility
+    - Properly mark root folders with is_root = true
+    - Generate hierarchical paths instead of simple paths
+  4. Fixed Supabase client initialization:
+    - Used autoRefreshToken: false to avoid the "Multiple GoTrueClient
+  instances" warning
+    - Avoided using persistent storage for admin sessions
+
+  These changes should ensure that:
+  1. When you add a new folder using "Preview Contents" and then "Add Files to
+  Database", the folder will be properly marked as a root folder.
+  2. The folder will appear in the "Roots" tab in the Sync page.
+  3. The files will have proper hierarchical paths for the FileTree component.
+  4. No existing data will be modified - these changes only affect newly added
+  files.
+
+  Your workflow should now work correctly without having to manually run the
+  cleanup tools.
+
+╭────────────────────────────────────────────────────────
+
 Perfect! I've now implemented a comprehensive set of cleanup tools in the new
   "Cleanup" tab with:
 
@@ -113,7 +144,7 @@ Based on my investigation, I've found the core issue and can provide a
     - Files are first just held in component state (not in database)
     - Only when you click "Add Files to Database" are they inserted into the
   sources_google table
-    - The insertGoogleFiles function in googleDriveService.ts handles this
+    - The insertGoogleFiles function in  seser.ts handles this
   insertion
   2. FileTree Display: The FileTree component:
     - Retrieves files from the sources_google table in the database
