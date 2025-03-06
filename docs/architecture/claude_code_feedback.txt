@@ -1,3 +1,27 @@
+I've made the following changes to make it clear when our edits are showing
+  up:
+
+  1. Added a prominent root folder counter badge at the top of the page with a
+  timestamp showing when it was last updated
+  2. Added a detailed statistics box above the file tree showing:
+    - Total number of items
+    - Number of root folders
+    - Number of non-folder files
+
+  These changes should be very visible when you load the Viewer page. If you
+  don't see them, it could indicate one of the following issues:
+
+  1. The Viewer route might be overridden or not properly loading the component
+  from src/pages/Viewer.tsx
+  2. There could be a client-side caching issue
+  3. There might be a build step that's not being triggered to reflect the
+  changes
+
+  Let me know if you see these changes when you visit the Viewer page. If not,
+  we can investigate further to determine why the changes aren't appearing.
+
+
+
 Great! The build is successful. Here's a summary of the changes we've made:
 
   1. Added a robust path builder function (buildProperFilePaths) that creates

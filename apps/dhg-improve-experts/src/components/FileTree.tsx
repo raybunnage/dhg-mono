@@ -41,6 +41,7 @@ export interface FileNode {
   };
   drive_id?: string;
   content?: string | null;
+  is_root?: boolean;  // Added is_root flag to identify root folders
 }
 
 interface FileTreeProps {
@@ -185,15 +186,16 @@ export const FILE_TYPE_COLORS = {
 } as const;
 
 export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProps) {
-  // Get all folder paths initially for expandAll
-  const initialExpandedFolders = new Set(
+  // Get root folder paths initially for automatic expansion
+  const rootFolderPaths = new Set(
     files
-      .filter(f => f.mime_type === 'application/vnd.google-apps.folder')
+      .filter(f => f.mime_type === 'application/vnd.google-apps.folder' && f.is_root === true)
       .map(f => f.path || '')
       .filter(Boolean)
   );
   
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(initialExpandedFolders);
+  // Start with root folders expanded by default
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(rootFolderPaths);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [activeMimeTypes, setActiveMimeTypes] = useState<Set<string>>(new Set());
   const [hideProcessedFiles, setHideProcessedFiles] = useState(false);
@@ -312,6 +314,50 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
   };
 
   const renderTree = (parentPath: string | null, level: number = 0) => {
+    // At the top level (level 0), we want to show only root folders if they exist
+    if (level === 0) {
+      // Find all folders marked as root
+      const rootFolders = files.filter(item => 
+        item.mime_type === 'application/vnd.google-apps.folder' && 
+        item.is_root === true
+      );
+      
+      console.log(`Found ${rootFolders.length} root folders for top level`);
+      
+      // If we have root folders, only show those at the top level
+      if (rootFolders.length > 0) {
+        // Sort the root folders alphabetically
+        const sortedRootFolders = [...rootFolders].sort((a, b) => a.name.localeCompare(b.name));
+        
+        return sortedRootFolders.map(folder => {
+          const isExpanded = expandedFolders.has(folder.path || '');
+          
+          return (
+            <div key={folder.id} className="file-tree-item">
+              <div 
+                className="flex items-center gap-2 py-1 hover:bg-gray-50 rounded cursor-pointer"
+                style={{ paddingLeft: `${level * 20}px` }}
+              >
+                <span 
+                  className="text-gray-500 hover:text-gray-700" 
+                  onClick={() => toggleFolder(folder.path || '')}
+                >
+                  {isExpanded ? '▼' : '▶'}
+                </span>
+                <span className="bg-blue-100 text-blue-700 p-1 rounded flex items-center gap-1">
+                  <span>📁</span>
+                  <span className="font-semibold">{folder.name}</span>
+                  <span className="text-xs bg-blue-200 px-1.5 py-0.5 rounded-full">root</span>
+                </span>
+              </div>
+              {isExpanded && folder.path && renderTree(folder.path, level + 1)}
+            </div>
+          );
+        });
+      }
+    }
+    
+    // Regular file tree rendering logic for non-root levels
     const items = files.filter(item => {
       // Get items at this level
       const isAtThisLevel = item.parent_path === parentPath;
@@ -329,15 +375,14 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
       return isAtThisLevel;
     });
     
-    // Add this debug log
-    console.log('Files with metadata:', items.map(item => ({
-      name: item.name,
-      metadata: item.metadata,
-      mime_type: item.mime_type
-    })));
+    // Filter out root folders if we're not at the top level
+    // This prevents root folders from showing up as regular folders in the hierarchy
+    const nonRootItems = level === 0 
+      ? items.filter(item => !(item.is_root === true && item.mime_type === 'application/vnd.google-apps.folder'))
+      : items;
     
     // Filter out non-processable files unless it's a folder
-    const filteredItems = items.filter(item => 
+    const filteredItems = nonRootItems.filter(item => 
       item.mime_type === 'application/vnd.google-apps.folder' || isProcessableFile(item)
     );
 
@@ -670,7 +715,7 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
         <div className="text-xl font-semibold flex items-center gap-3 px-2 py-3 border-b">
           <span className="text-2xl">🗂️</span>
           <span className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-            Dynamic Healing Group Files
+            Files by Root Folders
           </span>
         </div>
       </div>
