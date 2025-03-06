@@ -330,8 +330,11 @@ export async function syncWithGoogleDrive(folderId?: string, folderName?: string
   const effectiveFolderId = folderId || import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID || '';
   const effectiveFolderName = folderName || 'Google Drive Folder';
   
+  // Store the explicitly requested folder ID in a global variable
+  // This will help ensure this specific folder is marked as a root when inserted
   if (folderId) {
     console.log(`Syncing with provided folder ID: ${effectiveFolderId} (${effectiveFolderName})`);
+    // If we need to pass this information to other functions, we'd do it explicitly
   }
   
   try {
@@ -633,13 +636,13 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
     console.log(`INSERTING FILES: Connecting to Supabase at ${supabaseUrl.substring(0, 20)}...`);
     
     // Create a supabase admin client with service role key to bypass RLS
-    // Use a different storage key to avoid the warning about multiple clients
+    // Use autoRefreshToken: false to avoid multiple GoTrueClient instances warning
     const supabaseAdmin = createClient<Database>(
       supabaseUrl,
       serviceRoleKey,
       {
         auth: {
-          storageKey: 'dhg-supabase-admin-auth',
+          autoRefreshToken: false,
           persistSession: false  // Don't persist admin sessions
         }
       }
@@ -689,6 +692,85 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
       const existingFileIds = new Set(existingFiles?.map(f => f.drive_id) || []);
       console.log(`INSERTING FILES: Found ${existingFileIds.size} existing files in this batch of ${batch.length}`);
       
+      // First build proper hierarchical paths for all files in the batch
+      console.log('INSERTING FILES: Building proper hierarchical paths for all files...');
+      const pathMap = await buildProperFilePaths(batch, supabaseAdmin);
+      
+      // Find the original folder ID that was requested to sync
+      // This is the root folder ID that should be marked as is_root = true
+      let rootFolderId = null;
+      
+      // First check if any folder has been explicitly marked as the root
+      // This happens when searchSpecificFolder is used
+      const folders = batch.filter(file => file.mimeType === 'application/vnd.google-apps.folder');
+      
+      // Check for the custom property we added in searchSpecificFolder
+      const explicitRootFolder = batch.find(file => 
+        // @ts-ignore - Checking for our custom property
+        file._isRootFolder === true && file.mimeType === 'application/vnd.google-apps.folder'
+      );
+      
+      if (explicitRootFolder) {
+        rootFolderId = explicitRootFolder.id;
+        console.log(`INSERTING FILES: Found explicitly marked root folder: ${rootFolderId}`);
+      } else if (folders.length === 1) {
+        // If there's only one folder, it's the root
+        rootFolderId = folders[0].id;
+        console.log(`INSERTING FILES: Single folder in batch, marking as root: ${rootFolderId}`);
+      } else if (folders.length > 1) {
+        // Look for folders without parents, or that are at the top level
+        const rootFolders = folders.filter(folder => !folder.parents || folder.parents.length === 0);
+        
+        if (rootFolders.length === 1) {
+          rootFolderId = rootFolders[0].id;
+          console.log(`INSERTING FILES: Found single top-level folder, marking as root: ${rootFolderId}`);
+        } else if (rootFolders.length === 0) {
+          // If we don't have any folders without parents, look for the one that's a parent to others
+          // Count how many times each folder appears as a parent
+          const parentCount = new Map<string, number>();
+          
+          batch.forEach(file => {
+            if (file.parents && file.parents.length > 0) {
+              file.parents.forEach(parentId => {
+                // Only count parents that are folders in our batch
+                if (folders.some(f => f.id === parentId)) {
+                  parentCount.set(parentId, (parentCount.get(parentId) || 0) + 1);
+                }
+              });
+            }
+          });
+          
+          // Find the folder that's most commonly a parent (likely the root)
+          let maxCount = 0;
+          folders.forEach(folder => {
+            const count = parentCount.get(folder.id) || 0;
+            if (count > maxCount) {
+              maxCount = count;
+              rootFolderId = folder.id;
+            }
+          });
+          
+          if (rootFolderId) {
+            console.log(`INSERTING FILES: Inferred root folder from parent relationships: ${rootFolderId}`);
+          }
+        } else {
+          console.log(`INSERTING FILES: Found ${rootFolders.length} possible root folders, using the first one`);
+          rootFolderId = rootFolders[0].id;
+        }
+      }
+      
+      if (!rootFolderId && folders.length > 0) {
+        // Fallback: if we couldn't determine the root but we have folders, use the first one
+        rootFolderId = folders[0].id;
+        console.log(`INSERTING FILES: Fallback to first folder as root: ${rootFolderId}`);
+      }
+      
+      if (rootFolderId) {
+        console.log(`INSERTING FILES: Root folder identified: ${rootFolderId}`);
+      } else {
+        console.log('INSERTING FILES: No folders found, cannot determine root folder');
+      }
+      
       // Create records for insertion or update
       const records = batch.map(file => {
         // Extract parent folder from file.parents if available
@@ -696,12 +778,23 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
           ? file.parents[0] 
           : null;
           
-        // Calculate file path based on parent folders
-        let fullPath = null;
-        if (parentFolderId) {
-          // For simplicity, just use parent ID as path for now
-          fullPath = `/folders/${parentFolderId}`;
+        // Get the proper hierarchical path from our path map
+        let fullPath = pathMap.get(file.id);
+        
+        // If no path was generated, fall back to a simple path
+        if (!fullPath) {
+          if (parentFolderId) {
+            // First, try to find this parent in our batch to get its name
+            const parentInBatch = batch.find(f => f.id === parentFolderId);
+            const parentName = parentInBatch?.name || 'folder';
+            // Create a simple fallback path
+            fullPath = `/folders/${parentFolderId}/${parentName}`;
+          }
         }
+        
+        // Determine if this is a root folder
+        const isRoot = rootFolderId === file.id || 
+                      (!parentFolderId && file.mimeType === 'application/vnd.google-apps.folder');
         
         // Get the current date in local time (not UTC)
         const now = new Date();
@@ -723,7 +816,8 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
           updated_at: localDate,
           parent_folder_id: parentFolderId,
           parent_path: fullPath,
-          is_root: parentFolderId === null, // Mark as root if no parent
+          path: fullPath, // Set both parent_path and path for compatibility with FileTree
+          is_root: isRoot, // Mark as root based on our earlier identification
           deleted: false,
           sync_status: 'synced', // Mark as synced since we're directly inserting
           metadata: JSON.stringify(file) // Store whatever metadata we have as JSON
@@ -953,7 +1047,7 @@ export async function getTableStructure(tableName: string) {
       import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
       {
         auth: {
-          storageKey: 'dhg-supabase-admin-auth',
+          autoRefreshToken: false,
           persistSession: false  // Don't persist admin sessions
         }
       }
@@ -1000,6 +1094,105 @@ export async function getTableStructure(tableName: string) {
  * Recursively search files and folders in a specific Google Drive folder
  * Robust version with detailed logging to help debug search issues
  */
+/**
+ * Helper function to build proper file paths
+ * This constructs hierarchical paths compatible with the FileTree component
+ */
+async function buildProperFilePaths(
+  files: DriveFile[], 
+  supabaseAdmin: any
+): Promise<Map<string, string>> {
+  console.log("Building proper hierarchical file paths...");
+  
+  // Create a map of drive_id to path
+  const pathMap = new Map<string, string>();
+  
+  // First, create a map of files by ID for quick lookup
+  const filesById = new Map<string, DriveFile>();
+  files.forEach(file => filesById.set(file.id, file));
+  
+  // Also create a map to track folder names
+  const folderNames = new Map<string, string>();
+  files.forEach(file => {
+    if (file.mimeType === 'application/vnd.google-apps.folder') {
+      folderNames.set(file.id, file.name);
+    }
+  });
+  
+  // Check if we need to fetch additional folder names from the database
+  const allParentIds = new Set<string>();
+  files.forEach(file => {
+    if (file.parents && file.parents.length > 0) {
+      file.parents.forEach(parentId => {
+        if (!folderNames.has(parentId)) {
+          allParentIds.add(parentId);
+        }
+      });
+    }
+  });
+  
+  // Fetch any missing folder names from the database
+  if (allParentIds.size > 0) {
+    console.log(`Fetching ${allParentIds.size} missing folder names from database...`);
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('sources_google')
+        .select('drive_id, name')
+        .in('drive_id', Array.from(allParentIds))
+        .eq('mime_type', 'application/vnd.google-apps.folder');
+        
+      if (error) {
+        console.error('Error fetching folder names:', error);
+      } else if (data) {
+        data.forEach(folder => {
+          if (folder.drive_id && folder.name) {
+            folderNames.set(folder.drive_id, folder.name);
+          }
+        });
+        console.log(`Found ${data.length} folder names in database`);
+      }
+    } catch (err) {
+      console.error('Exception fetching folder names:', err);
+    }
+  }
+  
+  // Now process each file to build its path
+  for (const file of files) {
+    // Skip root folders (they have no parents)
+    if (!file.parents || file.parents.length === 0) {
+      // Root folders get a simple path with just their name
+      pathMap.set(file.id, `/${file.name}`);
+      continue;
+    }
+    
+    // Get parent ID
+    const parentId = file.parents[0];
+    
+    // If this is a folder, add its name to our lookup map
+    if (file.mimeType === 'application/vnd.google-apps.folder') {
+      folderNames.set(file.id, file.name);
+    }
+    
+    // Try to find the parent path
+    let parentPath = pathMap.get(parentId);
+    
+    // If we don't have the parent path, try to build a simple one
+    if (!parentPath) {
+      const parentName = folderNames.get(parentId) || 'folder';
+      parentPath = `/${parentName}`;
+    }
+    
+    // Build this file's path
+    let filePath = `${parentPath}/${file.name}`;
+    
+    // Store the path
+    pathMap.set(file.id, filePath);
+  }
+  
+  console.log(`Built paths for ${pathMap.size} files and folders`);
+  return pathMap;
+}
+
 export async function searchSpecificFolder(folderId: string): Promise<{
   files: DriveFile[],
   totalCount: number, 
@@ -1384,6 +1577,21 @@ export async function searchSpecificFolder(folderId: string): Promise<{
     
     const files = allFiles.filter(f => f.mimeType !== 'application/vnd.google-apps.folder');
     console.log(`Files: ${files.length}`);
+    
+    // Make sure the root folder is properly marked
+    // Find the original requested folder in our results
+    const rootFolderIndex = allFiles.findIndex(f => f.id === folderId);
+    if (rootFolderIndex >= 0) {
+      // Tag this folder with a special property so it's marked as root on insertion
+      console.log(`Marking folder ${folderId} as root folder`);
+      
+      // We'll add a non-standard property to the DriveFile object
+      // This will be used in insertGoogleFiles to identify the root folder
+      // @ts-ignore - Adding custom property
+      allFiles[rootFolderIndex]._isRootFolder = true;
+    } else {
+      console.log(`Root folder ${folderId} not found in results! This will cause issues with proper root marking.`);
+    }
     
     // Display extra info about limits used for this search
     console.log(`Search settings: MAX_FILES=${MAX_FILES}, MAX_FOLDER_DEPTH=${MAX_FOLDER_DEPTH}`);
