@@ -1,6 +1,6 @@
 # Markdown Files Report
 
-Generated: Mon Mar  3 15:36:29 PST 2025
+Generated: Thu Mar  6 22:42:26 PST 2025
 
 ## Overview
 
@@ -9,11 +9,11 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
 
 ## Summary
 
-- **Total markdown files:** 83
+- **Total markdown files:** 75
 - **README files:** 4
-- **Files in docs folders:** 64
+- **Files in docs folders:** 56
 - **Files in other locations:** 15
-- **Prompt files:** 12 (included in total, marked with 📜)
+- **Prompt files:** 2 (included in total, marked with 📜)
 - **Root-level files:** 2
 
 ## Root-Level Files
@@ -21,15 +21,15 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
 | File | Last Modified | Size (bytes) |
 |------|---------------|--------------|
 | CLAUDE.md | 2025-02-27 07:41 | 1332 |
-| supabase-types-analysis.md | 2025-03-01 09:52 | 6171 |
+| supabase-types-analysis.md | 2025-03-05 20:01 | 6171 |
 
 ## Docs Directory (Hierarchical View)
 
 - 📄 [command-history-tracking.md](/docs/command-history-tracking.md) - 2025-03-02 11:14 (5007 bytes)
 - 📄 [documentation-management.md](/docs/documentation-management.md) - 2025-03-02 12:17 (4672 bytes)
-- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-03 15:36 (254 bytes)
+- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-06 22:42 (254 bytes)
 - 📁 **architecture/**
-  - 📜 [claude_code_prompts.md](/docs/architecture/claude_code_prompts.md) - 2025-03-01 05:13 (4262 bytes) [PROMPT]
+  - 📄 [doc-assessment-implementation.md](/docs/architecture/doc-assessment-implementation.md) - 2025-03-05 17:24 (9269 bytes)
   - 📁 **supabase_design/**
     - 📄 [ClassifyDocument_Explanation.md](/docs/architecture/supabase_design/ClassifyDocument_Explanation.md) - 2025-02-27 07:46 (5547 bytes)
     - 📄 [README.md](/docs/architecture/supabase_design/README.md) - 2025-02-28 06:15 (3649 bytes)
@@ -89,14 +89,6 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
   - 📄 [vite-configuration-guide.md](/docs/project-structure/vite-configuration-guide.md) - 2025-02-10 17:31 (5301 bytes)
   - 📄 [vite-setup.md](/docs/project-structure/vite-setup.md) - 2025-02-10 17:31 (1345 bytes)
 - 📁 **prompts/**
-  - 📜 [code-analysis-prompt.md](/docs/prompts/code-analysis-prompt.md) - 2025-02-20 21:28 (5270 bytes) [PROMPT]
-  - 📜 [document-classification-prompt.md](/docs/prompts/document-classification-prompt.md) - 2025-02-19 17:38 (2899 bytes) [PROMPT]
-  - 📜 [document-type-analysis.md](/docs/prompts/document-type-analysis.md) - 2025-02-19 17:38 (8410 bytes) [PROMPT]
-  - 📜 [document-type-integration-guide.md](/docs/prompts/document-type-integration-guide.md) - 2025-02-19 17:38 (4473 bytes) [PROMPT]
-  - 📜 [enhanced-analysis-prompt.md](/docs/prompts/enhanced-analysis-prompt.md) - 2025-02-21 18:48 (11487 bytes) [PROMPT]
-  - 📜 [expert-extraction-prompt.md](/docs/prompts/expert-extraction-prompt.md) - 2025-02-17 17:41 (2347 bytes) [PROMPT]
-  - 📜 [expert-profiles.md](/docs/prompts/expert-profiles.md) - 2025-02-17 17:41 (5851 bytes) [PROMPT]
-  - 📜 [react-component-analysis-prompt.md](/docs/prompts/react-component-analysis-prompt.md) - 2025-02-21 22:08 (5990 bytes) [PROMPT]
 - 📁 **scripting/**
   - 📄 [shell-scripting-basics.md](/docs/scripting/shell-scripting-basics.md) - 2025-02-17 17:41 (4287 bytes)
 - 📁 **troubleshooting/**
@@ -159,6 +151,7 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
   - 📄 [README.md](/apps/dhg-improve-experts/README.md) - 2025-02-10 17:31 (2303 bytes)
   - 📄 [SUPABASE_CONNECTION.md](/apps/dhg-improve-experts/SUPABASE_CONNECTION.md) - 2025-03-03 00:43 (3884 bytes)
   - 📄 [SUPABASE_TYPES_MIGRATION.md](/apps/dhg-improve-experts/SUPABASE_TYPES_MIGRATION.md) - 2025-03-03 00:35 (3707 bytes)
+  - 📄 [development-process-specification.md](/apps/dhg-improve-experts/development-process-specification.md) - 2025-03-05 17:17 (10161 bytes)
   - 📄 [experts-audit.md](/apps/dhg-improve-experts/experts-audit.md) - 2025-02-28 06:48 (4895 bytes)
   - 📁 **apps/**
     - 📁 **dhg-improve-experts/**
@@ -172,7 +165,7 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
     - 📄 [docs-organization.md](/apps/dhg-improve-experts/docs/docs-organization.md) - 2025-03-02 12:06 (3222 bytes)
     - 📄 [documentation-report.md](/apps/dhg-improve-experts/docs/documentation-report.md) - 2025-03-02 13:20 (4593 bytes)
     - 📄 [guts-dashboard.md](/apps/dhg-improve-experts/docs/guts-dashboard.md) - 2025-03-01 06:44 (4630 bytes)
-    - 📄 [markdown-report.md](/apps/dhg-improve-experts/docs/markdown-report.md) - 2025-03-03 02:35 (1576 bytes)
+    - 📄 [markdown-report.md](/apps/dhg-improve-experts/docs/markdown-report.md) - 2025-03-03 15:42 (1634 bytes)
     - 📄 [test-documentation.md](/apps/dhg-improve-experts/docs/test-documentation.md) - 2025-03-03 02:26 (2249 bytes)
   - 📁 **public/**
     - 📁 **docs/**
@@ -180,7 +173,6 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
         - 📜 [document-classification-prompt.md](/apps/dhg-improve-experts/public/docs/prompts/document-classification-prompt.md) - 2025-02-19 22:29 (4210 bytes) [PROMPT]
         - 📜 [expert-extraction-prompt.md](/apps/dhg-improve-experts/public/docs/prompts/expert-extraction-prompt.md) - 2025-02-17 17:41 (2347 bytes) [PROMPT]
     - 📁 **prompts/**
-      - 📜 [enhanced-analysis-prompt.md](/apps/dhg-improve-experts/public/prompts/enhanced-analysis-prompt.md) - 2025-02-20 21:51 (52 bytes) [PROMPT]
   - 📁 **scripts/**
     - 📁 **docs-organization/**
   - 📁 **src/**
@@ -194,6 +186,8 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
       - 📁 **api/**
         - 📁 **docs-process-queue/**
         - 📁 **docs-sync/**
+        - 📁 **markdown/**
+          - 📁 **[id]/**
         - 📁 **markdown-report/**
       - 📁 **experts/**
         - 📁 **profiler/**
