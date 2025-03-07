@@ -582,6 +582,12 @@ export function ClassifyDocument() {
   const [formCategories, setFormCategories] = useState<string[]>([]);
   const [formMimeTypes, setFormMimeTypes] = useState<string[]>([]);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
+  const [isAiRequesting, setIsAiRequesting] = useState(false);
+  const [aiRequestPrompt, setAiRequestPrompt] = useState('');
+  const [aiRequestResponse, setAiRequestResponse] = useState('');
+  const [aiResponseJson, setAiResponseJson] = useState('');
+  const [aiResponseComments, setAiResponseComments] = useState('');
+  const [editedAiJson, setEditedAiJson] = useState('');
 
   // Function to fetch document types for the manager tab
   const fetchDocumentTypesForManager = async () => {
@@ -684,6 +690,7 @@ export function ClassifyDocument() {
     fetchFormOptions();
     setSelectedType(docType);
     setIsEditing(true);
+    setIsAiRequesting(false);
   };
 
   const handleAddNewClick = () => {
@@ -691,6 +698,205 @@ export function ClassifyDocument() {
     fetchFormOptions();
     setSelectedType(null);
     setIsEditing(true);
+    setIsAiRequesting(false);
+  };
+  
+  const handleAiRequestClick = () => {
+    setIsAiRequesting(true);
+    setIsEditing(false);
+    setAiRequestPrompt('');
+    setAiResponseJson('');
+    setAiResponseComments('');
+    setEditedAiJson('');
+  };
+
+  const handleSubmitAiRequest = async () => {
+    if (!aiRequestPrompt.trim()) {
+      toast.error('Please enter a request prompt');
+      return;
+    }
+
+    setIsFormSubmitting(true);
+    try {
+      // Get existing document types to provide context to the AI
+      const documentTypes = await loadDocumentTypes();
+      
+      const result = await processWithAI({
+        systemPrompt: `You are an expert system designer who creates document type schemas for a content management system. 
+        You will receive a request from a user who needs a new document type defined. 
+        Your job is to analyze the request and create a structured document type definition based on the request.
+        
+        First, provide a brief analysis of the request in plain text, including what you understand about:
+        1. The purpose of this document type
+        2. The key fields that will be needed
+        3. Any special processing requirements
+        
+        Then, create a JSON object that defines the document type with all required fields. The schema must follow this structure:
+        
+        {
+          "document_type": string, // A concise name for this document type
+          "category": string, // One of these categories: "Research", "Communication", "Documentation", "Legal", or create a new appropriate category
+          "description": string, // Detailed description of what this document type represents
+          "mime_type": string | null, // Preferred MIME type, or null if not specific
+          "file_extension": string | null, // Preferred file extension, or null if not specific
+          "is_ai_generated": boolean, // Whether this document type was created via AI
+          "required_fields": {
+            // Define fields that must be present in this document type
+            "field_name": "field_type", // Types can be: string, number, boolean, date, array
+            // Add as many fields as needed
+          },
+          "validation_rules": {
+            // Optional validation rules for fields
+            "field_name": { 
+              "required": boolean,
+              "minLength": number, // for strings
+              "maxLength": number, // for strings
+              "min": number, // for numbers
+              "max": number, // for numbers
+              // Add other validation rules as needed
+            }
+          },
+          "ai_processing_rules": {
+            // Rules for AI processing of this document type
+            "extractFields": [string], // List of fields to extract
+            "confidenceThreshold": number, // Minimum confidence score (0-1)
+            // Add other processing rules as needed
+          }
+        }
+        
+        Be creative but practical in your design. Include all fields that would be necessary for this document type.`,
+        userMessage: `Please create a document type definition based on this request:\n\n${aiRequestPrompt}\n\nInclude realistic validation rules and AI processing rules that would be appropriate for this document type. Use existing document types for reference but do not duplicate them.`,
+        temperature: 0.7,
+        requireJsonOutput: false
+      });
+      
+      // Parse the response to separate comments from JSON
+      const response = result.trim();
+      try {
+        // Find the JSON part of the response (assumes JSON is at the end or between code blocks)
+        const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) || 
+                        response.match(/```\n([\s\S]*?)\n```/) || 
+                        response.match(/({[\s\S]*})/);
+                        
+        if (jsonMatch && jsonMatch[1]) {
+          // We found JSON in code blocks
+          const jsonStr = jsonMatch[1].trim();
+          // Validate it parses correctly
+          JSON.parse(jsonStr);
+          
+          // Get the comments (everything before the JSON)
+          const jsonIndex = response.indexOf(jsonMatch[0]);
+          const comments = response.substring(0, jsonIndex).trim();
+          
+          setAiResponseJson(jsonStr);
+          setEditedAiJson(jsonStr);
+          setAiResponseComments(comments);
+        } else {
+          // Attempt to find JSON object in the text
+          const lastBraceIndex = response.lastIndexOf('}');
+          const firstBraceIndex = response.indexOf('{');
+          
+          if (firstBraceIndex !== -1 && lastBraceIndex !== -1) {
+            const jsonPart = response.substring(firstBraceIndex, lastBraceIndex + 1);
+            try {
+              // Validate it parses correctly
+              JSON.parse(jsonPart);
+              
+              const commentsPart = response.substring(0, firstBraceIndex).trim();
+              
+              setAiResponseJson(jsonPart);
+              setEditedAiJson(jsonPart);
+              setAiResponseComments(commentsPart);
+            } catch (parseError) {
+              // If we can't parse JSON, treat it all as comments
+              setAiResponseComments(response);
+              setAiResponseJson('');
+              setEditedAiJson('');
+              toast.warning('Could not extract valid JSON from AI response');
+            }
+          } else {
+            // No JSON found, treat it all as comments
+            setAiResponseComments(response);
+            setAiResponseJson('');
+            setEditedAiJson('');
+            toast.warning('Could not extract valid JSON from AI response');
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing AI response:', error);
+        setAiResponseComments(response);
+        setAiResponseJson('');
+        setEditedAiJson('');
+        toast.warning('Could not parse AI response format');
+      }
+      
+      setAiRequestResponse(result);
+      toast.success('AI request processed successfully');
+    } catch (error) {
+      console.error('AI request error:', error);
+      toast.error('Failed to process AI request');
+    } finally {
+      setIsFormSubmitting(false);
+    }
+  };
+  
+  const handleAddProposedDocumentType = async () => {
+    setIsFormSubmitting(true);
+    try {
+      // Validate the JSON
+      if (!editedAiJson.trim()) {
+        toast.error('No document type definition available');
+        return;
+      }
+      
+      const docTypeData = JSON.parse(editedAiJson);
+      
+      // Validate required fields
+      if (!docTypeData.document_type || !docTypeData.category) {
+        toast.error('Document type and category are required');
+        return;
+      }
+      
+      // Create new document type
+      const newId = crypto.randomUUID();
+      
+      const { error } = await supabase
+        .from("document_types")
+        .insert({
+          id: newId,
+          document_type: docTypeData.document_type,
+          description: docTypeData.description || null,
+          category: docTypeData.category,
+          mime_type: docTypeData.mime_type || null,
+          file_extension: docTypeData.file_extension || null,
+          is_ai_generated: true,
+          required_fields: docTypeData.required_fields || null,
+          validation_rules: docTypeData.validation_rules || null,
+          ai_processing_rules: docTypeData.ai_processing_rules || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      
+      toast.success('AI-proposed document type created successfully');
+      
+      // Reset form and refresh data
+      setIsAiRequesting(false);
+      setAiRequestPrompt('');
+      setAiResponseJson('');
+      setAiResponseComments('');
+      setEditedAiJson('');
+      fetchDocumentTypesForManager();
+      // Also update the main lists
+      loadDocumentTypes();
+      fetchDocumentStats();
+    } catch (error) {
+      console.error('Error saving AI-proposed document type:', error);
+      toast.error('Failed to save document type: ' + (error.message || 'Invalid JSON'));
+    } finally {
+      setIsFormSubmitting(false);
+    }
   };
 
   const handleDeleteClick = async (id: string) => {
@@ -1793,11 +1999,108 @@ Use this exact structure, with empty arrays [] for missing information:
               <PlusCircle size={16} />
               Add New Type
             </button>
+            <button
+              onClick={handleAiRequestClick}
+              className="flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-2 rounded"
+            >
+              <PlusCircle size={16} />
+              AI Request
+            </button>
           </div>
         </div>
         
         {/* Display the form when isEditing is true */}
         {isEditing && renderForm()}
+        
+        {/* Display the AI Request form when isAiRequesting is true */}
+        {isAiRequesting && (
+          <div className="bg-white p-5 rounded-lg shadow mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">
+                Generate Document Type with AI
+              </h3>
+              <button
+                onClick={() => setIsAiRequesting(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              {/* Step 1: Request Input */}
+              <div className="border-b pb-4">
+                <label className="block text-sm font-medium mb-2">Describe the document type you need:</label>
+                <textarea
+                  value={aiRequestPrompt}
+                  onChange={(e) => setAiRequestPrompt(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md h-32"
+                  placeholder="Example: I need a document type for financial reports that include quarterly revenue, expenses, and profit margins. The document should track financial metrics and allow for year-over-year comparisons."
+                  disabled={!!aiResponseJson}
+                />
+                {!aiResponseJson && (
+                  <button
+                    onClick={handleSubmitAiRequest}
+                    disabled={isFormSubmitting || !aiRequestPrompt.trim()}
+                    className="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+                  >
+                    {isFormSubmitting ? 'Processing...' : 'Submit Request to AI'}
+                  </button>
+                )}
+              </div>
+              
+              {/* Step 2: AI Response */}
+              {aiResponseComments && (
+                <div className="border-b pb-4">
+                  <h4 className="font-medium mb-2">AI Analysis:</h4>
+                  <div className="bg-gray-50 p-4 rounded text-sm whitespace-pre-line">
+                    {aiResponseComments}
+                  </div>
+                </div>
+              )}
+              
+              {/* Step 3: JSON Output */}
+              {aiResponseJson && (
+                <div className="border-b pb-4">
+                  <h4 className="font-medium mb-2">Proposed Document Type Definition:</h4>
+                  <div className="mb-2 text-sm text-gray-600">
+                    Review and edit the JSON below if needed:
+                  </div>
+                  <textarea
+                    value={editedAiJson}
+                    onChange={(e) => setEditedAiJson(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md h-80 font-mono text-sm"
+                  />
+                </div>
+              )}
+              
+              {/* Step 4: Final Action */}
+              {aiResponseJson && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setIsAiRequesting(false);
+                      setAiRequestPrompt('');
+                      setAiResponseJson('');
+                      setAiResponseComments('');
+                      setEditedAiJson('');
+                    }}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md mr-2"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddProposedDocumentType}
+                    disabled={isFormSubmitting || !editedAiJson.trim()}
+                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
+                  >
+                    {isFormSubmitting ? 'Adding...' : 'Add Proposed Document Type'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         
         <div className="mb-4">
           <div className="text-sm font-medium mb-2">Filter by Category:</div>
