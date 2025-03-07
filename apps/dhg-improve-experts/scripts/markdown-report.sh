@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Enhanced markdown file report with hierarchical presentation
-# Shows all markdown files in their natural hierarchy
+# Shows all markdown files including prompts in their natural hierarchy
 
 echo "Generating markdown files report..."
 
@@ -17,8 +17,8 @@ total_files=0
 readme_files=0
 docs_files=0
 other_files=0
+prompt_files=0
 root_files=0
-prompts_files=0
 
 # Create report header
 cat > "$REPORT_FILE" << EOL
@@ -29,6 +29,7 @@ Generated: $(date)
 ## Overview
 
 This report shows all markdown files found in the repository, organized hierarchically by directory.
+Prompt files are included and marked with 📜 emoji and [PROMPT] label.
 
 EOL
 
@@ -76,16 +77,19 @@ process_directory() {
     last_mod=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M" "$file" 2>/dev/null)
     size=$(stat -f "%z" "$file" 2>/dev/null)
     
-    # Add file to hierarchy
-    eval "$target_array+=(\"$prefix- 📄 [$filename](/$rel_path) - $last_mod ($size bytes)\")"
+    # Count prompt files separately but still include them in hierarchy
+    if [[ "$dir" == *"/prompts"* || "$filename" == *"prompt"* ]]; then
+      ((prompt_files++))
+      eval "$target_array+=(\"$prefix- 📜 [$filename](/$rel_path) - $last_mod ($size bytes) [PROMPT]\")"
+    else
+      eval "$target_array+=(\"$prefix- 📄 [$filename](/$rel_path) - $last_mod ($size bytes)\")"
+    fi
     
     # Count file type
     if [[ "$filename" == "README.md" || "$filename" == README-* ]]; then
       ((readme_files++))
     elif [[ "$dir" == *"/docs/"* ]]; then
       ((docs_files++))
-    elif [[ "$dir" == *"/prompts/"* ]]; then
-      ((prompts_files++))
     else
       ((other_files++))
     fi
@@ -110,10 +114,10 @@ echo "Processing docs directory..."
 docs_hierarchy=()
 process_directory "$REPO_ROOT/docs" "" "docs_hierarchy"
 
-# Process the prompts directory (if it exists)
+# Process the root prompts directory
+echo "Processing root prompts directory..."
+prompts_hierarchy=()
 if [ -d "$REPO_ROOT/prompts" ]; then
-  echo "Processing prompts directory..."
-  prompts_hierarchy=()
   process_directory "$REPO_ROOT/prompts" "" "prompts_hierarchy"
 fi
 
@@ -127,6 +131,13 @@ echo "Processing packages directory..."
 packages_hierarchy=()
 process_directory "$REPO_ROOT/packages" "" "packages_hierarchy"
 
+# Process public directory (specifically for prompts subfolders)
+echo "Processing public directory for prompts..."
+public_hierarchy=()
+if [ -d "$REPO_ROOT/public" ]; then
+  process_directory "$REPO_ROOT/public" "" "public_hierarchy"
+fi
+
 # Write summary to report
 cat >> "$REPORT_FILE" << EOL
 ## Summary
@@ -134,8 +145,8 @@ cat >> "$REPORT_FILE" << EOL
 - **Total markdown files:** $total_files
 - **README files:** $readme_files
 - **Files in docs folders:** $docs_files
-- **Files in prompts folder:** $prompts_files
 - **Files in other locations:** $other_files
+- **Prompt files:** $prompt_files (included in total, marked with 📜)
 - **Root-level files:** $root_files
 
 ## Root-Level Files
@@ -150,8 +161,26 @@ for file in "${root_md_files[@]}"; do
   last_mod=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M" "$file" 2>/dev/null)
   size=$(stat -f "%z" "$file" 2>/dev/null)
   
-  echo "| $filename | $last_mod | $size |" >> "$REPORT_FILE"
+  # Check if it's a prompt file
+  if [[ "$filename" == *"prompt"* ]]; then
+    echo "| $filename | $last_mod | $size | 📜 PROMPT |" >> "$REPORT_FILE"
+  else
+    echo "| $filename | $last_mod | $size |" >> "$REPORT_FILE"
+  fi
 done
+
+# Add root prompts hierarchy if it exists
+if [ ${#prompts_hierarchy[@]} -gt 0 ]; then
+  cat >> "$REPORT_FILE" << EOL
+
+## Prompts Directory (Hierarchical View)
+
+EOL
+
+  for line in "${prompts_hierarchy[@]}"; do
+    echo "$line" >> "$REPORT_FILE"
+  done
+fi
 
 # Add docs hierarchy
 cat >> "$REPORT_FILE" << EOL
@@ -164,15 +193,15 @@ for line in "${docs_hierarchy[@]}"; do
   echo "$line" >> "$REPORT_FILE"
 done
 
-# Add prompts hierarchy (if it exists)
-if [ -d "$REPO_ROOT/prompts" ]; then
+# Add public hierarchy specifically for prompts
+if [ ${#public_hierarchy[@]} -gt 0 ]; then
   cat >> "$REPORT_FILE" << EOL
 
-## Prompts Directory (Hierarchical View)
+## Public Directory (Hierarchical View)
 
 EOL
 
-  for line in "${prompts_hierarchy[@]}"; do
+  for line in "${public_hierarchy[@]}"; do
     echo "$line" >> "$REPORT_FILE"
   done
 fi
@@ -205,6 +234,6 @@ echo "Summary:"
 echo "- Total markdown files: $total_files"
 echo "- README files: $readme_files"
 echo "- Files in docs folders: $docs_files"
-echo "- Files in prompts folder: $prompts_files"
 echo "- Files in other locations: $other_files"
+echo "- Prompt files: $prompt_files (included in total)"
 echo "- Root-level files: $root_files"

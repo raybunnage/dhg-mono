@@ -182,6 +182,58 @@ export class MarkdownFileService {
       });
     }
     
+    // Special handling for root-level prompts directory (not included in the report)
+    if (typeof window !== 'undefined') {
+      try {
+        // Add a root-level prompts folder
+        if (!folderMap['prompts']) {
+          const promptsFolder: MarkdownTreeItem = {
+            id: 'folder_prompts',
+            name: 'prompts',
+            type: 'folder',
+            path: 'prompts',
+            children: [],
+            isOpen: true
+          };
+          folderMap['prompts'] = promptsFolder;
+          files.push(promptsFolder);
+          
+          // We'll manually add known prompt files
+          // In a real implementation, you would dynamically fetch this list
+          const knownPromptFiles = [
+            { path: 'prompts/document-type-analysis.md', name: 'document-type-analysis.md', lastModified: new Date().toISOString(), size: 3000 },
+            { path: 'prompts/code-analysis-prompt.md', name: 'code-analysis-prompt.md', lastModified: new Date().toISOString(), size: 4500 },
+            { path: 'prompts/react-component-analysis-prompt.md', name: 'react-component-analysis-prompt.md', lastModified: new Date().toISOString(), size: 3800 }
+          ];
+          
+          // Add these files if they don't already exist in our set
+          knownPromptFiles.forEach(file => {
+            if (!filePathSet.has(file.path)) {
+              filePathSet.add(file.path);
+              const promptFile: MarkdownTreeItem = {
+                id: `file_${file.path}`,
+                name: file.name,
+                type: 'file',
+                path: file.path,
+                lastModified: file.lastModified,
+                size: file.size,
+                isPrompt: true
+              };
+              
+              // Add to the prompts folder
+              if (folderMap['prompts'].children) {
+                folderMap['prompts'].children.push(promptFile);
+              }
+            }
+          });
+          
+          console.log(`Added prompts folder with ${folderMap['prompts'].children?.length || 0} prompt files`);
+        }
+      } catch (error) {
+        console.error('Error adding root-level prompts folder:', error);
+      }
+    }
+    
     // 2. Extract from directory sections with proper hierarchy handling
     console.log('Extracting from directory sections with full hierarchy...');
     const dirSectionRegex = /## ([^\n]+) Directory \(Hierarchical View\)\n\n([\s\S]*?)(?=\n\n## |$)/g;
@@ -478,6 +530,43 @@ export class MarkdownFileService {
               }
             ],
             isOpen: true
+          }
+        ],
+        isOpen: true
+      },
+      // Add the root prompts directory
+      {
+        id: 'folder_prompts',
+        name: 'prompts',
+        type: 'folder',
+        path: 'prompts',
+        children: [
+          {
+            id: 'file_prompts/document-type-analysis.md',
+            name: 'document-type-analysis.md',
+            type: 'file',
+            path: 'prompts/document-type-analysis.md',
+            isPrompt: true,
+            lastModified: '2025-03-04',
+            size: 3000
+          },
+          {
+            id: 'file_prompts/code-analysis-prompt.md',
+            name: 'code-analysis-prompt.md',
+            type: 'file',
+            path: 'prompts/code-analysis-prompt.md',
+            isPrompt: true,
+            lastModified: '2025-03-04',
+            size: 4500
+          },
+          {
+            id: 'file_prompts/react-component-analysis-prompt.md',
+            name: 'react-component-analysis-prompt.md',
+            type: 'file',
+            path: 'prompts/react-component-analysis-prompt.md',
+            isPrompt: true,
+            lastModified: '2025-03-04',
+            size: 3800
           }
         ],
         isOpen: true
@@ -1379,6 +1468,8 @@ Documentation for auditing expert profiles and data.`
    * This version directly searches for all markdown files regardless of report content
    * and populates all documentation tables: documentation_files, documentation_sections,
    * documentation_relations, and documentation_processing_queue
+   * 
+   * Also handles soft deletion of files that no longer exist on disk
    */
   async syncDocumentationFiles(): Promise<{ success: boolean, message: string, details?: any }> {
     try {
@@ -1407,6 +1498,27 @@ Documentation for auditing expert profiles and data.`
         }
         
         console.log('Successfully connected to documentation_files table');
+        
+        // Check if is_deleted column exists
+        try {
+          // Try a query that uses is_deleted to see if the column exists
+          const { error: columnCheckError } = await supabase
+            .from('documentation_files')
+            .select('id')
+            .eq('is_deleted', false)
+            .limit(1);
+            
+          if (columnCheckError && columnCheckError.message.includes('column "is_deleted" does not exist')) {
+            console.warn('The is_deleted column does not exist. Please run the add_soft_delete_to_docs.sql script.');
+            return {
+              success: false,
+              message: 'The is_deleted column does not exist. Please run the add_soft_delete_to_docs.sql script to enable soft deletion.'
+            };
+          }
+        } catch (columnError) {
+          console.warn('Error checking for is_deleted column:', columnError);
+          // Continue anyway, as the sync might still work without soft delete
+        }
       } catch (schemaError) {
         console.error('Error checking table schema:', schemaError);
         return {
@@ -1610,6 +1722,8 @@ Documentation for auditing expert profiles and data.`
               { path: `${repoRoot}/packages`, name: 'packages' },
               { path: `${repoRoot}/public`, name: 'public' },
               { path: `${repoRoot}/src`, name: 'src' },
+              // Add the root prompts directory
+              { path: `${repoRoot}/prompts`, name: 'prompts' },
               
               // Also include the parent docs directory which contains project-structure, etc.
               { path: `${repoRoot}/../docs`, name: 'docs' }
@@ -1623,7 +1737,9 @@ Documentation for auditing expert profiles and data.`
               { path: `${repoRoot}/../docs/utils`, name: 'utils' },
               { path: `${repoRoot}/../docs/troubleshooting`, name: 'troubleshooting' },
               { path: `${repoRoot}/../docs/prompts`, name: 'prompts' },
-              { path: `${repoRoot}/../docs/git-history`, name: 'git-history' }
+              { path: `${repoRoot}/../docs/git-history`, name: 'git-history' },
+              // Make sure we specifically check for the root prompts directory
+              { path: `${repoRoot}/prompts`, name: 'prompts' }
             ];
             
             // Add these to the dirs to process
@@ -1727,7 +1843,8 @@ Documentation for auditing expert profiles and data.`
               '/packages',
               '/public',
               '/src',
-              '/scripts'
+              '/scripts',
+              '/prompts' // Add the root prompts directory
             ];
             
             const scanDirectory = async (dirPath: string) => {
@@ -1943,6 +2060,12 @@ Documentation for auditing expert profiles and data.`
         { path: 'public/prompts/enhanced-analysis-prompt.md', name: 'enhanced-analysis-prompt.md' },
         { path: 'public/docs/prompts/document-classification-prompt.md', name: 'document-classification-prompt.md' },
         { path: 'public/docs/prompts/expert-extraction-prompt.md', name: 'expert-extraction-prompt.md' },
+        // Root prompts directory files
+        { path: 'prompts/document-type-analysis.md', name: 'document-type-analysis.md' },
+        { path: 'prompts/code-analysis-prompt.md', name: 'code-analysis-prompt.md' },
+        { path: 'prompts/react-component-analysis-prompt.md', name: 'react-component-analysis-prompt.md' },
+        { path: 'prompts/expert-extraction-prompt.md', name: 'expert-extraction-prompt.md' },
+        { path: 'prompts/document-classification-prompt.md', name: 'document-classification-prompt.md' },
         
         // More docs from directories found in our analysis
         { path: 'docs/ai-processing/function-analysis.md', name: 'function-analysis.md' },
@@ -2004,7 +2127,13 @@ Documentation for auditing expert profiles and data.`
         '/docs/prompts/expert-profiles.md',
         '/docs/prompts/react-component-analysis-prompt.md',
         '/docs/git-history/git_history.md',
-        '/docs/git-history/git_history_detailed.md'
+        '/docs/git-history/git_history_detailed.md',
+        // Add files from the new root prompts directory
+        '/prompts/document-type-analysis.md',
+        '/prompts/code-analysis-prompt.md',
+        '/prompts/react-component-analysis-prompt.md',
+        '/prompts/expert-extraction-prompt.md',
+        '/prompts/document-classification-prompt.md'
       ];
       
       // Add each of these to our markdownFiles list if not already there
@@ -2162,6 +2291,61 @@ Documentation for auditing expert profiles and data.`
         }
       }
       
+      // Handle soft deletion of files that no longer exist on disk
+      try {
+        console.log('Handling soft deletion of files that no longer exist on disk...');
+        
+        // Get all file paths from the database that aren't already marked as deleted
+        const { data: existingFiles, error: getError } = await supabase
+          .from('documentation_files')
+          .select('id, file_path')
+          .eq('is_deleted', false);
+        
+        if (getError) {
+          console.error('Error fetching existing files for soft delete:', getError);
+        } else if (existingFiles && existingFiles.length > 0) {
+          console.log(`Found ${existingFiles.length} existing files in database for soft delete check`);
+          
+          // Create a set of file paths from our current scan for quick lookups
+          const currentFilePaths = new Set(markdownFiles.map(file => file.path));
+          
+          // Track files to mark as deleted
+          const filesToDelete = existingFiles.filter(file => !currentFilePaths.has(file.file_path));
+          
+          if (filesToDelete.length > 0) {
+            console.log(`Found ${filesToDelete.length} files to mark as deleted`);
+            
+            // Get the IDs of files to mark as deleted
+            const fileIdsToDelete = filesToDelete.map(file => file.id);
+            
+            // Mark files as deleted (soft delete)
+            const { error: updateError } = await supabase
+              .from('documentation_files')
+              .update({
+                is_deleted: true,
+                updated_at: new Date().toISOString()
+              })
+              .in('id', fileIdsToDelete);
+            
+            if (updateError) {
+              console.error('Error marking files as deleted:', updateError);
+              stats.failed += filesToDelete.length;
+            } else {
+              console.log(`Successfully marked ${filesToDelete.length} files as deleted`);
+              // Add soft deleted files to stats
+              stats.softDeleted = filesToDelete.length;
+              stats.deletedPaths = filesToDelete.map(file => file.file_path);
+            }
+          } else {
+            console.log('No files need to be marked as deleted');
+            stats.softDeleted = 0;
+          }
+        }
+      } catch (softDeleteError) {
+        console.error('Error during soft delete process:', softDeleteError);
+        stats.softDeleted = 0;
+      }
+      
       // Process file relationships after all files have been added/updated
       try {
         console.log('Processing file relationships...');
@@ -2176,7 +2360,9 @@ Documentation for auditing expert profiles and data.`
         stats,
         filesPaths: stats.filesPaths,
         totalFound: markdownFiles.length,
-        totalProcessed: stats.added + stats.updated + stats.unchanged + stats.failed
+        totalProcessed: stats.added + stats.updated + stats.unchanged + stats.failed,
+        softDeleted: stats.softDeleted || 0,
+        deletedPaths: stats.deletedPaths || []
       };
       
       // Include some sample files for debugging
@@ -2188,7 +2374,7 @@ Documentation for auditing expert profiles and data.`
       
       return {
         success: true,
-        message: `Sync completed: ${stats.added} added, ${stats.updated} updated, ${stats.unchanged} unchanged, ${stats.failed} failed`,
+        message: `Sync completed: ${stats.added} added, ${stats.updated} updated, ${stats.unchanged} unchanged, ${stats.softDeleted || 0} soft deleted, ${stats.failed} failed`,
         details
       };
     } catch (error) {

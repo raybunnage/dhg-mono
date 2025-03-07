@@ -16,14 +16,14 @@ export async function generateMarkdownReport() {
     const repoRoot = process.cwd();
     
     // Try multiple locations for the script
-    let scriptPath = path.join(repoRoot, '../..', 'scripts', 'markdown-report.sh');
-    let reportPath = path.join(repoRoot, '../..', 'docs', 'markdown-report.md');
+    let scriptPath = path.join(repoRoot, 'scripts', 'markdown-report.sh');
+    let reportPath = path.join(repoRoot, 'docs', 'markdown-report.md');
     
     // Check if script exists at the first location
     if (!existsSync(scriptPath)) {
-      // Try alternative location (project root)
-      scriptPath = path.join(repoRoot, 'scripts', 'markdown-report.sh');
-      reportPath = path.join(repoRoot, 'docs', 'markdown-report.md');
+      // Try alternative locations
+      scriptPath = path.join(repoRoot, '../..', 'scripts', 'markdown-report.sh');
+      reportPath = path.join(repoRoot, '../..', 'docs', 'markdown-report.md');
     }
     
     // If script still not found, try parent directory 
