@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { FileTree2, type FileNode } from '@/components/FileTree2';
+import { insertGoogleFiles, fixPathsInDatabase } from '@/services/googleDriveService';
+import { toast } from 'react-hot-toast';
 
 // Define the root folder names we're specifically looking for
 const TARGET_ROOT_FOLDERS = [
@@ -15,6 +17,10 @@ function Viewer2() {
   const [error, setError] = useState<string | null>(null);
   const [rootFolders, setRootFolders] = useState<any[]>([]);
   const [testingRoots, setTestingRoots] = useState(false);
+  const [isInserting, setIsInserting] = useState(false);
+  const [insertResult, setInsertResult] = useState<{success: number, errors: number} | null>(null);
+  const [isFixingPaths, setIsFixingPaths] = useState(false);
+  const [fixPathsResult, setFixPathsResult] = useState<{fixed: number, errors: number} | null>(null);
   
   // Function to query root folders by exact name match
   const findTargetRootFolders = async () => {
@@ -369,6 +375,99 @@ function Viewer2() {
     }
   };
   
+  // Function to fix paths for existing records
+  const handleFixPaths = async () => {
+    try {
+      setIsFixingPaths(true);
+      toast.loading('Fixing file paths in database...');
+      
+      // If we have root folders, we can use the first one's ID as the starting point
+      const rootFolderId = rootFolders.length > 0 ? rootFolders[0].drive_id || rootFolders[0].id : undefined;
+      
+      const result = await fixPathsInDatabase(rootFolderId);
+      setFixPathsResult(result);
+      
+      if (result.errors > 0) {
+        toast.error(`Fixed ${result.fixed} paths with ${result.errors} errors`);
+      } else {
+        toast.success(`Successfully fixed ${result.fixed} file paths in the database`);
+      }
+    } catch (error) {
+      console.error('Error fixing paths:', error);
+      toast.error(`Error fixing paths: ${error.message}`);
+    } finally {
+      setIsFixingPaths(false);
+      toast.dismiss();
+    }
+  };
+  
+  // Function to insert found files into the database
+  const handleInsertFiles = async () => {
+    if (files.length === 0) {
+      toast.error('No files to insert');
+      return;
+    }
+    
+    try {
+      setIsInserting(true);
+      toast.loading('Inserting files into database...');
+      
+      // CRITICAL: We need to properly prepare the files with parent-child relationships
+      // First identify all folders
+      const folders = files.filter(f => f.mime_type === 'application/vnd.google-apps.folder');
+      const folderIds = new Set(folders.map(f => f.id));
+      
+      // Identify the root folders specifically (they have is_root=true)
+      const rootFolders = folders.filter(f => f.is_root === true);
+      const rootFolderIds = new Set(rootFolders.map(f => f.id));
+      
+      console.log(`Preparing files: ${files.length} total, ${folders.length} folders, ${rootFolders.length} root folders`);
+      
+      // Now carefully build the parent-child structure
+      // Convert files to the format expected by insertGoogleFiles with proper hierarchy
+      const driveFiles = files.map(file => {
+        // Start with basic information
+        const driveFile = {
+          id: file.drive_id || file.id,
+          name: file.name,
+          mimeType: file.mime_type,
+          modifiedTime: new Date().toISOString(),
+          parents: [] as string[]
+        };
+        
+        // CRITICAL: Set is_root for root folders
+        if (rootFolderIds.has(file.id)) {
+          // @ts-ignore: Adding custom property
+          driveFile._isRootFolder = true;
+          console.log(`Marking as root folder: ${file.name}`);
+        }
+        
+        // Add parent relationship if available
+        if (file.parent_folder_id) {
+          driveFile.parents = [file.parent_folder_id];
+        }
+        
+        return driveFile;
+      });
+      
+      // Insert the files
+      const result = await insertGoogleFiles(driveFiles);
+      setInsertResult(result);
+      
+      if (result.errors > 0) {
+        toast.error(`Files inserted with ${result.errors} errors`);
+      } else {
+        toast.success(`Successfully inserted ${result.success} files into the database`);
+      }
+    } catch (error) {
+      console.error('Error inserting files:', error);
+      toast.error(`Error inserting files: ${error.message}`);
+    } finally {
+      setIsInserting(false);
+      toast.dismiss();
+    }
+  };
+  
   // Initial fetch of all files on component mount
   useEffect(() => {
     async function fetchInitialFiles() {
@@ -477,6 +576,26 @@ function Viewer2() {
           >
             {loading ? 'Loading Files...' : 'Show Files in Target Folders'}
           </button>
+          
+          {files.length > 0 && (
+            <div className="flex gap-2">
+              <button 
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                onClick={handleInsertFiles}
+                disabled={isInserting || files.length === 0}
+              >
+                {isInserting ? 'Inserting Files...' : `Insert ${files.length} Files to Database`}
+              </button>
+              
+              <button 
+                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
+                onClick={handleFixPaths}
+                disabled={isFixingPaths}
+              >
+                {isFixingPaths ? 'Fixing File Paths...' : 'Fix Database File Paths'}
+              </button>
+            </div>
+          )}
         </div>
         
         {rootFolders.length > 0 && (
@@ -534,6 +653,81 @@ function Viewer2() {
                     ))}
                   </ul>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Show path fixing result if available */}
+        {fixPathsResult && (
+          <div className={`mt-4 p-4 ${
+            fixPathsResult.errors > 0 ? 'bg-orange-50 border border-orange-200' : 'bg-green-50 border border-green-200'
+          } rounded`}>
+            <h3 className="font-bold mb-2">Path Fixing Results</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div>Successfully fixed:</div>
+              <div className="font-semibold text-green-700">{fixPathsResult.fixed} files</div>
+              
+              <div>Errors:</div>
+              <div className={`font-semibold ${fixPathsResult.errors > 0 ? 'text-red-600' : 'text-green-700'}`}>
+                {fixPathsResult.errors} files
+              </div>
+            </div>
+            
+            <div className="mt-3 text-sm">
+              <p className="text-gray-700">
+                {fixPathsResult.fixed > 0 
+                  ? `File paths have been fixed in the database. This should improve how files appear in the file tree.` 
+                  : 'No file paths were fixed. They may already be correct.'}
+              </p>
+              
+              <div className="mt-3 flex">
+                <button
+                  onClick={() => window.location.href = '/viewer'}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                >
+                  Go to Main Viewer to See Files
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Show insert result if available */}
+        {insertResult && (
+          <div className={`mt-4 p-4 ${
+            insertResult.errors > 0 ? 'bg-orange-50 border border-orange-200' : 'bg-green-50 border border-green-200'
+          } rounded`}>
+            <h3 className="font-bold mb-2">Insert Results</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div>Successfully inserted:</div>
+              <div className="font-semibold text-green-700">{insertResult.success} files</div>
+              
+              <div>Errors:</div>
+              <div className={`font-semibold ${insertResult.errors > 0 ? 'text-red-600' : 'text-green-700'}`}>
+                {insertResult.errors} files
+              </div>
+            </div>
+            
+            <div className="mt-3 text-sm">
+              <p className="text-gray-700">
+                {insertResult.success > 0 
+                  ? `The database has been updated with ${insertResult.success} new files. You can now view them in the file tree.` 
+                  : 'No files were added to the database.'}
+              </p>
+              {insertResult.errors > 0 && (
+                <p className="text-orange-700 mt-1">
+                  Some files failed to insert. This may be because they already exist in the database or due to validation errors.
+                </p>
+              )}
+              
+              <div className="mt-3 flex">
+                <button
+                  onClick={() => window.location.href = '/viewer'}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                >
+                  Go to Main Viewer to See Files
+                </button>
               </div>
             </div>
           </div>
