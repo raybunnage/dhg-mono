@@ -87,8 +87,26 @@ function Docs() {
     const root: FileNode[] = [];
     const folderMap: Record<string, FileNode> = {};
     
+    // Skip soft-deleted files or files with invalid paths
+    // This is a safety check in case the database query didn't filter them
+    const validFiles = files.filter(file => {
+      if (!file.file_path) {
+        console.warn(`File ${file.id} has no file_path, skipping`);
+        return false;
+      }
+      
+      if (file.is_deleted) {
+        console.warn(`File ${file.file_path} is marked as deleted, skipping`);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`Building file tree from ${validFiles.length} valid files out of ${files.length} total`);
+    
     // First pass: create all folder nodes
-    files.forEach(file => {
+    validFiles.forEach(file => {
       const pathParts = file.file_path.split('/');
       
       // Create folder nodes for each part of the path
@@ -111,7 +129,7 @@ function Docs() {
     });
     
     // Second pass: create file nodes and add to parent folders
-    files.forEach(file => {
+    validFiles.forEach(file => {
       const pathParts = file.file_path.split('/');
       const fileName = pathParts[pathParts.length - 1];
       
@@ -159,8 +177,21 @@ function Docs() {
       }
     });
     
+    // Fourth pass: remove empty folders
+    const removeEmptyFolders = (nodes: FileNode[]): FileNode[] => {
+      return nodes.filter(node => {
+        if (node.type === 'folder' && node.children) {
+          node.children = removeEmptyFolders(node.children);
+          return node.children.length > 0;
+        }
+        return true;
+      });
+    };
+    
+    const cleanedRoot = removeEmptyFolders(root);
+    
     // Sort root nodes
-    root.sort((a, b) => {
+    cleanedRoot.sort((a, b) => {
       // Folders come before files
       if (a.type !== b.type) {
         return a.type === 'folder' ? -1 : 1;
@@ -169,7 +200,25 @@ function Docs() {
       return a.name.localeCompare(b.name);
     });
     
-    return root;
+    // Sort children recursively
+    const sortFolderContents = (node: FileNode) => {
+      if (node.type === 'folder' && node.children && node.children.length > 0) {
+        node.children.sort((a, b) => {
+          if (a.type !== b.type) {
+            return a.type === 'folder' ? -1 : 1;
+          }
+          return a.name.localeCompare(b.name);
+        });
+        
+        // Recursively sort children
+        node.children.forEach(sortFolderContents);
+      }
+    };
+    
+    // Apply sorting to all folders
+    cleanedRoot.forEach(sortFolderContents);
+    
+    return cleanedRoot;
   };
 
   // Handle the search functionality
@@ -251,6 +300,20 @@ function Docs() {
 
   // Select a file to view
   const selectFile = (file: DocumentationFile) => {
+    // Verify file is not deleted before selecting
+    if (file && file.is_deleted) {
+      console.warn(`Attempted to select deleted file: ${file.file_path}`);
+      alert(`This file has been deleted or is no longer available: ${file.file_path}`);
+      return;
+    }
+    
+    // Verify file has a valid path
+    if (!file || !file.file_path) {
+      console.warn('Attempted to select a file with no path');
+      alert('This file is invalid or has no path');
+      return;
+    }
+    
     setSelectedFile(file);
   };
   

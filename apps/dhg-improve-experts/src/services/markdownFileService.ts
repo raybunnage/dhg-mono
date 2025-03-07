@@ -2076,85 +2076,15 @@ Documentation for auditing expert profiles and data.`
         { path: 'docs/authentication/google-auth.md', name: 'google-auth.md' }
       ];
       
-      // Add the static files to our list if they're not already there
-      const existingPaths = new Set(markdownFiles.map(f => f.path));
-      for (const staticFile of staticFiles) {
-        if (!existingPaths.has(staticFile.path)) {
-          markdownFiles.push({
-            id: `file_${staticFile.path}`,
-            name: staticFile.name,
-            type: 'file',
-            path: staticFile.path,
-            lastModified: new Date().toISOString(),
-            size: 0,
-            isPrompt: staticFile.name.includes('prompt') || staticFile.path.includes('/prompts/')
-          });
-        }
-      }
+      // IMPORTANT: Don't add static files automatically anymore
+      // We'll only check if they already exist in the database but not add new ones
+      // This way we don't show files that don't exist on disk
       
-      // Add the specific missing files you mentioned to ensure they're included
-      const specificMissingFiles = [
-        '/docs/project-structure/adding-new-apps.md',
-        '/docs/project-structure/anatomy-of-a-button.md',
-        '/docs/project-structure/architecture-comparison.md',
-        '/docs/project-structure/backup-restore-guide.md',
-        '/docs/project-structure/batch-processing.md',
-        '/docs/project-structure/config-management.md',
-        '/docs/project-structure/content-extraction_flow.md',
-        '/docs/project-structure/dhg-improve-experts-structure.md',
-        '/docs/project-structure/environment-setup.md',
-        '/docs/project-structure/monorepo-layout.md',
-        '/docs/project-structure/pnpm-commands.md',
-        '/docs/project-structure/shared-packages-guide.md',
-        '/docs/project-structure/supabase-functions.md',
-        '/docs/project-structure/supabase-interactions.md',
-        '/docs/project-structure/supabase_types.md',
-        '/docs/project-structure/vite-configuration-guide.md',
-        '/docs/project-structure/vite-setup.md',
-        '/docs/guides/batch-processing-and-trees.md',
-        '/docs/guides/file-entries-mapping.md',
-        '/docs/guides/supabase-connection_fixes.md',
-        '/docs/guides/using-supabase-views.md',
-        '/docs/pages/document-classification.md',
-        '/docs/utils/ai-processing.md',
-        '/docs/utils/google-drive.md',
-        '/docs/utils/sync-file-metadata.md',
-        '/docs/troubleshooting/component-integration.md',
-        '/docs/prompts/code-analysis-prompt.md',
-        '/docs/prompts/document-classification-prompt.md',
-        '/docs/prompts/document-type-analysis.md',
-        '/docs/prompts/document-type-integration-guide.md',
-        '/docs/prompts/expert-profiles.md',
-        '/docs/prompts/react-component-analysis-prompt.md',
-        '/docs/git-history/git_history.md',
-        '/docs/git-history/git_history_detailed.md',
-        // Add files from the new root prompts directory
-        '/prompts/document-type-analysis.md',
-        '/prompts/code-analysis-prompt.md',
-        '/prompts/react-component-analysis-prompt.md',
-        '/prompts/expert-extraction-prompt.md',
-        '/prompts/document-classification-prompt.md'
-      ];
+      // Create a list of paths that were found on disk for checking against database
+      const foundOnDiskPaths = new Set(markdownFiles.map(f => f.path));
       
-      // Add each of these to our markdownFiles list if not already there
-      for (const missingFilePath of specificMissingFiles) {
-        // Normalize path (remove leading slash)
-        const path = missingFilePath.startsWith('/') ? missingFilePath.substring(1) : missingFilePath;
-        
-        if (!existingPaths.has(path)) {
-          const fileName = path.split('/').pop() || '';
-          markdownFiles.push({
-            id: `file_${path}`,
-            name: fileName,
-            type: 'file',
-            path,
-            lastModified: new Date().toISOString(),
-            size: 0,
-            isPrompt: fileName.includes('prompt') || path.includes('/prompts/')
-          });
-          existingPaths.add(path);
-        }
-      }
+      // We don't add any specific missing files now - we only want to work with files that actually exist on disk
+      // This will ensure the tree only shows files that are really there
       
       console.log(`Total files after adding static and specific missing files: ${markdownFiles.length}`);
       
