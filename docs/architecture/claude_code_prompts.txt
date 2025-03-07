@@ -1,6 +1,23 @@
 I need you do design a set of database tables for managing prompts that are used across my application.
-The needs for tracking are as follows
-1
+The overall development process I use is this
+1) load up a number of related documents (usually of the same document_type)into a commercial ai engine - 
+2) tell it the kind of information I need extracted 
+3) let it evaluate a number of the files it would be applying this to
+4) Let it create a prompt that improves my origihnal request and fleshes it out into a markdown document I can store with my project and which will be tracked by git
+5) Then open up the "AI" tab of my project which was earlier designed and there should be a "load prompt" button - where I will navigate to the newly created prompt I got from the ai 
+6) this prompt is in markdown and will be loaded into a json content field in my prompts database table along with approriate metadata from the prompt file
+7) I will do this repeatedly - I expect to have quite a few prompts added over time.  EAch promopt should have an associated document_type that in the future when it detects a document_type that it has a prompt for and when requested it will apply that prompt to a document with that data type
+8) usually the setup for and the calling of the prompt will be handled in the context of functions oing specific tasks in my app, and the ai api will be called along with the relevant supoport files such as writing samples or objectives for the ai to measure the loaded document against. THen the ai will execute against the ai, drawing the prompt from the datgabase and applyinjg it,and then the response will go into some document or ui element as directed by the function.  This process will be repeated again and again. 
+
+10) I want the prompt file start with the baseic fieldds it needs to support this workflow - you can sjuggest fields you think would be imp;ortant as well as additional tables that would help to manage the prompt workfklow - but don't make it too complicated to start with.  I just want to get started and perfect the 10 prompts I have so far
+
+11) provide the sql commands to build these tables that I can review before I apply thenm
+12) tell me the pros and cons of my approach and suggest any important options you can think of so I can build it better to start with
+
+
+
+
+
 
 
 on the "Classify" page on the "Document Types" add another button on the right next to "Add New Type" called "Ai Request" - when the user clicks on this button we want signifcation ui for the following
