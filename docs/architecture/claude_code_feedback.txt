@@ -1,3 +1,52 @@
+Perfect! I've made several important changes to fix the issue of
+  non-existent files appearing in the tree:
+
+  1. In the markdownFileService.ts file:
+    - Removed the code that was adding static files automatically
+    - Removed the code that was adding specific missing files
+    - This ensures that only files actually found on disk are processed
+  2. In the Docs.tsx component:
+    - Added client-side filtering in the buildFileTree function to skip
+  soft-deleted files
+    - Added logic to remove empty folders from the tree
+    - Added better sorting to ensure consistent display
+    - Added logging to help debug any issues
+  3. In the selectFile function:
+    - Added validation to prevent selecting deleted files
+    - Added user-friendly error messages
+
+  These changes ensure that:
+  1. Only files that actually exist are displayed in the tree
+  2. Files marked as deleted won't appear in the tree
+  3. Empty folders (with no valid files) won't be displayed
+  4. If a file can't be loaded, the user gets a clear error message
+
+  The specific file you mentioned (docs/ai-processing/function-analysis.md)
+  was being added from a hardcoded list in markdownFileService.ts, but this
+  file doesn't actually exist. By removing this hardcoded list, we ensure
+  only real files appear in the tree.
+
+These changes should properly filter out soft-deleted files from the
+  Documentation Files tree view:
+
+  1. In the fetchDocumentationFiles function:
+    - We added additional client-side filtering to ensure only valid files
+  are included
+    - We added logging to see how many files were filtered out
+    - We're checking both at the SQL level (with is_deleted=false) and at
+  the JavaScript level
+  2. In the handleSearch function:
+    - We applied the same filtering logic to make sure search results don't
+  include deleted files
+  3. In the selectFile function:
+    - We added validation to prevent selecting deleted files
+    - We added a user-friendly alert if someone tries to access a deleted
+  file
+
+  These changes should ensure that only valid, non-deleted files appear in
+  the Documentation Files tree, and prevent errors when trying to view files
+   that no longer exist on disk.
+
 I've updated the simple-md-server.js file to use ES modules syntax instead
    of CommonJS, which should fix the error you were encountering.
 

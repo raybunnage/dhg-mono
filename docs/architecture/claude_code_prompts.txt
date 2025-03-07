@@ -1,4 +1,13 @@
-
+ some of the files shown in the "Document Files" tree under the "Docs"      │
+│   page do not exist either on disk or in the documentation_files table as    │
+│   far as I can tell.  One that that won't read (and thus probably doesn't    │
+│   exist is: docs/ai-processing/function-analysis.md  - can you find out how  │
+│   this file is getting into the "Document Files" tree and how it even        │
+│   shows up if it is not in the documentation_files table.  THe "Document     │
+│   Files" tree should only be getting its files from the documenation_files   │
+│   table - no where else and if a file no longer exists it should be marked   │
+│   with a soft delete flat and NOT shown in the tree. Please investigate   
+ 
  node simple-md-server.js
 
 Now that the script: scripts/markdown-report.sh
