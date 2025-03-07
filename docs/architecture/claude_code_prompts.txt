@@ -1,10 +1,52 @@
+I need you do design a set of database tables for managing prompts that are used across my application.
+The needs for tracking are as follows
+1
+
+
 on the "Classify" page on the "Document Types" add another button on the right next to "Add New Type" called "Ai Request" - when the user clicks on this button we want signifcation ui for the following
 1) a multi line edit box where the user can submit a request that defines the purpose of the document type they need
 2) a button to submit the request to an ai engineering
 3) two windows for the response from ai - the first will have any comments the ai wants to make about the request
 4) the other window will have a filled in json set of fields returned from the ai that has the proposed fields for this new document type  - the user will review the proposed json and if necessary edit any fields they want to change
 5) FIHALLY an "Add Proposed Document Type" button which will take the json or edited json in the proposed fields window and then submit that to the database to add the new document type
-
+Here are the fields for the document_types
+document_types: {
+        Row: {
+          ai_processing_rules: Json | null
+          category: string
+          content_schema: Json | null
+          created_at: string
+          current_num_of_type: number | null
+          description: string | null
+          document_type: string
+          document_type_counts: number | null
+          file_extension: string | null
+          id: string
+          is_ai_generated: boolean
+          legacy_document_type_id: number | null
+          mime_type: string | null
+          required_fields: Json | null
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          ai_processing_rules?: Json | null
+          category: string
+          content_schema?: Json | null
+          created_at?: string
+          current_num_of_type?: number | null
+          description?: string | null
+          document_type: string
+          document_type_counts?: number | null
+          file_extension?: string | null
+          id?: string
+          is_ai_generated?: boolean
+          legacy_document_type_id?: number | null
+          mime_type?: string | null
+          required_fields?: Json | null
+          updated_at?: string
+          validation_rules?: Json | null
+        }
 
 
 in the search results list that appears at the bottom of the "roots" tab on the "sync" page can you add a checkbox on each line and when that checkbox is selected display the json for that sources_google record below it.
