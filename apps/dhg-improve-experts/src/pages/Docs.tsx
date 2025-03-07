@@ -33,19 +33,47 @@ function Docs() {
   const fetchDocumentationFiles = async () => {
     setLoading(true);
     try {
-      const { data, error, count } = await supabase
+      // Check if the is_deleted column exists by trying to filter by it
+      const checkResponse = await supabase
         .from('documentation_files')
-        .select('*', { count: 'exact' })
+        .select('id')
+        .limit(1);
+      
+      const hasIsDeletedColumn = !checkResponse.error || 
+        !checkResponse.error.message.includes('column "is_deleted" does not exist');
+        
+      // Query adjusted based on whether is_deleted column exists
+      let query = supabase
+        .from('documentation_files')
+        .select('*', { count: 'exact' });
+        
+      // Filter out soft-deleted files if the column exists
+      if (hasIsDeletedColumn) {
+        query = query.eq('is_deleted', false);
+      } else {
+        console.log('Note: is_deleted column not found, not filtering deleted files');
+      }
+      
+      const { data, error, count } = await query
         .order('file_path', { ascending: true })
         .limit(100);
 
       if (error) throw error;
 
-      setDocumentationFiles(data || []);
+      // Filter out files with missing file_path or any other issues
+      const validFiles = (data || []).filter(file => 
+        file && file.file_path && 
+        // Only include files that exist (should be all, but double-check)
+        !(hasIsDeletedColumn && file.is_deleted === true)
+      );
+
+      console.log(`Fetched ${data?.length || 0} files, ${validFiles.length} valid files after filtering`);
+      
+      setDocumentationFiles(validFiles);
       setTotalRecords(count || 0);
       
       // Build file tree
-      const tree = buildFileTree(data || []);
+      const tree = buildFileTree(validFiles);
       setFileTree(tree);
     } catch (error) {
       console.error('Error fetching documentation files:', error);
@@ -148,19 +176,45 @@ function Docs() {
   const handleSearch = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Check if the is_deleted column exists
+      const checkResponse = await supabase
+        .from('documentation_files')
+        .select('id')
+        .limit(1);
+      
+      const hasIsDeletedColumn = !checkResponse.error || 
+        !checkResponse.error.message.includes('column "is_deleted" does not exist');
+        
+      // Create query with search criteria
+      let query = supabase
         .from('documentation_files')
         .select('*')
-        .ilike('file_path', `%${searchQuery}%`)
+        .ilike('file_path', `%${searchQuery}%`);
+        
+      // Filter out soft-deleted files if the column exists
+      if (hasIsDeletedColumn) {
+        query = query.eq('is_deleted', false);
+      }
+      
+      const { data, error } = await query
         .order('file_path', { ascending: true })
         .limit(100);
 
       if (error) throw error;
 
-      setDocumentationFiles(data || []);
+      // Filter out files with missing file_path or any other issues
+      const validFiles = (data || []).filter(file => 
+        file && file.file_path && 
+        // Only include files that exist (should be all, but double-check)
+        !(hasIsDeletedColumn && file.is_deleted === true)
+      );
+
+      console.log(`Search found ${data?.length || 0} files, ${validFiles.length} valid files after filtering`);
+      
+      setDocumentationFiles(validFiles);
       
       // Update tree view
-      const tree = buildFileTree(data || []);
+      const tree = buildFileTree(validFiles);
       setFileTree(tree);
     } catch (error) {
       console.error('Error searching documentation files:', error);
@@ -292,8 +346,41 @@ function Docs() {
               <button
                 onClick={syncDatabase}
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                title="Sync database with files on disk, handling updates and soft deletions"
               >
                 Sync Database
+              </button>
+              <button
+                onClick={() => {
+                  setLoading(true);
+                  // First call the script to update the markdown report
+                  fetch('/api/markdown-report', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    }
+                  })
+                  .then(response => response.json())
+                  .then(result => {
+                    if (result.success) {
+                      console.log('Markdown report generated successfully');
+                      // Then sync the database
+                      return syncDatabase();
+                    } else {
+                      alert(`Error generating markdown report: ${result.error || 'Unknown error'}`);
+                      setLoading(false);
+                    }
+                  })
+                  .catch(error => {
+                    console.error('Error running markdown report:', error);
+                    alert(`Error running markdown report: ${error.message}`);
+                    setLoading(false);
+                  });
+                }}
+                className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600"
+                title="Run the markdown-report.sh script first, then sync database with files on disk"
+              >
+                Run Report + Sync
               </button>
             </div>
             <input

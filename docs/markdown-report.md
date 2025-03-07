@@ -1,19 +1,18 @@
 # Markdown Files Report
 
-Generated: Thu Mar  6 22:42:26 PST 2025
+Generated: Fri Mar  7 00:26:38 PST 2025
 
 ## Overview
 
 This report shows all markdown files found in the repository, organized hierarchically by directory.
-Prompt files are included and marked with 📜 emoji and [PROMPT] label.
 
 ## Summary
 
-- **Total markdown files:** 75
+- **Total markdown files:** 89
 - **README files:** 4
 - **Files in docs folders:** 56
-- **Files in other locations:** 15
-- **Prompt files:** 2 (included in total, marked with 📜)
+- **Files in prompts folder:** 0
+- **Files in other locations:** 29
 - **Root-level files:** 2
 
 ## Root-Level Files
@@ -27,7 +26,7 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
 
 - 📄 [command-history-tracking.md](/docs/command-history-tracking.md) - 2025-03-02 11:14 (5007 bytes)
 - 📄 [documentation-management.md](/docs/documentation-management.md) - 2025-03-02 12:17 (4672 bytes)
-- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-06 22:42 (254 bytes)
+- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-07 00:26 (181 bytes)
 - 📁 **architecture/**
   - 📄 [doc-assessment-implementation.md](/docs/architecture/doc-assessment-implementation.md) - 2025-03-05 17:24 (9269 bytes)
   - 📁 **supabase_design/**
@@ -97,6 +96,23 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
   - 📄 [ai-processing.md](/docs/utils/ai-processing.md) - 2025-02-17 17:41 (5779 bytes)
   - 📄 [google-drive.md](/docs/utils/google-drive.md) - 2025-02-17 17:41 (5938 bytes)
   - 📄 [sync-file-metadata.md](/docs/utils/sync-file-metadata.md) - 2025-02-17 17:41 (4362 bytes)
+
+## Prompts Directory (Hierarchical View)
+
+- 📄 [claude_code_prompts.md](/prompts/claude_code_prompts.md) - 2025-03-01 05:13 (4262 bytes)
+- 📄 [code-analysis-prompt.md](/prompts/code-analysis-prompt.md) - 2025-02-20 21:28 (5270 bytes)
+- 📄 [development-process-specification.md](/prompts/development-process-specification.md) - 2025-03-05 17:14 (10131 bytes)
+- 📄 [doc-assessment-prompt.md](/prompts/doc-assessment-prompt.md) - 2025-03-05 17:23 (3081 bytes)
+- 📄 [document-classification-prompt.md](/prompts/document-classification-prompt.md) - 2025-02-19 17:38 (2899 bytes)
+- 📄 [document-type-analysis.md](/prompts/document-type-analysis.md) - 2025-02-19 17:38 (8410 bytes)
+- 📄 [document-type-integration-guide.md](/prompts/document-type-integration-guide.md) - 2025-02-19 17:38 (4473 bytes)
+- 📄 [document-type-request-template.md](/prompts/document-type-request-template.md) - 2025-03-06 17:36 (1512 bytes)
+- 📄 [enhanced-analysis-prompt.md](/prompts/enhanced-analysis-prompt.md) - 2025-02-21 18:48 (11487 bytes)
+- 📄 [expert-extraction-prompt.md](/prompts/expert-extraction-prompt.md) - 2025-02-17 17:41 (2347 bytes)
+- 📄 [expert-profiles.md](/prompts/expert-profiles.md) - 2025-02-17 17:41 (5851 bytes)
+- 📄 [prompt-management-implementation-plan.md](/prompts/prompt-management-implementation-plan.md) - 2025-03-06 17:25 (10422 bytes)
+- 📄 [react-component-analysis-prompt.md](/prompts/react-component-analysis-prompt.md) - 2025-02-21 22:08 (5990 bytes)
+- 📄 [sql-history-implementation-plan.md](/prompts/sql-history-implementation-plan.md) - 2025-03-06 23:35 (18388 bytes)
 
 ## Apps Directory (Hierarchical View)
 
@@ -170,8 +186,8 @@ Prompt files are included and marked with 📜 emoji and [PROMPT] label.
   - 📁 **public/**
     - 📁 **docs/**
       - 📁 **prompts/**
-        - 📜 [document-classification-prompt.md](/apps/dhg-improve-experts/public/docs/prompts/document-classification-prompt.md) - 2025-02-19 22:29 (4210 bytes) [PROMPT]
-        - 📜 [expert-extraction-prompt.md](/apps/dhg-improve-experts/public/docs/prompts/expert-extraction-prompt.md) - 2025-02-17 17:41 (2347 bytes) [PROMPT]
+        - 📄 [document-classification-prompt.md](/apps/dhg-improve-experts/public/docs/prompts/document-classification-prompt.md) - 2025-02-19 22:29 (4210 bytes)
+        - 📄 [expert-extraction-prompt.md](/apps/dhg-improve-experts/public/docs/prompts/expert-extraction-prompt.md) - 2025-02-17 17:41 (2347 bytes)
     - 📁 **prompts/**
   - 📁 **scripts/**
     - 📁 **docs-organization/**

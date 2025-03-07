@@ -1,12 +1,17 @@
 // Ultra simple markdown file server
-// Node.js v12+ compatible - uses only core modules
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+// Node.js ES Modules version
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 // Configuration
 const PORT = 3001;
+
+// Get directory name (ES modules compatible)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Server
 const server = http.createServer((req, res) => {

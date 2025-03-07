@@ -1,6 +1,17 @@
-Now that the script: docs/markdown-report.md is working well to find all the markdown files on disk and to extract their metadata I need you to make a new "Sync" database button on the "Docs" page as the previous "Sync Database" button is not working properly.
 
-Basically what needs to happen is that the database table
+ node simple-md-server.js
+
+Now that the script: scripts/markdown-report.sh
+ is working well to find all the markdown files on disk and to extract their metadata I need you to make a new "Sync" database button on the "Docs" page as the previous "Sync Database" button is not working properly.
+
+Basically what needs to happen is that the database table I have below when you query it is not being updated properly. I need you to keep this table up to date with the actual files that are on disk.  If you need to refer to the script: scripts/markdown-report.sh to do so great.  If you need to create a new script that you can call or that will run on disk, then do so since this only needs to work on my development machine for now.
+
+
+if there is not a soft delete on the table I need you to give me the sql to alter the table to add it and then if you can't find a previous documentation_file I need you to soft delete it for now, so that the the documentation_files have another script which will read the records (that are not soft deleted and display them properly in a markdown viewer.  The bottom line is that the documentation_files have to be up-to-date.
+
+
+
+documentation_files
 [
   {
     "column_name": "id",
