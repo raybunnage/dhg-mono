@@ -1,3 +1,8 @@
+I need a document type for my documentation markdown files.  There will be other types of markdown files, but these are specifically for documentation for project code.
+
+
+Now if you haven't already hook up the code in the "Proposed Document Type Definition:" text area and take the json (which may have been edited - and first check that it is ready for the database insertion inot document_types - if it is not formatted properly then tell the user what is wrong with the formatting, but if all is well insert the record into the database if it does not yet exist and if it does exist - actually check first it does exist and refuse to insert it, but if all is well inser the record into the document_types table
+
 on on the "Ai" page under the tabs
 make a new tab that implements this plan for adding prompts into the database that is called "Database" this is the where the ui for this spec should go.  Follow the spec if it makes sense, but also veer from it if you see a better way.  I already have a file to load for my first prompt
 

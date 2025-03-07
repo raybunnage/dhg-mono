@@ -718,11 +718,39 @@ export function ClassifyDocument() {
 
     setIsFormSubmitting(true);
     try {
+      // First, check if we have a database prompt template
+      const { data: promptsData, error: promptsError } = await supabase
+        .from('prompts')
+        .select('*')
+        .eq('name', 'document-type-request-template')
+        .eq('status', 'active');
+      
+      if (promptsError) {
+        console.error('Error fetching prompt template:', promptsError);
+        toast.error('Failed to load document type request template');
+        return;
+      }
+      
       // Get existing document types to provide context to the AI
       const documentTypes = await loadDocumentTypes();
       
-      const result = await processWithAI({
-        systemPrompt: `You are an expert system designer who creates document type schemas for a content management system. 
+      // Use the database template if available, otherwise use the hardcoded one
+      let systemPrompt = '';
+      let userMessage = '';
+      
+      if (promptsData && promptsData.length > 0) {
+        console.log('Using database prompt template:', promptsData[0].name);
+        // Parse the content from JSON string if needed
+        const promptContent = typeof promptsData[0].content === 'string' 
+          ? JSON.parse(promptsData[0].content) 
+          : promptsData[0].content;
+          
+        systemPrompt = promptContent;
+        userMessage = `Please create a document type definition based on this request:\n\n${aiRequestPrompt}\n\nInclude realistic validation rules and AI processing rules that would be appropriate for this document type. Use existing document types for reference but do not duplicate them.`;
+      } else {
+        console.log('Using hardcoded prompt template (no database template found)');
+        // Use the original hardcoded template
+        systemPrompt = `You are an expert system designer who creates document type schemas for a content management system. 
         You will receive a request from a user who needs a new document type defined. 
         Your job is to analyze the request and create a structured document type definition based on the request.
         
@@ -764,8 +792,14 @@ export function ClassifyDocument() {
           }
         }
         
-        Be creative but practical in your design. Include all fields that would be necessary for this document type.`,
-        userMessage: `Please create a document type definition based on this request:\n\n${aiRequestPrompt}\n\nInclude realistic validation rules and AI processing rules that would be appropriate for this document type. Use existing document types for reference but do not duplicate them.`,
+        Be creative but practical in your design. Include all fields that would be necessary for this document type.`;
+        userMessage = `Please create a document type definition based on this request:\n\n${aiRequestPrompt}\n\nInclude realistic validation rules and AI processing rules that would be appropriate for this document type. Use existing document types for reference but do not duplicate them.`;
+      }
+
+      // Use Claude 3.7 Sonnet for processing
+      const result = await processWithAI({
+        systemPrompt,
+        userMessage,
         temperature: 0.7,
         requireJsonOutput: false
       });
@@ -849,11 +883,34 @@ export function ClassifyDocument() {
         return;
       }
       
-      const docTypeData = JSON.parse(editedAiJson);
+      let docTypeData;
+      // Try to parse the JSON
+      try {
+        docTypeData = JSON.parse(editedAiJson);
+      } catch (parseError) {
+        toast.error('Invalid JSON format. Please check the document type definition.');
+        console.error('JSON parse error:', parseError);
+        return;
+      }
       
       // Validate required fields
       if (!docTypeData.document_type || !docTypeData.category) {
         toast.error('Document type and category are required');
+        return;
+      }
+      
+      // Check if a document type with the same name already exists
+      const { data: existingTypes, error: checkError } = await supabase
+        .from("document_types")
+        .select("id, document_type")
+        .eq("document_type", docTypeData.document_type);
+        
+      if (checkError) {
+        throw new Error(`Error checking existing document types: ${checkError.message}`);
+      }
+      
+      if (existingTypes && existingTypes.length > 0) {
+        toast.error(`Document type "${docTypeData.document_type}" already exists`);
         return;
       }
       
@@ -2047,6 +2104,14 @@ Use this exact structure, with empty arrays [] for missing information:
                     {isFormSubmitting ? 'Processing...' : 'Submit Request to AI'}
                   </button>
                 )}
+                
+                {/* Display result visualization if we're processing */}
+                {isFormSubmitting && !aiResponseJson && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-800 font-medium">⏳ Processing with Claude 3.7...</p>
+                    <p className="text-xs text-blue-600">This may take up to 30 seconds</p>
+                  </div>
+                )}
               </div>
               
               {/* Step 2: AI Response */}
@@ -2062,7 +2127,10 @@ Use this exact structure, with empty arrays [] for missing information:
               {/* Step 3: JSON Output */}
               {aiResponseJson && (
                 <div className="border-b pb-4">
-                  <h4 className="font-medium mb-2">Proposed Document Type Definition:</h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium">Proposed Document Type Definition:</h4>
+                    <span className="text-sm px-2 py-1 bg-green-100 text-green-800 rounded">✅ Ready for review</span>
+                  </div>
                   <div className="mb-2 text-sm text-gray-600">
                     Review and edit the JSON below if needed:
                   </div>

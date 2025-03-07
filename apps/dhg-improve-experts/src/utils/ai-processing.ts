@@ -260,14 +260,17 @@ export async function processWithAI({
     });
 
     debug.log('request', {
-      model: 'claude-3-5-sonnet-20241022',
+      model: MODEL_NAME_NEW,
       messagePreview: userMessage.slice(0, 100) + '...',
       systemPromptPreview: systemPrompt.slice(0, 100) + '...'
     });
 
-    // Remove signal from request if it causes issues
+    // Use the latest Claude model (or fallback to older one if not available)
+    const model = MODEL_NAME_NEW;
+    console.log(`Using AI model: ${model}`);
+    
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model,
       max_tokens: 4096,
       temperature,
       system: systemPrompt,
