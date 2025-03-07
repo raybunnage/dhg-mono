@@ -29,37 +29,70 @@ export function SupabasePage() {
   // Verify that we can connect to Supabase
   async function verifyDatabaseConnection() {
     try {
-      // First attempt with proper count syntax
-      const { count, error } = await supabase
-        .from('sources_google')
-        .select('*', { count: 'exact', head: true })
+      console.log('Verifying database connection...');
       
-      if (error) {
-        console.error('Database connection error:', error)
-        toast.error(`Database connection error: ${error.message}`)
-      } else {
-        // Log the count value to see what's being returned
-        console.log('Database connection successful, count result:', count)
+      // First check authentication
+      const { data: authData, error: authError } = await supabase.auth.getSession();
+      
+      if (authError) {
+        console.error('Authentication error:', authError);
+        toast.error(`Authentication error: ${authError.message}`);
+        return;
+      }
+      
+      if (!authData.session) {
+        console.warn('No active session found. Attempting to sign in with test user');
         
-        // If count wasn't returned, try a different approach
-        if (count === null || count === undefined) {
-          console.log('Count not returned, trying to fetch actual data')
-          const { data, error: dataError } = await supabase
-            .from('sources_google')
-            .select('*')
-            .limit(5)
-            
-          if (!dataError) {
-            console.log(`Successfully fetched ${data?.length} rows`)
-          }
+        // Try auto-signin with test account
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: import.meta.env.VITE_TEST_USER_EMAIL,
+          password: import.meta.env.VITE_TEST_USER_PASSWORD,
+        });
+        
+        if (signInError || !signInData.session) {
+          console.error('Sign in failed:', signInError);
+          toast.error(`Unable to authenticate: ${signInError?.message || 'No session created'}`);
+          return;
         }
         
-        toast.success('Connected to database successfully')
+        console.log('Signed in as:', signInData.user?.email);
+        toast.success(`Signed in as ${signInData.user?.email}`);
+      } else {
+        console.log('Already authenticated as:', authData.session.user.email);
+      }
+      
+      // Test access to various common tables
+      const testTables = ['sources_google', 'sync_history', 'document_types', 'expert_documents'];
+      let accessibleTablesCount = 0;
+      
+      for (const table of testTables) {
+        try {
+          console.log(`Testing access to ${table}...`);
+          const { count, error } = await supabase
+            .from(table)
+            .select('*', { count: 'exact', head: true });
+          
+          if (error) {
+            console.warn(`Cannot access ${table}:`, error.message);
+          } else {
+            console.log(`Table ${table} accessible, contains ${count || 0} rows`);
+            accessibleTablesCount++;
+          }
+        } catch (tableError) {
+          console.error(`Error testing ${table}:`, tableError);
+        }
+      }
+      
+      if (accessibleTablesCount === 0) {
+        toast.warning('Connected to database, but no tables accessible. Check RLS policies.');
+      } else {
+        toast.success(`Connected to database successfully (${accessibleTablesCount}/${testTables.length} tables accessible)`);
         // Load initial data for the default table
-        loadTableData(tableName)
+        loadTableData(tableName);
       }
     } catch (err) {
-      console.error('Connection verification error:', err)
+      console.error('Connection verification error:', err);
+      toast.error(`Connection verification error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   }
 
@@ -68,6 +101,21 @@ export function SupabasePage() {
     setLoading(true)
     setError(null)
     try {
+      // First, ensure we're authenticated
+      const { data: authData } = await supabase.auth.getSession();
+      if (!authData.session) {
+        console.warn('No active session, attempting to authenticate before loading table data');
+        // Auto-login with test account
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: import.meta.env.VITE_TEST_USER_EMAIL,
+          password: import.meta.env.VITE_TEST_USER_PASSWORD,
+        });
+        
+        if (signInError) {
+          throw new Error(`Authentication required: ${signInError.message}`);
+        }
+      }
+      
       // First log some info about what we're doing
       console.log(`Attempting to fetch data from table: ${table}`);
       
@@ -83,6 +131,9 @@ export function SupabasePage() {
         
       if (countError) {
         console.warn(`Count query failed for table ${table}:`, countError);
+        if (countError.code === 'PGRST116') {
+          throw new Error(`Table '${table}' not found. Verify the table name is correct`);
+        }
       } else {
         console.log(`Table ${table} contains approximately ${count || 'unknown'} rows`);
       }
@@ -93,28 +144,29 @@ export function SupabasePage() {
         .select('*')
         .limit(10);
       
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42501') {
+          throw new Error(`Permission denied to table '${table}'. Check RLS policies.`);
+        }
+        throw error;
+      }
       
       if (!data || data.length === 0) {
         console.log(`No data retrieved from table ${table} (might be empty)`);
         
-        // Try a more specific query just to validate the table exists
-        const { data: testData, error: testError } = await supabase
-          .from(table)
-          .select('*')
-          .limit(1);
-          
-        if (testError) {
-          throw new Error(`Table access error: ${testError.message}`);
-        }
+        // Set empty array but don't throw an error - empty tables are valid
+        setTableData([]);
+        toast.info(`Table '${table}' exists but is empty`);
+        return;
       }
       
-      setTableData(data || []);
-      toast.success(`Loaded data from ${table} (${data?.length || 0} rows)`);
+      setTableData(data);
+      toast.success(`Loaded data from ${table} (${data.length} rows)`);
     } catch (err) {
       console.error(`Error loading table ${table}:`, err);
       setError(err instanceof Error ? err.message : `Failed to load data from ${table}`);
       toast.error(`Failed to load table: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTableData([]); // Clear any previous data
     } finally {
       setLoading(false);
     }
@@ -124,21 +176,95 @@ export function SupabasePage() {
     setLoading(true)
     setError(null)
     try {
-      // Instead of querying information_schema directly, we'll build a schema from what we can access
-      // Get a list of tables we can access by trying to query common tables
-      const commonTables = [
+      // Check if authentication is working first
+      const { data: authData, error: authError } = await supabase.auth.getSession();
+      
+      if (authError) {
+        console.error('Authentication error:', authError);
+        throw new Error(`Authentication error: ${authError.message}`);
+      }
+      
+      if (!authData.session) {
+        console.warn('No active session found. Attempting to sign in with test user');
+        // Try auto-signin with test account
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: import.meta.env.VITE_TEST_USER_EMAIL,
+          password: import.meta.env.VITE_TEST_USER_PASSWORD,
+        });
+        
+        if (signInError || !signInData.session) {
+          throw new Error(`Unable to authenticate. Please make sure you're logged in.`);
+        }
+        
+        toast.success(`Signed in as ${signInData.user?.email}`);
+      }
+      
+      // Instead of querying information_schema directly, we'll build a schema from all possible tables
+      console.log('Attempting to query all tables from Database interface...');
+      
+      // Comprehensive list of tables that might exist in the database
+      const allPossibleTables = [
+        // Common tables we know exist
         'sources_google',
         'sync_history', 
         'google_auth_tokens',
         'experts',
         'expert_documents',
         'document_types',
-        'sync_statistics'
+        'sync_statistics',
+        'function_registry',
+        'prompts',
+        
+        // Additional tables from the Database type
+        'ai_processing_attempts',
+        'app_pages',
+        'app_state',
+        'asset_types',
+        'audio_processing_configs',
+        'audio_processing_stages',
+        'audio_processor_steps',
+        'audio_segments',
+        'batch_processing_status',
+        'citation_expert_aliases',
+        'command_categories',
+        'command_history',
+        'command_patterns',
+        'documentation_files',
+        'documentation_processing_queue',
+        'documentation_relations',
+        'documentation_sections',
+        'domains',
+        'email_addresses',
+        'emails',
+        'favorite_commands',
+        'function_relationships',
+        'page_dependencies',
+        'page_function_usage',
+        'page_guts_raw_data',
+        'page_table_usage',
+        'presentation_assets',
+        'presentation_collection_items',
+        'presentation_collections',
+        'presentation_relationships',
+        'presentation_search_index',
+        'presentation_tag_links',
+        'presentation_tags',
+        'presentation_theme_links',
+        'presentation_themes',
+        'presentations',
+        'processing_batches',
+        'profiles',
+        'sources',
+        'speaker_profiles',
+        'transcription_feedback',
+        'user_annotations'
       ];
+      
+      console.log(`Querying ${allPossibleTables.length} possible tables...`);
       
       // Try to get a sample row from each table
       const tablesData = await Promise.all(
-        commonTables.map(async (tableName) => {
+        allPossibleTables.map(async (tableName) => {
           try {
             // First try to get the count to check if the table exists
             const { count, error: countError } = await supabase
@@ -146,60 +272,97 @@ export function SupabasePage() {
               .select('*', { count: 'exact', head: true });
               
             if (countError) {
-              console.log(`Error querying table ${tableName}:`, countError);
-              return null;
+              // Table likely doesn't exist or no access
+              if (countError.code === 'PGRST116') {
+                // This is the "relation does not exist" error code
+                return null; // Skip this table altogether - it doesn't exist
+              }
+              
+              return {
+                table_name: tableName,
+                table_schema: 'public',
+                table_type: 'BASE TABLE',
+                columns: [],
+                row_count: 0,
+                error: countError.message
+              };
             }
+            
+            // Table exists and we have access to it
+            console.log(`Found table ${tableName} with count: ${count || 0}`);
             
             // Then get actual data to determine columns
             const { data, error } = await supabase
               .from(tableName)
               .select('*')
               .limit(1);
-              
-            if (!error && data) {
-              return {
-                table_name: tableName,
-                table_schema: 'public',
-                table_type: 'BASE TABLE',
-                columns: data.length > 0 ? Object.keys(data[0]) : [],
-                row_count: count || (data ? data.length : 0)
-              };
-            }
             
-            // If we got here but have a count, the table exists but is empty
-            if (count !== null && count !== undefined) {
+            if (error) {
+              // We can get the count but not the data (likely RLS issue)
               return {
                 table_name: tableName,
                 table_schema: 'public',
                 table_type: 'BASE TABLE',
                 columns: [],
-                row_count: count
+                row_count: count || 0,
+                error: error.message,
+                note: 'Can get count but not data (RLS restriction?)'
+              };
+            }
+              
+            if (data && data.length > 0) {
+              // We have data, use it to get column names
+              return {
+                table_name: tableName,
+                table_schema: 'public',
+                table_type: 'BASE TABLE',
+                columns: Object.keys(data[0]),
+                row_count: count || 1
               };
             }
             
-            return null;
+            // Table exists but is empty
+            return {
+              table_name: tableName,
+              table_schema: 'public',
+              table_type: 'BASE TABLE',
+              columns: [],
+              row_count: count || 0,
+              note: 'Table exists but is empty'
+            };
           } catch (e) {
             console.error(`Exception querying ${tableName}:`, e);
-            return null;
+            return null; // Skip tables with unexpected errors
           }
         })
       );
       
-      // Filter out nulls
-      const accessibleTables = tablesData.filter(table => table !== null);
+      // Filter out nulls (tables that don't exist)
+      const existingTables = tablesData.filter(table => table !== null);
+      
+      console.log(`Found ${existingTables.length} tables that exist in the database`);
+      
+      // Count successful tables (have data or at least count)
+      const successfulTables = existingTables.filter(table => !table.error).length;
+      console.log(`Successfully queried ${successfulTables} of ${existingTables.length} tables`);
       
       // We can't get functions or triggers without direct SQL access, so use empty arrays
       const functionsData = [];
       const triggersData = [];
 
       const schema = {
-        tables: accessibleTables,
+        tables: existingTables,
         functions: functionsData,
         triggers: triggersData
       }
 
       setSchemaData(schema)
-      toast.success('Schema information retrieved')
+      
+      if (successfulTables === 0) {
+        toast.warning('No tables could be accessed. Check permissions or connection.')
+      } else {
+        toast.success(`Schema information retrieved (${successfulTables} tables)`)
+      }
 
       // Save to file
       const blob = new Blob([JSON.stringify(schema, null, 2)], { type: 'application/json' })
@@ -271,16 +434,50 @@ export function SupabasePage() {
     setLoading(true)
     setError(null)
     try {
+      // First, ensure we're authenticated
+      const { data: authData } = await supabase.auth.getSession();
+      if (!authData.session) {
+        console.warn('No active session, attempting to authenticate before getting metadata');
+        // Auto-login with test account
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: import.meta.env.VITE_TEST_USER_EMAIL,
+          password: import.meta.env.VITE_TEST_USER_PASSWORD,
+        });
+        
+        if (signInError) {
+          throw new Error(`Authentication required: ${signInError.message}`);
+        }
+      }
+      
+      // First check if the table exists
+      const { count, error: countError } = await supabase
+        .from(tableName)
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) {
+        // Handle specific error codes
+        if (countError.code === 'PGRST116') {
+          throw new Error(`Table '${tableName}' not found. Verify the table name is correct`);
+        } else if (countError.code === '42501') {
+          throw new Error(`Permission denied to table '${tableName}'. Check RLS policies.`);
+        }
+        throw countError;
+      }
+      
+      console.log(`Table ${tableName} exists with ${count || 0} rows`);
+        
       // Get a sample row to infer table structure
       const { data: sampleData, error: sampleError } = await supabase
         .from(tableName)
         .select('*')
-        .limit(1)
+        .limit(1);
       
-      if (sampleError) throw sampleError
+      if (sampleError) {
+        throw sampleError;
+      }
       
       // Generate metadata from the sample data
-      let metadata = []
+      let metadata = [];
       
       if (sampleData && sampleData.length > 0) {
         metadata = Object.keys(sampleData[0]).map(columnName => ({
@@ -290,28 +487,48 @@ export function SupabasePage() {
                    typeof sampleData[0][columnName] === 'object' ? 'object' : 'string',
           is_nullable: 'YES', // We don't know this for sure
           table_name: tableName,
-          table_schema: 'public'
+          table_schema: 'public',
+          sample_value: sampleData[0][columnName] !== null ? 
+                        (typeof sampleData[0][columnName] === 'object' ? 
+                          JSON.stringify(sampleData[0][columnName]).substring(0, 50) : 
+                          String(sampleData[0][columnName]).substring(0, 50)) 
+                        : 'NULL'
         }))
+      } else {
+        // Table exists but is empty - try to provide some helpful info
+        console.log(`Table ${tableName} exists but is empty`);
+        toast.info(`Table '${tableName}' exists but is empty. Cannot infer column structure.`);
+        
+        // We can still set an empty metadata array, but with a message
+        metadata = [{
+          column_name: '(empty table)',
+          data_type: 'unknown',
+          is_nullable: 'unknown',
+          table_name: tableName,
+          table_schema: 'public',
+          note: 'Table exists but is empty. Cannot infer structure.'
+        }];
       }
       
-      setTableMetadata(metadata)
-      toast.success(`Table metadata retrieved for ${tableName}`)
+      setTableMetadata(metadata);
+      toast.success(`Table metadata retrieved for ${tableName}`);
       
       // Save to file
-      const blob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${tableName}_metadata.json`
-      a.click()
-      window.URL.revokeObjectURL(url)
+      const blob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${tableName}_metadata.json`;
+      a.click();
+      window.URL.revokeObjectURL(url);
       
     } catch (err) {
-      console.error('Error fetching table metadata:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch table metadata')
-      toast.error(`Failed to fetch table metadata: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      console.error('Error fetching table metadata:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch table metadata');
+      toast.error(`Failed to fetch table metadata: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTableMetadata([]); // Clear any previous metadata
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
