@@ -805,6 +805,67 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
           .replace('T', ' ')
           .replace(/\.\d+Z$/, '');
           
+        // FIXING FILE PATHS: Correctly set parent_path and path for better FileTree compatibility
+        
+        // CRITICAL FIX: This is exactly how old records are structured - we must match this format
+        // 1. path - This is THE MOST IMPORTANT field for the file tree (folders need this)
+        // 2. parent_path - This is how children find their parents (children need this)
+        // 3. parent_folder_id - This is a backup/alternative way to find parents
+        
+        // For path consistency, files need their own path and parent paths need to be set properly
+        let filePath = null;
+        let parentPath = null;
+        
+        if (parentFolderId) {
+          // Look up the parent folder in our set of files, or in pathMap
+          const parentFolder = batch.find(f => f.id === parentFolderId);
+          if (parentFolder) {
+            // If we have the parent's full path, use it as parent_path
+            const parentFullPath = pathMap.get(parentFolderId);
+            if (parentFullPath) {
+              // CRITICAL: Parent's path becomes the child's parent_path
+              parentPath = parentFullPath;
+              
+              // CRITICAL: Child's path is parent path + child name
+              filePath = `${parentFullPath}/${file.name}`;
+              
+              console.log(`SUCCESS - Found complete path info for ${file.name}: path=${filePath}, parent_path=${parentPath}`);
+            } else {
+              // If we know the parent name but not full path, construct a basic one
+              parentPath = `/${parentFolder.name}`;
+              filePath = `${parentPath}/${file.name}`;
+              console.log(`PARTIAL - Using parent name for ${file.name}: path=${filePath}, parent_path=${parentPath}`);
+            }
+          } else {
+            // We can't use await here since we're not in an async function
+            // Just use a simple fallback approach for now
+            console.log(`Need parent folder info for ID: ${parentFolderId} - child: ${file.name}`);
+            
+            // Generic fallback with just the ID - this ensures paths work
+            parentPath = `/folders/${parentFolderId}`;
+            filePath = `${parentPath}/${file.name}`;
+            console.log(`SIMPLIFIED PATH - Using generic path for ${file.name}: path=${filePath}, parent_path=${parentPath}`);
+          }
+        } else if (isRoot) {
+          // Root folders get a special path format
+          filePath = `/${file.name}`;
+          parentPath = null; // Root folders have no parent
+          console.log(`ROOT FOLDER - Setting path for root: ${filePath}`);
+        } else {
+          // Files with no parent and not roots - these shouldn't normally exist
+          filePath = `/${file.name}`;
+          parentPath = null;
+          console.log(`WARNING - File with no parent and not root: ${file.name}`);
+        }
+        
+        // Strict validation to ensure we have a path
+        if (!filePath) {
+          console.error(`ERROR - Failed to set path for ${file.name} - using name as fallback`);
+          filePath = `/${file.name}`;
+        }
+        
+        console.log(`FINAL PATHS for "${file.name}": path=${filePath}, parent_path=${parentPath}, parent_folder_id=${parentFolderId}`);
+        
         // Build a simplified record with basic metadata to avoid errors with missing fields
         const record: any = {
           drive_id: file.id,
@@ -815,8 +876,8 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
           created_at: localDate,
           updated_at: localDate,
           parent_folder_id: parentFolderId,
-          parent_path: fullPath,
-          path: fullPath, // Set both parent_path and path for compatibility with FileTree
+          parent_path: parentPath,
+          path: filePath, // FIXED: Properly distinct path from parent_path
           is_root: isRoot, // Mark as root based on our earlier identification
           deleted: false,
           sync_status: 'synced', // Mark as synced since we're directly inserting
@@ -966,6 +1027,7 @@ export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: n
                 updated_at: record.updated_at,
                 parent_folder_id: record.parent_folder_id,
                 parent_path: record.parent_path,
+                path: record.path, // Also update path field
                 sync_status: 'synced',
                 metadata: record.metadata,
                 size: record.size
@@ -1098,11 +1160,15 @@ export async function getTableStructure(tableName: string) {
  * Helper function to build proper file paths
  * This constructs hierarchical paths compatible with the FileTree component
  */
+/**
+ * Improved version of buildProperFilePaths that generates both path and parent_path correctly
+ * This is key to ensuring file tree compatibility for both old and new files
+ */
 async function buildProperFilePaths(
   files: DriveFile[], 
   supabaseAdmin: any
 ): Promise<Map<string, string>> {
-  console.log("Building proper hierarchical file paths...");
+  console.log("IMPROVED: Building comprehensive file paths with both path and parent_path...");
   
   // Create a map of drive_id to path
   const pathMap = new Map<string, string>();
@@ -1119,7 +1185,7 @@ async function buildProperFilePaths(
     }
   });
   
-  // Check if we need to fetch additional folder names from the database
+  // Check if we need to fetch additional folder names AND paths from the database
   const allParentIds = new Set<string>();
   files.forEach(file => {
     if (file.parents && file.parents.length > 0) {
@@ -1131,66 +1197,344 @@ async function buildProperFilePaths(
     }
   });
   
-  // Fetch any missing folder names from the database
+  // Fetch existing paths and folder info from database
+  const existingPaths = new Map<string, string>();
+  
+  // Fetch any missing folder names AND paths from the database
   if (allParentIds.size > 0) {
-    console.log(`Fetching ${allParentIds.size} missing folder names from database...`);
+    console.log(`Fetching ${allParentIds.size} missing folder data from database...`);
     try {
       const { data, error } = await supabaseAdmin
         .from('sources_google')
-        .select('drive_id, name')
+        .select('drive_id, name, path')
         .in('drive_id', Array.from(allParentIds))
         .eq('mime_type', 'application/vnd.google-apps.folder');
         
       if (error) {
-        console.error('Error fetching folder names:', error);
+        console.error('Error fetching folder data:', error);
       } else if (data) {
         data.forEach(folder => {
           if (folder.drive_id && folder.name) {
             folderNames.set(folder.drive_id, folder.name);
+            
+            // Also store the existing path if available
+            if (folder.path) {
+              existingPaths.set(folder.drive_id, folder.path);
+              pathMap.set(folder.drive_id, folder.path); // Add to our path map
+            }
           }
         });
-        console.log(`Found ${data.length} folder names in database`);
+        console.log(`Found ${data.length} folder names in database (${existingPaths.size} with paths)`);
       }
     } catch (err) {
-      console.error('Exception fetching folder names:', err);
+      console.error('Exception fetching folder data:', err);
     }
   }
   
-  // Now process each file to build its path
+  // First pass: build paths for root folders
   for (const file of files) {
-    // Skip root folders (they have no parents)
+    // Root folders (they have no parents)
     if (!file.parents || file.parents.length === 0) {
       // Root folders get a simple path with just their name
       pathMap.set(file.id, `/${file.name}`);
-      continue;
+      console.log(`Root folder path: ${file.name} -> ${pathMap.get(file.id)}`);
     }
-    
-    // Get parent ID
-    const parentId = file.parents[0];
-    
-    // If this is a folder, add its name to our lookup map
-    if (file.mimeType === 'application/vnd.google-apps.folder') {
-      folderNames.set(file.id, file.name);
-    }
-    
-    // Try to find the parent path
-    let parentPath = pathMap.get(parentId);
-    
-    // If we don't have the parent path, try to build a simple one
-    if (!parentPath) {
-      const parentName = folderNames.get(parentId) || 'folder';
-      parentPath = `/${parentName}`;
-    }
-    
-    // Build this file's path
-    let filePath = `${parentPath}/${file.name}`;
-    
-    // Store the path
-    pathMap.set(file.id, filePath);
   }
   
-  console.log(`Built paths for ${pathMap.size} files and folders`);
+  // Do multiple passes to allow child paths to build on their parents
+  // This addresses folders at any level of nesting
+  const MAX_PASSES = 5; // Limit passes to handle deep hierarchies without infinite loops
+  
+  for (let pass = 0; pass < MAX_PASSES; pass++) {
+    let pathsAdded = 0;
+    
+    // Process each file
+    for (const file of files) {
+      // Skip if we've already built a path for this file
+      if (pathMap.has(file.id)) continue;
+      
+      // Skip files with no parents (should have been handled as roots)
+      if (!file.parents || file.parents.length === 0) continue;
+      
+      // Get parent ID
+      const parentId = file.parents[0];
+      
+      // If this is a folder, make sure it's in our folder names map
+      if (file.mimeType === 'application/vnd.google-apps.folder') {
+        folderNames.set(file.id, file.name);
+      }
+      
+      // Try to find the parent path - either from our map or existing paths
+      let parentPath = pathMap.get(parentId) || existingPaths.get(parentId);
+      
+      // If we have a parent path, we can build this file's path
+      if (parentPath) {
+        // Build this file's path
+        let filePath = `${parentPath}/${file.name}`;
+        
+        // Store the path
+        pathMap.set(file.id, filePath);
+        pathsAdded++;
+        
+        // Debug
+        if (file.mimeType === 'application/vnd.google-apps.folder') {
+          console.log(`Folder path: ${file.name} -> ${filePath} (parent: ${parentPath})`);
+        }
+      }
+    }
+    
+    console.log(`Pass ${pass+1}: Added ${pathsAdded} paths`);
+    
+    // If we didn't add any paths in this pass, no need to continue
+    if (pathsAdded === 0) break;
+  }
+  
+  // Final pass: handle any remaining files without paths using a fallback approach
+  for (const file of files) {
+    if (!pathMap.has(file.id) && file.parents && file.parents.length > 0) {
+      const parentId = file.parents[0];
+      const parentName = folderNames.get(parentId) || '';
+      
+      // Create the fallback path without leading slash or "unknown-folder"
+      const fallbackPath = parentName ? `${parentName}/${file.name}` : `${file.name}`;
+      
+      pathMap.set(file.id, fallbackPath);
+      console.log(`Fallback path for ${file.name}: ${fallbackPath}`);
+    }
+  }
+  
+  console.log(`IMPROVED: Built ${pathMap.size} file paths of ${files.length} total files`);
   return pathMap;
+}
+
+/**
+ * Fix paths for files in the database
+ * This is a special function to help repair/rebuild the path hierarchy
+ * It's especially useful for fixing files that don't appear in the file tree
+ */
+export async function fixPathsInDatabase(rootFolderId?: string): Promise<{
+  fixed: number;
+  errors: number;
+  details: string[];
+}> {
+  try {
+    console.log('Starting path fixing operation...');
+    
+    // Check for Supabase admin credentials
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('Missing Supabase credentials');
+      return {
+        fixed: 0,
+        errors: 0,
+        details: ['Missing Supabase credentials']
+      };
+    }
+    
+    // Create admin client
+    const supabaseAdmin = createClient<any>(
+      supabaseUrl,
+      serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+    
+    // Get all records that need to be fixed
+    let query = supabaseAdmin
+      .from('sources_google')
+      .select('id, drive_id, name, mime_type, parent_folder_id, is_root');
+    
+    // If root folder ID is provided, limit to that subtree
+    if (rootFolderId) {
+      // First get the root folder
+      const { data: rootFolder } = await supabaseAdmin
+        .from('sources_google')
+        .select('id, drive_id, name, mime_type, path')
+        .eq('drive_id', rootFolderId)
+        .single();
+        
+      if (!rootFolder) {
+        return {
+          fixed: 0,
+          errors: 1,
+          details: [`Root folder with ID ${rootFolderId} not found`]
+        };
+      }
+      
+      // Set this as the starting point
+      console.log(`Starting path fixing from root folder: ${rootFolder.name}`);
+    }
+    
+    // Get all files in the database
+    const { data: allFiles, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching files:', error);
+      return {
+        fixed: 0,
+        errors: 1,
+        details: [`Error fetching files: ${error.message}`]
+      };
+    }
+    
+    if (!allFiles || allFiles.length === 0) {
+      return {
+        fixed: 0,
+        errors: 0,
+        details: ['No files found to fix']
+      };
+    }
+    
+    console.log(`Found ${allFiles.length} files to process`);
+    
+    // First identify all folders
+    const folders = allFiles.filter(f => f.mime_type === 'application/vnd.google-apps.folder');
+    console.log(`Found ${folders.length} folders`);
+    
+    // Create lookup maps
+    const filesByDriveId = new Map();
+    allFiles.forEach(file => {
+      if (file.drive_id) {
+        filesByDriveId.set(file.drive_id, file);
+      }
+    });
+    
+    // Create path maps
+    const pathMap = new Map();
+    const pathUpdates = [];
+    const errors = [];
+    
+    // First pass: Set root folder paths
+    const rootFolders = allFiles.filter(f => 
+      f.mime_type === 'application/vnd.google-apps.folder' && 
+      f.is_root === true
+    );
+    
+    console.log(`Found ${rootFolders.length} root folders`);
+    
+    for (const folder of rootFolders) {
+      const path = `/${folder.name}`;
+      pathMap.set(folder.drive_id, path);
+      
+      // Prepare update for this root folder
+      pathUpdates.push({
+        id: folder.id,
+        drive_id: folder.drive_id,
+        path: path,
+        parent_path: null,
+        is_root: true
+      });
+    }
+    
+    // Multiple passes to handle nested folders
+    let pathsAdded = 1; // Start with a non-zero value to enter the loop
+    let pass = 0;
+    const MAX_PASSES = 10;
+    
+    while (pathsAdded > 0 && pass < MAX_PASSES) {
+      pass++;
+      pathsAdded = 0;
+      
+      console.log(`Path fixing pass ${pass}...`);
+      
+      for (const file of allFiles) {
+        // Skip if we already have a path for this file
+        if (pathMap.has(file.drive_id)) continue;
+        
+        // Skip files with no parent
+        if (!file.parent_folder_id) continue;
+        
+        // Get parent path
+        const parentPath = pathMap.get(file.parent_folder_id);
+        if (!parentPath) continue; // Skip if parent path not yet known
+        
+        // Build this file's path
+        const path = `${parentPath}/${file.name}`;
+        pathMap.set(file.drive_id, path);
+        pathsAdded++;
+        
+        // Prepare update
+        pathUpdates.push({
+          id: file.id,
+          drive_id: file.drive_id,
+          path: path,
+          parent_path: parentPath,
+          parent_folder_id: file.parent_folder_id
+        });
+      }
+      
+      console.log(`Pass ${pass}: Added ${pathsAdded} paths`);
+      
+      // If we didn't add any paths, we're done
+      if (pathsAdded === 0) break;
+    }
+    
+    // Now update all the paths in the database
+    console.log(`Updating ${pathUpdates.length} files with new paths...`);
+    
+    let fixedCount = 0;
+    let errorCount = 0;
+    
+    // Update in batches for better performance
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < pathUpdates.length; i += BATCH_SIZE) {
+      const batch = pathUpdates.slice(i, i + BATCH_SIZE);
+      console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(pathUpdates.length/BATCH_SIZE)}`);
+      
+      for (const update of batch) {
+        try {
+          // Update this file
+          const { error } = await supabaseAdmin
+            .from('sources_google')
+            .update({
+              path: update.path,
+              parent_path: update.parent_path,
+              parent_folder_id: update.parent_folder_id,
+              is_root: update.is_root || false
+            })
+            .eq('id', update.id);
+            
+          if (error) {
+            console.error(`Error updating file ${update.id}:`, error);
+            errors.push(`Error updating file ${update.id}: ${error.message}`);
+            errorCount++;
+          } else {
+            fixedCount++;
+          }
+        } catch (err) {
+          console.error(`Exception updating file ${update.id}:`, err);
+          errors.push(`Exception updating file ${update.id}: ${err.message}`);
+          errorCount++;
+        }
+      }
+      
+      // Add a small delay between batches
+      if (i + BATCH_SIZE < pathUpdates.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    console.log(`Path fixing complete: ${fixedCount} files fixed, ${errorCount} errors`);
+    
+    return {
+      fixed: fixedCount,
+      errors: errorCount,
+      details: errors
+    };
+  } catch (error) {
+    console.error('Error in fixPathsInDatabase:', error);
+    return {
+      fixed: 0,
+      errors: 1,
+      details: [`Error in fixPathsInDatabase: ${error.message}`]
+    };
+  }
 }
 
 export async function searchSpecificFolder(folderId: string): Promise<{

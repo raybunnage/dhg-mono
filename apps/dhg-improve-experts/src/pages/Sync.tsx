@@ -2600,10 +2600,10 @@ function Sync() {
         }
       );
       
-      // Search for records with a name that contains the search string
+      // Search for records with a name that contains the search string - select all fields
       const { data, error } = await supabaseAdmin
         .from('sources_google')
-        .select('id, drive_id, name, mime_type')
+        .select('*')
         .ilike('name', `%${nameToSearch}%`)
         .limit(10);
         
@@ -2852,19 +2852,45 @@ function Sync() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {nameSearchResults.map((record) => (
-                    <tr key={record.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{record.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{record.mime_type}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{record.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => copyIdToRootInput(record.id)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          Use ID
-                        </button>
-                      </td>
-                    </tr>
+                    <React.Fragment key={record.id}>
+                      <tr className={expandedRecords[record.id] ? "bg-blue-50" : ""}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <div className="flex items-center">
+                            <input 
+                              type="checkbox" 
+                              checked={!!expandedRecords[record.id]}
+                              onChange={() => {
+                                setExpandedRecords(prev => ({
+                                  ...prev,
+                                  [record.id]: !prev[record.id]
+                                }));
+                              }}
+                              className="h-4 w-4 mr-2 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            {record.name}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{record.mime_type}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{record.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => copyIdToRootInput(record.id)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            Use ID
+                          </button>
+                        </td>
+                      </tr>
+                      {expandedRecords[record.id] && (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-4 bg-blue-50">
+                            <div className="max-h-48 overflow-auto bg-white p-3 rounded border text-xs font-mono whitespace-pre">
+                              {JSON.stringify(record, null, 2)}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -3139,6 +3165,7 @@ function Sync() {
     message: string;
     deletedCount: number;
   } | null>(null);
+  const [expandedRecords, setExpandedRecords] = useState<Record<string, boolean>>({});
 
   // Function to fix parent_path issues
   const fixParentPaths = async () => {

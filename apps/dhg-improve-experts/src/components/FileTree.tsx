@@ -314,6 +314,52 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
   };
 
   const renderTree = (parentPath: string | null, level: number = 0) => {
+    // Add debug info at the start
+    if (level === 0) {
+      console.log(`Starting to render tree at root level - found ${files.filter(f => f.is_root).length} root items`);
+      
+      // DEBUG: Let's analyze the files to find structural issues
+      console.log(`%c ==== FILETREE DEBUGGING INFO ====`, 'background: #000; color: #ff0; font-size: 14px');
+      
+      // Log root folders
+      const rootFolders = files.filter(f => f.is_root === true && f.mime_type === 'application/vnd.google-apps.folder');
+      console.log(`Root folders (${rootFolders.length}):`);
+      rootFolders.forEach(folder => {
+        console.log(`%c${folder.name}`, 'color: #0a0; font-weight: bold', {
+          id: folder.id,
+          path: folder.path,
+          parent_path: folder.parent_path,
+          parent_folder_id: folder.parent_folder_id,
+          is_root: folder.is_root
+        });
+      });
+      
+      // For each root folder, check children
+      rootFolders.forEach(folder => {
+        if (!folder.path) {
+          console.log(`%cWARNING: Root folder has no path: ${folder.name}`, 'color: #f00; font-weight: bold');
+          return;
+        }
+        
+        // Find children by parent_path
+        const pathChildren = files.filter(f => f.parent_path === folder.path);
+        console.log(`Children for "${folder.name}" by parent_path: ${pathChildren.length}`);
+        
+        // Also find by parent_folder_id for comparison
+        const idChildren = folder.id ? files.filter(f => f.parent_folder_id === folder.id) : [];
+        const driveIdChildren = folder.drive_id ? files.filter(f => f.parent_folder_id === folder.drive_id) : [];
+        
+        console.log(`Children for "${folder.name}" by parent_folder_id: ${idChildren.length}`);
+        console.log(`Children for "${folder.name}" by drive_id: ${driveIdChildren.length}`);
+        
+        // Report detailed issues
+        if (pathChildren.length === 0 && (idChildren.length > 0 || driveIdChildren.length > 0)) {
+          console.log(`%cMISSING PATH RELATIONSHIP: "${folder.name}" has children by ID but not by path`, 'color: #f00');
+        }
+      });
+      
+      console.log(`%c ================================`, 'background: #000; color: #ff0; font-size: 14px');
+    }
     // At the top level (level 0), we want to show only root folders if they exist
     if (level === 0) {
       // Find all folders marked as root
@@ -358,22 +404,54 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
     }
     
     // Regular file tree rendering logic for non-root levels
-    const items = files.filter(item => {
-      // Get items at this level
-      const isAtThisLevel = item.parent_path === parentPath;
-      
-      // If hiding subfolders, show:
-      // 1. All files regardless of level
-      // 2. Top-level folders (level 0)
-      // 3. First-level folders (level 1)
-      if (hideSubfolders) {
+    // Find items at this level using BOTH path and parent_folder_id
+    const itemsByPath = files.filter(item => item.parent_path === parentPath);
+    
+    // Also find items by parent_folder_id if we have a parent folder
+    let itemsByFolderId: FileNode[] = [];
+    if (parentPath) {
+      // Try to find the folder with this path
+      const parentFolder = files.find(f => f.path === parentPath);
+      if (parentFolder) {
+        // Include items that have this as parent_folder_id
+        itemsByFolderId = files.filter(item => 
+          item.parent_folder_id === parentFolder.id
+        );
+      }
+    }
+    
+    // Combine the results, deduplicating by ID
+    const combinedItems = new Map<string, FileNode>();
+    itemsByPath.forEach(item => combinedItems.set(item.id, item));
+    itemsByFolderId.forEach(item => {
+      if (!combinedItems.has(item.id)) {
+        combinedItems.set(item.id, item);
+      }
+    });
+    
+    // Convert back to array
+    let items = Array.from(combinedItems.values());
+    
+    // Add debugging output for folders with lots of children or at important levels
+    if (items.length > 5 || level <= 1) {
+      if (parentPath) {
+        const parentFolder = files.find(f => f.path === parentPath);
+        console.log(
+          `Level ${level}: "${parentPath?.split('/').pop() || 'root'}" has ${items.length} children ` +
+          `(${itemsByPath.length} by path, ${itemsByFolderId.length} by parent_folder_id)` +
+          `${parentFolder ? ' [Folder ID: ' + parentFolder.id + ']' : ''}`
+        );
+      }
+    }
+    
+    // Apply subfolder hiding if needed
+    if (hideSubfolders) {
+      items = items.filter(item => {
         const isFile = item.mime_type !== 'application/vnd.google-apps.folder';
         const isTopOrFirstLevelFolder = (level === 0 || level === 1) && !isFile;
-        return isAtThisLevel && (isFile || isTopOrFirstLevelFolder);
-      }
-      
-      return isAtThisLevel;
-    });
+        return (isFile || isTopOrFirstLevelFolder);
+      });
+    }
     
     // Filter out root folders if we're not at the top level
     // This prevents root folders from showing up as regular folders in the hierarchy
@@ -420,7 +498,11 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
     return sortedItems.map(item => {
       const isFolder = item.mime_type === 'application/vnd.google-apps.folder';
       const isExpanded = expandedFolders.has(item.path || '');
-      const hasChildren = files.some(f => f.parent_path === item.path);
+      // Check for children using BOTH parent_path and parent_folder_id
+      const hasChildren = files.some(f => 
+        (f.parent_path === item.path) || 
+        (f.parent_folder_id === item.id)
+      );
 
       const fileType = getFileType(item.mime_type);
       const colors = FILE_TYPE_COLORS[fileType] || FILE_TYPE_COLORS.other;
@@ -499,7 +581,10 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
               </>
             )}
           </div>
-          {isFolder && isExpanded && renderTree(item.path, level + 1)}
+          {isFolder && isExpanded && (
+            // Pass folder ID as alternative param when path is missing
+            renderTree(item.path, level + 1)
+          )}
         </div>
       );
     });

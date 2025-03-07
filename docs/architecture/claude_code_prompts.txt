@@ -1,3 +1,94 @@
+on the "Classify" page on the "Document Types" add another button on the right next to "Add New Type" called "Ai Request" - when the user clicks on this button we want signifcation ui for the following
+1) a multi line edit box where the user can submit a request that defines the purpose of the document type they need
+2) a button to submit the request to an ai engineering
+3) two windows for the response from ai - the first will have any comments the ai wants to make about the request
+4) the other window will have a filled in json set of fields returned from the ai that has the proposed fields for this new document type  - the user will review the proposed json and if necessary edit any fields they want to change
+5) FIHALLY an "Add Proposed Document Type" button which will take the json or edited json in the proposed fields window and then submit that to the database to add the new document type
+
+
+
+in the search results list that appears at the bottom of the "roots" tab on the "sync" page can you add a checkbox on each line and when that checkbox is selected display the json for that sources_google record below it.
+
+102_Research Repository Instructions
+{
+  "id": "07c04e74-6e13-4180-bd06-75200d851f07",
+  "drive_id": "1zZIuetL8-N0N-pSUyfUMvSUtDgKSvwoM",
+  "name": "102_Research Repository Instructions",
+  "mime_type": "application/vnd.google-apps.folder",
+  "web_view_link": "https://drive.google.com/drive/folders/1zZIuetL8-N0N-pSUyfUMvSUtDgKSvwoM",
+  "parent_folder_id": "1Bpz7Kpq4TchnuLcCN_CFhCGMH58bafD7",
+  "is_root": false,
+  "path": "101_Research Repository Getting Started/102_Research Repository Instructions",
+  "created_at": "2025-03-06T00:11:37+00:00",
+  "updated_at": "2025-03-06T00:11:37+00:00",
+  "last_indexed": null,
+  "metadata": "{\"mimeType\":\"application/vnd.google-apps.folder\",\"parents\":[\"1Bpz7Kpq4TchnuLcCN_CFhCGMH58bafD7\"],\"webViewLink\":\"https://drive.google.com/drive/folders/1zZIuetL8-N0N-pSUyfUMvSUtDgKSvwoM\",\"id\":\"1zZIuetL8-N0N-pSUyfUMvSUtDgKSvwoM\",\"name\":\"102_Research Repository Instructions\",\"modifiedTime\":\"2024-05-18T22:54:23.527Z\"}",
+  "parent_path": "101_Research Repository Getting Started",
+  "parent_id": null,
+  "modified_time": "2024-05-18T22:54:23.527+00:00",
+  "size": null
+}
+
+2025-05-07 - Raison - Depression a survival strategy
+{
+  "id": "56ff4e62-4270-405f-bbea-2cf3cb301025",
+  "drive_id": "1XZlq1NQNmcLxgiuPooJ8QH3LP3lJlZB3",
+  "name": "2025-05-07 - Raison - Depression a survival strategy",
+  "mime_type": "application/vnd.google-apps.folder",
+  "web_view_link": "https://drive.google.com/drive/folders/1XZlq1NQNmcLxgiuPooJ8QH3LP3lJlZB3",
+  "parent_folder_id": null,
+  "is_root": false,
+  "path": "Dynamic Healing Discussion Group/2025-05-07 - Raison - Depression a survival strategy",
+  "created_at": "2025-02-15T01:13:21.294+00:00",
+  "updated_at": "2025-02-16T06:34:07.634559+00:00",
+  "last_indexed": null,
+  "metadata": {
+    "modifiedTime": "2025-01-17T03:31:28.300Z"
+  },
+  "sync_status": null,
+  "parent_path": "Dynamic Healing Discussion Group",
+  "sync_id": null,
+  "parent_id": null,
+  "modified_time": null,
+}
+
+{
+  "id": "c711a758-5b2b-439a-80df-7d17231a77d4",
+  "drive_id": "1wriOM2j2IglnMcejplqG_XcCxSIfoRMV",
+  "name": "Dynamic Healing Discussion Group",
+  "mime_type": "application/vnd.google-apps.folder",
+  "web_view_link": "https://drive.google.com/drive/folders/1wriOM2j2IglnMcejplqG_XcCxSIfoRMV",
+  "parent_folder_id": null,
+  "is_root": true,
+  "path": "Dynamic Healing Discussion Group",
+  "created_at": "2025-02-15T01:13:20.319+00:00",
+  "updated_at": "2025-02-17T08:13:59.990606+00:00",
+  "last_indexed": null,
+  "metadata": {
+    "modifiedTime": "2024-12-17T06:30:07.764Z"
+  },
+  "parent_path": null,
+  "parent_id": null,
+  "modified_time": null,
+}
+
+{
+  "id": "88c9a42a-1aaa-4c5c-abae-2380d6c8a278",
+  "drive_id": "1Bpz7Kpq4TchnuLcCN_CFhCGMH58bafD7",
+  "name": "101_Research Repository Getting Started",
+  "mime_type": "application/vnd.google-apps.folder",
+  "web_view_link": "https://drive.google.com/drive/folders/1Bpz7Kpq4TchnuLcCN_CFhCGMH58bafD7",
+  "parent_folder_id": "1zLNEa0_uO5XJ1rzCwMp4JOoK91P9yUWw",
+  "is_root": true,
+  "path": "/folders/1zLNEa0_uO5XJ1rzCwMp4JOoK91P9yUWw/101_Research Repository Getting Started",
+  "created_at": "2025-03-06T00:11:37+00:00",
+  "updated_at": "2025-03-06T00:11:37+00:00",
+  "metadata": "{\"id\":\"1Bpz7Kpq4TchnuLcCN_CFhCGMH58bafD7\",\"name\":\"101_Research Repository Getting Started\",\"mimeType\":\"application/vnd.google-apps.folder\",\"parents\":[\"1zLNEa0_uO5XJ1rzCwMp4JOoK91P9yUWw\"],\"webViewLink\":\"https://drive.google.com/drive/folders/1Bpz7Kpq4TchnuLcCN_CFhCGMH58bafD7\",\"modifiedTime\":\"2024-05-18T22:57:53.111Z\",\"_isRootFolder\":true}",
+  "parent_path": "/folders/1zLNEa0_uO5XJ1rzCwMp4JOoK91P9yUWw",
+  "parent_id": null,
+  "modified_time": "2024-05-18T22:57:53.111+00:00",
+}
+
 
 I think I am getting closer to my ideal solution. I'll tell you what I want and you let me know the safe way to accomplish this and I'll propose my method and see if they line up. Then we'll take action to implement it. 
 
