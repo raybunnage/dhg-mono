@@ -1,3 +1,15 @@
+Ok - we're trying a different approach to a prompt that generates sql.  For the time being create a new page called "Test Sql" and write entirely new code that implements ui that 1) has a multiline text input box where the user prompt is added  2) a button to take that promopt and call claude sonnet 3.7 with the data from the user and applying the "supabase-sql-query-guide" from the prompts table and then having a json window wherfe the results are written.  Using the logic defined in this following spec defining similar code functionality
+
+
+
+
+
+find the word "Category" or "Categories" in the code and give me a        │
+│   markdown file showing me all the instances and the code   │
+│   involved that has "Category" so that I can direct you in  │
+│   the future to safely change this to another word than     │
+│   category.
+
 
 Lets take a different approach.  add a new page called "Test Docs"
 

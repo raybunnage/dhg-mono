@@ -56,7 +56,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       mode === 'development' && componentTagger(),
-      mode === 'development' && corsMiddleware(),
+      mode === 'development' && corsMiddleware.vitePlugin(), // Use the vitePlugin property
       {
         name: 'api-routes',
         configureServer(server: ViteDevServer) {
@@ -85,9 +85,21 @@ export default defineConfig(({ mode }) => {
                   // Make it executable
                   await execPromise(`chmod +x "${scriptPath}"`);
                   
-                  // Execute the script
+                  // Ensure proper environment variables are available to the script
+                  const env = {
+                    ...process.env,
+                    // Add Supabase environment variables if they exist
+                    SUPABASE_URL: env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+                    SUPABASE_KEY: env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY
+                  };
+                  
+                  // Execute the script with environment variables
                   console.log(`Executing script: ${scriptPath}`);
-                  const { stdout, stderr } = await execPromise(`cd "${projectRoot}" && "${scriptPath}"`);
+                  const { stdout, stderr } = await execPromise(`cd "${projectRoot}" && "${scriptPath}"`, { 
+                    env,
+                    // Increase max buffer size to handle larger outputs
+                    maxBuffer: 1024 * 1024 * 10 // 10 MB
+                  });
                   
                   const result = {
                     success: !stderr || stderr.trim() === '',
@@ -95,17 +107,24 @@ export default defineConfig(({ mode }) => {
                     output: stdout + (stderr ? `\nErrors:\n${stderr}` : '')
                   };
                   
+                  console.log(`Script execution completed with status: ${result.success ? 'success' : 'with errors'}`);
+                  
                   res.statusCode = result.success ? 200 : 500;
                   res.setHeader('Content-Type', 'application/json');
                   res.end(JSON.stringify(result));
                 } catch (execError) {
                   console.error('Error executing script:', execError);
+                  
+                  // Include both stderr and stdout in the response for debugging
+                  const stdout = execError.stdout || '';
+                  const stderr = execError.stderr || '';
+                  
                   res.statusCode = 500;
                   res.setHeader('Content-Type', 'application/json');
                   res.end(JSON.stringify({
                     success: false,
                     message: `Error executing script: ${execError.message || 'Unknown error'}`,
-                    output: execError.stdout + (execError.stderr ? `\nErrors:\n${execError.stderr}` : '')
+                    output: stdout + (stderr ? `\nErrors:\n${stderr}` : '')
                   }));
                 }
               } catch (error) {
@@ -296,6 +315,12 @@ export default defineConfig(({ mode }) => {
         'Cross-Origin-Embedder-Policy': 'require-corp',
         'Cross-Origin-Opener-Policy': 'same-origin',
       },
+      cors: {
+        origin: ['http://localhost:5173'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'x-api-key', 'anthropic-version'],
+        credentials: true
+      },
       proxy: {
         '/api/claude/messages': {
           target: 'https://api.anthropic.com/v1',
@@ -310,7 +335,15 @@ export default defineConfig(({ mode }) => {
               console.log('Proxying Claude API request with env var API key');
             });
           }
-        }
+        },
+        // Add a direct proxy for docs-sync to avoid CORS issues
+        '/api/docs-sync': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+          configure: (proxy, options) => {
+            console.log('Setting up docs-sync proxy');
+          }
+        }}
       }
     },
     preview: {

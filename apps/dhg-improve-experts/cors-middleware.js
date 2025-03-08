@@ -4,9 +4,13 @@
 // For Express: Export middleware function directly
 const corsMiddleware = (req, res, next) => {
   // Add CORS headers to all responses
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Instead of wildcard, use specific origins since we're allowing credentials
+  const origin = req.headers.origin || 'http://localhost:5173';
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, x-api-key, anthropic-version');
+  // Allow credentials (cookies, authorization headers, etc)
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   // Handle preflight OPTIONS requests
   if (req.method === 'OPTIONS') {

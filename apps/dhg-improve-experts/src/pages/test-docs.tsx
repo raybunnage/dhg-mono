@@ -71,8 +71,18 @@ export default function TestDocs() {
     setUpdateOutput('Running update script...\n');
 
     try {
-      const response = await fetch('/api/docs-sync', {
+      // Use the correct API endpoint based on application environment
+      // Detect if we're running on port 5173 and adjust URL accordingly
+      const baseUrl = window.location.port === '5173' ? 'http://localhost:8080' : '';
+      console.log(`Using base URL: ${baseUrl} for API request`);
+      
+      const response = await fetch(`${baseUrl}/api/docs-sync`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Include credentials for cross-origin requests
+        credentials: 'include',
       });
 
       if (!response.ok) {
