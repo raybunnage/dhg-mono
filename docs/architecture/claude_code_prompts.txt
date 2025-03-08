@@ -1,3 +1,7 @@
+Info about restoring a previous version
+91272de is the commit I need for restoring the script
+file path: scripts/markdown-report.sh
+
 Ok - we're trying a different approach to a prompt that generates sql.  For the time being create a new page called "Test Sql" and write entirely new code that implements ui that 1) has a multiline text input box where the user prompt is added  2) a button to take that promopt and call claude sonnet 3.7 with the data from the user and applying the "supabase-sql-query-guide" from the prompts table and then having a json window wherfe the results are written.  Using the logic defined in this following spec defining similar code functionality
 
 
