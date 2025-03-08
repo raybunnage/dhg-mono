@@ -5,7 +5,6 @@ import { readFile } from 'fs/promises';
 import { getSafePath, getProjectRoot } from '@/utils/file-utils';
 import { 
   generateMarkdownReport, 
-  syncDocumentationToDatabase,
   processNextDocumentationQueueItem
 } from '@/api/markdown-report';
 
@@ -132,12 +131,59 @@ export async function POST(req: Request) {
     
     // Endpoint to sync documentation to database
     if (path.endsWith('/docs-sync')) {
-      const result = await syncDocumentationToDatabase();
-      
-      return new Response(JSON.stringify(result), {
-        status: result.success ? 200 : 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      try {
+        const { exec } = require('child_process');
+        const { promisify } = require('util');
+        const path = require('path');
+        const execPromise = promisify(exec);
+        
+        // Get the project root directory
+        const projectRoot = process.cwd();
+        
+        // Path to the update script
+        const scriptPath = path.join(projectRoot, 'scripts', 'update-docs-database.sh');
+        
+        // Check if script exists
+        try {
+          await execPromise(`test -f "${scriptPath}"`);
+        } catch (error) {
+          console.error(`Script not found at ${scriptPath}`);
+          return new Response(JSON.stringify({
+            success: false,
+            message: `Script not found at ${scriptPath}`
+          }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Make script executable
+        await execPromise(`chmod +x "${scriptPath}"`);
+        
+        // Execute the script
+        console.log(`Executing script: ${scriptPath}`);
+        const { stdout, stderr } = await execPromise(`cd "${projectRoot}" && "${scriptPath}"`);
+        
+        const result = {
+          success: !stderr || stderr.trim() === '',
+          message: 'Documentation database update completed',
+          output: stdout + (stderr ? `\nErrors:\n${stderr}` : '')
+        };
+        
+        return new Response(JSON.stringify(result), {
+          status: result.success ? 200 : 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        console.error('Error executing documentation update script:', error);
+        return new Response(JSON.stringify({
+          success: false,
+          message: `Error: ${error.message || 'Unknown error'}`
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
     }
     
     // Endpoint to process the next documentation queue item

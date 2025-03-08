@@ -11,27 +11,43 @@
 // or manually download the express and cors modules and place them in a local node_modules folder
 
 // Try to support both ESM and CommonJS environments
-let express, cors, fs, path;
+let express, fs, path, corsMiddleware;
 try {
   // Try CommonJS require
   express = require('express');
-  cors = require('cors');
   fs = require('fs');
   path = require('path');
+  
+  // Try to use our custom CORS middleware first
+  try {
+    corsMiddleware = require('./cors-middleware');
+  } catch (corsError) {
+    // Fall back to regular cors if our middleware isn't available
+    corsMiddleware = require('cors')();
+  }
 } catch (e) {
   // Fall back to dynamic imports for ESM
   console.log('Falling back to dynamic imports for ESM...');
   import('express').then(module => express = module.default);
-  import('cors').then(module => cors = module.default);
   import('fs').then(module => fs = module.default);
   import('path').then(module => path = module.default);
+  
+  // Try to use custom CORS middleware
+  import('./cors-middleware.js').then(module => {
+    corsMiddleware = module.default;
+  }).catch(() => {
+    // Fall back to regular cors
+    import('cors').then(module => {
+      corsMiddleware = module.default();
+    });
+  });
 }
 
 const app = express();
 const PORT = 3001; // Different port than your main app
 
 // Enable CORS for local development
-app.use(cors());
+app.use(corsMiddleware);
 
 // Parse JSON bodies
 app.use(express.json());
