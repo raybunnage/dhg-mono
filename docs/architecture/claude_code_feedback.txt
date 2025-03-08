@@ -1,3 +1,23 @@
+The changes have been successfully applied to the SupabaseAdmin.tsx file. Here's a summary of the
+  changes made:
+
+  1. Changed the label from "app_pages" to "Column Names" by adding a heading above the table
+  columns.
+  2. Added a "Show Records" button below the Column Names table with:
+    - A number input field with default value of 3
+    - A toggle button (pill) for showing/hiding "xxx_at" timestamp fields
+    - A JSON display area that shows the records from the selected table when the button is clicked
+  3. Added two new state variables to manage this functionality:
+    - recordLimit - controls how many records to display (default: 3)
+    - showTimestampFields - toggles whether to show timestamp fields ending with "_at" (default:
+  false)
+
+  The implementation also includes:
+  - Proper filtering of timestamp fields when the toggle is off
+  - JSON formatting for better readability
+  - Success/error toast notifications when loading records
+  - Appropriate styling to match the existing UI
+
 I've successfully implemented the filter pills and categories in the SupabaseAdmin component, which
    is the one driving the actual display. The key changes include:
 

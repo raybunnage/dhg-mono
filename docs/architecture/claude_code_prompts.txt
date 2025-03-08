@@ -1,5 +1,9 @@
 
-on the "Supabase" page under the "Tables & Views" tab put some pills above the tables that will do the following:  Hide tables that have zero records.  Put named pills that will filter in our out the following groups of tables:  "Presentation", "Command", "Email", "Page", "Prompt", "Sql" and "Sync".  By querying the database you should be able to filter in or out the tables related to these pills.
+on the "Supabsae" page 
+under the "Tables & Views" tab
+on the right side of the page there is a label called "app_pages" - change that to "Column Names"
+add a button further below on the right below the  "Column Names" that says "Show Records" and has a small edit box with the number 3 as default in it.  Right below that are a couple of pills to click. The first pill is "Show xxx_at fields" - the default is to not show these "at" fields.  In a window below show the JSON for the number of records specified in the box at the time the user presses them.  This will give them some indication of how the fields are populated in a table that has redcords.
+
 
 
 on the "Supabase" page under the "Sql Editor" add a button to the right of "Save Query" called "Ask Ai" and when this button is pressed provide ui to enter in a multi line edit box a requests for help  from the AI to generate sql to accomplish some purpose in the database.  Make the sure the sql you provide for the request will work correctly and then copy it into the SQL query window so the user can test it. Just provide the ui for the moment. I will create a prompt for this and load it into the "prompts" table so soon you can load up the real thing and we can test it out.

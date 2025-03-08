@@ -100,6 +100,7 @@ const SupabaseAdmin: React.FC<SupabaseManagerProps> = ({ initialTab = "overview"
     "Prompt": ["prompt"],
     "Sql": ["sql"],
     "Sync": ["sync"],
+    "Documentation": ["documentation", "document", "doc_"],
   };
   
   // AI SQL generation states
@@ -873,6 +874,11 @@ $$ LANGUAGE plpgsql;`);
     }
   };
 
+  // State for record display
+  const [recordLimit, setRecordLimit] = useState<number>(3);
+  const [showTimestampFields, setShowTimestampFields] = useState<boolean>(false);
+  const [hideNullFields, setHideNullFields] = useState<boolean>(false);
+  
   // Generate AI tag suggestions for a query
   const generateTagSuggestions = async (query: string) => {
     try {
@@ -1750,6 +1756,9 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                 <CardContent>
                   {selectedTable ? (
                     <div className="max-h-[600px] overflow-y-auto">
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-lg font-semibold">Column Names</h3>
+                      </div>
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -1783,6 +1792,99 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                           ))}
                         </TableBody>
                       </Table>
+                      
+                      {/* Record display section */}
+                      <div className="mt-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              if (selectedTable) {
+                                supabase
+                                  .from(selectedTable)
+                                  .select('*')
+                                  .limit(recordLimit)
+                                  .then(({ data, error }) => {
+                                    if (error) {
+                                      toast.error(`Error fetching records: ${error.message}`);
+                                    } else {
+                                      setSqlResult(data || []);
+                                      toast.success(`Loaded ${data?.length || 0} records from ${selectedTable}`);
+                                    }
+                                  });
+                              }
+                            }}
+                          >
+                            Show Records
+                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              type="number" 
+                              min="1" 
+                              max="100" 
+                              defaultValue="3" 
+                              className="w-16" 
+                              onChange={(e) => setRecordLimit(parseInt(e.target.value) || 3)}
+                            />
+                          </div>
+                          <button
+                            onClick={() => setShowTimestampFields(!showTimestampFields)}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors shadow-sm ${
+                              showTimestampFields 
+                                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                                : 'bg-white border border-gray-300 hover:bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            Show xxx_at fields
+                          </button>
+                          <button
+                            onClick={() => setHideNullFields(!hideNullFields)}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors shadow-sm ${
+                              hideNullFields 
+                                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                                : 'bg-white border border-gray-300 hover:bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            Hide fields with Nulls
+                          </button>
+                        </div>
+                        
+                        {sqlResult && Array.isArray(sqlResult) && sqlResult.length > 0 && (
+                          <div className="mt-2 border rounded-md p-3 bg-gray-50 overflow-x-auto">
+                            <pre className="text-xs">
+                              {JSON.stringify(
+                                sqlResult.map(record => {
+                                  let filteredRecord = { ...record };
+                                  
+                                  // Apply filters based on selected options
+                                  if (!showTimestampFields || hideNullFields) {
+                                    filteredRecord = Object.fromEntries(
+                                      Object.entries(filteredRecord).filter(([key, value]) => {
+                                        // Filter out timestamp fields if option is selected
+                                        if (!showTimestampFields && key.endsWith('_at')) {
+                                          return false;
+                                        }
+                                        
+                                        // Filter out null fields if option is selected
+                                        if (hideNullFields && value === null) {
+                                          return false;
+                                        }
+                                        
+                                        return true;
+                                      })
+                                    );
+                                  }
+                                  
+                                  return filteredRecord;
+                                }),
+                                null, 
+                                2
+                              )}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
                       
                       {/* Actions for this table */}
                       <div className="mt-4 space-x-2">
