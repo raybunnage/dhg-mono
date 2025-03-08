@@ -1,4 +1,10 @@
 
+on the "Supabase" page under the "Sql Editor" tab there is an "Ask Ai" button which when pressed opens a little dialog box with a "Generate SQL" button. Take the text from the edit box and apply generate an ai api call using the "supabase-sql-query-guide" from the "prompts" table in the database- the api ai call to claude sonnet 3.7 should also feed in the latest version of the types.ts file at supabase/types.ts which has all the database tables and their fields.
+Or If it is better to get the latest information from the database to get all the objects you need to feed into the prompt. Please do so. THen assemble an api with the relevant context data and supply it with the prompt I mentioned and write out the sql query that the ai comes up with directly into the SQL Editor window after you close the dialog box.
+
+
+pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+
 on the "Supabsae" page 
 under the "Tables & Views" tab
 on the right side of the page there is a label called "app_pages" - change that to "Column Names"

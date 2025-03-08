@@ -591,6 +591,7 @@ export type Database = {
           file_hash: string | null
           file_path: string
           id: string
+          is_deleted: boolean | null
           last_indexed_at: string
           last_modified_at: string
           manual_tags: string[] | null
@@ -605,6 +606,7 @@ export type Database = {
           file_hash?: string | null
           file_path: string
           id?: string
+          is_deleted?: boolean | null
           last_indexed_at: string
           last_modified_at: string
           manual_tags?: string[] | null
@@ -619,6 +621,7 @@ export type Database = {
           file_hash?: string | null
           file_path?: string
           id?: string
+          is_deleted?: boolean | null
           last_indexed_at?: string
           last_modified_at?: string
           manual_tags?: string[] | null
@@ -2045,6 +2048,190 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          parent_category_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          parent_category_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          parent_category_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_categories_parent_category_id_fkey"
+            columns: ["parent_category_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_relationships: {
+        Row: {
+          child_prompt_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          parent_prompt_id: string
+          relationship_type: Database["public"]["Enums"]["relationship_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          child_prompt_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          parent_prompt_id: string
+          relationship_type: Database["public"]["Enums"]["relationship_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          child_prompt_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          parent_prompt_id?: string
+          relationship_type?: Database["public"]["Enums"]["relationship_type"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_relationships_child_prompt_id_fkey"
+            columns: ["child_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_relationships_parent_prompt_id_fkey"
+            columns: ["parent_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_usage: {
+        Row: {
+          execution_time: number | null
+          function_name: string | null
+          id: string
+          prompt_id: string | null
+          response_summary: string | null
+          success: boolean | null
+          used_at: string | null
+        }
+        Insert: {
+          execution_time?: number | null
+          function_name?: string | null
+          id?: string
+          prompt_id?: string | null
+          response_summary?: string | null
+          success?: boolean | null
+          used_at?: string | null
+        }
+        Update: {
+          execution_time?: number | null
+          function_name?: string | null
+          id?: string
+          prompt_id?: string | null
+          response_summary?: string | null
+          success?: boolean | null
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_usage_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompts: {
+        Row: {
+          author: string | null
+          category_id: string | null
+          content: Json
+          created_at: string | null
+          description: string | null
+          document_type_id: string | null
+          file_path: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          status: Database["public"]["Enums"]["prompt_status"] | null
+          tags: string[] | null
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          author?: string | null
+          category_id?: string | null
+          content: Json
+          created_at?: string | null
+          description?: string | null
+          document_type_id?: string | null
+          file_path?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          status?: Database["public"]["Enums"]["prompt_status"] | null
+          tags?: string[] | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          author?: string | null
+          category_id?: string | null
+          content?: Json
+          created_at?: string | null
+          description?: string | null
+          document_type_id?: string | null
+          file_path?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          status?: Database["public"]["Enums"]["prompt_status"] | null
+          tags?: string[] | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompts_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sources: {
         Row: {
           abstract: string | null
@@ -2467,6 +2654,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sql_query_history: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          execution_count: number | null
+          execution_status: string | null
+          id: string
+          is_favorite: boolean | null
+          last_executed_at: string | null
+          query_name: string | null
+          query_text: string
+          tags: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          execution_count?: number | null
+          execution_status?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          last_executed_at?: string | null
+          query_name?: string | null
+          query_text: string
+          tags?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          execution_count?: number | null
+          execution_status?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          last_executed_at?: string | null
+          query_name?: string | null
+          query_text?: string
+          tags?: string[] | null
+        }
+        Relationships: []
+      }
+      sql_query_tag_mappings: {
+        Row: {
+          query_id: string
+          tag_id: string
+        }
+        Insert: {
+          query_id: string
+          tag_id: string
+        }
+        Update: {
+          query_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sql_query_tag_mappings_query_id_fkey"
+            columns: ["query_id"]
+            isOneToOne: false
+            referencedRelation: "sql_query_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sql_query_tag_mappings_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "sql_query_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sql_query_tags: {
+        Row: {
+          created_at: string
+          id: string
+          tag_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tag_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tag_name?: string
+        }
+        Relationships: []
       }
       sync_history: {
         Row: {
@@ -3424,6 +3701,13 @@ export type Database = {
         | "completed"
         | "failed"
         | "retrying"
+      prompt_status: "draft" | "active" | "deprecated" | "archived"
+      relationship_type:
+        | "extends"
+        | "references"
+        | "prerequisite"
+        | "alternative"
+        | "successor"
     }
     CompositeTypes: {
       [_ in never]: never
