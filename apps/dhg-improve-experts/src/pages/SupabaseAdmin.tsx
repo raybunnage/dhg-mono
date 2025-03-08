@@ -223,6 +223,7 @@ $$ LANGUAGE plpgsql;`);
         if (isLoadingData) {
           console.log('Data loading safety timeout triggered');
           setIsLoadingData(false);
+          setLoading(false); // Make sure we also reset the main loading state
         }
         toast.warning('Some data may not have loaded properly. Try refreshing if needed.');
       }, 15000);
@@ -298,12 +299,54 @@ $$ LANGUAGE plpgsql;`);
         console.log('Already authenticated as:', authData.session.user.email);
       }
       
-      // Instead of using a hardcoded list, let's try to find all tables in the database
-      try {
-        console.log("Attempting to fetch all tables from the database schema...");
+      // Helper function to check tables and create summaries
+      async function checkTables(tableNames: string[]) {
+        console.log(`Checking ${tableNames.length} potential tables...`);
+        let tablesFound: string[] = [];
+      
+        // Try to check each table to see if it exists
+        await Promise.all(tableNames.map(async (tableName) => {
+          try {
+            // Just try to get 1 row to see if the table exists
+            const { count, error } = await supabase
+              .from(tableName)
+              .select('*', { count: 'exact', head: true });
+              
+            if (!error) {
+              tablesFound.push(tableName);
+              console.log(`Found table: ${tableName} with count: ${count || 0}`);
+            }
+          } catch (e) {
+            // Table doesn't exist or can't be accessed
+            console.log(`Table doesn't exist or can't be accessed: ${tableName}`);
+          }
+        }));
         
-        // First try to get all table names from the information schema
-        const { data: schemaData, error: schemaError } = await supabase.rpc(
+        if (tablesFound.length === 0) {
+          console.log("No tables found, using fallback list");
+          // Last resort - use a smaller list of common tables
+          tablesFound = [
+            'sources_google', 
+            'sync_history',
+            'experts',
+            'expert_documents',
+            'document_types',
+            'function_registry',
+            'sql_query_history',
+            'sql_query_tags',
+            'sql_users'
+          ];
+        }
+        
+        return tablesFound;
+      }
+      
+      // Find all tables in the database
+      let tablesFound: string[] = [];
+      try {
+        // First try information schema query
+        console.log("Querying information_schema for all tables...");
+        const { data, error } = await supabase.rpc(
           'execute_sql_query',
           {
             query: `SELECT table_name 
@@ -314,20 +357,15 @@ $$ LANGUAGE plpgsql;`);
           }
         );
         
-        if (schemaError || !schemaData) {
-          console.error("Error fetching tables from information schema:", schemaError);
-          throw new Error("Failed to fetch tables from schema");
-        }
-        
-        // Extract table names from the response
-        const tableNames = schemaData.map((row: any) => row.table_name);
-        console.log(`Found ${tableNames.length} tables from information schema`);
-        
-        if (tableNames.length === 0) {
-          // Fallback to hardcoded list if information schema query fails
-          console.log("No tables found from schema, using hardcoded list");
-          const fallbackTableNames = [
-            // Common tables that should exist
+        if (!error && data && data.length > 0) {
+          // Extract table names from the response
+          const tableNames = data.map((row: any) => row.table_name);
+          console.log(`Found ${tableNames.length} tables from schema query`);
+          tablesFound = await checkTables(tableNames);
+        } else {
+          // Fallback to hardcoded list approach
+          console.log("Schema query failed, using fallback approach");
+          const fallbackTables = [
             'sources_google', 
             'sync_history',
             'google_auth_tokens',
@@ -387,103 +425,11 @@ $$ LANGUAGE plpgsql;`);
             'transcription_feedback',
             'user_annotations'
           ];
-          return await checkTables(fallbackTableNames);
+          tablesFound = await checkTables(fallbackTables);
         }
-        
-        return await checkTables(tableNames);
-        
       } catch (error) {
         console.error("Error finding tables:", error);
-        // Fallback to direct table access approach with extended list
-        const fallbackTableNames = [
-          'sources_google', 
-          'sync_history',
-          'google_auth_tokens',
-          'experts',
-          'expert_documents',
-          'document_types',
-          'function_registry',
-          'ai_processing_attempts',
-          'app_pages',
-          'app_state',
-          'asset_types',
-          'audio_processing_configs',
-          'audio_processing_stages',
-          'audio_processor_steps',
-          'audio_segments',
-          'batch_processing_status',
-          'citation_expert_aliases',
-          'command_categories',
-          'command_history',
-          'command_patterns',
-          'documentation_files',
-          'documentation_processing_queue',
-          'documentation_relations',
-          'documentation_sections',
-          'domains',
-          'email_addresses',
-          'emails',
-          'favorite_commands',
-          'function_relationships',
-          'lionya_emails',
-          'page_dependencies',
-          'page_function_usage',
-          'page_guts_raw_data',
-          'page_table_usage',
-          'presentation_assets',
-          'presentation_collection_items',
-          'presentation_collections',
-          'presentation_relationships',
-          'presentation_search_index',
-          'presentation_tag_links',
-          'presentation_tags',
-          'presentation_theme_links',
-          'presentation_themes',
-          'presentations',
-          'processing_batches',
-          'processing_templates',
-          'profiles',
-          'sources',
-          'sources_google_backup',
-          'speaker_profiles',
-          'sql_query_history',
-          'sql_query_tags',
-          'sql_users',
-          'sync_history_backup',
-          'sync_statistics',
-          'temp_sources',
-          'transcription_feedback',
-          'user_annotations'
-        ];
-        return await checkTables(fallbackTableNames);
-      }
-      
-      // Helper function to check tables and create summaries
-      async function checkTables(tableNames: string[]) {
-        console.log(`Checking ${tableNames.length} potential tables...`);
-        let tablesFound: string[] = [];
-      
-      // Try to check each table to see if it exists
-      await Promise.all(tableNames.map(async (tableName) => {
-        try {
-          // Just try to get 1 row to see if the table exists
-          const { count, error } = await supabase
-            .from(tableName)
-            .select('*', { count: 'exact', head: true });
-            
-          if (!error) {
-            tablesFound.push(tableName);
-            console.log(`Found table: ${tableName} with count: ${count || 0}`);
-          }
-        } catch (e) {
-          // Table doesn't exist or can't be accessed
-          console.log(`Table doesn't exist or can't be accessed: ${tableName}`);
-        }
-      }));
-      
-      if (tablesFound.length === 0) {
-        console.log("No tables found, using fallback list");
-        // Last resort - use a smaller list of common tables
+        // Final fallback
         tablesFound = [
           'sources_google', 
           'sync_history',
@@ -497,11 +443,6 @@ $$ LANGUAGE plpgsql;`);
         ];
       }
       
-      return tablesFound;
-    }
-      
-      // Get the table names using our new approach
-      const tablesFound = await checkTables([]);
       console.log(`Found ${tablesFound.length} tables in total`);
         
       // Create summaries from our found tables
