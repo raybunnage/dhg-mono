@@ -211,12 +211,27 @@ db_query() {
   
   # Try using supabase command if available (preferred)
   if command -v supabase &> /dev/null; then
+    echo "Using supabase CLI for database query"
     supabase db execute "$query" 2>/dev/null
-  # Otherwise fall back to psql
+  # Otherwise fall back to psql with direct connection parameters
   elif command -v psql &> /dev/null; then
-    psql -c "$query" 2>/dev/null
+    echo "Using psql for database query"
+    # If we have SUPABASE_URL in environment, extract connection details
+    if [[ -n "$SUPABASE_URL" && -n "$SUPABASE_KEY" ]]; then
+      echo "Using Supabase environment variables for connection"
+      # For direct psql, we need to extract host, port, etc. from SUPABASE_URL
+      # Example URL: https://jdksnfkupzywjdfefkyj.supabase.co
+      # Extract the hostname part
+      local supabase_host=$(echo "$SUPABASE_URL" | sed -E 's|https://([^/]+).*|\1|')
+      psql -h "$supabase_host" -U postgres -d postgres -c "$query" 2>/dev/null
+    else
+      # Try default psql connection
+      echo "Using default psql connection"
+      psql -c "$query" 2>/dev/null
+    fi
   else
     echo "ERROR: Neither supabase cli nor psql is available"
+    echo "Please install either supabase CLI or psql to run database queries"
     return 1
   fi
 }
