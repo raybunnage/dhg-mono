@@ -1,6 +1,123 @@
 
-on the "Supabase" page under the "Sql Editor" tab there is an "Ask Ai" button which when pressed opens a little dialog box with a "Generate SQL" button. Take the text from the edit box and apply generate an ai api call using the "supabase-sql-query-guide" from the "prompts" table in the database- the api ai call to claude sonnet 3.7 should also feed in the latest version of the types.ts file at supabase/types.ts which has all the database tables and their fields.
-Or If it is better to get the latest information from the database to get all the objects you need to feed into the prompt. Please do so. THen assemble an api with the relevant context data and supply it with the prompt I mentioned and write out the sql query that the ai comes up with directly into the SQL Editor window after you close the dialog box.
+Lets take a different approach.  add a new page called "Test Docs"
+
+Here is the code from a script that corectly identifies all the markdown files in my project
+
+the path of this script is: scripts/markdown-report.sh
+
+Write a new script - using the same search logic that will update the table: 
+
+[
+  {
+    "column_name": "id",
+    "data_type": "string",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "0b6f230f-8fa8-4a72-9d0d-9e6d34ff6376"
+  },
+  {
+    "column_name": "file_path",
+    "data_type": "string",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "docs/docs-organization.md"
+  },
+  {
+    "column_name": "title",
+    "data_type": "string",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "Docs Organization"
+  },
+  {
+    "column_name": "summary",
+    "data_type": "string",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": ""
+  },
+  {
+    "column_name": "ai_generated_tags",
+    "data_type": "object",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "[\"documentation organization\",\"documentation\"]"
+  },
+  {
+    "column_name": "manual_tags",
+    "data_type": "object",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "NULL"
+  },
+  {
+    "column_name": "last_modified_at",
+    "data_type": "string",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "2025-03-02T12:06:00+00:00"
+  },
+  {
+    "column_name": "last_indexed_at",
+    "data_type": "string",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "2025-03-08T02:12:36.861+00:00"
+  },
+  {
+    "column_name": "file_hash",
+    "data_type": "string",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "445a2ec2-19573869cf6"
+  },
+  {
+    "column_name": "metadata",
+    "data_type": "object",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "{\"size\":3222,\"isPrompt\":false}"
+  },
+  {
+    "column_name": "created_at",
+    "data_type": "string",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "2025-03-03T10:29:53.982723+00:00"
+  },
+  {
+    "column_name": "updated_at",
+    "data_type": "string",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "2025-03-08T02:12:37.010808+00:00"
+  },
+  {
+    "column_name": "is_deleted",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "table_name": "documentation_files",
+    "table_schema": "public",
+    "sample_value": "true"
+  }
+]
+
+I noticed that when I check the table all the records were marked as is_deleted = true. that should not be.  when you are done, the files for certain records will have been moved and they won't exist.  Mark only those with is_deleted = true. But new and existing files that you find need to hve their metadata updated and new records created, so the script will be more invovled.  Basically the idea is to have the script interact with the database on the documentation_files and the end result is that that table should faithfully identify the status of all files in my project on disk.  
+
+
+
 
 
 pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
