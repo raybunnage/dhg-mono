@@ -6,6 +6,7 @@ import { componentTagger } from "lovable-tagger"
 import fs from 'fs/promises'
 import { ViteDevServer, ProxyOptions } from 'vite'
 import { IncomingMessage, ServerResponse } from 'http'
+import corsMiddleware from './cors-middleware'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -55,6 +56,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       mode === 'development' && componentTagger(),
+      mode === 'development' && corsMiddleware(),
       {
         name: 'api-routes',
         configureServer(server: ViteDevServer) {
@@ -91,6 +93,70 @@ export default defineConfig(({ mode }) => {
           });
           
           // Main API handler for all other server-side routes
+          // Add Claude API proxy middleware
+          server.middlewares.use('/api/claude-message-proxy', async (req: IncomingMessage, res: ServerResponse) => {
+            if (req.method === 'POST') {
+              try {
+                // Parse form data
+                let body = '';
+                req.on('data', chunk => {
+                  body += chunk.toString();
+                });
+                
+                req.on('end', async () => {
+                  try {
+                    // Extract the payload from the form
+                    const formData = new URLSearchParams(body);
+                    const payloadStr = formData.get('payload');
+                    
+                    if (!payloadStr) {
+                      res.statusCode = 400;
+                      res.end(JSON.stringify({ error: 'Missing payload' }));
+                      return;
+                    }
+                    
+                    const payload = JSON.parse(payloadStr);
+                    const { apiKey, ...claudePayload } = payload;
+                    
+                    console.log('Proxying Claude API request from middleware');
+                    
+                    // Make the request to Claude API
+                    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01'
+                      },
+                      body: JSON.stringify(claudePayload)
+                    });
+                    
+                    const responseData = await claudeResponse.json();
+                    
+                    // Return the response
+                    res.statusCode = claudeResponse.status;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify(responseData));
+                  } catch (error) {
+                    console.error('Error in Claude proxy middleware:', error);
+                    res.statusCode = 500;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ error: error.message || 'Internal server error' }));
+                  }
+                });
+              } catch (error) {
+                console.error('Error in Claude proxy middleware:', error);
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: error.message || 'Internal server error' }));
+              }
+              return;
+            }
+            
+            res.statusCode = 405;
+            res.end(JSON.stringify({ error: 'Method not allowed' }));
+          });
+          
           server.middlewares.use('/api', async (req: IncomingMessage, res: ServerResponse) => {
             // Create a proper request object
             const request = new Request(`http://localhost${req.url}`, {
@@ -197,6 +263,22 @@ export default defineConfig(({ mode }) => {
         'Cross-Origin-Embedder-Policy': 'require-corp',
         'Cross-Origin-Opener-Policy': 'same-origin',
       },
+      proxy: {
+        '/api/claude/messages': {
+          target: 'https://api.anthropic.com/v1',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/claude\/messages/, '/messages'),
+          configure: (proxy, options) => {
+            // Add request interceptor to add API key
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              // Add Anthropic API key and version header
+              proxyReq.setHeader('x-api-key', env.VITE_ANTHROPIC_API_KEY);
+              proxyReq.setHeader('anthropic-version', '2023-06-01');
+              console.log('Proxying Claude API request with env var API key');
+            });
+          }
+        }
+      }
     },
     preview: {
       port: 4173,

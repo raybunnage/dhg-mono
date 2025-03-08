@@ -105,13 +105,26 @@ const SupabaseAdmin: React.FC<SupabaseManagerProps> = ({ initialTab = "overview"
   
   // AI SQL generation states
   const [showAskAiDialog, setShowAskAiDialog] = useState(false);
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [claudeApiKey, setClaudeApiKey] = useState("");
   const [generatingSql, setGeneratingSql] = useState(false);
   
   // Simple loading flag (no caching)
   const [isLoadingData, setIsLoadingData] = useState(false);
   // Flag to track if initial data has been loaded
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+
+  // Load Claude API key from environment variable on mount
+  useEffect(() => {
+    const envApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+    if (envApiKey) {
+      setClaudeApiKey(envApiKey);
+      console.log("Using Claude API key from environment variable");
+    } else {
+      console.warn("VITE_ANTHROPIC_API_KEY environment variable is not set");
+    }
+  }, []);
 
   // Initialize some static data on component mount
   useEffect(() => {
@@ -1501,6 +1514,17 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
     toast.success("Types export initiated");
     // This would trigger the generation of the types.ts file
   };
+  
+  // Function to handle API key status
+  const checkApiKeyStatus = () => {
+    const envApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+    if (!envApiKey) {
+      toast.error('Claude API key not found in environment variables (VITE_ANTHROPIC_API_KEY)');
+      console.error('Missing VITE_ANTHROPIC_API_KEY in environment variables');
+      return false;
+    }
+    return true;
+  };
 
   const getStatusColor = (status: 'good' | 'warning' | 'danger') => {
     switch (status) {
@@ -2173,16 +2197,34 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                       </Button>
                     )}
                     
-                    <Button 
-                      variant="outline" 
-                      className="bg-blue-50 border-blue-200 hover:bg-blue-100"
-                      onClick={() => setShowAskAiDialog(true)}
-                    >
-                      <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 3C7.58 3 4 6.58 4 11C4 13.03 4.74 14.89 6 16.28V21L8.5 19.5L10.5 21L12.5 19.5L14.5 21L16.5 19.5L19 21V16.28C20.26 14.89 21 13.03 21 11C21 6.58 17.42 3 12 3ZM13 15H11V13H13V15ZM13 11H11V7H13V11Z" fill="#4285F4"/>
-                      </svg>
-                      Ask AI
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="bg-blue-50 border-blue-200 hover:bg-blue-100"
+                        onClick={() => setShowAskAiDialog(true)}
+                      >
+                        <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 3C7.58 3 4 6.58 4 11C4 13.03 4.74 14.89 6 16.28V21L8.5 19.5L10.5 21L12.5 19.5L14.5 21L16.5 19.5L19 21V16.28C20.26 14.89 21 13.03 21 11C21 6.58 17.42 3 12 3ZM13 15H11V13H13V15ZM13 11H11V7H13V11Z" fill="#4285F4"/>
+                        </svg>
+                        Ask AI
+                        {import.meta.env.VITE_ANTHROPIC_API_KEY ? (
+                          <span className="ml-1 w-2 h-2 bg-green-500 rounded-full" title="Claude API key is set in environment variables"></span>
+                        ) : (
+                          <span className="ml-1 w-2 h-2 bg-red-500 rounded-full" title="Claude API key is missing from environment variables"></span>
+                        )}
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        title="Configure Claude API Key" 
+                        onClick={() => setShowApiKeyDialog(true)}
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#888888"/>
+                        </svg>
+                      </Button>
+                    </div>
                   </div>
                   
                   <div className="space-x-2">
@@ -2412,6 +2454,39 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
             </div>
           )}
           
+          {/* API Key Dialog */}
+          {showApiKeyDialog && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 className="text-lg font-bold mb-4">Claude API Key Information</h3>
+                
+                <div className="space-y-4">
+                  <div className="p-4 border-l-4 border-yellow-500 bg-yellow-50 rounded">
+                    <p className="text-sm text-gray-700">
+                      This application uses the Claude API key from your environment variables. 
+                      Make sure <code className="bg-gray-100 px-1 py-0.5 rounded">VITE_ANTHROPIC_API_KEY</code> is 
+                      set in your <code className="bg-gray-100 px-1 py-0.5 rounded">.env.development</code> file.
+                    </p>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600">
+                    Status: {import.meta.env.VITE_ANTHROPIC_API_KEY ? (
+                      <span className="text-green-600 font-medium">API key is set in environment variables</span>
+                    ) : (
+                      <span className="text-red-600 font-medium">API key is missing from environment variables</span>
+                    )}
+                  </p>
+                  
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button onClick={() => setShowApiKeyDialog(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Ask AI Dialog */}
           {showAskAiDialog && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -2449,27 +2524,99 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                     Cancel
                   </Button>
                   <Button 
-                    onClick={() => {
-                      // Placeholder for actual AI SQL generation
+                    onClick={async () => {
+                      if (!aiPrompt.trim()) return;
+                      
+                      // Check for API key first
+                      const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+                      if (!apiKey) {
+                        toast.error('Claude API key not found in environment variables. Please set VITE_ANTHROPIC_API_KEY in your .env.development file.');
+                        setShowApiKeyDialog(true);
+                        return;
+                      }
+                      
                       setGeneratingSql(true);
-                      // Simulate AI response - this will be replaced with actual API call
-                      setTimeout(() => {
-                        const sampleQuery = "-- Generated SQL based on your request\n" +
-                          "SELECT table_name, COUNT(*) as row_count\n" +
-                          "FROM information_schema.tables\n" +
-                          "WHERE table_schema = 'public'\n" +
-                          "GROUP BY table_name\n" +
-                          "ORDER BY row_count DESC;";
+                      
+                      try {
+                        // 1. Get the SQL guide prompt from the database
+                        const { data: promptData, error: promptError } = await supabase
+                          .from('prompts')
+                          .select('content')
+                          .eq('name', 'supabase-sql-query-guide')
+                          .single();
+                        
+                        if (promptError) {
+                          throw new Error(`Failed to get SQL prompt: ${promptError.message}`);
+                        }
+                        
+                        const promptTemplate = promptData?.content?.prompt || 
+                          "You are an expert SQL assistant helping to generate SQL queries for a Supabase PostgreSQL database.";
+                        
+                        // 2. Get database schema information
+                        const { data: schemaData, error: schemaError } = await supabase.rpc(
+                          'get_schema_info',
+                          { schema_name: 'public' }
+                        );
+                        
+                        if (schemaError) {
+                          console.warn("Could not get schema via RPC, using types.ts information instead");
+                        }
+                        
+                        // Generate a schema summary from the database schema or types.ts
+                        let schemaContext = '';
+                        
+                        if (schemaData) {
+                          // Format the schema data for the prompt
+                          schemaContext = JSON.stringify(schemaData, null, 2);
+                        } else {
+                          // Generate schemaContext from dbObjects 
+                          schemaContext = dbObjects.map(obj => {
+                            return `Table: ${obj.name}\nDefinition: ${obj.definition}\n`;
+                          }).join('\n');
+                        }
+                        
+                        // 3. Set up the prompt for Claude
+                        const fullPrompt = `${promptTemplate}
+                          
+## Database Schema Information
+${schemaContext}
+
+## User Request
+${aiPrompt}
+
+Please generate a PostgreSQL SQL query that addresses the request above. 
+Return only the SQL query with brief comments explaining key parts.
+Make sure the query is valid PostgreSQL SQL and follows best practices.
+`;
+                        
+                        // 4. Call Claude API using processWithAI from ai-processing.ts
+                        const { processWithAI } = await import('@/utils/ai-processing');
+                        
+                        // Use the AI processing function to make the API call
+                        const result = await processWithAI({
+                          messages: [{ role: 'user', content: fullPrompt }],
+                          temperature: 0.2,
+                          maxTokens: 4000,
+                          model: 'claude-3-7-sonnet-20250219'
+                        });
+                        
+                        const generatedSql = result.rawResponse;
                         
                         // Set the SQL content
-                        setSqlContent(sampleQuery);
+                        setSqlContent(generatedSql);
+                        
                         // Close dialog and reset
                         setShowAskAiDialog(false);
                         setAiPrompt("");
-                        setGeneratingSql(false);
+                        
                         // Show success message
                         toast.success("SQL query generated! You can now run it or make adjustments.");
-                      }, 1500);
+                      } catch (error) {
+                        console.error("Error generating SQL query:", error);
+                        toast.error(`Failed to generate SQL: ${error.message}`);
+                      } finally {
+                        setGeneratingSql(false);
+                      }
                     }}
                     disabled={!aiPrompt.trim() || generatingSql}
                     className="bg-blue-600 hover:bg-blue-700 text-white"

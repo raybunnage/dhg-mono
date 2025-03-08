@@ -11,6 +11,7 @@ export function MainNavbar() {
     { name: 'Show', href: '/show' },
     { name: 'Sync', href: '/sync' },
     { name: 'Docs', href: '/docs' },
+    { name: 'Test Docs', href: '/test-docs' },
     { name: 'AI', href: '/ai' },
     { name: 'Classify', href: '/classify' },
     { name: 'Transcribe', href: '/transcribe' },

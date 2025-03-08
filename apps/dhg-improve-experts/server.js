@@ -33,10 +33,52 @@ const PORT = 3001; // Different port than your main app
 // Enable CORS for local development
 app.use(cors());
 
+// Parse JSON bodies
+app.use(express.json());
+
 // Simple middleware to log requests
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
+});
+
+// Claude API proxy endpoint - supports both paths
+app.post(['/api/claude-proxy', '/api/claude-api'], async (req, res) => {
+  try {
+    const ANTHROPIC_API_KEY = process.env.VITE_ANTHROPIC_API_KEY;
+    
+    if (!ANTHROPIC_API_KEY) {
+      return res.status(500).json({ error: 'API key not configured on server' });
+    }
+    
+    console.log('Proxying Claude API request via Express server');
+    
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(req.body)
+    });
+    
+    const responseData = await response.json();
+    
+    if (!response.ok) {
+      console.error('Claude API error:', responseData);
+      return res.status(response.status).json({
+        error: responseData.error || 'Error from Claude API',
+        status: response.status,
+        statusText: response.statusText
+      });
+    }
+    
+    return res.json(responseData);
+  } catch (error) {
+    console.error('Error in Claude proxy:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
+  }
 });
 
 // Endpoint to get markdown content by file path
