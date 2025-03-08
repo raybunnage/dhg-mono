@@ -1,4 +1,10 @@
- the next gh
+
+on the "Supabase" page under the "Tables & Views" tab put some pills above the tables that will do the following:  Hide tables that have zero records.  Put named pills that will filter in our out the following groups of tables:  "Presentation", "Command", "Email", "Page", "Prompt", "Sql" and "Sync".  By querying the database you should be able to filter in or out the tables related to these pills.
+
+
+on the "Supabase" page under the "Sql Editor" add a button to the right of "Save Query" called "Ask Ai" and when this button is pressed provide ui to enter in a multi line edit box a requests for help  from the AI to generate sql to accomplish some purpose in the database.  Make the sure the sql you provide for the request will work correctly and then copy it into the SQL query window so the user can test it. Just provide the ui for the moment. I will create a prompt for this and load it into the "prompts" table so soon you can load up the real thing and we can test it out.
+
+
  
  
  Currentlh the "Supabase" page functionality is awesome but I notice that it refreshes each tab whenever I switch tabs.  I assume this is the expecdted behaviour but it becomes kind of annoying as everytime I swtich tabs I have to wait for it to refresh again, which is quite a few seconds.  It would bve usaeful if you could cache the results after the first search and then when I return to a page used the cacheed results.  Then if I knew there where changes to the databawes and I wanted the ui t pick them up - I would have some ui mechanism to refresh - clear the previous cache and pickup the new changes.  What do you suggest?
