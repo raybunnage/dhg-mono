@@ -2,8 +2,39 @@ import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { supabase } from '@/integrations/supabase/client'
 import type { Database } from '@/integrations/supabase/types'
+import { useSupabaseTabCache } from '@/hooks/useSupabaseTabCache'
 
 export function SupabasePage() {
+  // Use separate cache hooks for different data types
+  const { 
+    cachedData: cachedSchemaData, 
+    setCachedData: setSchemaCache, 
+    clearCache: clearSchemaCache,
+    isCached: isSchemaDataCached
+  } = useSupabaseTabCache<any>('schema')
+  
+  const { 
+    cachedData: cachedForeignKeyData, 
+    setCachedData: setForeignKeyCache, 
+    clearCache: clearForeignKeyCache,
+    isCached: isForeignKeyDataCached
+  } = useSupabaseTabCache<any>('foreignKeys')
+  
+  const { 
+    cachedData: cachedTableMetadata, 
+    setCachedData: setTableMetadataCache, 
+    clearCache: clearTableMetadataCache,
+    isCached: isTableMetadataCached
+  } = useSupabaseTabCache<any>('tableMetadata')
+  
+  const { 
+    cachedData: cachedTableData, 
+    setCachedData: setTableDataCache, 
+    clearCache: clearTableDataCache,
+    isCached: isTableDataCached
+  } = useSupabaseTabCache<any[]>('tableData')
+  
+  // State for UI
   const [schemaData, setSchemaData] = useState<any>(null)
   const [foreignKeyData, setForeignKeyData] = useState<any>(null)
   const [tableMetadata, setTableMetadata] = useState<any>(null)
@@ -20,6 +51,14 @@ export function SupabasePage() {
     'experts',
     'expert_documents'
   ]
+  
+  // Initialize UI state from cache when component mounts
+  useEffect(() => {
+    if (cachedSchemaData) setSchemaData(cachedSchemaData);
+    if (cachedForeignKeyData) setForeignKeyData(cachedForeignKeyData);
+    if (cachedTableMetadata) setTableMetadata(cachedTableMetadata);
+    if (cachedTableData) setTableData(cachedTableData);
+  }, [cachedSchemaData, cachedForeignKeyData, cachedTableMetadata, cachedTableData]);
 
   // Verify database connection on component mount
   useEffect(() => {
@@ -98,6 +137,19 @@ export function SupabasePage() {
 
   // Load table data
   async function loadTableData(table: string) {
+    // Check if we already have this table data cached
+    const cacheKey = `table_${table}`;
+    if (isTableDataCached(cacheKey)) {
+      console.log(`Using cached data for table: ${table}`);
+      
+      // Get data from cache
+      const cachedTable = cachedTableData;
+      if (cachedTable) {
+        setTableData(cachedTable);
+        return;
+      }
+    }
+    
     setLoading(true)
     setError(null)
     try {
@@ -156,11 +208,18 @@ export function SupabasePage() {
         
         // Set empty array but don't throw an error - empty tables are valid
         setTableData([]);
+        
+        // Cache the empty result
+        setTableDataCache(cacheKey, []);
+        
         toast.info(`Table '${table}' exists but is empty`);
         return;
       }
       
+      // Update UI state and cache
       setTableData(data);
+      setTableDataCache(cacheKey, data);
+      
       toast.success(`Loaded data from ${table} (${data.length} rows)`);
     } catch (err) {
       console.error(`Error loading table ${table}:`, err);
@@ -173,6 +232,20 @@ export function SupabasePage() {
   }
 
   async function getCompleteSchema() {
+    // Check if we already have schema data cached
+    const cacheKey = 'schema_data';
+    if (isSchemaDataCached(cacheKey)) {
+      console.log('Using cached schema data');
+      
+      // Get data from cache
+      const cachedSchema = cachedSchemaData;
+      if (cachedSchema) {
+        setSchemaData(cachedSchema);
+        toast.success('Using cached schema data');
+        return;
+      }
+    }
+    
     setLoading(true)
     setError(null)
     try {
@@ -356,7 +429,9 @@ export function SupabasePage() {
         triggers: triggersData
       }
 
+      // Update state and cache
       setSchemaData(schema)
+      setSchemaCache(cacheKey, schema);
       
       if (successfulTables === 0) {
         toast.warning('No tables could be accessed. Check permissions or connection.')
@@ -383,6 +458,20 @@ export function SupabasePage() {
   }
 
   async function getForeignKeys() {
+    // Check if we already have foreign key data cached
+    const cacheKey = 'foreign_keys';
+    if (isForeignKeyDataCached(cacheKey)) {
+      console.log('Using cached foreign key data');
+      
+      // Get data from cache
+      const cachedForeignKeys = cachedForeignKeyData;
+      if (cachedForeignKeys) {
+        setForeignKeyData(cachedForeignKeys);
+        toast.success('Using cached foreign key data');
+        return;
+      }
+    }
+    
     setLoading(true)
     setError(null)
     try {
@@ -403,7 +492,9 @@ export function SupabasePage() {
         }
       ];
       
+      // Update state and cache
       setForeignKeyData(mockForeignKeys);
+      setForeignKeyCache(cacheKey, mockForeignKeys);
 
       // Save to separate file
       const blob = new Blob([JSON.stringify(mockForeignKeys, null, 2)], { type: 'application/json' });
@@ -429,6 +520,20 @@ export function SupabasePage() {
       setError('Please enter a table name')
       toast.error('Please enter a table name')
       return
+    }
+    
+    // Check if we already have metadata for this table cached
+    const cacheKey = `metadata_${tableName}`;
+    if (isTableMetadataCached(cacheKey)) {
+      console.log(`Using cached metadata for table: ${tableName}`);
+      
+      // Get data from cache
+      const cachedMetadata = cachedTableMetadata;
+      if (cachedMetadata) {
+        setTableMetadata(cachedMetadata);
+        toast.success(`Using cached metadata for table: ${tableName}`);
+        return;
+      }
     }
     
     setLoading(true)
@@ -510,7 +615,10 @@ export function SupabasePage() {
         }];
       }
       
+      // Update state and cache
       setTableMetadata(metadata);
+      setTableMetadataCache(cacheKey, metadata);
+      
       toast.success(`Table metadata retrieved for ${tableName}`);
       
       // Save to file
@@ -538,62 +646,129 @@ export function SupabasePage() {
     loadTableData(newTable)
   }
 
+  // Function to clear all caches
+  const clearAllCaches = () => {
+    clearSchemaCache();
+    clearForeignKeyCache();
+    clearTableMetadataCache();
+    clearTableDataCache();
+    toast.success('All caches cleared');
+  };
+  
+  // Function to check if data is being served from cache
+  const isUsingCachedData = () => {
+    return (
+      isSchemaDataCached('schema_data') ||
+      isForeignKeyDataCached('foreign_keys') ||
+      isTableMetadataCached(`metadata_${tableName}`) ||
+      isTableDataCached(`table_${tableName}`)
+    );
+  };
+  
+  // Function to refresh current view
+  const refreshCurrentView = () => {
+    if (schemaData) {
+      clearSchemaCache('schema_data');
+      getCompleteSchema();
+    }
+    
+    if (foreignKeyData) {
+      clearForeignKeyCache('foreign_keys');
+      getForeignKeys();
+    }
+    
+    if (tableMetadata) {
+      clearTableMetadataCache(`metadata_${tableName}`);
+      getTableMetadata();
+    }
+    
+    if (tableData.length > 0) {
+      clearTableDataCache(`table_${tableName}`);
+      loadTableData(tableName);
+    }
+    
+    toast.success('View refreshed with latest data');
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Supabase Schema Explorer</h1>
       
-      <div className="flex flex-wrap gap-4 mb-4">
-        <button
-          onClick={getCompleteSchema}
-          disabled={loading}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
-        >
-          {loading ? 'Fetching Schema...' : 'Get Schema Info'}
-        </button>
-        
-        <button
-          onClick={getForeignKeys}
-          disabled={loading}
-          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
-        >
-          {loading ? 'Fetching Foreign Keys...' : 'Get Foreign Keys'}
-        </button>
-        
-        <div className="w-full md:w-auto flex items-end gap-2">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Table Name
-            </label>
-            <div className="flex">
-              <input
-                type="text"
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={getCompleteSchema}
+            disabled={loading}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+          >
+            {loading ? 'Fetching Schema...' : 'Get Schema Info'}
+          </button>
+          
+          <button
+            onClick={getForeignKeys}
+            disabled={loading}
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+          >
+            {loading ? 'Fetching Foreign Keys...' : 'Get Foreign Keys'}
+          </button>
+          
+          <div className="w-full md:w-auto flex items-end gap-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Table Name
+              </label>
+              <div className="flex">
+                <input
+                  type="text"
+                  value={tableName}
+                  onChange={(e) => setTableName(e.target.value)}
+                  className="flex-grow px-3 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Enter table name"
+                />
+                <button
+                  onClick={getTableMetadata}
+                  disabled={loading}
+                  className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-r disabled:opacity-50"
+                >
+                  {loading ? 'Loading...' : 'Inspect Table'}
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <select
                 value={tableName}
-                onChange={(e) => setTableName(e.target.value)}
-                className="flex-grow px-3 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="Enter table name"
-              />
-              <button
-                onClick={getTableMetadata}
-                disabled={loading}
-                className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-r disabled:opacity-50"
+                onChange={(e) => handleTableChange(e.target.value)}
+                className="h-10 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
-                {loading ? 'Loading...' : 'Inspect Table'}
-              </button>
+                <option value="">Select a table</option>
+                {commonTables.map(table => (
+                  <option key={table} value={table}>{table}</option>
+                ))}
+              </select>
             </div>
           </div>
-          
-          <div>
-            <select
-              value={tableName}
-              onChange={(e) => handleTableChange(e.target.value)}
-              className="h-10 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="">Select a table</option>
-              {commonTables.map(table => (
-                <option key={table} value={table}>{table}</option>
-              ))}
-            </select>
+        </div>
+        
+        {/* Cache controls */}
+        <div className="flex gap-2">
+          <div className="flex items-center">
+            <span className={`px-2 py-1 rounded text-xs font-medium ${isUsingCachedData() ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+              {isUsingCachedData() ? 'Using cached data' : 'Using live data'}
+            </span>
           </div>
+          <button
+            onClick={refreshCurrentView}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-3 rounded"
+          >
+            Refresh Current View
+          </button>
+          <button
+            onClick={clearAllCaches}
+            className="bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-3 rounded"
+          >
+            Clear All Caches
+          </button>
         </div>
       </div>
 

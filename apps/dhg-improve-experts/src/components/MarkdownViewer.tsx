@@ -28,21 +28,35 @@ function MarkdownViewer({ documentId, className = '' }: MarkdownViewerProps) {
   // Helper function to get file content safely using local file server
   const getFileContent = async (filePath: string): Promise<string | null> => {
     try {
-      // Try local markdown server first (for development)
-      try {
-        // This is the local express server we created - simple and reliable
-        console.log(`Trying local markdown server for ${filePath}`);
-        const response = await fetch(`http://localhost:3001/api/markdown-file?path=${encodeURIComponent(filePath)}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.content) {
-            console.log(`Successfully loaded content from local server for ${filePath}`);
-            return data.content;
+      // Try local markdown server first (for development) if it's running
+      if (window.location.hostname === 'localhost') {
+        try {
+          // This is the local express server we created - simple and reliable
+          console.log(`Trying local markdown server for ${filePath}`);
+          
+          // Use AbortController to set a timeout to prevent hanging
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 500);
+          
+          const response = await fetch(
+            `http://localhost:3001/api/markdown-file?path=${encodeURIComponent(filePath)}`,
+            { signal: controller.signal }
+          );
+          
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.content) {
+              console.log(`Successfully loaded content from local server for ${filePath}`);
+              return data.content;
+            }
+          }
+        } catch (localServerError) {
+          if (localServerError.name !== 'AbortError') {
+            console.log('Local markdown server not available, continuing with alternatives');
           }
         }
-      } catch (localServerError) {
-        console.warn('Local markdown server not available:', localServerError);
       }
       
       // Fallback to API endpoint
