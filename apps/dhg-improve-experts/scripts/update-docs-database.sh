@@ -82,8 +82,12 @@ process_file() {
   # Create metadata JSON
   local metadata="{\"size\":$file_size,\"isPrompt\":$is_prompt_file}"
   
+  # Escape single quotes in SQL strings
+  local escaped_rel_path="${rel_path//\'/\'\'}"
+  local escaped_title="${title//\'/\'\'}"
+  
   # Check if file already exists in database
-  local existing_record=$(db_query "SELECT id, file_hash FROM documentation_files WHERE file_path = '$rel_path' AND is_deleted = false;" | grep -v "id" | grep -v "row" | grep -v "\-\-\-" | grep -v "^$")
+  local existing_record=$(db_query "SELECT id, file_hash FROM documentation_files WHERE file_path = '$escaped_rel_path' AND is_deleted = false;" | grep -v "id" | grep -v "row" | grep -v "\-\-\-" | grep -v "^$")
   
   if [ -n "$existing_record" ]; then
     # Record exists, check if file has changed
@@ -94,7 +98,7 @@ process_file() {
       # File has changed, update record
       echo "Updating existing record for $rel_path (changed)"
       db_query "UPDATE documentation_files 
-               SET title = '$title', 
+               SET title = '$escaped_title', 
                    last_modified_at = '$last_modified_iso', 
                    last_indexed_at = '$TIMESTAMP', 
                    file_hash = '$file_hash', 
@@ -110,14 +114,14 @@ process_file() {
     fi
   else
     # Check if the file was previously deleted
-    local deleted_record=$(db_query "SELECT id FROM documentation_files WHERE file_path = '$rel_path' AND is_deleted = true;" | grep -v "id" | grep -v "row" | grep -v "\-\-\-" | grep -v "^$")
+    local deleted_record=$(db_query "SELECT id FROM documentation_files WHERE file_path = '$escaped_rel_path' AND is_deleted = true;" | grep -v "id" | grep -v "row" | grep -v "\-\-\-" | grep -v "^$")
     
     if [ -n "$deleted_record" ]; then
       # File was previously deleted, update record and mark as not deleted
       local db_id=$(echo "$deleted_record" | awk '{print $1}')
       echo "Restoring previously deleted record for $rel_path"
       db_query "UPDATE documentation_files 
-               SET title = '$title', 
+               SET title = '$escaped_title', 
                    last_modified_at = '$last_modified_iso', 
                    last_indexed_at = '$TIMESTAMP', 
                    file_hash = '$file_hash', 
@@ -131,7 +135,7 @@ process_file() {
       db_query "INSERT INTO documentation_files 
                (file_path, title, last_modified_at, last_indexed_at, file_hash, metadata, created_at, updated_at, is_deleted) 
                VALUES 
-               ('$rel_path', '$title', '$last_modified_iso', '$TIMESTAMP', '$file_hash', '$metadata', '$TIMESTAMP', '$TIMESTAMP', false);"
+               ('$escaped_rel_path', '$escaped_title', '$last_modified_iso', '$TIMESTAMP', '$file_hash', '$metadata', '$TIMESTAMP', '$TIMESTAMP', false);"
     fi
   fi
 }

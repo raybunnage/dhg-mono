@@ -5,7 +5,7 @@ Let's create a summary document explaining the changes we've made and
   ⎿ Wrote 130 lines to CLAUDE_SQL_FIX.md
      # SQL Generation Fix Implementation
      This document explains the changes made to fix the SQL generation
-      functionality in the Supabase Admin page.
+      functionality in the Supabases Admin page.
      ## Problem
      The "Generate SQL" button in the Supabase Admin page was not
      working correctly because it used a mock implementation in

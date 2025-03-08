@@ -66,15 +66,48 @@ export default defineConfig(({ mode }) => {
           server.middlewares.use('/api/docs-sync', async (req: IncomingMessage, res: ServerResponse) => {
             if (req.method === 'POST') {
               try {
-                console.log('POST request to /api/docs-sync received');
-                // Import dynamically to avoid circular dependencies
-                const { syncDocumentationToDatabase } = await import('./src/api/markdown-report.ts');
-                const result = await syncDocumentationToDatabase();
+                console.log('POST request to /api/docs-sync received - executing shell script');
+                const { exec } = require('child_process');
+                const { promisify } = require('util');
+                const path = require('path');
+                const execPromise = promisify(exec);
                 
-                console.log('Sync result:', result);
-                res.statusCode = result.success ? 200 : 500;
-                res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify(result));
+                // Get the project root directory
+                const projectRoot = process.cwd();
+                
+                // Path to the update script
+                const scriptPath = path.join(projectRoot, 'scripts', 'update-docs-database.sh');
+                
+                try {
+                  // Check if script exists
+                  await execPromise(`test -f "${scriptPath}"`);
+                  
+                  // Make it executable
+                  await execPromise(`chmod +x "${scriptPath}"`);
+                  
+                  // Execute the script
+                  console.log(`Executing script: ${scriptPath}`);
+                  const { stdout, stderr } = await execPromise(`cd "${projectRoot}" && "${scriptPath}"`);
+                  
+                  const result = {
+                    success: !stderr || stderr.trim() === '',
+                    message: 'Documentation database update completed',
+                    output: stdout + (stderr ? `\nErrors:\n${stderr}` : '')
+                  };
+                  
+                  res.statusCode = result.success ? 200 : 500;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify(result));
+                } catch (execError) {
+                  console.error('Error executing script:', execError);
+                  res.statusCode = 500;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({
+                    success: false,
+                    message: `Error executing script: ${execError.message || 'Unknown error'}`,
+                    output: execError.stdout + (execError.stderr ? `\nErrors:\n${execError.stderr}` : '')
+                  }));
+                }
               } catch (error) {
                 console.error('Error in docs-sync middleware:', error);
                 res.statusCode = 500;
