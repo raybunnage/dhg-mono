@@ -1,6 +1,6 @@
 # Markdown Files Report
 
-Generated: Fri Mar  7 17:15:01 PST 2025
+Generated: Sat Mar  8 14:20:16 PST 2025
 
 ## Overview
 
@@ -8,11 +8,11 @@ This report shows all markdown files found in the repository, organized hierarch
 
 ## Summary
 
-- **Total markdown files:** 89
+- **Total markdown files:** 95
 - **README files:** 4
-- **Files in docs folders:** 56
+- **Files in docs folders:** 57
 - **Files in prompts folder:** 0
-- **Files in other locations:** 29
+- **Files in other locations:** 34
 - **Root-level files:** 2
 
 ## Root-Level Files
@@ -26,7 +26,7 @@ This report shows all markdown files found in the repository, organized hierarch
 
 - 📄 [command-history-tracking.md](/docs/command-history-tracking.md) - 2025-03-02 11:14 (5007 bytes)
 - 📄 [documentation-management.md](/docs/documentation-management.md) - 2025-03-02 12:17 (4672 bytes)
-- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-07 17:15 (181 bytes)
+- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-08 14:20 (181 bytes)
 - 📁 **architecture/**
   - 📄 [doc-assessment-implementation.md](/docs/architecture/doc-assessment-implementation.md) - 2025-03-05 17:24 (9269 bytes)
   - 📁 **supabase_design/**
@@ -56,6 +56,8 @@ This report shows all markdown files found in the repository, organized hierarch
   - 📄 [git_history.md](/docs/git-history/git_history.md) - 2025-02-17 17:41 (11758 bytes)
   - 📄 [git_history_detailed.md](/docs/git-history/git_history_detailed.md) - 2025-02-17 17:41 (35558 bytes)
   - 📄 [git_history_with_files.md](/docs/git-history/git_history_with_files.md) - 2025-02-17 17:41 (88786 bytes)
+- 📁 **git-workflows/**
+  - 📄 [restoring-previous-file-versions.md](/docs/git-workflows/restoring-previous-file-versions.md) - 2025-03-08 14:19 (5791 bytes)
 - 📁 **guides/**
   - 📄 [batch-processing-and-trees.md](/docs/guides/batch-processing-and-trees.md) - 2025-02-17 17:41 (6416 bytes)
   - 📄 [file-entries-mapping.md](/docs/guides/file-entries-mapping.md) - 2025-02-17 17:41 (3974 bytes)
@@ -113,6 +115,8 @@ This report shows all markdown files found in the repository, organized hierarch
 - 📄 [prompt-management-implementation-plan.md](/prompts/prompt-management-implementation-plan.md) - 2025-03-06 17:25 (10422 bytes)
 - 📄 [react-component-analysis-prompt.md](/prompts/react-component-analysis-prompt.md) - 2025-02-21 22:08 (5990 bytes)
 - 📄 [sql-history-implementation-plan.md](/prompts/sql-history-implementation-plan.md) - 2025-03-06 23:35 (18388 bytes)
+- 📄 [sql-query-generation-guide.md](/prompts/sql-query-generation-guide.md) - 2025-03-08 02:57 (3488 bytes)
+- 📄 [supabase-sql-query-guide.md](/prompts/supabase-sql-query-guide.md) - 2025-03-08 14:19 (13180 bytes)
 
 ## Apps Directory (Hierarchical View)
 
@@ -162,9 +166,12 @@ This report shows all markdown files found in the repository, organized hierarch
       - 📁 **supabase/**
   - 📁 **supabase/**
 - 📁 **dhg-improve-experts/**
+  - 📄 [CLAUDE_API_WORKFLOW.md](/apps/dhg-improve-experts/CLAUDE_API_WORKFLOW.md) - 2025-03-08 04:17 (12062 bytes)
+  - 📄 [CLAUDE_SQL_FIX.md](/apps/dhg-improve-experts/CLAUDE_SQL_FIX.md) - 2025-03-08 04:30 (4456 bytes)
   - 📄 [DocumentTypeArchiveNotes.md](/apps/dhg-improve-experts/DocumentTypeArchiveNotes.md) - 2025-03-03 09:15 (2372 bytes)
   - 📄 [README-guts-dashboard.md](/apps/dhg-improve-experts/README-guts-dashboard.md) - 2025-03-01 06:46 (4625 bytes)
   - 📄 [README.md](/apps/dhg-improve-experts/README.md) - 2025-02-10 17:31 (2303 bytes)
+  - 📄 [SQL_GENERATION_WORKFLOW.md](/apps/dhg-improve-experts/SQL_GENERATION_WORKFLOW.md) - 2025-03-08 04:22 (14131 bytes)
   - 📄 [SUPABASE_CONNECTION.md](/apps/dhg-improve-experts/SUPABASE_CONNECTION.md) - 2025-03-03 00:43 (3884 bytes)
   - 📄 [SUPABASE_TYPES_MIGRATION.md](/apps/dhg-improve-experts/SUPABASE_TYPES_MIGRATION.md) - 2025-03-03 00:35 (3707 bytes)
   - 📄 [development-process-specification.md](/apps/dhg-improve-experts/development-process-specification.md) - 2025-03-05 17:17 (10161 bytes)

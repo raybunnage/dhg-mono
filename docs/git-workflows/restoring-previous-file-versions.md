@@ -12,11 +12,17 @@ Here's the complete sequence of commands to restore a file from a previous commi
 # 1. View recent commit history for the specific file
 git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- path/to/file.sh
 
+# real things Example: View recent commit history for the markdown report script
+git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- scripts/markdown-report.sh
+
 # 2. Examine detailed changes to identify the last working version
 git log -n 5 -p -- path/to/file.sh
 
 # 3. Restore the file from the identified commit
 git checkout abc123 -- path/to/file.sh
+
+# real things Example: Restore the markdown report script from commit 91272de
+git checkout 12d3da3 -- scripts/markdown-report.sh
 
 # 4. Make the file executable (if it's a script)
 chmod +x path/to/file.sh
