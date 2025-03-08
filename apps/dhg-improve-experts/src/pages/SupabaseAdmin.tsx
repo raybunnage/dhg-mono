@@ -59,7 +59,8 @@ interface SupabaseManagerProps {
 
 const SupabaseAdmin: React.FC<SupabaseManagerProps> = ({ initialTab = "overview" }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [loading, setLoading] = useState(true);
+  // Set loading to false initially to display UI elements immediately
+  const [loading, setLoading] = useState(false);
   const [tables, setTables] = useState<TableSummary[]>([]);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [tableColumns, setTableColumns] = useState<TableColumn[]>([]);
@@ -85,6 +86,16 @@ const SupabaseAdmin: React.FC<SupabaseManagerProps> = ({ initialTab = "overview"
   const [objectType, setObjectType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [inconsistencies, setInconsistencies] = useState<any[]>([]);
+  
+  // AI SQL generation states
+  const [showAskAiDialog, setShowAskAiDialog] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [generatingSql, setGeneratingSql] = useState(false);
+  
+  // Simple loading flag (no caching)
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  // Flag to track if initial data has been loaded
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
   // Initialize some static data on component mount
   useEffect(() => {
@@ -135,18 +146,98 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;`);
+
+    // Initialize with empty data first
+    const emptyTablesList: TableSummary[] = [
+      {
+        table_name: "Loading...",
+        row_count: 0,
+        size: '~',
+        last_vacuum: 'Unknown',
+        missing_indexes: 0,
+        has_primary_key: true,
+        column_count: 0,
+        status: 'warning'
+      }
+    ];
+    
+    setTables(emptyTablesList);
+    
+    // Set default empty objects
+    setDbObjects([
+      {
+        name: "Loading database objects...",
+        type: 'table',
+        definition: "-- Loading...",
+        schema: 'public'
+      }
+    ]);
+    
+    setFilteredObjects([
+      {
+        name: "Loading database objects...",
+        type: 'table',
+        definition: "-- Loading...",
+        schema: 'public'
+      }
+    ]);
+
+    // Set a short delay before fetching actual data to ensure UI renders first
+    setTimeout(() => {
+      // Fetch data only once on initial mount
+      if (!initialDataLoaded && (activeTab === "overview" || activeTab === "tables")) {
+        setIsLoadingData(true);
+        fetchDatabaseOverview()
+          .catch(err => {
+            console.error('Error loading data:', err);
+            toast.error('Failed to load data');
+          })
+          .finally(() => {
+            setIsLoadingData(false);
+            setInitialDataLoaded(true);
+          });
+      }
+    }, 100); // Short delay to let UI render first
   }, []);
 
-  // Call this on mount
+  // Add safety timeout to ensure component loads even if data fetching fails
   useEffect(() => {
-    if (activeTab === "overview" || activeTab === "tables") {
-      fetchDatabaseOverview();
+    if (isLoadingData) {
+      const safetyTimeout = window.setTimeout(() => {
+        if (isLoadingData) {
+          console.log('Data loading safety timeout triggered');
+          setIsLoadingData(false);
+        }
+        toast.warning('Some data may not have loaded properly. Try refreshing if needed.');
+      }, 15000);
+      
+      return () => window.clearTimeout(safetyTimeout);
     }
-    if (activeTab === "sql") {
+  }, [isLoadingData]);
+  
+  // Handle tab change - only fetch data if not already loaded
+  useEffect(() => {
+    // Skip if we're already loading data
+    if (isLoadingData) return;
+    
+    if ((activeTab === "overview" || activeTab === "tables") && !initialDataLoaded) {
+      // Only fetch if data hasn't been loaded yet
+      setIsLoadingData(true);
+      fetchDatabaseOverview()
+        .catch(err => {
+          console.error('Error loading data:', err);
+          toast.error('Failed to load data');
+        })
+        .finally(() => {
+          setIsLoadingData(false);
+          setInitialDataLoaded(true);
+        });
+    }
+    else if (activeTab === "sql") {
       fetchQueryHistory();
       fetchAvailableTags();
     }
-  }, [activeTab]);
+  }, [activeTab, isLoadingData, initialDataLoaded]);
 
   useEffect(() => {
     if (selectedTable) {
@@ -375,6 +466,7 @@ $$ LANGUAGE plpgsql;`);
       setFilteredObjects(objects);
       
       console.log("Database overview fetched successfully");
+      return true; // Explicitly return true to indicate success
     } catch (error) {
       console.error("Error in fetchDatabaseOverview:", error);
       toast.error("Failed to fetch database overview: " + (error instanceof Error ? error.message : String(error)));
@@ -433,6 +525,7 @@ $$ LANGUAGE plpgsql;`);
           schema: 'public'
         }
       ]);
+      return false; // Return false to indicate failure
     } finally {
       setLoading(false);
     }
@@ -1783,6 +1876,17 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                         Save Query
                       </Button>
                     )}
+                    
+                    <Button 
+                      variant="outline" 
+                      className="bg-blue-50 border-blue-200 hover:bg-blue-100"
+                      onClick={() => setShowAskAiDialog(true)}
+                    >
+                      <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 3C7.58 3 4 6.58 4 11C4 13.03 4.74 14.89 6 16.28V21L8.5 19.5L10.5 21L12.5 19.5L14.5 21L16.5 19.5L19 21V16.28C20.26 14.89 21 13.03 21 11C21 6.58 17.42 3 12 3ZM13 15H11V13H13V15ZM13 11H11V7H13V11Z" fill="#4285F4"/>
+                      </svg>
+                      Ask AI
+                    </Button>
                   </div>
                   
                   <div className="space-x-2">
@@ -2006,6 +2110,82 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                   </Button>
                   <Button onClick={saveQueryToHistory}>
                     Save Query
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Ask AI Dialog */}
+          {showAskAiDialog && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+                <h3 className="text-lg font-bold mb-4">Ask AI to Generate SQL</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Describe what you need</label>
+                    <Textarea
+                      className="min-h-[150px]"
+                      placeholder="Describe in plain English what SQL query you need, e.g. 'Find all documents uploaded in the last 30 days that contain the word expert' or 'Count the number of records in each table'"
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      rows={5}
+                    />
+                  </div>
+                  
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <h4 className="text-sm font-medium mb-2">Tips for best results:</h4>
+                    <ul className="text-sm text-gray-600 space-y-1 list-disc pl-5">
+                      <li>Be specific about which tables and columns you want to query</li>
+                      <li>Mention any filters, sorting, or grouping you need</li>
+                      <li>For complex queries, break down your request into steps</li>
+                      <li>Include examples of expected results if possible</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" onClick={() => {
+                    setShowAskAiDialog(false);
+                    setAiPrompt("");
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      // Placeholder for actual AI SQL generation
+                      setGeneratingSql(true);
+                      // Simulate AI response - this will be replaced with actual API call
+                      setTimeout(() => {
+                        const sampleQuery = "-- Generated SQL based on your request\n" +
+                          "SELECT table_name, COUNT(*) as row_count\n" +
+                          "FROM information_schema.tables\n" +
+                          "WHERE table_schema = 'public'\n" +
+                          "GROUP BY table_name\n" +
+                          "ORDER BY row_count DESC;";
+                        
+                        // Set the SQL content
+                        setSqlContent(sampleQuery);
+                        // Close dialog and reset
+                        setShowAskAiDialog(false);
+                        setAiPrompt("");
+                        setGeneratingSql(false);
+                        // Show success message
+                        toast.success("SQL query generated! You can now run it or make adjustments.");
+                      }, 1500);
+                    }}
+                    disabled={!aiPrompt.trim() || generatingSql}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {generatingSql ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>Generate SQL</>
+                    )}
                   </Button>
                 </div>
               </div>

@@ -1,3 +1,10 @@
+Okay - let's change our approach.
+
+On the "supabase" page can you first display your ui objects, but don't start querying the databbase until these objects appeared - even though their counts might be zero.
+Only then start the querying that populates the various ui widgets with numbers.
+Also have a very close look at your database queires. It is taking a very long time now, whereawse before it was faster.  It seems like it is repeagting the quieries again and again and it seems to be stuck in a loop even without caching making it more difficult.  Please investigate and fix.  It shouldn[t take you that long to populagte the dashboard widgets]
+
+
 The fixes have been implemented to address the endless refresh loop issue
   on the Supabase page. Here are the key changes made:
 
