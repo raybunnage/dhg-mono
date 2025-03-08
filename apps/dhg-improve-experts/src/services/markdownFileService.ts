@@ -843,11 +843,14 @@ export class MarkdownFileService {
           if (normalizedPath.startsWith('public/')) {
             const publicPath = normalizedPath.replace('public/', '/');
             try {
+              console.log(`Attempting to fetch public file: ${publicPath}`);
               const response = await fetch(publicPath);
               if (response.ok) {
                 const content = await response.text();
                 const fileName = normalizedPath.split('/').pop() || '';
                 const title = fileName.replace(/\.md[x]?$/, '');
+                
+                console.log(`Successfully loaded public file: ${publicPath} (${content.length} bytes)`);
                 
                 return {
                   id: `file_${normalizedPath}`,
@@ -857,6 +860,8 @@ export class MarkdownFileService {
                   lastModifiedAt: new Date().toISOString(),
                   size: content.length
                 };
+              } else {
+                console.warn(`Failed to fetch public file: ${publicPath} - Status: ${response.status}`);
               }
             } catch (fetchError) {
               console.warn(`Error fetching public file: ${publicPath}`, fetchError);
@@ -932,34 +937,52 @@ Documentation for auditing expert profiles and data.`
           
           // Get all potential file locations
           const repoRoot = process.cwd();
-          const potentialPaths = [
-            // Direct path
-            path.join(repoRoot, normalizedPath),
-            
-            // Root level relative path
-            path.join(repoRoot, '..', normalizedPath),
-            
-            // Without docs prefix if it has one
-            normalizedPath.startsWith('docs/') 
-              ? path.join(repoRoot, normalizedPath.substring(5))
-              : null,
-            
-            // With docs prefix if it doesn't have one
-            !normalizedPath.startsWith('docs/') && !normalizedPath.includes('/')
-              ? path.join(repoRoot, 'docs', normalizedPath)
-              : null,
+          
+          // Normalize path - handle both .md and .mdx extensions
+          let pathsToTry = [normalizedPath];
+          if (!normalizedPath.endsWith('.md') && !normalizedPath.endsWith('.mdx')) {
+            pathsToTry.push(`${normalizedPath}.md`);
+            pathsToTry.push(`${normalizedPath}.mdx`);
+          }
+          
+          const potentialPaths = [];
+          
+          // Generate all possible paths for each path variation
+          for (const pathVariant of pathsToTry) {
+            potentialPaths.push(
+              // Direct path
+              path.join(repoRoot, pathVariant),
               
-            // Check in monorepo root with the same path
-            path.join(repoRoot, '..', '..', normalizedPath),
-            
-            // Try to handle paths with /docs/ in them
-            normalizedPath.includes('/docs/') 
-              ? path.join(repoRoot, '..', '..', normalizedPath.replace('/docs/', '/'))
-              : null
-          ].filter(Boolean) as string[];
+              // Root level relative path
+              path.join(repoRoot, '..', pathVariant),
+              
+              // Without docs prefix if it has one
+              pathVariant.startsWith('docs/') 
+                ? path.join(repoRoot, pathVariant.substring(5))
+                : null,
+              
+              // With docs prefix if it doesn't have one
+              !pathVariant.startsWith('docs/') && !pathVariant.includes('/')
+                ? path.join(repoRoot, 'docs', pathVariant)
+                : null,
+                
+              // Check in monorepo root with the same path
+              path.join(repoRoot, '..', '..', pathVariant),
+              
+              // Try to handle paths with /docs/ in them
+              pathVariant.includes('/docs/') 
+                ? path.join(repoRoot, '..', '..', pathVariant.replace('/docs/', '/'))
+                : null
+            );
+          }
+          
+          // Filter out nulls and log the paths we're trying
+          const validPaths = potentialPaths.filter(Boolean) as string[];
+          console.log(`Trying ${validPaths.length} potential paths for file: ${normalizedPath}`);
+          validPaths.slice(0, 5).forEach((p, i) => console.log(`  Path ${i+1}: ${p}`));
           
           // Try all potential paths
-          for (const tryPath of potentialPaths) {
+          for (const tryPath of validPaths) {
             if (fs.existsSync(tryPath)) {
               try {
                 const content = fs.readFileSync(tryPath, 'utf8');
@@ -1548,7 +1571,8 @@ Documentation for auditing expert profiles and data.`
           console.log('Using comprehensive recursive directory scanning approach');
           
           // First, get ALL markdown files in the repo with a single command to ensure we don't miss any
-          const allFilesCommand = `find "${repoRoot}/.." -type f -name "*.md" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*" -not -path "*/build/*" -not -path "*/coverage/*" 2>/dev/null`;
+          // Use both .md and .mdx extensions in the find command to get all markdown files
+          const allFilesCommand = `find "${repoRoot}/.." -type f \\( -name "*.md" -o -name "*.mdx" \\) -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*" -not -path "*/build/*" -not -path "*/coverage/*" 2>/dev/null`;
           console.log(`Executing comprehensive file search: ${allFilesCommand}`);
           
           const { stdout: allFilesOutput, stderr: allFilesError } = await execAsync(allFilesCommand);
@@ -1583,6 +1607,16 @@ Documentation for auditing expert profiles and data.`
           // Define the recursive function to process a directory
           const processDirectory = async (dirPath: string, results: MarkdownTreeItem[]) => {
             console.log(`Processing directory: ${dirPath}`);
+            
+            // Skip directories we know should be excluded
+            if (dirPath.includes('/node_modules/') || 
+                dirPath.includes('/.git/') ||
+                dirPath.includes('/dist/') ||
+                dirPath.includes('/build/') ||
+                dirPath.includes('/coverage/')) {
+              console.log(`Skipping excluded directory: ${dirPath}`);
+              return;
+            }
             
             try {
               // For this directory, add all files from our map
@@ -1631,6 +1665,15 @@ Documentation for auditing expert profiles and data.`
               
               // Process all subdirectories recursively
               for (const dir of directories) {
+                // Skip node_modules, .git, etc.
+                if (dir.includes('/node_modules/') || 
+                    dir.includes('/.git/') ||
+                    dir.includes('/dist/') ||
+                    dir.includes('/build/') ||
+                    dir.includes('/coverage/')) {
+                  continue;
+                }
+                
                 // Create a folder entry
                 const dirName = dir.split('/').pop() || '';
                 const relPath = dir.replace(repoRoot + '/', '');
@@ -1656,7 +1699,7 @@ Documentation for auditing expert profiles and data.`
           
           // Root level markdown files
           try {
-            const rootFilesCommand = `find "${repoRoot}" -maxdepth 1 -name "*.md" -type f 2>/dev/null`;
+            const rootFilesCommand = `find "${repoRoot}" -maxdepth 1 -type f \\( -name "*.md" -o -name "*.mdx" \\) 2>/dev/null`;
             const { stdout: rootFilesOutput, stderr: rootFilesError } = await execAsync(rootFilesCommand);
             
             if (rootFilesError) {
@@ -2094,7 +2137,9 @@ Documentation for auditing expert profiles and data.`
         updated: 0,
         unchanged: 0,
         failed: 0,
-        filesPaths: [] as string[] // Track actual file paths for detailed reporting
+        softDeleted: 0,
+        filesPaths: [] as string[], // Track actual file paths for detailed reporting
+        deletedPaths: [] as string[] // Track paths of soft-deleted files
       };
       
       // Process each file - focusing only on the documentation_files table
@@ -2262,6 +2307,13 @@ Documentation for auditing expert profiles and data.`
               stats.failed += filesToDelete.length;
             } else {
               console.log(`Successfully marked ${filesToDelete.length} files as deleted`);
+              
+              // Log the deleted files for debugging
+              console.log('Soft-deleted files:');
+              filesToDelete.forEach((file, index) => {
+                console.log(`${index + 1}. ${file.file_path} (ID: ${file.id})`);
+              });
+              
               // Add soft deleted files to stats
               stats.softDeleted = filesToDelete.length;
               stats.deletedPaths = filesToDelete.map(file => file.file_path);

@@ -1,3 +1,20 @@
+The code has been updated to improve the Markdown file finding and synchronization process. Here's
+   what was fixed:
+
+  1. Enhanced the file search to find both .md and .mdx files by using a more comprehensive find
+  command pattern.
+  2. Improved directory traversal by adding better filtering to skip node_modules, .git, and other
+  directories that should be excluded.
+  3. Enhanced the file path resolution with better path normalization and handling of file
+  extensions.
+  4. Added more detailed logging to help diagnose issues, especially for soft-deleted files.
+  5. Improved error handling when fetching files from public directories.
+
+  These changes should ensure the "Sync Database" button properly identifies all markdown files in
+  the repository, correctly updates existing files, and properly marks deleted files using the soft
+  delete functionality. The system now matches the same logic used in the bash script for finding
+  Markdown files.
+
 Perfect! I've made several important changes to fix the issue of
   non-existent files appearing in the tree:
 
