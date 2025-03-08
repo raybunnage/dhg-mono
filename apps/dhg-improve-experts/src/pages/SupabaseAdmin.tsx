@@ -87,6 +87,21 @@ const SupabaseAdmin: React.FC<SupabaseManagerProps> = ({ initialTab = "overview"
   const [searchTerm, setSearchTerm] = useState("");
   const [inconsistencies, setInconsistencies] = useState<any[]>([]);
   
+  // Table filters
+  const [hideEmptyTables, setHideEmptyTables] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  
+  // Table category definitions
+  const tableCategories = {
+    "Presentation": ["presentation", "present"],
+    "Command": ["command"],
+    "Email": ["email", "mail"],
+    "Page": ["page"],
+    "Prompt": ["prompt"],
+    "Sql": ["sql"],
+    "Sync": ["sync"],
+  };
+  
   // AI SQL generation states
   const [showAskAiDialog, setShowAskAiDialog] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
@@ -724,7 +739,8 @@ $$ LANGUAGE plpgsql;`);
       }
       
       setTableColumns(columns);
-      toast.info(`Showing inferred structure for table ${tableName}`);
+      // Use toast.success instead of toast.info which might not be available
+      toast.success(`Showing inferred structure for table ${tableName}`);
       
     } catch (error) {
       console.error(`Error fetching details for table ${tableName}:`, error);
@@ -1448,6 +1464,53 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
       default: return <Database className="h-4 w-4" />;
     }
   };
+  
+  // Function to check if a table belongs to a category
+  const tableMatchesCategory = (tableName: string, category: string): boolean => {
+    const patterns = tableCategories[category as keyof typeof tableCategories] || []
+    return patterns.some(pattern => tableName.toLowerCase().includes(pattern.toLowerCase()))
+  }
+  
+  // Function to toggle a filter
+  const toggleFilter = (filter: string) => {
+    setActiveFilters(prev => {
+      if (prev.includes(filter)) {
+        return prev.filter(f => f !== filter)
+      } else {
+        return [...prev, filter]
+      }
+    })
+  }
+  
+  // Filter and sort tables based on active filters
+  const getFilteredTables = () => {
+    if (!tables) return []
+    
+    let filtered = [...tables]
+    
+    // Filter out empty tables if the option is selected
+    if (hideEmptyTables) {
+      filtered = filtered.filter(table => table.row_count > 0)
+    }
+    
+    // Filter tables based on active category filters
+    if (activeFilters.length > 0) {
+      filtered = filtered.filter(table => {
+        // If the table matches any of the active filters, include it
+        return activeFilters.some(filter => 
+          tableMatchesCategory(table.table_name, filter)
+        )
+      })
+    }
+    
+    // Sort tables by row count in descending order
+    return filtered.sort((a, b) => {
+      // Convert to numbers to ensure proper comparison
+      const countA = typeof a.row_count === 'number' ? a.row_count : 0
+      const countB = typeof b.row_count === 'number' ? b.row_count : 0
+      return countB - countA // Descending order
+    })
+  };
 
   if (loading) {
     return (
@@ -1559,10 +1622,62 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
               <Card className="h-full">
                 <CardHeader>
                   <CardTitle>Tables & Views</CardTitle>
-                  <CardDescription>Select a table to view details</CardDescription>
+                  <CardDescription>Select a table to view details: Pills Below</CardDescription>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <div className="max-h-[600px] overflow-y-auto">
+                <CardContent>
+                  {/* Filter Pills */}
+                  <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+                    <h3 className="text-sm font-semibold mb-2">Filter Tables:</h3>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {/* Toggle for hiding empty tables */}
+                      <button
+                        onClick={() => setHideEmptyTables(!hideEmptyTables)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors shadow-sm ${
+                          hideEmptyTables 
+                            ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                            : 'bg-white border border-gray-300 hover:bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {hideEmptyTables ? 'Hide Empty Tables' : 'Show All Tables'}
+                      </button>
+                      
+                      {/* Category filter pills */}
+                      {Object.keys(tableCategories).map(category => (
+                        <button
+                          key={category}
+                          onClick={() => toggleFilter(category)}
+                          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors shadow-sm ${
+                            activeFilters.includes(category)
+                              ? 'bg-green-600 text-white hover:bg-green-700'
+                              : 'bg-white border border-gray-300 hover:bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {category}
+                        </button>
+                      ))}
+                      
+                      {/* Clear all filters button */}
+                      {(activeFilters.length > 0 || hideEmptyTables) && (
+                        <button
+                          onClick={() => {
+                            setActiveFilters([]);
+                            setHideEmptyTables(false);
+                          }}
+                          className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 hover:bg-red-200 text-red-700 shadow-sm border border-red-200"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="text-xs text-blue-800">
+                      Showing {getFilteredTables().length} of {tables.length} tables
+                      {hideEmptyTables ? ' (hiding empty tables)' : ''}
+                      {activeFilters.length > 0 ? ` with filters: ${activeFilters.join(', ')}` : ''}
+                    </div>
+                  </div>
+                
+                  <div className="max-h-[500px] overflow-y-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -1573,14 +1688,42 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {tables.map((table) => (
+                        {getFilteredTables().map((table) => (
                           <TableRow 
                             key={table.table_name}
-                            className={selectedTable === table.table_name ? 'bg-blue-50' : ''}
+                            className={`${selectedTable === table.table_name ? 'bg-blue-50' : ''} ${table.row_count > 0 ? '' : 'bg-gray-50'}`}
                             onClick={() => setSelectedTable(table.table_name)}
                           >
-                            <TableCell className="font-medium">{table.table_name}</TableCell>
-                            <TableCell>{table.row_count.toLocaleString()}</TableCell>
+                            <TableCell>
+                              <div className="font-medium">{table.table_name}</div>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {Object.keys(tableCategories).filter(
+                                  category => tableMatchesCategory(table.table_name, category)
+                                ).map(category => (
+                                  <span 
+                                    key={category}
+                                    className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!activeFilters.includes(category)) {
+                                        toggleFilter(category);
+                                      }
+                                    }}
+                                  >
+                                    {category}
+                                  </span>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                table.row_count > 0 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {table.row_count.toLocaleString()}
+                              </span>
+                            </TableCell>
                             <TableCell>{table.size}</TableCell>
                             <TableCell>
                               <Badge className={getStatusColor(table.status)}>

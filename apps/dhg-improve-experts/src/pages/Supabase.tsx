@@ -212,7 +212,7 @@ export function SupabasePage() {
         // Cache the empty result
         setTableDataCache(cacheKey, []);
         
-        toast.info(`Table '${table}' exists but is empty`);
+        toast.success(`Table '${table}' exists but is empty`);
         return;
       }
       
@@ -567,7 +567,7 @@ export function SupabasePage() {
       } else {
         // Table exists but is empty - try to provide some helpful info
         console.log(`Table ${tableName} exists but is empty`);
-        toast.info(`Table '${tableName}' exists but is empty. Cannot infer column structure.`);
+        toast.success(`Table '${tableName}' exists but is empty. Cannot infer column structure.`);
         
         // We can still set an empty metadata array, but with a message
         metadata = [{
@@ -648,6 +648,68 @@ export function SupabasePage() {
     toast.success('View refreshed with latest data');
   };
 
+  // Add filter states
+  const [hideEmptyTables, setHideEmptyTables] = useState(false)
+  const [activeFilters, setActiveFilters] = useState<string[]>([])
+  
+  // Table category definitions
+  const tableCategories = {
+    "Presentation": ["presentation", "present"],
+    "Command": ["command"],
+    "Email": ["email", "mail"],
+    "Page": ["page"],
+    "Prompt": ["prompt"],
+    "Sql": ["sql"],
+    "Sync": ["sync"],
+  }
+  
+  // Function to check if a table belongs to a category
+  const tableMatchesCategory = (tableName: string, category: string): boolean => {
+    const patterns = tableCategories[category as keyof typeof tableCategories] || []
+    return patterns.some(pattern => tableName.toLowerCase().includes(pattern.toLowerCase()))
+  }
+  
+  // Function to toggle a filter
+  const toggleFilter = (filter: string) => {
+    setActiveFilters(prev => {
+      if (prev.includes(filter)) {
+        return prev.filter(f => f !== filter)
+      } else {
+        return [...prev, filter]
+      }
+    })
+  }
+  
+  // Filter tables based on active filters and empty table filter
+  const getFilteredTables = () => {
+    if (!schemaData || !schemaData.tables) return []
+    
+    let filtered = [...schemaData.tables]
+    
+    // Filter out empty tables if the option is selected
+    if (hideEmptyTables) {
+      filtered = filtered.filter(table => table.row_count > 0)
+    }
+    
+    // Filter tables based on active category filters
+    if (activeFilters.length > 0) {
+      filtered = filtered.filter(table => {
+        // If the table matches any of the active filters, include it
+        return activeFilters.some(filter => 
+          tableMatchesCategory(table.table_name, filter)
+        )
+      })
+    }
+    
+    // Sort tables by row count in descending order
+    return filtered.sort((a, b) => {
+      // Convert to numbers to ensure proper comparison
+      const countA = typeof a.row_count === 'number' ? a.row_count : 0
+      const countB = typeof b.row_count === 'number' ? b.row_count : 0
+      return countB - countA // Descending order
+    })
+  }
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Supabase Schema Explorer</h1>
@@ -673,7 +735,7 @@ export function SupabasePage() {
           <div className="w-full md:w-auto flex items-end gap-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Table Name
+                Table Name <span className="text-xs font-normal text-blue-600">(See filter pills below)</span>
               </label>
               <div className="flex">
                 <input
@@ -699,7 +761,7 @@ export function SupabasePage() {
                 onChange={(e) => handleTableChange(e.target.value)}
                 className="h-10 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
-                <option value="">Select a table</option>
+                <option value="">Select a table to view Details: Pills Below</option>
                 {commonTables.map(table => (
                   <option key={table} value={table}>{table}</option>
                 ))}
@@ -729,6 +791,62 @@ export function SupabasePage() {
           </button>
         </div>
       </div>
+
+      {/* Table Filter Pills - Placed prominently at the top */}
+      {schemaData && schemaData.tables && (
+        <div className="mt-6 mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-3">Table Filters</h3>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {/* Toggle for hiding empty tables */}
+            <button
+              onClick={() => setHideEmptyTables(!hideEmptyTables)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm ${
+                hideEmptyTables 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-white border border-gray-300 hover:bg-gray-100 text-gray-800'
+              }`}
+            >
+              {hideEmptyTables ? 'Showing Non-Empty Tables' : 'Show All Tables'}
+            </button>
+            
+            {/* Category filter pills */}
+            {Object.keys(tableCategories).map(category => (
+              <button
+                key={category}
+                onClick={() => toggleFilter(category)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm ${
+                  activeFilters.includes(category)
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-white border border-gray-300 hover:bg-gray-100 text-gray-800'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+            
+            {/* Clear all filters button */}
+            {(activeFilters.length > 0 || hideEmptyTables) && (
+              <button
+                onClick={() => {
+                  setActiveFilters([]);
+                  setHideEmptyTables(false);
+                }}
+                className="px-4 py-2 rounded-full text-sm font-medium bg-red-100 hover:bg-red-200 text-red-700 shadow-sm border border-red-200"
+              >
+                Clear All Filters
+              </button>
+            )}
+          </div>
+          
+          {schemaData.tables && schemaData.tables.length > 0 && (
+            <div className="text-sm font-medium text-blue-800 bg-blue-100 px-3 py-1 rounded inline-block">
+              Showing {getFilteredTables().length} of {schemaData.tables.length} tables
+              {hideEmptyTables ? ' (hiding empty tables)' : ''}
+              {activeFilters.length > 0 ? ` with filters: ${activeFilters.join(', ')}` : ''}
+            </div>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
@@ -765,6 +883,112 @@ export function SupabasePage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Display filtered tables list */}
+      {schemaData && schemaData.tables && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Tables & Views <span className="text-sm font-normal text-gray-500">(sorted by row count)</span></h2>
+          
+          <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Table Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Row Count
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Categories
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {getFilteredTables().map((table: any) => (
+                    <tr 
+                      key={table.table_name} 
+                      className={`hover:bg-gray-50 ${table.row_count > 0 ? 'bg-white' : 'bg-gray-50'}`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">{table.table_name}</div>
+                        {table.error && (
+                          <div className="text-xs text-red-500 mt-1">{table.error}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span 
+                          className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full 
+                            ${table.row_count > 0 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-100 text-gray-800'}`}
+                        >
+                          {table.row_count || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {Object.keys(tableCategories).filter(
+                            category => tableMatchesCategory(table.table_name, category)
+                          ).map(category => (
+                            <span 
+                              key={category}
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                              onClick={() => {
+                                // Make categories clickable to filter by them
+                                if (!activeFilters.includes(category)) {
+                                  toggleFilter(category);
+                                }
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {category}
+                            </span>
+                          ))}
+                          {Object.keys(tableCategories).filter(
+                            category => tableMatchesCategory(table.table_name, category)
+                          ).length === 0 && (
+                            <span className="text-xs text-gray-500">No category</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            setTableName(table.table_name);
+                            getTableMetadata();
+                          }}
+                          className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded text-sm font-medium"
+                        >
+                          View Metadata
+                        </button>
+                        <button
+                          onClick={() => handleTableChange(table.table_name)}
+                          className="ml-2 bg-green-100 hover:bg-green-200 text-green-800 px-3 py-1 rounded text-sm font-medium"
+                        >
+                          Load Data
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  
+                  {getFilteredTables().length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
+                        No tables match the current filters. Try adjusting your filters.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
