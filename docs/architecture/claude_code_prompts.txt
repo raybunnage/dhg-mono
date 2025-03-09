@@ -1,3 +1,10 @@
+
+undereath the "supabase" page under the "Sql Editor" tab hook up the real code to run the sql query (you had done this once    │
+│   before).  Make sure the code to save the query is provided once it    │
+│   runs successfully - it was all working beautifully but you turned if  │
+│   off for some reason.  You even had it so when I saved the query it came up with a way to state what it was used for. Is that functionality still there?
+
+
 Info about restoring a previous version
 91272de is the commit I need for restoring the script
 file path: scripts/markdown-report.sh

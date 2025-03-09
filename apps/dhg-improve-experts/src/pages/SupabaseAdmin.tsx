@@ -1011,11 +1011,226 @@ $$ LANGUAGE plpgsql;`);
         console.log('Signed in as:', signInData.user?.email);
       }
       
-      // For safety, only allow certain kinds of queries
       const sql = sqlContent.trim();
+      const isSELECT = sql.toLowerCase().startsWith('select');
+      const isINSERT = sql.toLowerCase().startsWith('insert');
+      const isUPDATE = sql.toLowerCase().startsWith('update');
+      const isDELETE = sql.toLowerCase().startsWith('delete');
       
-      // Check if this is a SELECT query (safer to execute)
-      if (sql.toLowerCase().startsWith('select')) {
+      // Flag for whether the RPC function is available
+      let rpcFunctionAvailable = true;
+      
+      // Try to execute the SQL query using stored procedure first
+      try {
+        const { data, error } = await supabase.rpc('execute_sql_query', { 
+          query: sql 
+        });
+        
+        // Check for the specific error indicating missing function
+        if (error) {
+          // Check if this is the "function not found" error (code: 'PGRST202')
+          if (error.code === 'PGRST202' && 
+              error.message?.includes('Could not find the function') && 
+              error.message?.includes('execute_sql_query')) {
+            rpcFunctionAvailable = false;
+            console.log('The execute_sql_query function is not available. Using fallback approaches.');
+            throw new Error('RPC function not available');
+          } else {
+            // This is some other SQL error
+            throw error;
+          }
+        }
+        
+        // If we get here, RPC execution was successful
+        console.log('Query executed successfully via RPC function');
+        
+        // Set the result and show success message
+        setSqlResult(data || []);
+        
+        // Store successful query in history
+        try {
+          const { error: historyError } = await supabase
+            .from('sql_query_history')
+            .insert({
+              query_text: sql,
+              executed_at: new Date().toISOString(),
+              execution_status: 'success'
+            });
+            
+          if (historyError) {
+            console.warn('Failed to save query to history:', historyError);
+          }
+        } catch (historyErr) {
+          console.warn('Error saving query history:', historyErr);
+        }
+        
+        // Show save query dialog
+        setShowSaveQueryDialog(true);
+        generateTagSuggestions(sql);
+        
+        toast.success(`Query executed successfully. Found ${Array.isArray(data) ? data.length : 0} result(s).`);
+        return;
+      } catch (rpcError) {
+        // Log the error but continue to fallback methods
+        console.warn('RPC execution failed, checking for fallback options:', rpcError);
+      }
+      
+      // If RPC function isn't available and this is a non-SELECT query, handle appropriately
+      if (!rpcFunctionAvailable && !isSELECT) {
+        // We support basic table operations using Supabase API
+        if (isINSERT && sql.toLowerCase().includes('into')) {
+          // Try to extract table name and values for INSERT
+          const tableMatch = sql.match(/insert\s+into\s+([a-zA-Z0-9_]+)/i);
+          if (tableMatch && tableMatch[1]) {
+            const tableName = tableMatch[1];
+            
+            // Show confirmation dialog for non-SELECT operations
+            if (!window.confirm(`This will INSERT data into the '${tableName}' table. Are you sure you want to proceed?`)) {
+              setSqlRunning(false);
+              return;
+            }
+            
+            try {
+              // Parse the values - this is a simplified approach and won't work for all cases
+              // In a real app, you would use a proper SQL parser
+              let dataToInsert: any = {};
+              
+              // Try to extract column names and values
+              const columnsMatch = sql.match(/\(([^)]+)\)\s+values\s+\(([^)]+)\)/i);
+              if (columnsMatch && columnsMatch[1] && columnsMatch[2]) {
+                const columns = columnsMatch[1].split(',').map(c => c.trim());
+                const values = columnsMatch[2].split(',').map(v => {
+                  v = v.trim();
+                  // Remove quotes from string values
+                  if ((v.startsWith("'") && v.endsWith("'")) || 
+                      (v.startsWith('"') && v.endsWith('"'))) {
+                    return v.substring(1, v.length - 1);
+                  }
+                  // Handle special values
+                  if (v.toLowerCase() === 'null') return null;
+                  if (v.toLowerCase() === 'true') return true;
+                  if (v.toLowerCase() === 'false') return false;
+                  if (!isNaN(Number(v))) return Number(v);
+                  return v;
+                });
+                
+                // Construct object from columns and values
+                if (columns.length === values.length) {
+                  columns.forEach((col, idx) => {
+                    dataToInsert[col] = values[idx];
+                  });
+                }
+              } else {
+                // Try simpler format: INSERT INTO table (col1, col2) VALUES ('val1', 'val2')
+                setSqlError("Could not parse INSERT values. Please use format: INSERT INTO table (col1, col2) VALUES ('val1', 'val2')");
+                toast.error("Failed to parse INSERT statement");
+                setSqlRunning(false);
+                return;
+              }
+              
+              // Execute the insert using Supabase API
+              const { data, error } = await supabase
+                .from(tableName)
+                .insert(dataToInsert)
+                .select();
+              
+              if (error) throw error;
+              
+              setSqlResult(data || { message: 'Insert successful' });
+              
+              // Show save query dialog
+              setShowSaveQueryDialog(true);
+              generateTagSuggestions(sql);
+              
+              toast.success('INSERT query executed successfully');
+              return;
+            } catch (err: any) {
+              console.error("Error executing INSERT:", err);
+              setSqlError(`Error executing INSERT: ${err.message}`);
+              toast.error("INSERT operation failed");
+              setSqlRunning(false);
+              return;
+            }
+          } else {
+            setSqlError("Could not parse table name for INSERT operation");
+            toast.error("Failed to parse INSERT statement");
+            setSqlRunning(false);
+            return;
+          }
+        } 
+        else if (isUPDATE) {
+          // Try to extract table name for UPDATE
+          const tableMatch = sql.match(/update\s+([a-zA-Z0-9_]+)/i);
+          if (tableMatch && tableMatch[1]) {
+            const tableName = tableMatch[1];
+            
+            // Show confirmation dialog for non-SELECT operations
+            if (!window.confirm(`This will UPDATE data in the '${tableName}' table. Are you sure you want to proceed?`)) {
+              setSqlRunning(false);
+              return;
+            }
+            
+            // Show user-friendly message explaining this operation needs RPC function
+            setSqlResult({
+              message: `UPDATE operation for '${tableName}' requires the 'execute_sql_query' function.`,
+              info: `To enable this functionality, ask your database administrator to create the 'execute_sql_query' function. See documentation for details.`,
+              sql: sql
+            });
+            
+            // Save the query anyway
+            setShowSaveQueryDialog(true);
+            generateTagSuggestions(sql);
+            
+            toast.warning(`This UPDATE operation requires an RPC function to execute. Contact your database administrator.`);
+            setSqlRunning(false);
+            return;
+          }
+        }
+        else if (isDELETE) {
+          // Try to extract table name for DELETE
+          const tableMatch = sql.match(/delete\s+from\s+([a-zA-Z0-9_]+)/i);
+          if (tableMatch && tableMatch[1]) {
+            const tableName = tableMatch[1];
+            
+            // Show confirmation dialog for non-SELECT operations
+            if (!window.confirm(`⚠️ WARNING: This will DELETE data from the '${tableName}' table. Are you sure you want to proceed?`)) {
+              setSqlRunning(false);
+              return;
+            }
+
+            // Show double confirmation for delete operations
+            if (!window.confirm(`⚠️ FINAL WARNING: DELETE operations cannot be undone. Are you ABSOLUTELY SURE you want to continue?`)) {
+              setSqlRunning(false);
+              return;
+            }
+            
+            // Show user-friendly message explaining this operation needs RPC function
+            setSqlResult({
+              message: `DELETE operation for '${tableName}' requires the 'execute_sql_query' function.`,
+              info: `To enable this functionality, ask your database administrator to create the 'execute_sql_query' function. See documentation for details.`,
+              sql: sql
+            });
+            
+            // Save the query anyway
+            setShowSaveQueryDialog(true);
+            generateTagSuggestions(sql);
+            
+            toast.warning(`This DELETE operation requires an RPC function to execute. Contact your database administrator.`);
+            setSqlRunning(false);
+            return;
+          }
+        }
+        else {
+          // Other non-SELECT statements (CREATE, ALTER, etc.)
+          setSqlError("This SQL statement requires the 'execute_sql_query' RPC function, which is not available in your database.");
+          toast.error("This operation requires database administrator privileges");
+          setSqlRunning(false);
+          return;
+        }
+      }
+      
+      // Fall back to client-side approach for SELECT queries
+      if (isSELECT) {
         // For information schema queries or specific SQL queries
         if (sql.toLowerCase().includes('information_schema') || sql.toLowerCase().includes('pg_')) {
           // Use the Database.type defined tables to simulate information_schema queries
@@ -1130,6 +1345,11 @@ $$ LANGUAGE plpgsql;`);
             }
             
             setSqlResult(result);
+            
+            // Show save query dialog
+            setShowSaveQueryDialog(true);
+            generateTagSuggestions(sql);
+            
             toast.success(`Query executed successfully. Found ${result.length} tables/views.`);
             return;
           }
@@ -1175,6 +1395,11 @@ $$ LANGUAGE plpgsql;`);
                   });
                   
                   setSqlResult(columns);
+                  
+                  // Show save query dialog
+                  setShowSaveQueryDialog(true);
+                  generateTagSuggestions(sql);
+                  
                   toast.success(`Found ${columns.length} columns for table ${tableName}`);
                   return;
                 } else {
@@ -1310,6 +1535,11 @@ $$ LANGUAGE plpgsql;`);
             });
             
             setSqlResult(result);
+            
+            // Show save query dialog
+            setShowSaveQueryDialog(true);
+            generateTagSuggestions(sql);
+            
             toast.success(`Query executed successfully. Found ${result.length} tables/views with row counts.`);
             return;
           }
@@ -1334,6 +1564,11 @@ $$ LANGUAGE plpgsql;`);
                 
               if (error) throw error;
               setSqlResult(data || []);
+              
+              // Show save query dialog
+              setShowSaveQueryDialog(true);
+              generateTagSuggestions(sql);
+              
               toast.success(`Query executed successfully. Found ${data?.length || 0} rows.`);
             } catch (err: any) {
               throw new Error(`Error querying table ${tableName}: ${err.message}`);
@@ -1345,9 +1580,20 @@ $$ LANGUAGE plpgsql;`);
         }
       } 
       else {
-        // Non-SELECT statements are not supported
-        setSqlError("Only SELECT queries are supported in this demo");
-        toast.error("Only SELECT queries are supported");
+        if (!rpcFunctionAvailable) {
+          // We get here if it's a non-SELECT query and we've already determined RPC is not available
+          setSqlError(`The 'execute_sql_query' function is not available in your database. To run ${
+            isINSERT ? 'INSERT' : isUPDATE ? 'UPDATE' : isDELETE ? 'DELETE' : 'this type of'
+          } query, database administrator privileges are required.`);
+          
+          toast.error(`To execute ${
+            isINSERT ? 'INSERT' : isUPDATE ? 'UPDATE' : isDELETE ? 'DELETE' : 'this type of'
+          } query, contact your database administrator.`);
+        } else {
+          // We shouldn't get here due to earlier checks, but just in case
+          setSqlError("This SQL statement requires the 'execute_sql_query' function, which had an error.");
+          toast.error("SQL execution failed. Check the query syntax.");
+        }
       }
     } catch (error: any) {
       console.error("SQL execution error:", error);
@@ -2157,7 +2403,7 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
           <Card>
             <CardHeader>
               <CardTitle>SQL Editor</CardTitle>
-              <CardDescription>Run SQL queries and view results</CardDescription>
+              <CardDescription>Run SQL queries and view results <span className="text-blue-500">[Claude37-SQLEditor]</span></CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -2238,7 +2484,24 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                     }}>
                       Table Columns
                     </Button>
+                    <Button variant="outline" className="bg-yellow-50 border-yellow-200 hover:bg-yellow-100" onClick={() => {
+                      const query = "-- Example of INSERT statement\nINSERT INTO table_name (column1, column2)\nVALUES ('value1', 'value2');";
+                      setSqlContent(query);
+                    }}>
+                      INSERT Example
+                    </Button>
                   </div>
+                </div>
+                
+                {/* Execute SQL Function Note - helpful for users to understand limitations */}
+                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm">
+                  <p className="font-medium text-yellow-800">Note about SQL queries:</p>
+                  <ul className="list-disc pl-5 mt-1 text-gray-700 space-y-1">
+                    <li>SELECT queries work for all tables you have access to</li>
+                    <li>INSERT, UPDATE, DELETE queries require the execute_sql_query database function</li>
+                    <li>Some queries will show warnings/confirmations to prevent accidental data loss</li>
+                    <li>All successful queries can be saved with tags for future reference</li>
+                  </ul>
                 </div>
                 
                 {sqlError && (
