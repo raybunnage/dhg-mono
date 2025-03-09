@@ -1,3 +1,20 @@
+'ve successfully added a "Copy as JSON" button to the Classify Document page. The button:
+
+  1. Is positioned at the top right of the category filters section
+  2. Shows a copy icon and label that indicates which category is being copied
+  3. When clicked, it:
+    - Gets the filtered document types for the selected category
+    - Converts them to formatted JSON with proper indentation
+    - Copies the JSON to the clipboard
+    - Shows a success toast message with the category name and count of copied items
+
+  The button label dynamically changes to match the selected category, showing either "Copy
+  All as JSON" or "Copy [Category Name] as JSON" depending on what's selected.
+
+  The functionality is now complete and ready to use. When you click the button, it will copy
+   the currently displayed document types as JSON to your clipboard.
+
+
 Now the Submit Request to AI button should work! I've made several
   key changes:
 
