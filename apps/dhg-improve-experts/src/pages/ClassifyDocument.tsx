@@ -2171,7 +2171,27 @@ Use this exact structure, with empty arrays [] for missing information:
         )}
         
         <div className="mb-4">
-          <div className="text-sm font-medium mb-2">Filter by Category:</div>
+          <div className="flex justify-between items-center mb-2">
+            <div className="text-sm font-medium">Filter by Category:</div>
+            <button
+              onClick={() => {
+                // Create JSON of filtered document types
+                const categoryName = selectedCategory === 'all' ? 'All Categories' : selectedCategory;
+                const jsonData = JSON.stringify(filteredDocumentTypes, null, 2);
+                // Copy to clipboard
+                navigator.clipboard.writeText(jsonData)
+                  .then(() => toast.success(`Copied ${filteredDocumentTypes.length} ${categoryName} document types as JSON`))
+                  .catch(err => toast.error('Failed to copy JSON: ' + err.message));
+              }}
+              className="flex items-center gap-1 text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded"
+              title="Copy document types as JSON"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+              </svg>
+              Copy {selectedCategory === 'all' ? 'All' : selectedCategory} as JSON
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2">
             {categories.map(category => (
               <button
