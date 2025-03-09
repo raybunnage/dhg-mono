@@ -144,6 +144,37 @@ const AI: React.FC = () => {
     savingRelationships: false
   });
   
+  // Check for online status
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Listen for online/offline events
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success('Connection restored. Reloading data...');
+      
+      // Reload data when connection is restored
+      loadPromptFiles();
+      loadDocumentTypes();
+      loadPromptCategories();
+      loadDatabasePrompts();
+      loadDocumentationFiles();
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.error('You are currently offline. Some features may be unavailable.');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // Load from localStorage on component mount
   useEffect(() => {
     const savedTemperature = localStorage.getItem('claude-temperature');
@@ -156,11 +187,22 @@ const AI: React.FC = () => {
       setApiKey(savedApiKey);
     }
     
-    loadPromptFiles();
-    loadDocumentTypes();
-    loadPromptCategories();
-    loadDatabasePrompts();
-    loadDocumentationFiles();
+    // Check if online before loading data
+    if (navigator.onLine) {
+      loadPromptFiles();
+      loadDocumentTypes();
+      loadPromptCategories();
+      loadDatabasePrompts();
+      loadDocumentationFiles();
+    } else {
+      // If offline, show a message and load fallback data
+      toast.error('You are currently offline. Some features may be unavailable.');
+      loadPromptFiles(); // This might still work if it uses local storage
+      loadDocumentTypes(); // This has fallback data
+      setPromptCategories([]);
+      setDatabasePrompts([]);
+      setDocumentationFiles([]);
+    }
   }, []);
   
   // Load documentation files from the database
@@ -181,7 +223,14 @@ const AI: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading documentation files:', error);
-      toast.error('Failed to load documentation files');
+      // Check for network connectivity issues
+      if (error.message?.includes('Failed to fetch') || !navigator.onLine) {
+        toast.error('Network connection issue. Please check your internet connection.');
+        // Provide fallback data if needed
+        setDocumentationFiles([]);
+      } else {
+        toast.error('Failed to load documentation files');
+      }
     } finally {
       setIsLoading(prev => ({ ...prev, loadingDocFiles: false }));
     }
@@ -201,6 +250,10 @@ const AI: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading document types:', error);
+      // Check for network connectivity issues
+      if (error.message?.includes('Failed to fetch') || !navigator.onLine) {
+        toast.error('Network connection issue. Please check your internet connection.');
+      }
       // Fallback to mock data if database connection fails
       setDocumentTypes([
         { id: '1', document_type: 'PDF Document', description: 'PDF files containing text content', mime_type: 'application/pdf', category: 'Document' },
@@ -225,7 +278,14 @@ const AI: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading prompt categories:', error);
-      toast.error('Failed to load prompt categories');
+      // Check for network connectivity issues
+      if (error.message?.includes('Failed to fetch') || !navigator.onLine) {
+        toast.error('Network connection issue. Please check your internet connection.');
+        // Provide fallback empty array
+        setPromptCategories([]);
+      } else {
+        toast.error('Failed to load prompt categories');
+      }
     }
   };
   
@@ -246,7 +306,14 @@ const AI: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading database prompts:', error);
-      toast.error('Failed to load database prompts');
+      // Check for network connectivity issues
+      if (error.message?.includes('Failed to fetch') || !navigator.onLine) {
+        toast.error('Network connection issue. Please check your internet connection.');
+        // Provide fallback empty array
+        setDatabasePrompts([]);
+      } else {
+        toast.error('Failed to load database prompts');
+      }
     } finally {
       setIsLoading(prev => ({ ...prev, loadingDbPrompts: false }));
     }
@@ -268,35 +335,42 @@ const AI: React.FC = () => {
         const relatedAssetIds = prompt.metadata.relatedAssets || [];
         
         if (relatedAssetIds.length > 0) {
-          // Get relationship data from prompt_relationships table
-          const { data: relationshipData, error } = await supabase
-            .from('prompt_relationships')
-            .select('asset_id, document_type_id')
-            .eq('prompt_id', prompt.id);
+          try {
+            // Get relationship data from prompt_relationships table
+            const { data: relationshipData, error } = await supabase
+              .from('prompt_relationships')
+              .select('asset_id, document_type_id')
+              .eq('prompt_id', prompt.id);
+              
+            if (error) {
+              console.error('Error fetching relationship data:', error);
+              throw error;
+            }
             
-          if (error) {
-            console.error('Error fetching relationship data:', error);
+            // Create a mapping of asset_id to document_type_id
+            const documentTypeMap: Record<string, string> = {};
+            if (relationshipData) {
+              relationshipData.forEach(rel => {
+                if (rel.document_type_id) {
+                  documentTypeMap[rel.asset_id] = rel.document_type_id;
+                }
+              });
+            }
+            
+            // Find the documentation files that match these IDs and enhance them with relationship data
+            const relatedFiles = documentationFiles
+              .filter(file => relatedAssetIds.includes(file.id))
+              .map(file => ({
+                ...file,
+                related_document_type_id: documentTypeMap[file.id] || null
+              }));
+            
+            relationshipsMap[prompt.id] = relatedFiles;
+          } catch (error) {
+            console.error(`Error fetching relationships for prompt ${prompt.id}:`, error);
+            // If we fail for a single prompt, still continue with the others
+            relationshipsMap[prompt.id] = [];
           }
-          
-          // Create a mapping of asset_id to document_type_id
-          const documentTypeMap: Record<string, string> = {};
-          if (relationshipData) {
-            relationshipData.forEach(rel => {
-              if (rel.document_type_id) {
-                documentTypeMap[rel.asset_id] = rel.document_type_id;
-              }
-            });
-          }
-          
-          // Find the documentation files that match these IDs and enhance them with relationship data
-          const relatedFiles = documentationFiles
-            .filter(file => relatedAssetIds.includes(file.id))
-            .map(file => ({
-              ...file,
-              related_document_type_id: documentTypeMap[file.id] || null
-            }));
-          
-          relationshipsMap[prompt.id] = relatedFiles;
         } else {
           relationshipsMap[prompt.id] = [];
         }
@@ -306,7 +380,14 @@ const AI: React.FC = () => {
       console.log('Loaded relationships map:', relationshipsMap);
     } catch (error) {
       console.error('Error loading prompt relationships:', error);
-      toast.error('Failed to load prompt relationships');
+      // Check for network connectivity issues
+      if (error.message?.includes('Failed to fetch') || !navigator.onLine) {
+        toast.error('Network connection issue. Please check your internet connection.');
+        // Initialize an empty relationships map
+        setPromptRelationshipsMap({});
+      } else {
+        toast.error('Failed to load prompt relationships');
+      }
     }
   };
   
@@ -1101,7 +1182,7 @@ const AI: React.FC = () => {
           const file = documentationFiles.find(file => file.id === assetId);
           if (!file) continue;
           
-          // Get the settings for this asset - either from our stored settings or the form
+          // Get the settings for this asset - prioritize using stored settings
           let settings;
           
           // If we have specific settings for this asset in our state, use those
@@ -1109,11 +1190,13 @@ const AI: React.FC = () => {
             settings = assetRelationshipSettings[assetId];
           } else {
             // For newly added assets without specific settings, use the form values
+            // but don't include document_type_id as it's now handled individually
             settings = {
               relationship_type: relationshipType,
               relationship_context: relationshipContext,
               description: relationshipDescription || `Generated relationship between prompt "${selectedRelationshipPrompt.name}" and asset "${file.title}"`,
-              document_type_id: relationshipDocumentTypeId === 'none' ? null : relationshipDocumentTypeId
+              // Use the file's own document type if available as a fallback
+              document_type_id: file.document_type_id || null
             };
           }
           
@@ -1250,14 +1333,24 @@ const AI: React.FC = () => {
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">AI Prompt Workshop</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">AI Prompt Workshop</h1>
+        {!isOnline && (
+          <div className="bg-red-100 text-red-800 px-4 py-2 rounded-md flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>You are offline - Limited functionality available</span>
+          </div>
+        )}
+      </div>
       
       <Tabs defaultValue="prompts" onValueChange={setActiveTab} value={activeTab}>
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="prompts">Prompts Library</TabsTrigger>
           <TabsTrigger value="editor">Prompt Editor</TabsTrigger>
           <TabsTrigger value="generator">Prompt Generator</TabsTrigger>
-          <TabsTrigger value="database">Database</TabsTrigger>
+          <TabsTrigger value="database" disabled={!isOnline}>Database{!isOnline && ' (Offline)'}</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         
@@ -1328,10 +1421,10 @@ const AI: React.FC = () => {
                     <div className="space-y-2">
                       <Label htmlFor="documentType">Document Type</Label>
                       <Select value={selectedDocumentType} onValueChange={setSelectedDocumentType}>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Select document type" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           {documentTypes.map((type) => (
                             <SelectItem key={type.id} value={type.id}>
                               {type.document_type}
@@ -1379,10 +1472,10 @@ const AI: React.FC = () => {
                   <div className="space-y-2">
                     <Label htmlFor="docTypeFilter">Filter by Document Type</Label>
                     <Select>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-white">
                         <SelectValue placeholder="All Document Types" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white">
                         <SelectItem value="all">All Document Types</SelectItem>
                         {documentTypes.map((type) => (
                           <SelectItem key={type.id} value={type.id}>
@@ -1595,10 +1688,10 @@ const AI: React.FC = () => {
                     <div className="space-y-2">
                       <Label htmlFor="dbPromptDocType">Document Type</Label>
                       <Select value={selectedDocumentType} onValueChange={setSelectedDocumentType}>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Select document type" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           <SelectItem value="none">None</SelectItem>
                           {documentTypes.map((type) => (
                             <SelectItem key={type.id} value={type.id}>
@@ -1611,10 +1704,10 @@ const AI: React.FC = () => {
                     <div className="space-y-2">
                       <Label htmlFor="dbPromptCategory">Category</Label>
                       <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           <SelectItem value="none">None</SelectItem>
                           {promptCategories.map((category) => (
                             <SelectItem key={category.id} value={category.id}>
@@ -1705,10 +1798,10 @@ const AI: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="importDocType">Document Type (Optional)</Label>
                   <Select value={selectedDocumentType} onValueChange={setSelectedDocumentType}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white">
                       <SelectValue placeholder="Select document type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="none">None</SelectItem>
                       {documentTypes.map((type) => (
                         <SelectItem key={type.id} value={type.id}>
@@ -1722,10 +1815,10 @@ const AI: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="importCategory">Category (Optional)</Label>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="none">None</SelectItem>
                       {promptCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
@@ -1794,10 +1887,10 @@ const AI: React.FC = () => {
                       value={selectedPromptForView || ''}
                       onValueChange={setSelectedPromptForView}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-white">
                         <SelectValue placeholder="Choose a prompt" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white">
                         <SelectItem value="none">None</SelectItem>
                         {databasePrompts.map(prompt => (
                           <SelectItem key={prompt.id} value={prompt.id}>
@@ -1853,15 +1946,25 @@ const AI: React.FC = () => {
                                   {file.file_path}
                                 </div>
                               </div>
-                              <div className="flex gap-1">
-                                <Badge variant="outline" className="text-xs">
-                                  {documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 'No Type'}
-                                </Badge>
-                                {file.related_document_type_id && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    Related: {documentTypes.find(dt => dt.id === file.related_document_type_id)?.document_type || 'Custom'}
+                              <div className="flex flex-col gap-1">
+                                <div className="flex gap-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    File Type: {documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 'No Type'}
                                   </Badge>
-                                )}
+                                </div>
+                                <div className="flex gap-1">
+                                  <Badge 
+                                    variant="secondary" 
+                                    className={`text-xs ${file.related_document_type_id && file.document_type_id && 
+                                                file.related_document_type_id !== file.document_type_id ? 
+                                                'bg-orange-100 text-orange-800 border-orange-200' : ''}`}
+                                  >
+                                    Relationship Type: {documentTypes.find(dt => dt.id === file.related_document_type_id)?.document_type || 
+                                                    documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 'Unspecified'}
+                                    {file.related_document_type_id && file.document_type_id && 
+                                      file.related_document_type_id !== file.document_type_id && ' (Override)'}
+                                  </Badge>
+                                </div>
                               </div>
                             </div>
                             <div className="mt-2 text-xs text-gray-500">
@@ -1909,13 +2012,20 @@ const AI: React.FC = () => {
                                     </div>
                                   )}
                                   
-                                  {file.related_document_type_id && (
-                                    <div className="mt-1 text-xs">
-                                      <span className="font-medium text-purple-700">Document Type:</span> {
-                                        documentTypes.find(dt => dt.id === file.related_document_type_id)?.document_type || 'Custom'
-                                      }
-                                    </div>
-                                  )}
+                                  <div className="mt-1 text-xs">
+                                    <span className="font-medium text-purple-700">Document Type:</span> {
+                                      documentTypes.find(dt => dt.id === file.related_document_type_id)?.document_type || 
+                                      documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 
+                                      'No Document Type'
+                                    }
+                                    {file.related_document_type_id && file.document_type_id && file.related_document_type_id !== file.document_type_id && (
+                                      <span className="ml-2 text-orange-600">
+                                        (Relationship override from file's type: {
+                                          documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 'None'
+                                        })
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -2021,10 +2131,10 @@ const AI: React.FC = () => {
                             value={relationshipType} 
                             onValueChange={setRelationshipType}
                           >
-                            <SelectTrigger id="relationshipType" className="h-8 text-xs">
+                            <SelectTrigger id="relationshipType" className="h-8 text-xs bg-white">
                               <SelectValue placeholder="Select type" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-white">
                               <SelectItem value="reference">Reference</SelectItem>
                               <SelectItem value="dependency">Dependency</SelectItem>
                               <SelectItem value="enhancement">Enhancement</SelectItem>
@@ -2058,25 +2168,7 @@ const AI: React.FC = () => {
                         />
                       </div>
                       
-                      <div className="space-y-1 mb-2">
-                        <Label htmlFor="relationshipDocumentType" className="text-xs text-blue-800">Document Type</Label>
-                        <Select 
-                          value={relationshipDocumentTypeId} 
-                          onValueChange={setRelationshipDocumentTypeId}
-                        >
-                          <SelectTrigger id="relationshipDocumentType" className="h-8 text-xs">
-                            <SelectValue placeholder="Select document type" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-white">
-                            <SelectItem value="none">None</SelectItem>
-                            {documentTypes.map((type) => (
-                              <SelectItem key={type.id} value={type.id}>
-                                {type.document_type}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      {/* Document type dropdown removed from here - will be handled per file */}
                     </div>
                   )}
                   
@@ -2113,10 +2205,10 @@ const AI: React.FC = () => {
                               }
                             }}
                           >
-                            <SelectTrigger id="relationshipType" className="h-8 text-xs">
+                            <SelectTrigger id="relationshipType" className="h-8 text-xs bg-white">
                               <SelectValue placeholder="Select type" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-white">
                               <SelectItem value="reference">Reference</SelectItem>
                               <SelectItem value="dependency">Dependency</SelectItem>
                               <SelectItem value="enhancement">Enhancement</SelectItem>
@@ -2182,41 +2274,7 @@ const AI: React.FC = () => {
                         />
                       </div>
                       
-                      <div className="space-y-1 mb-2">
-                        <Label htmlFor="relationshipDocumentType" className="text-xs text-green-800">Document Type</Label>
-                        <Select 
-                          value={relationshipDocumentTypeId} 
-                          onValueChange={(value) => {
-                            setRelationshipDocumentTypeId(value);
-                            // Also update the asset settings cache
-                            if (selectedRelatedAssets.length === 1) {
-                              const assetId = selectedRelatedAssets[0];
-                              setAssetRelationshipSettings(prev => ({
-                                ...prev,
-                                [assetId]: {
-                                  ...prev[assetId] || {},
-                                  relationship_type: relationshipType,
-                                  relationship_context: relationshipContext,
-                                  description: relationshipDescription,
-                                  document_type_id: value
-                                }
-                              }));
-                            }
-                          }}
-                        >
-                          <SelectTrigger id="relationshipDocumentType" className="h-8 text-xs">
-                            <SelectValue placeholder="Select document type" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-white">
-                            <SelectItem value="none">None</SelectItem>
-                            {documentTypes.map((type) => (
-                              <SelectItem key={type.id} value={type.id}>
-                                {type.document_type}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      {/* Document type dropdown removed from here too - will be handled per file */}
                       
                       <div className="text-xs font-medium text-green-700 mt-2">
                         Selected File: {documentationFiles.find(f => f.id === selectedRelatedAssets[0])?.title || 'Unknown'}
@@ -2287,11 +2345,50 @@ const AI: React.FC = () => {
                                       </div>
                                     )}
                                     
-                                    {isSelected && fileSettings && fileSettings.document_type_id && fileSettings.document_type_id !== 'none' && (
-                                      <div className="text-xs text-purple-700 mt-1">
-                                        <span className="font-medium">Type:</span> {
-                                          documentTypes.find(dt => dt.id === fileSettings.document_type_id)?.document_type || 'Custom'
-                                        }
+                                    {/* Document Type dropdown component for each file - always shown when selected */}
+                                    {isSelected && (
+                                      <div className="text-xs text-purple-700 mt-1 flex items-center">
+                                        <span className="font-medium mr-1">Type:</span> 
+                                        <div className="relative inline-block cursor-pointer border border-purple-200 rounded bg-purple-50 hover:bg-purple-100">
+                                          <Select 
+                                            value={fileSettings?.document_type_id || 'none'}
+                                            onValueChange={(value) => {
+                                              // Update the asset settings cache with the new document type
+                                              setAssetRelationshipSettings(prev => ({
+                                                ...prev,
+                                                [file.id]: {
+                                                  ...prev[file.id] || {
+                                                    relationship_type: relationshipType,
+                                                    relationship_context: relationshipContext,
+                                                    description: relationshipDescription,
+                                                  },
+                                                  document_type_id: value
+                                                }
+                                              }));
+                                              
+                                              // If this is the only selected asset, also update the main state
+                                              if (selectedRelatedAssets.length === 1) {
+                                                setRelationshipDocumentTypeId(value);
+                                              }
+                                            }}
+                                          >
+                                            <SelectTrigger className="h-6 p-1 min-w-[150px] text-xs border-0 bg-white">
+                                              <SelectValue placeholder="Select type">
+                                                {fileSettings?.document_type_id && fileSettings.document_type_id !== 'none' 
+                                                  ? documentTypes.find(dt => dt.id === fileSettings.document_type_id)?.document_type || 'Custom'
+                                                  : 'Select document type'}
+                                              </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-white">
+                                              <SelectItem value="none">None</SelectItem>
+                                              {documentTypes.map((type) => (
+                                                <SelectItem key={type.id} value={type.id}>
+                                                  {type.document_type}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
                                       </div>
                                     )}
                                     
