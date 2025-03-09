@@ -1,12 +1,59 @@
-make a "Readme" documen type
+AI - JUST 2
+
+ai_prompt_template	
+ai-assets	
+Markdown files containing prompt templates for AI systems. These templates can be uploaded to AI engines along with content and support files to generate specific outputs.	
+
+api_context_support	
+ai-assets	
+Markdown files containing contextual information to enhance API prompt calls. These documents provide reference material, examples, or domain knowledge that can be included in API requests to generate more accurate and relevant results.	
+
+
+
+
+DOCUMENTATION: 
+
+make a "Readme" document type
+
+Code Documentation Markdown	
+Technical Documentation	
+
+Markdown files specifically for documenting project code, including function descriptions, parameter details, usage examples, and implementation notes.
+
 impelementation or spec scripts
-classification prompt
 fix history documentation
-code explanation docs
 deployment and environments
-ai related markdown - prompts
-ai-assets
 git history and commands
+script report documentation
+
+
+sh scripts
+js scripts
+
+
+fix the 
+the [
+  {
+    "table_name": "prompt_categories",
+    "table_size": "24 kB",
+    "table_description": null
+  },
+  {
+    "table_name": "prompt_relationships",
+    "table_size": "24 kB",
+    "table_description": null
+  },
+  {
+    "table_name": "prompt_usage",
+    "table_size": "16 kB",
+    "table_description": null
+  },
+  {
+    "table_name": "prompts",
+    "table_size": "80 kB",
+    "table_description": null
+  }
+]
 
 
 undereath the "supabase" page under the "Sql Editor" tab hook up the real code to run the sql query (you had done this once    │
