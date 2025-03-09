@@ -1,3 +1,113 @@
+
+I understand the issue now. You're receiving a "This operation
+  requires database administrator privileges" toast warning when trying
+   to run your ALTER TABLE query in the Supabase SQL Editor.
+
+  The VITE_SUPABASE_SERVICE_ROLE_KEY you have in your .env.development
+  file is intended for server-side operations from your application
+  code, but it doesn't automatically grant you admin privileges in the
+  SQL Editor interface.
+
+  Here's what's happening:
+
+  1. The Supabase SQL Editor runs queries with the permissions of your
+  currently logged-in user
+  2. ALTER TABLE operations require database administrator privileges,
+  which your current user doesn't have
+  3. Even though you have a service role key in your environment
+  variables, the browser-based SQL Editor doesn't use it
+
+  To fix this issue, you have two options:
+
+  1. Use the Supabase dashboard with admin credentials: Log in to your
+  Supabase dashboard with full admin credentials (not through the SQL
+  Editor in your application) to run these migrations
+  2. Create a migration script: Write a server-side script that uses
+  your VITE_SUPABASE_SERVICE_ROLE_KEY to execute these SQL statements
+  programmatically
+
+  The service role key has elevated permissions when used correctly
+  from your backend code, but for security reasons, the SQL Editor in
+  the browser UI runs with the permissions of your logged-in user.
+
+
+ased on your environment file having the
+  VITE_SUPABASE_SERVICE_ROLE_KEY, I can help explain your SQL warning.
+
+  Looking at the database schema, the issue is with the SQL query
+  you're trying to run. Here's what I can determine:
+
+  1. The documentation_files table already exists (lines 587-634 in
+  types.ts)
+  2. The document_types table exists (lines 530-586 in types.ts)
+  3. You're trying to add a new column documentation_type_id to
+  reference document_types(id)
+
+  The warning is likely because there's a mismatch between column types
+   or the referenced column isn't properly set up. The error
+  specifically happens when you're trying to run:
+
+  ALTER TABLE documentation_files
+  ADD COLUMN documentation_type_id UUID DEFAULT NULL;
+
+  The most common issue would be that you're using
+  documentation_type_id in one place but the table is expecting
+  document_type_id (which matches with other tables in your schema).
+  Also, make sure the id column in the document_types table is defined
+  as a UUID.
+
+  To fix this:
+  1. Check if you meant document_type_id instead of
+  documentation_type_id
+  2. Verify both columns are UUID type
+
+  A service role key should have sufficient permissions to run these
+  ALTER TABLE statements, but it depends on how your Supabase
+  permissions are configured.
+
+I've made comprehensive updates to the SQL Editor in
+  SupabaseAdmin.tsx to properly handle the missing execute_sql_query
+  function error:
+
+  1. Added specific error detection for the PGRST202 error code that
+  appears when the RPC function is missing
+  2. Implemented better fallback handling for all four CRUD operations:
+    - SELECT: Works as before with existing table queries
+    - INSERT: Now attempts to process simple INSERT statements using
+  the Supabase API with confirmation dialog
+    - UPDATE and DELETE: Shows a clear message explaining the RPC
+  function is needed, with confirmation dialogs
+    - Other SQL: Shows appropriate error messages
+  3. Added user-friendly UI improvements:
+    - Added a new INSERT example button
+    - Added an informational note explaining SQL capabilities
+    - Made non-SELECT operations require confirmation to prevent
+  accidental data loss
+    - Better error messages specifically targeting the PGRST202 error
+  4. Preserved query saving functionality for all query types, even if
+  they can't be executed
+
+  These changes provide a better experience for users while still
+  saving their queries, even when they try operations that would
+  typically require the execute_sql_query RPC function.
+
+
+The SQL Editor functionality has been successfully restored. I've
+  updated the runSql function in the SupabaseAdmin.tsx file to:
+
+  1. First try executing SQL queries directly using the
+  execute_sql_query RPC function
+  2. Automatically save successful queries to history
+  3. Prompt the user to add metadata (name, description, tags) after a
+  successful query
+  4. Support both SELECT and non-SELECT queries when the RPC function
+  is available
+  5. Maintain backward compatibility with the existing fallback
+  approach
+
+  This implementation preserves the functionality you mentioned where
+  you can save queries with metadata after they run successfully.
+
 I've made several key fixes to resolve the 404 error:
 
   1. Updated test-docs.tsx to dynamically determine the API endpoint
