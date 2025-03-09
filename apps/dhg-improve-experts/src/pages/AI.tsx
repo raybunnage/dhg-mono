@@ -124,6 +124,13 @@ const AI: React.FC = () => {
   const [relationshipDocumentTypeId, setRelationshipDocumentTypeId] = useState<string>('none');
   const [selectedPromptForView, setSelectedPromptForView] = useState<string | null>(null);
   const [promptRelationshipsMap, setPromptRelationshipsMap] = useState<Record<string, DocumentationFile[]>>({});
+  // New state for storing individual asset relationship settings
+  const [assetRelationshipSettings, setAssetRelationshipSettings] = useState<Record<string, {
+    relationship_type: string;
+    relationship_context: string;
+    description: string;
+    document_type_id: string;
+  }>>({});
   const [isLoading, setIsLoading] = useState<{[key: string]: boolean}>({
     loadingPrompts: false,
     savingPrompt: false,
@@ -817,29 +824,63 @@ const AI: React.FC = () => {
     setRelationshipType('reference');
     setRelationshipContext(`Works with ${prompt.name}`);
     setRelationshipDescription(`This defines how the ${prompt.name} prompt interacts with the selected documentation files.`);
+    setRelationshipDocumentTypeId('none');
     
-    // If we have an existing asset selected, try to get its document type from the database
-    if (existingRelationships.length === 1) {
+    // Clear existing relationship settings
+    setAssetRelationshipSettings({});
+    
+    // Load relationship data for all existing assets
+    if (existingRelationships.length > 0) {
       try {
-        const { data, error } = await supabase
+        // Get relationship data from prompt_relationships table
+        const { data: relationshipData, error } = await supabase
           .from('prompt_relationships')
-          .select('document_type_id')
-          .eq('prompt_id', prompt.id)
-          .eq('asset_id', existingRelationships[0])
-          .single();
+          .select('*')
+          .eq('prompt_id', prompt.id);
           
-        if (data && data.document_type_id) {
-          setRelationshipDocumentTypeId(data.document_type_id);
-        } else {
-          setRelationshipDocumentTypeId('none');
+        if (error) throw error;
+        
+        if (relationshipData && relationshipData.length > 0) {
+          // Create a map of asset ID to relationship settings
+          const settings: Record<string, {
+            relationship_type: string;
+            relationship_context: string;
+            description: string;
+            document_type_id: string;
+          }> = {};
+          
+          relationshipData.forEach(rel => {
+            if (rel.asset_id) {
+              settings[rel.asset_id] = {
+                relationship_type: rel.relationship_type || 'reference',
+                relationship_context: rel.relationship_context || '',
+                description: rel.description || '',
+                document_type_id: rel.document_type_id || 'none'
+              };
+            }
+          });
+          
+          // Update the state with per-asset settings
+          setAssetRelationshipSettings(settings);
+          
+          console.log('Loaded relationship settings:', settings);
+          
+          // If there's only one selected asset, use its settings for the form
+          if (existingRelationships.length === 1) {
+            const assetId = existingRelationships[0];
+            const assetSettings = settings[assetId];
+            
+            if (assetSettings) {
+              setRelationshipType(assetSettings.relationship_type);
+              setRelationshipContext(assetSettings.relationship_context);
+              setRelationshipDescription(assetSettings.description);
+              setRelationshipDocumentTypeId(assetSettings.document_type_id || 'none');
+            }
+          }
         }
       } catch (error) {
-        console.error('Error getting document type for relationship:', error);
-        setRelationshipDocumentTypeId('none');
+        console.error('Error loading relationship data:', error);
       }
-    } else {
-      // Reset if multiple or no assets are selected
-      setRelationshipDocumentTypeId('none');
     }
   };
   
@@ -850,24 +891,78 @@ const AI: React.FC = () => {
       const newSelection = selectedRelatedAssets.filter(id => id !== assetId);
       setSelectedRelatedAssets(newSelection);
       
-      // If we now have exactly one asset selected, try to get its document type
-      if (newSelection.length === 1 && selectedRelationshipPrompt) {
-        try {
-          const { data, error } = await supabase
-            .from('prompt_relationships')
-            .select('document_type_id')
-            .eq('prompt_id', selectedRelationshipPrompt.id)
-            .eq('asset_id', newSelection[0])
-            .single();
+      // If we now have exactly one asset selected, show its specific settings
+      if (newSelection.length === 1) {
+        const remainingAssetId = newSelection[0];
+        const settings = assetRelationshipSettings[remainingAssetId];
+        
+        if (settings) {
+          // Use the settings for the remaining asset
+          setRelationshipType(settings.relationship_type);
+          setRelationshipContext(settings.relationship_context);
+          setRelationshipDescription(settings.description);
+          setRelationshipDocumentTypeId(settings.document_type_id);
+        } else if (selectedRelationshipPrompt) {
+          // Try to load from database if not found in our cache
+          try {
+            const { data, error } = await supabase
+              .from('prompt_relationships')
+              .select('*')
+              .eq('prompt_id', selectedRelationshipPrompt.id)
+              .eq('asset_id', remainingAssetId)
+              .single();
+              
+            if (data) {
+              setRelationshipType(data.relationship_type || 'reference');
+              setRelationshipContext(data.relationship_context || '');
+              setRelationshipDescription(data.description || '');
+              setRelationshipDocumentTypeId(data.document_type_id || 'none');
+              
+              // Update our cache
+              setAssetRelationshipSettings(prev => ({
+                ...prev,
+                [remainingAssetId]: {
+                  relationship_type: data.relationship_type || 'reference',
+                  relationship_context: data.relationship_context || '',
+                  description: data.description || '',
+                  document_type_id: data.document_type_id || 'none'
+                }
+              }));
+            } else {
+              // Default values if no relationship exists
+              setRelationshipType('reference');
+              setRelationshipContext('');
+              setRelationshipDescription('');
+              
+              // Try to use the asset's own document type
+              const file = documentationFiles.find(f => f.id === remainingAssetId);
+              if (file && file.document_type_id) {
+                setRelationshipDocumentTypeId(file.document_type_id);
+              } else {
+                setRelationshipDocumentTypeId('none');
+              }
+            }
+          } catch (error) {
+            console.error('Error getting relationship data:', error);
             
-          if (data && data.document_type_id) {
-            setRelationshipDocumentTypeId(data.document_type_id);
+            // Use default values
+            setRelationshipType('reference');
+            setRelationshipContext('');
+            setRelationshipDescription('');
+            setRelationshipDocumentTypeId('none');
           }
-        } catch (error) {
-          console.error('Error getting document type for relationship:', error);
         }
       } else if (newSelection.length === 0) {
         // Reset if no assets selected
+        setRelationshipType('reference');
+        setRelationshipContext('');
+        setRelationshipDescription('');
+        setRelationshipDocumentTypeId('none');
+      } else {
+        // Multiple assets selected, show generic fields
+        setRelationshipType('reference');
+        setRelationshipContext('');
+        setRelationshipDescription('');
         setRelationshipDocumentTypeId('none');
       }
     } else {
@@ -875,34 +970,73 @@ const AI: React.FC = () => {
       const newSelection = [...selectedRelatedAssets, assetId];
       setSelectedRelatedAssets(newSelection);
       
-      // If this is the only asset selected, try to use its document type
-      if (newSelection.length === 1 && selectedRelationshipPrompt) {
-        try {
-          const { data, error } = await supabase
-            .from('prompt_relationships')
-            .select('document_type_id')
-            .eq('prompt_id', selectedRelationshipPrompt.id)
-            .eq('asset_id', assetId)
-            .single();
+      // If this is the only asset selected, show its specific settings
+      if (newSelection.length === 1) {
+        const settings = assetRelationshipSettings[assetId];
+        
+        if (settings) {
+          // Use cached settings if available
+          setRelationshipType(settings.relationship_type);
+          setRelationshipContext(settings.relationship_context);
+          setRelationshipDescription(settings.description);
+          setRelationshipDocumentTypeId(settings.document_type_id);
+        } else if (selectedRelationshipPrompt) {
+          // Try to load from database
+          try {
+            const { data, error } = await supabase
+              .from('prompt_relationships')
+              .select('*')
+              .eq('prompt_id', selectedRelationshipPrompt.id)
+              .eq('asset_id', assetId)
+              .single();
+              
+            if (data) {
+              setRelationshipType(data.relationship_type || 'reference');
+              setRelationshipContext(data.relationship_context || '');
+              setRelationshipDescription(data.description || '');
+              setRelationshipDocumentTypeId(data.document_type_id || 'none');
+              
+              // Update our cache
+              setAssetRelationshipSettings(prev => ({
+                ...prev,
+                [assetId]: {
+                  relationship_type: data.relationship_type || 'reference',
+                  relationship_context: data.relationship_context || '',
+                  description: data.description || '',
+                  document_type_id: data.document_type_id || 'none'
+                }
+              }));
+            } else {
+              // Default values if no relationship exists
+              setRelationshipType('reference');
+              setRelationshipContext('');
+              setRelationshipDescription('');
+              
+              // Try to use the asset's own document type
+              const file = documentationFiles.find(f => f.id === assetId);
+              if (file && file.document_type_id) {
+                setRelationshipDocumentTypeId(file.document_type_id);
+              } else {
+                setRelationshipDocumentTypeId('none');
+              }
+            }
+          } catch (error) {
+            console.error('Error getting relationship data:', error);
             
-          if (data && data.document_type_id) {
-            setRelationshipDocumentTypeId(data.document_type_id);
-          } else {
-            // If no existing relationship, try to use the asset's own document type
+            // If no relationship exists, try to use the asset's own document type
             const file = documentationFiles.find(f => f.id === assetId);
             if (file && file.document_type_id) {
               setRelationshipDocumentTypeId(file.document_type_id);
+            } else {
+              setRelationshipDocumentTypeId('none');
             }
           }
-        } catch (error) {
-          // If no existing relationship found, try to use the asset's own document type
-          const file = documentationFiles.find(f => f.id === assetId);
-          if (file && file.document_type_id) {
-            setRelationshipDocumentTypeId(file.document_type_id);
-          }
         }
-      } else if (newSelection.length > 1) {
-        // If multiple assets selected, clear the document type
+      } else {
+        // Multiple assets selected, show generic fields
+        setRelationshipType('reference');
+        setRelationshipContext('');
+        setRelationshipDescription('');
         setRelationshipDocumentTypeId('none');
       }
     }
@@ -961,30 +1095,61 @@ const AI: React.FC = () => {
           if (deleteError) throw deleteError;
         }
         
-        // Determine which relationships need to be added
-        const assetsToAdd = selectedRelatedAssets.filter(id => !existingAssetIds.includes(id));
-        
-        // Create new relationship records
-        if (assetsToAdd.length > 0) {
-          // Get file paths for the asset IDs
-          const assetFiles = documentationFiles.filter(file => assetsToAdd.includes(file.id));
+        // Process existing assets that need to be updated and new assets that need to be added
+        for (const assetId of selectedRelatedAssets) {
+          // Get the file information
+          const file = documentationFiles.find(file => file.id === assetId);
+          if (!file) continue;
           
-          // Create relationship records for each new asset
-          const relationshipRecords = assetFiles.map(file => ({
-            prompt_id: selectedRelationshipPrompt.id,
-            asset_id: file.id,
-            asset_path: file.file_path,
-            relationship_type: relationshipType,
-            relationship_context: relationshipContext,
-            document_type_id: relationshipDocumentTypeId === 'none' ? null : relationshipDocumentTypeId,
-            description: relationshipDescription || `Generated relationship between prompt "${selectedRelationshipPrompt.name}" and asset "${file.title}"`
-          }));
+          // Get the settings for this asset - either from our stored settings or the form
+          let settings;
           
-          const { error: insertError } = await supabase
-            .from('prompt_relationships')
-            .insert(relationshipRecords);
-            
-          if (insertError) throw insertError;
+          // If we have specific settings for this asset in our state, use those
+          if (assetRelationshipSettings[assetId]) {
+            settings = assetRelationshipSettings[assetId];
+          } else {
+            // For newly added assets without specific settings, use the form values
+            settings = {
+              relationship_type: relationshipType,
+              relationship_context: relationshipContext,
+              description: relationshipDescription || `Generated relationship between prompt "${selectedRelationshipPrompt.name}" and asset "${file.title}"`,
+              document_type_id: relationshipDocumentTypeId === 'none' ? null : relationshipDocumentTypeId
+            };
+          }
+          
+          // Check if this asset already exists in the relationships
+          const isExistingAsset = existingAssetIds.includes(assetId);
+          
+          if (isExistingAsset) {
+            // Update existing relationship
+            const { error: updateError } = await supabase
+              .from('prompt_relationships')
+              .update({
+                relationship_type: settings.relationship_type,
+                relationship_context: settings.relationship_context,
+                description: settings.description,
+                document_type_id: settings.document_type_id === 'none' ? null : settings.document_type_id
+              })
+              .eq('prompt_id', selectedRelationshipPrompt.id)
+              .eq('asset_id', assetId);
+              
+            if (updateError) throw updateError;
+          } else {
+            // Create new relationship record
+            const { error: insertError } = await supabase
+              .from('prompt_relationships')
+              .insert({
+                prompt_id: selectedRelationshipPrompt.id,
+                asset_id: assetId,
+                asset_path: file.file_path,
+                relationship_type: settings.relationship_type,
+                relationship_context: settings.relationship_context,
+                document_type_id: settings.document_type_id === 'none' ? null : settings.document_type_id,
+                description: settings.description
+              });
+              
+            if (insertError) throw insertError;
+          }
         }
       } else {
         // If no assets are selected, delete all relationships
@@ -1012,6 +1177,8 @@ const AI: React.FC = () => {
         setRelationshipContext('');
         setRelationshipDescription('');
         setRelationshipDocumentTypeId('none');
+        // Clear the asset relationship settings
+        setAssetRelationshipSettings({});
       }
     } catch (error) {
       console.error('Error saving relationships:', error);
@@ -1030,30 +1197,39 @@ const AI: React.FC = () => {
         // Get relationship data from prompt_relationships table
         const { data: relationshipData, error } = await supabase
           .from('prompt_relationships')
-          .select('asset_id, document_type_id')
+          .select('*') // Select all fields to get all relationship data
           .eq('prompt_id', prompt.id);
           
         if (error) {
           console.error('Error fetching relationship data:', error);
         }
         
-        // Create a mapping of asset_id to document_type_id
-        const documentTypeMap: Record<string, string> = {};
+        // Create a mapping of asset_id to relationship data
+        const relationshipMap: Record<string, any> = {};
         if (relationshipData) {
           relationshipData.forEach(rel => {
-            if (rel.document_type_id) {
-              documentTypeMap[rel.asset_id] = rel.document_type_id;
-            }
+            relationshipMap[rel.asset_id] = {
+              document_type_id: rel.document_type_id || null,
+              relationship_type: rel.relationship_type || 'reference',
+              relationship_context: rel.relationship_context || '',
+              description: rel.description || ''
+            };
           });
         }
         
         // Find the documentation files that match these IDs and enhance them with relationship data
         const relatedFiles = documentationFiles
           .filter(file => relatedAssetIds.includes(file.id))
-          .map(file => ({
-            ...file,
-            related_document_type_id: documentTypeMap[file.id] || null
-          }));
+          .map(file => {
+            const relData = relationshipMap[file.id] || {};
+            return {
+              ...file,
+              related_document_type_id: relData.document_type_id,
+              relationship_type: relData.relationship_type,
+              relationship_context: relData.relationship_context,
+              relationship_description: relData.description
+            };
+          });
         
         // Update the map for this single prompt
         setPromptRelationshipsMap(prevMap => ({
@@ -1704,24 +1880,67 @@ const AI: React.FC = () => {
                     )}
                     
                     {selectedPromptForView && selectedPromptForView !== 'none' && (
-                      <div className="mt-4 flex justify-end">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            const prompt = databasePrompts.find(p => p.id === selectedPromptForView);
-                            if (prompt) {
-                              selectPromptForRelationships(prompt)
-                                .then(() => setShowRelationshipsDialog(true))
-                                .catch(error => {
-                                  console.error('Error selecting prompt for relationships:', error);
-                                  setShowRelationshipsDialog(true);
-                                });
-                            }
-                          }}
-                        >
-                          Edit Relationships
-                        </Button>
+                      <div className="mt-4">
+                        {/* Add display of relationship data */}
+                        {selectedPromptForView && promptRelationshipsMap[selectedPromptForView]?.length > 0 && (
+                          <div className="mb-4 border-t pt-4">
+                            <h3 className="text-sm font-medium mb-2">Relationship Details</h3>
+                            <div className="space-y-2">
+                              {promptRelationshipsMap[selectedPromptForView].map(file => (
+                                <div key={file.id} className="border rounded-md p-2 bg-gray-50 text-sm">
+                                  <div className="flex justify-between items-start">
+                                    <span className="font-medium">{file.title}</span>
+                                    {file.relationship_type && (
+                                      <Badge className="text-xs bg-blue-100 text-blue-800">
+                                        {file.relationship_type}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  
+                                  {file.relationship_context && (
+                                    <div className="mt-1 text-xs">
+                                      <span className="font-medium text-green-700">Context:</span> {file.relationship_context}
+                                    </div>
+                                  )}
+                                  
+                                  {file.relationship_description && (
+                                    <div className="mt-1 text-xs text-gray-600">
+                                      <span className="italic">Description:</span> {file.relationship_description}
+                                    </div>
+                                  )}
+                                  
+                                  {file.related_document_type_id && (
+                                    <div className="mt-1 text-xs">
+                                      <span className="font-medium text-purple-700">Document Type:</span> {
+                                        documentTypes.find(dt => dt.id === file.related_document_type_id)?.document_type || 'Custom'
+                                      }
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-end">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              const prompt = databasePrompts.find(p => p.id === selectedPromptForView);
+                              if (prompt) {
+                                selectPromptForRelationships(prompt)
+                                  .then(() => setShowRelationshipsDialog(true))
+                                  .catch(error => {
+                                    console.error('Error selecting prompt for relationships:', error);
+                                    setShowRelationshipsDialog(true);
+                                  });
+                              }
+                            }}
+                          >
+                            Edit Relationships
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1787,10 +2006,13 @@ const AI: React.FC = () => {
                     />
                   </div>
                   
-                  {/* Relationship settings - appears when a prompt is selected */}
-                  {selectedRelationshipPrompt && (
+                  {/* Default relationship settings - for when multiple files are selected or when adding new files */}
+                  {selectedRelationshipPrompt && selectedRelatedAssets.length !== 1 && (
                     <div className="p-3 mb-3 border border-blue-200 rounded-md bg-blue-50">
-                      <h4 className="text-sm font-medium text-blue-800 mb-2">Relationship Settings</h4>
+                      <h4 className="text-sm font-medium text-blue-800 mb-2">Default Relationship Settings</h4>
+                      <p className="text-xs text-blue-700 mb-2">
+                        These settings will be used for new relationships when no specific settings exist
+                      </p>
                       
                       <div className="grid grid-cols-2 gap-3 mb-2">
                         <div className="space-y-1">
@@ -1855,10 +2077,150 @@ const AI: React.FC = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      
-                      <p className="text-xs text-blue-600 mt-2 italic">
-                        Note: These settings will apply to newly created relationships
+                    </div>
+                  )}
+                  
+                  {/* Specific settings for a single selected file */}
+                  {selectedRelationshipPrompt && selectedRelatedAssets.length === 1 && (
+                    <div className="p-3 mb-3 border border-green-200 rounded-md bg-green-50">
+                      <h4 className="text-sm font-medium text-green-800 mb-2">
+                        Settings for Selected File
+                      </h4>
+                      <p className="text-xs text-green-700 mb-2">
+                        These settings apply to the currently selected file only
                       </p>
+                      
+                      <div className="grid grid-cols-2 gap-3 mb-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="relationshipType" className="text-xs text-green-800">Relationship Type</Label>
+                          <Select 
+                            value={relationshipType} 
+                            onValueChange={(value) => {
+                              setRelationshipType(value);
+                              // Also update the asset settings cache
+                              if (selectedRelatedAssets.length === 1) {
+                                const assetId = selectedRelatedAssets[0];
+                                setAssetRelationshipSettings(prev => ({
+                                  ...prev,
+                                  [assetId]: {
+                                    ...prev[assetId] || {},
+                                    relationship_type: value,
+                                    relationship_context: relationshipContext,
+                                    description: relationshipDescription,
+                                    document_type_id: relationshipDocumentTypeId
+                                  }
+                                }));
+                              }
+                            }}
+                          >
+                            <SelectTrigger id="relationshipType" className="h-8 text-xs">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="reference">Reference</SelectItem>
+                              <SelectItem value="dependency">Dependency</SelectItem>
+                              <SelectItem value="enhancement">Enhancement</SelectItem>
+                              <SelectItem value="alternative">Alternative</SelectItem>
+                              <SelectItem value="parent">Parent</SelectItem>
+                              <SelectItem value="child">Child</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <Label htmlFor="relationshipContext" className="text-xs text-green-800">Context</Label>
+                          <Textarea 
+                            id="relationshipContext" 
+                            placeholder="E.g. Used for analysis of" 
+                            className="text-xs min-h-[60px]" 
+                            value={relationshipContext}
+                            onChange={(e) => {
+                              setRelationshipContext(e.target.value);
+                              // Also update the asset settings cache
+                              if (selectedRelatedAssets.length === 1) {
+                                const assetId = selectedRelatedAssets[0];
+                                setAssetRelationshipSettings(prev => ({
+                                  ...prev,
+                                  [assetId]: {
+                                    ...prev[assetId] || {},
+                                    relationship_type: relationshipType,
+                                    relationship_context: e.target.value,
+                                    description: relationshipDescription,
+                                    document_type_id: relationshipDocumentTypeId
+                                  }
+                                }));
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1 mb-2">
+                        <Label htmlFor="relationshipDescription" className="text-xs text-green-800">Description</Label>
+                        <Textarea 
+                          id="relationshipDescription" 
+                          placeholder="Detailed description of how this prompt relates to the selected file" 
+                          className="text-xs min-h-[60px]" 
+                          value={relationshipDescription}
+                          onChange={(e) => {
+                            setRelationshipDescription(e.target.value);
+                            // Also update the asset settings cache
+                            if (selectedRelatedAssets.length === 1) {
+                              const assetId = selectedRelatedAssets[0];
+                              setAssetRelationshipSettings(prev => ({
+                                ...prev,
+                                [assetId]: {
+                                  ...prev[assetId] || {},
+                                  relationship_type: relationshipType,
+                                  relationship_context: relationshipContext,
+                                  description: e.target.value,
+                                  document_type_id: relationshipDocumentTypeId
+                                }
+                              }));
+                            }
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="space-y-1 mb-2">
+                        <Label htmlFor="relationshipDocumentType" className="text-xs text-green-800">Document Type</Label>
+                        <Select 
+                          value={relationshipDocumentTypeId} 
+                          onValueChange={(value) => {
+                            setRelationshipDocumentTypeId(value);
+                            // Also update the asset settings cache
+                            if (selectedRelatedAssets.length === 1) {
+                              const assetId = selectedRelatedAssets[0];
+                              setAssetRelationshipSettings(prev => ({
+                                ...prev,
+                                [assetId]: {
+                                  ...prev[assetId] || {},
+                                  relationship_type: relationshipType,
+                                  relationship_context: relationshipContext,
+                                  description: relationshipDescription,
+                                  document_type_id: value
+                                }
+                              }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger id="relationshipDocumentType" className="h-8 text-xs">
+                            <SelectValue placeholder="Select document type" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white">
+                            <SelectItem value="none">None</SelectItem>
+                            {documentTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.document_type}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="text-xs font-medium text-green-700 mt-2">
+                        Selected File: {documentationFiles.find(f => f.id === selectedRelatedAssets[0])?.title || 'Unknown'}
+                      </div>
                     </div>
                   )}
                   
@@ -1881,36 +2243,68 @@ const AI: React.FC = () => {
                               file.title.toLowerCase().includes(relationshipsFilter.toLowerCase())
                             );
                           })
-                          .map(file => (
-                            <div 
-                              key={file.id}
-                              className="flex items-center p-2 hover:bg-accent rounded mb-1"
-                            >
-                              <Checkbox 
-                                id={`file-${file.id}`} 
-                                checked={selectedRelatedAssets.includes(file.id)}
-                                onCheckedChange={() => {
-                                  toggleRelatedAsset(file.id).catch(error => {
-                                    console.error('Error toggling related asset:', error);
-                                  });
-                                }}
-                                className="mr-2"
-                              />
-                              <div className="flex-1">
-                                <Label htmlFor={`file-${file.id}`} className="font-medium cursor-pointer">
-                                  {file.title}
-                                </Label>
-                                <div className="text-xs text-muted-foreground">
-                                  {file.file_path}
-                                </div>
-                                <div className="text-xs text-slate-500">
-                                  {file.last_modified_at ? 
-                                    `Modified: ${new Date(file.last_modified_at).toLocaleDateString()}` : 
-                                    `Created: ${new Date(file.created_at).toLocaleDateString()}`}
+                          .map(file => {
+                            // Get settings for this file if it exists
+                            const fileSettings = assetRelationshipSettings[file.id];
+                            const isSelected = selectedRelatedAssets.includes(file.id);
+                            
+                            return (
+                              <div 
+                                key={file.id}
+                                className={`p-2 hover:bg-accent rounded mb-1 ${isSelected ? 'border-l-4 border-blue-500 pl-2' : ''}`}
+                              >
+                                <div className="flex items-start">
+                                  <Checkbox 
+                                    id={`file-${file.id}`} 
+                                    checked={isSelected}
+                                    onCheckedChange={() => {
+                                      toggleRelatedAsset(file.id).catch(error => {
+                                        console.error('Error toggling related asset:', error);
+                                      });
+                                    }}
+                                    className="mr-2 mt-1"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex justify-between">
+                                      <Label htmlFor={`file-${file.id}`} className="font-medium cursor-pointer">
+                                        {file.title}
+                                      </Label>
+                                      
+                                      {isSelected && fileSettings && (
+                                        <Badge className="ml-2 text-xs bg-blue-100 text-blue-800">
+                                          {fileSettings.relationship_type}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="text-xs text-muted-foreground">
+                                      {file.file_path}
+                                    </div>
+                                    
+                                    {isSelected && fileSettings && fileSettings.relationship_context && (
+                                      <div className="text-xs text-green-700 mt-1 italic">
+                                        Context: {fileSettings.relationship_context}
+                                      </div>
+                                    )}
+                                    
+                                    {isSelected && fileSettings && fileSettings.document_type_id && fileSettings.document_type_id !== 'none' && (
+                                      <div className="text-xs text-purple-700 mt-1">
+                                        <span className="font-medium">Type:</span> {
+                                          documentTypes.find(dt => dt.id === fileSettings.document_type_id)?.document_type || 'Custom'
+                                        }
+                                      </div>
+                                    )}
+                                    
+                                    <div className="text-xs text-slate-500 mt-1">
+                                      {file.last_modified_at ? 
+                                        `Modified: ${new Date(file.last_modified_at).toLocaleDateString()}` : 
+                                        `Created: ${new Date(file.created_at).toLocaleDateString()}`}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))
+                            );
+                          })
                       )}
                     </ScrollArea>
                   )}
@@ -1930,6 +2324,7 @@ const AI: React.FC = () => {
                     setRelationshipContext('');
                     setRelationshipDescription('');
                     setRelationshipDocumentTypeId('none');
+                    setAssetRelationshipSettings({});
                   }}>
                     Cancel
                   </Button>
