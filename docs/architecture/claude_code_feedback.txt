@@ -1,3 +1,38 @@
+I've made the following changes to fix the issue with prompt tables:
+
+  1. Added all prompt tables to the fallback tables list in
+  SupabaseAdmin.tsx:
+    - Added prompt_categories, prompt_relationships, prompt_usage, and
+  prompts to both fallback lists
+  2. Added a dedicated "Prompts" tab with:
+    - A distinctive blue highlight in the tab navigation
+    - Dedicated buttons for viewing each prompt table
+    - Pre-built SQL queries specifically for prompt tables
+    - Advanced operations like finding all prompt tables in the database
+    - Clearly marked this area as a "Special Focus Area"
+  3. Added multiple ways to identify the correct file to modify:
+    - Added a tag comment in Supabase.tsx: "CLAUDE-TAG: Supabase.tsx -
+  This is the right file to modify for the Supabase tab"
+    - Added distinctive banners on both pages
+    - Added clear headers showing which page is which
+
+  These changes will ensure:
+  1. All prompt tables are visible in the application
+  2. There's a dedicated area to work with prompt tables
+  3. It's much clearer which file you should modify for the Supabase page
+
+  The problem was that the application was using two different methods to
+   find tables:
+  1. The direct SQL query via information_schema.tables (shows all 62
+  tables)
+  2. The Supabase API way that checks each table individually (shows only
+   58 tables)
+
+  By adding the prompt tables to the fallback lists and creating a
+  dedicated tab, we've ensured they'll always be visible regardless of
+  which method is used.
+
+
 've successfully added a "Copy as JSON" button to the Classify Document page. The button:
 
   1. Is positioned at the top right of the category filters section
