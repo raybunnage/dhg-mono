@@ -1,3 +1,39 @@
+
+I've made several improvements to address the issues in the
+  relationships dialog:
+
+  1. Added individual settings per asset:
+    - Created a new state variable assetRelationshipSettings to store
+  relationship settings for each asset
+    - Modified the selectPromptForRelationships function to load all
+  relationship data into this state
+    - Updated the toggleRelatedAsset function to show the correct
+  settings when selecting an asset
+  2. Updated the UI to show different forms based on selection:
+    - When one asset is selected: Show a dedicated form for that specific
+   asset with its settings
+    - When multiple assets are selected: Show a default settings form for
+   new assets
+    - Added visual indicators that show relationship settings for each
+  file in the list
+  3. Updated the save function:
+    - Modified saveRelationships to save specific settings for each asset
+    - Adds proper storage and retrieval of the relationship_type,
+  relationship_context, description and document_type_id
+  4. Improved the relationships viewer:
+    - Modified updateRelationshipsMap to include all relationship data
+    - Updated the relationships view to show context, description, and
+  document type for each file
+    - Made sure relationship data is properly loaded and displayed
+
+  These changes allow users to:
+  1. Set different relationship properties for each related file
+  2. See existing relationship data when editing relationships
+  3. View relationship details in the prompt relationship viewer
+
+  The implementation preserves all existing functionality while adding
+  the new per-asset relationship management capabilities.
+
 I've made the following changes to the "Manage Prompt Relationships"
   dialog:
 
