@@ -1,5 +1,71 @@
 
-now lets one more set of funcionality to the 
+
+
+
+Again lets add_soft_delete_to_docs one more set of funcionality to the "Set Relationships" on the "Ai" page under the "Database" tab.  I just identified another field called document_type_id on the table "prompt_relationships" table.  I need you to modify the ui to accomodate this new field as a dropdown wherer the user can associate the document_type_id of the related asset as well as the actual markdown file to choose from. Of course it should successfully save the relationship information with all its new fields that we are allowing the user to add.  
+
+
+
+now lets one more set of funcionality to the "Set Relationships" on the "Ai" page under the "Database" tab.  Now that the following fields now exist on the "prompt_relationships" table I need you to modify the ui to accomodate the fields I should be filling in such as relationship_context field any any others you deem necessary
+
+[
+  {
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "uuid_generate_v4()"
+  },
+  {
+    "column_name": "prompt_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "column_name": "asset_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "asset_path",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "column_name": "relationship_type",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "column_name": "relationship_context",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "description",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()"
+  },
+  {
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()"
+  }
+]
+
+
 
 [
   {

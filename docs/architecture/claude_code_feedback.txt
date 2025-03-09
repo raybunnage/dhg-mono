@@ -1,3 +1,90 @@
+I've made the following changes to the "Manage Prompt Relationships"
+  dialog:
+
+  1. Changed the "Context" input to a multiline textarea with increased
+  height (min-h-[60px])
+  2. Moved the "Description" field above the "Document Type" dropdown
+  3. Increased the "Description" textarea height to match the Context
+  field
+  4. Added a solid white background to the dropdown menu
+  (className="bg-white" on SelectContent) to prevent content beneath from
+   showing through
+
+  These changes should improve the user experience by:
+  - Providing more space for entering context information
+  - Organizing the form fields in a more logical order
+  - Making the dropdown items more readable with a solid background
+
+  The changes are now complete. The relationship dialog should be more
+  user-friendly with these improvements.
+
+
+I've fixed all instances where we were using an empty string as the
+  value for the document type dropdown. This should resolve the error:
+
+  1. Changed the default value for relationshipDocumentTypeId from an
+  empty string to 'none'
+  2. Changed the SelectItem value from an empty string to 'none'
+  3. Updated the code that passes the value to the database to convert
+  'none' to null
+  4. Updated all code that resets or defaults the value to use 'none'
+  instead of an empty string
+
+  The error occurred because the UI component (Select from your UI
+  library) doesn't allow empty strings as values because those are
+  reserved for clearing the selection. This is a common pattern in React
+  components that handle selections.
+
+
+Great! Let me summarize the changes we've made:
+
+  1. Added a new state variable relationshipDocumentTypeId to store the
+  selected document type for relationships
+  2. Updated the saveRelationships function to include the
+  document_type_id when creating new relationship records
+  3. Added a document type dropdown to the relationship dialog UI
+  4. Updated the relationship display to show document type information
+  5. Enhanced the loadPromptRelationships function to fetch
+  document_type_id from the database
+  6. Made updateRelationshipsMap async to fetch document type data
+  7. Enhanced selectPromptForRelationships to preselect document types
+  when appropriate
+  8. Updated toggleRelatedAsset to intelligently handle document type
+  selection based on user actions
+  9. Updated various async function calls to properly handle promises
+
+  These changes will now allow users to associate a document_type_id with
+   each prompt relationship, and the UI will appropriately display and
+  manage this information. The selection is intelligent - if only one
+  asset is selected, it will try to use either its existing relationship
+  document type or its own document type as a default.
+
+
+I've successfully made the following improvements to accommodate the
+  new table fields:
+
+  1. Added new state variables for managing relationship settings:
+    - relationshipType
+    - relationshipContext
+    - relationshipDescription
+  2. Updated the UI to include fields for:
+    - Relationship Type (dropdown with options like reference,
+  dependency, etc.)
+    - Context (text input)
+    - Description (textarea)
+  3. Modified the selectPromptForRelationships function to set default
+  values for these fields
+  4. Updated the saveRelationships function to:
+    - Use the values from these new fields when creating relationship
+  records
+    - Reset all state variables after successful saving
+  5. Made sure to clean up all state variables when closing the dialog
+
+  These changes will now allow users to properly set the new fields like
+  relationship_context and others in the prompt_relationships table. The
+  UI provides a clear and intuitive way to manage these relationships
+  with appropriate defaults.
+
 I've made the following changes to fix the issue with prompt tables:
 
   1. Added all prompt tables to the fallback tables list in
