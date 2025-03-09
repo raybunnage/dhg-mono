@@ -23,6 +23,7 @@ Markdown files specifically for documenting project code, including function des
 impelementation or spec scripts
 fix history documentation
 deployment and environments
+
 git history and commands
 script report documentation
 
