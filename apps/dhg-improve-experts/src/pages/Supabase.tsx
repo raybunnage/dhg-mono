@@ -46,12 +46,19 @@ export function SupabasePage() {
   // Flag to track if database has been connected
   const [dbInitialized, setDbInitialized] = useState(false)
   
+  // CLAUDE-TAG: Supabase.tsx - This is the right file to modify for the Supabase tab
   const commonTables = [
     'sources_google',
     'sync_history',
     'google_auth_tokens',
     'experts',
-    'expert_documents'
+    'expert_documents',
+    'prompt_categories',
+    'prompt_relationships',
+    'prompt_usage',
+    'prompts',
+    'documentation_files',
+    'document_types'
   ]
   
   // Initialize UI state from cache when component mounts
@@ -287,7 +294,12 @@ export function SupabasePage() {
         'experts',
         'expert_documents',
         'document_types',
-        'function_registry'
+        'function_registry',
+        'prompt_categories',
+        'prompt_relationships',
+        'prompt_usage',
+        'prompts',
+        'documentation_files'
       ];
       
       console.log(`Querying ${essentialTables.length} essential tables...`);
@@ -658,9 +670,11 @@ export function SupabasePage() {
     "Command": ["command"],
     "Email": ["email", "mail"],
     "Page": ["page"],
-    "Prompt": ["prompt"],
+    "Prompt": ["prompt", "prompt_categories", "prompt_relationships", "prompt_usage", "prompts"],
+    "Document": ["document", "documentation", "doc"],
     "Sql": ["sql"],
     "Sync": ["sync"],
+    "Expert": ["expert"]
   }
   
   // Function to check if a table belongs to a category
@@ -711,8 +725,12 @@ export function SupabasePage() {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Supabase Schema Explorer</h1>
+    <div className="container mx-auto p-4 relative">
+      {/* Special marker to make this page easily identifiable */}
+      <div className="absolute top-0 right-0 bg-green-500 text-white px-4 py-2 rounded-bl-lg font-bold shadow-md">
+        Supabase Page (Not Admin)
+      </div>
+      <h1 className="text-2xl font-bold mb-4">Supabase Schema Explorer <span className="text-blue-500 text-sm font-normal">[Supabase.tsx - Main Tab]</span></h1>
       
       <div className="flex justify-between items-center mb-4">
         <div className="flex flex-wrap gap-2">

@@ -97,7 +97,7 @@ const SupabaseAdmin: React.FC<SupabaseManagerProps> = ({ initialTab = "overview"
     "Command": ["command"],
     "Email": ["email", "mail"],
     "Page": ["page"],
-    "Prompt": ["prompt"],
+    "Prompt": ["prompt", "prompt_", "prompts"], // Added more patterns to catch all prompt tables
     "Sql": ["sql"],
     "Sync": ["sync"],
     "Documentation": ["documentation", "document", "doc_"],
@@ -1849,10 +1849,14 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6 relative">
+      {/* Special marker to make this page easily identifiable */}
+      <div className="absolute top-0 right-0 bg-blue-500 text-white px-4 py-2 rounded-bl-lg font-bold shadow-md">
+        SupabaseAdmin Page
+      </div>
       <h1 className="text-3xl font-bold mb-6 flex items-center">
         <Database className="mr-2 h-8 w-8 text-blue-500" />
-        Supabase Database Manager
+        Supabase Database Manager <span className="text-blue-500 text-sm font-normal mt-2">[SupabaseAdmin.tsx - Used for SQL and Prompts]</span>
       </h1>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
