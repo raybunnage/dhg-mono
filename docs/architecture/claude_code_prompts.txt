@@ -1,3 +1,13 @@
+make a "Readme" documen type
+impelementation or spec scripts
+classification prompt
+fix history documentation
+code explanation docs
+deployment and environments
+ai related markdown - prompts
+ai-assets
+git history and commands
+
 
 undereath the "supabase" page under the "Sql Editor" tab hook up the real code to run the sql query (you had done this once    │
 │   before).  Make sure the code to save the query is provided once it    │

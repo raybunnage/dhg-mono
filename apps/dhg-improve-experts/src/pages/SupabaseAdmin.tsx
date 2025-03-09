@@ -2602,9 +2602,14 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                                   onClick={() => {
                                     setSqlContent(query.query_text);
                                     toast.success('Query loaded from history');
+                                    // Run the query automatically after loading
+                                    setTimeout(() => {
+                                      // Use setTimeout to ensure the SQL content is updated first
+                                      runSql();
+                                    }, 100);
                                   }}
                                 >
-                                  Load
+                                  Load & Run
                                 </Button>
                               </TableCell>
                             </TableRow>
