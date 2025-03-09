@@ -2129,7 +2129,7 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                       
                       {/* Record display section */}
                       <div className="mt-6">
-                        <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center gap-3 mb-3 flex-wrap">
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -2182,6 +2182,56 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                           >
                             Hide fields with Nulls
                           </button>
+                          
+                          {/* Record ID search */}
+                          <div className="flex items-center gap-2 ml-3">
+                            <Input 
+                              placeholder="ID" 
+                              className="w-40" 
+                              id="table-record-id-search"
+                            />
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                if (!selectedTable) {
+                                  toast.warning("Please select a table first");
+                                  return;
+                                }
+                                
+                                const input = document.getElementById('table-record-id-search') as HTMLInputElement;
+                                const id = input.value.trim();
+                                
+                                if (!id) {
+                                  toast.warning("Please enter an ID to search");
+                                  return;
+                                }
+                                
+                                // Search for the record
+                                supabase
+                                  .from(selectedTable)
+                                  .select('*')
+                                  .eq('id', id)
+                                  .single()
+                                  .then(({ data, error }) => {
+                                    if (error) {
+                                      toast.error(`Error finding record: ${error.message}`);
+                                      return;
+                                    }
+                                    
+                                    if (data) {
+                                      setSqlResult([data]);
+                                      toast.success(`Found record with ID: ${id}`);
+                                    } else {
+                                      toast.warning(`No record found with ID: ${id}`);
+                                      setSqlResult([]);
+                                    }
+                                  });
+                              }}
+                            >
+                              Search ID
+                            </Button>
+                          </div>
                         </div>
                         
                         {sqlResult && Array.isArray(sqlResult) && sqlResult.length > 0 && (
