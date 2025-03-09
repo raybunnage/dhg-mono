@@ -1948,16 +1948,17 @@ const AI: React.FC = () => {
                               </div>
                               <div className="flex flex-col gap-1">
                                 <div className="flex gap-1">
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge variant="outline" className="text-xs bg-gray-50 text-gray-800 border-gray-200">
                                     File Type: {documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 'No Type'}
                                   </Badge>
                                 </div>
                                 <div className="flex gap-1">
                                   <Badge 
-                                    variant="secondary" 
+                                    variant="outline" 
                                     className={`text-xs ${file.related_document_type_id && file.document_type_id && 
                                                 file.related_document_type_id !== file.document_type_id ? 
-                                                'bg-orange-100 text-orange-800 border-orange-200' : ''}`}
+                                                'bg-orange-50 text-orange-800 border-orange-200' : 
+                                                'bg-blue-50 text-blue-800 border-blue-200'}`}
                                   >
                                     Relationship Type: {documentTypes.find(dt => dt.id === file.related_document_type_id)?.document_type || 
                                                     documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 'Unspecified'}
@@ -2013,16 +2014,22 @@ const AI: React.FC = () => {
                                   )}
                                   
                                   <div className="mt-1 text-xs">
-                                    <span className="font-medium text-purple-700">Document Type:</span> {
-                                      documentTypes.find(dt => dt.id === file.related_document_type_id)?.document_type || 
-                                      documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 
-                                      'No Document Type'
-                                    }
+                                    <span className="font-medium text-purple-700">Document Type:</span> 
+                                    <span className={`ml-1 px-1.5 py-0.5 rounded ${
+                                      file.related_document_type_id && file.document_type_id && 
+                                      file.related_document_type_id !== file.document_type_id ? 
+                                      'bg-orange-50 text-orange-800' : 'bg-blue-50 text-blue-800'
+                                    }`}>
+                                      {documentTypes.find(dt => dt.id === file.related_document_type_id)?.document_type || 
+                                       documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 
+                                       'No Document Type'}
+                                    </span>
+                                    
                                     {file.related_document_type_id && file.document_type_id && file.related_document_type_id !== file.document_type_id && (
-                                      <span className="ml-2 text-orange-600">
-                                        (Relationship override from file's type: {
+                                      <span className="ml-2 bg-gray-50 text-gray-800 px-1.5 py-0.5 rounded">
+                                        Original file type: {
                                           documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 'None'
-                                        })
+                                        }
                                       </span>
                                     )}
                                   </div>
