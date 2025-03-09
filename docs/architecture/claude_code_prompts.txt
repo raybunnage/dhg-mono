@@ -1,3 +1,29 @@
+
+now lets one more set of funcionality to the 
+
+
+on the "Ai" page under the "Database" tab - can you add lower down on the page a new button that says: "Set Relationships" that does nothing yet - 
+
+
+on the "Ai" page under the "Database" tab  now hook up code to "Set Relationships" that allows you to pick one of the prompts and assign the other asset types which will mostly be markdown files that are listed in documentation_files that are actually support the main prompt that are seleced. They are usually mentioned as being support assets in the original prompt stored in the "prompts" table.  You need to query the documentation_files table for existing records only that will provide a list of markdown files - I guess if you also provide the date (and soon the document_type when I have hooked up and sort in descdeing order I can find the file I want for the relationship in a flat list - to start with.  Implement just that much functionalithy in the front end code )
+
+
+THe problem is I need to load one or markdown files which are local to my machihne. Can you give me a script that I can run to load the actual markdown file that you can call on the front end and which will give you its contents to pass to the ai.  THe problem with the relatioships table is that i want to specify the relationsshiopts of these asset files to the original prompt so I can provide the necessary context.  But unlike the prompts these are dynamic files whose content may change.  I suppose as long as the name of the asset doesn['t change  - even it its content does, the relatshionsip table just needs to define the fixed loation and as long as the script you build can take a filepath and read the conents of the file and provide to the front end, the relatiohship tables will be useful because it shows what the prompt needs to do its work and it will be in the database so it will make it easier to build soiphistacted multi file contest file prompts to submit to the ai.
+
+
+[
+  {
+    "column_name": "(empty table)",
+    "data_type": "unknown",
+    "is_nullable": "unknown",
+    "table_name": "prompt_relationships",
+    "table_schema": "public",
+    "note": "Table exists but is empty. Cannot infer structure."
+  }
+]
+
+
+
 AI - JUST 2
 
 ai_prompt_template	
@@ -7,8 +33,6 @@ Markdown files containing prompt templates for AI systems. These templates can b
 api_context_support	
 ai-assets	
 Markdown files containing contextual information to enhance API prompt calls. These documents provide reference material, examples, or domain knowledge that can be included in API requests to generate more accurate and relevant results.	
-
-
 
 
 DOCUMENTATION: 
@@ -56,6 +80,7 @@ the [
   }
 ]
 
+all done now with 7 document types
 [
   {
     "id": "e9d3e473-5315-4837-9f5f-61f150cbd137",

@@ -63,6 +63,7 @@ interface DatabasePrompt {
       dependencies: string[];
       estimatedCost: string;
     };
+    relatedAssets?: string[]; // Array of related asset IDs
   };
   document_type_id: string | null;
   category_id: string | null;
@@ -73,6 +74,23 @@ interface DatabasePrompt {
   author: string | null;
   tags: string[];
   file_path: string | null;
+}
+
+interface DocumentationFile {
+  id: string;
+  file_path: string;
+  title: string;
+  metadata?: {
+    size?: number;
+    created?: string;
+    modified?: string;
+    isPrompt?: boolean;
+  };
+  last_modified_at?: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+  document_type_id?: string | null;
 }
 
 const AI: React.FC = () => {
@@ -94,7 +112,14 @@ const AI: React.FC = () => {
   const [newCategoryDescription, setNewCategoryDescription] = useState<string>('');
   const [showImportDialog, setShowImportDialog] = useState<boolean>(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState<boolean>(false);
+  const [showRelationshipsDialog, setShowRelationshipsDialog] = useState<boolean>(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [documentationFiles, setDocumentationFiles] = useState<DocumentationFile[]>([]);
+  const [selectedRelationshipPrompt, setSelectedRelationshipPrompt] = useState<DatabasePrompt | null>(null);
+  const [selectedRelatedAssets, setSelectedRelatedAssets] = useState<string[]>([]);
+  const [relationshipsFilter, setRelationshipsFilter] = useState<string>('');
+  const [selectedPromptForView, setSelectedPromptForView] = useState<string | null>(null);
+  const [promptRelationshipsMap, setPromptRelationshipsMap] = useState<Record<string, DocumentationFile[]>>({});
   const [isLoading, setIsLoading] = useState<{[key: string]: boolean}>({
     loadingPrompts: false,
     savingPrompt: false,
@@ -103,7 +128,9 @@ const AI: React.FC = () => {
     loadingDbPrompts: false,
     savingDbPrompt: false,
     importingPrompt: false,
-    creatingCategory: false
+    creatingCategory: false,
+    loadingDocFiles: false,
+    savingRelationships: false
   });
   
   // Load from localStorage on component mount
@@ -122,7 +149,32 @@ const AI: React.FC = () => {
     loadDocumentTypes();
     loadPromptCategories();
     loadDatabasePrompts();
+    loadDocumentationFiles();
   }, []);
+  
+  // Load documentation files from the database
+  const loadDocumentationFiles = async () => {
+    setIsLoading(prev => ({ ...prev, loadingDocFiles: true }));
+    try {
+      const { data, error } = await supabase
+        .from('documentation_files')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('last_modified_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (data) {
+        setDocumentationFiles(data);
+        console.log(`Loaded ${data.length} documentation files`);
+      }
+    } catch (error) {
+      console.error('Error loading documentation files:', error);
+      toast.error('Failed to load documentation files');
+    } finally {
+      setIsLoading(prev => ({ ...prev, loadingDocFiles: false }));
+    }
+  };
   
   const loadDocumentTypes = async () => {
     try {
@@ -178,12 +230,49 @@ const AI: React.FC = () => {
       
       if (data) {
         setDatabasePrompts(data);
+        // Load relationship data after loading prompts
+        loadPromptRelationships(data);
       }
     } catch (error) {
       console.error('Error loading database prompts:', error);
       toast.error('Failed to load database prompts');
     } finally {
       setIsLoading(prev => ({ ...prev, loadingDbPrompts: false }));
+    }
+  };
+  
+  // Function to load relationship data for all prompts
+  const loadPromptRelationships = async (prompts: DatabasePrompt[]) => {
+    try {
+      // Only proceed if we have documentation files already loaded
+      if (documentationFiles.length === 0) {
+        await loadDocumentationFiles();
+      }
+      
+      // Create a map of prompt ID to related documentation files
+      const relationshipsMap: Record<string, DocumentationFile[]> = {};
+      
+      // For each prompt, find its related assets
+      for (const prompt of prompts) {
+        const relatedAssetIds = prompt.metadata.relatedAssets || [];
+        
+        if (relatedAssetIds.length > 0) {
+          // Find the documentation files that match these IDs
+          const relatedFiles = documentationFiles.filter(file => 
+            relatedAssetIds.includes(file.id)
+          );
+          
+          relationshipsMap[prompt.id] = relatedFiles;
+        } else {
+          relationshipsMap[prompt.id] = [];
+        }
+      }
+      
+      setPromptRelationshipsMap(relationshipsMap);
+      console.log('Loaded relationships map:', relationshipsMap);
+    } catch (error) {
+      console.error('Error loading prompt relationships:', error);
+      toast.error('Failed to load prompt relationships');
     }
   };
   
@@ -678,6 +767,99 @@ const AI: React.FC = () => {
       setIsLoading(prev => ({ ...prev, savingDbPrompt: false }));
     }
   };
+  
+  // Open relationships dialog for a prompt
+  const openRelationshipsDialog = () => {
+    // If we don't have documentation files yet, load them
+    if (documentationFiles.length === 0) {
+      loadDocumentationFiles();
+    }
+    
+    setShowRelationshipsDialog(true);
+  };
+  
+  // Handle selecting a prompt for relationships
+  const selectPromptForRelationships = (prompt: DatabasePrompt) => {
+    setSelectedRelationshipPrompt(prompt);
+    
+    // Initialize selected assets from existing relationships if available
+    const existingRelationships = prompt.metadata.relatedAssets || [];
+    setSelectedRelatedAssets(existingRelationships);
+  };
+  
+  // Toggle selection of a related asset
+  const toggleRelatedAsset = (assetId: string) => {
+    if (selectedRelatedAssets.includes(assetId)) {
+      setSelectedRelatedAssets(selectedRelatedAssets.filter(id => id !== assetId));
+    } else {
+      setSelectedRelatedAssets([...selectedRelatedAssets, assetId]);
+    }
+  };
+  
+  // Save relationships for the selected prompt
+  const saveRelationships = async () => {
+    if (!selectedRelationshipPrompt) {
+      toast.error('No prompt selected');
+      return;
+    }
+    
+    setIsLoading(prev => ({ ...prev, savingRelationships: true }));
+    try {
+      // Create updated metadata with the new related assets
+      const updatedMetadata = {
+        ...selectedRelationshipPrompt.metadata,
+        relatedAssets: selectedRelatedAssets
+      };
+      
+      // Update the prompt in the database
+      const { data, error } = await supabase
+        .from('prompts')
+        .update({
+          metadata: updatedMetadata,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedRelationshipPrompt.id)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      // Update local state
+      if (data) {
+        // Update the relationships map with the new data
+        updateRelationshipsMap(data);
+        
+        // Update the prompts list
+        await loadDatabasePrompts();
+        
+        toast.success(`Relationships updated for "${data.name}"`);
+        setShowRelationshipsDialog(false);
+        setSelectedRelationshipPrompt(null);
+        setSelectedRelatedAssets([]);
+      }
+    } catch (error) {
+      console.error('Error saving relationships:', error);
+      toast.error(`Failed to save relationships: ${error.message}`);
+    } finally {
+      setIsLoading(prev => ({ ...prev, savingRelationships: false }));
+    }
+  };
+  
+  // Update the relationships map with a single prompt
+  const updateRelationshipsMap = (prompt: DatabasePrompt) => {
+    const relatedAssetIds = prompt.metadata.relatedAssets || [];
+    
+    // Find the documentation files that match these IDs
+    const relatedFiles = documentationFiles.filter(file => 
+      relatedAssetIds.includes(file.id)
+    );
+    
+    // Update the map for this single prompt
+    setPromptRelationshipsMap(prevMap => ({
+      ...prevMap,
+      [prompt.id]: relatedFiles
+    }));
+  };
 
   return (
     <div className="container mx-auto py-6">
@@ -1110,8 +1292,8 @@ const AI: React.FC = () => {
           
           {/* Import Dialog */}
           <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-            <DialogContent className="bg-background border-border">
-              <DialogHeader>
+            <DialogContent className="bg-white border-gray-200 shadow-lg">
+              <DialogHeader className="bg-white">
                 <DialogTitle>Import Prompt from File</DialogTitle>
                 <DialogDescription>
                   Upload a markdown file with YAML frontmatter to import as a prompt
@@ -1188,10 +1370,275 @@ const AI: React.FC = () => {
             </DialogContent>
           </Dialog>
           
+          {/* Set Relationships Button */}
+          <Card className="mt-4">
+            <CardContent className="pt-6">
+              <div className="flex justify-center">
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  className="w-full md:w-1/2 lg:w-1/3 bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-800"
+                  onClick={openRelationshipsDialog}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  Set Relationships
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Prompt Relationships Viewer */}
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Prompt Relationships</CardTitle>
+              <CardDescription>
+                View relationships between prompts and documentation files
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Prompts Selection Column */}
+                  <div className="border rounded-md p-4">
+                    <h3 className="text-sm font-medium mb-3">Select a Prompt</h3>
+                    <Select
+                      value={selectedPromptForView || ''}
+                      onValueChange={setSelectedPromptForView}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a prompt" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {databasePrompts.map(prompt => (
+                          <SelectItem key={prompt.id} value={prompt.id}>
+                            {prompt.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    {selectedPromptForView && selectedPromptForView !== 'none' && (
+                      <div className="mt-4 text-sm">
+                        <div className="font-medium">
+                          {databasePrompts.find(p => p.id === selectedPromptForView)?.name}
+                        </div>
+                        <div className="text-muted-foreground mt-1">
+                          {databasePrompts.find(p => p.id === selectedPromptForView)?.description || 'No description'}
+                        </div>
+                        <div className="mt-2 text-xs">
+                          <span className="font-medium">Category:</span>{' '}
+                          {promptCategories.find(c => c.id === databasePrompts.find(p => p.id === selectedPromptForView)?.category_id)?.name || 'None'}
+                        </div>
+                        <div className="mt-1 text-xs">
+                          <span className="font-medium">Status:</span>{' '}
+                          {databasePrompts.find(p => p.id === selectedPromptForView)?.status || 'Unknown'}
+                        </div>
+                        <div className="mt-2 bg-blue-50 p-2 rounded text-blue-800 text-xs">
+                          {promptRelationshipsMap[selectedPromptForView]?.length || 0} Related Files
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Relationships Display - 2/3 width */}
+                  <div className="md:col-span-2 border rounded-md p-4">
+                    <h3 className="text-sm font-medium mb-3">Related Documentation Files</h3>
+                    
+                    {!selectedPromptForView || selectedPromptForView === 'none' ? (
+                      <div className="h-48 flex items-center justify-center text-muted-foreground">
+                        Select a prompt to view its relationships
+                      </div>
+                    ) : promptRelationshipsMap[selectedPromptForView]?.length === 0 ? (
+                      <div className="h-48 flex items-center justify-center text-muted-foreground">
+                        No related files for this prompt
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                        {promptRelationshipsMap[selectedPromptForView]?.map(file => (
+                          <div key={file.id} className="border rounded-md p-3 hover:bg-gray-50">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <div className="font-medium">{file.title}</div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {file.file_path}
+                                </div>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                {documentTypes.find(dt => dt.id === file.document_type_id)?.document_type || 'No Type'}
+                              </Badge>
+                            </div>
+                            <div className="mt-2 text-xs text-gray-500">
+                              Last modified: {file.last_modified_at ? 
+                                new Date(file.last_modified_at).toLocaleDateString() : 
+                                new Date(file.updated_at).toLocaleDateString()}
+                            </div>
+                            {file.metadata?.size && (
+                              <div className="mt-1 text-xs text-gray-500">
+                                Size: {Math.round(file.metadata.size / 1024)} KB
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {selectedPromptForView && selectedPromptForView !== 'none' && (
+                      <div className="mt-4 flex justify-end">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const prompt = databasePrompts.find(p => p.id === selectedPromptForView);
+                            if (prompt) {
+                              selectPromptForRelationships(prompt);
+                              setShowRelationshipsDialog(true);
+                            }
+                          }}
+                        >
+                          Edit Relationships
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Relationships Dialog */}
+          <Dialog open={showRelationshipsDialog} onOpenChange={setShowRelationshipsDialog}>
+            <DialogContent className="bg-white border-gray-200 shadow-lg max-w-5xl">
+              <DialogHeader className="bg-white">
+                <DialogTitle>Manage Prompt Relationships</DialogTitle>
+                <DialogDescription>
+                  Link prompts to related markdown documentation files
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-4 min-h-[500px] bg-white">
+                {/* Prompts List - takes 2/7 of the space */}
+                <div className="md:col-span-2 border rounded-md p-2 bg-white">
+                  <div className="font-medium text-sm mb-2">Select a Prompt</div>
+                  <ScrollArea className="h-[450px] bg-white">
+                    {databasePrompts.length > 0 ? (
+                      databasePrompts.map(prompt => (
+                        <div 
+                          key={prompt.id}
+                          className={`p-2 mb-1 rounded cursor-pointer hover:bg-accent ${selectedRelationshipPrompt?.id === prompt.id ? 'bg-accent' : ''}`}
+                          onClick={() => selectPromptForRelationships(prompt)}
+                        >
+                          <div className="font-medium text-sm">{prompt.name}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {prompt.description || 'No description'}
+                          </div>
+                          <div className="text-xs text-blue-600 mt-1">
+                            {prompt.metadata.relatedAssets ? 
+                              `${prompt.metadata.relatedAssets.length} related files` : 
+                              'No related files'}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center text-muted-foreground py-4">
+                        No prompts available
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+                
+                {/* Documentation Files - takes 5/7 of the space */}
+                <div className="md:col-span-5 border rounded-md p-2 bg-white">
+                  <div className="mb-2 bg-white">
+                    <div className="font-medium text-sm mb-2">Related Documentation Files</div>
+                    <Input 
+                      placeholder="Filter markdown files..." 
+                      value={relationshipsFilter}
+                      onChange={(e) => setRelationshipsFilter(e.target.value)}
+                      className="mb-2"
+                    />
+                  </div>
+                  
+                  {!selectedRelationshipPrompt ? (
+                    <div className="flex items-center justify-center h-[400px] text-muted-foreground bg-white">
+                      Please select a prompt from the list
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-[400px] bg-white">
+                      {isLoading.loadingDocFiles ? (
+                        <div className="text-center py-4">Loading documentation files...</div>
+                      ) : documentationFiles.length === 0 ? (
+                        <div className="text-center py-4">No documentation files found</div>
+                      ) : (
+                        documentationFiles
+                          .filter(file => {
+                            if (!relationshipsFilter) return true;
+                            return (
+                              file.file_path.toLowerCase().includes(relationshipsFilter.toLowerCase()) ||
+                              file.title.toLowerCase().includes(relationshipsFilter.toLowerCase())
+                            );
+                          })
+                          .map(file => (
+                            <div 
+                              key={file.id}
+                              className="flex items-center p-2 hover:bg-accent rounded mb-1"
+                            >
+                              <Checkbox 
+                                id={`file-${file.id}`} 
+                                checked={selectedRelatedAssets.includes(file.id)}
+                                onCheckedChange={() => toggleRelatedAsset(file.id)}
+                                className="mr-2"
+                              />
+                              <div className="flex-1">
+                                <Label htmlFor={`file-${file.id}`} className="font-medium cursor-pointer">
+                                  {file.title}
+                                </Label>
+                                <div className="text-xs text-muted-foreground">
+                                  {file.file_path}
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  {file.last_modified_at ? 
+                                    `Modified: ${new Date(file.last_modified_at).toLocaleDateString()}` : 
+                                    `Created: ${new Date(file.created_at).toLocaleDateString()}`}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                      )}
+                    </ScrollArea>
+                  )}
+                </div>
+              </div>
+              
+              <DialogFooter className="flex justify-between mt-4 bg-white pt-4 border-t">
+                <div className="text-sm text-muted-foreground">
+                  {selectedRelatedAssets.length} file(s) selected
+                </div>
+                <div className="space-x-2">
+                  <Button variant="outline" onClick={() => {
+                    setShowRelationshipsDialog(false);
+                    setSelectedRelationshipPrompt(null);
+                    setSelectedRelatedAssets([]);
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={saveRelationships}
+                    disabled={!selectedRelationshipPrompt || isLoading.savingRelationships}
+                  >
+                    {isLoading.savingRelationships ? 'Saving...' : 'Save Relationships'}
+                  </Button>
+                </div>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {/* New Category Dialog */}
           <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
-            <DialogContent className="bg-background border-border">
-              <DialogHeader>
+            <DialogContent className="bg-white border-gray-200 shadow-lg">
+              <DialogHeader className="bg-white">
                 <DialogTitle>Create Prompt Category</DialogTitle>
                 <DialogDescription>
                   Add a new category to organize your prompts
