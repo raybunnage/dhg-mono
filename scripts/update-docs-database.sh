@@ -247,6 +247,87 @@ async function updateDocumentationFiles() {
   try {
     console.log('Querying all documentation files...');
     
+    // ADDED: Load and verify access to specific files
+    console.log('\n--- Verifying Access to Required AI Assets ---');
+    
+    // Check markdown files
+    const requiredFiles = [
+      'docs/markdown-report.md',
+      'prompts/development-process-specification.md'
+    ];
+    
+    console.log('Checking required markdown files:');
+    for (const filePath of requiredFiles) {
+      const fullPath = path.join(repoRoot, filePath);
+      try {
+        if (fs.existsSync(fullPath)) {
+          const content = fs.readFileSync(fullPath, 'utf8');
+          const contentPreview = content.substring(0, 150).replace(/\n/g, ' ') + '...';
+          console.log(`✅ ${filePath} - Found and readable (Preview: ${contentPreview})`);
+        } else {
+          console.log(`❌ ${filePath} - Not found`);
+        }
+      } catch (error) {
+        console.log(`❌ ${filePath} - Error: ${error.message}`);
+      }
+    }
+    
+    // Count document_types records
+    console.log('\nCounting document_types records:');
+    try {
+      const { count: documentTypesCount, error: countError } = await supabase
+        .from('document_types')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) {
+        console.log(`❌ Error counting document_types: ${countError.message}`);
+      } else {
+        console.log(`✅ Found ${documentTypesCount} document_types records`);
+        
+        // Get all document types for verification
+        const { data: documentTypes, error: fetchError } = await supabase
+          .from('document_types')
+          .select('id, name, description')
+          .order('name');
+        
+        if (fetchError) {
+          console.log(`❌ Error fetching document_types: ${fetchError.message}`);
+        } else {
+          console.log('Document types found:');
+          documentTypes.forEach(type => {
+            console.log(`  - ${type.name} (${type.id}): ${type.description || 'No description'}`);
+          });
+        }
+      }
+    } catch (error) {
+      console.log(`❌ Error accessing document_types: ${error.message}`);
+    }
+    
+    // Find specific prompt in prompts table
+    console.log('\nLooking for "markdown-document-classification-prompt" in prompts table:');
+    try {
+      const { data: promptData, error: promptError } = await supabase
+        .from('prompts')
+        .select('*')
+        .ilike('name', '%markdown-document-classification-prompt%')
+        .limit(1);
+      
+      if (promptError) {
+        console.log(`❌ Error querying prompts table: ${promptError.message}`);
+      } else if (promptData && promptData.length > 0) {
+        const prompt = promptData[0];
+        console.log(`✅ Found prompt: ${prompt.name} (ID: ${prompt.id})`);
+        console.log(`  - Created: ${new Date(prompt.created_at).toLocaleString()}`);
+        console.log(`  - Content preview: ${prompt.content.substring(0, 100)}...`);
+      } else {
+        console.log('❌ Prompt "markdown-document-classification-prompt" not found');
+      }
+    } catch (error) {
+      console.log(`❌ Error accessing prompts table: ${error.message}`);
+    }
+    
+    console.log('\n--- End of AI Assets Verification ---\n');
+    
     // Get count of all records before update
     const { count: totalCountBefore, error: totalErrorBefore } = await supabase
       .from('documentation_files')

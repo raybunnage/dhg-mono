@@ -1,34 +1,35 @@
 # Documentation Files Database Update Report
 
-Generated: 3/8/2025, 7:52:51 PM
+Generated: 3/9/2025, 12:13:08 PM
 
 ## Update Summary
 
 ### Statistics Before Update
-- **Total records:** 156
-- **Active records:** 112
+- **Total records:** 158
+- **Active records:** 114
 - **Deleted records:** 44
 
 ### Statistics After Update
-- **Total records:** 156
-- **Active records:** 112
+- **Total records:** 158
+- **Active records:** 114
 - **Deleted records:** 44
 
 ### Update Results
 - **Files activated:** 0
 - **Files marked as deleted:** 0
 - **Files with metadata updated:** 1
-- **Files unchanged:** 155
+- **Files unchanged:** 157
 - **New files added:** 0
 - **Update errors:** 0
 
 ### File Existence Check
-- **Files that exist on disk:** 112
+- **Files that exist on disk:** 114
 - **Files not found on disk:** 44
 - **New files found:** 0
 
 ### Existing Files Processed
 apps/dhg-hub-lovable/README.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 2303 bytes | Created: 2/10/2025, 5:31:12 PM | Modified: 2/10/2025, 5:31:12 PM | 🔄 Possible move from: docs/supabase_design/README.md, README.md  
+apps/dhg-improve-experts/CLAUDE_API_CALL_FIX.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 6855 bytes | Created: 3/9/2025, 4:36:51 AM | Modified: 3/9/2025, 4:36:51 AM  
 apps/dhg-improve-experts/CLAUDE_API_WORKFLOW.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 12062 bytes | Created: 3/8/2025, 4:17:53 AM | Modified: 3/8/2025, 4:17:53 AM  
 apps/dhg-improve-experts/CLAUDE_SQL_FIX.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 4456 bytes | Created: 3/8/2025, 4:30:14 AM | Modified: 3/8/2025, 4:30:14 AM  
 apps/dhg-improve-experts/development-process-specification.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 10161 bytes | Created: 3/5/2025, 5:17:04 PM | Modified: 3/5/2025, 5:17:04 PM  
@@ -76,7 +77,7 @@ docs/development/code-standards.md | ❌ NOT FOUND | Before: DELETED | After: DE
 docs/development/file-management.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 1452 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
 docs/development/testing.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 110 bytes | Last Updated: 3/7/2025, 5:12:02 PM  
 docs/docs-organization.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 3222 bytes | Last Updated: 3/7/2025, 6:12:37 PM | 🔄 Possibly moved to: apps/dhg-improve-experts/docs/docs-organization.md  
-docs/documentation-files-report.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | → UPDATING METADATA | Size: 35764 bytes | Created: 3/8/2025, 7:41:20 PM | Modified: 3/8/2025, 7:51:16 PM  
+docs/documentation-files-report.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | → UPDATING METADATA | Size: 37208 bytes | Created: 3/9/2025, 12:12:42 PM | Modified: 3/9/2025, 12:12:42 PM  
 docs/documentation-management.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 4672 bytes | Created: 3/2/2025, 3:08:50 AM | Modified: 3/2/2025, 12:17:05 PM  
 docs/documentation-report.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 4593 bytes | Last Updated: 3/7/2025, 6:12:37 PM | 🔄 Possibly moved to: apps/dhg-improve-experts/docs/documentation-report.md  
 docs/experts/expert-model.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 120 bytes | Last Updated: 3/7/2025, 5:12:02 PM  
@@ -86,14 +87,14 @@ docs/git-history/ai_processing_with_patches.md | ✅ EXISTS | Before: ACTIVE | A
 docs/git-history/git_history_detailed.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 35558 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
 docs/git-history/git_history.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 11758 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
 docs/git-history/git_history_with_files.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 88786 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
-docs/git-workflows/restoring-previous-file-versions.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 5791 bytes | Created: 3/8/2025, 1:58:05 PM | Modified: 3/8/2025, 2:19:01 PM  
+docs/git-workflows/restoring-previous-file-versions.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 6166 bytes | Created: 3/8/2025, 1:58:05 PM | Modified: 3/9/2025, 4:32:04 AM  
 docs/google-drive/sync-process.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 120 bytes | Last Updated: 3/7/2025, 5:12:02 PM  
 docs/guides/batch-processing-and-trees.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 6416 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
 docs/guides/file-entries-mapping.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 3974 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
 docs/guides/supabase-connection_fixes.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 11081 bytes | Created: 2/23/2025, 9:54:01 AM | Modified: 2/23/2025, 10:14:03 AM  
 docs/guides/using-supabase-views.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 4601 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
 docs/guts-dashboard.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 4630 bytes | Last Updated: 3/7/2025, 6:12:38 PM | 🔄 Possibly moved to: apps/dhg-improve-experts/docs/guts-dashboard.md  
-docs/markdown-report.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 14734 bytes | Created: 3/7/2025, 12:17:13 AM | Modified: 3/8/2025, 2:20:17 PM  
+docs/markdown-report.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 15130 bytes | Created: 3/9/2025, 8:54:17 AM | Modified: 3/9/2025, 8:54:47 AM  
 docs/migrations/api-drive-supa.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 6164 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
 docs/migrations/google-drive-integration.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 15453 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
 docs/migrations/migration_management.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 4232 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
@@ -125,7 +126,7 @@ docs/prompts/document-type-integration-guide.md | ❌ NOT FOUND | Before: DELETE
 docs/prompts/expert-profiles.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 147 bytes | Last Updated: 3/7/2025, 5:12:02 PM | 🔄 Possibly moved to: prompts/expert-profiles.md  
 docs/prompts/react-component-analysis-prompt.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 179 bytes | Last Updated: 3/7/2025, 5:12:02 PM | 🔄 Possibly moved to: prompts/react-component-analysis-prompt.md  
 docs/scripting/shell-scripting-basics.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 4287 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
-docs/script-report.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 8524 bytes | Created: 3/8/2025, 2:38:25 PM | Modified: 3/8/2025, 2:48:56 PM  
+docs/script-report.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 8809 bytes | Created: 3/8/2025, 2:38:25 PM | Modified: 3/9/2025, 11:56:36 AM  
 docs/simple-db-results.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 312 bytes | Created: 3/8/2025, 3:40:51 PM | Modified: 3/8/2025, 3:40:51 PM  
 docs/supabase_design/ai_columns_review.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 169 bytes | Last Updated: 3/7/2025, 5:12:02 PM | 🔄 Possibly moved to: docs/architecture/supabase_design/ai_columns_review.md  
 docs/supabase_design/ClassifyDocument_Explanation.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 191 bytes | Last Updated: 3/7/2025, 5:12:02 PM | 🔄 Possibly moved to: docs/architecture/supabase_design/ClassifyDocument_Explanation.md  
@@ -160,6 +161,7 @@ prompts/document-type-request-template.md | ✅ EXISTS | Before: ACTIVE | After:
 prompts/enhanced-analysis-prompt.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 11487 bytes | Created: 2/21/2025, 6:48:35 PM | Modified: 2/21/2025, 6:48:35 PM | 🔄 Possible move from: public/prompts/enhanced-analysis-prompt.md  
 prompts/expert-extraction-prompt.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 2347 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM | 🔄 Possible move from: public/docs/prompts/expert-extraction-prompt.md  
 prompts/expert-profiles.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 5851 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM | 🔄 Possible move from: docs/prompts/expert-profiles.md  
+prompts/markdown-document-classification-prompt.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 4013 bytes | Created: 3/9/2025, 11:44:22 AM | Modified: 3/9/2025, 11:44:22 AM  
 prompts/prompt-management-implementation-plan.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 10422 bytes | Created: 3/6/2025, 5:25:15 PM | Modified: 3/6/2025, 5:25:15 PM  
 prompts/react-component-analysis-prompt.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 5990 bytes | Created: 2/21/2025, 6:48:24 PM | Modified: 2/21/2025, 10:08:14 PM | 🔄 Possible move from: docs/prompts/react-component-analysis-prompt.md  
 prompts/sql-history-implementation-plan.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 18388 bytes | Created: 3/6/2025, 11:35:35 PM | Modified: 3/6/2025, 11:35:35 PM  
@@ -170,7 +172,7 @@ public/docs/prompts/expert-extraction-prompt.md | ❌ NOT FOUND | Before: DELETE
 public/prompts/enhanced-analysis-prompt.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 873 bytes | Last Updated: 3/7/2025, 5:12:02 PM | 🔄 Possibly moved to: prompts/enhanced-analysis-prompt.md  
 README-guts-dashboard.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 4625 bytes | Last Updated: 3/7/2025, 6:12:30 PM | 🔄 Possibly moved to: apps/dhg-improve-experts/README-guts-dashboard.md  
 README.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 2303 bytes | Last Updated: 3/7/2025, 6:12:31 PM | 🔄 Possibly moved to: apps/dhg-hub-lovable/README.md, apps/dhg-improve-experts/README.md, docs/architecture/supabase_design/README.md, file_types/registry_archives/pdf-research-portal/README.md, scripts/whisper/.venv-whisper/lib/python3.11/site-packages/torchgen/packaged/autograd/README.md, supabase/types/README.md  
-scripts/docs/markdown-report.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 733 bytes | Created: 3/8/2025, 1:51:16 PM | Modified: 3/8/2025, 1:51:16 PM  
+scripts/docs/markdown-report.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 733 bytes | Created: 3/9/2025, 8:54:42 AM | Modified: 3/9/2025, 8:54:42 AM  
 scripts/README-db-functions.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 7808 bytes | Created: 3/2/2025, 3:31:12 PM | Modified: 3/5/2025, 8:01:15 PM  
 scripts/whisper/.venv-whisper/lib/python3.11/site-packages/huggingface_hub/templates/datasetcard_template.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 5503 bytes | Created: 2/22/2025, 5:38:59 PM | Modified: 2/22/2025, 5:38:59 PM  
 scripts/whisper/.venv-whisper/lib/python3.11/site-packages/huggingface_hub/templates/modelcard_template.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 6870 bytes | Created: 2/22/2025, 5:38:59 PM | Modified: 2/22/2025, 5:38:59 PM  

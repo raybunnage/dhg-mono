@@ -1,6 +1,6 @@
 # Shell Script Report
 
-Generated: Sat Mar  8 14:48:25 PST 2025
+Generated: Sun Mar  9 11:56:06 PDT 2025
 
 ## Overview
 
@@ -9,8 +9,8 @@ It includes information about each script's executable status, size, and last mo
 
 ## Summary
 
-- **Total shell scripts:**       45
-- **Executable scripts:**       42
+- **Total shell scripts:**       47
+- **Executable scripts:**       44
 - **Non-executable scripts:**        3
 - **Root-level scripts:**        0
 
@@ -47,7 +47,11 @@ find . -name "*.sh" -type f -exec chmod +x {} \;
     - Shebang: `#!/bin/bash`
   - 📜 [setup-prompts.sh](/scripts/setup-prompts.sh) - ✅ Executable - 2025-02-21 21:37 (1 bytes)
     - Shebang: `No shebang`
+  - 📜 [simple-db-query.sh](/scripts/simple-db-query.sh) - ✅ Executable - 2025-03-08 15:37 (3326 bytes)
+    - Shebang: `#!/bin/bash`
   - 📜 [track.sh](/scripts/track.sh) - ✅ Executable - 2025-03-02 11:13 (1192 bytes)
+    - Shebang: `#!/bin/bash`
+  - 📜 [update-docs-database.sh](/scripts/update-docs-database.sh) - ✅ Executable - 2025-03-08 19:52 (26515 bytes)
     - Shebang: `#!/bin/bash`
   - 📁 **app-management/**
     - 📜 [backup-configs.sh](/scripts/app-management/backup-configs.sh) - ✅ Executable - 2025-02-12 14:14 (2721 bytes)

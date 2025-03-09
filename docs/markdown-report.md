@@ -1,6 +1,6 @@
 # Markdown Files Report
 
-Generated: Sat Mar  8 14:20:16 PST 2025
+Generated: Sun Mar  9 08:54:46 PDT 2025
 
 ## Overview
 
@@ -8,11 +8,11 @@ This report shows all markdown files found in the repository, organized hierarch
 
 ## Summary
 
-- **Total markdown files:** 95
+- **Total markdown files:** 99
 - **README files:** 4
 - **Files in docs folders:** 57
 - **Files in prompts folder:** 0
-- **Files in other locations:** 34
+- **Files in other locations:** 38
 - **Root-level files:** 2
 
 ## Root-Level Files
@@ -25,8 +25,11 @@ This report shows all markdown files found in the repository, organized hierarch
 ## Docs Directory (Hierarchical View)
 
 - 📄 [command-history-tracking.md](/docs/command-history-tracking.md) - 2025-03-02 11:14 (5007 bytes)
+- 📄 [documentation-files-report.md](/docs/documentation-files-report.md) - 2025-03-09 08:52 (37376 bytes)
 - 📄 [documentation-management.md](/docs/documentation-management.md) - 2025-03-02 12:17 (4672 bytes)
-- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-08 14:20 (181 bytes)
+- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-09 08:54 (181 bytes)
+- 📄 [script-report.md](/docs/script-report.md) - 2025-03-08 14:48 (8524 bytes)
+- 📄 [simple-db-results.md](/docs/simple-db-results.md) - 2025-03-08 15:40 (312 bytes)
 - 📁 **architecture/**
   - 📄 [doc-assessment-implementation.md](/docs/architecture/doc-assessment-implementation.md) - 2025-03-05 17:24 (9269 bytes)
   - 📁 **supabase_design/**
@@ -57,7 +60,7 @@ This report shows all markdown files found in the repository, organized hierarch
   - 📄 [git_history_detailed.md](/docs/git-history/git_history_detailed.md) - 2025-02-17 17:41 (35558 bytes)
   - 📄 [git_history_with_files.md](/docs/git-history/git_history_with_files.md) - 2025-02-17 17:41 (88786 bytes)
 - 📁 **git-workflows/**
-  - 📄 [restoring-previous-file-versions.md](/docs/git-workflows/restoring-previous-file-versions.md) - 2025-03-08 14:19 (5791 bytes)
+  - 📄 [restoring-previous-file-versions.md](/docs/git-workflows/restoring-previous-file-versions.md) - 2025-03-09 04:32 (6166 bytes)
 - 📁 **guides/**
   - 📄 [batch-processing-and-trees.md](/docs/guides/batch-processing-and-trees.md) - 2025-02-17 17:41 (6416 bytes)
   - 📄 [file-entries-mapping.md](/docs/guides/file-entries-mapping.md) - 2025-02-17 17:41 (3974 bytes)
@@ -166,6 +169,7 @@ This report shows all markdown files found in the repository, organized hierarch
       - 📁 **supabase/**
   - 📁 **supabase/**
 - 📁 **dhg-improve-experts/**
+  - 📄 [CLAUDE_API_CALL_FIX.md](/apps/dhg-improve-experts/CLAUDE_API_CALL_FIX.md) - 2025-03-09 04:36 (6855 bytes)
   - 📄 [CLAUDE_API_WORKFLOW.md](/apps/dhg-improve-experts/CLAUDE_API_WORKFLOW.md) - 2025-03-08 04:17 (12062 bytes)
   - 📄 [CLAUDE_SQL_FIX.md](/apps/dhg-improve-experts/CLAUDE_SQL_FIX.md) - 2025-03-08 04:30 (4456 bytes)
   - 📄 [DocumentTypeArchiveNotes.md](/apps/dhg-improve-experts/DocumentTypeArchiveNotes.md) - 2025-03-03 09:15 (2372 bytes)
