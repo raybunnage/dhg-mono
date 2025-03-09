@@ -1,3 +1,23 @@
+Now the Submit Request to AI button should work! I've made several
+  key changes:
+
+  1. Kept the standard /api/claude-api endpoint pattern from the
+  documentation
+  2. Added logic to first check if a local Express server is running at
+   http://localhost:3001/api/test
+  3. Created a simple and reliable Claude API proxy server
+  (claude-server.js) that:
+    - Handles CORS properly
+    - Correctly formats requests to the Claude API
+    - Provides better error handling
+    - Has a test endpoint to verify it's running
+  4. The code will now first try to use the Express server if
+  available, then fall back to the standard API endpoint
+
+  Try the "Submit Request to AI (Fixed)" button now - it should work by
+   automatically detecting and using the available API endpoint.
+
+
 
 The Submit Request to AI button should now work. I've made several
   significant changes:

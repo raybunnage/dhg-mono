@@ -15,6 +15,9 @@ git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- path/to/file.sh
 # real things Example: View recent commit history for the markdown report script
 git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- scripts/markdown-report.sh
 
+
+git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- apps/dhg-improve-experts/src/pages/ClassifyDocument.tsx
+
 # 2. Examine detailed changes to identify the last working version
 git log -n 5 -p -- path/to/file.sh
 
@@ -23,6 +26,12 @@ git checkout abc123 -- path/to/file.sh
 
 # real things Example: Restore the markdown report script from commit 91272de
 git checkout 12d3da3 -- scripts/markdown-report.sh
+
+git checkout be29a29 -- apps/dhg-improve-experts/src/pages/ClassifyDocument.tsx
+
+git checkout be29a29 -- apps/dhg-improve-experts/src/utils/ai-processing.ts
+
+git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- apps/dhg-improve-experts/src/utils/ai-processing.ts
 
 # 4. Make the file executable (if it's a script)
 chmod +x path/to/file.sh
