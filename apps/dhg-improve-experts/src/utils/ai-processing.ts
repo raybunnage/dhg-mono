@@ -229,120 +229,8 @@ export const validateExpertProfile = (response: any) => {
   }
 };
 
-// Define new interface to match the document classification implementation
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-interface ProcessWithAIOptions<T = any> {
-  messages: Message[];
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-  responseSchema?: any;
-  validateResponse?: (response: any) => T;
-  signal?: AbortSignal;
-}
-
-interface AIProcessingResult<T = any> {
-  rawResponse: string;
-  parsedResponse?: T;
-}
-
-// New processWithAI function matching the document classification implementation
-export async function processWithAI<T = any>({
-  messages,
-  model = MODEL_NAME_NEW,
-  temperature = 0,
-  maxTokens = 4000,
-  responseSchema,
-  validateResponse,
-  signal
-}: ProcessWithAIOptions<T>): Promise<AIProcessingResult<T>> {
-  try {
-    console.log(`Processing with AI: ${model}`, { messageCount: messages.length });
-    
-    // Make the API request to Claude
-    const response = await fetch('/api/claude-api', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        temperature,
-        max_tokens: maxTokens,
-        messages
-      })
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    const contentResponse = data.content?.[0]?.text || '';
-    
-    // Check for abort after the request
-    if (signal?.aborted) {
-      throw new Error('Processing aborted by user');
-    }
-    
-    debug.log('ai-response', {
-      contentType: typeof contentResponse,
-      length: contentResponse.length,
-      preview: contentResponse.slice(0, 100)
-    });
-    
-    let validatedResponse: any = contentResponse;
-    
-    // Validate the response if a schema or validation function is provided
-    if (responseSchema || validateResponse) {
-      try {
-        if (validateResponse) {
-          validatedResponse = validateResponse(contentResponse);
-        } else if (responseSchema) {
-          // Try to match JSON code blocks first
-          const jsonMatch = contentResponse.match(/```(?:json)?\n([\s\S]*?)\n```/);
-          if (jsonMatch && jsonMatch[1]) {
-            try {
-              const jsonData = JSON.parse(jsonMatch[1]);
-              validatedResponse = responseSchema.parse(jsonData);
-            } catch (jsonError) {
-              console.error('Failed to parse JSON from code block:', jsonError);
-              throw new Error(`Invalid JSON in response: ${jsonError.message}`);
-            }
-          } else {
-            // Try to parse the entire response as JSON
-            try {
-              const jsonData = JSON.parse(contentResponse);
-              validatedResponse = responseSchema.parse(jsonData);
-            } catch (jsonError) {
-              console.error('Failed to parse response as JSON:', jsonError);
-              throw new Error(`Invalid JSON response: ${jsonError.message}`);
-            }
-          }
-        }
-      } catch (validationError) {
-        console.error('Response validation failed:', validationError);
-        throw new Error(`Response validation failed: ${validationError.message}`);
-      }
-    }
-    
-    return {
-      rawResponse: contentResponse,
-      parsedResponse: validatedResponse as T
-    };
-  } catch (error) {
-    console.error("Error in processWithAI:", error);
-    throw error;
-  }
-}
-
-// Legacy processWithAI function for backward compatibility
-export async function processWithAIOld({
+// Update processWithAI to handle validation better
+export async function processWithAI({
   systemPrompt,
   userMessage,
   temperature = 0.7,
@@ -546,18 +434,18 @@ export async function processDocumentWithAI(documentId: string) {
         throw new Error('Document has no content');
       }
 
-      // Process with detailed logging using the new processWithAI function
+      // Process with detailed logging
       const result = await processWithAI({
-        messages: [{ role: 'user', content: doc.raw_content }],
+        systemPrompt,
+        userMessage: doc.raw_content,
+        requireJsonOutput: true,
         validateResponse: validateExpertProfile
       });
 
       // Log the raw response for debugging
       console.log('AI Raw Response:', {
         type: typeof result,
-        rawResponseLength: result.rawResponse?.length,
-        parsedResponseExists: !!result.parsedResponse,
-        preview: result.rawResponse?.slice(0, 200)
+        preview: typeof result === 'string' ? result.slice(0, 200) : JSON.stringify(result).slice(0, 200)
       });
 
       // Update document status
@@ -567,7 +455,7 @@ export async function processDocumentWithAI(documentId: string) {
           processing_status: 'completed',
           processed_content: {
             raw: doc.raw_content,
-            ai_analysis: result.parsedResponse || result.rawResponse,
+            ai_analysis: result,
             processed_at: new Date().toISOString()
           }
         })
@@ -577,7 +465,7 @@ export async function processDocumentWithAI(documentId: string) {
         throw new Error(`Failed to update document: ${updateError.message}`);
       }
 
-      return result.parsedResponse || result.rawResponse;
+      return result;
 
     } catch (processError) {
       debug.error('processing-failed', {
