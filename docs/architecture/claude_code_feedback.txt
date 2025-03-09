@@ -1,3 +1,29 @@
+I've made the following improvements to enhance the readability of the
+  document type indicators:
+
+  1. In the main relationship cards:
+    - Changed the "File Type" badge to use a light gray background with
+  darker text for better contrast and readability
+    - Changed the "Relationship Type" badge to use a light blue
+  background (when matching) for normal types
+    - For overridden types, it uses a light orange background that's
+  lighter than before (bg-orange-50 instead of bg-orange-100)
+    - Changed the badge variant to "outline" which helps with visibility
+  2. In the detailed relationship cards section:
+    - Added styled spans with proper padding and rounded corners
+    - Used light blue background for normal document types
+    - Used light orange background for overridden document types
+    - Improved the display of the original file type with a light gray
+  background for better contrast
+    - Reworded the original file type indicator to be clearer
+
+  These changes should make the document type information much more
+  readable with better contrast between the text and background colors.
+  The color coding (blue for normal, orange for overrides) also helps
+  quickly identify which relationships have custom document type
+  assignments.
+
+
 The changes have been made. Here's a summary of what we implemented to
   fix the network connection errors:
 
