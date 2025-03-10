@@ -1011,40 +1011,41 @@ const AI: React.FC = () => {
               }));
             } else {
               // Default values if no relationship exists
-              setRelationshipType('reference');
-              setRelationshipContext('');
-              setRelationshipDescription('');
-              
-              // Try to use the asset's own document type
               const file = documentationFiles.find(f => f.id === remainingAssetId);
-              if (file && file.document_type_id) {
-                setRelationshipDocumentTypeId(file.document_type_id);
-              } else {
-                setRelationshipDocumentTypeId('none');
-              }
+              const docTypeId = file && file.document_type_id ? file.document_type_id : 'none';
+              
+              // Initialize settings for this asset
+              setAssetRelationshipSettings(prev => ({
+                ...prev,
+                [remainingAssetId]: {
+                  relationship_type: 'reference',
+                  relationship_context: '',
+                  description: '',
+                  document_type_id: docTypeId
+                }
+              }));
             }
           } catch (error) {
             console.error('Error getting relationship data:', error);
             
-            // Use default values
-            setRelationshipType('reference');
-            setRelationshipContext('');
-            setRelationshipDescription('');
-            setRelationshipDocumentTypeId('none');
+            // Initialize with empty settings for this asset
+            const remainingAssetId = newSelection[0];
+            setAssetRelationshipSettings(prev => ({
+              ...prev,
+              [remainingAssetId]: {
+                relationship_type: 'reference',
+                relationship_context: '',
+                description: '',
+                document_type_id: 'none'
+              }
+            }));
           }
         }
       } else if (newSelection.length === 0) {
         // Reset if no assets selected
-        setRelationshipType('reference');
-        setRelationshipContext('');
-        setRelationshipDescription('');
-        setRelationshipDocumentTypeId('none');
+        // No need to set global fields as they're no longer used
       } else {
-        // Multiple assets selected, show generic fields
-        setRelationshipType('reference');
-        setRelationshipContext('');
-        setRelationshipDescription('');
-        setRelationshipDocumentTypeId('none');
+        // Multiple assets selected, individual card fields are used instead
       }
     } else {
       // Adding a new asset
@@ -1089,36 +1090,40 @@ const AI: React.FC = () => {
               }));
             } else {
               // Default values if no relationship exists
-              setRelationshipType('reference');
-              setRelationshipContext('');
-              setRelationshipDescription('');
-              
-              // Try to use the asset's own document type
               const file = documentationFiles.find(f => f.id === assetId);
-              if (file && file.document_type_id) {
-                setRelationshipDocumentTypeId(file.document_type_id);
-              } else {
-                setRelationshipDocumentTypeId('none');
-              }
+              const docTypeId = file && file.document_type_id ? file.document_type_id : 'none';
+              
+              // Initialize settings for this asset
+              setAssetRelationshipSettings(prev => ({
+                ...prev,
+                [assetId]: {
+                  relationship_type: 'reference',
+                  relationship_context: '',
+                  description: '',
+                  document_type_id: docTypeId
+                }
+              }));
             }
           } catch (error) {
             console.error('Error getting relationship data:', error);
             
-            // If no relationship exists, try to use the asset's own document type
+            // Initialize with empty settings for this asset
             const file = documentationFiles.find(f => f.id === assetId);
-            if (file && file.document_type_id) {
-              setRelationshipDocumentTypeId(file.document_type_id);
-            } else {
-              setRelationshipDocumentTypeId('none');
-            }
+            const docTypeId = file && file.document_type_id ? file.document_type_id : 'none';
+            
+            setAssetRelationshipSettings(prev => ({
+              ...prev,
+              [assetId]: {
+                relationship_type: 'reference',
+                relationship_context: '',
+                description: '',
+                document_type_id: docTypeId
+              }
+            }));
           }
         }
       } else {
-        // Multiple assets selected, show generic fields
-        setRelationshipType('reference');
-        setRelationshipContext('');
-        setRelationshipDescription('');
-        setRelationshipDocumentTypeId('none');
+        // Multiple assets selected, individual card fields are used instead
       }
     }
   };
@@ -1182,19 +1187,18 @@ const AI: React.FC = () => {
           const file = documentationFiles.find(file => file.id === assetId);
           if (!file) continue;
           
-          // Get the settings for this asset - prioritize using stored settings
+          // Get the settings for this asset from our stored state
           let settings;
           
           // If we have specific settings for this asset in our state, use those
           if (assetRelationshipSettings[assetId]) {
             settings = assetRelationshipSettings[assetId];
           } else {
-            // For newly added assets without specific settings, use the form values
-            // but don't include document_type_id as it's now handled individually
+            // For newly added assets without specific settings, create default values
             settings = {
-              relationship_type: relationshipType,
-              relationship_context: relationshipContext,
-              description: relationshipDescription || `Generated relationship between prompt "${selectedRelationshipPrompt.name}" and asset "${file.title}"`,
+              relationship_type: 'reference',
+              relationship_context: '',
+              description: `Generated relationship between prompt "${selectedRelationshipPrompt.name}" and asset "${file.title}"`,
               // Use the file's own document type if available as a fallback
               document_type_id: file.document_type_id || null
             };
@@ -2123,169 +2127,13 @@ const AI: React.FC = () => {
                     />
                   </div>
                   
-                  {/* Default relationship settings - for when multiple files are selected or when adding new files */}
-                  {selectedRelationshipPrompt && selectedRelatedAssets.length !== 1 && (
+                  {/* Message explaining individual card settings */}
+                  {selectedRelationshipPrompt && (
                     <div className="p-3 mb-3 border border-blue-200 rounded-md bg-blue-50">
-                      <h4 className="text-sm font-medium text-blue-800 mb-2">Default Relationship Settings</h4>
-                      <p className="text-xs text-blue-700 mb-2">
-                        These settings will be used for new relationships when no specific settings exist
+                      <h4 className="text-sm font-medium text-blue-800 mb-2">Relationship Settings</h4>
+                      <p className="text-xs text-blue-700">
+                        Configure relationship settings on each file card. Changes will be saved when you click "Save Relationships".
                       </p>
-                      
-                      <div className="grid grid-cols-2 gap-3 mb-2">
-                        <div className="space-y-1">
-                          <Label htmlFor="relationshipType" className="text-xs text-blue-800">Relationship Type</Label>
-                          <Select 
-                            value={relationshipType} 
-                            onValueChange={setRelationshipType}
-                          >
-                            <SelectTrigger id="relationshipType" className="h-8 text-xs bg-white">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white">
-                              <SelectItem value="reference">Reference</SelectItem>
-                              <SelectItem value="dependency">Dependency</SelectItem>
-                              <SelectItem value="enhancement">Enhancement</SelectItem>
-                              <SelectItem value="alternative">Alternative</SelectItem>
-                              <SelectItem value="parent">Parent</SelectItem>
-                              <SelectItem value="child">Child</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <Label htmlFor="relationshipContext" className="text-xs text-blue-800">Context</Label>
-                          <Textarea 
-                            id="relationshipContext" 
-                            placeholder="E.g. Used for analysis of" 
-                            className="text-xs min-h-[60px]" 
-                            value={relationshipContext}
-                            onChange={(e) => setRelationshipContext(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-1 mb-2">
-                        <Label htmlFor="relationshipDescription" className="text-xs text-blue-800">Description</Label>
-                        <Textarea 
-                          id="relationshipDescription" 
-                          placeholder="Detailed description of how this prompt relates to the selected files" 
-                          className="text-xs min-h-[60px]" 
-                          value={relationshipDescription}
-                          onChange={(e) => setRelationshipDescription(e.target.value)}
-                        />
-                      </div>
-                      
-                      {/* Document type dropdown removed from here - will be handled per file */}
-                    </div>
-                  )}
-                  
-                  {/* Specific settings for a single selected file */}
-                  {selectedRelationshipPrompt && selectedRelatedAssets.length === 1 && (
-                    <div className="p-3 mb-3 border border-green-200 rounded-md bg-green-50">
-                      <h4 className="text-sm font-medium text-green-800 mb-2">
-                        Settings for Selected File
-                      </h4>
-                      <p className="text-xs text-green-700 mb-2">
-                        These settings apply to the currently selected file only
-                      </p>
-                      
-                      <div className="grid grid-cols-2 gap-3 mb-2">
-                        <div className="space-y-1">
-                          <Label htmlFor="relationshipType" className="text-xs text-green-800">Relationship Type</Label>
-                          <Select 
-                            value={relationshipType} 
-                            onValueChange={(value) => {
-                              setRelationshipType(value);
-                              // Also update the asset settings cache
-                              if (selectedRelatedAssets.length === 1) {
-                                const assetId = selectedRelatedAssets[0];
-                                setAssetRelationshipSettings(prev => ({
-                                  ...prev,
-                                  [assetId]: {
-                                    ...prev[assetId] || {},
-                                    relationship_type: value,
-                                    relationship_context: relationshipContext,
-                                    description: relationshipDescription,
-                                    document_type_id: relationshipDocumentTypeId
-                                  }
-                                }));
-                              }
-                            }}
-                          >
-                            <SelectTrigger id="relationshipType" className="h-8 text-xs bg-white">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white">
-                              <SelectItem value="reference">Reference</SelectItem>
-                              <SelectItem value="dependency">Dependency</SelectItem>
-                              <SelectItem value="enhancement">Enhancement</SelectItem>
-                              <SelectItem value="alternative">Alternative</SelectItem>
-                              <SelectItem value="parent">Parent</SelectItem>
-                              <SelectItem value="child">Child</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <Label htmlFor="relationshipContext" className="text-xs text-green-800">Context</Label>
-                          <Textarea 
-                            id="relationshipContext" 
-                            placeholder="E.g. Used for analysis of" 
-                            className="text-xs min-h-[60px]" 
-                            value={relationshipContext}
-                            onChange={(e) => {
-                              setRelationshipContext(e.target.value);
-                              // Also update the asset settings cache
-                              if (selectedRelatedAssets.length === 1) {
-                                const assetId = selectedRelatedAssets[0];
-                                setAssetRelationshipSettings(prev => ({
-                                  ...prev,
-                                  [assetId]: {
-                                    ...prev[assetId] || {},
-                                    relationship_type: relationshipType,
-                                    relationship_context: e.target.value,
-                                    description: relationshipDescription,
-                                    document_type_id: relationshipDocumentTypeId
-                                  }
-                                }));
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-1 mb-2">
-                        <Label htmlFor="relationshipDescription" className="text-xs text-green-800">Description</Label>
-                        <Textarea 
-                          id="relationshipDescription" 
-                          placeholder="Detailed description of how this prompt relates to the selected file" 
-                          className="text-xs min-h-[60px]" 
-                          value={relationshipDescription}
-                          onChange={(e) => {
-                            setRelationshipDescription(e.target.value);
-                            // Also update the asset settings cache
-                            if (selectedRelatedAssets.length === 1) {
-                              const assetId = selectedRelatedAssets[0];
-                              setAssetRelationshipSettings(prev => ({
-                                ...prev,
-                                [assetId]: {
-                                  ...prev[assetId] || {},
-                                  relationship_type: relationshipType,
-                                  relationship_context: relationshipContext,
-                                  description: e.target.value,
-                                  document_type_id: relationshipDocumentTypeId
-                                }
-                              }));
-                            }
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Document type dropdown removed from here too - will be handled per file */}
-                      
-                      <div className="text-xs font-medium text-green-700 mt-2">
-                        Selected File: {documentationFiles.find(f => f.id === selectedRelatedAssets[0])?.title || 'Unknown'}
-                      </div>
                     </div>
                   )}
                   
@@ -2352,49 +2200,127 @@ const AI: React.FC = () => {
                                       </div>
                                     )}
                                     
-                                    {/* Document Type dropdown component for each file - always shown when selected */}
+                                    {/* Enhanced settings for each selected file card */}
                                     {isSelected && (
-                                      <div className="text-xs text-purple-700 mt-1 flex items-center">
-                                        <span className="font-medium mr-1">Type:</span> 
-                                        <div className="relative inline-block cursor-pointer border border-purple-200 rounded bg-purple-50 hover:bg-purple-100">
-                                          <Select 
-                                            value={fileSettings?.document_type_id || 'none'}
-                                            onValueChange={(value) => {
-                                              // Update the asset settings cache with the new document type
+                                      <div className="mt-3 p-2 border border-blue-200 rounded-md bg-blue-50">
+                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                          {/* Relationship Type */}
+                                          <div className="space-y-1">
+                                            <Label className="text-xs text-blue-800">Reference Type</Label>
+                                            <Select 
+                                              value={fileSettings?.relationship_type || 'reference'}
+                                              onValueChange={(value) => {
+                                                // Update the asset settings cache with the new relationship type
+                                                setAssetRelationshipSettings(prev => ({
+                                                  ...prev,
+                                                  [file.id]: {
+                                                    ...prev[file.id] || {
+                                                      relationship_context: '',
+                                                      description: '',
+                                                      document_type_id: fileSettings?.document_type_id || 'none'
+                                                    },
+                                                    relationship_type: value
+                                                  }
+                                                }));
+                                              }}
+                                            >
+                                              <SelectTrigger className="h-7 text-xs bg-white">
+                                                <SelectValue placeholder="Select type" />
+                                              </SelectTrigger>
+                                              <SelectContent className="bg-white">
+                                                <SelectItem value="reference">Reference</SelectItem>
+                                                <SelectItem value="dependency">Dependency</SelectItem>
+                                                <SelectItem value="enhancement">Enhancement</SelectItem>
+                                                <SelectItem value="alternative">Alternative</SelectItem>
+                                                <SelectItem value="parent">Parent</SelectItem>
+                                                <SelectItem value="child">Child</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                          
+                                          {/* Document Type */}
+                                          <div className="space-y-1">
+                                            <Label className="text-xs text-blue-800">Document Type</Label>
+                                            <Select 
+                                              value={fileSettings?.document_type_id || 'none'}
+                                              onValueChange={(value) => {
+                                                // Update the asset settings cache with the new document type
+                                                setAssetRelationshipSettings(prev => ({
+                                                  ...prev,
+                                                  [file.id]: {
+                                                    ...prev[file.id] || {
+                                                      relationship_type: fileSettings?.relationship_type || 'reference',
+                                                      relationship_context: fileSettings?.relationship_context || '',
+                                                      description: fileSettings?.description || '',
+                                                    },
+                                                    document_type_id: value
+                                                  }
+                                                }));
+                                              }}
+                                            >
+                                              <SelectTrigger className="h-7 text-xs bg-white">
+                                                <SelectValue placeholder="Select type">
+                                                  {fileSettings?.document_type_id && fileSettings.document_type_id !== 'none' 
+                                                    ? documentTypes.find(dt => dt.id === fileSettings.document_type_id)?.document_type || 'Custom'
+                                                    : 'Select document type'}
+                                                </SelectValue>
+                                              </SelectTrigger>
+                                              <SelectContent className="bg-white">
+                                                <SelectItem value="none">None</SelectItem>
+                                                {documentTypes.map((type) => (
+                                                  <SelectItem key={type.id} value={type.id}>
+                                                    {type.document_type}
+                                                  </SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Context */}
+                                        <div className="space-y-1 mb-2">
+                                          <Label className="text-xs text-blue-800">Context</Label>
+                                          <Textarea 
+                                            placeholder="E.g., Used for analysis of" 
+                                            className="text-xs min-h-[40px] bg-white" 
+                                            value={fileSettings?.relationship_context || ''}
+                                            onChange={(e) => {
                                               setAssetRelationshipSettings(prev => ({
                                                 ...prev,
                                                 [file.id]: {
                                                   ...prev[file.id] || {
-                                                    relationship_type: relationshipType,
-                                                    relationship_context: relationshipContext,
-                                                    description: relationshipDescription,
+                                                    relationship_type: fileSettings?.relationship_type || 'reference',
+                                                    description: fileSettings?.description || '',
+                                                    document_type_id: fileSettings?.document_type_id || 'none',
                                                   },
-                                                  document_type_id: value
+                                                  relationship_context: e.target.value
                                                 }
                                               }));
-                                              
-                                              // If this is the only selected asset, also update the main state
-                                              if (selectedRelatedAssets.length === 1) {
-                                                setRelationshipDocumentTypeId(value);
-                                              }
                                             }}
-                                          >
-                                            <SelectTrigger className="h-6 p-1 min-w-[150px] text-xs border-0 bg-white">
-                                              <SelectValue placeholder="Select type">
-                                                {fileSettings?.document_type_id && fileSettings.document_type_id !== 'none' 
-                                                  ? documentTypes.find(dt => dt.id === fileSettings.document_type_id)?.document_type || 'Custom'
-                                                  : 'Select document type'}
-                                              </SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-white">
-                                              <SelectItem value="none">None</SelectItem>
-                                              {documentTypes.map((type) => (
-                                                <SelectItem key={type.id} value={type.id}>
-                                                  {type.document_type}
-                                                </SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
+                                          />
+                                        </div>
+                                        
+                                        {/* Description */}
+                                        <div className="space-y-1">
+                                          <Label className="text-xs text-blue-800">Description</Label>
+                                          <Textarea 
+                                            placeholder="Detailed description of how this prompt relates to the file" 
+                                            className="text-xs min-h-[40px] bg-white" 
+                                            value={fileSettings?.description || ''}
+                                            onChange={(e) => {
+                                              setAssetRelationshipSettings(prev => ({
+                                                ...prev,
+                                                [file.id]: {
+                                                  ...prev[file.id] || {
+                                                    relationship_type: fileSettings?.relationship_type || 'reference',
+                                                    relationship_context: fileSettings?.relationship_context || '',
+                                                    document_type_id: fileSettings?.document_type_id || 'none',
+                                                  },
+                                                  description: e.target.value
+                                                }
+                                              }));
+                                            }}
+                                          />
                                         </div>
                                       </div>
                                     )}
