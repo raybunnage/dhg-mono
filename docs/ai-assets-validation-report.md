@@ -1,6 +1,6 @@
 # Validation Report
 
-Generated: 3/9/2025, 6:11:30 PM
+Generated: 3/9/2025, 6:23:13 PM
 
 ## 1. Claude API Test
 
@@ -14,39 +14,27 @@ Generated: 3/9/2025, 6:11:30 PM
 Without specific details about your current documentation_files table structure, I'll provide a general analysis of common issues and best practices for documentation management in a monorepo.
 
 ## Common Issues with Documentation Files in Databases
-- Inconsistent file naming and organization
-- Outdated content that doesn't match current codebase
-- Lack of clear ownership and maintenance responsibilities
-- Poor discoverability of relevant documentation
-- Version mismatches between documentation and code
+- Inconsistent metadata tracking (creation dates, authors, versions)
+- Poor organization leading to duplicate or outdated files
+- Lack of clear relationships between code and corresponding documentation
+- Insufficient versioning to match documentation with code releases
 
 ## Best Practices for Documentation in a Monorepo
 
-### 1. Co-locate Documentation with Code
-**Recommendation:** Store documentation files directly alongside the code they describe, rather than in a separate database table.
+### 1. Implement a Consistent Directory Structure
+**Recommendation:** Create a standardized documentation hierarchy that mirrors your code structure.
+- Place documentation close to the code it describes (e.g., `/src/module/docs/`)
+- Maintain a central index in a `/docs` directory with cross-references
+- Use consistent naming conventions (e.g., `component-name.md`, `api-reference.md`)
 
-**Implementation:**
-- Create a `docs/` folder within each component/module directory
-- Use markdown files for flexibility and readability
-- Implement a documentation build process that can aggregate these files when needed
-- Example structure:
-  ```
-  /components/auth/
-    /src/
-    /tests/
-    /docs/
-      architecture.md
-      api.md
-      usage.md
-  ```
+### 2. Establish Documentation Versioning Strategy
+**Recommendation:** Align documentation versions with code releases.
+- Tag documentation with the same version numbers as code releases
+- Implement a documentation changelog to track significant updates
+- Consider using a documentation versioning tool like Docusaurus or MkDocs
+- Store version metadata in your documentation_files table to enable filtering
 
-### 2. Implement Documentation Testing and Validation
-**Recommendation:** Treat documentation as code by implementing automated checks.
-
-**Implementation:**
-- Add documentation linting to CI/CD pipelines
-- Validate links and references automatically
-- Create tests that verify code
+### 3. Automate Documentation Testing an
 
 ## 2. Markdown Report File
 
@@ -63,6 +51,16 @@ Without specific details about your current documentation_files table structure,
 **Error:** None
 
 ### Prompt Details
+
+- **Name:** markdown-document-classification-prompt
+- **ID:** 880480a9-3241-48f0-bb83-a93a81de8553
+- **Created:** 3/9/2025, 6:45:28 PM
+
+### Prompt Content
+
+
+
+### Prompt JSON
 
 
 
