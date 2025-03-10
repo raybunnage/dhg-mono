@@ -339,9 +339,23 @@ async function validatePromptRelationships() {
             
             // Get document type if available
             let documentType = null;
-            if (relationship.document_type_id && docTypesMap[relationship.document_type_id]) {
-              documentType = docTypesMap[relationship.document_type_id];
-              console.log(\`     Document Type: \${documentType.name}\`);
+            if (relationship.document_type_id) {
+              // Explicitly query for this document type to ensure we get it
+              const { data: docTypeData, error: docTypeError } = await supabase
+                .from('document_types')
+                .select('*')
+                .eq('id', relationship.document_type_id)
+                .single();
+                
+              if (!docTypeError && docTypeData) {
+                documentType = docTypeData;
+                console.log(\`     Document Type: \${documentType.name} (ID: \${documentType.id})\`);
+                if (documentType.description) {
+                  console.log(\`     Description: \${documentType.description}\`);
+                }
+              } else {
+                console.log(\`     Document Type ID: \${relationship.document_type_id} (Could not retrieve details)\`);
+              }
             }
             
             // Read file content if available
@@ -415,8 +429,27 @@ async function validatePromptRelationships() {
     
     // Write prompt content to a separate file to avoid escaping issues
     if (results.promptQuery.success && results.promptQuery.prompt && results.promptQuery.prompt.content) {
-      fs.writeFileSync(path.join(tempDir, 'prompt_content.txt'), 
-                      results.promptQuery.prompt.content);
+      // Log the content to verify we have it
+      console.log('\\nPrompt content found. First 100 characters:');
+      console.log(results.promptQuery.prompt.content.substring(0, 100) + '...');
+      console.log('\\nWriting prompt content to file...');
+      
+      // Write to file with explicit encoding
+      fs.writeFileSync(
+        path.join(tempDir, 'prompt_content.txt'), 
+        results.promptQuery.prompt.content,
+        { encoding: 'utf8' }
+      );
+      
+      // Verify the file was written correctly
+      if (fs.existsSync(path.join(tempDir, 'prompt_content.txt'))) {
+        const fileContent = fs.readFileSync(path.join(tempDir, 'prompt_content.txt'), 'utf8');
+        console.log(`Prompt content file created. Size: ${fileContent.length} characters`);
+      } else {
+        console.log('Error: Failed to create prompt content file');
+      }
+    } else {
+      console.log('No prompt content found or prompt query failed');
     }
     
     fs.writeFileSync(path.join(tempDir, 'relationships.json'), 
@@ -480,13 +513,30 @@ async function validatePromptRelationships() {
       report += '- **ID:** ' + results.promptQuery.prompt.id + '\\n';
       report += '- **Created:** ' + new Date(results.promptQuery.prompt.created_at).toLocaleString() + '\\n\\n';
       
+      // Direct approach to include prompt content
       report += '### Prompt Content\\n\\n```\\n';
-      // Read from the file instead of using the variable directly
-      if (fs.existsSync(path.join(tempDir, 'prompt_content.txt'))) {
-        report += fs.readFileSync(path.join(tempDir, 'prompt_content.txt'), 'utf8');
-      } else {
-        report += 'Error: Could not read prompt content';
+      
+      // Try multiple approaches to ensure content is included
+      try {
+        if (fs.existsSync(path.join(tempDir, 'prompt_content.txt'))) {
+          // Method 1: Read from file
+          const promptContent = fs.readFileSync(path.join(tempDir, 'prompt_content.txt'), 'utf8');
+          report += promptContent;
+          console.log('Added prompt content from file to report');
+        } else if (results.promptQuery.prompt.content) {
+          // Method 2: Use content directly
+          report += results.promptQuery.prompt.content;
+          console.log('Added prompt content directly to report');
+        } else {
+          // Fallback
+          report += 'Error: Could not read prompt content';
+          console.log('Could not add prompt content to report');
+        }
+      } catch (error) {
+        console.error('Error adding prompt content to report:', error.message);
+        report += 'Error adding prompt content: ' + error.message;
       }
+      
       report += '\\n```\\n\\n';
     }
     
@@ -524,6 +574,23 @@ async function validatePromptRelationships() {
           if (docType.description) {
             report += '  - **Description:** ' + docType.description + '\\n';
           }
+          
+          // Add document_type field (which is the name)
+          if (docType.document_type) {
+            report += '  - **Document Type Name:** ' + docType.document_type + '\\n';
+          }
+          
+          // Add all other fields from the document type
+          report += '  - **All Document Type Fields:**\\n';
+          Object.keys(docType).forEach(key => {
+            if (key !== 'name' && key !== 'id' && key !== 'description') {
+              if (docType[key] !== null && docType[key] !== undefined) {
+                report += '    - **' + key + ':** ' + docType[key] + '\\n';
+              } else {
+                report += '    - **' + key + ':** null\\n';
+              }
+            }
+          });
         } else {
           report += '- **Document Type:** Not specified\\n';
         }
@@ -550,6 +617,29 @@ async function validatePromptRelationships() {
     report += '**Status:** ' + (results.documentTypes.success ? '✅ SUCCESS' : '❌ FAILED') + '\\n';
     report += '**Count:** ' + results.documentTypes.data.length + ' records found\\n';
     report += '**Error:** ' + (results.documentTypes.error || 'None') + '\\n\\n';
+    
+    // Add detailed information for each document type
+    if (results.documentTypes.data && results.documentTypes.data.length > 0) {
+      report += '### Document Types Details\\n\\n';
+      
+      for (let i = 0; i < results.documentTypes.data.length; i++) {
+        const docType = results.documentTypes.data[i];
+        
+        report += '#### Document Type ' + (i + 1) + ': ' + docType.name + '\\n\\n';
+        
+        // Display all fields from the document type record
+        Object.keys(docType).forEach(key => {
+          if (docType[key] !== null && docType[key] !== undefined) {
+            report += '- **' + key + ':** ' + docType[key] + '\\n';
+          } else {
+            report += '- **' + key + ':** null\\n';
+          }
+        });
+        
+        report += '\\n';
+      }
+    }
+    
     report += '### Document Types JSON\\n\\n```\\n';
     report += fs.readFileSync(path.join(tempDir, 'document_types.json'), 'utf8');
     report += '\\n```\\n\\n';
