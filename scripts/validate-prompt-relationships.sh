@@ -412,6 +412,13 @@ async function validatePromptRelationships() {
     // Write JSON data to temporary files
     fs.writeFileSync(path.join(tempDir, 'prompt.json'), 
                     JSON.stringify(results.promptQuery.prompt, null, 2));
+    
+    // Write prompt content to a separate file to avoid escaping issues
+    if (results.promptQuery.success && results.promptQuery.prompt && results.promptQuery.prompt.content) {
+      fs.writeFileSync(path.join(tempDir, 'prompt_content.txt'), 
+                      results.promptQuery.prompt.content);
+    }
+    
     fs.writeFileSync(path.join(tempDir, 'relationships.json'), 
                     JSON.stringify(results.relationships.data, null, 2));
     fs.writeFileSync(path.join(tempDir, 'document_types.json'), 
@@ -474,7 +481,12 @@ async function validatePromptRelationships() {
       report += '- **Created:** ' + new Date(results.promptQuery.prompt.created_at).toLocaleString() + '\\n\\n';
       
       report += '### Prompt Content\\n\\n```\\n';
-      report += results.promptQuery.prompt.content;
+      // Read from the file instead of using the variable directly
+      if (fs.existsSync(path.join(tempDir, 'prompt_content.txt'))) {
+        report += fs.readFileSync(path.join(tempDir, 'prompt_content.txt'), 'utf8');
+      } else {
+        report += 'Error: Could not read prompt content';
+      }
       report += '\\n```\\n\\n';
     }
     
