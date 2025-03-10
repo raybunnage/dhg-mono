@@ -466,7 +466,19 @@ async function validatePromptRelationships() {
     report += '## 3. Prompt Query\\n\\n';
     report += '**Status:** ' + (results.promptQuery.success ? '✅ SUCCESS' : '❌ FAILED') + '\\n';
     report += '**Error:** ' + (results.promptQuery.error || 'None') + '\\n\\n';
-    report += '### Prompt Details\\n\\n```\\n';
+    
+    if (results.promptQuery.success && results.promptQuery.prompt) {
+      report += '### Prompt Details\\n\\n';
+      report += '- **Name:** ' + results.promptQuery.prompt.name + '\\n';
+      report += '- **ID:** ' + results.promptQuery.prompt.id + '\\n';
+      report += '- **Created:** ' + new Date(results.promptQuery.prompt.created_at).toLocaleString() + '\\n\\n';
+      
+      report += '### Prompt Content\\n\\n```\\n';
+      report += results.promptQuery.prompt.content;
+      report += '\\n```\\n\\n';
+    }
+    
+    report += '### Prompt JSON\\n\\n```\\n';
     report += fs.readFileSync(path.join(tempDir, 'prompt.json'), 'utf8');
     report += '\\n```\\n\\n';
     
