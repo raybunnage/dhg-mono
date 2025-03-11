@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Simple wrapper script to run the Node.js classifier
+# Enhanced wrapper script that uses the new TypeScript CLI
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -9,7 +9,18 @@ NC='\033[0m' # No Color
 
 echo -e "${BOLD}${BLUE}=== Running Markdown Classifier ===${NC}\n"
 
-# Run the Node.js script
-node $(dirname "$0")/classify-markdowns.js
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI_DIR="${SCRIPT_DIR}/cli"
+TARGET_FILE="$(pwd)/docs/markdown-report.md"
+
+# Check if the new CLI is built
+if [ -f "${CLI_DIR}/dist/index.js" ]; then
+  echo "Using the new TypeScript CLI"
+  node "${CLI_DIR}/dist/index.js" classify "${TARGET_FILE}" --verbose
+else
+  echo "New CLI not built yet, using legacy Node.js script"
+  node "${SCRIPT_DIR}/classify-markdowns.js"
+fi
 
 echo -e "\n${BOLD}${GREEN}=== Markdown Classification Complete ===${NC}"
