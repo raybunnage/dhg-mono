@@ -5,60 +5,65 @@ A modular TypeScript CLI application designed to handle complex AI workflows, sp
 ## Features
 
 - Markdown document classification using Claude 3 API
-- Asset validation for prompt relationships
+- Supabase integration for prompts and relationships
+- Asset validation
 - Comprehensive error handling and logging
 - Modular architecture with clear separation of concerns
 
 ## Installation
 
 ```bash
-# Install dependencies
-npm install
+# From the app directory
+cd /path/to/dhg-mono/apps/dhg-improve-experts
 
-# Build the application
-npm run build
-
-# Link the CLI for local development
-npm link
+# Install dependencies and build the CLI
+pnpm run cli:build
 ```
 
 ## Usage
 
-### Classify a Markdown Document
+### Workflow Command (Main Command)
 
 ```bash
-# Basic usage
-ai-workflow classify docs/markdown-report.md
+# Run the workflow that examines markdown files and their relationships
+pnpm run cli:workflow
+```
 
-# Specify output location
-ai-workflow classify docs/markdown-report.md -o reports/classification.md
+This command:
+1. Reads the target markdown file
+2. Queries Supabase for the prompt named "markdown-document-classification-prompt"
+3. Gets the ID and content of the prompt
+4. Queries for relationships using the prompt ID
+5. Reads the content of each related asset file
+6. Extracts the relationship context for each asset
+7. Gets document types with category "Documentation"
+8. When run with `--execute` flag:
+   - Makes an API call to Claude with all assembled data
+   - Parses the JSON response
+   - Updates the assessment fields in the database record
+   - Shows the updated document with assessment information
 
-# Enable verbose logging
-ai-workflow classify docs/markdown-report.md --verbose
+### Classify Command (Full Process)
+
+```bash
+# Run the full classification process with Claude API
+pnpm run cli:classify
+```
+
+### Examine Command
+
+```bash
+# Examine a markdown document and its relationships
+pnpm run cli:examine
 ```
 
 ### Validate Assets
 
 ```bash
-# Validate assets for a specific prompt
-ai-workflow validate --prompt markdown-document-classification-prompt
-
-# Enable verbose logging
-ai-workflow validate --prompt markdown-document-classification-prompt --verbose
+# Directly using the CLI
+cd scripts/cli
+node dist/index.js validate --prompt markdown-document-classification-prompt
 ```
-
-## Environment Variables
-
-The application requires the following environment variables:
-
-- `VITE_SUPABASE_URL`: The URL of your Supabase instance
-- `VITE_SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
-- `VITE_ANTHROPIC_API_KEY`: Your Anthropic API key for Claude
-
-Optional environment variables:
-
-- `LOG_LEVEL`: The log level (debug, info, warn, error)
-- `OUTPUT_DIR`: The default output directory for reports
 
 ## Project Structure
 
@@ -66,7 +71,9 @@ Optional environment variables:
 src/
 ├── commands/             # Command implementations
 │   ├── classify-markdown.ts
+│   ├── examine-markdown.ts
 │   ├── validate-assets.ts
+│   ├── workflow.ts       # Main workflow command
 │   └── index.ts
 ├── services/             # Service implementations
 │   ├── file-service.ts
@@ -86,16 +93,17 @@ src/
 └── index.ts              # Entry point
 ```
 
-## Development
+## Environment Configuration
 
-To add a new command:
+The CLI requires the following environment variables:
 
-1. Create a new file in the `src/commands` directory
-2. Implement the command function and registration function
-3. Import and register the command in `src/commands/index.ts`
+- `VITE_SUPABASE_URL`: The URL of your Supabase instance
+- `VITE_SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `VITE_ANTHROPIC_API_KEY`: Your Anthropic API key for Claude
 
-To add a new service:
+These are loaded from the `.env.development` file in the app directory.
 
-1. Create a new file in the `src/services` directory
-2. Implement the service class
-3. Export the service in `src/services/index.ts`
+## Monorepo Usage
+
+See [PNPM-USAGE.md](./PNPM-USAGE.md) for details on how to use this CLI in a pnpm monorepo context.

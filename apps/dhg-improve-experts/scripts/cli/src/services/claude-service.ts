@@ -2,12 +2,14 @@ import axios from 'axios';
 import { Logger } from '../utils/logger';
 import { AppError, ErrorHandler } from '../utils/error-handler';
 
+export interface TextContent {
+  type: 'text';
+  text: string;
+}
+
 export interface Message {
   role: 'user' | 'assistant';
-  content: Array<{
-    type: 'text';
-    text: string;
-  }>;
+  content: TextContent[];
 }
 
 export interface ClaudeRequest {

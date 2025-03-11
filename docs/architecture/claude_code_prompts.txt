@@ -3,17 +3,45 @@
 I have sophisticated set of processing I need - here's an example: I have added logic from another script to this classify script.  It will be doing some complicated functions in the ndoe sectionl.  Herre is what needs to happen.  and rearrange the code in the script to accompoish thest steps
 
 
-NOw that I have this platform bjilt for
+NOw that I have this platform built  for me I need to start using it. here is the start of my workflow:
 
 1) open up the target markdown file: docs/markdown-report.md. right now this is hardcoded but evetn9ually this will represent any markdown file that needs to be examimed.
-2) next open up the supabase table in prompts table that has the name: "markdown-document-classification-prompt" retrieve the id and the content and then query the id in the file "prompt_relationships" and find te associated records.  Read out the "asset_path" field of each of these records and open and read the content of those two files. Also, retreiver the "context" field from those records.  
-3) do a searcdh of the document_types table for all the records that have the category "Documentation" and get those records into json format.
-4) finally you need to assemple a proper ai api call to claude sonnet 3.7 (just like what yuo used in the test) where you 
-1) submit the file in step 1 as the file content to be analyzed
-2) assemble a prompt using the "contrent" field from step 2 - that is the actual; prompt you will be analyzing the file with 3) ladd the following context to the ai prompt that it will need to evaluate the target file
-a) the results of step 3 above - the json from the matching document_type records that have the category "Documentation"
+2) next open up the supabase table in prompts databse table that has the name: "markdown-document-classification-prompt" retrieve the id and then return the content field and then query for the same the id in the file "prompt_relationships" and find the associated records.  Read out the "asset_path" field of each of these records and open and read the content of those two files. Also, retreiver the "context" field from those records.  
+Let's start with just this much. HOw do I get started with just these steps?
+
+Here's additional steps to add to the worflow after these firsst (that I want you to keep)
+
+1) do a searcdh of the document_types table for all the records that have the category "Documentation" and get those records into json format.
+2) finally you need to assemple the text for a  proper ai api call to claude sonnet 3.7 you will be using the model:  claude-3-7-sonnet-20250219 and the following that I found in A
+successufl call to an eearlier validatin script: 
+ const options = {
+        hostname: 'api.anthropic.com',
+        port: 443,
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicApiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Length': Buffer.byteLength(data)
+        }
+      };
+
+
+3) submit the markdown example file you successfully read eearlier as the main file to be analyzed in the ai call
+4) assemble a prompt using the "content" field from step 2 - that is the actual; prompt you will be analyzing the file with 
+5)) add the following context to the ai prompt that it will need to evaluate the target file
+a) the results of step earlier in your workflow proces - the json from the matching document_type records that have the category "Documentation"
 b) the two files that were the related files in th prompt_relationships table - you will need to read them from disk and load them - along with the "conterxt" fields that go with them.
-Then you will need to esecute the ai dcall and write the response that you get back in the json format that was submitted to the ai.
+Can you show that you have all the ingredients for the ai api call.
+
+
+Now add this final step to the workflow: take the api results that are in json and update the assessment fields of the matching record for the file you analyzed: "docs/markdown-report.md" and then show the json from this record that shows that the assesssement fields got filled in properly after you've updated the record and can pull the assessement information from the updated record in the database
+
+
+
+
+6) Then you will need to esecute the ai dcall and write the response that you get back in the json format that was submitted to the ai.
 I would like to see confirmation that these steps occured in the final report that you generate in the markdown file: docs\markdown-classifation-report.md and I would like to see the json from the response shown in the report so I can know the api call worked.
 
 My approach so far has been to create a shell scrtipt (sh) which then calls out to node to implement the ai api calls, the database calls and to process things.  I hve the main script embed this code in itl. 
