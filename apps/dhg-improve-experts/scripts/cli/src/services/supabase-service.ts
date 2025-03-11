@@ -122,4 +122,69 @@ export class SupabaseService {
       return data as DocumentType;
     }, `Failed to get document type by ID: ${id}`);
   }
+  
+  /**
+   * Get a document record by filename
+   */
+  async getDocumentByFilename(filename: string): Promise<any | null> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Getting document record by filename: ${filename}`);
+      
+      const { data, error } = await this.client
+        .from('documents')
+        .select('*')
+        .ilike('filename', `%${filename}%`)
+        .limit(1);
+      
+      if (error) {
+        throw new AppError(
+          `Failed to get document by filename: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      if (!data || data.length === 0) {
+        Logger.warn(`No document found with filename: ${filename}`);
+        return null;
+      }
+      
+      Logger.debug(`Found document with ID: ${data[0].id}`);
+      return data[0];
+    }, `Failed to get document by filename: ${filename}`);
+  }
+  
+  /**
+   * Update document assessment fields
+   */
+  async updateDocumentAssessment(documentId: string, assessment: any): Promise<any> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Updating assessment for document ID: ${documentId}`);
+      
+      // Prepare the update data
+      const updateData = {
+        assessment_json: assessment,
+        assessment_date: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data, error } = await this.client
+        .from('documents')
+        .update(updateData)
+        .eq('id', documentId)
+        .select()
+        .single();
+      
+      if (error) {
+        throw new AppError(
+          `Failed to update document assessment: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      Logger.debug(`Document assessment updated successfully`);
+      return data;
+    }, `Failed to update assessment for document ID: ${documentId}`);
+  }
 }

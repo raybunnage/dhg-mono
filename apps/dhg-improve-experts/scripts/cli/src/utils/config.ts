@@ -9,28 +9,71 @@ class Config {
   
   supabaseUrl: string;
   supabaseKey: string;
+  supabaseAnonKey: string;
   anthropicApiKey: string;
   logLevel: LogLevel;
   defaultOutputDir: string;
   
   private constructor() {
-    // Load environment variables - first try .env file in current directory
+    // First try loading from .env file in the CLI directory
     dotenv.config();
     
-    // Try to load from app-specific location if exists
+    // Find the .env.development file
+    let envFilePath = '';
+    
+    // Try the direct app path
+    const appEnvPath = path.resolve(process.cwd(), '.env.development');
+    if (fs.existsSync(appEnvPath)) {
+      envFilePath = appEnvPath;
+    } 
+    // Try one level up
+    else if (fs.existsSync(path.resolve(process.cwd(), '../.env.development'))) {
+      envFilePath = path.resolve(process.cwd(), '../.env.development');
+    }
+    // Look for standard path
+    else if (fs.existsSync(path.resolve(process.cwd(), 'apps/dhg-improve-experts/.env.development'))) {
+      envFilePath = path.resolve(process.cwd(), 'apps/dhg-improve-experts/.env.development');
+    }
+    // Look for real absolute path
+    else if (fs.existsSync('/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/.env.development')) {
+      envFilePath = '/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/.env.development';
+    }
+    
     try {
-      const appEnvPath = path.resolve(process.cwd(), 'apps/dhg-improve-experts/.env.development');
-      if (fs.existsSync(appEnvPath)) {
-        Logger.debug(`Loading environment from: ${appEnvPath}`);
-        dotenv.config({ path: appEnvPath });
+      if (envFilePath) {
+        Logger.debug(`Loading environment from: ${envFilePath}`);
+        dotenv.config({ path: envFilePath });
+        
+        // Log the loaded env values for debugging (first few chars only)
+        const supabaseUrl = process.env.VITE_SUPABASE_URL || 'not-set';
+        const supabaseKeyPrefix = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY 
+          ? process.env.VITE_SUPABASE_SERVICE_ROLE_KEY.substring(0, 5) + '...' 
+          : 'not-set';
+        const apiKeyPrefix = process.env.VITE_ANTHROPIC_API_KEY 
+          ? process.env.VITE_ANTHROPIC_API_KEY.substring(0, 5) + '...' 
+          : 'not-set';
+          
+        Logger.debug(`Loaded env variables from ${envFilePath}:`, {
+          VITE_SUPABASE_URL: supabaseUrl,
+          VITE_SUPABASE_SERVICE_ROLE_KEY: supabaseKeyPrefix,
+          VITE_ANTHROPIC_API_KEY: apiKeyPrefix
+        });
+      } else {
+        Logger.warn('Environment file not found in any of the expected locations');
+        throw new AppError('Environment file .env.development not found', 'CONFIG_ERROR');
       }
     } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
       Logger.warn('Failed to load app-specific environment file', error);
+      throw new AppError('Failed to load environment file', 'CONFIG_ERROR');
     }
     
     // Required environment variables
     this.supabaseUrl = this.getRequiredEnv('VITE_SUPABASE_URL');
     this.supabaseKey = this.getRequiredEnv('VITE_SUPABASE_SERVICE_ROLE_KEY');
+    this.supabaseAnonKey = this.getRequiredEnv('VITE_SUPABASE_ANON_KEY');
     this.anthropicApiKey = this.getRequiredEnv('VITE_ANTHROPIC_API_KEY');
     
     // Optional environment variables with defaults

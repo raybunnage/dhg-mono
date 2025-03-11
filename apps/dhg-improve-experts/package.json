@@ -21,7 +21,10 @@
     "markdown-server": "node md-server.mjs",
     "dev:with-markdown": "npm run markdown-server",
     "cli:build": "cd scripts/cli && npm install && npm run build",
-    "cli:classify": "./scripts/classify-markdowns.sh"
+    "cli:classify": "./scripts/classify-markdowns.sh",
+    "cli:examine": "./scripts/examine-markdown.sh",
+    "cli:workflow": "./scripts/run-workflow.sh",
+    "cli:workflow:execute": "./scripts/run-workflow.sh --execute"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.2",
