@@ -319,7 +319,36 @@ Now, please analyze the following markdown document and classify it according to
 
 ${fileResult.content}
 
-Please provide your classification in JSON format, including the document type ID, name, and explanation for your choice. Also include any metadata you can extract from the document.`;
+Please provide your classification in JSON format with fields that match directly with the documentation_files table structure:
+{
+  "document_type_id": "uuid-of-matched-document-type-from-the-document_types-list-above",
+  "document_type": "Name of the document type EXACTLY as it appears in the document_types list above",
+  "title": "Document title extracted from content",
+  "summary": "Concise summary of document purpose and content",
+  "ai_generated_tags": ["topic1", "topic2", "topic3"],
+  "assessment_quality_score": 0.XX, // confidence score between 0 and 1
+  "classification_reasoning": "Detailed explanation for why this document type was chosen",
+  "audience": "Target audience for this document",
+  "quality_assessment": {
+    "completeness": 1-5 score,
+    "clarity": 1-5 score,
+    "accuracy": 1-5 score,
+    "overall": 1-5 score
+  },
+  "suggested_improvements": [
+    "Improvement suggestion 1",
+    "Improvement suggestion 2"
+  ]
+}
+
+IMPORTANT: 
+1. For the document_type_id field, use the exact ID value from the document_types list provided above
+2. Match the document type name precisely with one from the list
+3. The field names must match exactly with the documentation_files table structure
+4. Use ai_generated_tags (not key_topics or tags) for consistency with the database
+5. Provide assessment_quality_score as a decimal between 0 and 1
+
+Your response should be strictly JSON without any explanatory text before or after.`;
 
     // Assemble the API request with proper typing
     const apiRequest = {
@@ -403,43 +432,261 @@ Please provide your classification in JSON format, including the document type I
           Logger.info('Step 6: Updating assessment in database');
           
           try {
-            // Extract the filename from the file path
-            const filename = path.basename(filePath);
-            console.log(`\n=== Updating Document Record for ${filename} ===`);
+            console.log(`\n=== Updating Documentation File Record for ${filePath} ===`);
             
-            // Find the document record by filename
-            const document = await supabaseService.getDocumentByFilename(filename);
+            // Find the documentation file record by path
+            const docFile = await supabaseService.getDocumentationFileByPath(filePath);
             
-            if (document) {
-              console.log(`Found document record with ID: ${document.id}`);
+            if (docFile) {
+              console.log(`Found documentation file record with ID: ${docFile.id}`);
+              console.log(`File path in database: ${docFile.file_path}`);
               
               // Parse the JSON content from Claude's response
               let assessmentJson;
+              let documentTypeId = null;
+              
               try {
                 // Try to extract JSON from the response text
                 const jsonMatch = responseText.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
                   assessmentJson = JSON.parse(jsonMatch[0]);
+                  
+                  // THIS IS THE CRITICAL SECTION - Extract document_type_id with simplified approach
+                  
+                  // First try direct ID if available
+                  if (assessmentJson.document_type_id) {
+                    documentTypeId = assessmentJson.document_type_id;
+                    console.log(`Extracted document type ID directly: ${documentTypeId}`);
+                    
+                    // Verify the ID exists in our document types
+                    const verifiedType = documentTypes.find(dt => dt.id === documentTypeId);
+                    if (verifiedType) {
+                      console.log(`✅ Verified document type ID: ${documentTypeId} matches "${verifiedType.name}"`);
+                    } else {
+                      console.log(`⚠️ Warning: document_type_id ${documentTypeId} not found in available document types!`);
+                    }
+                  } else {
+                    // If no direct ID, use the document_type name to find matching ID
+                    console.log('\n*** Matching document type by name ***');
+                    
+                    // Log available document types for reference
+                    console.log('Available document types:');
+                    documentTypes.forEach(dt => {
+                      console.log(`- ${dt.name} (ID: ${dt.id})`);
+                    });
+                    
+                    // Get document type name from the assessment
+                    const documentTypeName = assessmentJson.document_type;
+                    
+                    if (documentTypeName && documentTypes && documentTypes.length > 0) {
+                      console.log(`Looking for document type by name: "${documentTypeName}"`);
+                      
+                      // Simple exact match (case insensitive)
+                      const matchedType = documentTypes.find(dt => 
+                        dt.name.toLowerCase() === documentTypeName.toLowerCase()
+                      );
+                      
+                      if (matchedType) {
+                        documentTypeId = matchedType.id;
+                        console.log(`✅ Found exact match: "${matchedType.name}" (ID: ${documentTypeId})`);
+                        
+                        // Add it to the assessment JSON for future reference
+                        assessmentJson.document_type_id = documentTypeId;
+                      } else {
+                        console.log(`No exact match found for "${documentTypeName}", checking partial matches...`);
+                        
+                        // Try partial matching
+                        const partialMatch = documentTypes.find(dt => 
+                          documentTypeName.toLowerCase().includes(dt.name.toLowerCase()) ||
+                          dt.name.toLowerCase().includes(documentTypeName.toLowerCase())
+                        );
+                        
+                        if (partialMatch) {
+                          documentTypeId = partialMatch.id;
+                          console.log(`✅ Found partial match: "${partialMatch.name}" (ID: ${documentTypeId})`);
+                          
+                          // Add it to the assessment JSON
+                          assessmentJson.document_type_id = documentTypeId;
+                        } else {
+                          console.log(`⚠️ No matches found for "${documentTypeName}"`);
+                          
+                          // FALLBACK: Use the first document type as default
+                          documentTypeId = documentTypes[0].id;
+                          console.log(`⚠️ Using default document type: "${documentTypes[0].name}" (ID: ${documentTypeId})`);
+                          
+                          // Add to the assessment JSON
+                          assessmentJson.document_type_id = documentTypeId;
+                        }
+                      }
+                    } else {
+                      console.log(`⚠️ Missing document type name or available document types`);
+                      
+                      // FALLBACK: If we have document types, use the first one
+                      if (documentTypes && documentTypes.length > 0) {
+                        documentTypeId = documentTypes[0].id;
+                        console.log(`⚠️ Using first available document type: "${documentTypes[0].name}" (ID: ${documentTypeId})`);
+                        
+                        // Add to the assessment JSON
+                        assessmentJson.document_type_id = documentTypeId;
+                      } else {
+                        console.log(`❌ ERROR: No document types available to choose from!`);
+                      }
+                    }
+                  }
+                  
+                  // Enhance the assessment object with additional metadata
+                  const timestamp = new Date().toISOString();
+                  
+                  // Add necessary fields if they don't exist
+                  if (!assessmentJson.processed_date) {
+                    assessmentJson.processed_date = timestamp;
+                  }
+                  
+                  // Add quality assessment if not present
+                  if (!assessmentJson.quality_assessment) {
+                    assessmentJson.quality_assessment = {
+                      completeness: 3,
+                      clarity: 3,
+                      accuracy: 3,
+                      overall: 3
+                    };
+                  }
+                  
+                  // Ensure we have key_topics for tags if not already present
+                  if (!assessmentJson.key_topics && !assessmentJson.tags && !assessmentJson.keywords) {
+                    assessmentJson.key_topics = [];
+                    
+                    // Try to extract topics from the document title or summary
+                    if (assessmentJson.title) {
+                      const words = assessmentJson.title.split(/\s+/)
+                        .filter((word) => word.length > 3)
+                        .map((word) => word.toLowerCase())
+                        .slice(0, 3);
+                      
+                      if (words.length > 0) {
+                        assessmentJson.key_topics = words;
+                      }
+                    }
+                  }
                 } else {
                   // If no JSON object found, use the whole response
+                  const timestamp = new Date().toISOString();
                   assessmentJson = { 
                     raw_response: responseText,
                     auto_extracted: false,
-                    processed_date: new Date().toISOString()
+                    processed_date: timestamp,
+                    quality_assessment: {
+                      completeness: 1,
+                      clarity: 1,
+                      accuracy: 1,
+                      overall: 1
+                    }
                   };
                 }
                 
-                // Update the document's assessment fields
-                const updatedDocument = await supabaseService.updateDocumentAssessment(document.id, assessmentJson);
+                // Ensure we have all the fields we need
+                if (!assessmentJson.processed_date) {
+                  assessmentJson.processed_date = new Date().toISOString();
+                }
                 
-                console.log('\n=== Document Updated Successfully ===');
-                console.log('Updated document record:');
-                console.log(JSON.stringify(updatedDocument, null, 2));
+                console.log('Parsed assessment JSON:', JSON.stringify(assessmentJson, null, 2));
                 
-                // Show specific assessment fields
-                console.log('\nAssessment data:');
-                console.log(JSON.stringify(updatedDocument.assessment_json, null, 2));
-                console.log(`\nAssessment date: ${updatedDocument.assessment_date}`);
+                // Add debug logs before update with direct field mapping
+                console.log('\n=== Preparing to Update Documentation File ===');
+                console.log(`Document File ID: ${docFile.id}`);
+                console.log(`Document Type ID: ${documentTypeId || 'Not found'}`);
+                console.log(`Title: ${assessmentJson.title || 'Not found'}`);
+                console.log(`Summary: ${assessmentJson.summary ? 'Found (' + assessmentJson.summary.length + ' chars)' : 'Not found'}`);
+                console.log(`Tags/Key Topics: ${JSON.stringify(assessmentJson.key_topics || assessmentJson.tags || [])}`);
+                console.log(`Quality Score: ${assessmentJson.confidence || (assessmentJson.quality_assessment?.overall / 5) || 0.7}`);
+                console.log(`Assessment Model: ${assessmentJson.model || 'claude-3-7-sonnet-20250219'}`);
+                
+                // Ensure proper format for direct field mapping
+                console.log('\n=== Field Mapping Verification ===');
+                
+                // Verify document_type_id is set
+                if (!assessmentJson.document_type_id && documentTypeId) {
+                  assessmentJson.document_type_id = documentTypeId;
+                  console.log(`✅ Added document_type_id to assessment: ${documentTypeId}`);
+                } else if (assessmentJson.document_type_id) {
+                  console.log(`✅ document_type_id already in assessment: ${assessmentJson.document_type_id}`);
+                } else {
+                  console.log(`❌ No document_type_id available!`);
+                }
+                
+                // Update the documentation file's assessment fields
+                const updatedDocFile = await supabaseService.updateDocumentationFileAssessment(
+                  docFile.id, 
+                  assessmentJson,
+                  documentTypeId
+                );
+                
+                console.log('\n=== Documentation File Updated Successfully ===');
+                console.log('Updated documentation file record:');
+                console.log(JSON.stringify(updatedDocFile, null, 2));
+                
+                // Show direct field mapping results with verification
+                console.log('\n=== VERIFICATION OF DOCUMENT FIELDS ===');
+                console.log(`• id: ${updatedDocFile.id || 'NULL'}`);
+                console.log(`• document_type_id: ${updatedDocFile.document_type_id || 'NULL'}`);
+                console.log(`• file_path: ${updatedDocFile.file_path || 'NULL'}`);
+                console.log(`• title: ${updatedDocFile.title || 'NULL'}`);
+                console.log(`• summary: ${updatedDocFile.summary ? (updatedDocFile.summary.length > 50 ? 
+                  updatedDocFile.summary.substring(0, 50) + '...' : updatedDocFile.summary) : 'NULL'}`);
+                console.log(`• ai_generated_tags: ${JSON.stringify(updatedDocFile.ai_generated_tags || 'NULL')}`);
+                console.log(`• ai_assessment: ${updatedDocFile.ai_assessment ? '✅ Set (object)' : '❌ NULL'}`);
+                console.log(`• assessment_quality_score: ${updatedDocFile.assessment_quality_score || 'NULL'}`);
+                console.log(`• assessment_created_at: ${updatedDocFile.assessment_created_at || 'NULL'}`);
+                console.log(`• assessment_updated_at: ${updatedDocFile.assessment_updated_at || 'NULL'}`);
+                console.log(`• assessment_model: ${updatedDocFile.assessment_model || 'NULL'}`);
+                console.log(`• assessment_version: ${updatedDocFile.assessment_version || 'NULL'}`);
+                console.log(`• last_modified_at: ${updatedDocFile.last_modified_at || 'NULL'}`);
+                console.log(`• last_indexed_at: ${updatedDocFile.last_indexed_at || 'NULL'}`);
+                console.log(`• updated_at: ${updatedDocFile.updated_at || 'NULL'}`);
+                console.log(`• created_at: ${updatedDocFile.created_at || 'NULL'}`);
+                
+                // If document_type_id is set, look up its name for verification
+                if (updatedDocFile.document_type_id) {
+                  // Find the document type in our local array for immediate verification
+                  const matchedDocType = documentTypes.find(dt => dt.id === updatedDocFile.document_type_id);
+                  
+                  if (matchedDocType) {
+                    console.log(`\n✅ DOCUMENT TYPE VERIFICATION: Successfully matched to "${matchedDocType.name}"`);
+                  } else {
+                    console.log(`\n⚠️ DOCUMENT TYPE WARNING: ID ${updatedDocFile.document_type_id} not found in local document types`);
+                    
+                    // Try to fetch it directly from the database for verification
+                    try {
+                      const docType = await supabaseService.getDocumentTypeById(updatedDocFile.document_type_id);
+                      if (docType) {
+                        console.log(`✅ DOCUMENT TYPE VERIFIED FROM DATABASE: "${docType.name}"`);
+                      } else {
+                        console.log(`❌ DOCUMENT TYPE NOT FOUND IN DATABASE!`);
+                      }
+                    } catch (e) {
+                      console.log(`❌ ERROR verifying document type: ${e instanceof Error ? e.message : 'Unknown error'}`);
+                    }
+                  }
+                } else {
+                  console.log(`\n❌ CRITICAL ERROR: document_type_id is not set in the updated record!`);
+                  console.log(`This indicates a failure in the document type ID matching and assignment process.`);
+                }
+                
+                console.log('\nFull Assessment data:');
+                console.log(JSON.stringify(updatedDocFile.ai_assessment, null, 2));
+                console.log(`\nAssessment date: ${updatedDocFile.assessment_date}`);
+                
+                if (updatedDocFile.document_type_id) {
+                  console.log(`\nDocument type ID: ${updatedDocFile.document_type_id}`);
+                }
+                
+                if (updatedDocFile.summary) {
+                  console.log(`\nSummary: ${updatedDocFile.summary}`);
+                }
+                
+                if (updatedDocFile.tags && updatedDocFile.tags.length > 0) {
+                  console.log(`\nTags: ${updatedDocFile.tags.join(', ')}`);
+                }
                 
               } catch (error) {
                 const jsonError = error as Error;
@@ -454,14 +701,19 @@ Please provide your classification in JSON format, including the document type I
                   processed_date: new Date().toISOString()
                 };
                 
-                const updatedDocument = await supabaseService.updateDocumentAssessment(document.id, assessmentJson);
-                console.log('\n=== Document Updated with Raw Response ===');
-                console.log('Updated document record:');
-                console.log(JSON.stringify(updatedDocument, null, 2));
+                const updatedDocFile = await supabaseService.updateDocumentationFileAssessment(
+                  docFile.id, 
+                  assessmentJson
+                );
+                
+                console.log('\n=== Documentation File Updated with Raw Response ===');
+                console.log('Updated documentation file record:');
+                console.log(JSON.stringify(updatedDocFile, null, 2));
               }
             } else {
-              console.log(`No document record found for filename: ${filename}`);
-              Logger.warn(`No document record found for filename: ${filename}`);
+              console.log(`No documentation file record found for path: ${filePath}`);
+              console.log(`You may need to add this file to the documentation_files table first.`);
+              Logger.warn(`No documentation file record found for path: ${filePath}`);
             }
           } catch (error) {
             const dbError = error as Error;

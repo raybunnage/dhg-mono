@@ -31,50 +31,36 @@ Provide your assessment in the following JSON format:
 
 ```json
 {
-  "id": "{{auto-generated UUID}}",
-  "file_path": "{{file_path}}",
-  "title": "{{document title}}",
-  "summary": {
-    "brief": "{{brief summary of the document}}",
-    "detailed": {
-      "purpose": "{{document purpose}}",
-      "key_components": "{{main sections/elements}}",
-      "practical_application": "{{how the document would be used}}"
-    }
+  "file_metadata": {
+    "filename": "{{filename}}",
+    "creation_date": "{{creation_date if available}}",
+    "last_modified": "{{last_modified_date if available}}",
+    "path": "{{file_path if available}}"
   },
-  "ai_generated_tags": ["{{tag1}}", "{{tag2}}", "{{tag3}}", "{{tag4}}", "{{tag5}}"],
-  "manual_tags": null,
-  "last_modified_at": "{{last_modified_date if available}}",
-  "last_indexed_at": "{{current_datetime}}",
-  "file_hash": "{{file_hash if available}}",
-  "metadata": {
-    "size": {{file_size_in_bytes}},
-    "isPrompt": false
-  },
-  "created_at": "{{creation_date if available, otherwise current_datetime}}",
-  "updated_at": "{{current_datetime}}",
-  "is_deleted": false,
-  "document_type_id": "{{matched document type id or null if UNCLASSIFIED}}",
-  "ai_assessment": {
+  "assessment": {
     "document_type": "{{matched document type or 'UNCLASSIFIED'}}",
+    "summary": "{{Three sentence summary describing the document's purpose and key content}}",
+    "detailed_summary": {
+      "purpose": "{{Paragraph explaining the document's intended purpose}}",
+      "key_components": "{{Paragraph describing the main sections/elements}}",
+      "practical_application": "{{Paragraph on how the document would be used}}"
+    },
+    "tags": ["{{tag1}}", "{{tag2}}", "{{tag3}}", "{{tag4}}", "{{tag5}}"],
     "current_relevance": {
       "score": {{1-10 score}},
-      "reasoning": "{{brief explanation of current relevance score}}"
+      "reasoning": "{{Brief explanation of current relevance score}}"
     },
     "potential_relevance": {
       "score": {{1-10 score}},
-      "reasoning": "{{brief explanation of potential future relevance}}"
+      "reasoning": "{{Brief explanation of potential future relevance}}"
     },
     "status_recommendation": "{{KEEP|UPDATE|ARCHIVE|DELETE}}",
     "confidence": {{1-10 score}},
-    "reasoning": "{{explanation of the overall assessment and recommendations}}"
-  },
-  "assessment_quality_score": {{1-10 overall quality score}},
-  "assessment_created_at": "{{current_datetime}}",
-  "assessment_updated_at": "{{current_datetime}}",
-  "assessment_model": "Claude 3.7 Sonnet",
-  "assessment_version": 1,
-  "assessment_date": "{{current_date}}"
+    "reasoning": "{{Summary paragraph explaining the overall assessment and recommendations}}",
+    "assessment_created_at": "{{current_date}}",
+    "assessment_model": "Claude 3.7 Sonnet",
+    "assessment_version": 1
+  }
 }
 ```
 
@@ -89,7 +75,6 @@ For the status recommendation:
 Score definitions:
 - Current/Potential Relevance (1-10): How valuable the document is now/could be in future
 - Confidence (1-10): How confident you are in your assessment
-- Assessment Quality Score (1-10): Overall quality of your assessment
 
 ## Example Workflow
 
@@ -105,5 +90,5 @@ For JSONB storage compatibility, ensure:
 - All JSON is properly formatted and validated
 - Nested objects are used for structured data
 - Text fields have reasonable length limitations
-- Date fields follow ISO 8601 format (YYYY-MM-DDTHH:MM:SS.sss+00:00)
+- Date fields follow ISO 8601 format (YYYY-MM-DD)
 - Numeric scores are integers in the specified ranges
