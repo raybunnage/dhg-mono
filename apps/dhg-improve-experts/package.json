@@ -19,7 +19,9 @@
     "docs:consolidate": "./scripts/docs-organization/consolidate-docs.sh",
     "docs:frontmatter": "./scripts/docs-organization/add-frontmatter.sh",
     "markdown-server": "node md-server.mjs",
-    "dev:with-markdown": "npm run markdown-server"
+    "dev:with-markdown": "npm run markdown-server",
+    "cli:build": "cd scripts/cli && npm install && npm run build",
+    "cli:classify": "./scripts/classify-markdowns.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.2",
