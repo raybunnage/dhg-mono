@@ -40,8 +40,17 @@ This command:
 8. When run with `--execute` flag:
    - Makes an API call to Claude with all assembled data
    - Parses the JSON response
-   - Updates the assessment fields in the database record
-   - Shows the updated document with assessment information
+   - Updates the documentation_files table with:
+     - ai_assessment (JSONB field with the full response)
+     - document_type_id (from the response)
+     - summary (from the response)
+     - ai_generated_tags (from key_topics/tags/keywords)
+     - assessment_quality_score (from confidence)
+     - assessment_created_at (timestamp)
+     - assessment_updated_at (timestamp)
+     - assessment_model (Claude model used)
+     - assessment_version (version number)
+   - Shows the updated documentation file record with all assessment information
 
 ### Classify Command (Full Process)
 
@@ -103,6 +112,54 @@ The CLI requires the following environment variables:
 - `VITE_ANTHROPIC_API_KEY`: Your Anthropic API key for Claude
 
 These are loaded from the `.env.development` file in the app directory.
+
+## Claude API Response Format
+
+The Claude API response follows a structured format that directly maps to the documentation_files table fields:
+
+```json
+{
+  "document_type_id": "uuid-of-matched-document-type-from-document_types-list",
+  "document_type": "Name of the document type EXACTLY as it appears in document_types list",
+  "title": "Document title extracted from content",
+  "summary": "Concise summary of document purpose and content",
+  "ai_generated_tags": ["topic1", "topic2", "topic3"],
+  "assessment_quality_score": 0.85,
+  "classification_reasoning": "Detailed explanation for why this document type was chosen",
+  "audience": "Target audience for this document",
+  "quality_assessment": {
+    "completeness": 4,
+    "clarity": 4,
+    "accuracy": 4,
+    "overall": 4
+  },
+  "suggested_improvements": [
+    "Improvement suggestion 1",
+    "Improvement suggestion 2"
+  ]
+}
+```
+
+Note the direct field mapping to the database:
+- `document_type_id`: Maps directly to documentation_files.document_type_id
+- `title`: Maps directly to documentation_files.title
+- `summary`: Maps directly to documentation_files.summary
+- `ai_generated_tags`: Maps directly to documentation_files.ai_generated_tags
+- `assessment_quality_score`: Maps directly to documentation_files.assessment_quality_score
+
+### Document Type ID Matching
+
+The system employs a multi-stage approach to ensure the correct document_type_id is set:
+
+1. Claude is instructed to use the exact document_type_id from the document_types list provided
+2. If Claude returns a valid document_type_id, it's verified against the list of available types
+3. If no direct ID is provided, the system matches by document_type name:
+   - Tries exact name match first (case-insensitive)
+   - Falls back to partial matches if needed
+   - Uses default first document type as last resort
+4. The matched ID is added to the assessment JSON and set in the documentation_files record
+
+This ensures reliable document type classification even when the model doesn't return an exact ID match.
 
 ## Monorepo Usage
 
