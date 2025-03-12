@@ -435,11 +435,26 @@ Your response should be strictly JSON without any explanatory text before or aft
             console.log(`\n=== Updating Documentation File Record for ${filePath} ===`);
             
             // Find the documentation file record by path
+            // Try multiple path formats to find the file (for backward compatibility)
             const docFile = await supabaseService.getDocumentationFileByPath(filePath);
             
             if (docFile) {
               console.log(`Found documentation file record with ID: ${docFile.id}`);
               console.log(`File path in database: ${docFile.file_path}`);
+              
+              // Verify path is in the standard format (relative to project root)
+              const projectRoot = findProjectRoot(process.cwd());
+              const isFullPath = filePath.startsWith(projectRoot);
+              const relPath = isFullPath ? filePath.substring(projectRoot.length + 1) : filePath;
+              
+              console.log(`Using project root: ${projectRoot}`);
+              console.log(`Normalized file path: ${relPath}`);
+              
+              // If paths don't match, log a warning about inconsistent paths
+              if (docFile.file_path !== relPath) {
+                console.log(`⚠️ Warning: Path in database (${docFile.file_path}) differs from normalized path (${relPath})`);
+                console.log(`This might be fixed by running the update-docs-database.sh script`);
+              }
               
               // Parse the JSON content from Claude's response
               let assessmentJson;

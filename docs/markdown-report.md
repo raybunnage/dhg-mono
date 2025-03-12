@@ -1,6 +1,6 @@
 # Markdown Files Report
 
-Generated: Sun Mar  9 08:54:46 PDT 2025
+Generated: Tue Mar 11 20:23:28 PDT 2025
 
 ## Overview
 
@@ -8,11 +8,11 @@ This report shows all markdown files found in the repository, organized hierarch
 
 ## Summary
 
-- **Total markdown files:** 99
-- **README files:** 4
+- **Total markdown files:** 110
+- **README files:** 5
 - **Files in docs folders:** 57
 - **Files in prompts folder:** 0
-- **Files in other locations:** 38
+- **Files in other locations:** 48
 - **Root-level files:** 2
 
 ## Root-Level Files
@@ -24,12 +24,18 @@ This report shows all markdown files found in the repository, organized hierarch
 
 ## Docs Directory (Hierarchical View)
 
+- 📄 [ai-assets-validation-report.md](/docs/ai-assets-validation-report.md) - 2025-03-09 18:46 (11537 bytes)
+- 📄 [cli-workflow-pipeline.md](/docs/cli-workflow-pipeline.md) - 2025-03-11 16:26 (7086 bytes)
 - 📄 [command-history-tracking.md](/docs/command-history-tracking.md) - 2025-03-02 11:14 (5007 bytes)
-- 📄 [documentation-files-report.md](/docs/documentation-files-report.md) - 2025-03-09 08:52 (37376 bytes)
+- 📄 [database-connectivity-report.md](/docs/database-connectivity-report.md) - 2025-03-09 15:09 (1 bytes)
+- 📄 [documentation-files-report.md](/docs/documentation-files-report.md) - 2025-03-09 12:13 (37604 bytes)
 - 📄 [documentation-management.md](/docs/documentation-management.md) - 2025-03-02 12:17 (4672 bytes)
-- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-09 08:54 (181 bytes)
-- 📄 [script-report.md](/docs/script-report.md) - 2025-03-08 14:48 (8524 bytes)
+- 📄 [file-reader-report.md](/docs/file-reader-report.md) - 2025-03-09 13:24 (4458 bytes)
+- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-11 20:23 (181 bytes)
+- 📄 [python-ai-services-technical-spec.md](/docs/python-ai-services-technical-spec.md) - 2025-03-10 21:07 (29740 bytes)
+- 📄 [script-report.md](/docs/script-report.md) - 2025-03-09 11:56 (8809 bytes)
 - 📄 [simple-db-results.md](/docs/simple-db-results.md) - 2025-03-08 15:40 (312 bytes)
+- 📄 [typescript-cli-technical-spec.md](/docs/typescript-cli-technical-spec.md) - 2025-03-10 20:55 (12053 bytes)
 - 📁 **architecture/**
   - 📄 [doc-assessment-implementation.md](/docs/architecture/doc-assessment-implementation.md) - 2025-03-05 17:24 (9269 bytes)
   - 📁 **supabase_design/**
@@ -60,7 +66,7 @@ This report shows all markdown files found in the repository, organized hierarch
   - 📄 [git_history_detailed.md](/docs/git-history/git_history_detailed.md) - 2025-02-17 17:41 (35558 bytes)
   - 📄 [git_history_with_files.md](/docs/git-history/git_history_with_files.md) - 2025-02-17 17:41 (88786 bytes)
 - 📁 **git-workflows/**
-  - 📄 [restoring-previous-file-versions.md](/docs/git-workflows/restoring-previous-file-versions.md) - 2025-03-09 04:32 (6166 bytes)
+  - 📄 [restoring-previous-file-versions.md](/docs/git-workflows/restoring-previous-file-versions.md) - 2025-03-09 17:41 (6307 bytes)
 - 📁 **guides/**
   - 📄 [batch-processing-and-trees.md](/docs/guides/batch-processing-and-trees.md) - 2025-02-17 17:41 (6416 bytes)
   - 📄 [file-entries-mapping.md](/docs/guides/file-entries-mapping.md) - 2025-02-17 17:41 (3974 bytes)
@@ -115,11 +121,13 @@ This report shows all markdown files found in the repository, organized hierarch
 - 📄 [enhanced-analysis-prompt.md](/prompts/enhanced-analysis-prompt.md) - 2025-02-21 18:48 (11487 bytes)
 - 📄 [expert-extraction-prompt.md](/prompts/expert-extraction-prompt.md) - 2025-02-17 17:41 (2347 bytes)
 - 📄 [expert-profiles.md](/prompts/expert-profiles.md) - 2025-02-17 17:41 (5851 bytes)
+- 📄 [markdown-document-classification-prompt copy.md](/prompts/markdown-document-classification-prompt copy.md) - 2025-03-09 11:44 (4013 bytes)
+- 📄 [markdown-document-classification-prompt.md](/prompts/markdown-document-classification-prompt.md) - 2025-03-11 08:32 (4504 bytes)
 - 📄 [prompt-management-implementation-plan.md](/prompts/prompt-management-implementation-plan.md) - 2025-03-06 17:25 (10422 bytes)
 - 📄 [react-component-analysis-prompt.md](/prompts/react-component-analysis-prompt.md) - 2025-02-21 22:08 (5990 bytes)
 - 📄 [sql-history-implementation-plan.md](/prompts/sql-history-implementation-plan.md) - 2025-03-06 23:35 (18388 bytes)
 - 📄 [sql-query-generation-guide.md](/prompts/sql-query-generation-guide.md) - 2025-03-08 02:57 (3488 bytes)
-- 📄 [supabase-sql-query-guide.md](/prompts/supabase-sql-query-guide.md) - 2025-03-08 14:19 (13180 bytes)
+- 📄 [supabase-sql-query-guide.md](/prompts/supabase-sql-query-guide.md) - 2025-03-09 15:09 (1 bytes)
 
 ## Apps Directory (Hierarchical View)
 
@@ -201,6 +209,15 @@ This report shows all markdown files found in the repository, organized hierarch
         - 📄 [expert-extraction-prompt.md](/apps/dhg-improve-experts/public/docs/prompts/expert-extraction-prompt.md) - 2025-02-17 17:41 (2347 bytes)
     - 📁 **prompts/**
   - 📁 **scripts/**
+    - 📁 **cli/**
+      - 📄 [MIGRATION.md](/apps/dhg-improve-experts/scripts/cli/MIGRATION.md) - 2025-03-10 21:18 (3133 bytes)
+      - 📄 [PNPM-USAGE.md](/apps/dhg-improve-experts/scripts/cli/PNPM-USAGE.md) - 2025-03-11 06:36 (2304 bytes)
+      - 📄 [README.md](/apps/dhg-improve-experts/scripts/cli/README.md) - 2025-03-11 08:38 (5550 bytes)
+      - 📁 **src/**
+        - 📁 **commands/**
+        - 📁 **models/**
+        - 📁 **services/**
+        - 📁 **utils/**
     - 📁 **docs-organization/**
   - 📁 **src/**
     - 📁 **_archive/**
@@ -257,6 +274,7 @@ This report shows all markdown files found in the repository, organized hierarch
       - 📁 **api/**
         - 📁 **sync-history/**
       - 📁 **google-drive/**
+- 📁 **prompts/**
 - 📁 **scripts/**
   - 📁 **whisper/**
 
