@@ -6,12 +6,65 @@
 # 2. Check each file against the database
 # 3. Update existing records or create new ones
 # 4. Mark records as deleted if the file no longer exists
+# 5. Standardize paths to always use project root-relative paths
 
 # Define important locations
 REPO_ROOT="$(pwd)"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
 
 echo "Starting documentation database update at $TIMESTAMP..."
+echo "Repository root: $REPO_ROOT"
+
+# Check if environment variables exist for Supabase connection
+if [[ -z "$SUPABASE_URL" || -z "$SUPABASE_KEY" ]]; then
+  # Try to load from .env file if available
+  if [[ -f .env ]]; then
+    echo "Loading Supabase credentials from .env file..."
+    export $(grep -v '^#' .env | xargs)
+  fi
+  
+  # Try to load from vite .env file if available
+  if [[ -f .env.local ]]; then
+    echo "Loading Supabase credentials from .env.local file..."
+    export $(grep -v '^#' .env.local | xargs)
+  fi
+fi
+
+# Set up PGPASSWORD if available
+if [[ -n "$SUPABASE_PASSWORD" ]]; then
+  export PGPASSWORD="$SUPABASE_PASSWORD"
+fi
+
+# Define a helper function for database queries
+db_query() {
+  local query="$1"
+  
+  # Try using supabase command if available (preferred)
+  if command -v supabase &> /dev/null; then
+    echo "Using supabase CLI for database query"
+    supabase db execute "$query" 2>/dev/null
+  # Otherwise fall back to psql with direct connection parameters
+  elif command -v psql &> /dev/null; then
+    echo "Using psql for database query"
+    # If we have SUPABASE_URL in environment, extract connection details
+    if [[ -n "$SUPABASE_URL" && -n "$SUPABASE_KEY" ]]; then
+      echo "Using Supabase environment variables for connection"
+      # For direct psql, we need to extract host, port, etc. from SUPABASE_URL
+      # Example URL: https://jdksnfkupzywjdfefkyj.supabase.co
+      # Extract the hostname part
+      local supabase_host=$(echo "$SUPABASE_URL" | sed -E 's|https://([^/]+).*|\1|')
+      psql -h "$supabase_host" -U postgres -d postgres -c "$query" 2>/dev/null
+    else
+      # Try default psql connection
+      echo "Using default psql connection"
+      psql -c "$query" 2>/dev/null
+    fi
+  else
+    echo "ERROR: Neither supabase cli nor psql is available"
+    echo "Please install either supabase CLI or psql to run database queries"
+    return 1
+  fi
+}
 
 # Function to extract title from markdown file
 extract_title() {
@@ -55,10 +108,29 @@ is_prompt() {
   fi
 }
 
+# Function to normalize a file path to a standard format from project root
+normalize_path() {
+  local file="$1"
+  local repo_root="$2"
+  
+  # First, get the full absolute path
+  local abs_path=$(realpath "$file" 2>/dev/null)
+  if [ $? -ne 0 ]; then
+    # realpath not available, try alternative
+    abs_path=$(cd "$(dirname "$file")" && pwd)/$(basename "$file")
+  fi
+  
+  # Then get path relative to repo root
+  # This ensures we always store paths in the form "apps/...", "docs/...", etc.
+  local rel_path=${abs_path#"$repo_root/"}
+  
+  echo "$rel_path"
+}
+
 # Function to check if file exists in database and update it
 process_file() {
   local file="$1"
-  local rel_path=${file#"$REPO_ROOT/"}
+  local rel_path=$(normalize_path "$file" "$REPO_ROOT")
   local title=$(extract_title "$file")
   local file_hash=$(calculate_hash "$file")
   local is_prompt_file=$(is_prompt "$file")
@@ -85,6 +157,8 @@ process_file() {
   # Escape single quotes in SQL strings
   local escaped_rel_path="${rel_path//\'/\'\'}"
   local escaped_title="${title//\'/\'\'}"
+  
+  echo "Processing: $rel_path (normalized path from project root)"
   
   # Check if file already exists in database
   local existing_record=$(db_query "SELECT id, file_hash FROM documentation_files WHERE file_path = '$escaped_rel_path' AND is_deleted = false;" | grep -v "id" | grep -v "row" | grep -v "\-\-\-" | grep -v "^$")
@@ -145,96 +219,101 @@ echo "Finding and processing markdown files..."
 # Create a temporary file to track processed files
 PROCESSED_FILES=$(mktemp)
 
+# Process all markdown files and track their normalized paths
+process_and_track_file() {
+  local file="$1"
+  # Process the file
+  process_file "$file"
+  # Get normalized path and save to processed files list
+  local norm_path=$(normalize_path "$file" "$REPO_ROOT")
+  echo "$norm_path" >> "$PROCESSED_FILES"
+}
+
 # Process the docs directory
 find "$REPO_ROOT/docs" -name "*.md" -type f 2>/dev/null | while read -r file; do
-  process_file "$file"
-  echo "${file#"$REPO_ROOT/"}" >> "$PROCESSED_FILES"
+  process_and_track_file "$file"
 done
 
 # Process the root prompts directory
 if [ -d "$REPO_ROOT/prompts" ]; then
   find "$REPO_ROOT/prompts" -name "*.md" -type f 2>/dev/null | while read -r file; do
-    process_file "$file"
-    echo "${file#"$REPO_ROOT/"}" >> "$PROCESSED_FILES"
+    process_and_track_file "$file"
   done
 fi
 
 # Process root markdown files
 find "$REPO_ROOT" -maxdepth 1 -name "*.md" -type f 2>/dev/null | while read -r file; do
-  process_file "$file"
-  echo "${file#"$REPO_ROOT/"}" >> "$PROCESSED_FILES"
+  process_and_track_file "$file"
 done
 
 # Process markdown files in apps directory
 find "$REPO_ROOT/apps" -name "*.md" -type f 2>/dev/null | while read -r file; do
-  process_file "$file"
-  echo "${file#"$REPO_ROOT/"}" >> "$PROCESSED_FILES"
+  process_and_track_file "$file"
 done
 
 # Process markdown files in packages directory
 find "$REPO_ROOT/packages" -name "*.md" -type f 2>/dev/null | while read -r file; do
-  process_file "$file"
-  echo "${file#"$REPO_ROOT/"}" >> "$PROCESSED_FILES"
+  process_and_track_file "$file"
 done
 
 # Process markdown files in public directory, especially prompts
 if [ -d "$REPO_ROOT/public" ]; then
   find "$REPO_ROOT/public" -name "*.md" -type f 2>/dev/null | while read -r file; do
-    process_file "$file"
-    echo "${file#"$REPO_ROOT/"}" >> "$PROCESSED_FILES"
+    process_and_track_file "$file"
   done
 fi
 
-# Check if environment variables exist for Supabase connection
-if [[ -z "$SUPABASE_URL" || -z "$SUPABASE_KEY" ]]; then
-  # Try to load from .env file if available
-  if [[ -f .env ]]; then
-    echo "Loading Supabase credentials from .env file..."
-    export $(grep -v '^#' .env | xargs)
-  fi
+# Function to standardize file paths in the database
+standardize_db_paths() {
+  echo "Checking for inconsistent file paths in the database..."
   
-  # Try to load from vite .env file if available
-  if [[ -f .env.local ]]; then
-    echo "Loading Supabase credentials from .env.local file..."
-    export $(grep -v '^#' .env.local | xargs)
-  fi
-fi
-
-# Set up PGPASSWORD if available
-if [[ -n "$SUPABASE_PASSWORD" ]]; then
-  export PGPASSWORD="$SUPABASE_PASSWORD"
-fi
-
-# Define a helper function for database queries
-db_query() {
-  local query="$1"
+  # Look for paths that might have app-specific prefixes instead of project root relative paths
+  db_query "SELECT id, file_path FROM documentation_files WHERE file_path LIKE 'src/%' OR file_path LIKE '../%';" | grep -v "row" | grep -v "\-\-\-" | grep -v "^$" > /tmp/inconsistent_paths
   
-  # Try using supabase command if available (preferred)
-  if command -v supabase &> /dev/null; then
-    echo "Using supabase CLI for database query"
-    supabase db execute "$query" 2>/dev/null
-  # Otherwise fall back to psql with direct connection parameters
-  elif command -v psql &> /dev/null; then
-    echo "Using psql for database query"
-    # If we have SUPABASE_URL in environment, extract connection details
-    if [[ -n "$SUPABASE_URL" && -n "$SUPABASE_KEY" ]]; then
-      echo "Using Supabase environment variables for connection"
-      # For direct psql, we need to extract host, port, etc. from SUPABASE_URL
-      # Example URL: https://jdksnfkupzywjdfefkyj.supabase.co
-      # Extract the hostname part
-      local supabase_host=$(echo "$SUPABASE_URL" | sed -E 's|https://([^/]+).*|\1|')
-      psql -h "$supabase_host" -U postgres -d postgres -c "$query" 2>/dev/null
-    else
-      # Try default psql connection
-      echo "Using default psql connection"
-      psql -c "$query" 2>/dev/null
-    fi
+  # Process each inconsistent path
+  if [[ -s /tmp/inconsistent_paths ]]; then
+    echo "Found inconsistent paths - standardizing to project root relative paths..."
+    cat /tmp/inconsistent_paths | while read -r record; do
+      local id=$(echo "$record" | awk '{print $1}')
+      local path=$(echo "$record" | awk '{$1=""; print $0}' | sed 's/^ *//')
+      
+      # Try to normalize the path
+      local normalized_path=""
+      
+      # Check for various path patterns
+      if [[ "$path" == src/* ]]; then
+        # Convert src/ paths to include the app name
+        normalized_path="apps/dhg-improve-experts/$path"
+        echo "Standardizing: $path -> $normalized_path"
+        
+        # Update the database
+        db_query "UPDATE documentation_files 
+                 SET file_path = '$normalized_path', 
+                     updated_at = '$TIMESTAMP' 
+                 WHERE id = '$id';"
+      elif [[ "$path" == ../* ]]; then
+        # Convert ../ paths to project root relative
+        # This is more complex and depends on the context, but we'll make a best effort
+        normalized_path=$(echo "$path" | sed 's|^\.\./|apps/|')
+        echo "Standardizing: $path -> $normalized_path"
+        
+        # Update the database
+        db_query "UPDATE documentation_files 
+                 SET file_path = '$normalized_path', 
+                     updated_at = '$TIMESTAMP' 
+                 WHERE id = '$id';"
+      fi
+    done
   else
-    echo "ERROR: Neither supabase cli nor psql is available"
-    echo "Please install either supabase CLI or psql to run database queries"
-    return 1
+    echo "No inconsistent paths found."
   fi
+  
+  # Clean up
+  rm -f /tmp/inconsistent_paths
 }
+
+# Run the path standardization routine
+standardize_db_paths
 
 # Mark files as deleted if they no longer exist
 echo "Marking deleted files..."
@@ -258,8 +337,10 @@ rm "$PROCESSED_FILES"
 # Get final statistics
 total_files=$(db_query "SELECT COUNT(*) FROM documentation_files WHERE is_deleted = false;" | tail -n 1)
 deleted_files=$(db_query "SELECT COUNT(*) FROM documentation_files WHERE is_deleted = true;" | tail -n 1)
+standardized_paths=$(db_query "SELECT COUNT(*) FROM documentation_files WHERE updated_at = '$TIMESTAMP';" | tail -n 1)
 
 echo "Update completed at $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")"
 echo "Statistics:"
 echo "- Active documentation files: $total_files"
 echo "- Deleted documentation files: $deleted_files"
+echo "- Files updated or standardized: $standardized_paths"

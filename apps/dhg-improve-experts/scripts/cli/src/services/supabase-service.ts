@@ -126,56 +126,92 @@ export class SupabaseService {
   
   /**
    * Get a documentation file record by file path
+   * This method tries multiple path formats to handle both
+   * project-root relative paths and other path formats
    */
   async getDocumentationFileByPath(filePath: string): Promise<any | null> {
     return await ErrorHandler.wrap(async () => {
       Logger.debug(`Getting documentation file record by path: ${filePath}`);
       
-      // Extract the filename from the path
+      // Extract the filename and basename from the path
       const filename = path.basename(filePath);
       
-      // Try direct file_path match first
-      let { data, error } = await this.client
+      // Normalize the path to handle different formats
+      const normalizedPaths = [];
+      
+      // 1. Use the exact path provided
+      normalizedPaths.push(filePath);
+      
+      // 2. If the path starts with a project root, extract the relative part
+      // Look for common patterns like /Users/.../dhg-mono/apps/... or /home/.../dhg-mono/...
+      const monoRepoMatch = filePath.match(/^.*?(\/dhg-mono\/)(.*)/);
+      if (monoRepoMatch && monoRepoMatch[2]) {
+        normalizedPaths.push(monoRepoMatch[2]);
+      }
+      
+      // 3. Handle src/ paths for app-specific components
+      if (filePath.includes('/src/') && !normalizedPaths.includes('src/' + filename)) {
+        normalizedPaths.push('src/' + path.basename(path.dirname(filePath)) + '/' + filename);
+        normalizedPaths.push('src/' + filename);
+      }
+      
+      // 4. Handle apps/ paths for monorepo components
+      if (filePath.includes('/apps/')) {
+        const appsMatch = filePath.match(/.*?\/apps\/([^\/]+)\/(.*)/);
+        if (appsMatch && appsMatch[2]) {
+          normalizedPaths.push('apps/' + appsMatch[1] + '/' + appsMatch[2]);
+        }
+      }
+      
+      // 5. Add just the filename as last resort
+      normalizedPaths.push(filename);
+      
+      Logger.debug(`Trying these normalized paths: ${normalizedPaths.join(', ')}`);
+      
+      // Try each path format until we find a match
+      for (const normPath of normalizedPaths) {
+        const { data, error } = await this.client
+          .from('documentation_files')
+          .select('*')
+          .eq('file_path', normPath)
+          .eq('is_deleted', false)
+          .limit(1);
+        
+        if (error) {
+          Logger.error(`Error querying file path: ${normPath}`, error);
+          continue;
+        }
+        
+        if (data && data.length > 0) {
+          Logger.debug(`Found documentation file with path: ${normPath}, ID: ${data[0].id}`);
+          return data[0];
+        }
+      }
+      
+      // Try a more flexible search if none of the exact matches worked
+      Logger.debug(`No exact match found, trying a flexible search with filename: ${filename}`);
+      const { data, error } = await this.client
         .from('documentation_files')
         .select('*')
-        .eq('file_path', filePath)
+        .ilike('file_path', `%${filename}%`)
+        .eq('is_deleted', false)
         .limit(1);
       
       if (error) {
         throw new AppError(
-          `Failed to get documentation file by path: ${error.message}`,
+          `Failed to get documentation file by filename: ${error.message}`,
           'SUPABASE_ERROR',
           error
         );
       }
       
-      // If not found, try a more flexible search
-      if (!data || data.length === 0) {
-        Logger.debug(`No exact match found for path: ${filePath}, trying with file name: ${filename}`);
-        
-        // Try to find by filename part
-        ({ data, error } = await this.client
-          .from('documentation_files')
-          .select('*')
-          .ilike('file_path', `%${filename}%`)
-          .limit(1));
-        
-        if (error) {
-          throw new AppError(
-            `Failed to get documentation file by filename: ${error.message}`,
-            'SUPABASE_ERROR',
-            error
-          );
-        }
+      if (data && data.length > 0) {
+        Logger.debug(`Found documentation file with fuzzy match: ${data[0].file_path}, ID: ${data[0].id}`);
+        return data[0];
       }
       
-      if (!data || data.length === 0) {
-        Logger.warn(`No documentation file found matching path: ${filePath} or filename: ${filename}`);
-        return null;
-      }
-      
-      Logger.debug(`Found documentation file with ID: ${data[0].id}`);
-      return data[0];
+      Logger.warn(`No documentation file found matching any of the attempted paths or filename: ${filename}`);
+      return null;
     }, `Failed to get documentation file by path: ${filePath}`);
   }
   
