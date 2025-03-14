@@ -14,6 +14,7 @@ RETRIES=3
 VERBOSE=false
 FILE_PATH=""
 FILE_ID=""
+INCLUDE_PROCESSED=false
 
 # Display usage
 function usage() {
@@ -30,6 +31,7 @@ function usage() {
   echo "  -d, --dry-run           Show what would be processed without making changes"
   echo "  -r, --retries NUMBER    Number of retry attempts for failed processing (default: 3)"
   echo "  -v, --verbose           Enable verbose logging"
+  echo "  --include-processed     Include already processed files with document type and assessment"
   echo ""
   echo "Examples:"
   echo "  $0 --all                               Process all documentation files"
@@ -78,6 +80,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -v|--verbose)
       VERBOSE=true
+      shift
+      ;;
+    --include-processed)
+      INCLUDE_PROCESSED=true
       shift
       ;;
     *)
@@ -134,6 +140,10 @@ fi
 
 if [ "$VERBOSE" = true ]; then
   CMD="$CMD --verbose"
+fi
+
+if [ "$INCLUDE_PROCESSED" = true ]; then
+  CMD="$CMD --include-processed"
 fi
 
 # Display the command being executed

@@ -3,6 +3,13 @@ import { getGoogleDocContent, getPdfContent } from './google-drive'
 import { toast } from 'react-hot-toast'
 import { EXPERT_EXTRACTION_PROMPT } from '@/config/ai-prompts'
 import { EXPERT_PROFILER_PROMPT } from '@/app/experts/profiler/prompts'
+import { claudeRateLimiter } from './rate-limiter'
+import Anthropic from '@anthropic-ai/sdk'
+
+// Initialize Anthropic client
+const anthropic = new Anthropic({
+  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || process.env.VITE_ANTHROPIC_API_KEY,
+});
 
 interface ProcessingResult {
   success: boolean
@@ -21,23 +28,39 @@ export function abortProcessing() {
   }
 }
 
-export async function processUnextractedDocuments(batchSize = 10): Promise<ProcessingResult> {
+export async function processUnextractedDocuments(batchSize = 10, skipProcessed = true): Promise<ProcessingResult> {
   const toastId = toast.loading('Starting document processing...');
   const MAX_FILE_SIZE = 1000000; // 1MB
   
   // Create new abort controller
   abortController = new AbortController();
   
+  // Track results
+  const results = {
+    processed: 0,
+    skipped: 0,
+    alreadyProcessed: 0,
+    errors: 0,
+    errorDetails: [] as string[]
+  };
+  
   try {
     // Double-check we're only getting unprocessed documents
-    const { data: documents, error } = await supabase
+    let query = supabase
       .from('expert_documents')
       .select('*')
       .eq('processing_status', 'pending')
-      .is('processed_content', null)
-      .is('content_extracted', false)  // Additional check
       .limit(batchSize)
       .order('created_at', { ascending: true });
+    
+    // Apply additional filters for unprocessed content if skipProcessed is true
+    if (skipProcessed) {
+      query = query
+        .is('processed_content', null)
+        .is('content_extracted', false);
+    }
+      
+    const { data: documents, error } = await query;
       
     if (error) {
       throw new Error(`Failed to fetch documents: ${error.message}`);
@@ -52,25 +75,42 @@ export async function processUnextractedDocuments(batchSize = 10): Promise<Proce
       };
     }
 
+    // Further filter documents if skipProcessed is true
+    let docsToProcess = documents;
+    if (skipProcessed) {
+      docsToProcess = documents.filter(doc => {
+        const alreadyProcessed = doc.processed_content !== null && 
+                               doc.content_extracted === true;
+        
+        if (alreadyProcessed) {
+          results.alreadyProcessed++;
+          console.log(`Skipping already processed document: ${doc.id}`);
+        }
+        
+        return !alreadyProcessed;
+      });
+    }
+
     toast.loading(
-      `Processing batch of ${documents.length} documents (max size: ${batchSize})...`, 
+      `Processing batch of ${docsToProcess.length} documents (max size: ${batchSize})...` +
+      (results.alreadyProcessed > 0 ? `\nSkipped ${results.alreadyProcessed} already processed` : ''), 
       { id: toastId }
     );
 
-    const results = {
-      processed: 0,
-      skipped: 0,
-      errors: 0,
-      errorDetails: [] as string[]
-    };
-
-    for (const doc of documents) {
+    for (const doc of docsToProcess) {
       // Check if processing was aborted
       if (abortController.signal.aborted) {
         throw new Error('Processing aborted by user');
       }
 
       try {
+        // Skip already processed documents
+        if (doc.processed_content !== null && doc.content_extracted === true) {
+          console.log(`Skipping already processed document: ${doc.id}`);
+          results.alreadyProcessed++;
+          continue;
+        }
+        
         // Detailed size check with error message
         if (doc.raw_content && doc.raw_content.length > MAX_FILE_SIZE) {
           const sizeMB = (doc.raw_content.length / 1000000).toFixed(2);
@@ -102,9 +142,10 @@ export async function processUnextractedDocuments(batchSize = 10): Promise<Proce
 
         // Update progress with detailed stats
         toast.loading(
-          `Progress: ${results.processed}/${documents.length}\n` +
+          `Progress: ${results.processed}/${docsToProcess.length}\n` +
           `Completed: ${results.processed}\n` +
           `Skipped: ${results.skipped}\n` +
+          `Already Processed: ${results.alreadyProcessed}\n` +
           `Errors: ${results.errors}`, 
           { id: toastId }
         );
@@ -141,9 +182,10 @@ export async function processUnextractedDocuments(batchSize = 10): Promise<Proce
     // Detailed final status update
     const statusMessage = [
       `Processing complete!`,
-      `Batch size: ${documents.length}`,
+      `Batch size: ${docsToProcess.length}`,
       `Processed: ${results.processed}`,
       `Skipped: ${results.skipped}`,
+      `Already Processed: ${results.alreadyProcessed}`,
       `Errors: ${results.errors}`,
       results.errorDetails.length > 0 ? '\nError Details:' : '',
       ...results.errorDetails.slice(0, 3), // Show first 3 errors
@@ -287,37 +329,71 @@ async function processDocumentWithAI(documentId: string) {
 
   console.log('Using Expert Profiler prompt...');
   
-  const response = await anthropic.messages.create({
-    model: 'claude-3-sonnet-20240229',
-    max_tokens: 4096,
-    system: EXPERT_PROFILER_PROMPT,
-    messages: [{
-      role: 'user',
-      content: `Analyze this document and create a detailed expert profile: ${document.raw_content}`
-    }]
-  });
-
-  // Parse and validate the response
-  try {
-    const extractedData = JSON.parse(response.content[0].text);
-    
-    // Update the document with processed content
-    await supabase
-      .from('expert_documents')
-      .update({
-        processed_content: extractedData,
-        processing_status: 'completed',
-        processed_at: new Date().toISOString(),
-        metadata: {
-          prompt_version: 'expert_profiler_v1',
-          model: 'claude-3-sonnet-20240229',
-          confidence_scores: extractedData.metadata?.confidenceScores
-        }
-      })
-      .eq('id', documentId);
-
-    return extractedData;
-  } catch (error) {
-    throw new Error(`Failed to parse AI response: ${error.message}`);
+  // Wait for rate limiter to allow the request
+  console.log(`Rate limiting: waiting for Claude API approval (queue length: ${claudeRateLimiter.getQueueLength()})`);
+  await claudeRateLimiter.acquire(1);
+  console.log('Rate limiter approved request, proceeding with API call');
+  
+  // Make the API call with retry logic for rate limit errors
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  
+  while (retries <= MAX_RETRIES) {
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-3-sonnet-20240229',
+        max_tokens: 4096,
+        system: EXPERT_PROFILER_PROMPT,
+        messages: [{
+          role: 'user',
+          content: `Analyze this document and create a detailed expert profile: ${document.raw_content}`
+        }]
+      });
+  
+      // Parse and validate the response
+      try {
+        const extractedData = JSON.parse(response.content[0].text);
+        
+        // Update the document with processed content
+        await supabase
+          .from('expert_documents')
+          .update({
+            processed_content: extractedData,
+            processing_status: 'completed',
+            processed_at: new Date().toISOString(),
+            content_extracted: true,
+            metadata: {
+              prompt_version: 'expert_profiler_v1',
+              model: 'claude-3-sonnet-20240229',
+              retries: retries > 0 ? retries : undefined,
+              confidence_scores: extractedData.metadata?.confidenceScores
+            }
+          })
+          .eq('id', documentId);
+  
+        return extractedData;
+      } catch (error) {
+        throw new Error(`Failed to parse AI response: ${error.message}`);
+      }
+    } catch (error) {
+      retries++;
+      
+      // Check if it's a rate limit error
+      const isRateLimit = error.message && 
+        (error.message.includes('rate limit') || 
+         error.message.includes('429') || 
+         error.message.includes('too many requests'));
+         
+      if (isRateLimit && retries <= MAX_RETRIES) {
+        // Exponential backoff
+        const delay = Math.pow(2, retries) * 1000;
+        console.log(`Rate limit exceeded, retry ${retries}/${MAX_RETRIES} after ${delay}ms delay`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      // Not a rate limit error or we've exceeded max retries
+      throw error;
+    }
   }
 } 
