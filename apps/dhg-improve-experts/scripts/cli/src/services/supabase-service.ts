@@ -4,12 +4,122 @@ import { Logger } from '../utils/logger';
 import { AppError, ErrorHandler } from '../utils/error-handler';
 import { DocumentType, Prompt, Relationship } from '../models';
 
+export interface QueryOptions {
+  columns?: string;
+  filters?: Array<{
+    field: string;
+    operator: string;
+    value: any;
+  }>;
+  order?: Array<{
+    field: string;
+    ascending: boolean;
+  }>;
+  limit?: number;
+}
+
 export class SupabaseService {
   private client: SupabaseClient;
   
   constructor(url: string, key: string) {
     Logger.debug('Initializing Supabase client');
     this.client = createClient(url, key);
+  }
+  
+  /**
+   * Execute a query on a table
+   */
+  async executeQuery(table: string, action: 'select' | 'insert' | 'update' | 'delete', options: QueryOptions): Promise<any> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Executing ${action} query on ${table}`);
+      
+      let query: any;
+      
+      if (action === 'select') {
+        query = this.client.from(table).select(options.columns || '*');
+        
+        // Apply filters
+        if (options.filters) {
+          for (const filter of options.filters) {
+            query = query.filter(filter.field, filter.operator, filter.value);
+          }
+        }
+        
+        // Apply ordering
+        if (options.order && options.order.length > 0) {
+          for (const order of options.order) {
+            query = query.order(order.field, { ascending: order.ascending });
+          }
+        }
+        
+        // Apply limit
+        if (options.limit) {
+          query = query.limit(options.limit);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          throw new AppError(`Query error: ${error.message}`, 'SUPABASE_ERROR', error);
+        }
+        
+        return data;
+      } else if (action === 'update') {
+        // Use for update operations
+        throw new AppError('Update operation must use the update method', 'OPERATION_ERROR');
+      } else if (action === 'insert') {
+        // Use for insert operations
+        throw new AppError('Insert operation must use the insert method', 'OPERATION_ERROR');
+      } else if (action === 'delete') {
+        // Use for delete operations
+        throw new AppError('Delete operation must use the delete method', 'OPERATION_ERROR');
+      }
+      
+      throw new AppError(`Unsupported action: ${action}`, 'OPERATION_ERROR');
+    }, `Failed to execute ${action} query on ${table}`);
+  }
+  
+  /**
+   * Get a record by ID
+   */
+  async getById(table: string, id: string): Promise<any> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Getting record from ${table} by ID: ${id}`);
+      
+      const { data, error } = await this.client
+        .from(table)
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        throw new AppError(`Failed to get record by ID: ${error.message}`, 'SUPABASE_ERROR', error);
+      }
+      
+      return data;
+    }, `Failed to get record from ${table} with ID: ${id}`);
+  }
+  
+  /**
+   * Update a record
+   */
+  async update(table: string, id: string, updates: any): Promise<any> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Updating record in ${table} with ID: ${id}`);
+      
+      const { data, error } = await this.client
+        .from(table)
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        throw new AppError(`Failed to update record: ${error.message}`, 'SUPABASE_ERROR', error);
+      }
+      
+      return data;
+    }, `Failed to update record in ${table} with ID: ${id}`);
   }
   
   /**
@@ -237,7 +347,10 @@ export class SupabaseService {
         title: assessment.title || null,
         summary: assessment.summary || null,
         ai_generated_tags: assessment.key_topics || assessment.tags || [],
-        assessment_quality_score: assessment.confidence || (assessment.quality_assessment?.overall ? assessment.quality_assessment.overall / 5.0 : 0.7),
+        // Get a score in the 0-1 range first
+        assessment_quality_score: assessment.assessment_quality_score || assessment.confidence || 
+          (assessment.quality_assessment?.overall ? parseFloat((assessment.quality_assessment.overall / 5.0).toFixed(2)) : 0.7),
+        // We'll convert it to an integer in the 0-100 range in the normalization step
         assessment_created_at: timestamp,
         assessment_updated_at: timestamp,
         assessment_model: 'claude-3-7-sonnet-20250219',
@@ -263,11 +376,33 @@ export class SupabaseService {
       }
       
       // Normalize assessment_quality_score to [0,1] range
-      if (typeof updateData.assessment_quality_score === 'number') {
+      try {
+        // Convert to number if it's a string
+        if (typeof updateData.assessment_quality_score === 'string') {
+          updateData.assessment_quality_score = parseFloat(updateData.assessment_quality_score);
+        }
+        
+        // Make sure it's a valid number
+        if (isNaN(updateData.assessment_quality_score) || typeof updateData.assessment_quality_score !== 'number') {
+          updateData.assessment_quality_score = 0.7; // We'll convert to integer (70) later
+        }
+        
+        // Normalize assessment_quality_score to [0,100] range (integer percent)
+        // This is necessary because the database column appears to be an integer, not a decimal
         if (updateData.assessment_quality_score < 0) updateData.assessment_quality_score = 0;
-        if (updateData.assessment_quality_score > 1) updateData.assessment_quality_score = 1;
-      } else {
-        updateData.assessment_quality_score = 0.7; // Default
+        if (updateData.assessment_quality_score > 1) {
+          // If it's already greater than 1, assume it's already in the 0-100 range
+          updateData.assessment_quality_score = Math.round(updateData.assessment_quality_score);
+        } else {
+          // Convert from 0-1 scale to 0-100 integer
+          updateData.assessment_quality_score = Math.round(updateData.assessment_quality_score * 100);
+        }
+        
+        // Ensure it's an integer
+        updateData.assessment_quality_score = Math.floor(updateData.assessment_quality_score);
+      } catch (error) {
+        Logger.warn('Error normalizing assessment_quality_score, using default', error);
+        updateData.assessment_quality_score = 70; // Default (0.7 on 0-1 scale = 70 on 0-100 scale)
       }
       
       // Set document_type_id - THE MOST CRITICAL FIELD

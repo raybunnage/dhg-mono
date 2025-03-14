@@ -1,6 +1,6 @@
 # Documentation Files Database Update Report
 
-Generated: 3/11/2025, 8:35:12 PM
+Generated: 3/11/2025, 9:36:18 PM
 
 ## Update Summary
 
@@ -10,8 +10,8 @@ Generated: 3/11/2025, 8:35:12 PM
 - **Deleted records:** 44
 
 ### Statistics After Update
-- **Total records:** 168
-- **Active records:** 124
+- **Total records:** 169
+- **Active records:** 125
 - **Deleted records:** 44
 
 ### Update Results
@@ -19,13 +19,13 @@ Generated: 3/11/2025, 8:35:12 PM
 - **Files marked as deleted:** 0
 - **Files with metadata updated:** 1
 - **Files unchanged:** 167
-- **New files added:** 0
+- **New files added:** 1
 - **Update errors:** 0
 
 ### File Existence Check
 - **Files that exist on disk:** 124
 - **Files not found on disk:** 44
-- **New files found:** 0
+- **New files found:** 1
 
 ### Existing Files Processed
 apps/dhg-hub-lovable/README.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 2303 bytes | Created: 2/10/2025, 5:31:12 PM | Modified: 2/10/2025, 5:31:12 PM | 🔄 Possible move from: docs/supabase_design/README.md, README.md  
@@ -83,7 +83,7 @@ docs/development/code-standards.md | ❌ NOT FOUND | Before: DELETED | After: DE
 docs/development/file-management.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 1452 bytes | Created: 2/17/2025, 5:41:13 PM | Modified: 2/17/2025, 5:41:13 PM  
 docs/development/testing.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 110 bytes | Last Updated: 3/7/2025, 5:12:02 PM  
 docs/docs-organization.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 3222 bytes | Last Updated: 3/7/2025, 6:12:37 PM | 🔄 Possibly moved to: apps/dhg-improve-experts/docs/docs-organization.md  
-docs/documentation-files-report.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | → UPDATING METADATA | Size: 39149 bytes | Created: 3/9/2025, 12:12:42 PM | Modified: 3/11/2025, 8:25:54 PM  
+docs/documentation-files-report.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | → UPDATING METADATA | Size: 39654 bytes | Created: 3/9/2025, 12:12:42 PM | Modified: 3/11/2025, 8:35:12 PM  
 docs/documentation-management.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 4672 bytes | Created: 3/2/2025, 3:08:50 AM | Modified: 3/2/2025, 12:17:05 PM  
 docs/documentation-report.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 4593 bytes | Last Updated: 3/7/2025, 6:12:37 PM | 🔄 Possibly moved to: apps/dhg-improve-experts/docs/documentation-report.md  
 docs/experts/expert-model.md | ❌ NOT FOUND | Before: DELETED | After: DELETED | (no change) | Size: 120 bytes | Last Updated: 3/7/2025, 5:12:02 PM  
@@ -198,7 +198,7 @@ SUPABASE_TYPES_MIGRATION.md | ❌ NOT FOUND | Before: DELETED | After: DELETED |
 supabase/types/README.md | ✅ EXISTS | Before: ACTIVE | After: ACTIVE | (no change) | Size: 3853 bytes | Created: 3/1/2025, 9:37:09 AM | Modified: 3/5/2025, 8:01:15 PM | 🔄 Possible move from: docs/supabase_design/README.md, README.md  
 
 ### New Files Added
-
+docs/batch-processing-technical-spec.md | ✨ NEW FILE | Size: 17019 bytes | Created: 3/11/2025, 8:54:10 PM | Modified: 3/11/2025, 8:54:15 PM  
 
 ## Claude API Test Results
 

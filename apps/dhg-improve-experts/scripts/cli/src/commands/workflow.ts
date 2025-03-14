@@ -458,7 +458,7 @@ Your response should be strictly JSON without any explanatory text before or aft
               
               // Parse the JSON content from Claude's response
               let assessmentJson;
-              let documentTypeId = null;
+              let documentTypeId: string | null = null;
               
               try {
                 // Try to extract JSON from the response text
@@ -574,8 +574,8 @@ Your response should be strictly JSON without any explanatory text before or aft
                     // Try to extract topics from the document title or summary
                     if (assessmentJson.title) {
                       const words = assessmentJson.title.split(/\s+/)
-                        .filter((word) => word.length > 3)
-                        .map((word) => word.toLowerCase())
+                        .filter((word: string) => word.length > 3)
+                        .map((word: string) => word.toLowerCase())
                         .slice(0, 3);
                       
                       if (words.length > 0) {
@@ -633,7 +633,7 @@ Your response should be strictly JSON without any explanatory text before or aft
                 const updatedDocFile = await supabaseService.updateDocumentationFileAssessment(
                   docFile.id, 
                   assessmentJson,
-                  documentTypeId
+                  documentTypeId || undefined
                 );
                 
                 console.log('\n=== Documentation File Updated Successfully ===');
