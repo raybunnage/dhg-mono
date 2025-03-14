@@ -1,3 +1,78 @@
+DAVIS, EYEMED, METLIFE 
+
+8773779353   8006990993    8333935433
+
+
+aybunnage@Rays-Laptop dhg-improve-experts % ./process-docs-batch.sh --all --limit 20
+Building CLI...
+
+> ai-workflow-cli@1.0.0 build
+> tsc
+
+src/commands/documentation-processor.ts:133:11 - error TS2322: Type 'null' is not assignable to type 'boolean'.
+
+133           value: null
+              ~~~~~
+
+  src/commands/documentation-processor.ts:121:50
+    121           { field: 'is_deleted', operator: 'eq', value: false }
+                                                         ~~~~~~~~~~~~
+    The expected type comes from property 'value' which is declared here on type '{ field: string; operator: string; value: boolean; }'
+
+src/commands/documentation-processor.ts:148:30 - error TS7006: Parameter 'doc' implicitly has an 'any' type.
+
+148         return result.filter(doc => {
+                                 ~~~
+
+src/commands/documentation-processor.ts:674:29 - error TS2339: Property 'document_type_id' does not exist on type 'DocumentationFile'.
+
+674         const status = file.document_type_id ? 'ALREADY CLASSIFIED' : 'UNCLASSIFIED';
+                                ~~~~~~~~~~~~~~~~
+
+
+Found 3 errors in the same file, starting at: src/commands/documentation-processor.ts:133
+
+
+Update(file_path: src/utils/document-processing.ts)…
+  ⎿ Updated src/utils/document-processing.ts with 6 additions
+      4  import { EXPERT_EXTRACTION_PROMPT } from '@/config/
+        ai-prompts'
+      5  import { EXPERT_PROFILER_PROMPT } from '@/app/exper
+        ts/profiler/prompts'
+      6  import { claudeRateLimiter } from './rate-limiter'
+      7  import Anthropic from '@anthropic-ai/sdk'
+      8 
+      9  // Initialize Anthropic client
+     10  const anthropic = new Anthropic({
+     11    apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY ||
+         process.env.VITE_ANTHROPIC_API_KEY,
+     12  });
+     13  
+     14  interface ProcessingResult {
+     15    success: boolean
+     16    message: string
+
+⏺ Let's summarize what we've implemented:
+
+  1. Created a token bucket rate limiter for Claude API calls
+    - Implemented in both the CLI and web application
+    - Configurable parameters for requests per minute and
+  burst capacity
+    - Queue management for exceeding rate limits
+  2. Updated the document processing code to skip already
+  processed documents
+    - Added filtering in the database query
+    - Added checks for document_type_id and assessment data
+    - Added reporting on skipped documents
+  3. Added retry logic for rate limit errors
+    - Exponential backoff for retries
+    - Error categorization to identify rate limit issues
+    - Detailed logging
+
+  These changes should address both the rate limiting issues
+  and prevent reprocessing of documents that are already
+  completed, making the system more efficient and robust.
+
 Perfect! The batch processing is now working correctly. All the fixes we've made
   are:
 

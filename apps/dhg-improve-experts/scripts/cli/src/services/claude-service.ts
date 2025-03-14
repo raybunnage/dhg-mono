@@ -25,6 +25,58 @@ export interface ClaudeResponse {
   error?: string;
 }
 
+// Simple rate limiter for CLI tool
+// This is a simplified version that doesn't require importing the main app's rate-limiter.ts
+class SimpleRateLimiter {
+  private tokens: number;
+  private maxTokens: number;
+  private refillRate: number; // tokens per second
+  private lastRefillTimestamp: number;
+
+  constructor(maxTokens: number, refillRate: number) {
+    this.tokens = maxTokens;
+    this.maxTokens = maxTokens;
+    this.refillRate = refillRate;
+    this.lastRefillTimestamp = Date.now();
+  }
+
+  private refillTokens(): void {
+    const now = Date.now();
+    const timePassed = (now - this.lastRefillTimestamp) / 1000; // seconds
+    const tokensToAdd = timePassed * this.refillRate;
+    
+    this.tokens = Math.min(this.maxTokens, this.tokens + tokensToAdd);
+    this.lastRefillTimestamp = now;
+  }
+
+  async acquire(cost = 1): Promise<void> {
+    this.refillTokens();
+    
+    if (this.tokens >= cost) {
+      this.tokens -= cost;
+      return Promise.resolve();
+    }
+    
+    // If not enough tokens, wait and check again
+    const waitTimeMs = Math.ceil((cost - this.tokens) / this.refillRate * 1000);
+    Logger.debug(`Rate limiting: waiting ${waitTimeMs}ms for token refill`);
+    
+    return new Promise<void>(resolve => {
+      setTimeout(() => {
+        this.refillTokens();
+        this.tokens -= cost;
+        resolve();
+      }, waitTimeMs);
+    });
+  }
+}
+
+// Create a singleton rate limiter instance
+const rateLimiter = new SimpleRateLimiter(
+  3,     // max tokens (requests) - allow bursts of up to 3 requests
+  0.167  // refill rate (requests per second) - 10 requests per minute
+);
+
 export class ClaudeService {
   private apiKey: string;
   private baseUrl: string = 'https://api.anthropic.com';
@@ -46,6 +98,11 @@ export class ClaudeService {
       });
       
       try {
+        // Wait for rate limiter to allow the request
+        Logger.debug('Waiting for rate limiter approval...');
+        await rateLimiter.acquire(1);
+        Logger.debug('Rate limiter approved request');
+        
         const response = await axios.post(
           `${this.baseUrl}/v1/messages`,
           request,

@@ -16,6 +16,7 @@ interface DocumentationFile {
   id: string;
   file_path: string;
   is_deleted: boolean;
+  document_type_id?: string | null;
   classification?: any;
   metadata?: any;
   assessment_date?: string;
@@ -29,6 +30,7 @@ interface ProcessOptions {
   dryRun?: boolean;
   retries?: number;
   verbose?: boolean;
+  includeProcessed?: boolean; // Option to include already processed files
 }
 
 /**
@@ -107,31 +109,63 @@ function resolveFilePath(filePath: string): string {
 /**
  * Database Query Functions
  */
-async function getFilesToProcess(supabaseService: SupabaseService, limit?: number): Promise<DocumentationFile[]> {
+async function getFilesToProcess(supabaseService: SupabaseService, limit?: number, skipProcessed = true): Promise<DocumentationFile[]> {
   try {
     Logger.info('Fetching files to process from database');
     
     // Instead of directly accessing the private client, use a query builder
     const data = await ErrorHandler.wrap(async () => {
-      const query = {
+      const query: {
+        from: string;
+        select: string;
+        filters: Array<{ field: string; operator: string; value: any }>;
+        order: { field: string; ascending: boolean };
+        limit: number;
+      } = {
         from: 'documentation_files',
         select: '*',
-        filter: { field: 'is_deleted', operator: 'eq', value: false },
+        filters: [
+          { field: 'is_deleted', operator: 'eq', value: false }
+        ],
         order: { field: 'created_at', ascending: false },
         limit: limit || 1000
       };
       
+      // Add filter to skip already processed documents
+      if (skipProcessed) {
+        // Skip if document_type_id is not null and quality_assessment exists
+        query.filters.push({ 
+          field: 'document_type_id', 
+          operator: 'is', 
+          value: null 
+        });
+        
+        // The query builder doesn't support complex conditions, so we'll filter the results after
+      }
+      
       const result = await supabaseService.executeQuery(query.from, 'select', {
         columns: query.select,
-        filters: [query.filter],
+        filters: query.filters,
         order: [query.order],
         limit: query.limit
       });
       
+      // Further filter to check for assessment data
+      if (skipProcessed && result) {
+        return result.filter((doc: DocumentationFile) => {
+          // Skip if already processed with assessment data
+          const hasAssessment = doc.classification && (
+            doc.classification.quality_assessment || 
+            doc.classification.assessment_quality_score
+          );
+          return !hasAssessment;
+        });
+      }
+      
       return result;
     }, 'Failed to fetch documentation files');
     
-    Logger.info(`Found ${data?.length || 0} files to process`);
+    Logger.info(`Found ${data?.length || 0} files to process${skipProcessed ? ' (unprocessed only)' : ''}`);
     return data as DocumentationFile[] || [];
   } catch (error) {
     Logger.error('Error fetching files:', error);
@@ -628,7 +662,8 @@ async function processAllFiles(options: ProcessOptions): Promise<void> {
     limit,
     dryRun = false,
     retries = 3,
-    verbose = false
+    verbose = false,
+    includeProcessed = false // New option to include already processed files
   } = options;
   
   try {
@@ -636,14 +671,17 @@ async function processAllFiles(options: ProcessOptions): Promise<void> {
     const supabaseService = new SupabaseService(config.supabaseUrl, config.supabaseKey);
     
     console.log('Fetching files to process...');
-    const files = await getFilesToProcess(supabaseService, limit);
+    const files = await getFilesToProcess(supabaseService, limit, !includeProcessed);
     
-    console.log(`Found ${files.length} files to process${limit ? ` (limited to ${limit})` : ''}`);
+    console.log(`Found ${files.length} files to process${limit ? ` (limited to ${limit})` : ''}${!includeProcessed ? ' (skipping already processed files)' : ''}`);
     
     if (dryRun) {
       console.log('DRY RUN - Would process these files:');
       files.forEach((file, index) => {
-        console.log(`${index + 1}. ${file.file_path} (ID: ${file.id})`);
+        const status = file.document_type_id ? 'ALREADY CLASSIFIED' : 'UNCLASSIFIED';
+        const hasAssessment = file.classification && (file.classification.quality_assessment || file.classification.assessment_quality_score);
+        const assessmentStatus = hasAssessment ? 'HAS ASSESSMENT' : 'NO ASSESSMENT';
+        console.log(`${index + 1}. ${file.file_path} (ID: ${file.id}) - ${status}, ${assessmentStatus}`);
       });
       return;
     }
@@ -836,7 +874,8 @@ export const processDocumentation = async (filePath: string | undefined, options
         limit: options.limit ? parseInt(options.limit) : undefined,
         dryRun: options.dryRun,
         retries: options.retries ? parseInt(options.retries) : undefined,
-        verbose: options.verbose
+        verbose: options.verbose,
+        includeProcessed: options.includeProcessed
       });
     } else {
       console.error('Error: Please provide a file path, ID, or use --all flag');
@@ -872,5 +911,6 @@ export const registerDocumentProcessorCommand = (program: Command): void => {
     .option('-d, --dry-run', 'Show what would be processed without making changes')
     .option('-r, --retries <number>', 'Number of retry attempts for failed processing', '3')
     .option('-v, --verbose', 'Enable verbose logging')
+    .option('--include-processed', 'Include already processed files (with document_type_id and assessment)')
     .action(processDocumentation);
 };
