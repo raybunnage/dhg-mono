@@ -1,3 +1,11 @@
+Fixed the error by adding dangerouslyAllowBrowser: true to
+  the Anthropic client initialization in
+  document-processing.ts. This error occurs when using the
+  Anthropic SDK in a browser environment where API keys might
+  be exposed. This config option acknowledges you understand
+  the security implications.
+
+
 DAVIS, EYEMED, METLIFE 
 
 8773779353   8006990993    8333935433

@@ -9,6 +9,7 @@ import Anthropic from '@anthropic-ai/sdk'
 // Initialize Anthropic client
 const anthropic = new Anthropic({
   apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || process.env.VITE_ANTHROPIC_API_KEY,
+  dangerouslyAllowBrowser: true
 });
 
 interface ProcessingResult {
