@@ -35,6 +35,8 @@ function Docs() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedFilesForProcessing, setSelectedFilesForProcessing] = useState<string[]>([]);
   const [selectedDocumentType, setSelectedDocumentType] = useState<string | null>(null);
+  const [showDuplicatePopup, setShowDuplicatePopup] = useState(false);
+  const [duplicateFileInfo, setDuplicateFileInfo] = useState<DocumentationFile | null>(null);
 
   // Fetch document types from the database
   const fetchDocumentTypes = async () => {
@@ -88,10 +90,15 @@ function Docs() {
       if (error) throw error;
 
       // Filter out files with missing file_path or any other issues
+      // Also exclude files under the file_types folder
       const validFiles = (data || []).filter(file => 
         file && file.file_path && 
         // Only include files that exist (should be all, but double-check)
-        !(hasIsDeletedColumn && file.is_deleted === true)
+        !(hasIsDeletedColumn && file.is_deleted === true) &&
+        // Exclude files under the file_types folder at the repo root
+        // The path could be like "/file_types/..." or start with "file_types/..."
+        !file.file_path.includes('/file_types/') && 
+        !file.file_path.startsWith('file_types/')
       );
 
       console.log(`Fetched ${data?.length || 0} files, ${validFiles.length} valid files after filtering`);
@@ -123,6 +130,61 @@ function Docs() {
       isExpanded: true
     };
     
+    // Create a map to track filename occurrences for detecting duplicates
+    // We'll store file paths in a map keyed by filename
+    const filenameMap = new Map<string, string[]>();
+    
+    // First pass: group files by filename
+    files.forEach(file => {
+      if (file.file_path) {
+        const filename = file.file_path.split('/').pop() || '';
+        const paths = filenameMap.get(filename) || [];
+        paths.push(file.file_path);
+        filenameMap.set(filename, paths);
+      }
+    });
+    
+    // Create another map that for each file path, stores the path of its duplicate (if any)
+    const duplicatePathMap = new Map<string, string>();
+    
+    // Loop through each group of files with the same filename
+    filenameMap.forEach((paths, filename) => {
+      // If there are multiple paths and none are in file_types
+      if (paths.length > 1 && !paths.some(path => 
+        path.includes('/file_types/') || path.startsWith('file_types/')
+      )) {
+        // For each path, store the first different path as its duplicate
+        paths.forEach((path, index) => {
+          // Find the first path that's different from this one
+          const otherPath = paths.find(p => p !== path);
+          if (otherPath) {
+            duplicatePathMap.set(path, otherPath);
+          }
+        });
+      }
+    });
+    
+    // Log duplicate files for debugging - but exclude duplicates where one is in file_types folder
+    const duplicatesFound = Array.from(filenameMap.entries())
+      .filter(([_, paths]) => {
+        // Only count as duplicate if there are multiple paths AND 
+        // they're not just duplicates because one is in file_types
+        if (paths.length <= 1) return false;
+        
+        // Check if any of the duplicates are in file_types - if so, don't count as true duplicate
+        const hasFileTypesPath = paths.some(path => 
+          path.includes('/file_types/') || path.startsWith('file_types/')
+        );
+        
+        // If it has a path in file_types, and other paths elsewhere, don't count as duplicate
+        return !hasFileTypesPath;
+      })
+      .map(([name, paths]) => `${name} (${paths.length} copies)`);
+      
+    if (duplicatesFound.length > 0) {
+      console.log(`Found ${duplicatesFound.length} genuine duplicate filenames:`, duplicatesFound);
+    }
+    
     // Group files by document_type_id
     const groups: Record<string, DocumentationFile[]> = {};
     
@@ -146,8 +208,30 @@ function Docs() {
         groups[typeId] = [];
       }
       
-      // Add file to its group
-      groups[typeId].push(file);
+      // Check if this file has duplicate filenames
+      const filename = file.file_path.split('/').pop() || '';
+      const paths = filenameMap.get(filename) || [];
+      
+      // Only mark as duplicate if:
+      // 1. There are multiple paths with the same filename, AND
+      // 2. None of the paths are in the file_types folder
+      const isDuplicate = paths.length > 1 && !paths.some(path => 
+        path.includes('/file_types/') || path.startsWith('file_types/')
+      );
+      
+      // Get the path to the other duplicate file (if any)
+      const duplicatePath = duplicatePathMap.get(file.file_path);
+      
+      // Add the file to its group with the duplicate flag and duplicate path
+      groups[typeId].push({
+        ...file,
+        // Add custom properties to indicate duplicate and duplicate path
+        metadata: {
+          ...file.metadata,
+          hasDuplicateFilename: isDuplicate,
+          duplicateFilePath: duplicatePath // Path to the other file with the same name
+        }
+      });
     });
     
     // Convert groups to array of DocumentTypeGroup
@@ -160,17 +244,28 @@ function Docs() {
       // Get document type from map
       const documentType = typeMap.get(typeId);
       
+      // Get group name
+      const groupName = documentType ? documentType.document_type : 'Uncategorized';
+      
+      // Determine if this group should be expanded by default
+      // External Library Documentation and Readme should be collapsed
+      const shouldBeExpanded = 
+        groupName !== 'External Library Documentation' && 
+        groupName !== 'Readme' &&
+        !groupName.toLowerCase().includes('external library') && 
+        !groupName.toLowerCase().includes('readme');
+      
       // Create group
       const group: DocumentTypeGroup = {
         id: typeId,
-        name: documentType ? documentType.document_type : 'Uncategorized',
+        name: groupName,
         files: files.sort((a, b) => {
           // Sort files by created_at (newest first)
           const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
           const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
           return dateB - dateA;
         }),
-        isExpanded: true
+        isExpanded: shouldBeExpanded
       };
       
       result.push(group);
@@ -178,6 +273,30 @@ function Docs() {
     
     // Sort groups alphabetically by name
     result.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Move "External Library Documentation" and "Readme" to the end
+    // and make them collapsed by default
+    const externalLibIndex = result.findIndex(group => 
+      group.name === 'External Library Documentation' || 
+      group.name.toLowerCase().includes('external library')
+    );
+    
+    if (externalLibIndex !== -1) {
+      const externalLib = result.splice(externalLibIndex, 1)[0];
+      externalLib.isExpanded = false; // Collapsed by default
+      result.push(externalLib);
+    }
+    
+    const readmeIndex = result.findIndex(group => 
+      group.name === 'Readme' || 
+      group.name.toLowerCase().includes('readme')
+    );
+    
+    if (readmeIndex !== -1) {
+      const readme = result.splice(readmeIndex, 1)[0];
+      readme.isExpanded = false; // Collapsed by default
+      result.push(readme);
+    }
     
     // Move "Uncategorized" to the end if it exists
     const uncategorizedIndex = result.findIndex(group => group.id === 'unknown');
@@ -237,41 +356,17 @@ function Docs() {
       if (selectedTags.length > 0) {
         console.log('Filtering by selected tags:', selectedTags);
         
-        // Use Postgres array contains operator to find exact tag matches
-        let tagConditions = [];
+        console.log('Setting up simple tag filter for:', selectedTags);
         
-        // Use array containment operator (@>) for exact matches
-        // For each tag, check if it's exactly in either of the tag arrays
-        selectedTags.forEach(tag => {
-          // Since our selectedTags are normalized, convert both arrays to lowercase for comparison
-          // Use array_to_string + lower for case-insensitive array matching of exact tags
-          const normalizedTag = tag.trim().toLowerCase();
+        // The simplest and most direct approach:
+        // Just filter on the first selected tag
+        if (selectedTags.length > 0) {
+          const singleTag = selectedTags[0].trim().toLowerCase();
           
-          // Escape the tag for SQL safety by replacing single quotes
-          const escapedTag = normalizedTag.replace(/'/g, "''");
+          // This uses the array containment operator directly
+          query = query.or(`ai_generated_tags::text ilike '%${singleTag}%',manual_tags::text ilike '%${singleTag}%'`);
           
-          // Use simple containment with array operators - most compatible approach
-          tagConditions.push(`'${escapedTag}' = ANY(ai_generated_tags)`);
-          tagConditions.push(`'${escapedTag}' = ANY(manual_tags)`);
-          
-          // Also try with lowercase for case-insensitive matching
-          tagConditions.push(`'${escapedTag}' = ANY(ARRAY(SELECT lower(unnest(ai_generated_tags))))`);
-          tagConditions.push(`'${escapedTag}' = ANY(ARRAY(SELECT lower(unnest(manual_tags))))`);
-          
-          // Try direct array containment too, in case the previous methods don't work
-          tagConditions.push(`ai_generated_tags && ARRAY['${escapedTag}']`);
-          tagConditions.push(`manual_tags && ARRAY['${escapedTag}']`);
-        });
-        
-        // Add this condition to our query
-        const filterCondition = tagConditions.join(' or ');
-        console.log('Using exact tag filter condition:', filterCondition);
-        
-        // Apply the filter to the query
-        if (hasTextSearch) {
-          query = query.or(filterCondition);
-        } else {
-          query = query.filter(filterCondition);
+          console.log(`Filtering on tag: "${singleTag}"`);
         }
       }
       
@@ -282,16 +377,23 @@ function Docs() {
       if (error) throw error;
 
       // Filter out files with missing file_path or any other issues
+      // Also exclude files under the file_types folder
       let validFiles = (data || []).filter(file => 
         file && file.file_path && 
         // Only include files that exist (should be all, but double-check)
-        !(hasIsDeletedColumn && file.is_deleted === true)
+        !(hasIsDeletedColumn && file.is_deleted === true) &&
+        // Exclude files under the file_types folder at the repo root
+        // The path could be like "/file_types/..." or start with "file_types/..."
+        !file.file_path.includes('/file_types/') && 
+        !file.file_path.startsWith('file_types/')
       );
       
-      // If only one tag is selected, the database query should be sufficient
-      // But if multiple tags are selected, we still need client-side filtering for the AND condition
-      if (selectedTags.length > 1) {
-        console.log(`Client-side filtering for documents with ALL ${selectedTags.length} selected tags`);
+      // Client-side filtering to ensure proper tag matching
+      // This is needed to ensure each document has EXACTLY the tag that was selected
+      if (selectedTags.length > 0) {
+        console.log(`Client-side filtering for files matching ${selectedTags.length} selected tags...`);
+        
+        const startingCount = validFiles.length;
         
         validFiles = validFiles.filter(file => {
           try {
@@ -302,34 +404,40 @@ function Docs() {
             if (file.ai_generated_tags && Array.isArray(file.ai_generated_tags)) {
               fileTags.push(...file.ai_generated_tags
                 .filter(Boolean)
-                .map(tag => tag.toString().toLowerCase().trim()));
+                .map(tag => String(tag).toLowerCase().trim()));
             }
             
             // Process manual_tags
             if (file.manual_tags && Array.isArray(file.manual_tags)) {
               fileTags.push(...file.manual_tags
                 .filter(Boolean)
-                .map(tag => tag.toString().toLowerCase().trim()));
+                .map(tag => String(tag).toLowerCase().trim()));
             }
             
-            // Check if ALL selected tags are in this file's tags
-            const hasAllTags = selectedTags.every(selectedTag => {
+            // Simple logging to debug available tags
+            if (Math.random() < 0.1) { // Log only 10% of files to avoid console spam
+              console.log(`File tags for ${file.file_path}:`, fileTags);
+            }
+            
+            // For each selected tag, check if it exists in this file's tags
+            // Using simple array.includes for exact matching
+            const hasRequiredTags = selectedTags.every(selectedTag => {
               const normalizedSelectedTag = selectedTag.toLowerCase().trim();
               return fileTags.includes(normalizedSelectedTag);
             });
             
-            // Debug logging for important cases
-            if (hasAllTags) {
-              console.log(`✅ MATCH: ${file.file_path} has ALL selected tags:`, 
-                selectedTags.map(t => t.toLowerCase().trim()));
+            if (hasRequiredTags) {
+              console.log(`✅ MATCH: "${file.file_path}" matches all tags:`, selectedTags);
             }
             
-            return hasAllTags;
+            return hasRequiredTags;
           } catch (error) {
             console.error('Error in client-side tag filtering:', error);
             return false;
           }
         });
+        
+        console.log(`Client-side filtering reduced results from ${startingCount} to ${validFiles.length} files`);
       }
 
       // Log detailed results if tag filtering was applied
@@ -534,6 +642,65 @@ function Docs() {
     }
   };
 
+  // Fetch file details by path
+  const fetchFileDetailsByPath = async (filePath: string): Promise<DocumentationFile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('documentation_files')
+        .select('*')
+        .eq('file_path', filePath)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching file details by path:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Exception fetching file details by path:', error);
+      return null;
+    }
+  };
+  
+  // Show duplicate file info popup
+  const showDuplicateFileInfo = async (filePath: string) => {
+    if (!filePath) {
+      toast.error("No duplicate file path available");
+      return;
+    }
+    
+    // First try to find the file in our current loaded files (faster)
+    const fileInMemory = documentationFiles.find(f => f.file_path === filePath);
+    
+    if (fileInMemory) {
+      setDuplicateFileInfo(fileInMemory);
+      setShowDuplicatePopup(true);
+      return;
+    }
+    
+    // If not found in memory, fetch from database
+    const fileFromDb = await fetchFileDetailsByPath(filePath);
+    
+    if (fileFromDb) {
+      setDuplicateFileInfo(fileFromDb);
+      setShowDuplicatePopup(true);
+    } else {
+      // If we can't find it in the database, create a minimal file object
+      setDuplicateFileInfo({
+        id: '',
+        file_path: filePath,
+        created_at: null,
+        updated_at: null,
+        title: filePath.split('/').pop() || '',
+        metadata: {
+          size: 0
+        }
+      } as DocumentationFile);
+      setShowDuplicatePopup(true);
+    }
+  };
+  
   // Select a file to view
   const selectFile = (file: DocumentationFile) => {
     // Verify file is not deleted before selecting
@@ -580,66 +747,93 @@ function Docs() {
   };
   
   // Handle document deletion
-  const handleDeleteFile = async (file: DocumentationFile) => {
-    if (!file || !file.id) {
+  const handleDeleteFile = async (file: DocumentationFile, byPath: boolean = false) => {
+    if (!file) {
       toast.error('Invalid file selected for deletion');
       return;
     }
     
     setLoading(true);
     try {
-      // Mark the file as deleted in the database
-      const { error: updateError } = await supabase
-        .from('documentation_files')
-        .update({ is_deleted: true })
-        .eq('id', file.id);
+      let updateResult;
       
-      if (updateError) {
-        throw updateError;
-      }
-      
-      // Call API to request physical file deletion (if needed)
-      try {
-        const response = await fetch('/api/docs-sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            action: 'delete-file',
-            fileId: file.id,
-            filePath: file.file_path 
-          })
-        });
+      // Check if we're deleting by ID or by path
+      if (!byPath && file.id) {
+        // Mark the file as deleted in the database by ID
+        const { error: updateError } = await supabase
+          .from('documentation_files')
+          .update({ is_deleted: true })
+          .eq('id', file.id);
         
-        if (!response.ok) {
-          console.warn(`API returned status ${response.status} when attempting to delete file physically`);
+        if (updateError) {
+          throw updateError;
         }
-      } catch (apiError) {
-        console.error('Error calling delete file API:', apiError);
-        // Continue anyway as the db update is more important
+        
+        updateResult = { success: true };
+      } else if (byPath && file.file_path) {
+        // Mark the file as deleted in the database by file_path
+        const { error: updateError } = await supabase
+          .from('documentation_files')
+          .update({ is_deleted: true })
+          .eq('file_path', file.file_path);
+        
+        if (updateError) {
+          throw updateError;
+        }
+        
+        updateResult = { success: true };
+      } else {
+        throw new Error('Missing file ID or path for deletion');
       }
       
-      // Extract just the filename for the success message
-      const fileName = file.file_path.split('/').pop();
-      toast.success(`File "${fileName}" has been marked as deleted`);
-      
-      // Update the UI
-      // Remove the file from the current documentationFiles list
-      setDocumentationFiles(prev => prev.filter(f => f.id !== file.id));
-      
-      // Rebuild groups to reflect the deleted file
-      const updatedGroups = buildDocumentTypeGroups(
-        documentationFiles.filter(f => f.id !== file.id),
-        documentTypes
-      );
-      setDocumentTypeGroups(updatedGroups);
-      
-      // If the currently selected file was deleted, clear selection
-      if (selectedFile?.id === file.id) {
-        setSelectedFile(null);
+      if (updateResult.success) {
+        // Call API to request physical file deletion
+        try {
+          const response = await fetch('/api/docs-sync', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+              action: 'delete-file',
+              fileId: file.id || null,
+              filePath: file.file_path 
+            })
+          });
+          
+          if (!response.ok) {
+            console.warn(`API returned status ${response.status} when attempting to delete file physically`);
+          }
+        } catch (apiError) {
+          console.error('Error calling delete file API:', apiError);
+          // Continue anyway as the db update is more important
+        }
+        
+        // Extract just the filename for the success message
+        const fileName = file.file_path.split('/').pop();
+        toast.success(`File "${fileName}" has been marked as deleted`);
+        
+        // Update the UI
+        // Remove the file from the current documentationFiles list
+        setDocumentationFiles(prev => prev.filter(f => 
+          (f.id && file.id) ? f.id !== file.id : f.file_path !== file.file_path
+        ));
+        
+        // Rebuild groups to reflect the deleted file
+        const updatedGroups = buildDocumentTypeGroups(
+          documentationFiles.filter(f => 
+            (f.id && file.id) ? f.id !== file.id : f.file_path !== file.file_path
+          ),
+          documentTypes
+        );
+        setDocumentTypeGroups(updatedGroups);
+        
+        // If the currently selected file was deleted, clear selection
+        if ((selectedFile?.id && file.id && selectedFile.id === file.id) || 
+            (selectedFile?.file_path === file.file_path)) {
+          setSelectedFile(null);
+        }
       }
-      
     } catch (error) {
       console.error('Error deleting file:', error);
       toast.error(`Failed to delete file: ${error.message || 'Unknown error'}`);
@@ -808,7 +1002,55 @@ function Docs() {
                     onClick={() => selectFile(file)}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="font-medium">{file.title || file.file_path.split('/').pop()}</div>
+                      <div className="flex items-center">
+                        <div className="font-medium">{file.title || file.file_path.split('/').pop()}</div>
+                        
+                        {/* Duplicate filename indicator */}
+                        {file.metadata?.hasDuplicateFilename && (
+                          <div 
+                            className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-full flex items-center font-medium cursor-pointer hover:bg-red-200"
+                            title={`Click to view duplicate file info. Filename: ${file.file_path.split('/').pop()}`}
+                            onClick={async (e) => {
+                              e.stopPropagation(); // Prevent file selection
+                              
+                              // Get the path to the duplicate file
+                              const duplicatePath = file.metadata?.duplicateFilePath;
+                              
+                              if (!duplicatePath) {
+                                toast.error("Couldn't find the duplicate file path");
+                                return;
+                              }
+                              
+                              // Copy the duplicate file path to clipboard
+                              navigator.clipboard.writeText(duplicatePath)
+                                .then(() => {
+                                  // Show a toast notification with longer duration
+                                  toast.success(`Duplicate file path copied: ${duplicatePath}`, {
+                                    duration: 10000, // 10 seconds
+                                    position: 'bottom-center',
+                                    style: {
+                                      maxWidth: '80vw',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis'
+                                    }
+                                  });
+                                  
+                                  // Show the duplicate file info popup
+                                  showDuplicateFileInfo(duplicatePath);
+                                })
+                                .catch(err => {
+                                  console.error('Failed to copy path:', err);
+                                  toast.error('Failed to copy path to clipboard');
+                                });
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            Duplicate
+                          </div>
+                        )}
+                      </div>
                       
                       {/* Status recommendation badge with conditional styling */}
                       {(file.status_recommendation || 
@@ -939,10 +1181,36 @@ function Docs() {
     setSelectedTags(prev => {
       // If tag is already selected, remove it
       if (prev.includes(normalizedTag)) {
-        return prev.filter(t => t !== normalizedTag);
+        const result = prev.filter(t => t !== normalizedTag);
+        console.log(`Tag "${normalizedTag}" removed, selected tags now:`, result);
+        return result;
       }
       // Otherwise, add it
-      return [...prev, normalizedTag];
+      const result = [...prev, normalizedTag];
+      console.log(`Tag "${normalizedTag}" added, selected tags now:`, result);
+      return result;
+    });
+  };
+  
+  // Helper function for debugging tag issues
+  const debugTagFilter = (docTags, selectedTag) => {
+    if (!docTags || !Array.isArray(docTags)) {
+      console.log("Document tags not available or not an array");
+      return [];
+    }
+    
+    // Map all tags and show if they match the selected tag
+    return docTags.map(tag => {
+      const normalizedTag = String(tag).toLowerCase().trim();
+      const normalizedSelectedTag = selectedTag.toLowerCase().trim();
+      const isMatch = normalizedTag === normalizedSelectedTag;
+      
+      return {
+        original: tag,
+        normalized: normalizedTag,
+        selectedTag: normalizedSelectedTag,
+        isMatch
+      };
     });
   };
   
@@ -1105,9 +1373,20 @@ function Docs() {
                     <button
                       key={tag}
                       onClick={() => {
-                        toggleTag(tag);
-                        // Use setTimeout to ensure state update completes before search
-                        setTimeout(() => handleSearch(), 0);
+                        // Direct approach: set just this one tag and search immediately
+                        const clickedTag = tag.trim().toLowerCase();
+                        console.log(`Tag clicked: "${clickedTag}"`);
+                        
+                        // If it's already selected, clear it
+                        if (selectedTags.includes(clickedTag)) {
+                          setSelectedTags([]);
+                        } else {
+                          // Otherwise, set just this one tag
+                          setSelectedTags([clickedTag]);
+                        }
+                        
+                        // Use setTimeout to ensure state is updated before search
+                        setTimeout(() => handleSearch(), 50);
                       }}
                       className={`text-xs px-3 py-1.5 rounded-full flex items-center transition-colors ${
                         selectedTags.includes(tag.trim().toLowerCase())
@@ -1209,7 +1488,55 @@ function Docs() {
                 className="p-3 bg-gray-50 flex justify-between items-center cursor-pointer border-b"
                 onClick={() => setShowFileSummary(!showFileSummary)}
               >
-                <h2 className="text-lg font-semibold">{selectedFile.title || selectedFile.file_path.split('/').pop()}</h2>
+                <div className="flex items-center">
+                  <h2 className="text-lg font-semibold">{selectedFile.title || selectedFile.file_path.split('/').pop()}</h2>
+                  
+                  {/* Duplicate indicator in file detail view */}
+                  {selectedFile.metadata?.hasDuplicateFilename && (
+                    <div 
+                      className="ml-3 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-full flex items-center font-medium cursor-pointer hover:bg-red-200"
+                      title={`Click to view duplicate file info. Filename: ${selectedFile.file_path.split('/').pop()}`}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent summary toggle
+                        
+                        // Get the path to the duplicate file
+                        const duplicatePath = selectedFile.metadata?.duplicateFilePath;
+                        
+                        if (!duplicatePath) {
+                          toast.error("Couldn't find the duplicate file path");
+                          return;
+                        }
+                        
+                        // Copy the duplicate file path to clipboard
+                        navigator.clipboard.writeText(duplicatePath)
+                          .then(() => {
+                            // Show a toast notification with longer duration
+                            toast.success(`Duplicate file path copied: ${duplicatePath}`, {
+                              duration: 10000, // 10 seconds
+                              position: 'bottom-center',
+                              style: {
+                                maxWidth: '80vw',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }
+                            });
+                            
+                            // Show the duplicate file info popup
+                            showDuplicateFileInfo(duplicatePath);
+                          })
+                          .catch(err => {
+                            console.error('Failed to copy path:', err);
+                            toast.error('Failed to copy path to clipboard');
+                          });
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Duplicate Filename
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center">
                   <span className="text-sm text-gray-500 mr-2">{selectedFile.file_path}</span>
                   <span>{showFileSummary ? '▲' : '▼'}</span>
@@ -1462,6 +1789,77 @@ function Docs() {
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mr-2 inline-block"></div>
             Loading...
+          </div>
+        </div>
+      )}
+      
+      {/* Duplicate file info popup */}
+      {showDuplicatePopup && duplicateFileInfo && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-5 rounded-lg shadow-lg max-w-md w-full">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-lg font-semibold">Duplicate File Information</h3>
+              <button 
+                className="text-gray-500 hover:text-gray-700"
+                onClick={() => setShowDuplicatePopup(false)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-4 pb-3 border-b">
+              <div className="font-medium text-blue-800 mb-1">Filename</div>
+              <div className="text-md">{duplicateFileInfo.file_path.split('/').pop()}</div>
+            </div>
+            
+            <div className="mb-4 pb-3 border-b">
+              <div className="font-medium text-blue-800 mb-1">Full Path</div>
+              <div className="text-sm bg-gray-50 p-2 rounded overflow-x-auto">{duplicateFileInfo.file_path}</div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-4 pb-3 border-b">
+              <div>
+                <div className="font-medium text-blue-800 mb-1">Size</div>
+                <div>{formatFileSize(duplicateFileInfo.metadata?.size)}</div>
+              </div>
+              <div>
+                <div className="font-medium text-blue-800 mb-1">Created</div>
+                <div>{formatDate(duplicateFileInfo.created_at)}</div>
+              </div>
+            </div>
+            
+            <div className="flex justify-between">
+              <button 
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                onClick={() => setShowDuplicatePopup(false)}
+              >
+                Close
+              </button>
+              <button 
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center"
+                onClick={() => {
+                  // Confirm deletion
+                  const confirmDelete = window.confirm(
+                    `Are you sure you want to delete the duplicate file: "${duplicateFileInfo.file_path}"?`
+                  );
+                  
+                  if (confirmDelete) {
+                    // Close popup
+                    setShowDuplicatePopup(false);
+                    
+                    // Delete the file
+                    handleDeleteFile(duplicateFileInfo, true);
+                  }
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete File
+              </button>
+            </div>
           </div>
         </div>
       )}
