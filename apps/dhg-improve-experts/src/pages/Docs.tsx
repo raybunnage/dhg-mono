@@ -8,31 +8,52 @@ import { Database } from '@/integrations/supabase/types';
 // Type for documentation files
 type DocumentationFile = Database['public']['Tables']['documentation_files']['Row'];
 
-// Type for our hierarchical file structure
-interface FileNode {
+// Type for document types
+type DocumentType = Database['public']['Tables']['document_types']['Row'];
+
+// Type for our document type grouping
+interface DocumentTypeGroup {
   id: string;
   name: string;
-  type: 'file' | 'folder';
-  path: string;
-  children?: FileNode[];
-  file?: DocumentationFile;
+  files: DocumentationFile[];
   isExpanded: boolean;
 }
 
 // Main component for the Docs page
 function Docs() {
   const [documentationFiles, setDocumentationFiles] = useState<DocumentationFile[]>([]);
-  const [fileTree, setFileTree] = useState<FileNode[]>([]);
+  const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
+  const [documentTypeGroups, setDocumentTypeGroups] = useState<DocumentTypeGroup[]>([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<DocumentationFile | null>(null);
   const [loading, setLoading] = useState(false);
   const [showFileSummary, setShowFileSummary] = useState(false);
 
+  // Fetch document types from the database
+  const fetchDocumentTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('document_types')
+        .select('*')
+        .order('document_type', { ascending: true });
+
+      if (error) throw error;
+      setDocumentTypes(data || []);
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching document types:', error);
+      return [];
+    }
+  };
+
   // Fetch documentation files from the database
   const fetchDocumentationFiles = async () => {
     setLoading(true);
     try {
+      // First fetch document types
+      const types = await fetchDocumentTypes();
+      
       // Check if the is_deleted column exists by trying to filter by it
       const checkResponse = await supabase
         .from('documentation_files')
@@ -55,8 +76,8 @@ function Docs() {
       }
       
       const { data, error, count } = await query
-        .order('file_path', { ascending: true })
-        .limit(100);
+        .order('updated_at', { ascending: false })
+        .limit(500);
 
       if (error) throw error;
 
@@ -72,9 +93,9 @@ function Docs() {
       setDocumentationFiles(validFiles);
       setTotalRecords(count || 0);
       
-      // Build file tree
-      const tree = buildFileTree(validFiles);
-      setFileTree(tree);
+      // Build document type groups
+      const groups = buildDocumentTypeGroups(validFiles, types);
+      setDocumentTypeGroups(groups);
     } catch (error) {
       console.error('Error fetching documentation files:', error);
     } finally {
@@ -82,149 +103,93 @@ function Docs() {
     }
   };
 
-  // Build hierarchical file tree from flat list
-  const buildFileTree = (files: DocumentationFile[]): FileNode[] => {
-    const root: FileNode[] = [];
-    const folderMap: Record<string, FileNode> = {};
+  // Build document type groups from files
+  const buildDocumentTypeGroups = (files: DocumentationFile[], types: DocumentType[]): DocumentTypeGroup[] => {
+    // Create a map for quick document type lookup
+    const typeMap = new Map<string, DocumentType>();
+    types.forEach(type => typeMap.set(type.id, type));
     
-    // Skip soft-deleted files or files with invalid paths
-    // This is a safety check in case the database query didn't filter them
-    const validFiles = files.filter(file => {
+    // Create a default "Unknown" type for files without a document_type_id
+    const defaultGroup: DocumentTypeGroup = {
+      id: 'unknown',
+      name: 'Uncategorized',
+      files: [],
+      isExpanded: true
+    };
+    
+    // Group files by document_type_id
+    const groups: Record<string, DocumentationFile[]> = {};
+    
+    files.forEach(file => {
+      // Skip invalid files
       if (!file.file_path) {
         console.warn(`File ${file.id} has no file_path, skipping`);
-        return false;
+        return;
       }
       
       if (file.is_deleted) {
         console.warn(`File ${file.file_path} is marked as deleted, skipping`);
-        return false;
+        return;
       }
       
-      return true;
-    });
-    
-    console.log(`Building file tree from ${validFiles.length} valid files out of ${files.length} total`);
-    
-    // First pass: create all folder nodes
-    validFiles.forEach(file => {
-      const pathParts = file.file_path.split('/');
+      // Get document_type_id, defaulting to unknown if not found
+      const typeId = file.document_type_id || 'unknown';
       
-      // Create folder nodes for each part of the path
-      let currentPath = '';
-      for (let i = 0; i < pathParts.length - 1; i++) {
-        const part = pathParts[i];
-        currentPath = currentPath ? `${currentPath}/${part}` : part;
-        
-        if (!folderMap[currentPath]) {
-          folderMap[currentPath] = {
-            id: `folder_${currentPath}`,
-            name: part,
-            type: 'folder',
-            path: currentPath,
-            children: [],
-            isExpanded: true
-          };
-        }
+      // Create group array if it doesn't exist
+      if (!groups[typeId]) {
+        groups[typeId] = [];
       }
+      
+      // Add file to its group
+      groups[typeId].push(file);
     });
     
-    // Second pass: create file nodes and add to parent folders
-    validFiles.forEach(file => {
-      const pathParts = file.file_path.split('/');
-      const fileName = pathParts[pathParts.length - 1];
+    // Convert groups to array of DocumentTypeGroup
+    const result: DocumentTypeGroup[] = [];
+    
+    Object.entries(groups).forEach(([typeId, files]) => {
+      // Skip empty groups
+      if (files.length === 0) return;
       
-      const fileNode: FileNode = {
-        id: file.id,
-        name: file.title || fileName,
-        type: 'file',
-        path: file.file_path,
-        file: file,
+      // Get document type from map
+      const documentType = typeMap.get(typeId);
+      
+      // Create group
+      const group: DocumentTypeGroup = {
+        id: typeId,
+        name: documentType ? documentType.document_type : 'Uncategorized',
+        files: files.sort((a, b) => {
+          // Sort files by updated_at (newest first)
+          const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+          const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+          return dateB - dateA;
+        }),
         isExpanded: true
       };
       
-      // Add file to parent folder or root
-      if (pathParts.length === 1) {
-        // Root-level file
-        root.push(fileNode);
-      } else {
-        // Nested file
-        const parentPath = pathParts.slice(0, pathParts.length - 1).join('/');
-        if (folderMap[parentPath]) {
-          folderMap[parentPath].children?.push(fileNode);
-        } else {
-          // Fallback: add to root if parent folder not found
-          root.push(fileNode);
-        }
-      }
+      result.push(group);
     });
     
-    // Third pass: add folder hierarchy
-    Object.keys(folderMap).forEach(path => {
-      const pathParts = path.split('/');
-      
-      if (pathParts.length === 1) {
-        // Root-level folder
-        root.push(folderMap[path]);
-      } else {
-        // Nested folder
-        const parentPath = pathParts.slice(0, pathParts.length - 1).join('/');
-        if (folderMap[parentPath]) {
-          folderMap[parentPath].children?.push(folderMap[path]);
-        } else {
-          // Fallback: add to root if parent folder not found
-          root.push(folderMap[path]);
-        }
-      }
-    });
+    // Sort groups alphabetically by name
+    result.sort((a, b) => a.name.localeCompare(b.name));
     
-    // Fourth pass: remove empty folders
-    const removeEmptyFolders = (nodes: FileNode[]): FileNode[] => {
-      return nodes.filter(node => {
-        if (node.type === 'folder' && node.children) {
-          node.children = removeEmptyFolders(node.children);
-          return node.children.length > 0;
-        }
-        return true;
-      });
-    };
+    // Move "Uncategorized" to the end if it exists
+    const uncategorizedIndex = result.findIndex(group => group.id === 'unknown');
+    if (uncategorizedIndex !== -1) {
+      const uncategorized = result.splice(uncategorizedIndex, 1)[0];
+      result.push(uncategorized);
+    }
     
-    const cleanedRoot = removeEmptyFolders(root);
-    
-    // Sort root nodes
-    cleanedRoot.sort((a, b) => {
-      // Folders come before files
-      if (a.type !== b.type) {
-        return a.type === 'folder' ? -1 : 1;
-      }
-      // Alphabetical sorting
-      return a.name.localeCompare(b.name);
-    });
-    
-    // Sort children recursively
-    const sortFolderContents = (node: FileNode) => {
-      if (node.type === 'folder' && node.children && node.children.length > 0) {
-        node.children.sort((a, b) => {
-          if (a.type !== b.type) {
-            return a.type === 'folder' ? -1 : 1;
-          }
-          return a.name.localeCompare(b.name);
-        });
-        
-        // Recursively sort children
-        node.children.forEach(sortFolderContents);
-      }
-    };
-    
-    // Apply sorting to all folders
-    cleanedRoot.forEach(sortFolderContents);
-    
-    return cleanedRoot;
+    return result;
   };
 
   // Handle the search functionality
   const handleSearch = async () => {
     setLoading(true);
     try {
+      // Get document types first
+      const types = await fetchDocumentTypes();
+      
       // Check if the is_deleted column exists
       const checkResponse = await supabase
         .from('documentation_files')
@@ -238,7 +203,7 @@ function Docs() {
       let query = supabase
         .from('documentation_files')
         .select('*')
-        .ilike('file_path', `%${searchQuery}%`);
+        .or(`file_path.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%,summary.ilike.%${searchQuery}%`);
         
       // Filter out soft-deleted files if the column exists
       if (hasIsDeletedColumn) {
@@ -246,7 +211,7 @@ function Docs() {
       }
       
       const { data, error } = await query
-        .order('file_path', { ascending: true })
+        .order('updated_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
@@ -262,9 +227,9 @@ function Docs() {
       
       setDocumentationFiles(validFiles);
       
-      // Update tree view
-      const tree = buildFileTree(validFiles);
-      setFileTree(tree);
+      // Update document type groups
+      const groups = buildDocumentTypeGroups(validFiles, types);
+      setDocumentTypeGroups(groups);
     } catch (error) {
       console.error('Error searching documentation files:', error);
     } finally {
@@ -317,21 +282,15 @@ function Docs() {
     setSelectedFile(file);
   };
   
-  // Toggle folder expanded state
-  const toggleFolder = (nodePath: string) => {
-    // Create a deep copy of the tree
-    const updateNodeExpanded = (nodes: FileNode[]): FileNode[] => {
-      return nodes.map(node => {
-        if (node.path === nodePath && node.type === 'folder') {
-          return { ...node, isExpanded: !node.isExpanded };
-        } else if (node.children) {
-          return { ...node, children: updateNodeExpanded(node.children) };
-        }
-        return node;
-      });
-    };
-    
-    setFileTree(updateNodeExpanded(fileTree));
+  // Toggle document type group expanded state
+  const toggleDocumentTypeGroup = (groupId: string) => {
+    setDocumentTypeGroups(
+      documentTypeGroups.map(group => 
+        group.id === groupId 
+          ? { ...group, isExpanded: !group.isExpanded }
+          : group
+      )
+    );
   };
   
   // Format file size
@@ -349,37 +308,39 @@ function Docs() {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
-  // Recursive component to render file tree
-  const renderFileTree = (nodes: FileNode[]) => {
-    return nodes.map(node => (
-      <div key={node.id} className="pl-2">
-        {node.type === 'folder' ? (
-          <div>
-            <div 
-              className="flex items-center p-2 cursor-pointer hover:bg-gray-100 rounded"
-              onClick={() => toggleFolder(node.path)}
-            >
-              <span className="mr-1">{node.isExpanded ? '▼' : '►'}</span>
-              <span className="font-medium">{node.name}/</span>
-            </div>
-            {node.isExpanded && node.children && node.children.length > 0 && (
-              <div className="ml-4 border-l border-gray-200">
-                {renderFileTree(node.children)}
+  // Render document type groups and their files
+  const renderDocumentTypeGroups = () => {
+    return documentTypeGroups.map(group => (
+      <div key={group.id} className="mb-4">
+        <div 
+          className="flex items-center p-2 cursor-pointer hover:bg-gray-100 rounded bg-gray-50"
+          onClick={() => toggleDocumentTypeGroup(group.id)}
+        >
+          <span className="mr-2">{group.isExpanded ? '▼' : '►'}</span>
+          <span className="font-medium text-lg">{group.name}</span>
+          <span className="ml-2 text-sm text-gray-500">({group.files.length})</span>
+        </div>
+        
+        {group.isExpanded && (
+          <div className="ml-4 border-l border-gray-200">
+            {group.files.map(file => (
+              <div 
+                key={file.id}
+                className={`p-3 cursor-pointer hover:bg-gray-100 rounded my-1 ${selectedFile?.id === file.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
+                onClick={() => selectFile(file)}
+              >
+                <div className="font-medium">{file.title || file.file_path.split('/').pop()}</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  <div className="flex items-center justify-between">
+                    <div>Size: {formatFileSize(file.metadata?.size)}</div>
+                    <div>Updated: {formatDate(file.updated_at)}</div>
+                  </div>
+                  <div className="mt-1 truncate text-gray-400">
+                    {file.file_path}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        ) : (
-          <div 
-            className={`p-2 cursor-pointer hover:bg-gray-100 rounded ${selectedFile?.id === node.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
-            onClick={() => node.file && selectFile(node.file)}
-          >
-            <div className="font-medium">{node.name}</div>
-            {node.file && (
-              <div className="text-xs text-gray-500">
-                <div>Size: {formatFileSize(node.file.metadata?.size)}</div>
-                <div>Updated: {formatDate(node.file.updated_at)}</div>
-              </div>
-            )}
+            ))}
           </div>
         )}
       </div>
@@ -456,17 +417,23 @@ function Docs() {
             />
           </div>
           
-          {/* Files tree header */}
+          {/* Document types header */}
           <div className="px-4 pt-3 pb-2 border-b">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Documentation Files</h2>
-              <div className="text-sm text-gray-500">Total: {totalRecords}</div>
+              <h2 className="text-lg font-semibold">Documentation Types</h2>
+              <div className="text-sm text-gray-500">Total Files: {totalRecords}</div>
             </div>
           </div>
           
-          {/* Files tree content */}
+          {/* Document types and files */}
           <div className="p-4 overflow-auto flex-grow" style={{ maxHeight: 'calc(100vh - 250px)' }}>
-            {renderFileTree(fileTree)}
+            {documentTypeGroups.length > 0 ? (
+              renderDocumentTypeGroups()
+            ) : (
+              <div className="text-center text-gray-500 py-10">
+                {loading ? 'Loading document types...' : 'No documentation files found'}
+              </div>
+            )}
           </div>
         </div>
         

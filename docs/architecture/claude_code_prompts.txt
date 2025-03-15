@@ -1,3 +1,11 @@
+Now on the "Docs" page there are 3 buttons
+on the upper left
+1) on the "Search" button - now can you use the metadata in the documentation_files to search in addition to the other strategies you had before
+2) the "Sync Database" button need to be connected now to the scripts/markdown-report.sh script 
+3) the "Run Report & Sync" needs to changed to "Update Docs" and drive the dhg-mono/apps/dhg-improve-experts/scripts/update-docs-database.sh script
+4) a new button called "Process AI" needs to call the new cli pipeline script called 
+
+
 I have run into rate limiting issues from the claude api calls, so here is a spec to implement to address.  Now that my first batch mostly worked, when you integrate this technical spec for rate limitiing, can you also tweak my existing code to skip reprocessing if the document_type_id is not null and the assessment reocrds are filled in for an existing record in the documentation_files - no need repeating what has already been successfully done is the principle I want you to implment
 
 Here is the techincal spec:

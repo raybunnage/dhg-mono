@@ -15,6 +15,9 @@ git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- path/to/file.sh
 # real things Example: View recent commit history for the markdown report script
 git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- scripts/markdown-report.sh
 
+
+git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- scripts/script-report.sh
+
 git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- scripts/validate-ai-assets.sh
 
 
@@ -29,6 +32,8 @@ git checkout abc123 -- path/to/file.sh
 
 # real things Example: Restore the markdown report script from commit 91272de
 git checkout 12d3da3 -- scripts/markdown-report.sh
+
+git checkout db9d4fd -- scripts/script-report.sh
 
 git checkout be29a29 -- apps/dhg-improve-experts/src/pages/ClassifyDocument.tsx
 
