@@ -29,6 +29,7 @@ function Docs() {
   const [selectedFile, setSelectedFile] = useState<DocumentationFile | null>(null);
   const [loading, setLoading] = useState(false);
   const [showFileSummary, setShowFileSummary] = useState(false);
+  const [showFileMetadata, setShowFileMetadata] = useState(false);
 
   // Fetch document types from the database
   const fetchDocumentTypes = async () => {
@@ -76,7 +77,7 @@ function Docs() {
       }
       
       const { data, error, count } = await query
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(500);
 
       if (error) throw error;
@@ -159,9 +160,9 @@ function Docs() {
         id: typeId,
         name: documentType ? documentType.document_type : 'Uncategorized',
         files: files.sort((a, b) => {
-          // Sort files by updated_at (newest first)
-          const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
-          const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+          // Sort files by created_at (newest first)
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
           return dateB - dateA;
         }),
         isExpanded: true
@@ -199,11 +200,23 @@ function Docs() {
       const hasIsDeletedColumn = !checkResponse.error || 
         !checkResponse.error.message.includes('column "is_deleted" does not exist');
         
-      // Create query with search criteria
+      // Create query with enhanced search criteria
       let query = supabase
         .from('documentation_files')
-        .select('*')
-        .or(`file_path.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%,summary.ilike.%${searchQuery}%`);
+        .select('*');
+        
+      // Build advanced search for multiple fields including metadata
+      if (searchQuery.trim()) {
+        query = query.or(
+          `file_path.ilike.%${searchQuery}%,` +
+          `title.ilike.%${searchQuery}%,` +
+          `summary.ilike.%${searchQuery}%,` +
+          `ai_generated_tags.cs.{${searchQuery}},` +
+          `manual_tags.cs.{${searchQuery}},` +
+          `metadata->category.ilike.%${searchQuery}%,` +
+          `status_recommendation.ilike.%${searchQuery}%`
+        );
+      }
         
       // Filter out soft-deleted files if the column exists
       if (hasIsDeletedColumn) {
@@ -211,7 +224,7 @@ function Docs() {
       }
       
       const { data, error } = await query
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
@@ -244,20 +257,91 @@ function Docs() {
     }
   };
 
-  // Sync database using the markdownFileService
-  const syncDatabase = async () => {
+  // Run the markdown-report.sh script
+  const runMarkdownReport = async () => {
     setLoading(true);
     try {
-      const result = await markdownFileService.syncDocumentationFiles();
+      const response = await fetch('/api/markdown-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const result = await response.json();
       if (result.success) {
-        alert(`Sync successful: ${result.message}`);
+        alert(`Markdown report generated successfully`);
         fetchDocumentationFiles(); // Refresh the data
       } else {
-        alert(`Sync failed: ${result.message}`);
+        alert(`Failed to generate markdown report: ${result.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error syncing database:', error);
-      alert('Error syncing database. Check console for details.');
+      console.error('Error running markdown report:', error);
+      alert(`Error running markdown report: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Run the update-docs-database.sh script
+  const updateDocsDatabase = async () => {
+    setLoading(true);
+    try {
+      // Execute update-docs-database.sh via API endpoint
+      const response = await fetch('/api/docs-sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: 'update' })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        alert(`Documentation database updated successfully`);
+        fetchDocumentationFiles(); // Refresh the data
+      } else {
+        alert(`Failed to update docs database: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating docs database:', error);
+      alert(`Error updating docs database: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Process docs with AI batch processing
+  const processDocsWithAI = async () => {
+    setLoading(true);
+    try {
+      // Execute process-docs-batch.sh via API endpoint
+      const response = await fetch('/api/docs-process-queue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          action: 'process',
+          options: {
+            all: true,
+            limit: 20,
+            batchSize: 5
+          }
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        alert(`Started AI processing of documentation: ${result.message}`);
+        // Wait a bit to allow processing to start before refreshing
+        setTimeout(() => fetchDocumentationFiles(), 2000);
+      } else {
+        alert(`Failed to start AI processing: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error starting AI processing:', error);
+      alert(`Error starting AI processing: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -329,11 +413,25 @@ function Docs() {
                 className={`p-3 cursor-pointer hover:bg-gray-100 rounded my-1 ${selectedFile?.id === file.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
                 onClick={() => selectFile(file)}
               >
-                <div className="font-medium">{file.title || file.file_path.split('/').pop()}</div>
+                <div className="flex items-center justify-between">
+                  <div className="font-medium">{file.title || file.file_path.split('/').pop()}</div>
+                  {file.status_recommendation && (
+                    <div className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full ml-2">
+                      {file.status_recommendation}
+                    </div>
+                  )}
+                </div>
                 <div className="text-xs text-gray-500 mt-1">
                   <div className="flex items-center justify-between">
-                    <div>Size: {formatFileSize(file.metadata?.size)}</div>
-                    <div>Updated: {formatDate(file.updated_at)}</div>
+                    <div>
+                      Size: {formatFileSize(file.metadata?.size)}
+                      {file.processed_content?.assessment?.status_recommendation && (
+                        <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                          {file.processed_content.assessment.status_recommendation}
+                        </span>
+                      )}
+                    </div>
+                    <div>Created: {formatDate(file.created_at)}</div>
                   </div>
                   <div className="mt-1 truncate text-gray-400">
                     {file.file_path}
@@ -360,7 +458,7 @@ function Docs() {
         <div className="col-span-1 flex flex-col bg-white rounded-lg shadow">
           {/* Search and Actions section */}
           <div className="p-4 border-b">
-            <div className="flex gap-2 mb-3">
+            <div className="flex flex-wrap gap-2 mb-3">
               <button
                 onClick={handleSearch}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -368,43 +466,25 @@ function Docs() {
                 Search
               </button>
               <button
-                onClick={syncDatabase}
+                onClick={runMarkdownReport}
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                title="Sync database with files on disk, handling updates and soft deletions"
+                title="Generate markdown report using markdown-report.sh"
               >
                 Sync Database
               </button>
               <button
-                onClick={() => {
-                  setLoading(true);
-                  // First call the script to update the markdown report
-                  fetch('/api/markdown-report', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    }
-                  })
-                  .then(response => response.json())
-                  .then(result => {
-                    if (result.success) {
-                      console.log('Markdown report generated successfully');
-                      // Then sync the database
-                      return syncDatabase();
-                    } else {
-                      alert(`Error generating markdown report: ${result.error || 'Unknown error'}`);
-                      setLoading(false);
-                    }
-                  })
-                  .catch(error => {
-                    console.error('Error running markdown report:', error);
-                    alert(`Error running markdown report: ${error.message}`);
-                    setLoading(false);
-                  });
-                }}
+                onClick={updateDocsDatabase}
                 className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600"
-                title="Run the markdown-report.sh script first, then sync database with files on disk"
+                title="Run update-docs-database.sh to update documentation in database"
               >
-                Run Report + Sync
+                Update Docs
+              </button>
+              <button
+                onClick={processDocsWithAI}
+                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+                title="Run AI processing on documentation files (limit 20)"
+              >
+                Process AI
               </button>
             </div>
             <input
@@ -412,7 +492,7 @@ function Docs() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleSearchKeyPress}
-              placeholder="Search documentation files..."
+              placeholder="Search documentation files, tags, metadata..."
               className="border rounded px-3 py-2 w-full"
             />
           </div>
@@ -455,10 +535,18 @@ function Docs() {
               
               {showFileSummary && (
                 <div className="p-4 bg-gray-50 border-b">
-                  <div className="bg-white p-3 rounded border mb-2">
-                    <h3 className="text-sm font-medium mb-2">File Summary:</h3>
-                    <p className="text-sm">{selectedFile.summary || 'No summary available for this file.'}</p>
-                  </div>
+                  {selectedFile.summary && (
+                    <div className="bg-white p-3 rounded border mb-2">
+                      <h3 className="text-sm font-medium mb-2">Summary:</h3>
+                      <p className="text-sm">{selectedFile.summary.replace(/^brief\s*:\s*/i, '')}</p>
+                    </div>
+                  )}
+                  {!selectedFile.summary && (
+                    <div className="bg-white p-3 rounded border mb-2">
+                      <h3 className="text-sm font-medium mb-2">Summary:</h3>
+                      <p className="text-sm text-gray-500 italic">No summary available for this file.</p>
+                    </div>
+                  )}
                   
                   {/* Detailed metadata */}
                   <div className="grid grid-cols-2 gap-4">
@@ -490,11 +578,22 @@ function Docs() {
                       </div>
                     )}
                     
-                    {/* JSON preview */}
+                    {/* JSON preview with better formatting */}
                     <div className="col-span-2">
-                      <h3 className="text-sm font-medium mb-1">Raw JSON:</h3>
+                      <h3 className="text-sm font-medium mb-1">File Metadata:</h3>
                       <pre className="text-xs bg-gray-900 text-gray-200 p-2 rounded overflow-auto max-h-24">
-                        {JSON.stringify(selectedFile, null, 2)}
+                        {JSON.stringify({
+                          id: selectedFile.id,
+                          file_path: selectedFile.file_path,
+                          title: selectedFile.title,
+                          document_type_id: selectedFile.document_type_id,
+                          status_recommendation: selectedFile.status_recommendation,
+                          is_deleted: selectedFile.is_deleted,
+                          ai_generated_tags: selectedFile.ai_generated_tags,
+                          metadata: selectedFile.metadata,
+                          created_at: selectedFile.created_at,
+                          updated_at: selectedFile.updated_at,
+                        }, null, 2)}
                       </pre>
                     </div>
                   </div>
