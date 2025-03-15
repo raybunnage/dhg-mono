@@ -20,7 +20,7 @@ export async function OPTIONS(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    console.log('Starting documentation database update from API route...', request.url);
+    console.log('Documentation API route called...', request.url);
     
     // Add CORS headers
     const headers = {
@@ -39,11 +39,25 @@ export async function POST(request: Request) {
       });
     }
     
+    // Parse request body
+    const body = await request.json();
+    const action = body.action || 'update'; // Default to 'update' if no action specified
+    
+    console.log(`Processing documentation action: ${action}`);
+    
     // Get the project root directory
     const projectRoot = path.resolve(process.cwd());
     
-    // Path to the update script
-    const scriptPath = path.join(projectRoot, 'scripts', 'update-docs-database.sh');
+    // Determine which script to run based on the action
+    let scriptPath = '';
+    if (action === 'report' || action === 'markdown-report') {
+      scriptPath = path.join(projectRoot, 'scripts', 'markdown-report.sh');
+    } else {
+      // Default to update-docs-database.sh for 'update' or any other action
+      scriptPath = path.join(projectRoot, 'scripts', 'update-docs-database.sh');
+    }
+    
+    console.log(`Selected script path: ${scriptPath}`);
     
     // Check if script exists
     try {
@@ -88,9 +102,16 @@ export async function POST(request: Request) {
         console.warn('Script errors:', stderr);
       }
       
+      let message = '';
+      if (action === 'report' || action === 'markdown-report') {
+        message = 'Markdown report generation completed';
+      } else {
+        message = 'Documentation database update completed';
+      }
+      
       const result = {
         success: !stderr || stderr.trim() === '',
-        message: 'Documentation database update completed',
+        message: message,
         output: stdout + (stderr ? `\nErrors:\n${stderr}` : '')
       };
       
