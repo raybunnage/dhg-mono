@@ -49,9 +49,23 @@ export async function generateMarkdownReport() {
     console.log('Running markdown report script at:', scriptPath);
     console.log('Report will be generated at:', reportPath);
     
+    // First remove any existing report file to force regeneration
+    try {
+      if (existsSync(reportPath)) {
+        console.log('Removing existing markdown report at:', reportPath);
+        await execPromise(`rm -f "${reportPath}"`);
+      }
+    } catch (rmError) {
+      console.warn('Error removing existing report file:', rmError);
+      // Continue even if removal fails
+    }
+    
     // Run the script
     try {
+      console.log('Executing script:', scriptPath);
       const { stdout, stderr } = await execPromise(`bash ${scriptPath}`);
+      
+      console.log('Markdown report script stdout:', stdout);
       
       if (stderr) {
         console.error('Error running markdown report script:', stderr);

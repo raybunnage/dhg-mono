@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { markdownFileService } from '@/services/markdownFileService';
 import MarkdownViewer from '@/components/MarkdownViewer';
+import toast from 'react-hot-toast';
 // Import correct types
 import { Database } from '@/integrations/supabase/types';
 
@@ -260,7 +261,20 @@ function Docs() {
   // Run the markdown-report.sh script
   const runMarkdownReport = async () => {
     setLoading(true);
+    
+    // Show a toast notification that the process has started
+    const toastId = toast.loading('Running markdown report...');
+    
     try {
+      // First, directly run markdown-report.sh with custom args to force regeneration
+      console.log('Preparing to run markdown report script...');
+      
+      // Making sure to force regeneration 
+      // (The script itself handles the file creation and will overwrite existing files)
+      toast.loading('Generating markdown report...', { id: toastId });
+      
+      // Then generate the new report
+      console.log('Calling /api/markdown-report endpoint...');
       const response = await fetch('/api/markdown-report', {
         method: 'POST',
         headers: {
@@ -268,18 +282,59 @@ function Docs() {
         }
       });
       
+      if (!response.ok) {
+        throw new Error(`Server responded with status ${response.status}`);
+      }
+      
       const result = await response.json();
+      console.log('Markdown report API response:', result);
+      
       if (result.success) {
-        alert(`Markdown report generated successfully`);
+        toast.success('Markdown report generated successfully', { id: toastId });
+        // After generating the report, sync with the database
+        await syncDocumentationToDatabase();
         fetchDocumentationFiles(); // Refresh the data
       } else {
-        alert(`Failed to generate markdown report: ${result.error || 'Unknown error'}`);
+        toast.error(`Failed to generate markdown report: ${result.error || 'Unknown error'}`, { id: toastId });
+        console.error('Markdown report error details:', result);
       }
     } catch (error) {
       console.error('Error running markdown report:', error);
-      alert(`Error running markdown report: ${error.message}`);
+      toast.error(`Error running markdown report: ${error.message}`, { id: toastId });
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Helper function to sync documentation to database
+  const syncDocumentationToDatabase = async () => {
+    try {
+      const response = await fetch('/api/docs-sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: 'sync' })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with status ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Documentation sync result:', result);
+      
+      if (!result.success) {
+        console.error('Documentation sync error:', result.message || 'Unknown error');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error syncing documentation to database:', error);
+      return { 
+        success: false, 
+        message: `Error: ${error.message}` 
+      };
     }
   };
   
@@ -425,9 +480,13 @@ function Docs() {
                   <div className="flex items-center justify-between">
                     <div>
                       Size: {formatFileSize(file.metadata?.size)}
-                      {file.processed_content?.assessment?.status_recommendation && (
+                      {(file.processed_content?.assessment?.status_recommendation || 
+                        file.status_recommendation || 
+                        file.ai_assessment?.status_recommendation) && (
                         <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                          {file.processed_content.assessment.status_recommendation}
+                          {file.processed_content?.assessment?.status_recommendation || 
+                           file.status_recommendation || 
+                           file.ai_assessment?.status_recommendation}
                         </span>
                       )}
                     </div>
@@ -536,22 +595,130 @@ function Docs() {
               {showFileSummary && (
                 <div className="p-4 bg-gray-50 border-b">
                   {selectedFile.summary && (
-                    <div className="bg-white p-3 rounded border mb-2">
+                    <div className="bg-white p-3 rounded border mb-4">
                       <h3 className="text-sm font-medium mb-2">Summary:</h3>
-                      <p className="text-sm">{selectedFile.summary.replace(/^brief\s*:\s*/i, '')}</p>
+                      <div className="text-sm">
+                        {(() => {
+                          try {
+                            // Try to parse as JSON if it looks like JSON
+                            if (selectedFile.summary.trim().startsWith('{') && selectedFile.summary.trim().endsWith('}')) {
+                              const summaryObj = JSON.parse(selectedFile.summary);
+                              return (
+                                <div>
+                                  {/* Brief section */}
+                                  {summaryObj.brief && (
+                                    <p className="mb-3">
+                                      <strong>Brief</strong>: {summaryObj.brief}
+                                    </p>
+                                  )}
+                                  
+                                  {/* Detailed section */}
+                                  {summaryObj.detailed && (
+                                    <div className="ml-3">
+                                      {summaryObj.detailed.purpose && (
+                                        <p className="mb-2">
+                                          <strong>Purpose</strong>: {summaryObj.detailed.purpose}
+                                        </p>
+                                      )}
+                                      {summaryObj.detailed.key_components && (
+                                        <p className="mb-2">
+                                          <strong>Key Components</strong>: {summaryObj.detailed.key_components}
+                                        </p>
+                                      )}
+                                      {summaryObj.detailed.practical_application && (
+                                        <p className="mb-2">
+                                          <strong>Practical Application</strong>: {summaryObj.detailed.practical_application}
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Show status recommendation if available from any source */}
+                                  {(selectedFile.status_recommendation || 
+                                   selectedFile.processed_content?.assessment?.status_recommendation ||
+                                   selectedFile.ai_assessment?.status_recommendation) && (
+                                    <div className="mt-4 p-2 bg-amber-50 rounded-md border border-amber-200">
+                                      <strong>Status Recommendation</strong>: {
+                                        selectedFile.status_recommendation || 
+                                        selectedFile.processed_content?.assessment?.status_recommendation ||
+                                        selectedFile.ai_assessment?.status_recommendation
+                                      }
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+                            // Fallback to simple text processing if not JSON
+                            return (
+                              <>
+                                {selectedFile.summary
+                                  .replace(/^brief\s*:\s*/i, '')
+                                  .replace(/\b(brief|purpose|key_components|practical_application)\b\s*:/gi, match => (
+                                    `<strong>${match.replace(/:/g, '').replace(/"/g, '')}</strong>:`
+                                  ))
+                                  .replace(/"/g, '')
+                                  .split(/\n+/).map((paragraph, idx) => (
+                                    <p key={idx} className="mb-2" dangerouslySetInnerHTML={{ __html: paragraph }} />
+                                  ))}
+                                
+                                {/* Add status recommendation to text mode too */}
+                                {(selectedFile.status_recommendation || 
+                                  selectedFile.processed_content?.assessment?.status_recommendation ||
+                                  selectedFile.ai_assessment?.status_recommendation) && (
+                                  <div className="mt-4 p-2 bg-amber-50 rounded-md border border-amber-200">
+                                    <strong>Status Recommendation</strong>: {
+                                      selectedFile.status_recommendation || 
+                                      selectedFile.processed_content?.assessment?.status_recommendation ||
+                                      selectedFile.ai_assessment?.status_recommendation
+                                    }
+                                  </div>
+                                )}
+                              </>
+                            );
+                          } catch (error) {
+                            // If JSON parsing fails, fall back to text display
+                            return (
+                              <>
+                                {selectedFile.summary
+                                  .replace(/^brief\s*:\s*/i, '')
+                                  .replace(/\b(brief|purpose|key_components|practical_application)\b\s*:/gi, match => (
+                                    `<strong>${match.replace(/:/g, '').replace(/"/g, '')}</strong>:`
+                                  ))
+                                  .replace(/"/g, '')
+                                  .split(/\n+/).map((paragraph, idx) => (
+                                    <p key={idx} className="mb-2" dangerouslySetInnerHTML={{ __html: paragraph }} />
+                                  ))}
+                                
+                                {/* Add status recommendation to text mode too */}
+                                {(selectedFile.status_recommendation || 
+                                  selectedFile.processed_content?.assessment?.status_recommendation ||
+                                  selectedFile.ai_assessment?.status_recommendation) && (
+                                  <div className="mt-4 p-2 bg-amber-50 rounded-md border border-amber-200">
+                                    <strong>Status Recommendation</strong>: {
+                                      selectedFile.status_recommendation || 
+                                      selectedFile.processed_content?.assessment?.status_recommendation ||
+                                      selectedFile.ai_assessment?.status_recommendation
+                                    }
+                                  </div>
+                                )}
+                              </>
+                            );
+                          }
+                        })()}
+                      </div>
                     </div>
                   )}
                   {!selectedFile.summary && (
-                    <div className="bg-white p-3 rounded border mb-2">
+                    <div className="bg-white p-3 rounded border mb-4">
                       <h3 className="text-sm font-medium mb-2">Summary:</h3>
                       <p className="text-sm text-gray-500 italic">No summary available for this file.</p>
                     </div>
                   )}
                   
-                  {/* Detailed metadata */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Basic metadata and tags */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <h3 className="text-sm font-medium mb-1">File Metadata:</h3>
+                      <h3 className="text-sm font-medium mb-1">File Information:</h3>
                       <ul className="text-xs text-gray-600">
                         <li>Size: {formatFileSize(selectedFile.metadata?.size)}</li>
                         <li>Created: {formatDate(selectedFile.created_at)}</li>
@@ -577,26 +744,48 @@ function Docs() {
                         </div>
                       </div>
                     )}
-                    
-                    {/* JSON preview with better formatting */}
-                    <div className="col-span-2">
-                      <h3 className="text-sm font-medium mb-1">File Metadata:</h3>
-                      <pre className="text-xs bg-gray-900 text-gray-200 p-2 rounded overflow-auto max-h-24">
-                        {JSON.stringify({
-                          id: selectedFile.id,
-                          file_path: selectedFile.file_path,
-                          title: selectedFile.title,
-                          document_type_id: selectedFile.document_type_id,
-                          status_recommendation: selectedFile.status_recommendation,
-                          is_deleted: selectedFile.is_deleted,
-                          ai_generated_tags: selectedFile.ai_generated_tags,
-                          metadata: selectedFile.metadata,
-                          created_at: selectedFile.created_at,
-                          updated_at: selectedFile.updated_at,
-                        }, null, 2)}
-                      </pre>
-                    </div>
                   </div>
+                </div>
+              )}
+              
+              {/* Collapsible metadata section */}
+              <div 
+                className="p-3 bg-gray-100 flex justify-between items-center cursor-pointer border-b"
+                onClick={() => setShowFileMetadata(!showFileMetadata)}
+              >
+                <h2 className="text-lg font-semibold">Full Document Metadata</h2>
+                <span>{showFileMetadata ? '▲' : '▼'}</span>
+              </div>
+              
+              {showFileMetadata && (
+                <div className="p-4 bg-gray-50 border-b">
+                  {/* Full JSON with assessment data */}
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium mb-1">Raw Document Data:</h3>
+                    <pre className="text-xs bg-gray-900 text-gray-200 p-3 rounded overflow-auto" style={{ maxHeight: '500px' }}>
+                      {JSON.stringify(
+                        {
+                          ...selectedFile,
+                          // Skip summary since we already display it separately
+                          summary: selectedFile.summary ? "[See Summary section above]" : null,
+                        }, 
+                        null, 
+                        2
+                      )}
+                    </pre>
+                  </div>
+                  
+                  {/* Assessment section if available */}
+                  {selectedFile.processed_content?.assessment && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-medium mb-2">Assessment Data:</h3>
+                      <div className="bg-white p-3 rounded border">
+                        <pre className="text-xs overflow-auto" style={{ maxHeight: '400px' }}>
+                          {JSON.stringify(selectedFile.processed_content.assessment, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               
