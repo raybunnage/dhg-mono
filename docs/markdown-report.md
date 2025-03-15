@@ -1,6 +1,6 @@
 # Markdown Files Report
 
-Generated: Tue Mar 11 20:23:28 PDT 2025
+Generated: Sat Mar 15 12:23:10 PDT 2025
 
 ## Overview
 
@@ -8,11 +8,11 @@ This report shows all markdown files found in the repository, organized hierarch
 
 ## Summary
 
-- **Total markdown files:** 110
+- **Total markdown files:** 121
 - **README files:** 5
-- **Files in docs folders:** 57
+- **Files in docs folders:** 66
 - **Files in prompts folder:** 0
-- **Files in other locations:** 48
+- **Files in other locations:** 50
 - **Root-level files:** 2
 
 ## Root-Level Files
@@ -25,15 +25,17 @@ This report shows all markdown files found in the repository, organized hierarch
 ## Docs Directory (Hierarchical View)
 
 - 📄 [ai-assets-validation-report.md](/docs/ai-assets-validation-report.md) - 2025-03-09 18:46 (11537 bytes)
+- 📄 [batch-processing-technical-spec.md](/docs/batch-processing-technical-spec.md) - 2025-03-11 20:54 (17019 bytes)
 - 📄 [cli-workflow-pipeline.md](/docs/cli-workflow-pipeline.md) - 2025-03-11 16:26 (7086 bytes)
 - 📄 [command-history-tracking.md](/docs/command-history-tracking.md) - 2025-03-02 11:14 (5007 bytes)
 - 📄 [database-connectivity-report.md](/docs/database-connectivity-report.md) - 2025-03-09 15:09 (1 bytes)
-- 📄 [documentation-files-report.md](/docs/documentation-files-report.md) - 2025-03-09 12:13 (37604 bytes)
+- 📄 [documentation-files-report.md](/docs/documentation-files-report.md) - 2025-03-11 21:36 (39797 bytes)
 - 📄 [documentation-management.md](/docs/documentation-management.md) - 2025-03-02 12:17 (4672 bytes)
 - 📄 [file-reader-report.md](/docs/file-reader-report.md) - 2025-03-09 13:24 (4458 bytes)
-- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-11 20:23 (181 bytes)
+- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-15 12:23 (181 bytes)
 - 📄 [python-ai-services-technical-spec.md](/docs/python-ai-services-technical-spec.md) - 2025-03-10 21:07 (29740 bytes)
-- 📄 [script-report.md](/docs/script-report.md) - 2025-03-09 11:56 (8809 bytes)
+- 📄 [rate-limiting-technical-spec.md](/docs/rate-limiting-technical-spec.md) - 2025-03-14 08:58 (10555 bytes)
+- 📄 [script-report.md](/docs/script-report.md) - 2025-03-14 20:07 (10131 bytes)
 - 📄 [simple-db-results.md](/docs/simple-db-results.md) - 2025-03-08 15:40 (312 bytes)
 - 📄 [typescript-cli-technical-spec.md](/docs/typescript-cli-technical-spec.md) - 2025-03-10 20:55 (12053 bytes)
 - 📁 **architecture/**
@@ -66,7 +68,7 @@ This report shows all markdown files found in the repository, organized hierarch
   - 📄 [git_history_detailed.md](/docs/git-history/git_history_detailed.md) - 2025-02-17 17:41 (35558 bytes)
   - 📄 [git_history_with_files.md](/docs/git-history/git_history_with_files.md) - 2025-02-17 17:41 (88786 bytes)
 - 📁 **git-workflows/**
-  - 📄 [restoring-previous-file-versions.md](/docs/git-workflows/restoring-previous-file-versions.md) - 2025-03-09 17:41 (6307 bytes)
+  - 📄 [restoring-previous-file-versions.md](/docs/git-workflows/restoring-previous-file-versions.md) - 2025-03-14 20:06 (6437 bytes)
 - 📁 **guides/**
   - 📄 [batch-processing-and-trees.md](/docs/guides/batch-processing-and-trees.md) - 2025-02-17 17:41 (6416 bytes)
   - 📄 [file-entries-mapping.md](/docs/guides/file-entries-mapping.md) - 2025-02-17 17:41 (3974 bytes)
@@ -202,6 +204,16 @@ This report shows all markdown files found in the repository, organized hierarch
     - 📄 [guts-dashboard.md](/apps/dhg-improve-experts/docs/guts-dashboard.md) - 2025-03-01 06:44 (4630 bytes)
     - 📄 [markdown-report.md](/apps/dhg-improve-experts/docs/markdown-report.md) - 2025-03-03 15:42 (1634 bytes)
     - 📄 [test-documentation.md](/apps/dhg-improve-experts/docs/test-documentation.md) - 2025-03-03 02:26 (2249 bytes)
+    - 📁 **reports/**
+      - 📄 [documentation-processing-report-2025-03-12-04-42-40.md](/apps/dhg-improve-experts/docs/reports/documentation-processing-report-2025-03-12-04-42-40.md) - 2025-03-11 21:42 (200 bytes)
+      - 📄 [documentation-processing-report-2025-03-12-04-44-07.md](/apps/dhg-improve-experts/docs/reports/documentation-processing-report-2025-03-12-04-44-07.md) - 2025-03-11 21:44 (207 bytes)
+      - 📄 [documentation-processing-report-2025-03-12-07-12-36.md](/apps/dhg-improve-experts/docs/reports/documentation-processing-report-2025-03-12-07-12-36.md) - 2025-03-12 00:12 (205 bytes)
+      - 📄 [documentation-processing-report-2025-03-14-17-19-54.md](/apps/dhg-improve-experts/docs/reports/documentation-processing-report-2025-03-14-17-19-54.md) - 2025-03-14 10:19 (199 bytes)
+      - 📄 [documentation-processing-report-2025-03-14-18-29-25.md](/apps/dhg-improve-experts/docs/reports/documentation-processing-report-2025-03-14-18-29-25.md) - 2025-03-14 11:29 (201 bytes)
+      - 📄 [documentation-processing-report-2025-03-14-19-02-01.md](/apps/dhg-improve-experts/docs/reports/documentation-processing-report-2025-03-14-19-02-01.md) - 2025-03-14 12:02 (212 bytes)
+      - 📄 [documentation-processing-report-2025-03-14-19-11-02.md](/apps/dhg-improve-experts/docs/reports/documentation-processing-report-2025-03-14-19-11-02.md) - 2025-03-14 12:11 (205 bytes)
+      - 📄 [documentation-processing-report-2025-03-14-19-33-20.md](/apps/dhg-improve-experts/docs/reports/documentation-processing-report-2025-03-14-19-33-20.md) - 2025-03-14 12:33 (197 bytes)
+      - 📄 [documentation-processing-report-2025-03-15-03-10-47.md](/apps/dhg-improve-experts/docs/reports/documentation-processing-report-2025-03-15-03-10-47.md) - 2025-03-14 20:10 (197 bytes)
   - 📁 **public/**
     - 📁 **docs/**
       - 📁 **prompts/**
