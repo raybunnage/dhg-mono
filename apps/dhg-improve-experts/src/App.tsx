@@ -29,7 +29,7 @@ import Viewer from '@/pages/Viewer';
 import Viewer2 from '@/pages/Viewer2';
 import Dashboard from '@/pages/Dashboard';
 import Docs from '@/pages/Docs';
-import TestDocs from '@/pages/test-docs';
+// Removed TestDocs import
 import Sync from '@/pages/Sync';
 import Write from '@/pages/Write';
 import Show from '@/pages/Show';
@@ -114,9 +114,10 @@ function App() {
         <Route path="/write" element={<Write />} />
         <Route path="/analyze" element={<Analyze />} />
         <Route path="/docs" element={<Docs />} />
-        <Route path="/test-docs" element={<TestDocs />} />
+        {/* Removed TestDocs route */}
         <Route path="/docs-new" element={<Navigate to="/docs" replace />} />
         <Route path="/docs-explorer" element={<Navigate to="/docs" replace />} />
+        <Route path="/test-docs" element={<Navigate to="/docs" replace />} /> {/* Redirect old path to main Docs */}
         <Route path="/show" element={<Show />} />
         <Route path="/ai" element={<AI />} />
         <Route path="/cmds" element={<Cmds />} />

@@ -31,6 +31,10 @@ function Docs() {
   const [loading, setLoading] = useState(false);
   const [showFileSummary, setShowFileSummary] = useState(false);
   const [showFileMetadata, setShowFileMetadata] = useState(false);
+  const [tags, setTags] = useState<{tag: string, count: number}[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedFilesForProcessing, setSelectedFilesForProcessing] = useState<string[]>([]);
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string | null>(null);
 
   // Fetch document types from the database
   const fetchDocumentTypes = async () => {
@@ -189,6 +193,8 @@ function Docs() {
   const handleSearch = async () => {
     setLoading(true);
     try {
+      console.log('Starting search with query:', searchQuery, 'Selected tags:', selectedTags);
+      
       // Get document types first
       const types = await fetchDocumentTypes();
       
@@ -205,9 +211,17 @@ function Docs() {
       let query = supabase
         .from('documentation_files')
         .select('*');
-        
+      
+      // Filter out soft-deleted files if the column exists
+      if (hasIsDeletedColumn) {
+        query = query.eq('is_deleted', false);
+      }
+      
+      let hasTextSearch = false;
+      
       // Build advanced search for multiple fields including metadata
       if (searchQuery.trim()) {
+        hasTextSearch = true;
         query = query.or(
           `file_path.ilike.%${searchQuery}%,` +
           `title.ilike.%${searchQuery}%,` +
@@ -218,10 +232,47 @@ function Docs() {
           `status_recommendation.ilike.%${searchQuery}%`
         );
       }
+      
+      // Filter by selected tags (if any)
+      if (selectedTags.length > 0) {
+        console.log('Filtering by selected tags:', selectedTags);
         
-      // Filter out soft-deleted files if the column exists
-      if (hasIsDeletedColumn) {
-        query = query.eq('is_deleted', false);
+        // Use Postgres array contains operator to find exact tag matches
+        let tagConditions = [];
+        
+        // Use array containment operator (@>) for exact matches
+        // For each tag, check if it's exactly in either of the tag arrays
+        selectedTags.forEach(tag => {
+          // Since our selectedTags are normalized, convert both arrays to lowercase for comparison
+          // Use array_to_string + lower for case-insensitive array matching of exact tags
+          const normalizedTag = tag.trim().toLowerCase();
+          
+          // Escape the tag for SQL safety by replacing single quotes
+          const escapedTag = normalizedTag.replace(/'/g, "''");
+          
+          // Use simple containment with array operators - most compatible approach
+          tagConditions.push(`'${escapedTag}' = ANY(ai_generated_tags)`);
+          tagConditions.push(`'${escapedTag}' = ANY(manual_tags)`);
+          
+          // Also try with lowercase for case-insensitive matching
+          tagConditions.push(`'${escapedTag}' = ANY(ARRAY(SELECT lower(unnest(ai_generated_tags))))`);
+          tagConditions.push(`'${escapedTag}' = ANY(ARRAY(SELECT lower(unnest(manual_tags))))`);
+          
+          // Try direct array containment too, in case the previous methods don't work
+          tagConditions.push(`ai_generated_tags && ARRAY['${escapedTag}']`);
+          tagConditions.push(`manual_tags && ARRAY['${escapedTag}']`);
+        });
+        
+        // Add this condition to our query
+        const filterCondition = tagConditions.join(' or ');
+        console.log('Using exact tag filter condition:', filterCondition);
+        
+        // Apply the filter to the query
+        if (hasTextSearch) {
+          query = query.or(filterCondition);
+        } else {
+          query = query.filter(filterCondition);
+        }
       }
       
       const { data, error } = await query
@@ -231,13 +282,74 @@ function Docs() {
       if (error) throw error;
 
       // Filter out files with missing file_path or any other issues
-      const validFiles = (data || []).filter(file => 
+      let validFiles = (data || []).filter(file => 
         file && file.file_path && 
         // Only include files that exist (should be all, but double-check)
         !(hasIsDeletedColumn && file.is_deleted === true)
       );
+      
+      // If only one tag is selected, the database query should be sufficient
+      // But if multiple tags are selected, we still need client-side filtering for the AND condition
+      if (selectedTags.length > 1) {
+        console.log(`Client-side filtering for documents with ALL ${selectedTags.length} selected tags`);
+        
+        validFiles = validFiles.filter(file => {
+          try {
+            // Extract and normalize all tags from this file
+            const fileTags: string[] = [];
+            
+            // Process ai_generated_tags
+            if (file.ai_generated_tags && Array.isArray(file.ai_generated_tags)) {
+              fileTags.push(...file.ai_generated_tags
+                .filter(Boolean)
+                .map(tag => tag.toString().toLowerCase().trim()));
+            }
+            
+            // Process manual_tags
+            if (file.manual_tags && Array.isArray(file.manual_tags)) {
+              fileTags.push(...file.manual_tags
+                .filter(Boolean)
+                .map(tag => tag.toString().toLowerCase().trim()));
+            }
+            
+            // Check if ALL selected tags are in this file's tags
+            const hasAllTags = selectedTags.every(selectedTag => {
+              const normalizedSelectedTag = selectedTag.toLowerCase().trim();
+              return fileTags.includes(normalizedSelectedTag);
+            });
+            
+            // Debug logging for important cases
+            if (hasAllTags) {
+              console.log(`✅ MATCH: ${file.file_path} has ALL selected tags:`, 
+                selectedTags.map(t => t.toLowerCase().trim()));
+            }
+            
+            return hasAllTags;
+          } catch (error) {
+            console.error('Error in client-side tag filtering:', error);
+            return false;
+          }
+        });
+      }
 
-      console.log(`Search found ${data?.length || 0} files, ${validFiles.length} valid files after filtering`);
+      // Log detailed results if tag filtering was applied
+      if (selectedTags.length > 0) {
+        console.log(`Tag filtering results:
+          - Initial database query found: ${data?.length || 0} files
+          - After client-side filtering: ${validFiles.length} files
+          - Selected tags: ${JSON.stringify(selectedTags)}
+        `);
+        
+        // Log first 5 matching files for debugging
+        if (validFiles.length > 0) {
+          console.log('Sample matching files:');
+          validFiles.slice(0, 5).forEach((file, index) => {
+            console.log(`${index + 1}. ${file.file_path}`);
+          });
+        }
+      } else {
+        console.log(`Search found ${data?.length || 0} files, ${validFiles.length} valid files after filtering`);
+      }
       
       setDocumentationFiles(validFiles);
       
@@ -266,37 +378,57 @@ function Docs() {
     const toastId = toast.loading('Running markdown report...');
     
     try {
-      // First, directly run markdown-report.sh with custom args to force regeneration
-      console.log('Preparing to run markdown report script...');
+      // Run directly with a shell script instead of using API
+      // This avoids potential 404 errors with the API endpoint
+      console.log('Preparing to run markdown report script using direct fetch...');
       
       // Making sure to force regeneration 
       // (The script itself handles the file creation and will overwrite existing files)
       toast.loading('Generating markdown report...', { id: toastId });
       
-      // Then generate the new report
-      console.log('Calling /api/markdown-report endpoint...');
-      const response = await fetch('/api/markdown-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      // Uses fetch to trigger both of the required scripts in sequence
+      // We're using a GET request to a local shell script that runs markdown-report.sh
+      const startReport = await fetch('/scripts/generate-report-and-sync-db.sh', { 
+        method: 'GET',
+        cache: 'no-cache' // Ensure fresh execution
       });
       
-      if (!response.ok) {
-        throw new Error(`Server responded with status ${response.status}`);
-      }
-      
-      const result = await response.json();
-      console.log('Markdown report API response:', result);
-      
-      if (result.success) {
-        toast.success('Markdown report generated successfully', { id: toastId });
-        // After generating the report, sync with the database
-        await syncDocumentationToDatabase();
-        fetchDocumentationFiles(); // Refresh the data
+      // If this fails, we'll try the backup API method
+      if (!startReport.ok) {
+        console.warn('Direct script execution failed, trying API fallback...');
+        
+        // Fallback to API
+        const response = await fetch('/api/docs-sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ action: 'report' })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Server responded with status ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Markdown report API response:', result);
+        
+        if (result.success) {
+          toast.success('Markdown report generated successfully', { id: toastId });
+          // After generating the report, sync with the database
+          await syncDocumentationToDatabase();
+          fetchDocumentationFiles(); // Refresh the data
+        } else {
+          toast.error(`Failed to generate markdown report: ${result.message || 'Unknown error'}`, { id: toastId });
+          console.error('Markdown report error details:', result);
+        }
       } else {
-        toast.error(`Failed to generate markdown report: ${result.error || 'Unknown error'}`, { id: toastId });
-        console.error('Markdown report error details:', result);
+        // Direct script approach worked
+        toast.success('Markdown report generated successfully', { id: toastId });
+        console.log('Markdown report script executed directly');
+        
+        // Refresh the data after a short delay to allow processing
+        setTimeout(() => fetchDocumentationFiles(), 2000);
       }
     } catch (error) {
       console.error('Error running markdown report:', error);
@@ -446,6 +578,197 @@ function Docs() {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
+  
+  // Handle document deletion
+  const handleDeleteFile = async (file: DocumentationFile) => {
+    if (!file || !file.id) {
+      toast.error('Invalid file selected for deletion');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Mark the file as deleted in the database
+      const { error: updateError } = await supabase
+        .from('documentation_files')
+        .update({ is_deleted: true })
+        .eq('id', file.id);
+      
+      if (updateError) {
+        throw updateError;
+      }
+      
+      // Call API to request physical file deletion (if needed)
+      try {
+        const response = await fetch('/api/docs-sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            action: 'delete-file',
+            fileId: file.id,
+            filePath: file.file_path 
+          })
+        });
+        
+        if (!response.ok) {
+          console.warn(`API returned status ${response.status} when attempting to delete file physically`);
+        }
+      } catch (apiError) {
+        console.error('Error calling delete file API:', apiError);
+        // Continue anyway as the db update is more important
+      }
+      
+      // Extract just the filename for the success message
+      const fileName = file.file_path.split('/').pop();
+      toast.success(`File "${fileName}" has been marked as deleted`);
+      
+      // Update the UI
+      // Remove the file from the current documentationFiles list
+      setDocumentationFiles(prev => prev.filter(f => f.id !== file.id));
+      
+      // Rebuild groups to reflect the deleted file
+      const updatedGroups = buildDocumentTypeGroups(
+        documentationFiles.filter(f => f.id !== file.id),
+        documentTypes
+      );
+      setDocumentTypeGroups(updatedGroups);
+      
+      // If the currently selected file was deleted, clear selection
+      if (selectedFile?.id === file.id) {
+        setSelectedFile(null);
+      }
+      
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast.error(`Failed to delete file: ${error.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Helper to get existing metadata for a file
+  const getExistingMetadata = async (fileId: string) => {
+    try {
+      // Fetch the current metadata
+      const { data, error } = await supabase
+        .from('documentation_files')
+        .select('metadata')
+        .eq('id', fileId)
+        .single();
+      
+      if (error) {
+        console.warn('Error fetching existing metadata:', error);
+        return {}; // Return empty object if there's an error
+      }
+      
+      // Return the existing metadata or empty object
+      return data?.metadata || {};
+    } catch (e) {
+      console.error('Exception fetching metadata:', e);
+      return {}; // Return empty object on exception
+    }
+  };
+  
+  // Handle updating document types for selected files
+  const updateDocumentTypeForSelectedFiles = async () => {
+    if (selectedFilesForProcessing.length === 0) {
+      toast.error('No files selected for processing');
+      return;
+    }
+    
+    if (!selectedDocumentType) {
+      toast.error('Please select a document type to assign');
+      return;
+    }
+    
+    setLoading(true);
+    const toastId = toast.loading(`Updating ${selectedFilesForProcessing.length} files...`);
+    
+    try {
+      // Try batch update first (faster, but might not work with metadata)
+      try {
+        const { error } = await supabase
+          .from('documentation_files')
+          .update({ 
+            document_type_id: selectedDocumentType,
+            // Only use columns that exist in the database schema
+            summary: null,
+            ai_generated_tags: null
+          })
+          .in('id', selectedFilesForProcessing);
+        
+        if (error) {
+          throw error;
+        }
+      } catch (batchError) {
+        console.warn('Batch update failed, falling back to individual updates:', batchError);
+        
+        // If batch update fails, fallback to updating files one by one
+        let successCount = 0;
+        let failCount = 0;
+        
+        toast.loading(`Batch update failed. Updating files individually...`, { id: toastId });
+        
+        for (const fileId of selectedFilesForProcessing) {
+          try {
+            // Get existing metadata for this specific file
+            const metadata = await getExistingMetadata(fileId);
+            
+            // Update this file individually
+            const { error } = await supabase
+              .from('documentation_files')
+              .update({ 
+                document_type_id: selectedDocumentType,
+                summary: null,
+                ai_generated_tags: null,
+                metadata: {
+                  ...metadata,
+                  needs_processing: true,
+                  last_processed: null
+                }
+              })
+              .eq('id', fileId);
+            
+            if (error) {
+              console.error(`Error updating file ${fileId}:`, error);
+              failCount++;
+            } else {
+              successCount++;
+            }
+          } catch (individualError) {
+            console.error(`Error in individual update for file ${fileId}:`, individualError);
+            failCount++;
+          }
+          
+          // Update progress in toast message
+          if ((successCount + failCount) % 5 === 0 || successCount + failCount === selectedFilesForProcessing.length) {
+            toast.loading(`Updated ${successCount}/${selectedFilesForProcessing.length} files...`, { id: toastId });
+          }
+        }
+        
+        if (failCount > 0) {
+          throw new Error(`Failed to update ${failCount} of ${selectedFilesForProcessing.length} files`);
+        }
+      }
+      
+      toast.success(`Updated ${selectedFilesForProcessing.length} files for reprocessing`, { id: toastId });
+      
+      // Clear selection after successful update
+      setSelectedFilesForProcessing([]);
+      setSelectedDocumentType(null);
+      
+      // Refresh data to reflect changes
+      await fetchDocumentationFiles();
+      
+    } catch (error) {
+      console.error('Error updating document types:', error);
+      toast.error(`Failed to update files: ${error.message || 'Unknown error'}`, { id: toastId });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Render document type groups and their files
   const renderDocumentTypeGroups = () => {
@@ -465,35 +788,59 @@ function Docs() {
             {group.files.map(file => (
               <div 
                 key={file.id}
-                className={`p-3 cursor-pointer hover:bg-gray-100 rounded my-1 ${selectedFile?.id === file.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
-                onClick={() => selectFile(file)}
+                className={`p-3 hover:bg-gray-100 rounded my-1 ${selectedFile?.id === file.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="font-medium">{file.title || file.file_path.split('/').pop()}</div>
-                  {file.status_recommendation && (
-                    <div className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full ml-2">
-                      {file.status_recommendation}
-                    </div>
-                  )}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      Size: {formatFileSize(file.metadata?.size)}
-                      {(file.processed_content?.assessment?.status_recommendation || 
-                        file.status_recommendation || 
+                <div className="flex items-start">
+                  {/* Selection checkbox for reprocessing */}
+                  <input
+                    type="checkbox"
+                    className="mt-1 mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={selectedFilesForProcessing.includes(file.id)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleFileSelection(file.id);
+                    }}
+                  />
+                  
+                  {/* File details - clickable for selection */}
+                  <div 
+                    className="flex-1 cursor-pointer"
+                    onClick={() => selectFile(file)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">{file.title || file.file_path.split('/').pop()}</div>
+                      
+                      {/* Status recommendation badge with conditional styling */}
+                      {(file.status_recommendation || 
+                        file.processed_content?.assessment?.status_recommendation || 
                         file.ai_assessment?.status_recommendation) && (
-                        <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                          {file.processed_content?.assessment?.status_recommendation || 
-                           file.status_recommendation || 
+                        <div className={`text-xs px-2 py-1 rounded-full ml-2 ${
+                          (file.status_recommendation === 'KEEP' || 
+                           file.processed_content?.assessment?.status_recommendation === 'KEEP' ||
+                           file.ai_assessment?.status_recommendation === 'KEEP') 
+                            ? 'bg-green-100 text-green-800'
+                            : (file.status_recommendation === 'UPDATE' ||
+                               file.processed_content?.assessment?.status_recommendation === 'UPDATE' ||
+                               file.ai_assessment?.status_recommendation === 'UPDATE')
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {file.status_recommendation || 
+                           file.processed_content?.assessment?.status_recommendation || 
                            file.ai_assessment?.status_recommendation}
-                        </span>
+                        </div>
                       )}
                     </div>
-                    <div>Created: {formatDate(file.created_at)}</div>
-                  </div>
-                  <div className="mt-1 truncate text-gray-400">
-                    {file.file_path}
+                    
+                    <div className="text-xs text-gray-500 mt-1">
+                      <div className="flex items-center justify-between">
+                        <div>Size: {formatFileSize(file.metadata?.size)}</div>
+                        <div>Created: {formatDate(file.created_at)}</div>
+                      </div>
+                      <div className="mt-1 truncate text-gray-400">
+                        {file.file_path}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -504,10 +851,133 @@ function Docs() {
     ));
   };
 
+  // Function to fetch and count tags
+  const fetchTags = async () => {
+    try {
+      // Skip trying to use the database function since it's not available
+      // Instead, directly use the client-side extraction
+      console.log('Using client-side tag extraction');
+      const extractedTags = extractTagsFromFiles(documentationFiles);
+      setTags(extractedTags);
+    } catch (error) {
+      console.error('Error in tag fetching:', error);
+      // Set empty tags array in case of error
+      setTags([]);
+    }
+  };
+  
+  // Helper function to extract tags from files on the client side
+  const extractTagsFromFiles = (files: DocumentationFile[]) => {
+    // Create a map to count tag occurrences
+    const tagMap = new Map<string, number>();
+    
+    // Process each file
+    files.forEach(file => {
+      if (!file) return;
+      
+      try {
+        // Extract AI generated tags (handle both string[] and JSON string)
+        let aiTags: string[] = [];
+        if (file.ai_generated_tags) {
+          if (Array.isArray(file.ai_generated_tags)) {
+            aiTags = file.ai_generated_tags;
+          } else if (typeof file.ai_generated_tags === 'string') {
+            // Try to parse JSON string if that's how it's stored
+            try {
+              aiTags = JSON.parse(file.ai_generated_tags);
+            } catch (e) {
+              // If it's not valid JSON, maybe it's a comma-separated string?
+              aiTags = file.ai_generated_tags.split(',').map(t => t.trim());
+            }
+          }
+        }
+        
+        // Extract manual tags (handle both string[] and JSON string)
+        let manualTags: string[] = [];
+        if (file.manual_tags) {
+          if (Array.isArray(file.manual_tags)) {
+            manualTags = file.manual_tags;
+          } else if (typeof file.manual_tags === 'string') {
+            // Try to parse JSON string if that's how it's stored
+            try {
+              manualTags = JSON.parse(file.manual_tags);
+            } catch (e) {
+              // If it's not valid JSON, maybe it's a comma-separated string?
+              manualTags = file.manual_tags.split(',').map(t => t.trim());
+            }
+          }
+        }
+        
+        // Combine and count all tags
+        [...aiTags, ...manualTags].forEach(tag => {
+          if (tag && typeof tag === 'string' && tag.trim() !== '') {
+            // Normalize the tag (lowercase, trim)
+            const normalizedTag = tag.trim().toLowerCase();
+            const count = tagMap.get(normalizedTag) || 0;
+            tagMap.set(normalizedTag, count + 1);
+          }
+        });
+      } catch (error) {
+        console.error('Error processing tags for file:', file.file_path, error);
+      }
+    });
+    
+    // Convert map to array and sort by count
+    const tagArray = Array.from(tagMap.entries())
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 30); // Limit to top 30 tags
+    
+    return tagArray;
+  };
+  
+  // Toggle tag selection
+  const toggleTag = (tag: string) => {
+    // Always work with lowercase normalized tags for consistency
+    const normalizedTag = tag.trim().toLowerCase();
+    
+    setSelectedTags(prev => {
+      // If tag is already selected, remove it
+      if (prev.includes(normalizedTag)) {
+        return prev.filter(t => t !== normalizedTag);
+      }
+      // Otherwise, add it
+      return [...prev, normalizedTag];
+    });
+  };
+  
+  // Toggle file selection for reprocessing
+  const toggleFileSelection = (fileId: string) => {
+    setSelectedFilesForProcessing(prev => {
+      if (prev.includes(fileId)) {
+        return prev.filter(id => id !== fileId);
+      }
+      return [...prev, fileId];
+    });
+  };
+  
+  // Select/deselect all files in the current view
+  const toggleSelectAllFiles = () => {
+    if (selectedFilesForProcessing.length === documentationFiles.length) {
+      // If all are selected, deselect all
+      setSelectedFilesForProcessing([]);
+    } else {
+      // Otherwise, select all visible files
+      setSelectedFilesForProcessing(documentationFiles.map(file => file.id));
+    }
+  };
+  
   // Initial data load
   useEffect(() => {
     fetchDocumentationFiles();
   }, []);
+  
+  // Fetch tags whenever documentation files change
+  useEffect(() => {
+    if (documentationFiles.length > 0) {
+      fetchTags();
+    }
+  }, [documentationFiles]);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -546,6 +1016,52 @@ function Docs() {
                 Process AI
               </button>
             </div>
+            
+            {/* File selection and reprocessing controls */}
+            <div className={`p-3 mb-3 rounded-md border ${selectedFilesForProcessing.length > 0 ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+              <div className="mb-2 flex justify-between items-center">
+                <h3 className="text-sm font-medium">
+                  {selectedFilesForProcessing.length > 0 
+                    ? `${selectedFilesForProcessing.length} files selected` 
+                    : 'Select files to reprocess'}
+                </h3>
+                <button 
+                  onClick={toggleSelectAllFiles}
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  {selectedFilesForProcessing.length === documentationFiles.length 
+                    ? 'Deselect All' 
+                    : 'Select All'}
+                </button>
+              </div>
+              
+              <div className="flex gap-2 items-center">
+                <select
+                  value={selectedDocumentType || ''}
+                  onChange={(e) => setSelectedDocumentType(e.target.value || null)}
+                  className="border rounded px-2 py-1 text-sm flex-1"
+                  disabled={selectedFilesForProcessing.length === 0}
+                >
+                  <option value="">Select Document Type...</option>
+                  {documentTypes.map(type => (
+                    <option key={type.id} value={type.id}>{type.document_type}</option>
+                  ))}
+                </select>
+                
+                <button
+                  onClick={updateDocumentTypeForSelectedFiles}
+                  disabled={selectedFilesForProcessing.length === 0 || !selectedDocumentType}
+                  className={`px-3 py-1 text-sm rounded ${
+                    selectedFilesForProcessing.length > 0 && selectedDocumentType
+                      ? 'bg-blue-500 text-white hover:bg-blue-600'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                  title="Update document type for selected files and mark for reprocessing"
+                >
+                  Reprocess Selected
+                </button>
+              </div>
+            </div>
             <input
               type="text"
               value={searchQuery}
@@ -554,6 +1070,63 @@ function Docs() {
               placeholder="Search documentation files, tags, metadata..."
               className="border rounded px-3 py-2 w-full"
             />
+          </div>
+          
+          {/* Tag filtering section */}
+          <div className="px-4 pt-3 pb-3 border-b">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-md font-medium">Filter by Tags</h2>
+              {selectedTags.length > 0 && (
+                <button 
+                  onClick={() => {
+                    setSelectedTags([]);
+                    setTimeout(handleSearch, 0); // Schedule a search after state update
+                  }} 
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1">
+              {tags.length === 0 ? (
+                <div className="text-sm text-gray-500 italic p-2">
+                  Loading tags or no tags found in current documents...
+                </div>
+              ) : (
+                tags.map(({tag, count}) => {
+                  // Format the tag for display (capitalize first letter of each word)
+                  const displayTag = tag
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+                  
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        toggleTag(tag);
+                        // Use setTimeout to ensure state update completes before search
+                        setTimeout(() => handleSearch(), 0);
+                      }}
+                      className={`text-xs px-3 py-1.5 rounded-full flex items-center transition-colors ${
+                        selectedTags.includes(tag.trim().toLowerCase())
+                          ? 'bg-blue-500 text-white font-medium shadow-sm'
+                          : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
+                      }`}
+                      title={`Filter by '${displayTag}' tag (${count} documents)`}
+                    >
+                      <span>{displayTag}</span>
+                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                        selectedTags.includes(tag.trim().toLowerCase())
+                          ? 'bg-blue-400 text-white'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>{count}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
           
           {/* Document types header */}
@@ -580,9 +1153,60 @@ function Docs() {
         <div className="col-span-2 bg-white rounded-lg shadow flex flex-col">
           {selectedFile ? (
             <>
+              {/* File actions and header section */}
+              <div className="flex items-center justify-between p-3 bg-gray-100 border-b">
+                {/* Status badge, if available */}
+                {(selectedFile.status_recommendation || 
+                 selectedFile.processed_content?.assessment?.status_recommendation ||
+                 selectedFile.ai_assessment?.status_recommendation) && (
+                  <div className={`text-xs px-2 py-1 rounded-full font-medium mr-2 ${
+                    (selectedFile.status_recommendation === 'KEEP' || 
+                     selectedFile.processed_content?.assessment?.status_recommendation === 'KEEP' ||
+                     selectedFile.ai_assessment?.status_recommendation === 'KEEP') 
+                      ? 'bg-green-100 text-green-800'
+                      : (selectedFile.status_recommendation === 'UPDATE' ||
+                         selectedFile.processed_content?.assessment?.status_recommendation === 'UPDATE' ||
+                         selectedFile.ai_assessment?.status_recommendation === 'UPDATE')
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {selectedFile.status_recommendation || 
+                     selectedFile.processed_content?.assessment?.status_recommendation ||
+                     selectedFile.ai_assessment?.status_recommendation}
+                  </div>
+                )}
+                
+                {/* Delete button */}
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent summary toggle
+                    
+                    // Extract just the filename from the file_path
+                    const fileName = selectedFile.file_path.split('/').pop();
+                    
+                    const confirmDelete = window.confirm(
+                      `Are you sure you want to delete the file "${fileName}"?\n\nThis will mark the file as deleted in the database and can be used to remove the file from the filesystem.`
+                    );
+                    if (confirmDelete) {
+                      handleDeleteFile(selectedFile);
+                    }
+                  }}
+                  className="ml-auto mr-3 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs px-3 py-1 rounded-md flex items-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                  Delete
+                </button>
+              </div>
+
               {/* Collapsible summary section */}
               <div 
-                className="p-3 bg-gray-100 flex justify-between items-center cursor-pointer border-b"
+                className="p-3 bg-gray-50 flex justify-between items-center cursor-pointer border-b"
                 onClick={() => setShowFileSummary(!showFileSummary)}
               >
                 <h2 className="text-lg font-semibold">{selectedFile.title || selectedFile.file_path.split('/').pop()}</h2>
@@ -637,7 +1261,17 @@ function Docs() {
                                   {(selectedFile.status_recommendation || 
                                    selectedFile.processed_content?.assessment?.status_recommendation ||
                                    selectedFile.ai_assessment?.status_recommendation) && (
-                                    <div className="mt-4 p-2 bg-amber-50 rounded-md border border-amber-200">
+                                    <div className={`mt-4 p-2 rounded-md border ${
+                                      (selectedFile.status_recommendation === 'KEEP' || 
+                                       selectedFile.processed_content?.assessment?.status_recommendation === 'KEEP' ||
+                                       selectedFile.ai_assessment?.status_recommendation === 'KEEP') 
+                                        ? 'bg-green-50 border-green-200'
+                                        : (selectedFile.status_recommendation === 'UPDATE' ||
+                                           selectedFile.processed_content?.assessment?.status_recommendation === 'UPDATE' ||
+                                           selectedFile.ai_assessment?.status_recommendation === 'UPDATE')
+                                          ? 'bg-yellow-50 border-yellow-200'
+                                          : 'bg-amber-50 border-amber-200'
+                                    }`}>
                                       <strong>Status Recommendation</strong>: {
                                         selectedFile.status_recommendation || 
                                         selectedFile.processed_content?.assessment?.status_recommendation ||
@@ -665,7 +1299,17 @@ function Docs() {
                                 {(selectedFile.status_recommendation || 
                                   selectedFile.processed_content?.assessment?.status_recommendation ||
                                   selectedFile.ai_assessment?.status_recommendation) && (
-                                  <div className="mt-4 p-2 bg-amber-50 rounded-md border border-amber-200">
+                                  <div className={`mt-4 p-2 rounded-md border ${
+                                    (selectedFile.status_recommendation === 'KEEP' || 
+                                     selectedFile.processed_content?.assessment?.status_recommendation === 'KEEP' ||
+                                     selectedFile.ai_assessment?.status_recommendation === 'KEEP') 
+                                      ? 'bg-green-50 border-green-200'
+                                      : (selectedFile.status_recommendation === 'UPDATE' ||
+                                         selectedFile.processed_content?.assessment?.status_recommendation === 'UPDATE' ||
+                                         selectedFile.ai_assessment?.status_recommendation === 'UPDATE')
+                                        ? 'bg-yellow-50 border-yellow-200'
+                                        : 'bg-amber-50 border-amber-200'
+                                  }`}>
                                     <strong>Status Recommendation</strong>: {
                                       selectedFile.status_recommendation || 
                                       selectedFile.processed_content?.assessment?.status_recommendation ||
@@ -693,7 +1337,17 @@ function Docs() {
                                 {(selectedFile.status_recommendation || 
                                   selectedFile.processed_content?.assessment?.status_recommendation ||
                                   selectedFile.ai_assessment?.status_recommendation) && (
-                                  <div className="mt-4 p-2 bg-amber-50 rounded-md border border-amber-200">
+                                  <div className={`mt-4 p-2 rounded-md border ${
+                                    (selectedFile.status_recommendation === 'KEEP' || 
+                                     selectedFile.processed_content?.assessment?.status_recommendation === 'KEEP' ||
+                                     selectedFile.ai_assessment?.status_recommendation === 'KEEP') 
+                                      ? 'bg-green-50 border-green-200'
+                                      : (selectedFile.status_recommendation === 'UPDATE' ||
+                                         selectedFile.processed_content?.assessment?.status_recommendation === 'UPDATE' ||
+                                         selectedFile.ai_assessment?.status_recommendation === 'UPDATE')
+                                        ? 'bg-yellow-50 border-yellow-200'
+                                        : 'bg-amber-50 border-amber-200'
+                                  }`}>
                                     <strong>Status Recommendation</strong>: {
                                       selectedFile.status_recommendation || 
                                       selectedFile.processed_content?.assessment?.status_recommendation ||

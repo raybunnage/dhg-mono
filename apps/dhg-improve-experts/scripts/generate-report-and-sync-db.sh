@@ -1,45 +1,41 @@
-#!/bin/bash
+#\!/bin/bash
 
-# Script to run the markdown report and then sync the database
+# This script generates the markdown report and syncs it with the database
+# It's designed to be called directly from the browser or via API
 
-echo "=== STEP 1: Generating Markdown Report ==="
+# Set headers for browser compatibility
+echo "Content-Type: text/plain"
+echo "Access-Control-Allow-Origin: *"
+echo "Access-Control-Allow-Methods: GET, POST, OPTIONS"
+echo "Access-Control-Allow-Headers: Content-Type"
+echo ""
+
 # Get the directory of this script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Run the markdown report script
-REPORT_SCRIPT="$SCRIPT_DIR/markdown-report.sh" 
-if [ -f "$REPORT_SCRIPT" ]; then
-  echo "Running markdown report script at: $REPORT_SCRIPT"
-  bash "$REPORT_SCRIPT"
-else
-  echo "Error: Could not find markdown-report.sh at $REPORT_SCRIPT"
+echo "Running from directory: $SCRIPT_DIR"
+echo "Repository root: $REPO_ROOT"
+
+# Step 1: Generate markdown report
+echo "Generating markdown report..."
+"$SCRIPT_DIR/markdown-report.sh"
+REPORT_STATUS=$?
+
+if [ $REPORT_STATUS -ne 0 ]; then
+  echo "ERROR: Failed to generate markdown report (exit code $REPORT_STATUS)"
   exit 1
 fi
 
-echo ""
-echo "=== STEP 2: Syncing Database ==="
+# Step 2: Update the database with the report data
+echo "Syncing documentation to database..."
+"$SCRIPT_DIR/update-docs-database.sh"
+SYNC_STATUS=$?
 
-# Check which environment we're in
-if [ -f "$REPO_ROOT/src/api/markdown-report.ts" ]; then
-  echo "Development environment detected"
-  
-  # In a development environment, we would call the API
-  # However, since we're in a shell script, we can't make direct API calls
-  # Instead, let's provide instructions:
-  
-  echo "To complete the database sync:"
-  echo "1. Go to the documentation page in the app"
-  echo "2. Click the 'Sync Database' button"
-  echo ""
-  echo "Or, if the app is running, you can make an API call with:"
-  echo "curl -X POST http://localhost:3000/api/docs-sync"
-else
-  echo "Production environment detected"
-  echo "Please run the database sync from the web application's documentation page"
+if [ $SYNC_STATUS -ne 0 ]; then
+  echo "ERROR: Failed to sync documentation to database (exit code $SYNC_STATUS)"
+  exit 1
 fi
 
-echo ""
-echo "=== Markdown Report and Sync Database Process Complete ==="
-echo "The markdown report has been generated at: $REPO_ROOT/docs/markdown-report.md"
-echo "If running in development, please complete the database sync as instructed above"
+echo "Successfully generated report and synced with database"
+exit 0

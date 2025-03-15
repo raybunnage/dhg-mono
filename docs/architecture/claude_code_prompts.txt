@@ -1,3 +1,9 @@
+Remove the "Test Docs" tab and the associated functions (as long as they are not used elsewhere. Nonetheless i don't want the "Test Docs" code anymore and I'm concenred about any duplicate cocd you might have because of it.
+
+Now on the left side on the "Docs" page below the 4 buttons - but above the list of documentation_files, can you find all the "tags" that are auto-generated and in the Documentaion_files records and for all files where "is_deleted" = false, create "Pills" from the tags and display either a pill for each "tag"  or for the tags that have the highest number in the documentation_files table and then make the pills become filters for the documentation files - according to the chosen tag(s)
+
+
+
 Now on the "Docs" page there are 3 buttons
 on the upper left
 1) on the "Search" button - now can you use the metadata in the documentation_files to search in addition to the other strategies you had before

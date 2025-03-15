@@ -197,6 +197,49 @@ app.get('/api/markdown-files', (req, res) => {
   }
 });
 
+// Serve shell scripts with executable permissions
+app.get('/scripts/:scriptName', (req, res) => {
+  const { scriptName } = req.params;
+  const repoRoot = process.cwd();
+  const scriptPath = path.join(repoRoot, 'scripts', scriptName);
+  
+  console.log(`Request for script: ${scriptPath}`);
+  
+  // Only allow specific script files to be executed
+  const allowedScripts = [
+    'generate-report-and-sync-db.sh',
+    'markdown-report.sh',
+    'update-docs-database.sh'
+  ];
+  
+  if (!allowedScripts.includes(scriptName)) {
+    return res.status(403).send('Script execution not allowed');
+  }
+  
+  if (fs.existsSync(scriptPath)) {
+    // Make sure the script is executable
+    try {
+      fs.chmodSync(scriptPath, '755');
+    } catch (error) {
+      console.error(`Error making script executable: ${error.message}`);
+    }
+    
+    // Execute the script
+    const { exec } = require('child_process');
+    exec(`${scriptPath}`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing script: ${error.message}`);
+        return res.status(500).send(`Script execution error: ${error.message}\n\n${stderr}`);
+      }
+      
+      res.setHeader('Content-Type', 'text/plain');
+      res.send(stdout);
+    });
+  } else {
+    res.status(404).send(`Script ${scriptName} not found`);
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Markdown file server running at http://localhost:${PORT}`);
