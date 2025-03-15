@@ -1,6 +1,6 @@
 # Markdown Files Report
 
-Generated: Sat Mar 15 12:23:10 PDT 2025
+Generated: Sat Mar 15 15:36:44 PDT 2025
 
 ## Overview
 
@@ -8,8 +8,8 @@ This report shows all markdown files found in the repository, organized hierarch
 
 ## Summary
 
-- **Total markdown files:** 121
-- **README files:** 5
+- **Total markdown files:** 122
+- **README files:** 6
 - **Files in docs folders:** 66
 - **Files in prompts folder:** 0
 - **Files in other locations:** 50
@@ -32,7 +32,7 @@ This report shows all markdown files found in the repository, organized hierarch
 - 📄 [documentation-files-report.md](/docs/documentation-files-report.md) - 2025-03-11 21:36 (39797 bytes)
 - 📄 [documentation-management.md](/docs/documentation-management.md) - 2025-03-02 12:17 (4672 bytes)
 - 📄 [file-reader-report.md](/docs/file-reader-report.md) - 2025-03-09 13:24 (4458 bytes)
-- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-15 12:23 (181 bytes)
+- 📄 [markdown-report.md](/docs/markdown-report.md) - 2025-03-15 15:36 (181 bytes)
 - 📄 [python-ai-services-technical-spec.md](/docs/python-ai-services-technical-spec.md) - 2025-03-10 21:07 (29740 bytes)
 - 📄 [rate-limiting-technical-spec.md](/docs/rate-limiting-technical-spec.md) - 2025-03-14 08:58 (10555 bytes)
 - 📄 [script-report.md](/docs/script-report.md) - 2025-03-14 20:07 (10131 bytes)
@@ -184,6 +184,7 @@ This report shows all markdown files found in the repository, organized hierarch
   - 📄 [CLAUDE_SQL_FIX.md](/apps/dhg-improve-experts/CLAUDE_SQL_FIX.md) - 2025-03-08 04:30 (4456 bytes)
   - 📄 [DocumentTypeArchiveNotes.md](/apps/dhg-improve-experts/DocumentTypeArchiveNotes.md) - 2025-03-03 09:15 (2372 bytes)
   - 📄 [README-guts-dashboard.md](/apps/dhg-improve-experts/README-guts-dashboard.md) - 2025-03-01 06:46 (4625 bytes)
+  - 📄 [README-tag-filtering.md](/apps/dhg-improve-experts/README-tag-filtering.md) - 2025-03-15 13:38 (1995 bytes)
   - 📄 [README.md](/apps/dhg-improve-experts/README.md) - 2025-02-10 17:31 (2303 bytes)
   - 📄 [SQL_GENERATION_WORKFLOW.md](/apps/dhg-improve-experts/SQL_GENERATION_WORKFLOW.md) - 2025-03-08 04:22 (14131 bytes)
   - 📄 [SUPABASE_CONNECTION.md](/apps/dhg-improve-experts/SUPABASE_CONNECTION.md) - 2025-03-03 00:43 (3884 bytes)
