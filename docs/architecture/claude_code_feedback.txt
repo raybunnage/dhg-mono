@@ -1,3 +1,50 @@
+ Yes, scripts/analyze-scripts.sh should also be moved since it directly interacts with the
+  CLI pipeline.
+
+  Here are the commands to move all CLI pipeline-related scripts:
+
+⏺ Bash(mkdir -p ../../packages/cli/scripts)…
+  ⎿  (No content)
+
+⏺ Bash(echo "Moving CLI pipeline scripts to packages/cli/scripts:";                       …
+      for script in fix-ai-integration.sh fix-batch-analyze.sh build-scan-scripts.sh
+      run-scan-scripts.sh run-analyze-scripts.sh fix-permissions.sh process-docs-batch.sh
+      build-cli.sh scripts/analyze-scripts.sh; do
+        if [ -f "$script" ]; then
+          echo "Moving $script"
+          cp "$script" "../../packages/cli/scripts/$(basename $script)"
+        else
+          echo "File not found: $script"
+        fi
+      done)
+  ⎿  Moving CLI pipeline scripts to packages/cli/scripts:
+     Moving fix-ai-integration.sh
+     Moving fix-batch-analyze.sh
+     Moving build-scan-scripts.sh
+     Moving run-scan-scripts.sh
+     Moving run-analyze-scripts.sh
+     Moving fix-permissions.sh
+     Moving process-docs-batch.sh
+     Moving build-cli.sh
+     Moving scripts/analyze-scripts.sh
+
+⏺ The scripts have been copied to the packages/cli/scripts directory. Here's a summary of
+  what was moved:
+
+  1. fix-ai-integration.sh - Creates Claude AI integration for batch-analyze-scripts command
+  2. fix-batch-analyze.sh - Implements batch-analyze-scripts command for analyzing script
+  files
+  3. build-scan-scripts.sh - Builds the scan-scripts command
+  4. run-scan-scripts.sh - Executes the scan-scripts command
+  5. run-analyze-scripts.sh - Runs the complete script analysis pipeline
+  6. fix-permissions.sh - Fixes CLI permissions and errors
+  7. process-docs-batch.sh - Batch processes documentation with CLI
+  8. build-cli.sh - Builds the CLI package
+  9. scripts/analyze-scripts.sh - Script analysis pipeline runner
+
+  Should I now delete these scripts from the dhg-improve-experts directory, or would you
+  prefer to keep them as backups for now?
+ 
  Here's the full list of scripts that have been updated to correctly use the packages/cli
   directory:
 
