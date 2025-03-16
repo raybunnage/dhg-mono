@@ -51,10 +51,10 @@ export async function POST(request: Request) {
     // Determine which script to run based on the action
     let scriptPath = '';
     if (action === 'report' || action === 'markdown-report') {
-      scriptPath = path.join(projectRoot, 'scripts', 'markdown-report.sh');
+      scriptPath = path.join(projectRoot, 'scripts', 'cli-pipeline', 'markdown-report.sh');
     } else {
       // Default to update-docs-database.sh for 'update' or any other action
-      scriptPath = path.join(projectRoot, 'scripts', 'update-docs-database.sh');
+      scriptPath = path.join(projectRoot, 'scripts', 'cli-pipeline', 'update-docs-database.sh');
     }
     
     console.log(`Selected script path: ${scriptPath}`);

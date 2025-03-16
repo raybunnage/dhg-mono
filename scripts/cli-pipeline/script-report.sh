@@ -6,11 +6,13 @@
 echo "Generating shell script report..."
 
 # Define important locations
-REPO_ROOT="$(pwd)"
-REPORT_FILE="$REPO_ROOT/docs/script-report.md"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPORT_DIR="$REPO_ROOT/docs"
+REPORT_FILE="$REPORT_DIR/script-report.md"
 
 # Ensure docs directory exists
-mkdir -p "$REPO_ROOT/docs"
+mkdir -p "$REPORT_DIR"
 
 # Initialize counters as global variables
 TOTAL_SCRIPTS=0
@@ -29,6 +31,13 @@ Generated: $(date)
 This report shows all shell script files (.sh) found in the repository, organized hierarchically by directory.
 It includes information about each script's executable status, size, and last modification date.
 
+**Note**: The following directories and patterns are excluded from this report:
+- _archive/ or archive/ directories (archived code)
+- scripts-*/ directories (backup scripts)
+- file_types/ directory (file type examples) 
+- backups/ or .backups/ directories
+- Standard exclusions: node_modules/, .git/, dist/, build/, coverage/
+
 EOL
 
 # Create temporary files for storing script paths
@@ -41,8 +50,19 @@ OTHER_TMP=$(mktemp)
 
 # Find all shell scripts in the repository and save to temporary file
 echo "Finding all shell scripts..."
-find "$REPO_ROOT" -name "*.sh" -type f -not -path "*/node_modules/*" -not -path "*/.git/*" \
-  -not -path "*/dist/*" -not -path "*/build/*" -not -path "*/coverage/*" > "$ALL_SCRIPTS_TMP"
+find "$REPO_ROOT" -name "*.sh" -type f \
+  -not -path "*/node_modules/*" \
+  -not -path "*/.git/*" \
+  -not -path "*/dist/*" \
+  -not -path "*/build/*" \
+  -not -path "*/coverage/*" \
+  -not -path "*/_archive/*" \
+  -not -path "*/archive/*" \
+  -not -path "*/scripts-*/*" \
+  -not -path "*/file_types/*" \
+  -not -path "*/backups/*" \
+  -not -path "*/.backups/*" \
+  -not -path "*/._archive/*" > "$ALL_SCRIPTS_TMP"
 
 # Count total scripts
 TOTAL_SCRIPTS=$(wc -l < "$ALL_SCRIPTS_TMP")
@@ -50,7 +70,14 @@ echo "Found $TOTAL_SCRIPTS shell scripts"
 
 # Find root level scripts
 echo "Finding scripts in repo root..."
-find "$REPO_ROOT" -maxdepth 1 -name "*.sh" -type f > "$ROOT_SCRIPTS_TMP"
+find "$REPO_ROOT" -maxdepth 1 -name "*.sh" -type f \
+  -not -path "*/_archive/*" \
+  -not -path "*/archive/*" \
+  -not -path "*/scripts-*" \
+  -not -path "*/file_types/*" \
+  -not -path "*/backups/*" \
+  -not -path "*/.backups/*" \
+  -not -path "*/._archive/*" > "$ROOT_SCRIPTS_TMP"
 ROOT_SCRIPTS=$(wc -l < "$ROOT_SCRIPTS_TMP")
 
 # Count executable and non-executable scripts
@@ -152,7 +179,14 @@ process_directory() {
           "$subdir" == *"/.git"* || 
           "$subdir" == *"/dist"* || 
           "$subdir" == *"/build"* || 
-          "$subdir" == *"/coverage"* ]]; then
+          "$subdir" == *"/coverage"* ||
+          "$subdir" == *"/_archive"* ||
+          "$subdir" == *"/archive"* ||
+          "$subdir" == *"/scripts-"* ||
+          "$subdir" == *"/file_types"* ||
+          "$subdir" == *"/backups"* ||
+          "$subdir" == *"/.backups"* ||
+          "$subdir" == *"/._archive"* ]]; then
       continue
     fi
     
@@ -244,7 +278,14 @@ for dir in "$REPO_ROOT"/*; do
      [[ "$dir" != *"/.git"* ]] && 
      [[ "$dir" != *"/dist"* ]] && 
      [[ "$dir" != *"/build"* ]] && 
-     [[ "$dir" != *"/coverage"* ]]; then
+     [[ "$dir" != *"/coverage"* ]] &&
+     [[ "$dir" != *"/_archive"* ]] &&
+     [[ "$dir" != *"/archive"* ]] &&
+     [[ "$dir" != *"/scripts-"* ]] &&
+     [[ "$dir" != *"/file_types"* ]] &&
+     [[ "$dir" != *"/backups"* ]] &&
+     [[ "$dir" != *"/.backups"* ]] &&
+     [[ "$dir" != *"/._archive"* ]]; then
     
     # Create a temporary file for this directory
     DIR_TMP=$(mktemp)
@@ -315,7 +356,7 @@ EOL
 fi
 
 # Add scripts hierarchy if scripts were found
-if [ $SCRIPTS_FOUND -eq 1 ] && [ -s "$SCRIPTS_TMP" ]; then
+if [[ -n "$SCRIPTS_FOUND" && "$SCRIPTS_FOUND" -eq 1 && -s "$SCRIPTS_TMP" ]]; then
   cat >> "$REPORT_FILE" << EOL
 
 ## Scripts Directory (Hierarchical View)
@@ -325,7 +366,7 @@ EOL
 fi
 
 # Add apps hierarchy if scripts were found
-if [ $APPS_FOUND -eq 1 ] && [ -s "$APPS_TMP" ]; then
+if [[ -n "$APPS_FOUND" && "$APPS_FOUND" -eq 1 && -s "$APPS_TMP" ]]; then
   cat >> "$REPORT_FILE" << EOL
 
 ## Apps Directory (Hierarchical View)
@@ -335,7 +376,7 @@ EOL
 fi
 
 # Add packages hierarchy if scripts were found
-if [ $PACKAGES_FOUND -eq 1 ] && [ -s "$PACKAGES_TMP" ]; then
+if [[ -n "$PACKAGES_FOUND" && "$PACKAGES_FOUND" -eq 1 && -s "$PACKAGES_TMP" ]]; then
   cat >> "$REPORT_FILE" << EOL
 
 ## Packages Directory (Hierarchical View)
@@ -345,7 +386,7 @@ EOL
 fi
 
 # Add other directories hierarchy if scripts were found
-if [ $OTHER_FOUND -eq 1 ] && [ -s "$OTHER_TMP" ]; then
+if [[ -n "$OTHER_FOUND" && "$OTHER_FOUND" -eq 1 && -s "$OTHER_TMP" ]]; then
   cat >> "$REPORT_FILE" << EOL
 
 ## Other Directories (Hierarchical View)
