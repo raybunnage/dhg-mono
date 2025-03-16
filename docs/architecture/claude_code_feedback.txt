@@ -1,3 +1,25 @@
+ Here's the full list of scripts that have been updated to correctly use the packages/cli
+  directory:
+
+  1. /Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/analyze-sc
+  ripts.sh
+  2. /Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/classify-m
+  arkdowns.sh
+  3. /Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/examine-ma
+  rkdown.sh
+  4. /Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/run-workfl
+  ow.sh
+
+  All these scripts have been updated with the correct path to the CLI package by:
+  1. Adding an APP_DIR variable to get the app root directory
+  2. Adding a MONO_ROOT variable to get the monorepo root
+  3. Setting CLI_DIR to point to packages/cli in the monorepo root
+  4. Adding comments to explain the change
+
+  These updates ensure that the scripts correctly reference the CLI code that has been moved
+   to the packages/cli directory instead of looking for it in the local app directory.
+
+ 
  Great! The script successfully imported all 73 records to the database.
 
   To summarize what we did:
@@ -118,7 +140,7 @@
     - Includes all requested metadata (title, summary, scores, tags, etc.)
 
   The implementation is available in three key files:
-
+tha
   1. Claude Service: Handles communication with Claude API
   2. Supabase Service Extensions: Added methods for database interactions
   3. Batch Analyze Command: Enhanced with AI capabilities

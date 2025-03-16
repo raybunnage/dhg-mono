@@ -6,7 +6,8 @@
 # Set variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-CLI_DIR="$ROOT_DIR/scripts/cli"  # Updated to use the correct CLI path
+MONO_ROOT="$(cd "$ROOT_DIR/.." && pwd)"
+CLI_DIR="$MONO_ROOT/packages/cli"  # Updated to use packages/cli directory
 SCAN_OUTPUT="$ROOT_DIR/script-scan-results.json"
 ANALYSIS_DIR="$ROOT_DIR/script-analysis-results"
 
