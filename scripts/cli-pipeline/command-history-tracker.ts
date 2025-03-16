@@ -22,7 +22,14 @@ import path from 'path';
 import fs from 'fs';
 
 // Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Also try the apps/dhg-improve-experts .env.development if available
+if (!process.env.SUPABASE_URL) {
+  const improvePath = path.resolve(__dirname, '../../apps/dhg-improve-experts/.env.development');
+  if (fs.existsSync(improvePath)) {
+    dotenv.config({ path: improvePath });
+  }
+}
 
 // Supabase client setup
 const supabaseUrl = process.env.SUPABASE_URL;
