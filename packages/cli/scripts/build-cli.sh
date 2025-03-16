@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Path to the CLI package
-CLI_DIR="../../packages/cli"
+# Set variables
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Navigate to CLI directory and build
 cd "$CLI_DIR" && npm run build
@@ -10,4 +11,4 @@ cd "$CLI_DIR" && npm run build
 cd - > /dev/null
 
 echo "CLI build completed"
-echo "Now remember to run the analyze-scripts.sh script from the dhg-mono root directory"
+echo "Now you can run the analyze-scripts.sh script from the packages/cli/scripts directory"

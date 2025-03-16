@@ -4,7 +4,7 @@
 
 # Set variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLI_DIR="../../packages/cli"
+CLI_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Create temp directory for isolated build
 TEMP_DIR="/tmp/scan-scripts-build"
@@ -118,4 +118,4 @@ EOL
 chmod +x "$CLI_DIR/dist/index.js"
 
 echo "Build completed. You can now run the scan-scripts command."
-echo "Run from dhg-mono root: node packages/cli/dist/index.js scan-scripts [options]"
+echo "Run: node $CLI_DIR/dist/index.js scan-scripts [options]"

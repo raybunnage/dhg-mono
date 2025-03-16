@@ -5,7 +5,8 @@
 
 # Set variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLI_DIST_DIR="../../packages/cli/dist"
+CLI_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLI_DIST_DIR="$CLI_DIR/dist"
 
 # Check if CLI dist directory exists
 if [ ! -d "$CLI_DIST_DIR" ]; then
@@ -425,4 +426,4 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Fix completed. You can now run the scan-scripts command."
-echo "Run from dhg-mono root: node packages/cli/dist/index.js scan-scripts [options]"
+echo "Run: node $CLI_DIST_DIR/index.js scan-scripts [options]"

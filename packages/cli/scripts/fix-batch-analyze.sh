@@ -4,7 +4,8 @@
 
 # Set variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLI_DIST_DIR="../../packages/cli/dist"
+CLI_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLI_DIST_DIR="$CLI_DIR/dist"
 
 # Check if CLI dist directory exists
 if [ ! -d "$CLI_DIST_DIR" ]; then
@@ -518,4 +519,4 @@ rm "$TEMP_JS_FILE"
 rm "$TEMP_INDEX_FILE"
 
 echo "Fix completed. You can now run the batch-analyze-scripts command."
-echo "Run from dhg-mono root: node packages/cli/dist/index.js batch-analyze-scripts [options]"
+echo "Run: node $CLI_DIST_DIR/index.js batch-analyze-scripts [options]"

@@ -93,22 +93,26 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Set script directory and CLI paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Ensure node_modules is installed
-if [ ! -d "./scripts/cli/node_modules" ]; then
+if [ ! -d "$CLI_DIR/node_modules" ]; then
   echo "Installing CLI dependencies..."
-  cd scripts/cli
+  cd "$CLI_DIR"
   npm install
-  cd ../..
+  cd - > /dev/null
 fi
 
 # Build the CLI 
-cd scripts/cli
+cd "$CLI_DIR"
 echo "Building CLI..."
 npm run build
-cd ../..
+cd - > /dev/null
 
 # Construct the command
-CMD="node scripts/cli/dist/index.js process"
+CMD="node $CLI_DIR/dist/index.js process"
 
 if [ -n "$FILE_PATH" ]; then
   CMD="$CMD $FILE_PATH"

@@ -4,8 +4,9 @@
 
 # Set variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MONO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-CLI_DIST="$MONO_ROOT/packages/cli/dist"
+CLI_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLI_DIST="$CLI_DIR/dist"
+MONO_ROOT="$(cd "$CLI_DIR/.." && pwd)"
 SCAN_OUTPUT="$MONO_ROOT/script-scan-results.json"
 
 # Explicitly set SUPABASE_SERVICE_ROLE_KEY from .env.development if available

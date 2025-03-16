@@ -1,3 +1,46 @@
+ I've moved all the files I could find from your list. Some of the files weren't found in
+  the repository:
+
+  Files moved to scripts/cli-pipeline/:
+  1. classify-markdowns.sh
+  2. examine-markdown.sh
+  3. generate-report-and-sync-db.sh
+  4. markdown-report.sh
+  5. process-documentation.ts
+  6. run-docs-processor.sh
+  7. run-workflow.sh
+  8. update-docs-database.sh
+
+  Files not found:
+  1. analyze-scripts.sh (only found in archive)
+  2. check-duplicates.ts
+  3. command-history-tracker.ts
+  4. import-script-analysis.sh
+  5. run-ai-analyze.sh
+  6. script-report.sh
+  7. setup-prompts.sh
+  8. validate-ai-assets.sh
+  9. validate-prompt-relationships.sh
+
+  The scripts have been successfully moved to the scripts/cli-pipeline directory.
+ 
+ 
+ All CLI pipeline scripts have been updated with the correct paths to work properly in
+  their new location in the packages/cli/scripts directory. The main changes made were:
+
+  1. Updated path references to use relative paths from the scripts directory to find the
+  CLI directory and its dist folder
+  2. Added proper path resolution using $(cd ... && pwd) to ensure paths work correctly
+  regardless of execution location
+  3. Updated command output messages to reflect the new locations
+  4. Fixed environment loading to ensure it works in the new location
+  5. Made sure all scripts maintain the same functionality with the updated paths
+
+  These scripts should now work correctly from their new location in the
+  packages/cli/scripts directory.
+
+ 
+ 
  Yes, scripts/analyze-scripts.sh should also be moved since it directly interacts with the
   CLI pipeline.
 
