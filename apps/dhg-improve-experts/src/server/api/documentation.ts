@@ -141,7 +141,7 @@ export async function POST(req: Request) {
         const projectRoot = process.cwd();
         
         // Path to the update script
-        const scriptPath = path.join(projectRoot, 'scripts', 'update-docs-database.sh');
+        const scriptPath = path.join(projectRoot, 'scripts', 'cli-pipeline', 'update-docs-database.sh');
         
         // Check if script exists
         try {

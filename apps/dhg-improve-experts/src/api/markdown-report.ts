@@ -16,19 +16,19 @@ export async function generateMarkdownReport() {
     const repoRoot = process.cwd();
     
     // Try multiple locations for the script
-    let scriptPath = path.join(repoRoot, 'scripts', 'markdown-report.sh');
+    let scriptPath = path.join(repoRoot, 'scripts', 'cli-pipeline', 'markdown-report.sh');
     let reportPath = path.join(repoRoot, 'docs', 'markdown-report.md');
     
     // Check if script exists at the first location
     if (!existsSync(scriptPath)) {
       // Try alternative locations
-      scriptPath = path.join(repoRoot, '../..', 'scripts', 'markdown-report.sh');
+      scriptPath = path.join(repoRoot, '../..', 'scripts', 'cli-pipeline', 'markdown-report.sh');
       reportPath = path.join(repoRoot, '../..', 'docs', 'markdown-report.md');
     }
     
     // If script still not found, try parent directory 
     if (!existsSync(scriptPath)) {
-      scriptPath = path.join(repoRoot, '..', 'scripts', 'markdown-report.sh');
+      scriptPath = path.join(repoRoot, '..', 'scripts', 'cli-pipeline', 'markdown-report.sh');
       reportPath = path.join(repoRoot, '..', 'docs', 'markdown-report.md');
     }
     
@@ -38,9 +38,9 @@ export async function generateMarkdownReport() {
         error: 'Could not find markdown-report.sh script',
         paths: {
           attemptedScriptPaths: [
-            path.join(repoRoot, '../..', 'scripts', 'markdown-report.sh'),
-            path.join(repoRoot, 'scripts', 'markdown-report.sh'),
-            path.join(repoRoot, '..', 'scripts', 'markdown-report.sh')
+            path.join(repoRoot, '../..', 'scripts', 'cli-pipeline', 'markdown-report.sh'),
+            path.join(repoRoot, 'scripts', 'cli-pipeline', 'markdown-report.sh'),
+            path.join(repoRoot, '..', 'scripts', 'cli-pipeline', 'markdown-report.sh')
           ]
         }
       };
