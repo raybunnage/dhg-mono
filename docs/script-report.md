@@ -1,6 +1,6 @@
 # Shell Script Report
 
-Generated: Fri Mar 14 20:06:59 PDT 2025
+Generated: Sat Mar 15 18:54:17 PDT 2025
 
 ## Overview
 
@@ -130,8 +130,8 @@ find . -name "*.sh" -type f -exec chmod +x {} \;
         - Shebang: `#!/bin/bash`
       - 📜 [examine-markdown.sh](/apps/dhg-improve-experts/scripts/examine-markdown.sh) - ✅ Executable - 2025-03-11 06:22 (904 bytes)
         - Shebang: `#!/bin/bash`
-      - 📜 [generate-report-and-sync-db.sh](/apps/dhg-improve-experts/scripts/generate-report-and-sync-db.sh) - ✅ Executable - 2025-03-07 00:36 (1554 bytes)
-        - Shebang: `#!/bin/bash`
+      - 📜 [generate-report-and-sync-db.sh](/apps/dhg-improve-experts/scripts/generate-report-and-sync-db.sh) - ✅ Executable - 2025-03-15 14:04 (1189 bytes)
+        - Shebang: `No shebang`
       - 📜 [markdown-report.sh](/apps/dhg-improve-experts/scripts/markdown-report.sh) - ✅ Executable - 2025-03-07 00:36 (6204 bytes)
         - Shebang: `#!/bin/bash`
       - 📜 [run-docs-processor.sh](/apps/dhg-improve-experts/scripts/run-docs-processor.sh) - ✅ Executable - 2025-03-02 16:23 (648 bytes)
