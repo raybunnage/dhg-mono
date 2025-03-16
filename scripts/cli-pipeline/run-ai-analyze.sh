@@ -31,7 +31,7 @@ fi
 # Check if CLI dist exists
 if [ ! -d "$CLI_DIST" ]; then
   echo "Error: CLI dist directory doesn't exist."
-  echo "Please run the fix scripts from apps/dhg-improve-experts first:"
+  echo "Please run the fix scripts from packages/cli/scripts first:"
   echo "  - fix-permissions.sh"
   echo "  - fix-batch-analyze.sh"
   echo "  - fix-ai-integration.sh"
