@@ -13,18 +13,16 @@ IMPROVE_EXPERTS_DIR="$MONO_ROOT/apps/dhg-improve-experts"
 # Create the analysis directory if it doesn't exist
 mkdir -p "$ANALYSIS_DIR"
 
-# Load environment variables from .env.development if available
-ENV_FILE="$IMPROVE_EXPERTS_DIR/.env.development"
-if [ -f "$ENV_FILE" ]; then
-  echo "Loading environment variables from $ENV_FILE"
-  export SUPABASE_SERVICE_ROLE_KEY=$(grep SUPABASE_SERVICE_ROLE_KEY "$ENV_FILE" | cut -d '=' -f2-)
-  export ANTHROPIC_API_KEY=$(grep VITE_ANTHROPIC_API_KEY "$ENV_FILE" | cut -d '=' -f2-)
-  echo "SUPABASE_SERVICE_ROLE_KEY and ANTHROPIC_API_KEY loaded from .env.development"
-fi
+# Load environment variables using the shared helper script
+source "$SCRIPT_DIR/load-env.sh" --verbose
 
-# Make sure Claude API key is set
-if [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$VITE_ANTHROPIC_API_KEY" ]; then
-  echo "Error: ANTHROPIC_API_KEY not set. Please set it in .env.development"
+# Check if critical variables are set
+if [ -z "$CLI_CLAUDE_API_KEY" ] || [ -z "$CLI_SUPABASE_URL" ] || [ -z "$CLI_SUPABASE_KEY" ]; then
+  echo -e "${RED}Error: Required environment variables are not set${NC}"
+  echo "Please make sure the following variables are defined in .env.local:"
+  echo "  - CLI_CLAUDE_API_KEY (currently: ${CLI_CLAUDE_API_KEY:0:3}...)"
+  echo "  - CLI_SUPABASE_URL (currently: ${CLI_SUPABASE_URL:-not set})"
+  echo "  - CLI_SUPABASE_KEY (currently: ${CLI_SUPABASE_KEY:0:3}...)"
   exit 1
 fi
 
