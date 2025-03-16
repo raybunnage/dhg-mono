@@ -1,0 +1,25 @@
+{
+  "analyzed_at": "2025-03-16T07:43:41.626Z",
+  "total_scripts": 20,
+  "languages": {
+    "shell": 8,
+    "typescript": 12
+  },
+  "document_types": {
+    "shell_script": 5,
+    "build_script": 2,
+    "service": 5,
+    "typescript_script": 4,
+    "test_script": 1,
+    "utility": 1,
+    "module_index": 2
+  },
+  "script_types": {
+    "shell": 5,
+    "build": 2,
+    "typescript": 10,
+    "test": 1,
+    "utility": 1,
+    "data_processing": 1
+  }
+}

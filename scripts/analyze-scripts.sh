@@ -5,10 +5,11 @@
 
 # Set variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-CLI_DIR="$ROOT_DIR/scripts/cli"  # Updated to use the correct CLI path
-SCAN_OUTPUT="$ROOT_DIR/script-scan-results.json"
-ANALYSIS_DIR="$ROOT_DIR/script-analysis-results"
+MONO_ROOT="$(dirname "$SCRIPT_DIR")"
+APP_DIR="$MONO_ROOT/apps/dhg-improve-experts"
+CLI_DIR="$MONO_ROOT/packages/cli"
+SCAN_OUTPUT="$MONO_ROOT/script-scan-results.json"
+ANALYSIS_DIR="$MONO_ROOT/script-analysis-results"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -24,9 +25,9 @@ echo "-----------------------------------"
 
 # Step 1: Scan for script files
 echo -e "${YELLOW}Step 1: Scanning for script files...${NC}"
-cd "$ROOT_DIR" && \
+cd "$MONO_ROOT" && \
 node "$CLI_DIR/dist/index.js" scan-scripts \
-  --dir "$ROOT_DIR" \
+  --dir "$MONO_ROOT" \
   --extensions "js,ts,sh,py,sql" \
   --exclude "node_modules,dist,build,.git,coverage" \
   --output "$SCAN_OUTPUT" \
@@ -42,11 +43,13 @@ echo "-----------------------------------"
 
 # Step 2: Batch analyze script files
 echo -e "${YELLOW}Step 2: Analyzing script files...${NC}"
-cd "$ROOT_DIR" && \
+cd "$MONO_ROOT" && \
 node "$CLI_DIR/dist/index.js" batch-analyze-scripts \
   --input "$SCAN_OUTPUT" \
   --output-dir "$ANALYSIS_DIR" \
+  --prompt-name "script-analysis-prompt" \
   --check-references \
+  --update-database \
   --batch-size 5 \
   --concurrency 2 \
   --verbose

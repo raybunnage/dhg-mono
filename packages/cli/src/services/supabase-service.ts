@@ -4,6 +4,43 @@ import { Logger } from '../utils/logger';
 import { AppError, ErrorHandler } from '../utils/error-handler';
 import { DocumentType, Prompt, Relationship } from '../models';
 
+// Script types
+export interface Script {
+  id: string;
+  file_path: string;
+  title: string;
+  language: string;
+  document_type: string;
+  summary: string;
+  tags: string[];
+  code_quality: number;
+  maintainability: number;
+  utility: number;
+  documentation: number;
+  relevance_score: number;
+  relevance_reasoning: string;
+  referenced: boolean;
+  status: string;
+  status_confidence: number;
+  status_reasoning: string;
+  script_type: string;
+  usage_status: string;
+  last_analyzed: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScriptRelationship {
+  id: string;
+  source_script_id: string;
+  target_script_id: string;
+  relationship_type: string;
+  confidence: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface QueryOptions {
   columns?: string;
   filters?: Array<{
@@ -473,5 +510,324 @@ export class SupabaseService {
       
       return data;
     }, `Failed to update assessment for documentation file ID: ${docFileId}`);
+  }
+  
+  /**
+   * Get script by file path
+   */
+  async getScriptByPath(filePath: string): Promise<Script | null> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Getting script with file path: ${filePath}`);
+      
+      const { data, error } = await this.client
+        .from('scripts')
+        .select('*')
+        .eq('file_path', filePath)
+        .maybeSingle();
+      
+      if (error) {
+        throw new AppError(
+          `Failed to get script by path: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      if (!data) {
+        Logger.debug(`No script found with path: ${filePath}`);
+        return null;
+      }
+      
+      Logger.debug(`Found script with path: ${filePath}`);
+      return data as Script;
+    }, `Failed to get script by path: ${filePath}`);
+  }
+  
+  /**
+   * Get all scripts
+   */
+  async getAllScripts(): Promise<Script[]> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug('Getting all scripts');
+      
+      const { data, error } = await this.client
+        .from('scripts')
+        .select('*')
+        .order('file_path');
+      
+      if (error) {
+        throw new AppError(
+          `Failed to get all scripts: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      Logger.debug(`Found ${data?.length || 0} scripts`);
+      return data as Script[] || [];
+    }, 'Failed to get all scripts');
+  }
+  
+  /**
+   * Get scripts by document type
+   */
+  async getScriptsByDocumentType(documentType: string): Promise<Script[]> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Getting scripts with document type: ${documentType}`);
+      
+      const { data, error } = await this.client
+        .from('scripts')
+        .select('*')
+        .eq('document_type', documentType)
+        .order('file_path');
+      
+      if (error) {
+        throw new AppError(
+          `Failed to get scripts by document type: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      Logger.debug(`Found ${data?.length || 0} scripts with document type: ${documentType}`);
+      return data as Script[] || [];
+    }, `Failed to get scripts with document type: ${documentType}`);
+  }
+  
+  /**
+   * Get scripts by status
+   */
+  async getScriptsByStatus(status: string): Promise<Script[]> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Getting scripts with status: ${status}`);
+      
+      const { data, error } = await this.client
+        .from('scripts')
+        .select('*')
+        .eq('status', status)
+        .order('file_path');
+      
+      if (error) {
+        throw new AppError(
+          `Failed to get scripts by status: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      Logger.debug(`Found ${data?.length || 0} scripts with status: ${status}`);
+      return data as Script[] || [];
+    }, `Failed to get scripts with status: ${status}`);
+  }
+  
+  /**
+   * Insert or update a script
+   */
+  async upsertScript(scriptData: Partial<Script>): Promise<Script> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Upserting script with file path: ${scriptData.file_path}`);
+      
+      // Ensure required fields are present
+      if (!scriptData.file_path) {
+        throw new AppError('Script file_path is required for upsert', 'VALIDATION_ERROR');
+      }
+      
+      const now = new Date().toISOString();
+      
+      // Add timestamps if not present
+      if (!scriptData.created_at) {
+        scriptData.created_at = now;
+      }
+      scriptData.updated_at = now;
+      
+      const { data, error } = await this.client
+        .from('scripts')
+        .upsert(scriptData, { 
+          onConflict: 'file_path',
+          ignoreDuplicates: false 
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw new AppError(
+          `Failed to upsert script: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      Logger.debug(`Successfully upserted script: ${scriptData.file_path}`);
+      return data as Script;
+    }, `Failed to upsert script with file path: ${scriptData.file_path}`);
+  }
+  
+  /**
+   * Delete a script
+   */
+  async deleteScript(filePath: string): Promise<void> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Deleting script with file path: ${filePath}`);
+      
+      const { error } = await this.client
+        .from('scripts')
+        .delete()
+        .eq('file_path', filePath);
+      
+      if (error) {
+        throw new AppError(
+          `Failed to delete script: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      Logger.debug(`Successfully deleted script: ${filePath}`);
+    }, `Failed to delete script with file path: ${filePath}`);
+  }
+  
+  /**
+   * Add a script relationship
+   */
+  async addScriptRelationship(relationshipData: {
+    source_path: string;
+    target_path: string;
+    relationship_type: string;
+    confidence: number;
+    notes?: string;
+  }): Promise<ScriptRelationship> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Adding script relationship: ${relationshipData.source_path} -> ${relationshipData.target_path}`);
+      
+      // Get source script
+      const sourceScript = await this.getScriptByPath(relationshipData.source_path);
+      if (!sourceScript) {
+        throw new AppError(
+          `Source script not found: ${relationshipData.source_path}`,
+          'NOT_FOUND_ERROR'
+        );
+      }
+      
+      // Get target script
+      const targetScript = await this.getScriptByPath(relationshipData.target_path);
+      if (!targetScript) {
+        throw new AppError(
+          `Target script not found: ${relationshipData.target_path}`,
+          'NOT_FOUND_ERROR'
+        );
+      }
+      
+      // Create relationship
+      const now = new Date().toISOString();
+      const relationship = {
+        source_script_id: sourceScript.id,
+        target_script_id: targetScript.id,
+        relationship_type: relationshipData.relationship_type,
+        confidence: relationshipData.confidence,
+        notes: relationshipData.notes || null,
+        created_at: now,
+        updated_at: now
+      };
+      
+      const { data, error } = await this.client
+        .from('script_relationships')
+        .upsert(relationship, {
+          onConflict: 'source_script_id,target_script_id,relationship_type',
+          ignoreDuplicates: false
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw new AppError(
+          `Failed to add script relationship: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      Logger.debug(`Successfully added script relationship: ${relationshipData.source_path} -> ${relationshipData.target_path}`);
+      return data as ScriptRelationship;
+    }, `Failed to add script relationship: ${relationshipData.source_path} -> ${relationshipData.target_path}`);
+  }
+  
+  /**
+   * Get script relationships for a specific script
+   */
+  async getScriptRelationships(scriptPath: string): Promise<Array<{
+    id: string;
+    relationship_type: string;
+    confidence: number;
+    notes?: string;
+    related_script: {
+      id: string;
+      file_path: string;
+      title: string;
+    };
+    is_source: boolean;
+  }>> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug(`Getting relationships for script: ${scriptPath}`);
+      
+      // Get script ID
+      const script = await this.getScriptByPath(scriptPath);
+      if (!script) {
+        throw new AppError(
+          `Script not found: ${scriptPath}`,
+          'NOT_FOUND_ERROR'
+        );
+      }
+      
+      // Get relationships where this script is either source or target
+      const { data: relationshipsData, error } = await this.client
+        .from('script_relationships')
+        .select(`
+          id,
+          relationship_type,
+          confidence,
+          notes,
+          source_script:source_script_id(id, file_path, title),
+          target_script:target_script_id(id, file_path, title)
+        `)
+        .or(`source_script_id.eq.${script.id},target_script_id.eq.${script.id}`);
+      
+      if (error) {
+        throw new AppError(
+          `Failed to get script relationships: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      if (!relationshipsData || relationshipsData.length === 0) {
+        Logger.debug(`No relationships found for script: ${scriptPath}`);
+        return [];
+      }
+      
+      // Format the relationships for easier consumption
+      const formattedRelationships = relationshipsData.map(rel => {
+        // Check if the script is the source or target
+        const isSource = rel.source_script.id === script.id;
+        
+        // The related script is the opposite of what the current script is
+        const relatedScript = isSource ? rel.target_script : rel.source_script;
+        
+        return {
+          id: rel.id,
+          relationship_type: rel.relationship_type,
+          confidence: rel.confidence,
+          notes: rel.notes,
+          related_script: {
+            id: relatedScript.id,
+            file_path: relatedScript.file_path,
+            title: relatedScript.title
+          },
+          is_source: isSource
+        };
+      });
+      
+      Logger.debug(`Found ${formattedRelationships.length} relationships for script: ${scriptPath}`);
+      return formattedRelationships;
+    }, `Failed to get relationships for script: ${scriptPath}`);
   }
 }

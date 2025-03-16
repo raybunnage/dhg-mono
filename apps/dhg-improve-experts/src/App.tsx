@@ -38,6 +38,7 @@ import Cmds from '@/pages/Cmds';
 import { GoogleAuthCallback } from './components/GoogleAuthCallback';
 import Guts from '@/pages/Guts';
 import Gmail from '@/pages/Gmail';
+import ScriptAnalysis from '@/pages/ScriptAnalysis';
 // import DocumentationTest from '@/pages/DocumentationTest'; // Archived on 2025-03-04
 
 // Component imports
@@ -125,6 +126,7 @@ function App() {
         <Route path="/guts" element={<Guts />} />
         <Route path="/guts-example" element={<Navigate to="/guts" replace />} />
         <Route path="/gmail" element={<Gmail />} />
+        <Route path="/scripts" element={<ScriptAnalysis />} />
       </Routes>
     </QueryClientProvider>
   );

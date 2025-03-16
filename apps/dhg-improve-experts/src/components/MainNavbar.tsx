@@ -19,6 +19,7 @@ export function MainNavbar() {
     { name: 'Experts', href: '/experts' },
     { name: 'Gmail', href: '/gmail' },
     { name: 'Code', href: '/code' },
+    { name: 'Scripts', href: '/scripts' },
     { name: 'Cmds', href: '/cmds' },
     { name: 'Guts', href: '/guts' },
   ]
