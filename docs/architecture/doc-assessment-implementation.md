@@ -1,3 +1,39 @@
+Let's adjust the command:
+
+⏺ Bash(cd /Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts && find . -type …
+       -name "*.js" -o -name "*.ts" -o -name "*.sh" -o -name "*.py" -o -name "*.sql" | grep -v
+      "node_modules" | grep -v "dist" | grep -v ".git" | grep -v "build" | grep -v "coverage" |
+      head -10)
+  ⎿  ./remove_user_references_code.sh
+     ./fix_experts_rls.sql
+     ./dev-start.sh
+     ./apply_function_registry_migrations.sh
+     ./apply_script_migrations.sh
+     ./cleanup_batches.sql
+     ./apply_export_functions_migration.sh
+     ./process-docs-batch.sh
+     ./apply_export_functions.sh
+     ./function_registry_migrations.sql
+
+⏺ Based on what we've found, here's the summary:
+
+  1. The scan-scripts command is supposed to find script files with extensions js, ts, sh,
+  py, sql while excluding patterns like node_modules, dist, build, .git, coverage.
+  2. There's a mismatch between how scan-scripts.ts calls the findFiles function and how
+  it's implemented in file-service.ts, which is likely causing issues.
+  3. The analyze-scripts.sh script is looking for the CLI in a location that doesn't exist
+  in your current setup.
+  4. The database schema for the scripts table includes fields for file_path, language,
+  document_type, summary, tags, etc.
+  5. A simple find command shows that there are indeed script files in the repository with
+  the extensions specified in the scan-scripts command.
+
+  The issue appears to be that the CLI tool isn't properly built or installed, and there
+  might be incompatibilities between the implementation and usage of the file finding logic.
+   The basic logic for finding script files should match what's in the database schema, but
+  the implementation details need to be resolved.
+
+
 # Documentation Assessment System: Implementation Guide
 
 ## Overview

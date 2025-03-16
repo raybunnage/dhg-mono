@@ -11,7 +11,9 @@ echo -e "${BOLD}${BLUE}=== Running Markdown Classifier ===${NC}\n"
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLI_DIR="${SCRIPT_DIR}/cli"
+APP_DIR="$(dirname "$SCRIPT_DIR")"
+MONO_ROOT="$(cd "$APP_DIR/.." && pwd)"
+CLI_DIR="${MONO_ROOT}/packages/cli"  # Updated to use packages/cli directory
 TARGET_FILE="$(pwd)/docs/markdown-report.md"
 
 # Check if the new CLI is built
