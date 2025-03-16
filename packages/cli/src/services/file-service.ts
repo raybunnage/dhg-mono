@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { glob } from 'glob';
 import { Logger } from '../utils/logger';
 import { AppError, ErrorHandler } from '../utils/error-handler';
 
@@ -127,9 +128,9 @@ export class FileService {
   }
   
   /**
-   * Find files recursively in a directory that match a pattern
+   * Find files recursively in a directory that match a pattern (legacy method)
    */
-  findFiles(
+  findFilesLegacy(
     directoryPath: string, 
     pattern: RegExp, 
     excludePatterns: RegExp[] = [/node_modules/, /\.git/, /dist/, /build/, /coverage/]
@@ -156,7 +157,7 @@ export class FileService {
         const stats = fs.statSync(itemPath);
         
         if (stats.isDirectory()) {
-          results = results.concat(this.findFiles(itemPath, pattern, excludePatterns));
+          results = results.concat(this.findFilesLegacy(itemPath, pattern, excludePatterns));
         } else if (pattern.test(item)) {
           results.push(itemPath);
         }
@@ -166,6 +167,60 @@ export class FileService {
     } catch (error) {
       Logger.error(`Error finding files: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return results;
+    }
+  }
+  
+  /**
+   * Find files using glob patterns
+   */
+  async findFiles(options: {
+    directory: string;
+    includePatterns: string[];
+    excludePatterns: string[];
+    recursive: boolean;
+  }): Promise<string[]> {
+    try {
+      const fullPath = path.resolve(options.directory);
+      
+      if (!fs.existsSync(fullPath)) {
+        Logger.warn(`Directory does not exist: ${fullPath}`);
+        return [];
+      }
+      
+      Logger.debug(`Finding files in ${fullPath} with patterns: ${options.includePatterns.join(', ')}`);
+      
+      const allResults: string[] = [];
+      
+      // Process each include pattern
+      for (const pattern of options.includePatterns) {
+        const globOptions = {
+          cwd: fullPath,
+          dot: false,
+          nodir: true,
+          absolute: true,
+          ignore: options.excludePatterns
+        };
+        
+        const results = await glob(pattern, globOptions);
+        
+        Logger.debug(`Found ${results.length} files matching pattern ${pattern}`);
+        allResults.push(...results);
+      }
+      
+      // Sort by modification time (newest first)
+      const sortedResults = await Promise.all(
+        allResults.map(async (filePath) => {
+          const stats = fs.statSync(filePath);
+          return { path: filePath, mtime: stats.mtime.getTime() };
+        })
+      );
+      
+      sortedResults.sort((a, b) => b.mtime - a.mtime);
+      
+      return sortedResults.map((item) => item.path);
+    } catch (error) {
+      Logger.error(`Error finding files: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return [];
     }
   }
 }

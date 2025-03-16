@@ -70,6 +70,12 @@ class Config {
       throw new AppError('Failed to load environment file', 'CONFIG_ERROR');
     }
     
+    // Check for SUPABASE_SERVICE_ROLE_KEY and use it if VITE_SUPABASE_SERVICE_ROLE_KEY is not set
+    if (!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      process.env.VITE_SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      Logger.debug('Using SUPABASE_SERVICE_ROLE_KEY as VITE_SUPABASE_SERVICE_ROLE_KEY');
+    }
+    
     // Required environment variables
     this.supabaseUrl = this.getRequiredEnv('VITE_SUPABASE_URL');
     this.supabaseKey = this.getRequiredEnv('VITE_SUPABASE_SERVICE_ROLE_KEY');
