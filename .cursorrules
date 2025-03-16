@@ -685,6 +685,73 @@
         "shell": "cp $SOURCE $DEST.$(date +%Y-%m-%d).$EXT",
         "node": "const date = new Date().toISOString().split('T')[0];"
       }
+    },
+    {
+      "type": "CLIPipelineOrganization",
+      "description": "Rules for organizing CLI pipeline services in the monorepo",
+      "structure": {
+        "central": {
+          "path": "/packages/cli",
+          "purpose": "Central location for all shared CLI pipeline services",
+          "contents": {
+            "services": "Reusable service modules (Supabase, AI, file processing)",
+            "commands": "CLI command implementations",
+            "utils": "Shared utilities and helpers"
+          }
+        },
+        "apps": {
+          "path": "apps/*/scripts",
+          "purpose": "App-specific scripts only, not shared services",
+          "restrictions": [
+            "No duplicate implementations of services in packages/cli",
+            "No app-specific versions of common services",
+            "No standalone pipelines that duplicate functionality"
+          ]
+        }
+      },
+      "requirements": [
+        "All common services must be in packages/cli directory",
+        "No duplicate implementations of services in app directories",
+        "Apps must import and use services from packages/cli",
+        "New common functionality should be added to packages/cli, not app directories"
+      ],
+      "services": {
+        "common": [
+          "Supabase database operations",
+          "AI service calls (Claude, OpenAI)",
+          "File processing and analysis",
+          "Document type classification",
+          "Report generation"
+        ]
+      },
+      "imports": {
+        "correct": "import { someService } from '@dhg/cli/services'",
+        "incorrect": "import { someService } from '../../../scripts/services'"
+      },
+      "bestPractices": {
+        "newFeatures": "Check packages/cli first for existing services before implementing",
+        "improvements": "Contribute improvements to packages/cli rather than creating app-specific versions",
+        "appSpecific": "Only implement in apps what is truly unique to that application"
+      },
+      "pattern": {
+        "forbidden": [
+          {
+            "match": "apps/.*/src/services/(supabase|claude|openai|file)",
+            "message": "Common services should be in packages/cli, not in app-specific directories"
+          },
+          {
+            "match": "apps/.*/scripts/cli",
+            "message": "CLI pipeline code should be in packages/cli, not in app-specific directories"
+          }
+        ],
+        "required": [
+          {
+            "match": "packages/cli/src/services",
+            "message": "Common services should be implemented in packages/cli/src/services"
+          }
+        ]
+      },
+      "severity": "warning"
     }
   ]
-} 
+}
