@@ -4,7 +4,7 @@
 
 # Set variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLI_DIST_DIR="../../packages/cli/dist"
+CLI_DIST_DIR="$(cd "$SCRIPT_DIR/.." && pwd)/dist"
 
 # Check if CLI dist directory exists
 if [ ! -d "$CLI_DIST_DIR" ]; then
