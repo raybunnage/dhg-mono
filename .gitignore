@@ -111,3 +111,6 @@ scripts/whisper/.venv-whisper/
 # Schema temporary files
 supabase/schema-info.tmp.json
 
+# Archive directories
+**/_archive/
+**/._archive/ # Also catch potential typos/variants
