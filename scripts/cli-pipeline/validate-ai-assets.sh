@@ -11,42 +11,33 @@
 echo "Starting AI assets validation..."
 
 # Define important locations
-REPO_ROOT="$(pwd)"
-ENV_FILE="$REPO_ROOT/apps/dhg-improve-experts/.env.development"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REPORT_FILE="$REPO_ROOT/docs/ai-assets-validation-report.md"
 
-# Check if environment file exists
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "ERROR: Environment file not found at $ENV_FILE"
-  exit 1
-fi
+# Load environment variables using the shared helper script
+source "$SCRIPT_DIR/load-env.sh" --verbose
 
-# Load environment variables from .env.development file - handle special characters properly
-echo "Loading Supabase and API credentials from $ENV_FILE..."
-set -a
-source "$ENV_FILE"
-set +a
+# Explicitly export the variables we'll use for the Node.js script
+export SUPABASE_URL="$CLI_SUPABASE_URL"
+export SUPABASE_KEY="$CLI_SUPABASE_KEY"
+export ANTHROPIC_API_KEY="$CLI_CLAUDE_API_KEY"
 
-# Check if required environment variables are loaded
-if [[ -z "$VITE_SUPABASE_URL" || -z "$VITE_SUPABASE_SERVICE_ROLE_KEY" ]]; then
+# Check if required Supabase variables are available
+if [[ -z "$CLI_SUPABASE_URL" || -z "$CLI_SUPABASE_KEY" ]]; then
   echo "ERROR: Required Supabase environment variables not found"
-  echo "Make sure VITE_SUPABASE_URL and VITE_SUPABASE_SERVICE_ROLE_KEY are in $ENV_FILE"
+  echo "Make sure CLI_SUPABASE_URL and CLI_SUPABASE_KEY are set in .env.local"
   exit 1
 fi
 
-echo "Supabase URL: $VITE_SUPABASE_URL"
-
-# Check if Anthropic API key is available
-if [[ -z "$VITE_ANTHROPIC_API_KEY" ]]; then
-  echo "WARNING: Anthropic API key not found in environment variables"
+# Determine if Claude API test should be enabled
+if [[ -n "$CLI_CLAUDE_API_KEY" ]]; then
+  echo "Using Claude API key: ${CLI_CLAUDE_API_KEY:0:5}..."
+  CLAUDE_API_TEST="enabled"
+else
+  echo "WARNING: No Claude API key found in environment variables"
   echo "Claude API test will be skipped"
   CLAUDE_API_TEST="skipped"
-else
-  echo "Anthropic API key found, will test Claude API"
-  # Print first few characters of the key for debugging (safely)
-  KEY_PREFIX="${VITE_ANTHROPIC_API_KEY:0:5}..."
-  echo "API Key prefix: $KEY_PREFIX"
-  CLAUDE_API_TEST="enabled"
 fi
 
 # Ensure docs directory exists
@@ -59,16 +50,16 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-// Initialize Supabase client
+// Initialize Supabase client - using the exported variables from the shell script
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
 );
 
 const repoRoot = '$REPO_ROOT';
 const reportFile = '$REPORT_FILE';
 const claudeApiTest = '$CLAUDE_API_TEST';
-const anthropicApiKey = process.env.VITE_ANTHROPIC_API_KEY;
+const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 
 // Debug API key
 console.log('Checking API key availability:');

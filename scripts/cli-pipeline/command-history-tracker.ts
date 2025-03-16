@@ -21,22 +21,44 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 
-// Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-// Also try the apps/dhg-improve-experts .env.development if available
-if (!process.env.SUPABASE_URL) {
-  const improvePath = path.resolve(__dirname, '../../apps/dhg-improve-experts/.env.development');
-  if (fs.existsSync(improvePath)) {
-    dotenv.config({ path: improvePath });
-  }
+// Load environment variables in order of precedence
+const repoRoot = path.resolve(__dirname, '../..');
+const envLocal = path.join(repoRoot, '.env.local');
+const envDev = path.join(repoRoot, '.env.development');
+const envBase = path.join(repoRoot, '.env');
+const appEnvDev = path.join(repoRoot, 'apps/dhg-improve-experts/.env.development');
+
+// Load base .env first (lowest precedence)
+if (fs.existsSync(envBase)) {
+  console.log(`Loading base environment variables from ${envBase}`);
+  dotenv.config({ path: envBase });
 }
 
-// Supabase client setup
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+// Load environment-specific variables
+if (fs.existsSync(envDev)) {
+  console.log(`Loading environment-specific variables from ${envDev}`);
+  dotenv.config({ path: envDev });
+}
+
+// Load local variables (highest precedence)
+if (fs.existsSync(envLocal)) {
+  console.log(`Loading local environment variables from ${envLocal}`);
+  dotenv.config({ path: envLocal });
+}
+
+// Fallback to app-specific .env.development if needed
+if (fs.existsSync(appEnvDev)) {
+  console.log(`Loading app-specific environment variables from ${appEnvDev}`);
+  dotenv.config({ path: appEnvDev });
+}
+
+// Supabase client setup - try CLI_ prefixed variables first, then fall back
+const supabaseUrl = process.env.CLI_SUPABASE_URL || process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.CLI_SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Error: SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env file');
+  console.error('Error: Supabase connection details not found in environment variables');
+  console.error('Please set CLI_SUPABASE_URL and CLI_SUPABASE_KEY in .env.local');
   process.exit(1);
 }
 

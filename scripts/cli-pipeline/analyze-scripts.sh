@@ -5,11 +5,24 @@
 
 # Set variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MONO_ROOT="$(dirname "$SCRIPT_DIR")"
+MONO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 APP_DIR="$MONO_ROOT/apps/dhg-improve-experts"
 CLI_DIR="$MONO_ROOT/packages/cli"
 SCAN_OUTPUT="$MONO_ROOT/script-scan-results.json"
 ANALYSIS_DIR="$MONO_ROOT/script-analysis-results"
+
+# Load environment variables 
+source "$SCRIPT_DIR/load-env.sh" --verbose
+
+# Check if critical variables are set
+if [[ -z "$CLI_CLAUDE_API_KEY" || -z "$CLI_SUPABASE_URL" || -z "$CLI_SUPABASE_KEY" ]]; then
+  echo -e "${RED}Error: Required environment variables are not set${NC}"
+  echo "Please make sure the following variables are defined in .env.local:"
+  echo "  - CLI_CLAUDE_API_KEY"
+  echo "  - CLI_SUPABASE_URL"
+  echo "  - CLI_SUPABASE_KEY"
+  exit 1
+fi
 
 # Colors for output
 GREEN='\033[0;32m'
