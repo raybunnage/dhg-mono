@@ -145,3 +145,5 @@ supabase/schema-info.tmp.json
 **/*.sensitive.*
 **/*-secrets.*
 **/*_secrets.*
+script-analysis-results/
+script-analysis-results/**
