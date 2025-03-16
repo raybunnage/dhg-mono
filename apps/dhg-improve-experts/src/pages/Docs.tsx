@@ -1455,6 +1455,44 @@ function Docs() {
                   </div>
                 )}
                 
+                {/* Copy content button */}
+                <button 
+                  onClick={async (e) => {
+                    e.stopPropagation(); // Prevent summary toggle
+                    
+                    try {
+                      if (!selectedFile || !selectedFile.file_path) {
+                        toast.error('No file selected');
+                        return;
+                      }
+                      
+                      // Use the markdownFileService to get the file content directly from disk
+                      const fileContent = await markdownFileService.getFileContent(selectedFile.file_path);
+                      
+                      if (!fileContent || !fileContent.content) {
+                        toast.error('Could not read file content');
+                        return;
+                      }
+                      
+                      // Copy content to clipboard
+                      await navigator.clipboard.writeText(fileContent.content);
+                      toast.success('Document content copied to clipboard!', {
+                        duration: 2000
+                      });
+                    } catch (error) {
+                      console.error('Failed to copy content:', error);
+                      toast.error('Failed to copy content to clipboard');
+                    }
+                  }}
+                  className="ml-auto mr-3 bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 text-xs px-3 py-1 rounded-md flex items-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  Copy Content
+                </button>
+                
                 {/* Delete button */}
                 <button 
                   onClick={(e) => {
@@ -1470,7 +1508,7 @@ function Docs() {
                       handleDeleteFile(selectedFile);
                     }
                   }}
-                  className="ml-auto mr-3 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs px-3 py-1 rounded-md flex items-center"
+                  className="mr-3 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs px-3 py-1 rounded-md flex items-center"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                     <path d="M3 6h18"></path>
