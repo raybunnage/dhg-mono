@@ -1,5 +1,19 @@
 [
   {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/run-ai-analyze.sh",
+    "language": "shell",
+    "size_bytes": 3242,
+    "line_count": 102,
+    "last_modified": "2025-03-16T08:04:03.998Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/fix-ai-integration.sh",
+    "language": "shell",
+    "size_bytes": 46100,
+    "line_count": 1224,
+    "last_modified": "2025-03-16T07:54:44.078Z"
+  },
+  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/run-analyze-scripts.sh",
     "language": "shell",
     "size_bytes": 2727,
@@ -2562,17 +2576,17 @@
     "last_modified": "2025-02-11T01:31:12.220Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-b/vite.config.js",
-    "language": "javascript",
-    "size_bytes": 501,
-    "line_count": 20,
-    "last_modified": "2025-02-11T01:31:12.219Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-a/vite.config.js",
     "language": "javascript",
     "size_bytes": 947,
     "line_count": 39,
+    "last_modified": "2025-02-11T01:31:12.219Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-b/vite.config.js",
+    "language": "javascript",
+    "size_bytes": 501,
+    "line_count": 20,
     "last_modified": "2025-02-11T01:31:12.219Z"
   },
   {

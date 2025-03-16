@@ -1,25 +1,23 @@
 {
-  "analyzed_at": "2025-03-16T07:43:41.626Z",
-  "total_scripts": 20,
+  "analyzed_at": "2025-03-16T08:15:26.901Z",
+  "total_scripts": 67,
   "languages": {
-    "shell": 8,
-    "typescript": 12
+    "shell": 67
   },
   "document_types": {
-    "shell_script": 5,
+    "shell_script": 57,
     "build_script": 2,
-    "service": 5,
-    "typescript_script": 4,
     "test_script": 1,
-    "utility": 1,
-    "module_index": 2
+    "setup_script": 5,
+    "deployment_script": 2
   },
   "script_types": {
-    "shell": 5,
-    "build": 2,
-    "typescript": 10,
+    "shell": 51,
+    "build": 3,
     "test": 1,
-    "utility": 1,
-    "data_processing": 1
+    "setup": 5,
+    "data_processing": 2,
+    "configuration": 3,
+    "deployment": 2
   }
 }

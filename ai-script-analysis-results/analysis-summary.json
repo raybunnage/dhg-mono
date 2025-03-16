@@ -1,0 +1,13 @@
+{
+  "analyzed_at": "2025-03-16T08:10:54.147Z",
+  "total_scripts": 5,
+  "languages": {
+    "shell": 5
+  },
+  "document_types": {
+    "shell_script": 5
+  },
+  "script_types": {
+    "shell": 5
+  }
+}
