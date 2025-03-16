@@ -30,3 +30,17 @@ dist-ssr
 
 # Archived files
 src/_archive/
+
+# Local environment files
+.env*
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Backup files
+**/.backups/
+**/*.backup
+**/*.bak
+**/.env.*.backup
+**/.env-backup*

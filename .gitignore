@@ -114,3 +114,34 @@ supabase/schema-info.tmp.json
 # Archive directories
 **/_archive/
 **/._archive/ # Also catch potential typos/variants
+
+# Env backups
+.backups/env/
+
+# Comprehensive backup patterns
+.backups/
+**/.backups/
+**/backups/
+**/*.backup
+**/*.bak
+**/*-backup.*
+**/*_backup.*
+
+# Environment backups specifically
+**/.env.*.backup
+**/.env.*.bak
+**/.env-backup*
+**/.env_backup*
+**/env-backups/
+**/.env-archives/
+**/.env.archive.*
+
+# Timestamp-based backup patterns (matching our backup script)
+**/.env.*.[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].backup
+**/dhg-improve-experts.env.*.[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].backup
+
+# Additional safety patterns
+**/*.secret.*
+**/*.sensitive.*
+**/*-secrets.*
+**/*_secrets.*

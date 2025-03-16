@@ -84,6 +84,10 @@ export class ClaudeService {
   
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+    
+    // Log API availability (for debugging only)
+    Logger.debug('ClaudeService initialized with API key:', 
+      apiKey ? `${apiKey.substring(0, 8)}...` : 'MISSING API KEY');
   }
   
   /**

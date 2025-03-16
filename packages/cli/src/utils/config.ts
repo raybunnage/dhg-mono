@@ -13,78 +13,109 @@ class Config {
   anthropicApiKey: string;
   logLevel: LogLevel;
   defaultOutputDir: string;
+  environment: string;
   
   private constructor() {
-    // First try loading from .env file in the CLI directory
-    dotenv.config();
+    // Load the environment variables in order of precedence
+    this.loadEnvironmentVariables();
     
-    // Find the .env.development file
-    let envFilePath = '';
-    
-    // Try the direct app path
-    const appEnvPath = path.resolve(process.cwd(), '.env.development');
-    if (fs.existsSync(appEnvPath)) {
-      envFilePath = appEnvPath;
-    } 
-    // Try one level up
-    else if (fs.existsSync(path.resolve(process.cwd(), '../.env.development'))) {
-      envFilePath = path.resolve(process.cwd(), '../.env.development');
-    }
-    // Look for standard path
-    else if (fs.existsSync(path.resolve(process.cwd(), 'apps/dhg-improve-experts/.env.development'))) {
-      envFilePath = path.resolve(process.cwd(), 'apps/dhg-improve-experts/.env.development');
-    }
-    // Look for real absolute path
-    else if (fs.existsSync('/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/.env.development')) {
-      envFilePath = '/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/.env.development';
-    }
-    
-    try {
-      if (envFilePath) {
-        Logger.debug(`Loading environment from: ${envFilePath}`);
-        dotenv.config({ path: envFilePath });
-        
-        // Log the loaded env values for debugging (first few chars only)
-        const supabaseUrl = process.env.VITE_SUPABASE_URL || 'not-set';
-        const supabaseKeyPrefix = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY 
-          ? process.env.VITE_SUPABASE_SERVICE_ROLE_KEY.substring(0, 5) + '...' 
-          : 'not-set';
-        const apiKeyPrefix = process.env.VITE_ANTHROPIC_API_KEY 
-          ? process.env.VITE_ANTHROPIC_API_KEY.substring(0, 5) + '...' 
-          : 'not-set';
-          
-        Logger.debug(`Loaded env variables from ${envFilePath}:`, {
-          VITE_SUPABASE_URL: supabaseUrl,
-          VITE_SUPABASE_SERVICE_ROLE_KEY: supabaseKeyPrefix,
-          VITE_ANTHROPIC_API_KEY: apiKeyPrefix
-        });
-      } else {
-        Logger.warn('Environment file not found in any of the expected locations');
-        throw new AppError('Environment file .env.development not found', 'CONFIG_ERROR');
-      }
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      Logger.warn('Failed to load app-specific environment file', error);
-      throw new AppError('Failed to load environment file', 'CONFIG_ERROR');
-    }
-    
-    // Check for SUPABASE_SERVICE_ROLE_KEY and use it if VITE_SUPABASE_SERVICE_ROLE_KEY is not set
-    if (!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      process.env.VITE_SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      Logger.debug('Using SUPABASE_SERVICE_ROLE_KEY as VITE_SUPABASE_SERVICE_ROLE_KEY');
-    }
-    
-    // Required environment variables
-    this.supabaseUrl = this.getRequiredEnv('VITE_SUPABASE_URL');
-    this.supabaseKey = this.getRequiredEnv('VITE_SUPABASE_SERVICE_ROLE_KEY');
-    this.supabaseAnonKey = this.getRequiredEnv('VITE_SUPABASE_ANON_KEY');
-    this.anthropicApiKey = this.getRequiredEnv('VITE_ANTHROPIC_API_KEY');
+    // First try the CLI-specific variables
+    this.supabaseUrl = this.getEnvVariable('CLI_SUPABASE_URL', 'SUPABASE_URL', 'VITE_SUPABASE_URL');
+    this.supabaseKey = this.getEnvVariable('CLI_SUPABASE_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'VITE_SUPABASE_SERVICE_ROLE_KEY');
+    this.supabaseAnonKey = this.getEnvVariable('SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY');
+    this.anthropicApiKey = this.getEnvVariable('CLI_CLAUDE_API_KEY', 'ANTHROPIC_API_KEY', 'VITE_ANTHROPIC_API_KEY');
     
     // Optional environment variables with defaults
-    this.logLevel = this.parseLogLevel(process.env.LOG_LEVEL || 'info');
-    this.defaultOutputDir = process.env.OUTPUT_DIR || 'docs';
+    this.environment = process.env.CLI_ENVIRONMENT || process.env.NODE_ENV || 'development';
+    this.logLevel = this.parseLogLevel(process.env.CLI_LOG_LEVEL || process.env.LOG_LEVEL || 'info');
+    this.defaultOutputDir = process.env.CLI_OUTPUT_DIR || process.env.OUTPUT_DIR || 'docs';
+    
+    // Log the loaded env variables for debugging (first few chars only)
+    Logger.debug('Config loaded with values:', {
+      environment: this.environment,
+      logLevel: LogLevel[this.logLevel],
+      supabaseUrl: this.supabaseUrl || 'not-set',
+      supabaseKey: this.supabaseKey ? this.supabaseKey.substring(0, 5) + '...' : 'not-set',
+      anthropicApiKey: this.anthropicApiKey ? this.anthropicApiKey.substring(0, 5) + '...' : 'not-set'
+    });
+  }
+  
+  /**
+   * Load environment variables from files in order of precedence:
+   * 1. .env.local (for secrets)
+   * 2. .env.[environment] (development/production)
+   * 3. .env (base values)
+   * 
+   * This searches in both the current directory and repository root.
+   */
+  private loadEnvironmentVariables(): void {
+    Logger.debug('Loading environment variables');
+    
+    // Start by loading .env from the current directory
+    dotenv.config();
+    
+    // Find the repository root and load environment files with proper precedence
+    const possibleRootPaths = [
+      // Current directory
+      process.cwd(),
+      // One level up (if in packages/cli)
+      path.resolve(process.cwd(), '..'),
+      // Two levels up (if in packages/cli/src)
+      path.resolve(process.cwd(), '../..'),
+      // Absolute path to repository
+      '/Users/raybunnage/Documents/github/dhg-mono'
+    ];
+    
+    // Find the first path that contains a .env file
+    const rootPath = possibleRootPaths.find(p => 
+      fs.existsSync(path.join(p, '.env'))
+    );
+    
+    if (!rootPath) {
+      Logger.warn('Could not find repository root with .env file');
+      return;
+    }
+    
+    // Load the base .env file
+    dotenv.config({ path: path.join(rootPath, '.env') });
+    
+    // Determine the current environment
+    const environment = process.env.CLI_ENVIRONMENT || process.env.NODE_ENV || 'development';
+    
+    // Load environment-specific file (.env.development or .env.production)
+    const envSpecificPath = path.join(rootPath, `.env.${environment}`);
+    if (fs.existsSync(envSpecificPath)) {
+      Logger.debug(`Loading environment-specific variables from: ${envSpecificPath}`);
+      dotenv.config({ path: envSpecificPath });
+    }
+    
+    // Load .env.local (highest priority, contains secrets)
+    const localEnvPath = path.join(rootPath, '.env.local');
+    if (fs.existsSync(localEnvPath)) {
+      Logger.debug(`Loading local environment variables from: ${localEnvPath}`);
+      dotenv.config({ path: localEnvPath });
+    } else {
+      Logger.warn('No .env.local file found. Secrets may not be properly configured.');
+    }
+  }
+  
+  /**
+   * Gets an environment variable from multiple possible names in order of preference
+   */
+  private getEnvVariable(...names: string[]): string {
+    for (const name of names) {
+      const value = process.env[name];
+      if (value) {
+        return value;
+      }
+    }
+    
+    // If we get here, no value was found - throw error with the first name
+    // which should be the most specific one (CLI_ prefixed)
+    throw new AppError(
+      `Required environment variable ${names[0]} is not set`,
+      'CONFIG_ERROR'
+    );
   }
   
   private getRequiredEnv(name: string): string {
