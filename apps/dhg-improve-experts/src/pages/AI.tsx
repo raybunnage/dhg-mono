@@ -64,6 +64,8 @@ interface DatabasePrompt {
       estimatedCost: string;
     };
     relatedAssets?: string[]; // Array of related asset IDs
+    databaseQuery?: string; // SQL query for database retrieval
+    packageJsonFiles?: any[]; // Package.json files with relationship settings
   };
   document_type_id: string | null;
   category_id: string | null;
@@ -124,6 +126,7 @@ const AI: React.FC = () => {
   const [relationshipDocumentTypeId, setRelationshipDocumentTypeId] = useState<string>('none');
   const [selectedPromptForView, setSelectedPromptForView] = useState<string | null>(null);
   const [promptRelationshipsMap, setPromptRelationshipsMap] = useState<Record<string, DocumentationFile[]>>({});
+  const [databaseQuery, setDatabaseQuery] = useState<string>('');
   // New state for storing individual asset relationship settings
   const [assetRelationshipSettings, setAssetRelationshipSettings] = useState<Record<string, {
     relationship_type: string;
@@ -974,6 +977,13 @@ const AI: React.FC = () => {
     setRelationshipDescription(`This defines how the ${prompt.name} prompt interacts with the selected documentation files.`);
     setRelationshipDocumentTypeId('none');
     
+    // Load the database query from metadata if available
+    if (prompt.metadata.databaseQuery) {
+      setDatabaseQuery(prompt.metadata.databaseQuery);
+    } else {
+      setDatabaseQuery('');
+    }
+    
     // Clear existing relationship settings
     setAssetRelationshipSettings({});
     
@@ -1051,61 +1061,114 @@ const AI: React.FC = () => {
           setRelationshipDescription(settings.description);
           setRelationshipDocumentTypeId(settings.document_type_id);
         } else if (selectedRelationshipPrompt) {
-          // Try to load from database if not found in our cache
-          try {
-            const { data, error } = await supabase
-              .from('prompt_relationships')
-              .select('*')
-              .eq('prompt_id', selectedRelationshipPrompt.id)
-              .eq('asset_id', remainingAssetId)
-              .single();
+          // Check if this is a package.json file
+          const file = documentationFiles.find(f => f.id === remainingAssetId);
+          if (file?.metadata?.isPackageJson) {
+            // Look for package.json settings in the prompt metadata
+            if (selectedRelationshipPrompt?.metadata?.packageJsonFiles) {
+              const packageData = selectedRelationshipPrompt.metadata.packageJsonFiles.find(pkg => pkg.id === remainingAssetId);
+              if (packageData) {
+                console.log(`Loading settings for package.json ${remainingAssetId}:`, packageData);
+                
+                // Use settings from metadata - PREFER top-level fields first, then settings object
+                const relType = packageData.relationship_type || packageData.settings?.relationship_type || 'reference';
+                const context = packageData.context || packageData.settings?.relationship_context || '';
+                const desc = packageData.description || packageData.settings?.description || 'Package.json file relationship';
+                const docType = packageData.document_type_id || packageData.settings?.document_type_id || 'none';
+                
+                console.log(`Setting UI values for package.json: relType=${relType}, context=${context}, docType=${docType}`);
+                
+                // Set UI fields
+                setRelationshipType(relType);
+                setRelationshipContext(context);
+                setRelationshipDescription(desc);
+                setRelationshipDocumentTypeId(docType);
+                
+                // Update our cache
+                setAssetRelationshipSettings(prev => ({
+                  ...prev,
+                  [remainingAssetId]: {
+                    relationship_type: relType,
+                    relationship_context: context,
+                    description: desc,
+                    document_type_id: docType
+                  }
+                }));
+                return;
+              }
+            }
+            
+            // Default settings for package.json
+            setRelationshipType('reference');
+            setRelationshipContext('');
+            setRelationshipDescription('Package.json file relationship');
+            setRelationshipDocumentTypeId('none');
+            
+            // Initialize settings for this asset
+            setAssetRelationshipSettings(prev => ({
+              ...prev,
+              [remainingAssetId]: {
+                relationship_type: 'reference',
+                relationship_context: '',
+                description: 'Package.json file relationship',
+                document_type_id: 'none'
+              }
+            }));
+          } else {
+            // Try to load from database if not found in our cache for regular files
+            try {
+              const { data, error } = await supabase
+                .from('prompt_relationships')
+                .select('*')
+                .eq('prompt_id', selectedRelationshipPrompt.id)
+                .eq('asset_id', remainingAssetId)
+                .single();
+                
+              if (data) {
+                setRelationshipType(data.relationship_type || 'reference');
+                setRelationshipContext(data.relationship_context || '');
+                setRelationshipDescription(data.description || '');
+                setRelationshipDocumentTypeId(data.document_type_id || 'none');
+                
+                // Update our cache
+                setAssetRelationshipSettings(prev => ({
+                  ...prev,
+                  [remainingAssetId]: {
+                    relationship_type: data.relationship_type || 'reference',
+                    relationship_context: data.relationship_context || '',
+                    description: data.description || '',
+                    document_type_id: data.document_type_id || 'none'
+                  }
+                }));
+              } else {
+                // Default values if no relationship exists
+                const docTypeId = file && file.document_type_id ? file.document_type_id : 'none';
+                
+                // Initialize settings for this asset
+                setAssetRelationshipSettings(prev => ({
+                  ...prev,
+                  [remainingAssetId]: {
+                    relationship_type: 'reference',
+                    relationship_context: '',
+                    description: '',
+                    document_type_id: docTypeId
+                  }
+                }));
+              }
+            } catch (error) {
+              console.error('Error getting relationship data:', error);
               
-            if (data) {
-              setRelationshipType(data.relationship_type || 'reference');
-              setRelationshipContext(data.relationship_context || '');
-              setRelationshipDescription(data.description || '');
-              setRelationshipDocumentTypeId(data.document_type_id || 'none');
-              
-              // Update our cache
-              setAssetRelationshipSettings(prev => ({
-                ...prev,
-                [remainingAssetId]: {
-                  relationship_type: data.relationship_type || 'reference',
-                  relationship_context: data.relationship_context || '',
-                  description: data.description || '',
-                  document_type_id: data.document_type_id || 'none'
-                }
-              }));
-            } else {
-              // Default values if no relationship exists
-              const file = documentationFiles.find(f => f.id === remainingAssetId);
-              const docTypeId = file && file.document_type_id ? file.document_type_id : 'none';
-              
-              // Initialize settings for this asset
+              // Initialize with empty settings for this asset
               setAssetRelationshipSettings(prev => ({
                 ...prev,
                 [remainingAssetId]: {
                   relationship_type: 'reference',
                   relationship_context: '',
                   description: '',
-                  document_type_id: docTypeId
+                  document_type_id: 'none'
                 }
               }));
             }
-          } catch (error) {
-            console.error('Error getting relationship data:', error);
-            
-            // Initialize with empty settings for this asset
-            const remainingAssetId = newSelection[0];
-            setAssetRelationshipSettings(prev => ({
-              ...prev,
-              [remainingAssetId]: {
-                relationship_type: 'reference',
-                relationship_context: '',
-                description: '',
-                document_type_id: 'none'
-              }
-            }));
           }
         }
       } else if (newSelection.length === 0) {
@@ -1130,37 +1193,106 @@ const AI: React.FC = () => {
           setRelationshipDescription(settings.description);
           setRelationshipDocumentTypeId(settings.document_type_id);
         } else if (selectedRelationshipPrompt) {
-          // Try to load from database
-          try {
-            const { data, error } = await supabase
-              .from('prompt_relationships')
-              .select('*')
-              .eq('prompt_id', selectedRelationshipPrompt.id)
-              .eq('asset_id', assetId)
-              .single();
+          // Check if this is a package.json file
+          const file = documentationFiles.find(f => f.id === assetId);
+          if (file?.metadata?.isPackageJson) {
+            // Look for package.json settings in the prompt metadata
+            if (selectedRelationshipPrompt?.metadata?.packageJsonFiles) {
+              const packageData = selectedRelationshipPrompt.metadata.packageJsonFiles.find(pkg => pkg.id === assetId);
+              if (packageData) {
+                console.log(`Loading settings for package.json ${assetId}:`, packageData);
+                
+                // Use settings from metadata - PREFER top-level fields first, then settings object
+                const relType = packageData.relationship_type || packageData.settings?.relationship_type || 'reference';
+                const context = packageData.context || packageData.settings?.relationship_context || '';
+                const desc = packageData.description || packageData.settings?.description || 'Package.json file relationship';
+                const docType = packageData.document_type_id || packageData.settings?.document_type_id || 'none';
+                
+                console.log(`Setting UI values for package.json: relType=${relType}, context=${context}, docType=${docType}`);
+                
+                // Set UI fields
+                setRelationshipType(relType);
+                setRelationshipContext(context);
+                setRelationshipDescription(desc);
+                setRelationshipDocumentTypeId(docType);
+                
+                // Update our cache
+                setAssetRelationshipSettings(prev => ({
+                  ...prev,
+                  [assetId]: {
+                    relationship_type: relType,
+                    relationship_context: context,
+                    description: desc,
+                    document_type_id: docType
+                  }
+                }));
+                return;
+              }
+            }
+            
+            // Default settings for package.json
+            setRelationshipType('reference');
+            setRelationshipContext('');
+            setRelationshipDescription('Package.json file relationship');
+            setRelationshipDocumentTypeId('none');
+            
+            // Initialize settings for this asset
+            setAssetRelationshipSettings(prev => ({
+              ...prev,
+              [assetId]: {
+                relationship_type: 'reference',
+                relationship_context: '',
+                description: 'Package.json file relationship',
+                document_type_id: 'none'
+              }
+            }));
+          } else {
+            // Try to load from database for regular files
+            try {
+              const { data, error } = await supabase
+                .from('prompt_relationships')
+                .select('*')
+                .eq('prompt_id', selectedRelationshipPrompt.id)
+                .eq('asset_id', assetId)
+                .single();
+                
+              if (data) {
+                setRelationshipType(data.relationship_type || 'reference');
+                setRelationshipContext(data.relationship_context || '');
+                setRelationshipDescription(data.description || '');
+                setRelationshipDocumentTypeId(data.document_type_id || 'none');
+                
+                // Update our cache
+                setAssetRelationshipSettings(prev => ({
+                  ...prev,
+                  [assetId]: {
+                    relationship_type: data.relationship_type || 'reference',
+                    relationship_context: data.relationship_context || '',
+                    description: data.description || '',
+                    document_type_id: data.document_type_id || 'none'
+                  }
+                }));
+              } else {
+                // Default values if no relationship exists
+                const docTypeId = file && file.document_type_id ? file.document_type_id : 'none';
+                
+                // Initialize settings for this asset
+                setAssetRelationshipSettings(prev => ({
+                  ...prev,
+                  [assetId]: {
+                    relationship_type: 'reference',
+                    relationship_context: '',
+                    description: '',
+                    document_type_id: docTypeId
+                  }
+                }));
+              }
+            } catch (error) {
+              console.error('Error getting relationship data:', error);
               
-            if (data) {
-              setRelationshipType(data.relationship_type || 'reference');
-              setRelationshipContext(data.relationship_context || '');
-              setRelationshipDescription(data.description || '');
-              setRelationshipDocumentTypeId(data.document_type_id || 'none');
-              
-              // Update our cache
-              setAssetRelationshipSettings(prev => ({
-                ...prev,
-                [assetId]: {
-                  relationship_type: data.relationship_type || 'reference',
-                  relationship_context: data.relationship_context || '',
-                  description: data.description || '',
-                  document_type_id: data.document_type_id || 'none'
-                }
-              }));
-            } else {
-              // Default values if no relationship exists
-              const file = documentationFiles.find(f => f.id === assetId);
+              // Initialize with empty settings for this asset
               const docTypeId = file && file.document_type_id ? file.document_type_id : 'none';
               
-              // Initialize settings for this asset
               setAssetRelationshipSettings(prev => ({
                 ...prev,
                 [assetId]: {
@@ -1171,22 +1303,6 @@ const AI: React.FC = () => {
                 }
               }));
             }
-          } catch (error) {
-            console.error('Error getting relationship data:', error);
-            
-            // Initialize with empty settings for this asset
-            const file = documentationFiles.find(f => f.id === assetId);
-            const docTypeId = file && file.document_type_id ? file.document_type_id : 'none';
-            
-            setAssetRelationshipSettings(prev => ({
-              ...prev,
-              [assetId]: {
-                relationship_type: 'reference',
-                relationship_context: '',
-                description: '',
-                document_type_id: docTypeId
-              }
-            }));
           }
         }
       } else {
@@ -1217,19 +1333,41 @@ const AI: React.FC = () => {
       const updatedMetadata = {
         ...selectedRelationshipPrompt.metadata,
         relatedAssets: selectedRelatedAssets,
+        databaseQuery: databaseQuery, // Save the database query in metadata
         packageJsonFiles: documentationFiles
           .filter(file => file.metadata?.isPackageJson && selectedRelatedAssets.includes(file.id))
-          .map(file => ({
-            id: file.id,
-            path: file.file_path,
-            title: file.title,
-            settings: assetRelationshipSettings[file.id] || {
+          .map(file => {
+            // Get settings for this package.json file - use logged version so we can debug issues
+            const settings = assetRelationshipSettings[file.id] || {
               relationship_type: 'reference',
               relationship_context: '',
               description: `Package.json file relationship`,
               document_type_id: null
-            }
-          }))
+            };
+            
+            console.log(`Saving package.json ${file.id} settings:`, settings);
+            
+            // Fix document_type_id: convert 'none' to null, otherwise keep ID
+            const docTypeId = settings.document_type_id === 'none' ? null : settings.document_type_id;
+            
+            // Create the complete object with all fields both at top level and in settings
+            return {
+              id: file.id,
+              path: file.file_path,
+              title: file.title,
+              document_type_id: docTypeId,
+              context: settings.relationship_context,
+              relationship_type: settings.relationship_type, 
+              description: settings.description,
+              // Store complete settings object with corrected document_type_id
+              settings: {
+                relationship_type: settings.relationship_type,
+                relationship_context: settings.relationship_context,
+                description: settings.description,
+                document_type_id: docTypeId
+              }
+            };
+          })
       };
       
       // Update the prompt in the database
@@ -1404,13 +1542,16 @@ const AI: React.FC = () => {
               const packageJsonFiles = prompt.metadata.packageJsonFiles || [];
               const packageData = packageJsonFiles.find(pkg => pkg.id === file.id);
               
-              if (packageData && packageData.settings) {
+              if (packageData) {
+                console.log(`Loading package.json ${file.id} data from metadata:`, packageData);
+                
                 return {
                   ...file,
-                  related_document_type_id: packageData.settings.document_type_id,
-                  relationship_type: packageData.settings.relationship_type,
-                  relationship_context: packageData.settings.relationship_context,
-                  relationship_description: packageData.settings.description
+                  // Use top-level properties if available, otherwise fallback to settings
+                  related_document_type_id: packageData.document_type_id || packageData.settings?.document_type_id,
+                  relationship_type: packageData.relationship_type || packageData.settings?.relationship_type || 'reference',
+                  relationship_context: packageData.context || packageData.settings?.relationship_context || '',
+                  relationship_description: packageData.description || packageData.settings?.description || 'Package.json file relationship'
                 };
               } else {
                 // Default package.json relationship data
@@ -2119,6 +2260,19 @@ const AI: React.FC = () => {
                     
                     {selectedPromptForView && selectedPromptForView !== 'none' && (
                       <div className="mt-4">
+                        {/* Display database query if available */}
+                        {selectedPromptForView && databasePrompts.find(p => p.id === selectedPromptForView)?.metadata.databaseQuery && (
+                          <div className="mb-4 border-t pt-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="text-sm font-medium">Database Query</h3>
+                              <Badge className="bg-blue-100 text-blue-800 border border-blue-200 font-mono">SQL</Badge>
+                            </div>
+                            <div className="border rounded-md p-3 bg-gray-50 font-mono text-xs overflow-x-auto">
+                              {databasePrompts.find(p => p.id === selectedPromptForView)?.metadata.databaseQuery}
+                            </div>
+                          </div>
+                        )}
+                        
                         {/* Add display of relationship data */}
                         {selectedPromptForView && promptRelationshipsMap[selectedPromptForView]?.length > 0 && (
                           <div className="mb-4 border-t pt-4">
@@ -2386,6 +2540,11 @@ const AI: React.FC = () => {
                                                     relationship_type: value
                                                   }
                                                 }));
+                                                
+                                                // Update global field if this is the only selected asset
+                                                if (selectedRelatedAssets.length === 1) {
+                                                  setRelationshipType(value);
+                                                }
                                               }}
                                             >
                                               <SelectTrigger className="h-7 text-xs bg-white">
@@ -2420,6 +2579,11 @@ const AI: React.FC = () => {
                                                     document_type_id: value
                                                   }
                                                 }));
+                                                
+                                                // Update global field if this is the only selected asset
+                                                if (selectedRelatedAssets.length === 1) {
+                                                  setRelationshipDocumentTypeId(value);
+                                                }
                                               }}
                                             >
                                               <SelectTrigger className="h-7 text-xs bg-white">
@@ -2460,6 +2624,11 @@ const AI: React.FC = () => {
                                                   relationship_context: e.target.value
                                                 }
                                               }));
+                                              
+                                              // Update global field if this is the only selected asset
+                                              if (selectedRelatedAssets.length === 1) {
+                                                setRelationshipContext(e.target.value);
+                                              }
                                             }}
                                           />
                                         </div>
@@ -2483,6 +2652,11 @@ const AI: React.FC = () => {
                                                   description: e.target.value
                                                 }
                                               }));
+                                              
+                                              // Update global field if this is the only selected asset
+                                              if (selectedRelatedAssets.length === 1) {
+                                                setRelationshipDescription(e.target.value);
+                                              }
                                             }}
                                           />
                                         </div>
@@ -2505,6 +2679,29 @@ const AI: React.FC = () => {
                 </div>
               </div>
               
+              {/* Database Query Section */}
+              <div className="border-t pt-4 mt-4 bg-white">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="databaseQuery" className="text-sm font-medium">
+                      Database Query
+                      <span className="ml-2 text-xs text-muted-foreground">(Saved with prompt)</span>
+                    </Label>
+                    <Badge className="bg-blue-100 text-blue-800 border border-blue-200 font-mono">SQL</Badge>
+                  </div>
+                  <Textarea 
+                    id="databaseQuery" 
+                    placeholder="SELECT * FROM documentations WHERE category = 'guides'" 
+                    className="font-mono text-sm h-24"
+                    value={databaseQuery}
+                    onChange={(e) => setDatabaseQuery(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This query will be stored with the prompt's metadata and can be used for dynamic data retrieval.
+                  </p>
+                </div>
+              </div>
+              
               <DialogFooter className="flex justify-between mt-4 bg-white pt-4 border-t">
                 <div className="text-sm text-muted-foreground">
                   {selectedRelatedAssets.length} file(s) selected
@@ -2518,6 +2715,7 @@ const AI: React.FC = () => {
                     setRelationshipContext('');
                     setRelationshipDescription('');
                     setRelationshipDocumentTypeId('none');
+                    setDatabaseQuery('');
                     setAssetRelationshipSettings({});
                   }}>
                     Cancel

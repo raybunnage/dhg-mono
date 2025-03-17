@@ -1,3 +1,161 @@
+  I've created a script to look up a prompt by name that:
+
+  1. Fetches the prompt information from the database
+  2. Retrieves its relationships and context
+  3. Reads the actual prompt file content from disk
+  4. Executes any database queries in the prompt metadata
+
+  To run the script, use:
+  ./scripts/cli-pipeline/prompt-lookup.sh script-analysis-prompt
+
+  Or to look up a different prompt:
+  ./scripts/cli-pipeline/prompt-lookup.sh some-other-prompt-name
+
+  The script provides a comprehensive view of the prompt and its
+  relationships, displaying:
+  - Prompt details (name, ID, description)
+  - All relationships with context
+  - Contents of related files
+  - The full prompt file content
+  - Any database query results specified in metadata
+
+  
+  
+  Now the issue should be fixed. I've made these comprehensive changes:
+
+  1. Fixed the Save Function:
+    - Added debugging logs to track what's being saved
+    - Made sure the document_type_id is properly normalized (converting
+  'none' to null)
+    - Stored ALL fields at both the top level and in the settings object
+  for complete data
+  2. Fixed the Load Functions:
+    - Added debugging to track what's being loaded
+    - Updated the field priority to prefer top-level fields before
+  falling back to settings
+    - Made the field extraction more explicit, with named variables and
+  logging
+    - Added missing fields to the object mapping in
+  updateRelationshipsMap
+  3. Enhanced Data Structure:
+    - Made sure the document_type_id, context, relationship_type, and
+  description are all stored at the top level
+    - Still kept the settings object for backward compatibility
+    - Added explicit logging to track the data flow
+  4. Fixed Potential Issue with 'none' Value:
+    - Properly normalized the document_type_id by converting 'none' to
+  null during save
+    - Made sure we convert null back to 'none' during load operations
+  5. Improved Consistency:
+    - Used the same field structure in all operations (save, load, and
+  update)
+    - Made sure all load operations prioritize the same fields in the
+  same order
+
+  These changes ensure that the Document Type and Context fields are
+  properly saved and loaded for package.json files. The added logging
+  will also help diagnose any remaining issues by showing exactly what's
+  being saved and loaded.
+
+  I've fixed the issue with the Document Type and Context fields not
+  being saved for package.json files. Here are the changes:
+
+  1. Updated the Package.json File Detection:
+    - Added special handling for package.json files in the
+  toggleRelatedAsset function
+    - Now checks explicitly if a file has the isPackageJson metadata flag
+    - Properly loads settings from prompt metadata for package.json files
+  2. Fixed Settings Update in the UI:
+    - Added two-way binding between card UI fields and the global state
+    - When you change settings in a card, the global state is updated
+  (for single selection)
+    - This ensures changes to document_type_id and context fields are
+  properly tracked
+  3. Enhanced the packageJsonFiles Structure:
+    - Added top-level document_type_id and context fields
+    - These are easier to access and more closely match the database
+  schema
+    - Settings is still preserved for backward compatibility
+  4. Updated Loading Logic:
+    - The toggleRelatedAsset function now correctly loads package.json
+  settings
+    - It checks for settings in the prompt metadata packageJsonFiles
+  array
+    - Falls back to default values if needed
+  5. Improved UI Field Handling:
+    - All fields (relationship_type, document_type_id, context,
+  description) now update both:
+        - The local asset settings cache
+      - The global state fields when appropriate
+
+  These changes ensure that your document_type and context settings for
+  package.json files are properly saved when you click "Save
+  Relationships" and are correctly loaded when you reopen the
+  relationship dialog.
+  
+  I've enhanced the packageJsonFiles structure and relationship handling:
+
+  1. Enhanced Data Structure:
+    - Modified the packageJsonFiles structure to store top-level
+  document_type_id and context
+    - This makes it easier to access these important fields directly
+    - Still maintaining the full settings object for backward
+  compatibility
+  2. Field Population:
+    - The document_type_id is now properly formatted (converting 'none'
+  to null)
+    - Context is stored directly at the top level with the same name as
+  in the UI
+    - All relationship settings are still preserved in the settings
+  object
+  3. Data Retrieval Logic:
+    - Updated the update relationships function to look for both
+  top-level fields and nested settings fields
+    - Added fallbacks to ensure backward compatibility
+    - This ensures the relationships display correctly in the UI
+  4. Field Priority:
+    - Top-level fields (document_type_id, context) are prioritized over
+  nested settings
+    - This allows for quick access to the most commonly used fields
+    - Ensures compatibility with any existing data
+
+  This change improves the storage and retrieval of package.json file
+  relationship data while maintaining backward compatibility with any
+  existing data stored in the system.
+
+  
+  I've added all the requested functionality:
+
+  1. Database Query Field:
+    - Added a new textarea field at the bottom of the Relationships
+  Dialog
+    - Styled it with a SQL badge and monospace font for code
+    - Added explanatory text about its purpose
+  2. Metadata Storage:
+    - Modified the DatabasePrompt interface to include the databaseQuery
+  field in the metadata
+    - Added state to track the database query value
+    - Set up initialization when a prompt is selected
+    - Updated the save function to store the query in the prompt's
+  metadata
+  3. Display in Relationship View:
+    - Added a section in the relationship details view to display the
+  saved database query
+    - Shows the query in a nicely formatted code block with a SQL badge
+    - Only displays this section if a query exists
+  4. Cleanup on Cancel/Close:
+    - Made sure the databaseQuery state is cleared when the dialog is
+  closed/cancelled
+
+  The database query can now be:
+  - Entered in the dialog
+  - Saved with the prompt's metadata
+  - Viewed in the relationship details panel
+  - Retrieved whenever needed for dynamic data operations
+
+  This implementation fully integrates with the existing package.json
+  files functionality while adding this new database query capability.
+  
   
   I've completely fixed the foreign key constraint issue by implementing
   a hybrid approach:
