@@ -1,4 +1,69 @@
   
+  I've completely fixed the foreign key constraint issue by implementing
+  a hybrid approach:
+
+  1. For real database files:
+    - Added filtering to detect which assets are package.json files vs.
+  real database files
+    - Only database files are processed with actual database
+  relationships
+    - These properly exist in the database and won't trigger foreign key
+  errors
+  2. For package.json files:
+    - Package.json files are now only stored in the metadata of the
+  prompt
+    - Created a dedicated packageJsonFiles array in metadata to store
+  package.json relationships
+    - All relationship settings for package.json files are stored in this
+   array
+    - This avoids trying to create foreign key relationships to
+  non-existent database records
+  3. Modified display logic:
+    - Updated the updateRelationshipsMap function to handle both types of
+   files
+    - Regular database files get their relationship data from the
+  database
+    - Package.json files get their relationship data from the prompt's
+  metadata
+
+  This approach gives you the best of both worlds:
+  1. You can still see and select package.json files in the UI
+  2. You can still configure relationship settings for these files
+  3. You won't get foreign key constraint errors when saving
+  4. All the data displays correctly in the relationships viewer
+
+  The changes are completely transparent to the user - they'll see both
+  types of files displayed the same way, but underneath the
+  implementation handles them differently.
+  
+  
+  I've now made the following changes to enhance the relationship dialog:
+
+  1. Added package.json files to the list of files that appear in the
+  "Related Documentation Files" section:
+    - Added root package.json
+    - Added package.json from each app (dhg-a, dhg-b, dhg-hub-lovable,
+  dhg-improve-experts)
+    - Each file is assigned a unique ID and properly formatted metadata
+  2. Made package.json files searchable in the dialog:
+    - Modified the search filter to recognize "package", "pkg", or "json"
+   keywords
+    - These keywords will match any package.json files regardless of
+  where they appear
+  3. Added visual styling to easily identify package.json files:
+    - Added a yellow background to package.json files
+    - Added a "package.json" badge next to the file title
+    - Applied similar styling in all views (relationship dialog,
+  relationship details, etc.)
+  4. Fixed the border and hover states to maintain consistent styling
+
+  These changes ensure that:
+  1. Package.json files are now available in the relationship dialog
+  2. They're easy to identify and visually distinct from other files
+  3. They can be easily found using the search functionality
+  4. They're handled consistently throughout all related UI components
+  
+  
   Great! I've successfully fixed all the scripts and the pipeline is now
   working. Here's what I did:
 
