@@ -1,3 +1,97 @@
+  Perfect! The script now successfully reads and displays the
+  package.json files referenced in the prompt metadata. I've added a new
+  section to the output called "PACKAGE.JSON FILES" that shows:
+
+  1. The file paths of the package.json files
+  2. Their titles and contexts from the metadata
+  3. The full content of each package.json file
+
+  The script has successfully found and displayed both package.json
+  files:
+  - Root package.json file at the repository root
+  - dhg-improve-experts package.json file from the apps directory
+
+  This completes all the requirements:
+  1. Display the full prompt content from the database
+  2. Read and display all related files
+  3. Execute the database queries and show the results
+  4. Read and display package.json files referenced in the metadata
+
+  The script now provides all the ingredients needed for AI processing,
+  including:
+  - The prompt content with instructions
+  - Related files with context information
+  - Database query results for document types
+  - Package.json files that might reference scripts
+
+  Is there anything else you'd like me to add or modify in the script?
+  
+  The script now successfully displays:
+
+  1. The full prompt content from the database (no longer truncated)
+  2. The full content of all related files (no longer truncated)
+  3. The results of the database query with document types
+
+  This provides all the necessary ingredients for submitting to an AI
+  service in the future:
+
+  1. The prompt content, which provides the instructions for the AI
+  2. The related files that provide context
+  3. The database query results with document types for classification
+
+  The script can be used with any prompt name:
+
+  ./scripts/cli-pipeline/prompt-lookup.sh your-prompt-name
+
+  Is there anything else you'd like me to add or modify to the script?
+
+  
+  
+  Excellent! The script is now fully functional. It successfully:
+
+  1. Connects to the Supabase database
+  2. Retrieves the prompt "script-analysis-prompt" from the database
+  3. Finds its relationship with the docs/script-report.md file
+  4. Loads the prompt file content from disk
+  5. Parses and executes the database query from the metadata to fetch
+  document types
+
+  The database query execution now works properly by:
+  1. Detecting the specific query pattern (SELECT * FROM document_types 
+  WHERE category IN (...))
+  2. Directly querying the document_types table with the extracted
+  categories
+  3. Returning the full document type data
+
+  This script provides a complete view of a prompt, including:
+  - Basic prompt information (ID, name, description)
+  - Any relationships with other files
+  - The actual prompt content
+  - Related data from the database
+
+  You can now use this script to lookup any prompt by name:
+
+  ./scripts/cli-pipeline/prompt-lookup.sh prompt-name
+  
+  
+  I've made the script more resilient to database connection issues:
+
+  1. It now handles the case where database connection fails but still
+  continues to try loading the prompt file from disk
+  2. Added better error handling throughout all the steps
+  3. The shell script loads environment variables from .env and
+  .env.local files
+  4. Added debug output for better troubleshooting
+
+  Try running it again:
+
+  ./scripts/cli-pipeline/prompt-lookup.sh script-analysis-prompt
+
+  Even if there are database connection issues, the script will still
+  attempt to read the prompt file from disk and display its contents.
+  This ensures you'll at least get partial functionality even without
+  database access.
+  
   I've created a script to look up a prompt by name that:
 
   1. Fetches the prompt information from the database
