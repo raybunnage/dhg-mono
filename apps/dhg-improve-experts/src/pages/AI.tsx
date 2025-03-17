@@ -217,10 +217,77 @@ const AI: React.FC = () => {
         
       if (error) throw error;
       
-      if (data) {
-        setDocumentationFiles(data);
-        console.log(`Loaded ${data.length} documentation files`);
-      }
+      // Load package.json files from the project
+      const findPackageJsonFiles = async () => {
+        try {
+          // This is a simplification - in a real implementation, you would
+          // scan the filesystem for package.json files or use an API
+          // Using proper UUID format for the ids
+          const packageFiles = [
+            {
+              id: "00000000-0000-4000-a000-000000000001",
+              file_path: "/package.json",
+              title: "Root package.json",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              last_modified_at: new Date().toISOString(),
+              is_deleted: false,
+              metadata: { isPackageJson: true }
+            },
+            {
+              id: "00000000-0000-4000-a000-000000000002",
+              file_path: "/apps/dhg-a/package.json",
+              title: "dhg-a package.json",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              last_modified_at: new Date().toISOString(),
+              is_deleted: false,
+              metadata: { isPackageJson: true }
+            },
+            {
+              id: "00000000-0000-4000-a000-000000000003",
+              file_path: "/apps/dhg-b/package.json",
+              title: "dhg-b package.json",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              last_modified_at: new Date().toISOString(),
+              is_deleted: false,
+              metadata: { isPackageJson: true }
+            },
+            {
+              id: "00000000-0000-4000-a000-000000000004",
+              file_path: "/apps/dhg-hub-lovable/package.json",
+              title: "dhg-hub-lovable package.json",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              last_modified_at: new Date().toISOString(),
+              is_deleted: false,
+              metadata: { isPackageJson: true }
+            },
+            {
+              id: "00000000-0000-4000-a000-000000000005",
+              file_path: "/apps/dhg-improve-experts/package.json",
+              title: "dhg-improve-experts package.json",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              last_modified_at: new Date().toISOString(),
+              is_deleted: false,
+              metadata: { isPackageJson: true }
+            }
+          ];
+          return packageFiles;
+        } catch (error) {
+          console.error("Error finding package.json files:", error);
+          return [];
+        }
+      };
+
+      // Combine database files with package.json files
+      const packageFiles = await findPackageJsonFiles();
+      const combinedFiles = [...(data || []), ...packageFiles];
+      
+      setDocumentationFiles(combinedFiles);
+      console.log(`Loaded ${data?.length || 0} documentation files and ${packageFiles.length} package.json files`);
     } catch (error) {
       console.error('Error loading documentation files:', error);
       // Check for network connectivity issues
@@ -1137,10 +1204,32 @@ const AI: React.FC = () => {
     
     setIsLoading(prev => ({ ...prev, savingRelationships: true }));
     try {
-      // Create updated metadata with the new related assets
+      // Filter out package.json files (which aren't in the database)
+      // and only keep regular documentation files for database operations
+      const databaseAssets = selectedRelatedAssets.filter(assetId => {
+        const file = documentationFiles.find(file => file.id === assetId);
+        // Skip files with special isPackageJson flag
+        return !(file?.metadata?.isPackageJson || false);
+      });
+      
+      // But include ALL assets (including package.json) in the metadata
+      // This way they'll show up in the UI but won't cause database errors
       const updatedMetadata = {
         ...selectedRelationshipPrompt.metadata,
-        relatedAssets: selectedRelatedAssets
+        relatedAssets: selectedRelatedAssets,
+        packageJsonFiles: documentationFiles
+          .filter(file => file.metadata?.isPackageJson && selectedRelatedAssets.includes(file.id))
+          .map(file => ({
+            id: file.id,
+            path: file.file_path,
+            title: file.title,
+            settings: assetRelationshipSettings[file.id] || {
+              relationship_type: 'reference',
+              relationship_context: '',
+              description: `Package.json file relationship`,
+              document_type_id: null
+            }
+          }))
       };
       
       // Update the prompt in the database
@@ -1157,7 +1246,8 @@ const AI: React.FC = () => {
       if (error) throw error;
       
       // Create or update relationship records in the prompt_relationships table
-      if (selectedRelatedAssets.length > 0) {
+      // But only for real database assets (not package.json files)
+      if (databaseAssets.length > 0) {
         // Get the existing relationships to avoid duplicates and determine which to delete
         const { data: existingRelationships, error: fetchError } = await supabase
           .from('prompt_relationships')
@@ -1168,7 +1258,7 @@ const AI: React.FC = () => {
         
         // Check which existing relationships need to be removed
         const existingAssetIds = existingRelationships?.map(rel => rel.asset_id) || [];
-        const assetsToRemove = existingAssetIds.filter(id => !selectedRelatedAssets.includes(id));
+        const assetsToRemove = existingAssetIds.filter(id => !databaseAssets.includes(id));
         
         // Delete removed relationships
         if (assetsToRemove.length > 0) {
@@ -1182,7 +1272,7 @@ const AI: React.FC = () => {
         }
         
         // Process existing assets that need to be updated and new assets that need to be added
-        for (const assetId of selectedRelatedAssets) {
+        for (const assetId of databaseAssets) {
           // Get the file information
           const file = documentationFiles.find(file => file.id === assetId);
           if (!file) continue;
@@ -1239,7 +1329,7 @@ const AI: React.FC = () => {
           }
         }
       } else {
-        // If no assets are selected, delete all relationships
+        // If no database assets are selected, delete all relationships from the table
         const { error: deleteAllError } = await supabase
           .from('prompt_relationships')
           .delete()
@@ -1304,18 +1394,45 @@ const AI: React.FC = () => {
           });
         }
         
-        // Find the documentation files that match these IDs and enhance them with relationship data
-        const relatedFiles = documentationFiles
+        // Find the documentation files that match these IDs
+        let relatedFiles = documentationFiles
           .filter(file => relatedAssetIds.includes(file.id))
           .map(file => {
-            const relData = relationshipMap[file.id] || {};
-            return {
-              ...file,
-              related_document_type_id: relData.document_type_id,
-              relationship_type: relData.relationship_type,
-              relationship_context: relData.relationship_context,
-              relationship_description: relData.description
-            };
+            // Check if it's a package.json file
+            if (file.metadata?.isPackageJson) {
+              // Get settings from package.json metadata if available
+              const packageJsonFiles = prompt.metadata.packageJsonFiles || [];
+              const packageData = packageJsonFiles.find(pkg => pkg.id === file.id);
+              
+              if (packageData && packageData.settings) {
+                return {
+                  ...file,
+                  related_document_type_id: packageData.settings.document_type_id,
+                  relationship_type: packageData.settings.relationship_type,
+                  relationship_context: packageData.settings.relationship_context,
+                  relationship_description: packageData.settings.description
+                };
+              } else {
+                // Default package.json relationship data
+                return {
+                  ...file,
+                  related_document_type_id: null,
+                  relationship_type: 'reference',
+                  relationship_context: '',
+                  relationship_description: 'Package.json file relationship'
+                };
+              }
+            } else {
+              // Regular database file - use relationship data from database
+              const relData = relationshipMap[file.id] || {};
+              return {
+                ...file,
+                related_document_type_id: relData.document_type_id,
+                relationship_type: relData.relationship_type,
+                relationship_context: relData.relationship_context,
+                relationship_description: relData.description
+              };
+            }
           });
         
         // Update the map for this single prompt
@@ -1942,10 +2059,23 @@ const AI: React.FC = () => {
                     ) : (
                       <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                         {promptRelationshipsMap[selectedPromptForView]?.map(file => (
-                          <div key={file.id} className="border rounded-md p-3 hover:bg-gray-50">
+                          <div 
+                            key={file.id} 
+                            className={`border rounded-md p-3 hover:bg-gray-50 ${
+                              file.metadata?.isPackageJson || file.file_path.toLowerCase().includes('package.json') 
+                                ? 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200' : ''
+                            }`}
+                          >
                             <div className="flex items-start justify-between">
                               <div>
-                                <div className="font-medium">{file.title}</div>
+                                <div className="font-medium">
+                                  {file.title}
+                                  {(file.metadata?.isPackageJson || file.file_path.toLowerCase().includes('package.json')) && (
+                                    <Badge className="ml-2 text-xs bg-yellow-100 text-yellow-800 border border-yellow-300">
+                                      package.json
+                                    </Badge>
+                                  )}
+                                </div>
                                 <div className="text-xs text-muted-foreground mt-1">
                                   {file.file_path}
                                 </div>
@@ -1995,9 +2125,22 @@ const AI: React.FC = () => {
                             <h3 className="text-sm font-medium mb-2">Relationship Details</h3>
                             <div className="space-y-2">
                               {promptRelationshipsMap[selectedPromptForView].map(file => (
-                                <div key={file.id} className="border rounded-md p-2 bg-gray-50 text-sm">
+                                <div 
+                                  key={file.id} 
+                                  className={`border rounded-md p-2 text-sm ${
+                                    file.metadata?.isPackageJson || file.file_path.toLowerCase().includes('package.json') 
+                                      ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50'
+                                  }`}
+                                >
                                   <div className="flex justify-between items-start">
-                                    <span className="font-medium">{file.title}</span>
+                                    <span className="font-medium">
+                                      {file.title}
+                                      {(file.metadata?.isPackageJson || file.file_path.toLowerCase().includes('package.json')) && (
+                                        <Badge className="ml-2 text-xs bg-yellow-100 text-yellow-800 border border-yellow-300">
+                                          package.json
+                                        </Badge>
+                                      )}
+                                    </span>
                                     {file.relationship_type && (
                                       <Badge className="text-xs bg-blue-100 text-blue-800">
                                         {file.relationship_type}
@@ -2151,6 +2294,17 @@ const AI: React.FC = () => {
                         documentationFiles
                           .filter(file => {
                             if (!relationshipsFilter) return true;
+                            
+                            // Special case for searching package.json files
+                            if (relationshipsFilter.toLowerCase().includes('package') || 
+                                relationshipsFilter.toLowerCase().includes('pkg') || 
+                                relationshipsFilter.toLowerCase().includes('json')) {
+                              if (file.metadata?.isPackageJson || 
+                                  file.file_path.toLowerCase().includes('package.json')) {
+                                return true;
+                              }
+                            }
+                            
                             return (
                               file.file_path.toLowerCase().includes(relationshipsFilter.toLowerCase()) ||
                               file.title.toLowerCase().includes(relationshipsFilter.toLowerCase())
@@ -2164,7 +2318,12 @@ const AI: React.FC = () => {
                             return (
                               <div 
                                 key={file.id}
-                                className={`p-2 hover:bg-accent rounded mb-1 ${isSelected ? 'border-l-4 border-blue-500 pl-2' : ''}`}
+                                className={`p-2 hover:bg-accent rounded mb-1 ${
+                                  isSelected ? 'border-l-4 border-blue-500 pl-2' : ''
+                                } ${
+                                  file.metadata?.isPackageJson || file.file_path.toLowerCase().includes('package.json') 
+                                    ? 'bg-yellow-50 hover:bg-yellow-100' : ''
+                                }`}
                               >
                                 <div className="flex items-start">
                                   <Checkbox 
@@ -2181,6 +2340,11 @@ const AI: React.FC = () => {
                                     <div className="flex justify-between">
                                       <Label htmlFor={`file-${file.id}`} className="font-medium cursor-pointer">
                                         {file.title}
+                                        {(file.metadata?.isPackageJson || file.file_path.toLowerCase().includes('package.json')) && (
+                                          <Badge className="ml-2 text-xs bg-yellow-100 text-yellow-800 border border-yellow-300">
+                                            package.json
+                                          </Badge>
+                                        )}
                                       </Label>
                                       
                                       {isSelected && fileSettings && (
