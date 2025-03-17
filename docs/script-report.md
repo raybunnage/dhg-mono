@@ -1,6 +1,6 @@
 # Shell Script Report
 
-Generated: Sun Mar 16 14:06:17 PDT 2025
+Generated: Sun Mar 16 18:50:43 PDT 2025
 
 ## Overview
 
@@ -16,9 +16,9 @@ It includes information about each script's executable status, size, and last mo
 
 ## Summary
 
-- **Total shell scripts:**       73
-- **Executable scripts:**       68
-- **Non-executable scripts:**        5
+- **Total shell scripts:**       62
+- **Executable scripts:**       56
+- **Non-executable scripts:**        6
 - **Root-level scripts:**        0
 
 ## Make All Scripts Executable
@@ -54,6 +54,9 @@ find . -name "*.sh" -type f -exec chmod +x {} \;
     - Shebang: `#!/bin/bash`
   - 📜 [markdown-report.sh](/scripts/markdown-report.sh) - ✅ Executable - 2025-03-07 00:26 (5224 bytes)
     - Shebang: `#!/bin/bash`
+  - 📜 [migrate-cli-scripts.sh](/scripts/migrate-cli-scripts.sh) - ❌ Not executable - 2025-03-16 14:54 (527 bytes)
+    - Shebang: `#!/bin/bash`
+    - To make executable: `chmod +x scripts/migrate-cli-scripts.sh`
   - 📜 [set-permissions.sh](/scripts/set-permissions.sh) - ✅ Executable - 2025-02-22 20:59 (601 bytes)
     - Shebang: `#!/bin/bash`
   - 📜 [setup-cli-package.sh](/scripts/setup-cli-package.sh) - ❌ Not executable - 2025-03-15 21:11 (4867 bytes)
@@ -68,6 +71,8 @@ find . -name "*.sh" -type f -exec chmod +x {} \;
     - Shebang: `#!/bin/bash`
   - 📜 [update-docs-database.sh](/scripts/update-docs-database.sh) - ✅ Executable - 2025-03-09 15:09 (26515 bytes)
     - Shebang: `#!/bin/bash`
+  - 📜 [verify-cli-scripts.sh](/scripts/verify-cli-scripts.sh) - ✅ Executable - 2025-03-16 14:58 (712 bytes)
+    - Shebang: `#!/bin/bash`
   - 📁 **app-management/**
     - 📜 [backup-configs.sh](/scripts/app-management/backup-configs.sh) - ✅ Executable - 2025-02-12 14:14 (2721 bytes)
       - Shebang: `#!/bin/bash`
@@ -80,11 +85,17 @@ find . -name "*.sh" -type f -exec chmod +x {} \;
   - 📁 **cli-pipeline/**
     - 📜 [analyze-scripts.sh](/scripts/cli-pipeline/analyze-scripts.sh) - ✅ Executable - 2025-03-16 13:40 (2843 bytes)
       - Shebang: `#!/bin/bash`
+    - 📜 [fix-ai-integration.sh](/scripts/cli-pipeline/fix-ai-integration.sh) - ✅ Executable - 2025-03-16 18:31 (5901 bytes)
+      - Shebang: `#!/bin/bash`
+    - 📜 [fix-batch-analyze.sh](/scripts/cli-pipeline/fix-batch-analyze.sh) - ✅ Executable - 2025-03-16 18:43 (3325 bytes)
+      - Shebang: `#!/bin/bash`
+    - 📜 [fix-permissions.sh](/scripts/cli-pipeline/fix-permissions.sh) - ✅ Executable - 2025-03-16 17:40 (26661 bytes)
+      - Shebang: `#!/bin/bash`
     - 📜 [import-script-analysis.sh](/scripts/cli-pipeline/import-script-analysis.sh) - ✅ Executable - 2025-03-16 12:49 (11091 bytes)
       - Shebang: `#!/bin/bash`
     - 📜 [load-env.sh](/scripts/cli-pipeline/load-env.sh) - ✅ Executable - 2025-03-16 13:40 (3770 bytes)
       - Shebang: `#!/bin/bash`
-    - 📜 [run-ai-analyze.sh](/scripts/cli-pipeline/run-ai-analyze.sh) - ✅ Executable - 2025-03-16 13:41 (3188 bytes)
+    - 📜 [run-ai-analyze.sh](/scripts/cli-pipeline/run-ai-analyze.sh) - ✅ Executable - 2025-03-16 18:48 (4152 bytes)
       - Shebang: `#!/bin/bash`
     - 📜 [script-report.sh](/scripts/cli-pipeline/script-report.sh) - ✅ Executable - 2025-03-16 14:05 (12327 bytes)
       - Shebang: `#!/bin/bash`
@@ -155,21 +166,6 @@ find . -name "*.sh" -type f -exec chmod +x {} \;
     - 📁 **scripts/**
       - 📜 [setup_whisper.sh](/apps/dhg-improve-experts/scripts/setup_whisper.sh) - ✅ Executable - 2025-02-22 17:21 (586 bytes)
         - Shebang: `#!/bin/bash`
-      - 📁 **cli-pipeline/**
-        - 📜 [classify-markdowns.sh](/apps/dhg-improve-experts/scripts/cli-pipeline/classify-markdowns.sh) - ✅ Executable - 2025-03-16 11:56 (866 bytes)
-          - Shebang: `#!/bin/bash`
-        - 📜 [examine-markdown.sh](/apps/dhg-improve-experts/scripts/cli-pipeline/examine-markdown.sh) - ✅ Executable - 2025-03-16 11:56 (1027 bytes)
-          - Shebang: `#!/bin/bash`
-        - 📜 [generate-report-and-sync-db.sh](/apps/dhg-improve-experts/scripts/cli-pipeline/generate-report-and-sync-db.sh) - ✅ Executable - 2025-03-15 14:04 (1189 bytes)
-          - Shebang: `No shebang`
-        - 📜 [markdown-report.sh](/apps/dhg-improve-experts/scripts/cli-pipeline/markdown-report.sh) - ✅ Executable - 2025-03-07 00:36 (6204 bytes)
-          - Shebang: `#!/bin/bash`
-        - 📜 [run-docs-processor.sh](/apps/dhg-improve-experts/scripts/cli-pipeline/run-docs-processor.sh) - ✅ Executable - 2025-03-02 16:23 (648 bytes)
-          - Shebang: `#!/bin/bash`
-        - 📜 [run-workflow.sh](/apps/dhg-improve-experts/scripts/cli-pipeline/run-workflow.sh) - ✅ Executable - 2025-03-16 11:56 (3345 bytes)
-          - Shebang: `#!/bin/bash`
-        - 📜 [update-docs-database.sh](/apps/dhg-improve-experts/scripts/cli-pipeline/update-docs-database.sh) - ✅ Executable - 2025-03-11 20:32 (12733 bytes)
-          - Shebang: `#!/bin/bash`
       - 📁 **docs-organization/**
         - 📜 [add-frontmatter.sh](/apps/dhg-improve-experts/scripts/docs-organization/add-frontmatter.sh) - ✅ Executable - 2025-03-02 12:22 (2026 bytes)
           - Shebang: `#!/bin/bash`
@@ -183,27 +179,3 @@ find . -name "*.sh" -type f -exec chmod +x {} \;
           - Shebang: `#!/bin/bash`
         - 📜 [tree-docs.sh](/apps/dhg-improve-experts/scripts/docs-organization/tree-docs.sh) - ✅ Executable - 2025-03-02 12:22 (2573 bytes)
           - Shebang: `#!/bin/bash`
-
-## Packages Directory (Hierarchical View)
-
-- 📁 **packages/**
-  - 📁 **cli/**
-    - 📁 **scripts/**
-      - 📜 [analyze-scripts.sh](/packages/cli/scripts/analyze-scripts.sh) - ✅ Executable - 2025-03-16 12:35 (2289 bytes)
-        - Shebang: `#!/bin/bash`
-      - 📜 [build-cli.sh](/packages/cli/scripts/build-cli.sh) - ✅ Executable - 2025-03-16 12:35 (367 bytes)
-        - Shebang: `#!/bin/bash`
-      - 📜 [build-scan-scripts.sh](/packages/cli/scripts/build-scan-scripts.sh) - ✅ Executable - 2025-03-16 12:36 (3378 bytes)
-        - Shebang: `#!/bin/bash`
-      - 📜 [fix-ai-integration.sh](/packages/cli/scripts/fix-ai-integration.sh) - ✅ Executable - 2025-03-16 12:35 (46111 bytes)
-        - Shebang: `#!/bin/bash`
-      - 📜 [fix-batch-analyze.sh](/packages/cli/scripts/fix-batch-analyze.sh) - ✅ Executable - 2025-03-16 12:36 (21044 bytes)
-        - Shebang: `#!/bin/bash`
-      - 📜 [fix-permissions.sh](/packages/cli/scripts/fix-permissions.sh) - ✅ Executable - 2025-03-16 12:37 (14749 bytes)
-        - Shebang: `#!/bin/bash`
-      - 📜 [process-docs-batch.sh](/packages/cli/scripts/process-docs-batch.sh) - ✅ Executable - 2025-03-16 12:37 (3553 bytes)
-        - Shebang: `#!/bin/bash`
-      - 📜 [run-analyze-scripts.sh](/packages/cli/scripts/run-analyze-scripts.sh) - ✅ Executable - 2025-03-16 12:36 (2746 bytes)
-        - Shebang: `#!/bin/bash`
-      - 📜 [run-scan-scripts.sh](/packages/cli/scripts/run-scan-scripts.sh) - ✅ Executable - 2025-03-16 12:37 (1838 bytes)
-        - Shebang: `#!/bin/bash`

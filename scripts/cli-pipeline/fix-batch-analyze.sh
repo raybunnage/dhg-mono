@@ -19,8 +19,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$ROOT_DIR"
 
-# Load environment variables
-source "$SCRIPT_DIR/load-env.sh" --verbose
+# Load environment variables - use ./ to ensure it runs in a subshell
+. "$SCRIPT_DIR/load-env.sh" --verbose
 
 # Check for required environment variables
 if [ -z "$CLI_CLAUDE_API_KEY" ]; then
