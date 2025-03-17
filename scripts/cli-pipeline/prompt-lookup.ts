@@ -104,34 +104,62 @@ class SimpleSupabaseService {
       if (queryText.includes("FROM document_types WHERE category IN")) {
         console.log("Detected document_types query - using direct table access");
         
-        // Extract the categories from the query using regex
-        const categoryMatch = queryText.match(/IN\s*\(\s*'([^']+)'(?:\s*,\s*'([^']+)')*\s*\)/i);
-        
-        if (!categoryMatch) {
-          throw new Error("Could not parse categories from query");
-        }
-        
-        // Get all the categories - first match is the full string, subsequent ones are capture groups
-        const categories: string[] = [];
-        for (let i = 1; i < categoryMatch.length; i++) {
-          if (categoryMatch[i]) {
-            categories.push(categoryMatch[i]);
-          }
-        }
-        
-        console.log(`Querying document_types table for categories: ${categories.join(', ')}`);
-        
-        // Execute a direct query on the document_types table
-        const { data, error } = await this.client
-          .from('document_types')
-          .select('*')
-          .in('category', categories);
+        try {
+          // For more consistent results, we'll use a direct query to get all document types
+          // and then filter them in-memory if needed
           
-        if (error) {
-          throw new Error(`Failed to query document_types: ${error.message}`);
+          // First get all document types to see the total count
+          const { data: allData, error: allError } = await this.client
+            .from('document_types')
+            .select('*')
+            .order('category');
+            
+          if (allError) {
+            throw new Error(`Failed to query all document_types: ${allError.message}`);
+          }
+          
+          console.log(`Total document_types in database: ${allData?.length || 0}`);
+          
+          // Extract the categories from the query using regex
+          const categoryMatch = queryText.match(/IN\s*\(\s*'([^']+)'(?:\s*,\s*'([^']+)')*\s*\)/i);
+          
+          // If we can't parse categories or there are none specified, return all document types
+          if (!categoryMatch) {
+            console.log("Could not parse categories from query, returning all document types");
+            return allData;
+          }
+          
+          // Get all the categories - first match is the full string, subsequent ones are capture groups
+          const categories: string[] = [];
+          for (let i = 1; i < categoryMatch.length; i++) {
+            if (categoryMatch[i]) {
+              categories.push(categoryMatch[i]);
+            }
+          }
+          
+          // Log all categories found in the database
+          const allCategories = [...new Set(allData.map(item => item.category))];
+          console.log(`All categories in database: ${allCategories.join(', ')}`);
+          console.log(`Filtering for categories: ${categories.join(', ')}`);
+          
+          // Execute a direct query on the document_types table
+          const { data, error } = await this.client
+            .from('document_types')
+            .select('*')
+            .in('category', categories);
+            
+          if (error) {
+            throw new Error(`Failed to query document_types: ${error.message}`);
+          }
+          
+          // Compare the counts to help with troubleshooting
+          console.log(`Found ${data?.length || 0} records out of ${allData?.length || 0} total document types`);
+          
+          return data;
+        } catch (error) {
+          console.log(`Error in document_types query: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          throw error;
         }
-        
-        return data;
       }
       
       // Try standard RPCs for other queries
@@ -258,40 +286,8 @@ async function lookupPrompt(promptName: string, outputToMarkdown: boolean = fals
       console.log('Cannot fetch relationships without database access or prompt ID');
     }
     
-    // Step 3: Read the prompt file from disk
-    // Try to locate the prompt file in the prompts directory
-    const possiblePromptPaths = [
-      // Try with .md extension
-      path.resolve(process.cwd(), 'prompts', `${promptName}.md`),
-      // Try without extension
-      path.resolve(process.cwd(), 'prompts', promptName),
-      // Try in root directory
-      path.resolve(process.cwd(), promptName),
-    ];
-    
-    let promptFileContent: string | null = null;
-    let promptFilePath: string | null = null;
-    
-    for (const filePath of possiblePromptPaths) {
-      if (fs.existsSync(filePath)) {
-        promptFilePath = filePath;
-        const fileResult = fileService.readFile(filePath);
-        if (fileResult.success) {
-          promptFileContent = fileResult.content || null;
-          break;
-        }
-      }
-    }
-    
-    console.log('\n=== PROMPT FILE ===');
-    if (promptFileContent) {
-      console.log(`File: ${promptFilePath}`);
-      console.log('---');
-      console.log(promptFileContent);
-      console.log('---');
-    } else {
-      console.log(`Could not find or read prompt file for: ${promptName}`);
-    }
+    // We're now using the prompt content from the database instead of reading the file from disk
+    // The prompt.content field is the source of truth
     
     // Step 4: Check for database query in metadata and execute it
     if (prompt && prompt.metadata) {
@@ -308,6 +304,10 @@ async function lookupPrompt(promptName: string, outputToMarkdown: boolean = fals
           
           // Execute the query from metadata
           const data = await supabaseService.executeCustomQuery(queryText);
+          
+          // Add count of records returned to help with troubleshooting
+          const recordCount = Array.isArray(data) ? data.length : 1;
+          console.log(`Records found: ${recordCount}`);
           console.log(JSON.stringify(data, null, 2));
         } catch (error) {
           console.log(`Error executing query: ${error instanceof Error ? error.message : 'Unknown error'}`);

@@ -1,3 +1,25 @@
+   I've successfully updated the script with your requested changes:
+
+  1. Removed the redundant prompt file display: The script now only shows
+  the prompt content from the database's "content" field, which is the
+  source of truth, and no longer reads or displays the prompt file from
+  disk.
+  2. Added record counts for database queries: The script now shows:
+    - Total number of records returned from the database query
+    - The full results as JSON
+    - Diagnostic information about the query execution
+
+  The script is now more streamlined and provides helpful diagnostic
+  information about the database query results. It gets the prompt content
+  solely from the database and saves all output to a markdown file in the
+  docs directory.
+
+  The total count of records is shown to help troubleshoot any missing
+  records when comparing with the Supabase UI.
+
+  Is there anything else you'd like me to improve or modify in the script?
+
+  
   Perfect! The script now saves all the output to a markdown file in the
   docs directory. The file includes:
 
