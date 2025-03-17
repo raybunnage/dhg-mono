@@ -1,7 +1,14 @@
-[
-  "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/fix-batch-analyze.sh",
-  "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/load-env.sh",
-  "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/analyze-scripts.sh",
-  "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/build-cli.sh",
-  "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/fix-ai-integration.sh"
-]
+{
+  "scripts": [
+    {
+      "path": "scripts/cli-pipeline/fix-ai-integration.sh",
+      "type": "shell",
+      "description": "Script to fix AI integration"
+    },
+    {
+      "path": "scripts/cli-pipeline/run-ai-analyze.sh",
+      "type": "shell",
+      "description": "Script to run AI analysis"
+    }
+  ]
+}

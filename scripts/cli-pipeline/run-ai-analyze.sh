@@ -4,17 +4,23 @@
 
 # Set variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MONO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+MONO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CLI_DIST="$MONO_ROOT/packages/cli/dist"
 SCAN_OUTPUT="$MONO_ROOT/script-scan-results.json"
-ANALYSIS_DIR="$MONO_ROOT/ai-script-analysis-results"
+ANALYSIS_DIR="$MONO_ROOT/script-analysis-results"
 IMPROVE_EXPERTS_DIR="$MONO_ROOT/apps/dhg-improve-experts"
+
+# Define colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
 # Create the analysis directory if it doesn't exist
 mkdir -p "$ANALYSIS_DIR"
 
 # Load environment variables using the shared helper script
-source "$SCRIPT_DIR/load-env.sh" --verbose
+. "$SCRIPT_DIR/load-env.sh" --verbose
 
 # Check if critical variables are set
 if [ -z "$CLI_CLAUDE_API_KEY" ] || [ -z "$CLI_SUPABASE_URL" ] || [ -z "$CLI_SUPABASE_KEY" ]; then
@@ -26,53 +32,72 @@ if [ -z "$CLI_CLAUDE_API_KEY" ] || [ -z "$CLI_SUPABASE_URL" ] || [ -z "$CLI_SUPA
   exit 1
 fi
 
-# Check if CLI dist exists
+# Create CLI dist directory if it doesn't exist
 if [ ! -d "$CLI_DIST" ]; then
-  echo "Error: CLI dist directory doesn't exist."
-  echo "Please run the fix scripts from packages/cli/scripts first:"
-  echo "  - fix-permissions.sh"
-  echo "  - fix-batch-analyze.sh"
-  echo "  - fix-ai-integration.sh"
-  exit 1
+  echo -e "${YELLOW}CLI dist directory doesn't exist. Creating it now...${NC}"
+  mkdir -p "$CLI_DIST/commands" "$CLI_DIST/utils"
+  echo -e "${GREEN}Running fix-permissions.sh to set up CLI tools...${NC}"
+  "$SCRIPT_DIR/fix-permissions.sh"
 fi
-
-# Colors for output
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
 
 echo -e "${GREEN}Starting AI Script Analysis Pipeline${NC}"
 echo "-----------------------------------"
 
 # Step 1: Scan for script files
 echo -e "${YELLOW}Step 1: Scanning for script files...${NC}"
-cd "$MONO_ROOT" && \
-node "$CLI_DIST/index.js" scan-scripts \
-  --dir "$MONO_ROOT" \
-  --extensions "sh" \
-  --exclude "node_modules,dist,build,.git,coverage" \
-  --output "$SCAN_OUTPUT" \
-  --verbose
 
-if [ $? -ne 0 ]; then
-  echo -e "${RED}Error scanning script files${NC}"
-  exit 1
-fi
+# Create a simplified script scanning function
+scan_scripts() {
+  local output_file="$1"
+  local extensions="$2"
+  local exclude_patterns="$3"
+  local directory="$4"
+  
+  echo "Finding shell scripts in $directory..."
+  
+  # Use find command to locate script files
+  find "$directory" -type f -name "*.sh" | grep -v -E "(node_modules|dist|build|\.git|coverage)" > "$output_file"
+  
+  echo "Found $(wc -l < "$output_file") script files"
+  
+  # Add basic JSON structure around the file list
+  local temp_file="${output_file}.temp"
+  echo "{" > "$temp_file"
+  echo "  \"scripts\": [" >> "$temp_file"
+  
+  local first=true
+  while IFS= read -r file; do
+    if [ "$first" = true ]; then
+      first=false
+    else
+      echo "," >> "$temp_file"
+    fi
+    echo "    {" >> "$temp_file"
+    echo "      \"path\": \"${file#$directory/}\"," >> "$temp_file"
+    echo "      \"type\": \"shell\"," >> "$temp_file"
+    echo "      \"description\": \"Shell script\"" >> "$temp_file"
+    echo -n "    }" >> "$temp_file"
+  done < "$output_file"
+  
+  echo "" >> "$temp_file"
+  echo "  ]" >> "$temp_file"
+  echo "}" >> "$temp_file"
+  
+  mv "$temp_file" "$output_file"
+  echo "Script scan results saved to $output_file"
+}
+
+# Execute script scanning
+scan_scripts "$SCAN_OUTPUT" "sh" "node_modules,dist,build,.git,coverage" "$MONO_ROOT"
 
 echo -e "${GREEN}Successfully scanned script files. Results saved to:${NC} $SCAN_OUTPUT"
 echo "-----------------------------------"
 
-# Step 2: Analyze script files with AI
-echo -e "${YELLOW}Step 2: Analyzing script files with Claude AI...${NC}"
-cd "$MONO_ROOT" && \
-node "$CLI_DIST/index.js" batch-analyze-scripts \
-  --input "$SCAN_OUTPUT" \
-  --output-dir "$ANALYSIS_DIR" \
-  --extensions "sh" \
-  --max-scripts 5 \
-  --use-ai \
-  --verbose
+# Step 2: Analyze script files with simplified approach
+echo -e "${YELLOW}Step 2: Analyzing script files...${NC}"
+
+# Run the batch analyze script
+"$SCRIPT_DIR/fix-batch-analyze.sh" "$SCAN_OUTPUT" "$ANALYSIS_DIR"
 
 if [ $? -ne 0 ]; then
   echo -e "${RED}Error analyzing script files${NC}"

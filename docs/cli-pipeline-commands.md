@@ -3,12 +3,140 @@
 This document provides information about the CLI pipeline scripts available in the `scripts/cli-pipeline` directory, including what they do, how to run them, and what services they interact with.
 
 ## Table of Contents
+Based on my inspection of the packages/cli directory and its critical
+  files, here's what I found regarding path handling and environment
+  variables:
 
+  1. Environment Variables:
+    - The config.ts file has a robust mechanism for loading environment
+  variables
+    - It properly searches for .env files in multiple possible root
+  paths, including the monorepo root
+    - It has a good order of precedence: .env.local → .env.[environment]
+  → .env
+    - It correctly handles CLI-specific environment variables with
+  appropriate fallbacks
+  2. Output Path Handling:
+    - The default output directory is set to 'docs' in the config (line
+  31 in config.ts)
+    - Report generation properly resolves paths to the docs folder (line
+  816 in documentation-processor.ts)
+    - Analysis results are also written correctly to the specified output
+   directory
+  3. File Path Resolution:
+    - The CLI properly handles both absolute and relative paths
+    - It has a findProjectRoot function that safely identifies the
+  monorepo root
+    - It correctly resolves paths that start with 'apps/' to be relative
+  to the monorepo root
+  4. Path Safety:
+    - Path operations use proper path.resolve() and path.join() functions
+    - The code checks for directory existence before writing files
+
+  Everything appears to be properly configured to run the CLI from the
+  monorepo root. The CLI will correctly access .env files from the root
+  directory and write output files to the docs directory as expected.
 - [Overview](#overview)
 - [Scripts](#scripts)
   - [analyze-scripts.sh](#analyze-scriptssh)
   - [run-ai-analyze.sh](#run-ai-analyzesh)
-  - [import-script-analysis.sh](#import-script-analysissh)
+  - [import-script-aBased on my inspection of the packages/cli directory and its critical
+  files, here's what I found regarding path handling and environment
+  variables:
+
+  1. Environment Variables:
+    - The config.ts file has a robust mechanism for loading environment
+  variables
+    - It properly searches for .env files in multiple possible root
+  paths, including the monorepo root
+    - It has a good order of precedence: .env.local → .env.[environment]
+  → .env
+    - It correctly handles CLI-specific environment variables with
+  appropriate fallbacks
+  2. Output Path Handling:
+    - The default output directory is set to 'docs' in the config (line
+  31 in config.ts)
+    - Report generation properly resolves paths to the docs folder (line
+  816 in documentation-processor.ts)
+    - Analysis results are also written correctly to the specified output
+   directory
+  3. File Path Resolution:
+    - The CLI properly handles both absolute and relative paths
+    - It has a findProjectRoot function that safely identifies the
+  monorepo root
+    - It correctly resolves paths that start with 'apps/' to be relative
+  to the monorepo root
+  4. Path Safety:
+    - Path operations use proper path.resolve() and path.join() functions
+    - The code checks for directory existence before writing files
+
+  Everything appears to be properly configured to run the CLI from the
+  monorepo root. The CLI will correctly access .env files from the root
+  directory and write output files to the docs directory as expected.Based on my inspection of the packages/cli directory and its critical
+  files, here's what I found regarding path handling and environment
+  variables:
+
+  1. Environment Variables:
+    - The config.ts file has a robust mechanism for loading environment
+  variables
+    - It properly searches for .env files in multiple possible root
+  paths, including the monorepo root
+    - It has a good order of precedence: .env.local → .env.[environment]
+  → .env
+    - It correctly handles CLI-specific environment variables with
+  appropriate fallbacks
+  2. Output Path Handling:
+    - The default output directory is set to 'docs' in the config (line
+  31 in config.ts)
+    - Report generation properly resolves paths to the docs folder (line
+  816 in documentation-processor.ts)
+    - Analysis results are also written correctly to the specified output
+   directory
+  3. File Path Resolution:
+    - The CLI properly handles both absolute and relative paths
+    - It has a findProjectRoot function that safely identifies the
+  monorepo root
+    - It correctly resolves paths that start with 'apps/' to be relative
+  to the monorepo root
+  4. Path Safety:
+    - Path operations use proper path.resolve() and path.join() functions
+    - The code checks for directory existence before writing files
+
+  Everything appears to be properlBased on my inspection of the packages/cli directory and its critical
+  files, here's what I found regarding path handling and environment
+  variables:
+
+  1. Environment Variables:
+    - The config.ts file has a robust mechanism for loading environment
+  variables
+    - It properly searches for .env files in multiple possible root
+  paths, including the monorepo root
+    - It has a good order of precedence: .env.local → .env.[environment]
+  → .env
+    - It correctly handles CLI-specific environment variables with
+  appropriate fallbacks
+  2. Output Path Handling:
+    - The default output directory is set to 'docs' in the config (line
+  31 in config.ts)
+    - Report generation properly resolves paths to the docs folder (line
+  816 in documentation-processor.ts)
+    - Analysis results are also written correctly to the specified output
+   directory
+  3. File Path Resolution:
+    - The CLI properly handles both absolute and relative paths
+    - It has a findProjectRoot function that safely identifies the
+  monorepo root
+    - It correctly resolves paths that start with 'apps/' to be relative
+  to the monorepo root
+  4. Path Safety:
+    - Path operations use proper path.resolve() and path.join() functions
+    - The code checks for directory existence before writing files
+
+  Everything appears to be properly configured to run the CLI from the
+  monorepo root. The CLI will correctly access .env files from the root
+  directory and write output files to the docs directory as expected.y configured to run the CLI from the
+  monorepo root. The CLI will correctly access .env files from the root
+  directory and write output files to the docs directory as expected.nalysis.sh](#import-script-analysissh)
   - [validate-ai-assets.sh](#validate-ai-assetssh)
   - [validate-prompt-relationships.sh](#validate-prompt-relationshipssh)
   - [script-report.sh](#script-reportsh)
