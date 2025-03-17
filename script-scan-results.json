@@ -1,52 +1,1375 @@
 [
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/run-ai-analyze.sh",
-    "language": "shell",
-    "size_bytes": 3242,
-    "line_count": 102,
-    "last_modified": "2025-03-16T08:04:03.998Z"
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/process-documentation.ts",
+    "language": "typescript",
+    "size_bytes": 10597,
+    "line_count": 346,
+    "last_modified": "2025-03-17T00:41:59.715Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/fix-ai-integration.sh",
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/update-docs-database.sh",
     "language": "shell",
-    "size_bytes": 46100,
+    "size_bytes": 12733,
+    "line_count": 346,
+    "last_modified": "2025-03-17T00:41:59.715Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/run-workflow.sh",
+    "language": "shell",
+    "size_bytes": 3345,
+    "line_count": 91,
+    "last_modified": "2025-03-17T00:41:59.715Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/run-docs-processor.sh",
+    "language": "shell",
+    "size_bytes": 648,
+    "line_count": 19,
+    "last_modified": "2025-03-17T00:41:59.715Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/run-ai-analyze.sh",
+    "language": "shell",
+    "size_bytes": 5995,
+    "line_count": 180,
+    "last_modified": "2025-03-17T00:41:59.715Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/markdown-report.sh",
+    "language": "shell",
+    "size_bytes": 6204,
+    "line_count": 239,
+    "last_modified": "2025-03-17T00:41:59.714Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/import-script-analysis.sh",
+    "language": "shell",
+    "size_bytes": 2783,
+    "line_count": 101,
+    "last_modified": "2025-03-17T00:41:59.714Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/generate-report-and-sync-db.sh",
+    "language": "shell",
+    "size_bytes": 1189,
+    "line_count": 42,
+    "last_modified": "2025-03-17T00:41:59.714Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/fix-permissions.sh",
+    "language": "shell",
+    "size_bytes": 28323,
+    "line_count": 880,
+    "last_modified": "2025-03-17T00:41:59.714Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/examine-markdown.sh",
+    "language": "shell",
+    "size_bytes": 1027,
+    "line_count": 34,
+    "last_modified": "2025-03-17T00:41:59.714Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/classify-markdowns.sh",
+    "language": "shell",
+    "size_bytes": 866,
+    "line_count": 28,
+    "last_modified": "2025-03-17T00:41:59.714Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/cli-pipeline/analyze-scripts.sh",
+    "language": "shell",
+    "size_bytes": 2675,
+    "line_count": 84,
+    "last_modified": "2025-03-17T00:41:59.713Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/fix-permissions.sh",
+    "language": "shell",
+    "size_bytes": 26661,
+    "line_count": 841,
+    "last_modified": "2025-03-17T00:40:18.034Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/server/api/documentation.ts",
+    "language": "typescript",
+    "size_bytes": 7281,
+    "line_count": 211,
+    "last_modified": "2025-03-16T22:18:53.001Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/api/markdown-report.ts",
+    "language": "typescript",
+    "size_bytes": 10912,
+    "line_count": 367,
+    "last_modified": "2025-03-16T22:18:49.019Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/app/api/docs-sync/route.ts",
+    "language": "typescript",
+    "size_bytes": 5092,
+    "line_count": 149,
+    "last_modified": "2025-03-16T22:18:35.357Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/verify-cli-scripts.sh",
+    "language": "shell",
+    "size_bytes": 712,
+    "line_count": 21,
+    "last_modified": "2025-03-16T21:58:59.457Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/migrate-cli-scripts.sh",
+    "language": "shell",
+    "size_bytes": 527,
+    "line_count": 13,
+    "last_modified": "2025-03-16T21:54:19.494Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/script-report.sh",
+    "language": "shell",
+    "size_bytes": 12327,
+    "line_count": 411,
+    "last_modified": "2025-03-16T21:05:31.268Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/test-env.sh",
+    "language": "shell",
+    "size_bytes": 2901,
+    "line_count": 86,
+    "last_modified": "2025-03-16T20:42:39.350Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/validate-ai-assets.sh",
+    "language": "shell",
+    "size_bytes": 15200,
+    "line_count": 417,
+    "last_modified": "2025-03-16T20:41:49.514Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/run-ai-analyze.sh",
+    "language": "shell",
+    "size_bytes": 3188,
+    "line_count": 100,
+    "last_modified": "2025-03-16T20:41:23.088Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/analyze-scripts.sh",
+    "language": "shell",
+    "size_bytes": 2843,
+    "line_count": 92,
+    "last_modified": "2025-03-16T20:40:59.370Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/load-env.sh",
+    "language": "shell",
+    "size_bytes": 3770,
+    "line_count": 116,
+    "last_modified": "2025-03-16T20:40:44.369Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/command-history-tracker.ts",
+    "language": "typescript",
+    "size_bytes": 5531,
+    "line_count": 185,
+    "last_modified": "2025-03-16T20:39:39.598Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/test-gitignore.sh",
+    "language": "shell",
+    "size_bytes": 621,
+    "line_count": 19,
+    "last_modified": "2025-03-16T20:34:12.803Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/backup-env.sh",
+    "language": "shell",
+    "size_bytes": 728,
+    "line_count": 24,
+    "last_modified": "2025-03-16T20:32:55.535Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/packages/cli/src/services/claude-service.ts",
+    "language": "typescript",
+    "size_bytes": 6453,
+    "line_count": 221,
+    "last_modified": "2025-03-16T20:18:38.394Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/packages/cli/src/utils/config.ts",
+    "language": "typescript",
+    "size_bytes": 5314,
+    "line_count": 157,
+    "last_modified": "2025-03-16T20:18:30.847Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/validate-prompt-relationships.sh",
+    "language": "shell",
+    "size_bytes": 27434,
+    "line_count": 691,
+    "last_modified": "2025-03-16T19:49:54.661Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/setup-prompts.sh",
+    "language": "shell",
+    "size_bytes": 1,
+    "line_count": 1,
+    "last_modified": "2025-03-16T19:49:54.658Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/import-script-analysis.sh",
+    "language": "shell",
+    "size_bytes": 11091,
+    "line_count": 333,
+    "last_modified": "2025-03-16T19:49:54.654Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/check-duplicates.ts",
+    "language": "typescript",
+    "size_bytes": 79,
+    "line_count": 2,
+    "last_modified": "2025-03-16T19:49:54.651Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/process-docs-batch.sh",
+    "language": "shell",
+    "size_bytes": 3553,
+    "line_count": 161,
+    "last_modified": "2025-03-16T19:37:39.998Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/run-scan-scripts.sh",
+    "language": "shell",
+    "size_bytes": 1838,
+    "line_count": 60,
+    "last_modified": "2025-03-16T19:37:19.918Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/fix-permissions.sh",
+    "language": "shell",
+    "size_bytes": 14749,
+    "line_count": 429,
+    "last_modified": "2025-03-16T19:37:08.655Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/fix-batch-analyze.sh",
+    "language": "shell",
+    "size_bytes": 21044,
+    "line_count": 522,
+    "last_modified": "2025-03-16T19:36:51.517Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/build-scan-scripts.sh",
+    "language": "shell",
+    "size_bytes": 3378,
+    "line_count": 121,
+    "last_modified": "2025-03-16T19:36:30.406Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/run-analyze-scripts.sh",
+    "language": "shell",
+    "size_bytes": 2746,
+    "line_count": 89,
+    "last_modified": "2025-03-16T19:36:09.954Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/analyze-scripts.sh",
+    "language": "shell",
+    "size_bytes": 2289,
+    "line_count": 77,
+    "last_modified": "2025-03-16T19:35:56.144Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/build-cli.sh",
+    "language": "shell",
+    "size_bytes": 367,
+    "line_count": 14,
+    "last_modified": "2025-03-16T19:35:45.082Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/file_types/scripts-2025-03-16/fix-ai-integration.sh",
+    "language": "shell",
+    "size_bytes": 46111,
     "line_count": 1224,
-    "last_modified": "2025-03-16T07:54:44.078Z"
+    "last_modified": "2025-03-16T19:35:28.943Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/run-analyze-scripts.sh",
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/services/markdownFileService.ts",
+    "language": "typescript",
+    "size_bytes": 118311,
+    "line_count": 3135,
+    "last_modified": "2025-03-16T19:21:09.411Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/services/documentationService.ts",
+    "language": "typescript",
+    "size_bytes": 14478,
+    "line_count": 471,
+    "last_modified": "2025-03-16T19:21:09.406Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/services/googleDriveService.ts",
+    "language": "typescript",
+    "size_bytes": 75744,
+    "line_count": 2023,
+    "last_modified": "2025-03-16T19:21:09.401Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/services/commandHistoryService.ts",
+    "language": "typescript",
+    "size_bytes": 8900,
+    "line_count": 366,
+    "last_modified": "2025-03-16T19:21:09.397Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/services/api.ts",
+    "language": "typescript",
+    "size_bytes": 1976,
+    "line_count": 72,
+    "last_modified": "2025-03-16T19:21:09.392Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/services/googleAuth.ts",
+    "language": "typescript",
+    "size_bytes": 17738,
+    "line_count": 489,
+    "last_modified": "2025-03-16T19:21:09.387Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/services/syncHistoryService.ts",
+    "language": "typescript",
+    "size_bytes": 3357,
+    "line_count": 114,
+    "last_modified": "2025-03-16T19:21:09.382Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/services/claudeApiService.ts",
+    "language": "typescript",
+    "size_bytes": 4240,
+    "line_count": 132,
+    "last_modified": "2025-03-16T19:21:09.377Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/api/source-code.ts",
+    "language": "typescript",
+    "size_bytes": 578,
+    "line_count": 23,
+    "last_modified": "2025-03-16T19:21:09.372Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/api/test-openai.ts",
+    "language": "typescript",
+    "size_bytes": 747,
+    "line_count": 28,
+    "last_modified": "2025-03-16T19:21:09.367Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/api/proxy.ts",
+    "language": "typescript",
+    "size_bytes": 2035,
+    "line_count": 66,
+    "last_modified": "2025-03-16T19:21:09.362Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/api/markdown-report.ts",
+    "language": "typescript",
+    "size_bytes": 10816,
+    "line_count": 367,
+    "last_modified": "2025-03-16T19:21:09.358Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/api/test-whisper.ts",
+    "language": "typescript",
+    "size_bytes": 983,
+    "line_count": 33,
+    "last_modified": "2025-03-16T19:21:09.353Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/api/process-expert-document.ts",
+    "language": "typescript",
+    "size_bytes": 6327,
+    "line_count": 178,
+    "last_modified": "2025-03-16T19:21:09.348Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/api/claude-api.ts",
+    "language": "typescript",
+    "size_bytes": 1256,
+    "line_count": 52,
+    "last_modified": "2025-03-16T19:21:09.343Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/lib/supabase.ts",
+    "language": "typescript",
+    "size_bytes": 160,
+    "line_count": 4,
+    "last_modified": "2025-03-16T19:21:09.338Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/lib/google-drive.ts",
+    "language": "typescript",
+    "size_bytes": 5244,
+    "line_count": 178,
+    "last_modified": "2025-03-16T19:21:09.334Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/lib/google-drive/sync.ts",
+    "language": "typescript",
+    "size_bytes": 5789,
+    "line_count": 188,
+    "last_modified": "2025-03-16T19:21:09.329Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/lib/utils.ts",
+    "language": "typescript",
+    "size_bytes": 169,
+    "line_count": 6,
+    "last_modified": "2025-03-16T19:21:09.324Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/lib/pdf-utils.ts",
+    "language": "typescript",
+    "size_bytes": 1009,
+    "line_count": 34,
+    "last_modified": "2025-03-16T19:21:09.319Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/lib/pdf-worker.ts",
+    "language": "typescript",
+    "size_bytes": 275,
+    "line_count": 8,
+    "last_modified": "2025-03-16T19:21:09.315Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/hooks/useSupabaseTabCache.ts",
+    "language": "typescript",
+    "size_bytes": 2692,
+    "line_count": 104,
+    "last_modified": "2025-03-16T19:21:09.310Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/hooks/use-toast.ts",
+    "language": "typescript",
+    "size_bytes": 757,
+    "line_count": 30,
+    "last_modified": "2025-03-16T19:21:09.305Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/vite-env.d.ts",
+    "language": "typescript",
+    "size_bytes": 38,
+    "line_count": 2,
+    "last_modified": "2025-03-16T19:21:09.300Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/components/index.ts",
+    "language": "typescript",
+    "size_bytes": 582,
+    "line_count": 12,
+    "last_modified": "2025-03-16T19:21:09.295Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/components/ui/use-toast.ts",
+    "language": "typescript",
+    "size_bytes": 82,
+    "line_count": 4,
+    "last_modified": "2025-03-16T19:21:09.291Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/integrations/google-drive.ts",
+    "language": "typescript",
+    "size_bytes": 3065,
+    "line_count": 108,
+    "last_modified": "2025-03-16T19:21:09.285Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/integrations/supabase/client.ts",
+    "language": "typescript",
+    "size_bytes": 1006,
+    "line_count": 22,
+    "last_modified": "2025-03-16T19:21:09.280Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/schemas/classification.schema.ts",
+    "language": "typescript",
+    "size_bytes": 290,
+    "line_count": 10,
+    "last_modified": "2025-03-16T19:21:09.276Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/registrations/metadata.ts",
+    "language": "typescript",
+    "size_bytes": 361,
+    "line_count": 11,
+    "last_modified": "2025-03-16T19:21:09.271Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/registrations/ai-processing.ts",
+    "language": "typescript",
+    "size_bytes": 1046,
+    "line_count": 36,
+    "last_modified": "2025-03-16T19:21:09.266Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/registrations/document-processing.ts",
+    "language": "typescript",
+    "size_bytes": 400,
+    "line_count": 11,
+    "last_modified": "2025-03-16T19:21:09.261Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/registrations/google-drive.ts",
+    "language": "typescript",
+    "size_bytes": 413,
+    "line_count": 11,
+    "last_modified": "2025-03-16T19:21:09.257Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/registrations/whisper.ts",
+    "language": "typescript",
+    "size_bytes": 382,
+    "line_count": 11,
+    "last_modified": "2025-03-16T19:21:09.252Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/registrations/components.ts",
+    "language": "typescript",
+    "size_bytes": 353,
+    "line_count": 11,
+    "last_modified": "2025-03-16T19:21:09.247Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/refreshGoogleToken.ts",
+    "language": "typescript",
+    "size_bytes": 2779,
+    "line_count": 93,
+    "last_modified": "2025-03-16T19:21:09.243Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/dbFunctions.ts",
+    "language": "typescript",
+    "size_bytes": 2657,
+    "line_count": 101,
+    "last_modified": "2025-03-16T19:21:09.238Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/file-utils.ts",
+    "language": "typescript",
+    "size_bytes": 2337,
+    "line_count": 78,
+    "last_modified": "2025-03-16T19:21:09.233Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/supabase.ts",
+    "language": "typescript",
+    "size_bytes": 3046,
+    "line_count": 115,
+    "last_modified": "2025-03-16T19:21:09.228Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/ai-processing.ts",
+    "language": "typescript",
+    "size_bytes": 15590,
+    "line_count": 547,
+    "last_modified": "2025-03-16T19:21:09.223Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/document-processing.ts",
+    "language": "typescript",
+    "size_bytes": 13094,
+    "line_count": 400,
+    "last_modified": "2025-03-16T19:21:09.219Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/google-drive-sync.ts",
+    "language": "typescript",
+    "size_bytes": 3850,
+    "line_count": 133,
+    "last_modified": "2025-03-16T19:21:09.214Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/google-drive.ts",
+    "language": "typescript",
+    "size_bytes": 17752,
+    "line_count": 601,
+    "last_modified": "2025-03-16T19:21:09.209Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/prompt-manager.ts",
+    "language": "typescript",
+    "size_bytes": 10234,
+    "line_count": 336,
+    "last_modified": "2025-03-16T19:21:09.205Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/database.ts",
+    "language": "typescript",
+    "size_bytes": 954,
+    "line_count": 29,
+    "last_modified": "2025-03-16T19:21:09.200Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/google-drive-helpers.ts",
+    "language": "typescript",
+    "size_bytes": 4074,
+    "line_count": 155,
+    "last_modified": "2025-03-16T19:21:09.195Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/function-registry.ts",
+    "language": "typescript",
+    "size_bytes": 3713,
+    "line_count": 154,
+    "last_modified": "2025-03-16T19:21:09.190Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/rate-limiter.ts",
+    "language": "typescript",
+    "size_bytes": 2324,
+    "line_count": 89,
+    "last_modified": "2025-03-16T19:21:09.186Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/google-auth.ts",
+    "language": "typescript",
+    "size_bytes": 836,
+    "line_count": 30,
+    "last_modified": "2025-03-16T19:21:09.181Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/format.ts",
+    "language": "typescript",
+    "size_bytes": 413,
+    "line_count": 16,
+    "last_modified": "2025-03-16T19:21:09.176Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/code-analysis/code-analysis-system.ts",
+    "language": "typescript",
+    "size_bytes": 22351,
+    "line_count": 796,
+    "last_modified": "2025-03-16T19:21:09.171Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/code-analysis/function-analyzer.ts",
+    "language": "typescript",
+    "size_bytes": 9335,
+    "line_count": 292,
+    "last_modified": "2025-03-16T19:21:09.167Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/code-analysis/analysis-detector.ts",
+    "language": "typescript",
+    "size_bytes": 5856,
+    "line_count": 177,
+    "last_modified": "2025-03-16T19:21:09.162Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/code-analysis/analysis-types.ts",
+    "language": "typescript",
+    "size_bytes": 2744,
+    "line_count": 129,
+    "last_modified": "2025-03-16T19:21:09.157Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/function-decorators.ts",
+    "language": "typescript",
+    "size_bytes": 553,
+    "line_count": 22,
+    "last_modified": "2025-03-16T19:21:09.152Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/function-migration.ts",
+    "language": "typescript",
+    "size_bytes": 929,
+    "line_count": 35,
+    "last_modified": "2025-03-16T19:21:09.148Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/whisper-processing.ts",
+    "language": "typescript",
+    "size_bytes": 9393,
+    "line_count": 316,
+    "last_modified": "2025-03-16T19:21:09.143Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/audio-pipeline.ts",
+    "language": "typescript",
+    "size_bytes": 2073,
+    "line_count": 67,
+    "last_modified": "2025-03-16T19:21:09.138Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/audio-extractor.ts",
+    "language": "typescript",
+    "size_bytes": 550,
+    "line_count": 16,
+    "last_modified": "2025-03-16T19:21:09.134Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/scan-functions.ts",
+    "language": "typescript",
+    "size_bytes": 4600,
+    "line_count": 148,
+    "last_modified": "2025-03-16T19:21:09.129Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/gutsTracker.ts",
+    "language": "typescript",
+    "size_bytes": 13810,
+    "line_count": 473,
+    "last_modified": "2025-03-16T19:21:09.124Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/prompt-loader.ts",
+    "language": "typescript",
+    "size_bytes": 603,
+    "line_count": 19,
+    "last_modified": "2025-03-16T19:21:09.119Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/batch-processor.ts",
+    "language": "typescript",
+    "size_bytes": 11468,
+    "line_count": 431,
+    "last_modified": "2025-03-16T19:21:09.114Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/utils/metadata-sync.ts",
+    "language": "typescript",
+    "size_bytes": 4592,
+    "line_count": 151,
+    "last_modified": "2025-03-16T19:21:09.109Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/server/api/documentation.ts",
+    "language": "typescript",
+    "size_bytes": 7265,
+    "line_count": 211,
+    "last_modified": "2025-03-16T19:21:09.104Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/server/api/source-files.ts",
+    "language": "typescript",
+    "size_bytes": 2093,
+    "line_count": 65,
+    "last_modified": "2025-03-16T19:21:09.099Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/config/ai-prompts.ts",
+    "language": "typescript",
+    "size_bytes": 1559,
+    "line_count": 55,
+    "last_modified": "2025-03-16T19:21:09.094Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/app/experts/profiler/prompts.ts",
+    "language": "typescript",
+    "size_bytes": 2955,
+    "line_count": 136,
+    "last_modified": "2025-03-16T19:21:09.089Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/app/api/docs-sync/route.ts",
+    "language": "typescript",
+    "size_bytes": 5060,
+    "line_count": 149,
+    "last_modified": "2025-03-16T19:21:09.083Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/app/api/docs-process-queue/route.ts",
+    "language": "typescript",
+    "size_bytes": 651,
+    "line_count": 22,
+    "last_modified": "2025-03-16T19:21:09.078Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/app/api/markdown-report/route.ts",
+    "language": "typescript",
+    "size_bytes": 611,
+    "line_count": 22,
+    "last_modified": "2025-03-16T19:21:09.073Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/app/api/script-analysis/route.ts",
+    "language": "typescript",
+    "size_bytes": 10578,
+    "line_count": 333,
+    "last_modified": "2025-03-16T19:21:09.068Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/app/api/markdown/[id]/route.ts",
+    "language": "typescript",
+    "size_bytes": 1810,
+    "line_count": 60,
+    "last_modified": "2025-03-16T19:21:09.064Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/types/supabase.ts",
+    "language": "typescript",
+    "size_bytes": 256,
+    "line_count": 12,
+    "last_modified": "2025-03-16T19:21:09.059Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/types/expert.ts",
+    "language": "typescript",
+    "size_bytes": 2089,
+    "line_count": 104,
+    "last_modified": "2025-03-16T19:21:09.054Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/types/pdf.d.ts",
+    "language": "typescript",
+    "size_bytes": 103,
+    "line_count": 4,
+    "last_modified": "2025-03-16T19:21:09.049Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/types/commandHistory.ts",
+    "language": "typescript",
+    "size_bytes": 2073,
+    "line_count": 58,
+    "last_modified": "2025-03-16T19:21:09.045Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/types/supabase/index.ts",
+    "language": "typescript",
+    "size_bytes": 682,
+    "line_count": 22,
+    "last_modified": "2025-03-16T19:21:09.040Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/src/types/commands.ts",
+    "language": "typescript",
+    "size_bytes": 1671,
+    "line_count": 80,
+    "last_modified": "2025-03-16T19:21:09.035Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/vite.config.ts",
+    "language": "typescript",
+    "size_bytes": 14615,
+    "line_count": 381,
+    "last_modified": "2025-03-16T19:21:09.030Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/process-documentation.ts",
+    "language": "typescript",
+    "size_bytes": 10597,
+    "line_count": 346,
+    "last_modified": "2025-03-16T19:21:08.981Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/tailwind.config.ts",
+    "language": "typescript",
+    "size_bytes": 2203,
+    "line_count": 82,
+    "last_modified": "2025-03-16T19:21:08.976Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/simple-md-server.js",
+    "language": "javascript",
+    "size_bytes": 3660,
+    "line_count": 126,
+    "last_modified": "2025-03-16T19:20:57.940Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/eslint.config.js",
+    "language": "javascript",
+    "size_bytes": 789,
+    "line_count": 30,
+    "last_modified": "2025-03-16T19:20:57.935Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/inspect-roots.js",
+    "language": "javascript",
+    "size_bytes": 108,
+    "line_count": 2,
+    "last_modified": "2025-03-16T19:20:57.930Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/process-docs-queue.js",
+    "language": "javascript",
+    "size_bytes": 10084,
+    "line_count": 358,
+    "last_modified": "2025-03-16T19:20:57.868Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/docs-organization/docs-index.js",
+    "language": "javascript",
+    "size_bytes": 3824,
+    "line_count": 131,
+    "last_modified": "2025-03-16T19:20:57.863Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/classify-markdowns.js",
+    "language": "javascript",
+    "size_bytes": 21710,
+    "line_count": 614,
+    "last_modified": "2025-03-16T19:20:57.858Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/public/pdf.worker.min.js",
+    "language": "javascript",
+    "size_bytes": 59,
+    "line_count": 1,
+    "last_modified": "2025-03-16T19:20:57.853Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/debug-filetree.js",
+    "language": "javascript",
+    "size_bytes": 4895,
+    "line_count": 156,
+    "last_modified": "2025-03-16T19:20:57.848Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/ffmpeg-worker.js",
+    "language": "javascript",
+    "size_bytes": 63,
+    "line_count": 1,
+    "last_modified": "2025-03-16T19:20:57.844Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/cors-middleware.js",
+    "language": "javascript",
+    "size_bytes": 1200,
+    "line_count": 35,
+    "last_modified": "2025-03-16T19:20:57.839Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/vite.config.js",
+    "language": "javascript",
+    "size_bytes": 234,
+    "line_count": 12,
+    "last_modified": "2025-03-16T19:20:57.834Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/ffmpeg-core.js",
+    "language": "javascript",
+    "size_bytes": 114673,
+    "line_count": 22,
+    "last_modified": "2025-03-16T19:20:57.828Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/server.js",
+    "language": "javascript",
+    "size_bytes": 7595,
+    "line_count": 247,
+    "last_modified": "2025-03-16T19:20:57.621Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/run_investigate_sync.sh",
+    "language": "shell",
+    "size_bytes": 2149,
+    "line_count": 64,
+    "last_modified": "2025-03-16T19:19:45.519Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/apply_migrations.sh",
+    "language": "shell",
+    "size_bytes": 687,
+    "line_count": 23,
+    "last_modified": "2025-03-16T19:19:45.515Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/run-analyze-scripts.sh",
     "language": "shell",
     "size_bytes": 2727,
     "line_count": 88,
-    "last_modified": "2025-03-16T07:38:56.000Z"
+    "last_modified": "2025-03-16T19:19:45.510Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/fix-batch-analyze.sh",
-    "language": "shell",
-    "size_bytes": 21037,
-    "line_count": 521,
-    "last_modified": "2025-03-16T05:54:10.901Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/run-scan-scripts.sh",
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/run-scan-scripts.sh",
     "language": "shell",
     "size_bytes": 1819,
     "line_count": 59,
-    "last_modified": "2025-03-16T05:51:31.477Z"
+    "last_modified": "2025-03-16T19:19:45.505Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/fix-permissions.sh",
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/test-fix.sh",
     "language": "shell",
-    "size_bytes": 14742,
-    "line_count": 428,
-    "last_modified": "2025-03-16T05:51:14.174Z"
+    "size_bytes": 1857,
+    "line_count": 59,
+    "last_modified": "2025-03-16T19:19:45.501Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/build-scan-scripts.sh",
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/apply_guts_migrations.sh",
+    "language": "shell",
+    "size_bytes": 456,
+    "line_count": 17,
+    "last_modified": "2025-03-16T19:19:45.496Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/start-markdown-server.sh",
+    "language": "shell",
+    "size_bytes": 618,
+    "line_count": 18,
+    "last_modified": "2025-03-16T19:19:45.491Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/markdown-report.sh",
+    "language": "shell",
+    "size_bytes": 6204,
+    "line_count": 239,
+    "last_modified": "2025-03-16T19:19:45.487Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/setup_whisper.sh",
+    "language": "shell",
+    "size_bytes": 586,
+    "line_count": 22,
+    "last_modified": "2025-03-16T19:19:45.482Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/run-docs-processor.sh",
+    "language": "shell",
+    "size_bytes": 648,
+    "line_count": 19,
+    "last_modified": "2025-03-16T19:19:45.478Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/generate-report-and-sync-db.sh",
+    "language": "shell",
+    "size_bytes": 1189,
+    "line_count": 42,
+    "last_modified": "2025-03-16T19:19:45.428Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/classify-markdowns.sh",
+    "language": "shell",
+    "size_bytes": 866,
+    "line_count": 28,
+    "last_modified": "2025-03-16T19:19:45.423Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/run-workflow.sh",
+    "language": "shell",
+    "size_bytes": 3345,
+    "line_count": 91,
+    "last_modified": "2025-03-16T19:19:45.418Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/examine-markdown.sh",
+    "language": "shell",
+    "size_bytes": 1027,
+    "line_count": 34,
+    "last_modified": "2025-03-16T19:19:45.413Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/analyze-scripts.sh",
+    "language": "shell",
+    "size_bytes": 2340,
+    "line_count": 77,
+    "last_modified": "2025-03-16T19:19:45.408Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/update-docs-database.sh",
+    "language": "shell",
+    "size_bytes": 12733,
+    "line_count": 346,
+    "last_modified": "2025-03-16T19:19:45.403Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/docs-organization/simple-report.sh",
+    "language": "shell",
+    "size_bytes": 5531,
+    "line_count": 203,
+    "last_modified": "2025-03-16T19:19:45.398Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/docs-organization/run-all.sh",
+    "language": "shell",
+    "size_bytes": 2171,
+    "line_count": 72,
+    "last_modified": "2025-03-16T19:19:45.393Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/docs-organization/consolidate-docs.sh",
+    "language": "shell",
+    "size_bytes": 3529,
+    "line_count": 101,
+    "last_modified": "2025-03-16T19:19:45.387Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/docs-organization/tree-docs.sh",
+    "language": "shell",
+    "size_bytes": 2573,
+    "line_count": 91,
+    "last_modified": "2025-03-16T19:19:45.383Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/docs-organization/add-frontmatter.sh",
+    "language": "shell",
+    "size_bytes": 2026,
+    "line_count": 81,
+    "last_modified": "2025-03-16T19:19:45.378Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/scripts/docs-organization/generate-docs-report.sh",
+    "language": "shell",
+    "size_bytes": 14100,
+    "line_count": 428,
+    "last_modified": "2025-03-16T19:19:45.373Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/fix-batch-analyze.sh",
+    "language": "shell",
+    "size_bytes": 21037,
+    "line_count": 521,
+    "last_modified": "2025-03-16T19:19:45.368Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/archive-expert-components.sh",
+    "language": "shell",
+    "size_bytes": 2109,
+    "line_count": 46,
+    "last_modified": "2025-03-16T19:19:45.363Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/build-cli.sh",
+    "language": "shell",
+    "size_bytes": 304,
+    "line_count": 13,
+    "last_modified": "2025-03-16T19:19:45.358Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/fix-ai-integration.sh",
+    "language": "shell",
+    "size_bytes": 46100,
+    "line_count": 1224,
+    "last_modified": "2025-03-16T19:19:45.353Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/build-scan-scripts.sh",
     "language": "shell",
     "size_bytes": 3390,
     "line_count": 121,
-    "last_modified": "2025-03-16T05:45:52.238Z"
+    "last_modified": "2025-03-16T19:19:45.180Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/fix-permissions.sh",
+    "language": "shell",
+    "size_bytes": 14742,
+    "line_count": 428,
+    "last_modified": "2025-03-16T19:19:45.175Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/apply_export_functions.sh",
+    "language": "shell",
+    "size_bytes": 944,
+    "line_count": 28,
+    "last_modified": "2025-03-16T19:19:45.170Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/process-docs-batch.sh",
+    "language": "shell",
+    "size_bytes": 3410,
+    "line_count": 157,
+    "last_modified": "2025-03-16T19:19:45.164Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/apply_export_functions_migration.sh",
+    "language": "shell",
+    "size_bytes": 1156,
+    "line_count": 38,
+    "last_modified": "2025-03-16T19:19:45.159Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/apply_script_migrations.sh",
+    "language": "shell",
+    "size_bytes": 1444,
+    "line_count": 49,
+    "last_modified": "2025-03-16T19:19:45.153Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/apply_function_registry_migrations.sh",
+    "language": "shell",
+    "size_bytes": 979,
+    "line_count": 34,
+    "last_modified": "2025-03-16T19:19:45.145Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/dev-start.sh",
+    "language": "shell",
+    "size_bytes": 725,
+    "line_count": 26,
+    "last_modified": "2025-03-16T19:19:45.138Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/scripts-2025-03-16/apps/dhg-improve-experts/remove_user_references_code.sh",
+    "language": "shell",
+    "size_bytes": 6361,
+    "line_count": 173,
+    "last_modified": "2025-03-16T19:19:45.128Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/src/integrations/supabase/client.ts",
+    "language": "typescript",
+    "size_bytes": 49,
+    "line_count": 1,
+    "last_modified": "2025-03-16T18:59:47.665Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/services/file-service.ts",
+    "language": "typescript",
+    "size_bytes": 4561,
+    "line_count": 171,
+    "last_modified": "2025-03-16T17:07:06.007Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/services/supabase-service.ts",
+    "language": "typescript",
+    "size_bytes": 27747,
+    "line_count": 833,
+    "last_modified": "2025-03-16T17:07:06.006Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/services/report-service.ts",
+    "language": "typescript",
+    "size_bytes": 1616,
+    "line_count": 61,
+    "last_modified": "2025-03-16T17:07:06.006Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/services/index.ts",
+    "language": "typescript",
+    "size_bytes": 135,
+    "line_count": 4,
+    "last_modified": "2025-03-16T17:07:06.006Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/services/claude-service.ts",
+    "language": "typescript",
+    "size_bytes": 6270,
+    "line_count": 217,
+    "last_modified": "2025-03-16T17:07:06.006Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/index.ts",
+    "language": "typescript",
+    "size_bytes": 842,
+    "line_count": 34,
+    "last_modified": "2025-03-16T17:07:06.005Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/commands/index.ts",
+    "language": "typescript",
+    "size_bytes": 1094,
+    "line_count": 26,
+    "last_modified": "2025-03-16T17:07:06.005Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/commands/documentation-processor.ts",
+    "language": "typescript",
+    "size_bytes": 32316,
+    "line_count": 916,
+    "last_modified": "2025-03-16T17:07:06.005Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/commands/analyze-script.ts",
+    "language": "typescript",
+    "size_bytes": 11286,
+    "line_count": 333,
+    "last_modified": "2025-03-16T17:07:06.005Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/commands/workflow.ts",
+    "language": "typescript",
+    "size_bytes": 36143,
+    "line_count": 777,
+    "last_modified": "2025-03-16T17:07:06.004Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/commands/validate-assets.ts",
+    "language": "typescript",
+    "size_bytes": 3554,
+    "line_count": 114,
+    "last_modified": "2025-03-16T17:07:06.004Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/commands/examine-markdown.ts",
+    "language": "typescript",
+    "size_bytes": 3613,
+    "line_count": 104,
+    "last_modified": "2025-03-16T17:07:06.004Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/commands/classify-markdown.ts",
+    "language": "typescript",
+    "size_bytes": 7182,
+    "line_count": 235,
+    "last_modified": "2025-03-16T17:07:06.004Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/models/relationship.ts",
+    "language": "typescript",
+    "size_bytes": 225,
+    "line_count": 10,
+    "last_modified": "2025-03-16T17:07:06.003Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/models/index.ts",
+    "language": "typescript",
+    "size_bytes": 90,
+    "line_count": 3,
+    "last_modified": "2025-03-16T17:07:06.003Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/commands/scan-scripts.ts",
+    "language": "typescript",
+    "size_bytes": 4431,
+    "line_count": 142,
+    "last_modified": "2025-03-16T17:07:06.003Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/commands/batch-analyze-scripts.ts",
+    "language": "typescript",
+    "size_bytes": 17567,
+    "line_count": 525,
+    "last_modified": "2025-03-16T17:07:06.003Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/utils/rate-limiter.ts",
+    "language": "typescript",
+    "size_bytes": 1958,
+    "line_count": 76,
+    "last_modified": "2025-03-16T17:07:06.002Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/utils/config.ts",
+    "language": "typescript",
+    "size_bytes": 4113,
+    "line_count": 120,
+    "last_modified": "2025-03-16T17:07:06.002Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/models/prompt.ts",
+    "language": "typescript",
+    "size_bytes": 178,
+    "line_count": 9,
+    "last_modified": "2025-03-16T17:07:06.002Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/models/document-type.ts",
+    "language": "typescript",
+    "size_bytes": 184,
+    "line_count": 9,
+    "last_modified": "2025-03-16T17:07:06.002Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/utils/logger.ts",
+    "language": "typescript",
+    "size_bytes": 2030,
+    "line_count": 85,
+    "last_modified": "2025-03-16T17:07:06.001Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/_archive/cli-/src/utils/error-handler.ts",
+    "language": "typescript",
+    "size_bytes": 1330,
+    "line_count": 56,
+    "last_modified": "2025-03-16T17:07:06.001Z"
   },
   {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/packages/cli/src/services/file-service.ts",
@@ -63,32 +1386,11 @@
     "last_modified": "2025-03-16T05:44:46.379Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/build-cli.sh",
-    "language": "shell",
-    "size_bytes": 304,
-    "line_count": 13,
-    "last_modified": "2025-03-16T05:42:58.323Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/test-fix.sh",
     "language": "shell",
     "size_bytes": 1857,
     "line_count": 59,
     "last_modified": "2025-03-16T05:40:53.762Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/packages/cli/src/utils/config.ts",
-    "language": "typescript",
-    "size_bytes": 4498,
-    "line_count": 126,
-    "last_modified": "2025-03-16T05:39:57.411Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/analyze-scripts.sh",
-    "language": "shell",
-    "size_bytes": 2376,
-    "line_count": 79,
-    "last_modified": "2025-03-16T05:37:08.828Z"
   },
   {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/packages/cli/src/commands/analyze-script.ts",
@@ -116,13 +1418,6 @@
     "language": "typescript",
     "size_bytes": 1616,
     "line_count": 61,
-    "last_modified": "2025-03-16T05:33:19.340Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/packages/cli/src/services/claude-service.ts",
-    "language": "typescript",
-    "size_bytes": 6270,
-    "line_count": 217,
     "last_modified": "2025-03-16T05:33:19.340Z"
   },
   {
@@ -231,13 +1526,6 @@
     "last_modified": "2025-03-16T05:33:19.311Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/analyze-scripts.sh",
-    "language": "shell",
-    "size_bytes": 2296,
-    "line_count": 76,
-    "last_modified": "2025-03-16T05:23:41.959Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/apply_script_migrations.sh",
     "language": "shell",
     "size_bytes": 1444,
@@ -250,48 +1538,6 @@
     "size_bytes": 10578,
     "line_count": 333,
     "last_modified": "2025-03-16T05:10:53.605Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/commands/index.ts",
-    "language": "typescript",
-    "size_bytes": 1094,
-    "line_count": 26,
-    "last_modified": "2025-03-16T05:10:04.913Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/services/supabase-service.ts",
-    "language": "typescript",
-    "size_bytes": 27747,
-    "line_count": 833,
-    "last_modified": "2025-03-16T05:09:52.995Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/utils/rate-limiter.ts",
-    "language": "typescript",
-    "size_bytes": 1958,
-    "line_count": 76,
-    "last_modified": "2025-03-16T05:07:35.492Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/commands/batch-analyze-scripts.ts",
-    "language": "typescript",
-    "size_bytes": 17567,
-    "line_count": 525,
-    "last_modified": "2025-03-16T05:07:24.334Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/commands/analyze-script.ts",
-    "language": "typescript",
-    "size_bytes": 11286,
-    "line_count": 333,
-    "last_modified": "2025-03-16T05:06:21.270Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/commands/scan-scripts.ts",
-    "language": "typescript",
-    "size_bytes": 4431,
-    "line_count": 142,
-    "last_modified": "2025-03-16T05:05:39.390Z"
   },
   {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/supabase/script_tracking/scripts-table-sql.sql",
@@ -322,39 +1568,11 @@
     "last_modified": "2025-03-15T21:04:40.774Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/generate-report-and-sync-db.sh",
-    "language": "shell",
-    "size_bytes": 1189,
-    "line_count": 42,
-    "last_modified": "2025-03-15T21:04:27.063Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/tag_counts_function.sql",
     "language": "sql",
     "size_bytes": 1255,
     "line_count": 42,
     "last_modified": "2025-03-15T19:43:01.851Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/app/api/docs-sync/route.ts",
-    "language": "typescript",
-    "size_bytes": 5060,
-    "line_count": 149,
-    "last_modified": "2025-03-15T19:35:50.866Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/api/markdown-report.ts",
-    "language": "typescript",
-    "size_bytes": 10816,
-    "line_count": 367,
-    "last_modified": "2025-03-15T19:27:36.012Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/script-report.sh",
-    "language": "shell",
-    "size_bytes": 10820,
-    "line_count": 370,
-    "last_modified": "2025-03-15T03:06:48.520Z"
   },
   {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/utils/document-processing.ts",
@@ -364,20 +1582,6 @@
     "last_modified": "2025-03-14T19:46:39.796Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/process-docs-batch.sh",
-    "language": "shell",
-    "size_bytes": 3410,
-    "line_count": 157,
-    "last_modified": "2025-03-14T17:20:25.679Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/commands/documentation-processor.ts",
-    "language": "typescript",
-    "size_bytes": 32316,
-    "line_count": 916,
-    "last_modified": "2025-03-14T16:38:24.917Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/api/proxy.ts",
     "language": "typescript",
     "size_bytes": 2035,
@@ -385,151 +1589,11 @@
     "last_modified": "2025-03-14T16:25:54.301Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/services/claude-service.ts",
-    "language": "typescript",
-    "size_bytes": 6270,
-    "line_count": 217,
-    "last_modified": "2025-03-14T16:25:35.662Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/utils/rate-limiter.ts",
     "language": "typescript",
     "size_bytes": 2324,
     "line_count": 89,
     "last_modified": "2025-03-14T16:25:08.584Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/commands/workflow.ts",
-    "language": "typescript",
-    "size_bytes": 36143,
-    "line_count": 777,
-    "last_modified": "2025-03-12T04:40:07.787Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/update-docs-database.sh",
-    "language": "shell",
-    "size_bytes": 12733,
-    "line_count": 346,
-    "last_modified": "2025-03-12T03:32:38.490Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/run-workflow.sh",
-    "language": "shell",
-    "size_bytes": 3222,
-    "line_count": 89,
-    "last_modified": "2025-03-11T13:57:42.105Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/utils/config.ts",
-    "language": "typescript",
-    "size_bytes": 4113,
-    "line_count": 120,
-    "last_modified": "2025-03-11T13:28:48.853Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/examine-markdown.sh",
-    "language": "shell",
-    "size_bytes": 904,
-    "line_count": 32,
-    "last_modified": "2025-03-11T13:22:52.949Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/commands/examine-markdown.ts",
-    "language": "typescript",
-    "size_bytes": 3613,
-    "line_count": 104,
-    "last_modified": "2025-03-11T13:22:36.043Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/classify-markdowns.sh",
-    "language": "shell",
-    "size_bytes": 743,
-    "line_count": 26,
-    "last_modified": "2025-03-11T04:17:42.049Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/index.ts",
-    "language": "typescript",
-    "size_bytes": 842,
-    "line_count": 34,
-    "last_modified": "2025-03-11T04:17:20.133Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/commands/validate-assets.ts",
-    "language": "typescript",
-    "size_bytes": 3554,
-    "line_count": 114,
-    "last_modified": "2025-03-11T04:17:11.444Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/commands/classify-markdown.ts",
-    "language": "typescript",
-    "size_bytes": 7182,
-    "line_count": 235,
-    "last_modified": "2025-03-11T04:16:56.264Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/services/index.ts",
-    "language": "typescript",
-    "size_bytes": 135,
-    "line_count": 4,
-    "last_modified": "2025-03-11T04:16:26.076Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/services/report-service.ts",
-    "language": "typescript",
-    "size_bytes": 1616,
-    "line_count": 61,
-    "last_modified": "2025-03-11T04:16:23.053Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/services/file-service.ts",
-    "language": "typescript",
-    "size_bytes": 4561,
-    "line_count": 171,
-    "last_modified": "2025-03-11T04:15:45.697Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/models/index.ts",
-    "language": "typescript",
-    "size_bytes": 90,
-    "line_count": 3,
-    "last_modified": "2025-03-11T04:15:28.041Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/models/relationship.ts",
-    "language": "typescript",
-    "size_bytes": 225,
-    "line_count": 10,
-    "last_modified": "2025-03-11T04:15:25.341Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/models/prompt.ts",
-    "language": "typescript",
-    "size_bytes": 178,
-    "line_count": 9,
-    "last_modified": "2025-03-11T04:15:22.335Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/models/document-type.ts",
-    "language": "typescript",
-    "size_bytes": 184,
-    "line_count": 9,
-    "last_modified": "2025-03-11T04:15:19.351Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/utils/error-handler.ts",
-    "language": "typescript",
-    "size_bytes": 1330,
-    "line_count": 56,
-    "last_modified": "2025-03-11T04:15:05.120Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/cli/src/utils/logger.ts",
-    "language": "typescript",
-    "size_bytes": 2030,
-    "line_count": 85,
-    "last_modified": "2025-03-11T04:14:58.171Z"
   },
   {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/classify-markdowns.js",
@@ -546,25 +1610,11 @@
     "last_modified": "2025-03-11T00:44:42.646Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/validate-prompt-relationships.sh",
-    "language": "shell",
-    "size_bytes": 27434,
-    "line_count": 691,
-    "last_modified": "2025-03-10T23:14:59.063Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/file-reader.sh",
     "language": "shell",
     "size_bytes": 2350,
     "line_count": 69,
     "last_modified": "2025-03-10T23:14:14.835Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/validate-ai-assets.sh",
-    "language": "shell",
-    "size_bytes": 15392,
-    "line_count": 426,
-    "last_modified": "2025-03-10T00:41:25.923Z"
   },
   {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/simple-db-query.sh",
@@ -614,13 +1664,6 @@
     "size_bytes": 725,
     "line_count": 26,
     "last_modified": "2025-03-08T18:29:55.725Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/server/api/documentation.ts",
-    "language": "typescript",
-    "size_bytes": 7265,
-    "line_count": 211,
-    "last_modified": "2025-03-08T18:24:44.241Z"
   },
   {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/services/claudeApiService.ts",
@@ -677,13 +1720,6 @@
     "size_bytes": 3660,
     "line_count": 126,
     "last_modified": "2025-03-07T08:47:35.718Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/markdown-report.sh",
-    "language": "shell",
-    "size_bytes": 6204,
-    "line_count": 239,
-    "last_modified": "2025-03-07T08:36:38.230Z"
   },
   {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/add_soft_delete_to_docs.sql",
@@ -917,13 +1953,6 @@
     "last_modified": "2025-03-03T07:25:29.387Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/run-docs-processor.sh",
-    "language": "shell",
-    "size_bytes": 648,
-    "line_count": 19,
-    "last_modified": "2025-03-03T00:23:22.715Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/process-docs-queue.js",
     "language": "javascript",
     "size_bytes": 10084,
@@ -1050,13 +2079,6 @@
     "last_modified": "2025-03-02T19:13:48.120Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/command-history-tracker.ts",
-    "language": "typescript",
-    "size_bytes": 4213,
-    "line_count": 156,
-    "last_modified": "2025-03-02T19:13:34.034Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/src/services/commandHistoryService.ts",
     "language": "typescript",
     "size_bytes": 8900,
@@ -1104,13 +2126,6 @@
     "size_bytes": 10234,
     "line_count": 336,
     "last_modified": "2025-03-02T18:55:08.295Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-improve-experts/scripts/process-documentation.ts",
-    "language": "typescript",
-    "size_bytes": 10597,
-    "line_count": 346,
-    "last_modified": "2025-03-02T17:59:14.900Z"
   },
   {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/process-documentation.ts",
@@ -1890,13 +2905,6 @@
     "last_modified": "2025-02-23T21:55:51.300Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/src/integrations/supabase/client.ts",
-    "language": "typescript",
-    "size_bytes": 49,
-    "line_count": 1,
-    "last_modified": "2025-02-23T17:56:13.575Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/supabase/update-schema.sh",
     "language": "shell",
     "size_bytes": 586,
@@ -2119,13 +3127,6 @@
     "size_bytes": 114673,
     "line_count": 22,
     "last_modified": "2025-02-23T00:08:03.017Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/setup-prompts.sh",
-    "language": "shell",
-    "size_bytes": 1,
-    "line_count": 1,
-    "last_modified": "2025-02-22T05:37:52.446Z"
   },
   {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/vite.config.base.d.ts",
@@ -2387,13 +3388,6 @@
     "last_modified": "2025-02-18T01:41:13.017Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/check-duplicates.ts",
-    "language": "typescript",
-    "size_bytes": 79,
-    "line_count": 2,
-    "last_modified": "2025-02-18T01:41:13.016Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/create-migration.sh",
     "language": "shell",
     "size_bytes": 1477,
@@ -2457,6 +3451,13 @@
     "last_modified": "2025-02-11T01:31:12.241Z"
   },
   {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/app-management/copy-lovable-app.sh",
+    "language": "shell",
+    "size_bytes": 1705,
+    "line_count": 60,
+    "last_modified": "2025-02-11T01:31:12.241Z"
+  },
+  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/deployment/setup-environments.sh",
     "language": "shell",
     "size_bytes": 902,
@@ -2475,13 +3476,6 @@
     "language": "shell",
     "size_bytes": 609,
     "line_count": 22,
-    "last_modified": "2025-02-11T01:31:12.241Z"
-  },
-  {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/scripts/app-management/copy-lovable-app.sh",
-    "language": "shell",
-    "size_bytes": 1705,
-    "line_count": 60,
     "last_modified": "2025-02-11T01:31:12.241Z"
   },
   {
@@ -2576,17 +3570,17 @@
     "last_modified": "2025-02-11T01:31:12.220Z"
   },
   {
-    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-a/vite.config.js",
-    "language": "javascript",
-    "size_bytes": 947,
-    "line_count": 39,
-    "last_modified": "2025-02-11T01:31:12.219Z"
-  },
-  {
     "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-b/vite.config.js",
     "language": "javascript",
     "size_bytes": 501,
     "line_count": 20,
+    "last_modified": "2025-02-11T01:31:12.219Z"
+  },
+  {
+    "file_path": "/Users/raybunnage/Documents/github/dhg-mono/apps/dhg-a/vite.config.js",
+    "language": "javascript",
+    "size_bytes": 947,
+    "line_count": 39,
     "last_modified": "2025-02-11T01:31:12.219Z"
   },
   {
