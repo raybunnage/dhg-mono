@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import path from 'path';
 import * as fs from 'fs';
-import logger from '../utils/logger';
-import { errorHandler } from '../utils/error-handler';
+import { Logger as logger } from '../utils/logger';
+import { ErrorHandler } from '../utils/error-handler';
 import * as claudeService from '../services/claude-service';
 import * as supabaseService from '../services/supabase-service';
 import * as reportService from '../services/report-service';
@@ -84,13 +84,30 @@ export const batchAnalyzeScriptsCommand = new Command('batch-analyze-scripts')
         logger.info(`Reading prompt template from file: ${promptPath}`);
         promptTemplate = await readPromptFromFile(promptPath);
       } else {
-        // Get from database by name
-        logger.info(`Fetching prompt template from database: ${options.promptName}`);
-        const prompt = await supabaseService.getPromptByName(options.promptName || 'script-analysis-prompt');
-        if (!prompt) {
-          throw new Error(`Prompt not found in database: ${options.promptName}`);
-        }
-        promptTemplate = prompt.content;
+        // Use default prompt template
+        logger.info(`Using default script analysis prompt template`);
+        promptTemplate = `Analyze the script file and provide the following information:
+
+1. Script Purpose: Identify the primary purpose and functionality of the script.
+2. Dependencies: List external tools, libraries, and commands used.
+3. Input/Output: Describe what inputs the script expects and what outputs it produces.
+4. Implementation Details: Highlight key implementation aspects and techniques.
+5. Potential Issues: Identify any potential bugs, edge cases, or security concerns.
+6. Improvement Suggestions: Suggest ways to enhance the script's functionality or readability.
+
+Format your response as JSON with the following structure:
+{
+  "purpose": "Brief description of what the script does",
+  "dependencies": ["list", "of", "dependencies"],
+  "input_output": {
+    "inputs": ["list", "of", "inputs"],
+    "outputs": ["list", "of", "outputs"]
+  },
+  "implementation_details": "Description of key implementation aspects",
+  "potential_issues": ["list", "of", "potential", "issues"],
+  "improvement_suggestions": ["list", "of", "suggestions"]
+}
+`;
       }
 
       // Initialize results array
@@ -114,17 +131,20 @@ export const batchAnalyzeScriptsCommand = new Command('batch-analyze-scripts')
         logger.info(`Processing batch ${currentBatch}/${batches.length}`);
         
         // Process each script in the batch with concurrency limit
-        const batchPromises = batch.map((scriptFile: any) => 
-          rateLimiter.schedule(() => 
+        const batchPromises = batch.map((scriptFile: any) => {
+          // Handle both string paths and objects with file_path property
+          const filePath = typeof scriptFile === 'string' ? scriptFile : scriptFile.file_path;
+          logger.debug(`Processing script: ${filePath}`);
+          return rateLimiter.schedule(() => 
             processScript(
-              scriptFile.file_path, 
+              filePath, 
               promptTemplate, 
               outputDir, 
               options.checkReferences,
               options.updateDatabase
             )
-          )
-        );
+          );
+        });
 
         // Wait for all scripts in the batch to finish processing
         const batchResults = await Promise.allSettled(batchPromises);
@@ -172,7 +192,7 @@ export const batchAnalyzeScriptsCommand = new Command('batch-analyze-scripts')
       }
 
     } catch (error) {
-      errorHandler(error as Error);
+      ErrorHandler.handle(error as Error);
       process.exit(1);
     }
   });
