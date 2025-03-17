@@ -2,6 +2,7 @@
 
 # This script executes the prompt-lookup.ts file with ts-node
 # Usage: ./prompt-lookup.sh [prompt-name]
+# The script will output results to both the console and a markdown file in the docs directory
 
 # Get the directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

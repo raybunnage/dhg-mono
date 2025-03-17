@@ -1,9 +1,30 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { FileService } from '../../packages/cli/src/services/file-service';
+import { FileService, FileResult } from '../../packages/cli/src/services/file-service';
 import config from '../../packages/cli/src/utils/config';
 import { Logger } from '../../packages/cli/src/utils/logger';
 import path from 'path';
 import fs from 'fs';
+
+// Helper function to write results to a markdown file
+async function writeResultsToMarkdown(fileName: string, content: string): Promise<boolean> {
+  try {
+    const docsDir = path.join(process.cwd(), 'docs');
+    
+    // Create docs directory if it doesn't exist
+    if (!fs.existsSync(docsDir)) {
+      console.log(`Creating docs directory at ${docsDir}`);
+      fs.mkdirSync(docsDir, { recursive: true });
+    }
+    
+    const filePath = path.join(docsDir, fileName);
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log(`\nResults saved to: ${filePath}`);
+    return true;
+  } catch (error) {
+    console.error(`Error writing to markdown file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return false;
+  }
+}
 
 // Create minimal versions of the types we need
 interface Prompt {
@@ -138,8 +159,23 @@ class SimpleSupabaseService {
 /**
  * Lookup a prompt by name and fetch its content, relationships, and related files
  * @param promptName The name of the prompt to look up
+ * @param outputToMarkdown Whether to output results to a markdown file
  */
-async function lookupPrompt(promptName: string) {
+async function lookupPrompt(promptName: string, outputToMarkdown: boolean = false) {
+  // Create a results array to collect all output
+  const results: string[] = [];
+  
+  // Override console.log to capture output to our results array
+  const originalConsoleLog = console.log;
+  if (outputToMarkdown) {
+    console.log = (...args) => {
+      // Still output to the console
+      originalConsoleLog(...args);
+      // Capture the output to our results array
+      results.push(args.join(' '));
+    };
+  }
+  
   try {
     // Hardcode Supabase URL and key for testing since config might not be loading properly
     const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project-id.supabase.co';
@@ -349,12 +385,32 @@ async function lookupPrompt(promptName: string) {
     
   } catch (error) {
     Logger.error('Error looking up prompt:', error);
+  } finally {
+    // Restore original console.log
+    if (outputToMarkdown) {
+      console.log = originalConsoleLog;
+      
+      // Generate markdown content
+      const markdownContent = `# Prompt Lookup: ${promptName}
+
+Generated: ${new Date().toISOString()}
+
+${results.join('\n')}
+`;
+      
+      // Write results to markdown file
+      const fileName = `prompt-lookup-${promptName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.md`;
+      await writeResultsToMarkdown(fileName, markdownContent);
+    }
   }
 }
 
 // Run the function with the provided prompt name or default to "script-analysis-prompt"
 const promptName = process.argv[2] || 'script-analysis-prompt';
-lookupPrompt(promptName)
+// Always output to markdown file
+const outputToMarkdown = true;
+
+lookupPrompt(promptName, outputToMarkdown)
   .then(() => console.log('Prompt lookup complete'))
   .catch(err => {
     Logger.error('Fatal error:', err);
