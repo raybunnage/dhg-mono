@@ -1,4 +1,31 @@
-   I've successfully updated the script with your requested changes:
+  Perfect! I've made all the requested improvements to the script:
+
+  1. Removed the redundant prompt file display: The script now only shows
+  the prompt content from the database's "content" field.
+  2. Added record count and debugging information for database queries:
+    - Shows count of records found in the query results
+    - Lists all document types by category that exist in the database for
+  reference
+    - Provides detailed diagnostic information for troubleshooting
+  3. Fixed query parsing for direct equality (category = X) and IN clauses:
+    - Now correctly handles both formats
+    - Special case handling for double-quoted strings in SQL
+    - Fallback to showing all document types when there are connection
+  issues
+  4. Added fallback mechanism for database issues:
+    - The script continues to function even when database access fails
+    - Shows helpful information about available categories and document
+  types
+    - Provides meaningful error messages about connection issues
+  5. Output to markdown file:
+    - All results are saved to a markdown file in the docs directory
+    - File is named based on the prompt name for easy reference
+
+  The script is now much more robust and provides detailed information for
+  both normal operation and troubleshooting.
+
+  
+  I've successfully updated the script with your requested changes:
 
   1. Removed the redundant prompt file display: The script now only shows
   the prompt content from the database's "content" field, which is the

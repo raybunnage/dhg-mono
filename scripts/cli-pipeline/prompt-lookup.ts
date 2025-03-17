@@ -101,7 +101,7 @@ class SimpleSupabaseService {
       console.log(`Executing query: ${queryText}`);
       
       // Check for specific known queries and handle them directly
-      if (queryText.includes("FROM document_types WHERE category IN")) {
+      if (queryText.includes("FROM document_types WHERE category")) {
         console.log("Detected document_types query - using direct table access");
         
         try {
@@ -120,21 +120,80 @@ class SimpleSupabaseService {
           
           console.log(`Total document_types in database: ${allData?.length || 0}`);
           
-          // Extract the categories from the query using regex
-          const categoryMatch = queryText.match(/IN\s*\(\s*'([^']+)'(?:\s*,\s*'([^']+)')*\s*\)/i);
-          
-          // If we can't parse categories or there are none specified, return all document types
-          if (!categoryMatch) {
-            console.log("Could not parse categories from query, returning all document types");
-            return allData;
+          // Log the first few document types to debug
+          if (allData && allData.length > 0) {
+            console.log("Sample document types:");
+            for (let i = 0; i < Math.min(3, allData.length); i++) {
+              console.log(`- ${i+1}: ${allData[i].document_type} (category: ${allData[i].category})`);
+            }
+            
+            // Log all categories for reference
+            const categories = [...new Set(allData.map(dt => dt.category))];
+            console.log(`Available categories: ${categories.join(', ')}`);
           }
           
-          // Get all the categories - first match is the full string, subsequent ones are capture groups
-          const categories: string[] = [];
-          for (let i = 1; i < categoryMatch.length; i++) {
-            if (categoryMatch[i]) {
-              categories.push(categoryMatch[i]);
+          // Check for specific query patterns we know about
+          let categories: string[] = [];
+          let useDirectEquality = false;
+          
+          // Log all document_types that exist in the database to help debugging
+          console.log("\n=== Document Types By Category in Database ===");
+          
+          const categoryGroups: Record<string, any[]> = {};
+          allData.forEach(item => {
+            if (!categoryGroups[item.category]) {
+              categoryGroups[item.category] = [];
             }
+            categoryGroups[item.category].push({
+              id: item.id,
+              document_type: item.document_type
+            });
+          });
+          
+          Object.keys(categoryGroups).sort().forEach(category => {
+            console.log(`\nCategory: ${category}`);
+            categoryGroups[category].forEach(item => {
+              console.log(`- ${item.document_type} (${item.id})`);
+            });
+          });
+          
+          // Special case for Documentation category
+          if (queryText.includes("category = \"Documentation\"")) {
+            console.log("Detected Documentation category query");
+            categories = ["Documentation"];
+            useDirectEquality = true;
+          } 
+          // Otherwise, try to extract categories with regex
+          else {
+            // Try the IN pattern first
+            let categoryMatch = queryText.match(/IN\s*\(\s*'([^']+)'(?:\s*,\s*'([^']+)')*\s*\)/i);
+          
+          // If we didn't find an IN pattern, check for equality pattern (category = 'X')
+          if (!categoryMatch) {
+            // Look for category = "X" or category = 'X' or category = X pattern (with or without quotes)
+            // Try with quotes first
+            let equalityMatch = queryText.match(/category\s*=\s*['"]([^'"]+)['"]/i);
+            
+            // If not found, try without quotes
+            if (!equalityMatch) {
+              equalityMatch = queryText.match(/category\s*=\s*([^\s;]+)/i);
+            }
+            if (equalityMatch && equalityMatch[1]) {
+              categories = [equalityMatch[1]];
+              useDirectEquality = true;
+              console.log(`Found equality match for category: ${equalityMatch[1]}`);
+            } else {
+              console.log("Could not parse category from query, returning all document types");
+              return allData;
+            }
+          } else {
+            // Process IN pattern - get all the categories from capture groups
+            for (let i = 1; i < categoryMatch.length; i++) {
+              if (categoryMatch[i]) {
+                categories.push(categoryMatch[i]);
+              }
+            }
+          }
           }
           
           // Log all categories found in the database
@@ -142,11 +201,18 @@ class SimpleSupabaseService {
           console.log(`All categories in database: ${allCategories.join(', ')}`);
           console.log(`Filtering for categories: ${categories.join(', ')}`);
           
-          // Execute a direct query on the document_types table
-          const { data, error } = await this.client
-            .from('document_types')
-            .select('*')
-            .in('category', categories);
+          // Execute a direct query based on the pattern found
+          let queryBuilder = this.client.from('document_types').select('*');
+          
+          if (useDirectEquality && categories.length === 1) {
+            // Use eq for single category (category = 'X')
+            queryBuilder = queryBuilder.eq('category', categories[0]);
+          } else if (categories.length > 0) {
+            // Use in for multiple categories (category IN ('X', 'Y'))
+            queryBuilder = queryBuilder.in('category', categories);
+          }
+          
+          const { data, error } = await queryBuilder;
             
           if (error) {
             throw new Error(`Failed to query document_types: ${error.message}`);
