@@ -12,6 +12,7 @@ This document provides information about the CLI pipeline scripts available in t
   - [validate-ai-assets.sh](#validate-ai-assetssh)
   - [validate-prompt-relationships.sh](#validate-prompt-relationshipssh)
   - [script-report.sh](#script-reportsh)
+  - [sync-markdown-files.sh](#sync-markdown-filessh)
   - [command-history-tracker.ts](#command-history-trackerts)
   - [check-duplicates.ts](#check-duplicatests)
   - [Other CLI Pipeline Scripts](#other-cli-pipeline-scripts)
@@ -181,6 +182,36 @@ cd /path/to/dhg-mono
 
 **Dependencies**:
 - Bash
+
+### sync-markdown-files.sh
+
+**Purpose**: Synchronizes markdown files in the repository with the documentation_files table in Supabase, updating metadata and tracking file existence.
+
+**Usage**:
+```bash
+cd /path/to/dhg-mono
+./scripts/cli-pipeline/sync-markdown-files.sh
+```
+
+**Details**:
+- Scans the repository for all markdown files (*.md), excluding specific directories (file_types, backup, archive, external tools)
+- Compares found files with the documentation_files table in Supabase
+- Adds new files to the database with is_deleted = FALSE
+- Marks missing files as is_deleted = TRUE
+- Updates metadata for all files (size, hash, title, modification date)
+- Ensures full paths are stored for all files
+
+**Database Interactions**:
+- Reads from the documentation_files table to get existing records
+- Inserts new files into the documentation_files table
+- Updates existing files in the documentation_files table
+- Sets is_deleted flag for files that no longer exist on disk
+
+**Dependencies**:
+- ts-node and TypeScript
+- Supabase database (CLI_SUPABASE_URL and CLI_SUPABASE_KEY environment variables)
+- FileService from the CLI package
+- Logger from the CLI package
 
 ### command-history-tracker.ts
 
@@ -358,7 +389,29 @@ The CLI pipeline scripts interact with the following Supabase database tables:
   - created_at (timestamp)
 - **Operations**: Insert
 
-### 8. Stored Procedures/RPC
+### 8. documentation_files
+- **Used by**: sync-markdown-files.sh
+- **Fields**:
+  - id (UUID)
+  - file_path (string)
+  - title (string)
+  - summary (string, optional)
+  - ai_generated_tags (string array)
+  - manual_tags (string array, optional)
+  - file_hash (string)
+  - metadata (JSON)
+  - is_deleted (boolean)
+  - document_type_id (UUID reference to document_types.id)
+  - ai_assessment (JSON, optional)
+  - assessment_quality_score (integer, optional)
+  - assessment_model (string, optional)
+  - assessment_version (integer, optional)
+  - assessment_date (timestamp, optional)
+  - created_at (timestamp)
+  - updated_at (timestamp)
+- **Operations**: Select, Insert, Update
+
+### 9. Stored Procedures/RPC
 - **sanitize_command**: Called by command-history-tracker.ts to remove sensitive information from commands
 - **register_markdown_file**: Used indirectly by documentation processing scripts
 - **register_document_section**: Used indirectly by documentation processing scripts
@@ -382,11 +435,12 @@ To validate the AI components:
 2. Run `validate-prompt-relationships.sh` for more detailed validation of the prompt system
 3. Review the generated reports in the `docs` directory
 
-### Documentation Generation
+### Documentation Management
 
-To generate documentation about scripts:
+For documentation and markdown files management:
 
 1. Run `script-report.sh` to create a comprehensive script report
+2. Run `sync-markdown-files.sh` to synchronize markdown files with the database
 
 ---
 

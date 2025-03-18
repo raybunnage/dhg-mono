@@ -1,3 +1,17 @@
+Now write a new script and put it into the packages/cli-pipeline Category
+
+0) make it compatible with the cli pipeline approach
+1) it should use the existing services in the packages/cli folder and beneath as much as possible.
+2) if a new service is needed then it should create and use that services
+3) it needs to search on disk for all markdown files - but it should exclude any it finds in file_types folder or backup or archive or external tools folders
+4) if it finds a new markdown file that is not in the documentation_files it needs to add it to the documentation_files and set is_deleted = FALSE
+5) if it no longer finds a markdown file it needs to mark that record in documentation_files as is_deleted = TRUE
+6) It needs to update the metadata for each file it finds and put that into the metadata fields in the documentation_files
+7) It needs to write the full path of the markdown file for any file it finds on disk - if a relative path is found overwrite it with the full_path - we need to count on it
+
+
+
+
 The script should now run properly without TypeScript errors. I've made
    these improvements:
 
