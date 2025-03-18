@@ -39,6 +39,10 @@ import {
   SupabaseClientService, 
   getSupabaseClient 
 } from '../../packages/cli/src/services/supabase-client';
+import {
+  PromptDocumentClassifier,
+  DocumentTypeAssignment
+} from '../../packages/cli/src/services/prompt-document-classifier';
 
 /**
  * Prompt the user to confirm they want to update the file paths
@@ -286,6 +290,7 @@ async function checkFilesWithoutDocumentType(): Promise<void> {
     console.log('1. Use the documentation UI in the web interface');
     console.log('2. Run the documentation processor: packages/cli/src/commands/documentation-processor.ts');
     console.log('3. Use the ClassifyDocument AI tool to automatically classify these files');
+    console.log('4. Automatically assign document types using Claude 3.7 (option 5 in the main menu)');
     
   } catch (error) {
     console.error('\nError checking files without document types:', error instanceof Error ? error.message : 'Unknown error');
@@ -618,6 +623,101 @@ async function countDocumentationFiles() {
 }
 
 /**
+ * Process documents without document types using Claude 3.7
+ */
+async function processDocumentsWithoutTypes(): Promise<void> {
+  console.log('\n=== PROCESS DOCUMENTS WITHOUT TYPES USING CLAUDE 3.7 ===');
+  
+  try {
+    // Initialize Supabase connection
+    console.log('Initializing Supabase connection...');
+    const supabase = await initSupabaseConnection();
+    
+    // Get Claude API key
+    const claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
+    
+    if (!claudeApiKey) {
+      console.error('Claude API key not found in environment variables.');
+      console.error('Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY in your environment.');
+      return;
+    }
+    
+    // Get supabase URL and key
+    const supabaseUrl = process.env.SUPABASE_URL || '';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    
+    // Prompt for classification prompt name
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    // Display information to the user
+    console.log('\nThis will use Claude 3.7 to classify documents that currently have no document type assignment.');
+    console.log('You will need to provide the name of the classification prompt to use.');
+    console.log('Recommended prompt: markdown-document-classification-prompt');
+    console.log('\nNOTE: This process will:');
+    console.log('1. Retrieve the specified prompt and its related document types');
+    console.log('2. Run the content of each unclassified document through Claude 3.7');
+    console.log('3. Save the assigned document types back to the database');
+    
+    const promptName = await new Promise<string>((resolve) => {
+      rl.question('\nEnter the prompt name to use for classification [markdown-document-classification-prompt]: ', (answer) => {
+        resolve(answer.trim() || 'markdown-document-classification-prompt');
+      });
+    });
+    
+    // Get limit of documents to process
+    const limitStr = await new Promise<string>((resolve) => {
+      rl.question('\nMaximum number of documents to process [10]: ', (answer) => {
+        resolve(answer.trim() || '10');
+      });
+    });
+    
+    // Get whether to output to markdown
+    const outputToMarkdownStr = await new Promise<string>((resolve) => {
+      rl.question('\nOutput results to markdown files? (y/n) [n]: ', (answer) => {
+        rl.close();
+        resolve(answer.trim().toLowerCase());
+      });
+    });
+    
+    const limit = parseInt(limitStr, 10);
+    const outputToMarkdown = outputToMarkdownStr === 'y' || outputToMarkdownStr === 'yes';
+    
+    console.log(`\nProcessing up to ${limit} documents using prompt: ${promptName}`);
+    console.log(`Output to markdown: ${outputToMarkdown ? 'Yes' : 'No'}`);
+    
+    // Initialize the prompt document classifier
+    const classifier = new PromptDocumentClassifier(supabaseUrl, supabaseKey, claudeApiKey);
+    
+    // Process the documents without document types
+    console.log('\nProcessing documents...');
+    const results = await classifier.processDocumentsWithoutTypes(promptName, limit, outputToMarkdown);
+    
+    // Display results
+    console.log('\n=== PROCESSING RESULTS ===');
+    console.log('--------------------------------------------------------------');
+    console.log(`Total documents processed: ${results.processed}`);
+    console.log(`Successfully classified: ${results.successful}`);
+    console.log(`Failed to classify: ${results.failed}`);
+    console.log(`Success rate: ${results.processed > 0 ? Math.round((results.successful / results.processed) * 100) : 0}%`);
+    
+    if (results.errors.length > 0) {
+      console.log('\nErrors encountered during processing:');
+      results.errors.forEach((error, index) => {
+        console.log(`${index + 1}. ${error}`);
+      });
+    }
+    
+    console.log('\nDocument classification complete.');
+    
+  } catch (error) {
+    console.error('\nError processing documents without types:', error instanceof Error ? error.message : 'Unknown error');
+  }
+}
+
+/**
  * Prompt user to choose an action
  */
 async function promptForAction(): Promise<string> {
@@ -631,14 +731,15 @@ async function promptForAction(): Promise<string> {
   console.log('2. Check file existence and update deletion status');
   console.log('3. Discover and add new documentation files');
   console.log('4. Check files without document type assignments');
-  console.log('5. Exit');
+  console.log('5. Process documents without types using Claude 3.7');
+  console.log('6. Exit');
   console.log();
   console.log('Note: Document organization features have been moved to:');
   console.log('packages/cli/src/services/document-organization');
   console.log('Use packages/cli/src/scripts/organize-docs.ts for organization tasks.');
   
   return new Promise((resolve) => {
-    rl.question('\nEnter your choice (1-5): ', (answer) => {
+    rl.question('\nEnter your choice (1-6): ', (answer) => {
       rl.close();
       resolve(answer.trim());
     });
@@ -754,6 +855,11 @@ async function main() {
           break;
           
         case '5':
+          // Process documents without types using Claude 3.7
+          await processDocumentsWithoutTypes();
+          break;
+          
+        case '6':
           console.log('Exiting...');
           exit = true;
           break;
