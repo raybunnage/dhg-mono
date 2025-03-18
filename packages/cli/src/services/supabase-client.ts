@@ -145,24 +145,57 @@ export class SupabaseClientService {
         return { success: false, error: 'Client not initialized' };
       }
       
+      console.log('Testing connection with URL:', this.url);
+      console.log('API Key length:', this.key ? this.key.length : 0);
+      
+      // Simple connection test using REST API
+      const { data: projectData, error: projectError } = await this.client.rpc('get_project_info');
+      if (projectError) {
+        console.error('Error getting project info:', projectError);
+      } else {
+        console.log('Project info:', projectData);
+      }
+      
       // Try to access a common table
-      const { error } = await this.client
+      console.log('Testing access to documentation_files table...');
+      const { error, status, statusText } = await this.client
         .from('documentation_files')
         .select('count', { count: 'exact', head: true });
       
+      console.log('Status:', status, statusText);
+      
       if (error) {
+        console.error('Error accessing documentation_files:', error);
+        
         // Try another table as a fallback
-        const { error: error2 } = await this.client
+        console.log('Testing access to document_types table...');
+        const { error: error2, status: status2, statusText: statusText2 } = await this.client
           .from('document_types')
           .select('count', { count: 'exact', head: true });
         
+        console.log('Status 2:', status2, statusText2);
+        
         if (error2) {
+          console.error('Error accessing document_types:', error2);
+          
+          // Try a simple database ping
+          console.log('Testing simple database ping...');
+          const { error: pingError } = await this.client.rpc('ping');
+          
+          if (pingError) {
+            console.error('Ping error:', pingError);
+          }
+          
           return { 
             success: false, 
             error: 'Connection test failed for both tables', 
             details: { 
-              firstError: error.message, 
-              secondError: error2.message 
+              firstError: JSON.stringify(error), 
+              secondError: JSON.stringify(error2),
+              status1: status,
+              status2: status2,
+              statusText1: statusText,
+              statusText2: statusText2
             } 
           };
         }
@@ -170,10 +203,13 @@ export class SupabaseClientService {
       
       return { success: true };
     } catch (error) {
+      console.error('Unexpected error during connection test:', error);
       return { 
         success: false, 
         error: 'Unexpected error during connection test',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? 
+          { message: error.message, stack: error.stack } : 
+          { error: JSON.stringify(error) }
       };
     }
   }

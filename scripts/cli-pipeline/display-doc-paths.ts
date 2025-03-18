@@ -5,7 +5,12 @@
  * This is a minimal script that just connects and counts records
  */
 
-import { config as loadDotEnv } from 'dotenv';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from different .env files
+dotenv.config(); // Load base .env
+dotenv.config({ path: '.env.development' }); // Load environment specific
+dotenv.config({ path: '.env.local' }); // Load local overrides
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
@@ -89,114 +94,17 @@ async function countDocumentationFiles() {
   const pathsToUpdate: PathUpdate[] = [];
   
   try {
-    // ==== GET SERVICE KEY, PRIORITIZING .ENV FILE KEY ====
-    console.log('Using service role key from .env file...');
-    
-    // Directly use the SUPABASE_SERVICE_ROLE_KEY that should have been loaded from .env
-    let supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    let keySource = 'SUPABASE_SERVICE_ROLE_KEY';
-
-    // If for some reason it's still not set, check other potential keys as fallbacks
-    if (!supabaseKey) {
-      console.log('Primary service key not found, checking alternatives...');
-      
-      const fallbackKeys = {
-        SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
-        CLI_SUPABASE_SERVICE_ROLE_KEY: process.env.CLI_SUPABASE_SERVICE_ROLE_KEY,
-        CLI_SUPABASE_SERVICE_KEY: process.env.CLI_SUPABASE_SERVICE_KEY
-      };
-      
-      // Try each fallback key
-      for (const [name, value] of Object.entries(fallbackKeys)) {
-        if (value) {
-          console.log(`Using ${name} as fallback`);
-          supabaseKey = value;
-          keySource = name;
-          break;
-        }
-      }
-    }
-    
-    // Get the URL (already handled in env loading)
-    const supabaseUrl = process.env.SUPABASE_URL;
-    
-    // Validate credentials
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('ERROR: Missing Supabase credentials!');
-      console.error(`URL: ${supabaseUrl ? 'Set' : 'MISSING'}`);
-      console.error(`Service Key: ${supabaseKey ? 'Set' : 'MISSING'}`);
-      process.exit(1);
-    }
-    
-    // Verify URL format
-    if (!supabaseUrl.startsWith('http')) {
-      console.error('ERROR: Invalid Supabase URL format!');
-      console.error(`URL value: "${supabaseUrl}"`);
-      console.error('The URL should start with http:// or https://');
-      process.exit(1);
-    }
-    
-    // Final connection details
-    console.log('\nFINAL CONNECTION DETAILS:');
-    console.log(`- URL: ${supabaseUrl}`);
-    console.log(`- Key Source: ${keySource}`);
-    console.log(`- Key Length: ${supabaseKey.length} chars`);
-    console.log(`- Key Preview: ${supabaseKey.substring(0, 10)}...`);
-    
-    // Create Supabase client using our shared service
-    console.log('\nCreating Supabase client...');
-    
-    let connectionSuccess = false;
+    // Use our improved connection function
+    console.log('Initializing Supabase connection...');
     let supabase;
     
     try {
-      console.log('Using SupabaseClientService...');
-      const supabaseService = SupabaseClientService.getInstance();
-      supabase = supabaseService.initialize(supabaseUrl, supabaseKey);
-      
-      // Test the connection
-      console.log('Testing connection...');
-      const connectionTest = await supabaseService.testConnection();
-      
-      if (!connectionTest.success) {
-        console.error(`Connection failed: ${connectionTest.error}`);
-        if (connectionTest.details) {
-          console.error('Error details:', connectionTest.details);
-        }
-      } else {
-        console.log('Connection successful!');
-        connectionSuccess = true;
-      }
+      // Use the initSupabaseConnection function we defined
+      supabase = await initSupabaseConnection();
+      console.log('✅ Successfully connected to Supabase!');
     } catch (error) {
-      console.error('Error creating Supabase client:', error instanceof Error ? error.message : 'Unknown error');
-    }
-    
-    // Try with anon key if service key failed
-    if (!connectionSuccess && process.env.SUPABASE_ANON_KEY) {
-      try {
-        console.log('\nAttempt 2: Trying with anon key instead...');
-        const supabaseService = SupabaseClientService.getInstance();
-        supabase = supabaseService.initialize(supabaseUrl, process.env.SUPABASE_ANON_KEY as string);
-        
-        // Test the connection
-        console.log('Testing connection with anon key...');
-        const connectionTest = await supabaseService.testConnection();
-        
-        if (!connectionTest.success) {
-          console.error(`Anon key connection failed: ${connectionTest.error}`);
-        } else {
-          console.log('Connection with anon key successful!');
-          connectionSuccess = true;
-        }
-      } catch (error) {
-        console.error('Error creating Supabase client with anon key:', error instanceof Error ? error.message : 'Unknown error');
-      }
-    }
-    
-    // If all connection attempts failed, exit
-    if (!connectionSuccess || !supabase) {
-      console.error('\nFATAL ERROR: All connection attempts failed!');
-      console.error('Please check your Supabase URL and keys.');
+      console.error('❌ Failed to connect to Supabase:');
+      console.error(error instanceof Error ? error.message : 'Unknown error');
       process.exit(1);
     }
     
@@ -435,14 +343,66 @@ async function promptForAction(): Promise<string> {
 // Use our shared Supabase client service instead
 async function initSupabaseConnection(): Promise<SupabaseClient> {
   console.log('Initializing database connection...');
-  const client = getSupabaseClient(true); // Force initialization from env if needed
+  
+  // Debug environment variables
+  console.log('\nDEBUGGING ENVIRONMENT VARIABLES:');
+  console.log(`SUPABASE_URL: ${process.env.SUPABASE_URL || '[NOT SET]'}`);
+  console.log(`CLI_SUPABASE_URL: ${process.env.CLI_SUPABASE_URL || '[NOT SET]'}`);
+  console.log(`SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]'}`);
+  console.log(`CLI_SUPABASE_KEY: ${process.env.CLI_SUPABASE_KEY ? '[SET]' : '[NOT SET]'}`);
+  
+  // Check if URL is properly set
+  const cliSupabaseUrl = process.env.CLI_SUPABASE_URL;
+  // If CLI_SUPABASE_URL contains a variable reference (${}) that wasn't interpolated
+  const supabaseUrl = (cliSupabaseUrl && !cliSupabaseUrl.includes('${')) ? cliSupabaseUrl : process.env.SUPABASE_URL;
+  
+  // Check for key and make sure it doesn't contain variable references
+  const cliKey = process.env.CLI_SUPABASE_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  let supabaseKey = null;
+  if (cliKey && !cliKey.includes('${')) {
+    supabaseKey = cliKey;
+    console.log('Using CLI_SUPABASE_KEY');
+  } else if (serviceRoleKey) {
+    supabaseKey = serviceRoleKey;
+    console.log('Using SUPABASE_SERVICE_ROLE_KEY');
+  }
+  
+  // Debug the key format (first few characters)
+  if (supabaseKey) {
+    console.log(`Key format check: ${supabaseKey.substring(0, 20)}...`);
+    // Verify the format (JWT tokens typically start with "ey")
+    if (!supabaseKey.startsWith('ey')) {
+      console.warn('WARNING: Key doesn\'t look like a JWT token (should start with "ey")');
+    }
+  }
+  
+  if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
+    console.error(`Invalid Supabase URL: "${supabaseUrl}"`);
+    throw new Error('Invalid Supabase URL. It must start with http:// or https://');
+  }
+  
+  if (!supabaseKey) {
+    throw new Error('Missing Supabase API key');
+  }
+  
+  // Initialize the client directly
+  const supabaseService = SupabaseClientService.getInstance();
+  const client = supabaseService.initialize(supabaseUrl, supabaseKey);
   
   // Test the connection
-  const connectionTest = await SupabaseClientService.getInstance().testConnection();
+  console.log('Testing connection...');
+  const connectionTest = await supabaseService.testConnection();
   if (!connectionTest.success) {
+    console.error(`Connection test failed: ${connectionTest.error}`);
+    if (connectionTest.details) {
+      console.error('Error details:', connectionTest.details);
+    }
     throw new Error(`Failed to connect to Supabase: ${connectionTest.error}`);
   }
   
+  console.log('✅ Connection successful!');
   return client;
 }
 
