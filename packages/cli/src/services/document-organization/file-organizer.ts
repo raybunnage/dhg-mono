@@ -454,3 +454,14 @@ export async function moveAllFilesByDocumentType(
     };
   }
 }
+
+// Document type mapping can be exported as a constant
+export const DOCUMENT_TYPE_MAPPING = {
+  'Code Documentation Markdown': 'code-documentation',
+  'Deployment Environment Guide': 'deployment-environment',
+  'Git Repository Journal': 'git-repository',
+  'Script Report': 'script-reports',
+  'Solution Guide': 'solution-guides',
+  'Technical Specification': 'technical-specs',
+  'Cli Pipeline Markdown' : 'cli-pipeline'
+} as const;
