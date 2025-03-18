@@ -1,10 +1,7 @@
 # Prompt Lookup: script-analysis-prompt
 
-Generated: 2025-03-17T23:58:02.330Z
+Generated: 2025-03-18T01:28:54.099Z
 
-Current configuration:
-- Using Supabase URL: https://jdksnfkupzywjdfefkyj.supabase.co...
-- Using Supabase Key: eyJhb...
 
 === PROMPT DETAILS FROM DATABASE ===
 ID: 43f058d8-6df7-4a01-8f8e-c1eec944defe
@@ -279,180 +276,11 @@ find . -name "*.sh" -type f -exec chmod +x {} \;
 === DATABASE QUERY RESULTS ===
 Query: SELECT * FROM document_types WHERE category IN ('AI', 'Development', 'Integration', 'Operations');
 Executing query: SELECT * FROM document_types WHERE category IN ('AI', 'Development', 'Integration', 'Operations');
-Detected document_types query - using direct table access
-Total document_types in database: 93
-Sample document types:
-- 1: hypothesis (category: academic)
-- 2: thesis (category: academic)
-- 3: AI Workflow Script (category: AI)
-Available categories: academic, AI, ai-assets, Announcements, article, audio, biography, book, communication, Communication, correction, Data, Database, Development, document, Documentation, extravaganza, folder, image, Integration, letter, narrative, news, Operations, presentation, report, spreadsheet, summary, text, transcript, unknown, Utility, video, web
-
-=== Document Types By Category in Database ===
-
-Category: AI
-- AI Workflow Script (95390c42-2048-41f7-ba30-59d48d3f1075)
-
-Category: Announcements
-- Presentation Announcement (554ed67c-35d1-4218-abba-8d1b0ff7156d)
-
-Category: Communication
-- Chat Log (46dac359-01e9-4e36-bfb2-531da9c25e3f)
-
-Category: Data
-- Data Processing Script (1fe10f0d-e99a-406e-b863-2963ee2925e7)
-
-Category: Database
-- sql database file (c785b34e-0d91-4485-bf7d-7a95f173335a)
-- json file (d2480114-93b8-4f8b-8910-6b6d5f68d8a5)
-- csv data (32229b46-eeda-4e67-a3a5-3d0e90cfbf0b)
-- SQL Create Table Statement (cf5414d9-9be3-4fda-812b-d4e14a4e76d3)
-- mermaid diagrams and charts (55a12b95-495a-4857-b8a7-a03ac73371e2)
-
-Category: Development
-- Build Automation Script (83706b48-b7e6-483b-a1c2-f31c4f1fbba6)
-- Code Generation Script (9636ee5d-d29e-4c09-982e-ac312994bac8)
-
-Category: Documentation
-- Code Documentation Markdown (e9d3e473-5315-4837-9f5f-61f150cbd137)
-- Deployment Environment Guide (e54ebd13-79d1-4fe2-93db-6f25c9b6a9d0)
-- Script Report (50c810a3-c4a6-4243-a7a4-6381eb42e0a3)
-- README (73ee8695-2750-453f-ad6a-929a6b64bc74)
-- Solution Guide (ad9336a0-613f-4632-906b-b691dc39c7df)
-- Technical Specification (adbe8042-dcc4-4402-977a-1fa04688945d)
-- External Library Documentation (c903f553-baf2-482b-bfc9-bade16d683d1)
-- Git Repository Journal (3e00c51b-acad-457a-b3b9-cdd3b6f15a4f)
-
-Category: Integration
-- Api Integration Script (682afaf1-1f16-4afe-a706-dc8e5ac2cf90)
-
-Category: Operations
-- Database Management Script (561a86b0-7064-4c20-a40e-2ec6905c4a42)
-- Deployment Script (a1dddf8e-1264-4ec0-a5af-52eafb536ee3)
-- Environment Setup Script (f7e83857-8bb8-4b18-9d8f-16d5cb783650)
-- Document Processing Script (53f42e7d-78bd-4bde-8106-dc12a4835695)
-- CI CD Pipeline Script (4fdbd8be-fe5a-4341-934d-2b6bd43be7be)
-
-Category: Utility
-- Utility Script (021f5097-68a0-48a3-b2c6-139b8eb20613)
-
-Category: academic
-- hypothesis (cebcbcd0-7662-4d78-b2d8-29eb37b7d26b)
-- thesis (195b0bee-2a3e-4112-aa3c-83ca95b7cd44)
-
-Category: ai-assets
-- ai_prompt_template (d98330a0-431f-4230-bda6-31f78795f484)
-- api_context_support (f8a40488-43e1-4c1c-8b19-c02d03d7a612)
-
-Category: article
-- editorial (ee563275-2e54-4ac8-b756-839486023c91)
-- research article (9ccdc433-99d8-46fb-8bf7-3ba72cf27c88)
-- journal article (5eb89387-854c-4754-baf8-3632ac286d92)
-- review article (5e61bfbc-39ef-4380-80c0-592017b39b71)
-- preprint (81109bf5-36b5-4075-a8db-5397e0e46fd6)
-- web news article (f2fd129e-a0ad-485d-a457-ec49736010a9)
-- magazine article (19802f2b-24f5-4b9a-ae7a-50e9f5ddacae)
-- essay (98ac1e77-2cff-474a-836e-4db32a521a16)
-
-Category: audio
-- wav audio (fe697fc5-933c-41c9-9b11-85e0defa86ed)
-- m3u file (8ce8fbbc-b397-4061-a80f-81402515503b)
-- aac audio (d2206940-e4f3-476e-9245-0e1eb12fd195)
-- mp3 audio (4edfb133-ffeb-4b9c-bfd4-79ee9a9d73af)
-- m4a audio (6ece37e7-840d-4a0c-864d-9f1f971b1d7e)
-
-Category: biography
-- professional biography (af194b7e-cbf9-45c3-a1fc-863dbc815f1e)
-- curriculum vitae (03743a23-d2f3-4c73-a282-85afc138fdfd)
-
-Category: book
-- book (fc07c06a-ab03-4714-baf2-343427d433a3)
-
-Category: communication
-- email correspondence (83849c95-823e-4f8b-bf47-4318ae014f16)
-
-Category: correction
-- corrigendum (c7c0f0bb-10c5-4dea-9bc7-25d398f10ee8)
-- erratum (6691b7f3-ba21-4118-8bd3-acf372fe675a)
-
-Category: document
-- pdf document (2fa04116-04ed-4828-b091-ca6840eb8863)
-
-Category: extravaganza
-- concept map (053f2cec-e4fa-4671-87e0-e4919554a732)
-
-Category: folder
-- low level folder (dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd)
-- high level folder (bd903d99-64a1-4297-ba76-1094ab235dac)
-- drive (82e32985-c8f9-418e-9687-cbd2617af308)
-- root folder (0d61a685-10e0-4c82-b964-60b88b02ac15)
-
-Category: image
-- jpg image (68b95822-2746-4ce1-ad35-34e5b0297177)
-- png image (db6518ad-765c-4a02-a684-9c2e49d77cf5)
-
-Category: letter
-- letter (e886b004-b90c-4130-bfa7-971d084e88ec)
-- letter to the editor (ab90f374-00f6-4220-90e0-91b2054eafad)
-
-Category: narrative
-- story (5031d315-3960-4d50-b2a8-d621232a6938)
-
-Category: news
-- press release (5f3f9982-3295-4d98-8f52-3db81b5e0ccb)
-
-Category: presentation
-- ppt microsoft early powerpoint (160884c5-4fb9-4fa4-a40d-e3f3de03c85e)
-- non science presentation (7f80ee0b-8e0a-4e45-ad34-a57d4a72b274)
-- powerpoint document (299ad443-4d84-40d8-98cb-a9df423ba451)
-- science meeting discussion (27784498-e35b-4729-a1c4-9e4ec24e6a5a)
-- scientific presentation and discussion (ba7893d4-8404-4489-b553-b6464cd5cbd8)
-
-Category: report
-- report (ea74c86e-7f22-4ecf-ae16-0430291995e2)
-
-Category: spreadsheet
-- google sheet (920893fc-f0be-4211-85b4-fc29882ade97)
-- xlsx document (b26a68ed-a0d1-415d-8271-cba875bfe3ce)
-
-Category: summary
-- subject classfication summary (b39cdae3-dca2-457f-aa36-3916ebd3978a)
-- new work summary (8467f8db-7514-46cb-ba5a-4c3278372726)
-
-Category: text
-- word document (bb90f01f-b6c4-4030-a3ea-db9dd8c4b55a)
-- textclipping snippet (ecc35d23-b709-4169-a99a-019c472848c9)
-- markdown document (0b99de50-7dfa-4d5c-bfdd-627fcac3e35a)
-- google doc (3946ceb8-fcf8-44b2-826b-8b55fe259132)
-- doc file (1e7015f7-43b4-47ed-8a73-b6545c6e0455)
-- txt file (08d25ab0-c3f8-4dfb-b703-3dc420ad50cf)
-
-Category: transcript
-- cleaned presentation transcript (3aaf624d-7550-4bb7-8c37-d7c4a80fd20f)
-- dicussion transcript (c62f92f5-6123-4324-876d-14639841284e)
-- ai presentation transcript (5acbbf7a-dcba-46a6-a59c-084fe9dba05a)
-- cleaned discussion transcript (79c36eb8-b599-45c8-8690-37568f4453da)
-- ai discussion transcript (4ce87d2a-451b-48e4-a72e-1c981e402df6)
-- presentation transcript (c1a7b78b-c61e-44a4-8b77-a27a38cbba7e)
-
-Category: unknown
-- unknown document type (9dbe32ff-5e82-4586-be63-1445e5bcc548)
-- correction (97a2a12e-1bdf-49c1-ad4c-d2a411199c9c)
-
-Category: video
-- video mpeg (3e7c880c-d821-4d01-8cc5-3547bdd2e347)
-- conf file (2c1d3bdc-b429-4194-bec2-7e4bbb165dbf)
-- video quicktime (d70a258e-262b-4bb3-95e3-f826ee9b918b)
-- m4v (28ab55b9-b408-486f-b1c3-8f0f0a174ad4)
-- mp4 video (ba1d7662-0168-4756-a2ea-6d964fd02ba8)
-- video microsoft avi (91fa92a3-d606-493b-832d-9ba1fa83dc9f)
-
-Category: web
-- website (3b9369c8-73f4-4b5c-ad00-33b9720516f9)
-- url blog post (eca21963-c638-4435-85f5-0da67458995c)
-All categories in database: academic, AI, ai-assets, Announcements, article, audio, biography, book, communication, Communication, correction, Data, Database, Development, document, Documentation, extravaganza, folder, image, Integration, letter, narrative, news, Operations, presentation, report, spreadsheet, summary, text, transcript, unknown, Utility, video, web
-Filtering for categories: AI, Operations
-Found 6 records out of 93 total document types
-Records found: 6
+Raw IN clause: 'AI', 'Development', 'Integration', 'Operations'
+Extracted category matches: ["'AI'","'Development'","'Integration'","'Operations'"]
+Detected IN query with categories: AI, Development, Integration, Operations
+Found 9 records with specified categories
+Records found: 9
 [
   {
     "id": "a1dddf8e-1264-4ec0-a5af-52eafb536ee3",
@@ -489,6 +317,119 @@ Records found: 6
       "should_have_error_handling": true,
       "should_have_timeout_handling": true,
       "should_have_environment_checks": true
+    }
+  },
+  {
+    "id": "83706b48-b7e6-483b-a1c2-f31c4f1fbba6",
+    "document_type": "Build Automation Script",
+    "current_num_of_type": 0,
+    "description": "Scripts for building applications, compiling code, bundling assets, and automating development workflows.",
+    "mime_type": "application/x-shellscript,text/javascript,text/x-typescript,text/x-python,application/x-bat,application/x-powershell",
+    "file_extension": "sh,js,ts,py,bat,ps1",
+    "document_type_counts": 0,
+    "category": "Development",
+    "created_at": "2025-03-16T03:19:13.173+00:00",
+    "updated_at": "2025-03-16T03:19:13.173+00:00",
+    "required_fields": [
+      "script_purpose",
+      "build_targets",
+      "environment_requirements"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "detect_build_tools": {
+        "keywords": [
+          "webpack",
+          "vite",
+          "gulp",
+          "grunt",
+          "rollup",
+          "parcel",
+          "babel",
+          "tsc",
+          "make"
+        ],
+        "description": "Identify build tools like webpack, vite, gulp, etc."
+      },
+      "analyze_build_steps": {
+        "description": "Identify distinct build phases or steps in the script",
+        "section_markers": [
+          "function",
+          "task",
+          "step",
+          "phase"
+        ]
+      },
+      "check_optimization_settings": {
+        "keywords": [
+          "minify",
+          "compress",
+          "optimize",
+          "production",
+          "sourcemap"
+        ],
+        "description": "Identify optimization flags and settings"
+      },
+      "detect_environment_variables": {
+        "pattern": "(process.env|ENV|\\$\\{|\\$[A-Z_]+)",
+        "description": "Identify environment variables used by the build script"
+      },
+      "identify_package_dependencies": {
+        "description": "Extract package dependencies referenced in the build script",
+        "analyze_imports": true
+      }
+    },
+    "validation_rules": {
+      "should_have_clean_exit": true,
+      "should_handle_build_errors": true,
+      "should_handle_dependencies": true,
+      "should_document_build_options": true,
+      "should_include_usage_instructions": true
+    }
+  },
+  {
+    "id": "9636ee5d-d29e-4c09-982e-ac312994bac8",
+    "document_type": "Code Generation Script",
+    "current_num_of_type": 0,
+    "description": "Scripts that generate code, type definitions, configuration files, or other source code artifacts.",
+    "mime_type": "[\"text/javascript\",\"application/x-shellscript\",\"text/x-python\",\"text/x-ruby\"]",
+    "file_extension": "[\"js\",\"ts\",\"sh\",\"py\",\"rb\"]",
+    "document_type_counts": 0,
+    "category": "Development",
+    "created_at": "2025-03-16T03:22:24.007+00:00",
+    "updated_at": "2025-03-16T03:22:24.007+00:00",
+    "required_fields": [
+      "script_purpose",
+      "output_language",
+      "input_parameters",
+      "execution_environment"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "check_code_style": true,
+      "extract_usage_patterns": true,
+      "detect_hardcoded_values": true,
+      "identify_security_risks": true,
+      "analyze_input_validation": true,
+      "identify_output_language": true,
+      "detect_templating_patterns": true,
+      "detect_error_handling_patterns": true,
+      "evaluate_documentation_quality": true,
+      "suggest_performance_improvements": true
+    },
+    "validation_rules": {
+      "max_complexity_score": 25,
+      "min_documentation_ratio": 0.15,
+      "should_have_error_handling": true,
+      "should_have_usage_examples": true,
+      "should_specify_dependencies": true,
+      "should_validate_generated_code": true,
+      "should_document_input_requirements": true,
+      "should_include_version_compatibility": true
     }
   },
   {
@@ -563,6 +504,44 @@ Records found: 6
       "should_document_output_format": true,
       "should_include_error_handling": true,
       "should_have_usage_instructions": true
+    }
+  },
+  {
+    "id": "682afaf1-1f16-4afe-a706-dc8e5ac2cf90",
+    "document_type": "Api Integration Script",
+    "current_num_of_type": 0,
+    "description": "Scripts that interact with external APIs, web services, or third-party systems to exchange data or trigger actions. Examples include API clients, webhook handlers, and integration testers.",
+    "mime_type": "text/javascript,application/x-shellscript,text/x-python,text/x-ruby,text/x-php,text/typescript",
+    "file_extension": "js,sh,py,rb,php,ts",
+    "document_type_counts": 0,
+    "category": "Integration",
+    "created_at": "2025-03-16T03:28:09.573+00:00",
+    "updated_at": "2025-03-16T03:28:09.573+00:00",
+    "required_fields": [
+      "script_purpose",
+      "api_endpoint",
+      "authentication_method"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "detect_api_endpoints": true,
+      "extract_dependencies": true,
+      "analyze_error_handling": true,
+      "identify_rate_limiting": true,
+      "check_response_handling": true,
+      "identify_data_transformations": true,
+      "detect_security_vulnerabilities": true,
+      "identify_authentication_methods": true
+    },
+    "validation_rules": {
+      "should_validate_input": true,
+      "should_handle_timeouts": true,
+      "should_include_logging": true,
+      "should_handle_api_errors": true,
+      "should_handle_pagination": true,
+      "should_have_rate_limiting": true
     }
   },
   {

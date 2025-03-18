@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { FileService, FileResult } from '../../packages/cli/src/services/file-service';
+import { SupabaseService } from '../../packages/cli/src/services/supabase-service';
 import config from '../../packages/cli/src/utils/config';
 import { Logger } from '../../packages/cli/src/utils/logger';
 import path from 'path';
@@ -48,225 +49,113 @@ interface Relationship {
   updated_at: string;
 }
 
-// Create a simplified SupabaseService
-class SimpleSupabaseService {
+// Use a standalone class specifically for executing custom queries that aren't in the SupabaseService
+class CustomQueryExecutor {
   private client: SupabaseClient;
   
   constructor(url: string, key: string) {
     this.client = createClient(url, key);
   }
   
-  async getPromptByName(name: string): Promise<Prompt | null> {
-    Logger.debug(`Getting prompt by name: ${name}`);
-    
-    const { data, error } = await this.client
-      .from('prompts')
-      .select('*')
-      .ilike('name', `%${name}%`)
-      .limit(1);
-    
-    if (error) {
-      Logger.error(`Failed to get prompt by name: ${error.message}`);
-      throw new Error(`Failed to get prompt by name: ${error.message}`);
-    }
-    
-    if (!data || data.length === 0) {
-      Logger.warn(`No prompt found with name: ${name}`);
-      return null;
-    }
-    
-    Logger.debug(`Found prompt: ${data[0].name}`);
-    return data[0] as Prompt;
-  }
-  
-  async getRelationshipsByPromptId(promptId: string): Promise<Relationship[]> {
-    Logger.debug(`Getting relationships for prompt ID: ${promptId}`);
-    
-    const { data, error } = await this.client
-      .from('prompt_relationships')
-      .select('*')
-      .eq('prompt_id', promptId);
-    
-    if (error) {
-      Logger.error(`Failed to get relationships for prompt: ${error.message}`);
-      throw new Error(`Failed to get relationships for prompt: ${error.message}`);
-    }
-    
-    Logger.debug(`Found ${data?.length || 0} relationships for prompt ID: ${promptId}`);
-    return data as Relationship[] || [];
-  }
-  
   async executeCustomQuery(queryText: string): Promise<any> {
     try {
       console.log(`Executing query: ${queryText}`);
       
-      // Replace double quotes with single quotes for SQL compatibility
-      // Note: This is a simple replacement that might not handle all SQL edge cases
-      let normalizedQuery = queryText;
-      if (queryText.includes("\"")) {
-        // Only process if we detect double quotes
-        console.log("Converting double quotes to single quotes for SQL compatibility");
-        
-        // First replace double-quoted column identifiers with temporary placeholders 
-        // We'll only convert string literals with double quotes to single quotes
-        normalizedQuery = queryText.replace(/("[\w\s]+")(\s*=\s*)/g, (match, p1, p2) => {
-          // Keep identifiers as is, but add a note about them
-          console.log(`Found possible column reference: ${p1}`);
-          return `${p1}${p2}`;
-        });
-        
-        // Then convert string literals (values in WHERE clauses)
-        normalizedQuery = normalizedQuery.replace(/(\w+\s*=\s*)"([^"]+)"/g, "$1'$2'");
-        console.log(`Normalized query: ${normalizedQuery}`);
-      }
-      
       // Check for specific known queries and handle them directly
-      if (normalizedQuery.includes("FROM document_types WHERE category") || 
-          queryText.includes("FROM document_types WHERE category")) {
-        console.log("Detected document_types query - using direct table access");
+      if (queryText.includes("document_types")) {
+        // Handle direct Documentation category query
+        if (queryText.includes("category = \"Documentation\"") || 
+            queryText.includes("category = 'Documentation'")) {
+          console.log("Detected Documentation category query - using direct table access");
+          
+          try {
+            // Execute a direct query for Documentation category
+            const { data, error } = await this.client
+              .from('document_types')
+              .select('*')
+              .eq('category', 'Documentation');
+              
+            if (error) {
+              throw new Error(`Failed to query document_types with category=Documentation: ${error.message}`);
+            }
+            
+            console.log(`Found ${data?.length || 0} records with category=Documentation`);
+            return data;
+          } catch (error) {
+            console.log(`Error in document_types query: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            throw error;
+          }
+        }
         
-        try {
-          // For more consistent results, we'll use a direct query to get all document types
-          // and then filter them in-memory if needed
+        // Handle IN queries for multiple categories
+        // First, extract the entire IN clause
+        const inClauseMatch = queryText.match(/category\s+IN\s*\(([^)]+)\)/i);
+        if (inClauseMatch && inClauseMatch[1]) {
+          // Extract all quoted categories from within the parentheses
+          const categoryValues: string[] = [];
+          const categoryMatches = inClauseMatch[1].match(/['"]([^'"]+)['"]/g);
           
-          // First get all document types to see the total count
-          const { data: allData, error: allError } = await this.client
-            .from('document_types')
-            .select('*')
-            .order('category');
-            
-          if (allError) {
-            throw new Error(`Failed to query all document_types: ${allError.message}`);
+          if (categoryMatches) {
+            categoryMatches.forEach(match => {
+              // Remove the quotes to get just the category value
+              const value = match.replace(/^['"]|['"]$/g, '');
+              if (value) categoryValues.push(value);
+            });
           }
           
-          console.log(`Total document_types in database: ${allData?.length || 0}`);
+          // Log for debugging purposes
+          console.log(`Raw IN clause: ${inClauseMatch[1]}`);
+          console.log(`Extracted category matches: ${JSON.stringify(categoryMatches)}`);
           
-          // Log the first few document types to debug
-          if (allData && allData.length > 0) {
-            console.log("Sample document types:");
-            for (let i = 0; i < Math.min(3, allData.length); i++) {
-              console.log(`- ${i+1}: ${allData[i].document_type} (category: ${allData[i].category})`);
-            }
+          // Alternative approach using split and map for more reliable extraction
+          if (categoryValues.length === 0 || categoryValues.length < 4) {
+            const cleanedInClause = inClauseMatch[1].trim();
+            const alternativeCategories = cleanedInClause
+              .split(',')
+              .map(part => part.trim().replace(/^['"]|['"]$/g, ''))
+              .filter(Boolean);
             
-            // Log all categories for reference
-            const categories = [...new Set(allData.map(dt => dt.category))];
-            console.log(`Available categories: ${categories.join(', ')}`);
+            if (alternativeCategories.length > 0) {
+              console.log(`Using alternative extraction method, found: ${alternativeCategories.join(', ')}`);
+              categoryValues.length = 0; // Clear existing array
+              categoryValues.push(...alternativeCategories);
+            }
           }
           
-          // Check for specific query patterns we know about
-          let categories: string[] = [];
-          let useDirectEquality = false;
-          
-          // Log all document_types that exist in the database to help debugging
-          console.log("\n=== Document Types By Category in Database ===");
-          
-          const categoryGroups: Record<string, any[]> = {};
-          allData.forEach(item => {
-            if (!categoryGroups[item.category]) {
-              categoryGroups[item.category] = [];
-            }
-            categoryGroups[item.category].push({
-              id: item.id,
-              document_type: item.document_type
-            });
-          });
-          
-          Object.keys(categoryGroups).sort().forEach(category => {
-            console.log(`\nCategory: ${category}`);
-            categoryGroups[category].forEach(item => {
-              console.log(`- ${item.document_type} (${item.id})`);
-            });
-          });
-          
-          // The query might use double quotes (JSON format) or single quotes (SQL format)
-          // Special case for Documentation category
-          if (queryText.includes("category = \"Documentation\"") || queryText.includes("category = 'Documentation'")) {
-            console.log("Detected Documentation category query");
-            categories = ["Documentation"];
-            useDirectEquality = true;
-          } 
-          // Otherwise, try to extract categories with regex
-          else {
-            // Try the IN pattern first
-            let categoryMatch = queryText.match(/IN\s*\(\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])*\s*\)/i);
-          
-          // If we didn't find an IN pattern, check for equality pattern (category = 'X')
-          if (!categoryMatch) {
-            // Look for category = "X" or category = 'X' or category = X pattern (with or without quotes)
-            // Try with quotes (both double and single)
-            let equalityMatch = queryText.match(/category\s*=\s*['"]([^'"]+)['"]/i);
-            
-            // If not found, try without quotes
-            if (!equalityMatch) {
-              equalityMatch = queryText.match(/category\s*=\s*([^\s;]+)/i);
-            }
-            if (equalityMatch && equalityMatch[1]) {
-              categories = [equalityMatch[1]];
-              useDirectEquality = true;
-              console.log(`Found equality match for category: ${equalityMatch[1]}`);
-            } else {
-              console.log("Could not parse category from query, returning all document types");
-              return allData;
-            }
-          } else {
-            // Process IN pattern - get all the categories from capture groups
-            for (let i = 1; i < categoryMatch.length; i++) {
-              if (categoryMatch[i]) {
-                categories.push(categoryMatch[i]);
+          // If we still don't have categories, try the old approach as fallback
+          if (categoryValues.length === 0) {
+            const inMatch = queryText.match(/category\s+IN\s*\(\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])*\s*\)/i);
+            if (inMatch) {
+              // Process all capture groups starting from index 1
+              for (let i = 1; i < inMatch.length; i++) {
+                if (inMatch[i]) {
+                  categoryValues.push(inMatch[i]);
+                }
               }
             }
           }
-          }
           
-          // Log all categories found in the database
-          const allCategories = [...new Set(allData.map(item => item.category))];
-          console.log(`All categories in database: ${allCategories.join(', ')}`);
-          console.log(`Filtering for categories: ${categories.join(', ')}`);
-          
-          // Execute a direct query based on the pattern found
-          let queryBuilder = this.client.from('document_types').select('*');
-          
-          if (useDirectEquality && categories.length === 1) {
-            // Use eq for single category (category = 'X')
-            queryBuilder = queryBuilder.eq('category', categories[0]);
-          } else if (categories.length > 0) {
-            // Use in for multiple categories (category IN ('X', 'Y'))
-            queryBuilder = queryBuilder.in('category', categories);
-          }
-          
-          const { data, error } = await queryBuilder;
+          // If we found categories, execute the query using the in() method
+          if (categoryValues.length > 0) {
+            console.log(`Detected IN query with categories: ${categoryValues.join(', ')}`);
             
-          if (error) {
-            throw new Error(`Failed to query document_types: ${error.message}`);
+            try {
+              const { data, error } = await this.client
+                .from('document_types')
+                .select('*')
+                .in('category', categoryValues);
+                
+              if (error) {
+                throw new Error(`Failed to query document_types with categories: ${error.message}`);
+              }
+              
+              console.log(`Found ${data?.length || 0} records with specified categories`);
+              return data;
+            } catch (error) {
+              console.log(`Error in document_types IN query: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              throw error;
+            }
           }
-          
-          // Compare the counts to help with troubleshooting
-          console.log(`Found ${data?.length || 0} records out of ${allData?.length || 0} total document types`);
-          
-          return data;
-        } catch (error) {
-          console.log(`Error in document_types query: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          throw error;
-        }
-      }
-      
-      // For document_types query with double quotes, attempt a direct query approach  
-      if (queryText.includes("document_types") && queryText.includes("\"Documentation\"")) {
-        console.log("Attempting direct query for Documentation category");
-        try {
-          const { data, error } = await this.client
-            .from('document_types')
-            .select('*')
-            .eq('category', 'Documentation');
-            
-          if (error) {
-            console.log(`Direct query failed: ${error.message}`);
-          } else {
-            console.log(`Direct query successful, found ${data?.length || 0} records`);
-            return data;
-          }
-        } catch (directError) {
-          console.log(`Error in direct query: ${directError instanceof Error ? directError.message : 'Unknown error'}`);
         }
       }
       
@@ -303,26 +192,6 @@ class SimpleSupabaseService {
         Logger.warn(`RPC method not available: ${rpcError instanceof Error ? rpcError.message : 'Unknown error'}`);
       }
       
-      // Last resort: check for specific known queries and handle them natively
-      if (queryText.includes("document_types") && queryText.includes("Documentation")) {
-        console.log("Last resort: Using direct document_types query for Documentation category");
-        try {
-          const { data, error } = await this.client
-            .from('document_types')
-            .select('*')
-            .eq('category', 'Documentation');
-            
-          if (error) {
-            console.log(`Last resort query failed: ${error.message}`);
-          } else {
-            console.log(`Last resort query successful, found ${data?.length || 0} records`);
-            return data;
-          }
-        } catch (lastError) {
-          console.log(`Error in last resort query: ${lastError instanceof Error ? lastError.message : 'Unknown error'}`);
-        }
-      }
-      
       throw new Error("No method available to execute this query directly");
     } catch (error) {
       Logger.error(`Error executing query: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -342,34 +211,29 @@ async function lookupPrompt(promptName: string, outputToMarkdown: boolean = fals
   
   // Override console.log to capture output to our results array
   const originalConsoleLog = console.log;
+  
   if (outputToMarkdown) {
     console.log = (...args) => {
-      // Still output to the console
       originalConsoleLog(...args);
-      // Capture the output to our results array
       results.push(args.join(' '));
     };
   }
-  
+
   try {
-    // Hardcode Supabase URL and key for testing since config might not be loading properly
-    const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project-id.supabase.co';
+    // Initialize services
+    const supabaseUrl = process.env.SUPABASE_URL || '';
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
     
-    // Debug configuration
-    console.log('Current configuration:');
-    console.log(`- Using Supabase URL: ${supabaseUrl.replace(/^(https?:\/\/[^\/]+).*$/, '$1...')}`);
-    console.log(`- Using Supabase Key: ${supabaseKey ? supabaseKey.substring(0, 5) + '...' : 'Not set'}`);
-    
-    // Initialize services
-    const supabaseService = new SimpleSupabaseService(supabaseUrl, supabaseKey);
+    // Initialize our services - we use SupabaseService for standard operations
+    // and CustomQueryExecutor for the custom SQL queries
+    const supabaseService = new SupabaseService(supabaseUrl, supabaseKey);
+    const queryExecutor = new CustomQueryExecutor(supabaseUrl, supabaseKey);
     const fileService = new FileService();
-    
-    // Step 1: Find the prompt by name
+
+    // Step 1: Find prompt by name
     Logger.info(`Looking up prompt: ${promptName}`);
-    
     let prompt: Prompt | null = null;
-    
+
     try {
       prompt = await supabaseService.getPromptByName(promptName);
       if (prompt) {
@@ -385,6 +249,64 @@ async function lookupPrompt(promptName: string, outputToMarkdown: boolean = fals
         console.log(prompt.content || 'No content available in the database');
       } else {
         console.log(`No prompt found in database with name: ${promptName}`);
+        
+        // Try to find the prompt on disk
+        try {
+          console.log(`\nTrying to load prompt from disk...`);
+          const promptFileDir = path.join(process.cwd(), 'prompts');
+          const possiblePaths = [
+            path.join(promptFileDir, `${promptName}.md`),
+            path.join(promptFileDir, promptName),
+            path.join(process.cwd(), promptName)
+          ];
+          
+          let promptFilePath = null;
+          let promptContent = null;
+          
+          for (const tryPath of possiblePaths) {
+            if (fs.existsSync(tryPath)) {
+              promptFilePath = tryPath;
+              promptContent = fs.readFileSync(tryPath, 'utf8');
+              break;
+            }
+          }
+          
+          if (promptContent) {
+            console.log(`Found prompt file on disk: ${promptFilePath}`);
+            console.log('\n=== PROMPT CONTENT FROM DISK ===');
+            console.log(promptContent);
+            
+            // Try to extract metadata from the prompt file using front matter or <!-- --> comments
+            const metadataMatch = promptContent.match(/<!--\s*([\s\S]*?)\s*-->/);
+            if (metadataMatch && metadataMatch[1]) {
+              try {
+                const metadata = JSON.parse(metadataMatch[1]);
+                
+                // Create a prompt object from the file content
+                prompt = {
+                  id: 'local-file',
+                  name: promptName,
+                  content: promptContent,
+                  description: 'Loaded from local file',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  metadata: metadata
+                };
+                
+                console.log('\n=== METADATA FROM PROMPT FILE ===');
+                console.log(JSON.stringify(metadata, null, 2));
+              } catch (parseError) {
+                console.log(`Error parsing metadata from prompt file: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+              }
+            } else {
+              console.log('No metadata found in prompt file');
+            }
+          } else {
+            console.log(`Could not find prompt file on disk. Tried: ${possiblePaths.join(', ')}`);
+          }
+        } catch (diskError) {
+          console.log(`Error reading prompt from disk: ${diskError instanceof Error ? diskError.message : 'Unknown error'}`);
+        }
       }
     } catch (error) {
       console.log(`Error accessing database: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -433,9 +355,6 @@ async function lookupPrompt(promptName: string, outputToMarkdown: boolean = fals
       console.log('Cannot fetch relationships without database access or prompt ID');
     }
     
-    // We're now using the prompt content from the database instead of reading the file from disk
-    // The prompt.content field is the source of truth
-    
     // Step 4: Check for database query in metadata and execute it
     if (prompt && prompt.metadata) {
       console.log('\n=== PROMPT METADATA ===');
@@ -450,7 +369,7 @@ async function lookupPrompt(promptName: string, outputToMarkdown: boolean = fals
           console.log(`Query: ${queryText}`);
           
           // Execute the query from metadata
-          const data = await supabaseService.executeCustomQuery(queryText);
+          const data = await queryExecutor.executeCustomQuery(queryText);
           
           // Add count of records returned to help with troubleshooting
           const recordCount = Array.isArray(data) ? data.length : 1;
@@ -489,6 +408,7 @@ async function lookupPrompt(promptName: string, outputToMarkdown: boolean = fals
                 console.log('---');
               } else {
                 // Try alternative locations if first attempt fails
+                let found = false;
                 const alternativePaths = [
                   // Remove leading slash
                   path.join(process.cwd(), pkgFile.path.replace(/^\//, '')),
@@ -500,17 +420,20 @@ async function lookupPrompt(promptName: string, outputToMarkdown: boolean = fals
                     : null
                 ].filter(Boolean) as string[];
                 
-                let found = false;
                 for (const altPath of alternativePaths) {
-                  const altResult = fileService.readFile(altPath);
-                  if (altResult.success) {
-                    console.log(`File found at alternative location: ${altPath}`);
-                    console.log(`Content (${altResult.stats?.lines} lines, ${altResult.stats?.size} bytes):`);
-                    console.log('---');
-                    console.log(altResult.content || '');
-                    console.log('---');
-                    found = true;
-                    break;
+                  try {
+                    const altResult = fileService.readFile(altPath);
+                    if (altResult.success) {
+                      console.log(`File found at alternative location: ${altPath}`);
+                      console.log(`Content (${altResult.stats?.lines} lines, ${altResult.stats?.size} bytes):`);
+                      console.log('---');
+                      console.log(altResult.content || '');
+                      console.log('---');
+                      found = true;
+                      break;
+                    }
+                  } catch (e) {
+                    console.log(`Error reading alternative path ${altPath}: ${e instanceof Error ? e.message : 'Unknown error'}`);
                   }
                 }
                 

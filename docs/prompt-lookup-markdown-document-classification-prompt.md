@@ -1,17 +1,14 @@
 # Prompt Lookup: markdown-document-classification-prompt
 
-Generated: 2025-03-18T00:02:42.484Z
+Generated: 2025-03-18T00:54:37.961Z
 
-Current configuration:
-- Using Supabase URL: https://jdksnfkupzywjdfefkyj.supabase.co...
-- Using Supabase Key: eyJhb...
 
 === PROMPT DETAILS FROM DATABASE ===
 ID: 880480a9-3241-48f0-bb83-a93a81de8553
 Name: markdown-document-classification-prompt
 Description: No description
 Created: 3/9/2025, 6:45:28 PM
-Updated: 3/17/2025, 1:18:43 PM
+Updated: 3/18/2025, 12:27:22 AM
 
 === PROMPT CONTENT FROM DATABASE ===
 "# Document Classification and Assessment Prompt\n\nYou are an expert document manager on a development team tasked with classifying and assessing markdown documentation files. Your job is to analyze the provided markdown file and determine which document type it best matches, then create a detailed assessment of its quality, relevance, and recommended status.\n\n## Input Context\n\nYou'll be provided with:\n1. A markdown file to analyze\n2. A list of document types defined in your system\n3. Current development architecture documentation\n4. Optional metadata about existing files in the repository\n\n## Instructions\n\n1. Carefully read the markdown file content.\n2. Compare against the provided document types to determine the most appropriate classification.\n3. Assess the document's quality, relevance, and potential value.\n4. Generate appropriate tags that capture the document's key topics.\n5. Determine a recommended status (KEEP, UPDATE, ARCHIVE, DELETE).\n6. Structure your response in the specified JSON format.\n\nYour assessment should consider:\n- How well the document aligns with current development architecture\n- The document's creation/modification date and its recency\n- The document's completeness and adherence to documentation standards\n- The document's practical value to developers\n\n## Response Format\n\nProvide your assessment in the following JSON format:\n\n```json\n{\n  \"id\": \"{{auto-generated UUID}}\",\n  \"file_path\": \"{{file_path}}\",\n  \"title\": \"{{document title}}\",\n  \"summary\": {\n    \"brief\": \"{{brief summary of the document}}\",\n    \"detailed\": {\n      \"purpose\": \"{{document purpose}}\",\n      \"key_components\": \"{{main sections/elements}}\",\n      \"practical_application\": \"{{how the document would be used}}\"\n    }\n  },\n  \"ai_generated_tags\": [\"{{tag1}}\", \"{{tag2}}\", \"{{tag3}}\", \"{{tag4}}\", \"{{tag5}}\"],\n  \"manual_tags\": null,\n  \"last_modified_at\": \"{{last_modified_date if available}}\",\n  \"last_indexed_at\": \"{{current_datetime}}\",\n  \"file_hash\": \"{{file_hash if available}}\",\n  \"metadata\": {\n    \"size\": {{file_size_in_bytes}},\n    \"isPrompt\": false\n  },\n  \"created_at\": \"{{creation_date if available, otherwise current_datetime}}\",\n  \"updated_at\": \"{{current_datetime}}\",\n  \"is_deleted\": false,\n  \"document_type_id\": \"{{matched document type id or null if UNCLASSIFIED}}\",\n  \"ai_assessment\": {\n    \"document_type\": \"{{matched document type or 'UNCLASSIFIED'}}\",\n    \"current_relevance\": {\n      \"score\": {{1-10 score}},\n      \"reasoning\": \"{{brief explanation of current relevance score}}\"\n    },\n    \"potential_relevance\": {\n      \"score\": {{1-10 score}},\n      \"reasoning\": \"{{brief explanation of potential future relevance}}\"\n    },\n    \"status_recommendation\": \"{{KEEP|UPDATE|ARCHIVE|DELETE}}\",\n    \"confidence\": {{1-10 score}},\n    \"reasoning\": \"{{explanation of the overall assessment and recommendations}}\"\n  },\n  \"assessment_quality_score\": {{1-10 overall quality score}},\n  \"assessment_created_at\": \"{{current_datetime}}\",\n  \"assessment_updated_at\": \"{{current_datetime}}\",\n  \"assessment_model\": \"Claude 3.7 Sonnet\",\n  \"assessment_version\": 1,\n  \"assessment_date\": \"{{current_date}}\"\n}\n```\n\nIf the document doesn't match any predefined document types, explain why in your reasoning and classify as \"UNCLASSIFIED\".\n\nFor the status recommendation:\n- KEEP: Document is relevant, accurate, and valuable as-is\n- UPDATE: Document contains useful information but needs updates\n- ARCHIVE: Document has historical value but is no longer actively relevant\n- DELETE: Document has little or no value and should be removed\n\nScore definitions:\n- Current/Potential Relevance (1-10): How valuable the document is now/could be in future\n- Confidence (1-10): How confident you are in your assessment\n- Assessment Quality Score (1-10): Overall quality of your assessment\n\n## Example Workflow\n\nWhen analyzing a document, follow this general process:\n1. First understand the document's content and structure\n2. Compare against document types to find the best match\n3. Evaluate quality based on completeness, clarity, and accuracy\n4. Assess relevance to current development practices\n5. Generate meaningful tags based on content\n6. Make a status recommendation with supporting reasoning\n\nFor JSONB storage compatibility, ensure:\n- All JSON is properly formatted and validated\n- Nested objects are used for structured data\n- Text fields have reasonable length limitations\n- Date fields follow ISO 8601 format (YYYY-MM-DDTHH:MM:SS.sss+00:00)\n- Numeric scores are integers in the specified ranges\n"
@@ -531,7 +528,7 @@ Documentation should focus on providing practical guidance, code examples, and c
     "estimatedCost": "",
     "successCriteria": ""
   },
-  "databaseQuery": "select * from document_types where category = \"Documentation\";",
+  "databaseQuery": "select * from document_types where category = 'Documentation';",
   "relatedAssets": [
     "667ae774-15df-4657-ab13-925e1b613f97",
     "40f9d0d9-029b-4e42-a37b-d8c1cf0d5a89"
@@ -540,12 +537,10 @@ Documentation should focus on providing practical guidance, code examples, and c
 }
 
 === DATABASE QUERY RESULTS ===
-Query: select * from document_types where category = "Documentation";
-Executing query: select * from document_types where category = "Documentation";
-Converting double quotes to single quotes for SQL compatibility
-Normalized query: select * from document_types where category = 'Documentation';
-Attempting direct query for Documentation category
-Direct query successful, found 8 records
+Query: select * from document_types where category = 'Documentation';
+Executing query: select * from document_types where category = 'Documentation';
+Detected Documentation category query - using direct table access
+Found 8 records with category=Documentation
 Records found: 8
 [
   {
