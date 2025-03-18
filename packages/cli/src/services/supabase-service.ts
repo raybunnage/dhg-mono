@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import path from 'path';
+import fs from 'fs';
 import { Logger } from '../utils/logger';
 import { AppError, ErrorHandler } from '../utils/error-handler';
 import { DocumentType, Prompt, Relationship } from '../models';
@@ -55,12 +56,228 @@ export interface QueryOptions {
   limit?: number;
 }
 
+/**
+ * Environment and utility functions for Supabase connections
+ */
+export interface EnvDiagnostics {
+  envFiles: Record<string, {exists: boolean, variables: Record<string, string | null>}>;
+  supabaseUrl: string | null;
+  serviceKey: string | null;
+  anonKey: string | null;
+  tablesInfo: Array<{name: string, exists: boolean, columns: Array<{name: string, type: string}>}> | null;
+  connectionSuccess: boolean;
+}
+
 export class SupabaseService {
   private client: SupabaseClient;
   
   constructor(url: string, key: string) {
     Logger.debug('Initializing Supabase client');
     this.client = createClient(url, key);
+  }
+  
+  /**
+   * Read and log environment variables from a file
+   * @param filePath Path to the environment file
+   * @returns Object containing environment variables (masking sensitive values)
+   */
+  static readEnvFile(filePath: string): {exists: boolean, variables: Record<string, string | null>} {
+    try {
+      if (fs.existsSync(filePath)) {
+        Logger.debug(`Reading ${filePath} for diagnostics...`);
+        const content = fs.readFileSync(filePath, 'utf8');
+        const envVars: Record<string, string | null> = {};
+        
+        content.split('\n').forEach(line => {
+          // Skip comments and empty lines
+          if (line.trim() && !line.trim().startsWith('#')) {
+            const [key, ...valueParts] = line.split('=');
+            const value = valueParts.join('='); // Rejoin in case value contains =
+            
+            if (key) {
+              // Mask sensitive values
+              if (key.includes('KEY') || key.includes('SECRET') || key.includes('TOKEN') || 
+                  key.includes('PASSWORD') || key.includes('PASS')) {
+                envVars[key.trim()] = value ? '[REDACTED]' : null;
+              } else {
+                envVars[key.trim()] = value ? value.trim() : null;
+              }
+            }
+          }
+        });
+        
+        return { exists: true, variables: envVars };
+      } else {
+        return { exists: false, variables: {} };
+      }
+    } catch (error) {
+      Logger.error(`Error reading ${filePath}:`, error);
+      return { exists: false, variables: {} };
+    }
+  }
+  
+  /**
+   * Run environment diagnostics to check for configuration issues
+   * @returns Diagnostic information about environment and connection status
+   */
+  static async runEnvDiagnostics(): Promise<EnvDiagnostics> {
+    const results: EnvDiagnostics = {
+      envFiles: {},
+      supabaseUrl: null,
+      serviceKey: null,
+      anonKey: null,
+      tablesInfo: null,
+      connectionSuccess: false
+    };
+    
+    // Check for environment files
+    const cwd = process.cwd();
+    const envFiles = [
+      '.env',
+      '.env.local',
+      '.env.development',
+      '.env.production'
+    ];
+    
+    for (const file of envFiles) {
+      const filePath = path.join(cwd, file);
+      results.envFiles[file] = this.readEnvFile(filePath);
+    }
+    
+    // Get environment variables that matter for Supabase
+    results.supabaseUrl = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL || null;
+    results.serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : null;
+    results.anonKey = process.env.SUPABASE_ANON_KEY ? '[SET]' : null;
+    
+    if (!results.supabaseUrl || (!results.serviceKey && !results.anonKey)) {
+      Logger.error('Missing required Supabase environment variables');
+      return results;
+    }
+    
+    // Try to connect to Supabase and check tables
+    try {
+      // Use service key with fallback to anon key
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+      const supabase = createClient(results.supabaseUrl, key);
+      
+      // Test connection with a simple query
+      const { error } = await supabase.from('_prisma_migrations').select('id').limit(1);
+      
+      if (error) {
+        Logger.warn(`Connection test error: ${error.message}`);
+        
+        // Try with a different table
+        const { error: error2 } = await supabase.from('document_types').select('id').limit(1);
+        
+        if (error2) {
+          Logger.error(`Second connection test error: ${error2.message}`);
+          return results;
+        }
+      }
+      
+      // Connection successful
+      results.connectionSuccess = true;
+      
+      // Check for important tables
+      results.tablesInfo = [];
+      const tables = ['documentation_files', 'document_types', 'scripts'];
+      
+      for (const table of tables) {
+        try {
+          // Check if table exists and get its columns
+          const { data, error: tableError } = await supabase
+            .from('information_schema.columns')
+            .select('column_name, data_type')
+            .eq('table_schema', 'public')
+            .eq('table_name', table);
+          
+          if (tableError || !data || data.length === 0) {
+            results.tablesInfo.push({
+              name: table,
+              exists: false,
+              columns: []
+            });
+          } else {
+            results.tablesInfo.push({
+              name: table,
+              exists: true,
+              columns: data.map(column => ({
+                name: column.column_name,
+                type: column.data_type
+              }))
+            });
+          }
+        } catch (tableError) {
+          Logger.error(`Error checking table ${table}:`, tableError);
+          results.tablesInfo.push({
+            name: table,
+            exists: false,
+            columns: []
+          });
+        }
+      }
+      
+    } catch (error) {
+      Logger.error('Error during diagnostics:', error);
+    }
+    
+    return results;
+  }
+  
+  /**
+   * Normalize a file path to use the project-relative format
+   * Converts paths like /Users/username/path/to/dhg-mono/apps/my-app/file.js
+   * to apps/my-app/file.js
+   * 
+   * @param filePath The file path to normalize
+   * @returns The normalized file path
+   */
+  static normalizePath(filePath: string): string {
+    if (!filePath || typeof filePath !== 'string') {
+      return filePath;
+    }
+    
+    let normalizedPath = filePath;
+    
+    // Regular expression patterns to match
+    const appsFolderPattern = /(?:\/|^)apps\/([^/].+)/i;
+    const docsFolderPattern = /(?:\/|^)docs\/([^/].+)/i;
+    const srcFolderPattern = /(?:\/|^)src\/([^/].+)/i;
+    const packagesFolderPattern = /(?:\/|^)packages\/([^/].+)/i;
+    
+    // Match patterns for top-level folders
+    let match;
+    if (match = filePath.match(appsFolderPattern)) {
+      normalizedPath = 'apps/' + match[1];
+    } else if (match = filePath.match(docsFolderPattern)) {
+      normalizedPath = 'docs/' + match[1];
+    } else if (match = filePath.match(srcFolderPattern)) {
+      normalizedPath = 'src/' + match[1];
+    } else if (match = filePath.match(packagesFolderPattern)) {
+      normalizedPath = 'packages/' + match[1];
+    } else {
+      // For any other paths, remove everything up to the last directory
+      // that isn't a known top-level folder
+      const parts = filePath.split('/');
+      const validParts = parts.filter(part => part && part !== 'dhg-mono' && 
+        !part.includes('Users') && !part.includes('Documents') && !part.includes('github'));
+      normalizedPath = validParts.join('/');
+    }
+    
+    // Remove any leading slash
+    normalizedPath = normalizedPath.replace(/^\/+/, '');
+    
+    return normalizedPath;
+  }
+  
+  /**
+   * Get diagnostic information about Supabase connection and environment
+   * @returns Diagnostic information
+   */
+  async getDiagnostics(): Promise<EnvDiagnostics> {
+    return await ErrorHandler.wrap(async () => {
+      return SupabaseService.runEnvDiagnostics();
+    }, 'Failed to run Supabase diagnostics');
   }
   
   /**
@@ -283,26 +500,33 @@ export class SupabaseService {
       // Extract the filename and basename from the path
       const filename = path.basename(filePath);
       
-      // Normalize the path to handle different formats
+      // 1. Use SupabaseService.normalizePath to get a standard format
+      const standardPath = SupabaseService.normalizePath(filePath);
+      Logger.debug(`Normalized path using standard function: ${standardPath}`);
+      
+      // Create a list of paths to try
       const normalizedPaths = [];
       
-      // 1. Use the exact path provided
+      // Start with the standardized path from our normalization function
+      normalizedPaths.push(standardPath);
+      
+      // 2. Use the exact path provided
       normalizedPaths.push(filePath);
       
-      // 2. If the path starts with a project root, extract the relative part
+      // 3. If the path starts with a project root, extract the relative part
       // Look for common patterns like /Users/.../dhg-mono/apps/... or /home/.../dhg-mono/...
       const monoRepoMatch = filePath.match(/^.*?(\/dhg-mono\/)(.*)/);
       if (monoRepoMatch && monoRepoMatch[2]) {
         normalizedPaths.push(monoRepoMatch[2]);
       }
       
-      // 3. Handle src/ paths for app-specific components
+      // 4. Handle src/ paths for app-specific components
       if (filePath.includes('/src/') && !normalizedPaths.includes('src/' + filename)) {
         normalizedPaths.push('src/' + path.basename(path.dirname(filePath)) + '/' + filename);
         normalizedPaths.push('src/' + filename);
       }
       
-      // 4. Handle apps/ paths for monorepo components
+      // 5. Handle apps/ paths for monorepo components
       if (filePath.includes('/apps/')) {
         const appsMatch = filePath.match(/.*?\/apps\/([^\/]+)\/(.*)/);
         if (appsMatch && appsMatch[2]) {
@@ -310,13 +534,15 @@ export class SupabaseService {
         }
       }
       
-      // 5. Add just the filename as last resort
+      // 6. Add just the filename as last resort
       normalizedPaths.push(filename);
       
-      Logger.debug(`Trying these normalized paths: ${normalizedPaths.join(', ')}`);
+      // Remove duplicates
+      const uniquePaths = [...new Set(normalizedPaths)];
+      Logger.debug(`Trying these normalized paths: ${uniquePaths.join(', ')}`);
       
       // Try each path format until we find a match
-      for (const normPath of normalizedPaths) {
+      for (const normPath of uniquePaths) {
         const { data, error } = await this.client
           .from('documentation_files')
           .select('*')
@@ -360,6 +586,118 @@ export class SupabaseService {
       Logger.warn(`No documentation file found matching any of the attempted paths or filename: ${filename}`);
       return null;
     }, `Failed to get documentation file by path: ${filePath}`);
+  }
+  
+  /**
+   * Update file paths in documentation_files to use normalized format
+   * @param dryRun If true, only show what would be updated without making changes
+   * @returns Information about the update operation
+   */
+  async updateDocumentationFilePaths(dryRun: boolean = false): Promise<{
+    totalPaths: number;
+    pathsToUpdate: number;
+    updatedPaths: number;
+    failedUpdates: number;
+    details: Array<{id: string, originalPath: string, normalizedPath: string, updated: boolean}>;
+  }> {
+    return await ErrorHandler.wrap(async () => {
+      Logger.debug('Looking for file paths to normalize in documentation_files table');
+      
+      // Get all documentation files
+      const { data, error } = await this.client
+        .from('documentation_files')
+        .select('id, file_path')
+        .order('file_path');
+      
+      if (error) {
+        throw new AppError(
+          `Failed to get documentation files: ${error.message}`,
+          'SUPABASE_ERROR',
+          error
+        );
+      }
+      
+      if (!data || data.length === 0) {
+        Logger.debug('No documentation files found');
+        return {
+          totalPaths: 0,
+          pathsToUpdate: 0,
+          updatedPaths: 0,
+          failedUpdates: 0,
+          details: []
+        };
+      }
+      
+      Logger.debug(`Found ${data.length} documentation files`);
+      
+      // Determine which paths need to be updated
+      const pathsToUpdate: Array<{id: string, originalPath: string, normalizedPath: string, updated: boolean}> = [];
+      
+      for (const file of data) {
+        if (!file.file_path) continue;
+        
+        const normalizedPath = SupabaseService.normalizePath(file.file_path);
+        
+        if (normalizedPath !== file.file_path) {
+          pathsToUpdate.push({
+            id: file.id,
+            originalPath: file.file_path,
+            normalizedPath,
+            updated: false
+          });
+        }
+      }
+      
+      Logger.debug(`Found ${pathsToUpdate.length} paths that need to be normalized`);
+      
+      // If dry run, just return the results without making changes
+      if (dryRun) {
+        Logger.debug('Dry run - not making any changes');
+        return {
+          totalPaths: data.length,
+          pathsToUpdate: pathsToUpdate.length,
+          updatedPaths: 0,
+          failedUpdates: 0,
+          details: pathsToUpdate
+        };
+      }
+      
+      // Update each path
+      let updatedPaths = 0;
+      let failedUpdates = 0;
+      
+      for (const path of pathsToUpdate) {
+        try {
+          const { error: updateError } = await this.client
+            .from('documentation_files')
+            .update({ file_path: path.normalizedPath })
+            .eq('id', path.id);
+          
+          if (updateError) {
+            Logger.error(`Failed to update path ${path.id}: ${updateError.message}`);
+            failedUpdates++;
+            continue;
+          }
+          
+          updatedPaths++;
+          path.updated = true;
+          Logger.debug(`Updated path ${path.id} from "${path.originalPath}" to "${path.normalizedPath}"`);
+        } catch (error) {
+          Logger.error(`Error updating path ${path.id}:`, error);
+          failedUpdates++;
+        }
+      }
+      
+      Logger.debug(`Successfully updated ${updatedPaths} of ${pathsToUpdate.length} paths`);
+      
+      return {
+        totalPaths: data.length,
+        pathsToUpdate: pathsToUpdate.length,
+        updatedPaths,
+        failedUpdates,
+        details: pathsToUpdate
+      };
+    }, 'Failed to update documentation file paths');
   }
   
   /**
