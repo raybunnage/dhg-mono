@@ -805,12 +805,13 @@ export class SupabaseService {
       }
       
       // Format the relationships for easier consumption
-      const formattedRelationships = relationshipsData.map(rel => {
+      const formattedRelationships = relationshipsData.map((rel: any) => {
         // Check if the script is the source or target
-        const isSource = rel.source_script.id === script.id;
+        const isSource = rel.source_script && rel.source_script.id === script.id;
         
         // The related script is the opposite of what the current script is
-        const relatedScript = isSource ? rel.target_script : rel.source_script;
+        const relatedScript = isSource && rel.target_script ? rel.target_script : 
+                             (!isSource && rel.source_script ? rel.source_script : {id: '', file_path: '', title: ''});
         
         return {
           id: rel.id,
@@ -818,9 +819,9 @@ export class SupabaseService {
           confidence: rel.confidence,
           notes: rel.notes,
           related_script: {
-            id: relatedScript.id,
-            file_path: relatedScript.file_path,
-            title: relatedScript.title
+            id: relatedScript.id || '',
+            file_path: relatedScript.file_path || '',
+            title: relatedScript.title || ''
           },
           is_source: isSource
         };
