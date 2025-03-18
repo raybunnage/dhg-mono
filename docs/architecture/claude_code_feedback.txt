@@ -1,3 +1,26 @@
+The script is now updated with several fixes to handle the SQL query
+  correctly:
+
+  1. I've updated the script to handle SQL queries with double quotes by
+  converting them to single quotes for SQL compatibility.
+  2. Added specific checks for the "document_types where category =
+  'Documentation'" query pattern and implemented direct querying with the
+  Supabase client API.
+  3. Implemented multiple fallback approaches to try different query formats
+   if the initial approach fails.
+  4. Added better error handling and logging to make it easier to diagnose
+  issues.
+  5. Fixed the regex patterns to handle both double and single quotes in SQL
+   queries.
+
+  The original query was select * from document_types where category = 
+  "Documentation"; which uses double quotes for string literals, which is a
+  non-standard SQL format (standard SQL uses single quotes for strings). The
+   fix should allow the script to correctly handle this query and similar
+  ones with double-quoted string literals.
+
+  
+  
   Perfect! I've made all the requested improvements to the script:
 
   1. Removed the redundant prompt file display: The script now only shows

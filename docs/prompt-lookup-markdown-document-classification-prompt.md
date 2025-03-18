@@ -1,6 +1,6 @@
 # Prompt Lookup: markdown-document-classification-prompt
 
-Generated: 2025-03-17T15:26:07.248Z
+Generated: 2025-03-18T00:02:42.484Z
 
 Current configuration:
 - Using Supabase URL: https://jdksnfkupzywjdfefkyj.supabase.co...
@@ -542,7 +542,501 @@ Documentation should focus on providing practical guidance, code examples, and c
 === DATABASE QUERY RESULTS ===
 Query: select * from document_types where category = "Documentation";
 Executing query: select * from document_types where category = "Documentation";
-Error executing query: No method available to execute this query directly
-Database query could not be executed due to connection issues.
+Converting double quotes to single quotes for SQL compatibility
+Normalized query: select * from document_types where category = 'Documentation';
+Attempting direct query for Documentation category
+Direct query successful, found 8 records
+Records found: 8
+[
+  {
+    "id": "73ee8695-2750-453f-ad6a-929a6b64bc74",
+    "document_type": "README",
+    "current_num_of_type": 0,
+    "description": "A markdown document that serves as the primary introduction and documentation for a project or repository. It typically contains project overview, installation instructions, usage examples, and contribution guidelines.",
+    "mime_type": "text/markdown",
+    "file_extension": "md",
+    "document_type_counts": 0,
+    "category": "Documentation",
+    "created_at": "2025-03-09T11:41:42.719+00:00",
+    "updated_at": "2025-03-09T11:41:42.719+00:00",
+    "required_fields": [
+      "title",
+      "project_description",
+      "installation_section"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "analyzers": {
+        "clarity_assessment": {
+          "output": "qualitative evaluation",
+          "description": "Assess how clear and understandable the instructions are"
+        },
+        "completeness_score": {
+          "output": "score 0-100",
+          "description": "Evaluate how complete the README is based on presence of key sections"
+        }
+      },
+      "extractors": {
+        "dependencies": {
+          "format": "array",
+          "description": "Identify and list any dependencies mentioned in installation instructions"
+        },
+        "code_examples": {
+          "format": "array",
+          "description": "Extract code examples for indexing and reference"
+        },
+        "project_summary": {
+          "max_length": 200,
+          "description": "Extract a concise summary of the project's purpose and features"
+        }
+      },
+      "generators": {
+        "table_of_contents": {
+          "trigger": "missing_toc",
+          "description": "Generate a table of contents based on headings if not present"
+        },
+        "improvement_suggestions": {
+          "trigger": "low_clarity_score",
+          "description": "Suggest improvements for unclear sections or missing information"
+        }
+      }
+    },
+    "validation_rules": {
+      "max_length": 50000,
+      "min_length": 300,
+      "required_sections": [
+        "Introduction/Overview",
+        "Installation",
+        "Usage"
+      ],
+      "markdown_validation": {
+        "require_headings": true,
+        "max_heading_depth": 4,
+        "require_code_blocks": false
+      }
+    }
+  },
+  {
+    "id": "e54ebd13-79d1-4fe2-93db-6f25c9b6a9d0",
+    "document_type": "Deployment Environment Guide",
+    "current_num_of_type": 0,
+    "description": "Comprehensive documentation for managing project deployment processes, environment configurations, and deployment workflows across different stages (development, staging, production).",
+    "mime_type": "[\"text/markdown\",\"application/pdf\",\"application/vnd.openxmlformats-officedocument.wordprocessingml.document\"]",
+    "file_extension": "[\"md\",\"pdf\",\"docx\"]",
+    "document_type_counts": 0,
+    "category": "Documentation",
+    "created_at": "2025-03-09T11:50:15.504+00:00",
+    "updated_at": "2025-03-09T11:50:15.504+00:00",
+    "required_fields": [
+      "title",
+      "environment_types",
+      "deployment_process",
+      "configuration_details",
+      "prerequisites"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "generate_summary": "Create an executive summary of the deployment process for quick reference",
+      "suggest_improvements": "Analyze the deployment process and suggest optimizations based on best practices",
+      "detect_security_risks": "Flag potential security issues in the deployment process",
+      "version_compatibility": "Identify software version dependencies and potential compatibility issues",
+      "identify_deployment_commands": "Extract all deployment commands and scripts for automation purposes",
+      "extract_environment_variables": "Identify and list all environment variables mentioned in the document"
+    },
+    "validation_rules": {
+      "environment_types": "Must include at least development and production environments",
+      "deployment_process": "Must contain step-by-step instructions with command examples",
+      "configuration_details": "Must include environment variables and configuration file locations",
+      "security_considerations": "Should include access control and credential management information"
+    }
+  },
+  {
+    "id": "3e00c51b-acad-457a-b3b9-cdd3b6f15a4f",
+    "document_type": "Git Repository Journal",
+    "current_num_of_type": 0,
+    "description": "A structured log for tracking Git operations, commit history, and command reference for a repository. Helps developers document what was checked in, when changes occurred, and which Git commands to use for specific situations.",
+    "mime_type": "text/markdown",
+    "file_extension": "md",
+    "document_type_counts": 0,
+    "category": "Documentation",
+    "created_at": "2025-03-09T11:52:53.145+00:00",
+    "updated_at": "2025-03-09T11:52:53.145+00:00",
+    "required_fields": [
+      "repository_name",
+      "entries"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "analysis": {
+        "command_usage": "Analyze command usage to recommend more efficient alternatives",
+        "commit_patterns": "Identify patterns in commit frequency and types",
+        "workflow_optimization": "Suggest improvements to Git workflow based on journal entries"
+      },
+      "extraction": {
+        "from_git_log": "Parse `git log` output to automatically populate entries",
+        "from_git_status": "Extract current repository status information"
+      },
+      "generation": {
+        "explanations": "Provide clear explanations for complex Git operations",
+        "best_practices": "Generate best practices for common Git workflows based on repository activity patterns",
+        "command_suggestions": "Suggest appropriate Git commands based on described scenarios"
+      }
+    },
+    "validation_rules": {
+      "entries": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "date",
+            "action_type",
+            "description"
+          ],
+          "properties": {
+            "date": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "action_type": {
+              "enum": [
+                "commit",
+                "merge",
+                "branch",
+                "rebase",
+                "pull",
+                "push",
+                "tag",
+                "other"
+              ],
+              "type": "string"
+            },
+            "branch_name": {
+              "type": "string"
+            },
+            "commit_hash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{7,40}$",
+              "required_if": {
+                "action_type": [
+                  "commit",
+                  "merge"
+                ]
+              }
+            },
+            "description": {
+              "type": "string",
+              "min_length": 5
+            },
+            "commands_used": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "notes": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "files_changed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "min_items": 1
+      },
+      "best_practices": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "scenario": {
+              "type": "string"
+            },
+            "explanation": {
+              "type": "string"
+            },
+            "recommended_commands": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "repository_name": {
+        "type": "string",
+        "max_length": 100,
+        "min_length": 1
+      }
+    }
+  },
+  {
+    "id": "e9d3e473-5315-4837-9f5f-61f150cbd137",
+    "document_type": "Code Documentation Markdown",
+    "current_num_of_type": 0,
+    "description": "Markdown files specifically for documenting project code, including function descriptions, parameter details, usage examples, and implementation notes.",
+    "mime_type": "text/markdown",
+    "file_extension": "md",
+    "document_type_counts": 0,
+    "category": "Documentation",
+    "created_at": "2025-03-07T06:36:28.847+00:00",
+    "updated_at": "2025-03-09T11:43:03.896+00:00",
+    "required_fields": [
+      "title",
+      "description",
+      "module_or_class_reference"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "linking": {
+        "link_to_dependency_docs": true,
+        "identify_cross_references": true,
+        "suggest_related_documentation": true
+      },
+      "analysis": {
+        "complexity_assessment": true,
+        "documentation_coverage": true,
+        "api_stability_indicators": true
+      },
+      "extraction": {
+        "detect_code_examples": true,
+        "identify_dependencies": true,
+        "extract_parameter_types": true,
+        "identify_functions_and_methods": true
+      },
+      "enhancement": {
+        "verify_example_validity": true,
+        "generate_missing_examples": false,
+        "suggest_missing_documentation": true,
+        "check_documentation_completeness": true
+      }
+    },
+    "validation_rules": {
+      "links": {
+        "internal_links_must_be_valid": true,
+        "external_links_must_be_labeled": true
+      },
+      "content": {
+        "max_heading_depth": 4,
+        "must_include_code_examples": true,
+        "must_have_function_descriptions": true
+      },
+      "structure": {
+        "min_sections": 3,
+        "must_have_heading": true,
+        "required_sections": [
+          "Overview",
+          "Usage",
+          "API Reference"
+        ]
+      }
+    }
+  },
+  {
+    "id": "adbe8042-dcc4-4402-977a-1fa04688945d",
+    "document_type": "Technical Specification",
+    "current_num_of_type": 0,
+    "description": "Structured markdown documentation that describes software specifications, implementation details, and coding guidelines to facilitate AI-assisted code generation.",
+    "mime_type": "text/markdown",
+    "file_extension": "md",
+    "document_type_counts": 0,
+    "category": "Documentation",
+    "created_at": "2025-03-09T11:46:09.967+00:00",
+    "updated_at": "2025-03-09T11:46:09.967+00:00",
+    "required_fields": [
+      "title",
+      "overview",
+      "requirements",
+      "implementation_guidelines"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "code_extraction": {
+        "validate_syntax": true,
+        "identify_languages": true,
+        "extract_code_blocks": true
+      },
+      "requirement_analysis": {
+        "detect_ambiguities": true,
+        "identify_functional_requirements": true,
+        "identify_non_functional_requirements": true
+      },
+      "code_generation_hints": {
+        "identify_return_values": true,
+        "extract_parameter_types": true,
+        "detect_error_handling_requirements": true
+      },
+      "implementation_guidance": {
+        "detect_technology_stack": true,
+        "extract_design_patterns": true,
+        "identify_architecture_components": true
+      }
+    },
+    "validation_rules": {
+      "max_length": 50000,
+      "min_length": 500,
+      "content_checks": {
+        "code_blocks_present": true,
+        "technical_specificity": "high"
+      },
+      "required_sections": [
+        "# Overview",
+        "# Requirements",
+        "# Implementation Guidelines"
+      ],
+      "recommended_sections": [
+        "# API Specifications",
+        "# Code Examples",
+        "# Testing Strategy",
+        "# Performance Considerations"
+      ]
+    }
+  },
+  {
+    "id": "c903f553-baf2-482b-bfc9-bade16d683d1",
+    "document_type": "External Library Documentation",
+    "current_num_of_type": 0,
+    "description": "Markdown documentation files that describe external libraries, frameworks, or APIs. These documents contain explanations, usage examples, and reference information for third-party code that is used within projects but not developed internally.",
+    "mime_type": "text/markdown",
+    "file_extension": "md",
+    "document_type_counts": 0,
+    "category": "Documentation",
+    "created_at": "2025-03-15T20:54:39.943+00:00",
+    "updated_at": "2025-03-15T20:54:39.943+00:00",
+    "required_fields": [
+      "library_name",
+      "version",
+      "purpose",
+      "main_features"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "detect_api_changes": true,
+      "identify_dependencies": true,
+      "suggest_usage_patterns": true,
+      "extract_library_details": true,
+      "tag_relevant_technologies": true,
+      "highlight_breaking_changes": true,
+      "generate_comparison_with_alternatives": false
+    },
+    "validation_rules": {
+      "max_heading_depth": 4,
+      "must_contain_code_examples": true,
+      "must_reference_external_source": true,
+      "must_include_version_information": true,
+      "should_include_installation_section": true
+    }
+  },
+  {
+    "id": "ad9336a0-613f-4632-906b-b691dc39c7df",
+    "document_type": "Solution Guide",
+    "current_num_of_type": 0,
+    "description": "Structured markdown files documenting specific coding fixes, workarounds, and solutions that have been verified to work. These guides help the AI learn from past successes when facing similar technical challenges.",
+    "mime_type": "text/markdown",
+    "file_extension": "md",
+    "document_type_counts": 0,
+    "category": "Documentation",
+    "created_at": "2025-03-09T11:48:10.007+00:00",
+    "updated_at": "2025-03-09T11:48:10.007+00:00",
+    "required_fields": [
+      "title",
+      "problem_statement",
+      "solution_approach",
+      "code_examples",
+      "verification_method"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "extract_error_patterns": true,
+      "categorize_by_root_cause": true,
+      "link_to_related_solutions": true,
+      "identify_solution_patterns": true,
+      "index_for_similarity_search": true,
+      "extract_programming_concepts": true
+    },
+    "validation_rules": {
+      "max_length": 10000,
+      "min_length": 200,
+      "must_contain_code_block": true,
+      "must_include_verification": true,
+      "must_have_problem_solution_structure": true
+    }
+  },
+  {
+    "id": "50c810a3-c4a6-4243-a7a4-6381eb42e0a3",
+    "document_type": "Script Report",
+    "current_num_of_type": 0,
+    "description": "A markdown document that contains both script output/results and documentation of the script development process itself. These documents serve as living artifacts that capture both the technical findings and the evolution of the script's development.",
+    "mime_type": "text/markdown",
+    "file_extension": "md",
+    "document_type_counts": 0,
+    "category": "Documentation",
+    "created_at": "2025-03-09T11:55:50.863+00:00",
+    "updated_at": "2025-03-09T11:55:50.863+00:00",
+    "required_fields": [
+      "title",
+      "script_purpose",
+      "development_notes",
+      "output_results"
+    ],
+    "legacy_document_type_id": null,
+    "is_ai_generated": true,
+    "content_schema": null,
+    "ai_processing_rules": {
+      "extract_metrics": {
+        "action": "data_extraction",
+        "description": "Identify and extract quantitative metrics or results from the output section"
+      },
+      "summarize_findings": {
+        "action": "text_summarization",
+        "description": "Create a concise summary of the script's key findings or outputs"
+      },
+      "extract_code_blocks": {
+        "action": "extract_structured_data",
+        "description": "Identify and extract all code blocks with their language specification"
+      },
+      "suggest_improvements": {
+        "action": "recommendation_generation",
+        "description": "Based on development notes and results, suggest potential improvements to the script"
+      },
+      "identify_development_stages": {
+        "action": "semantic_classification",
+        "description": "Analyze development notes to identify distinct stages of script evolution"
+      }
+    },
+    "validation_rules": {
+      "max_size_mb": 10,
+      "min_sections": 3,
+      "must_include_code_blocks": true,
+      "must_have_results_section": true,
+      "must_have_development_section": true
+    }
+  }
+]
 
 === PACKAGE.JSON FILES ===

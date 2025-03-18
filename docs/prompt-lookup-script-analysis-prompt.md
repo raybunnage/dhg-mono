@@ -1,6 +1,6 @@
 # Prompt Lookup: script-analysis-prompt
 
-Generated: 2025-03-17T15:23:36.827Z
+Generated: 2025-03-17T23:58:02.330Z
 
 Current configuration:
 - Using Supabase URL: https://jdksnfkupzywjdfefkyj.supabase.co...

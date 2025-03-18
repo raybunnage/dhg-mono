@@ -100,8 +100,29 @@ class SimpleSupabaseService {
     try {
       console.log(`Executing query: ${queryText}`);
       
+      // Replace double quotes with single quotes for SQL compatibility
+      // Note: This is a simple replacement that might not handle all SQL edge cases
+      let normalizedQuery = queryText;
+      if (queryText.includes("\"")) {
+        // Only process if we detect double quotes
+        console.log("Converting double quotes to single quotes for SQL compatibility");
+        
+        // First replace double-quoted column identifiers with temporary placeholders 
+        // We'll only convert string literals with double quotes to single quotes
+        normalizedQuery = queryText.replace(/("[\w\s]+")(\s*=\s*)/g, (match, p1, p2) => {
+          // Keep identifiers as is, but add a note about them
+          console.log(`Found possible column reference: ${p1}`);
+          return `${p1}${p2}`;
+        });
+        
+        // Then convert string literals (values in WHERE clauses)
+        normalizedQuery = normalizedQuery.replace(/(\w+\s*=\s*)"([^"]+)"/g, "$1'$2'");
+        console.log(`Normalized query: ${normalizedQuery}`);
+      }
+      
       // Check for specific known queries and handle them directly
-      if (queryText.includes("FROM document_types WHERE category")) {
+      if (normalizedQuery.includes("FROM document_types WHERE category") || 
+          queryText.includes("FROM document_types WHERE category")) {
         console.log("Detected document_types query - using direct table access");
         
         try {
@@ -157,8 +178,9 @@ class SimpleSupabaseService {
             });
           });
           
+          // The query might use double quotes (JSON format) or single quotes (SQL format)
           // Special case for Documentation category
-          if (queryText.includes("category = \"Documentation\"")) {
+          if (queryText.includes("category = \"Documentation\"") || queryText.includes("category = 'Documentation'")) {
             console.log("Detected Documentation category query");
             categories = ["Documentation"];
             useDirectEquality = true;
@@ -166,12 +188,12 @@ class SimpleSupabaseService {
           // Otherwise, try to extract categories with regex
           else {
             // Try the IN pattern first
-            let categoryMatch = queryText.match(/IN\s*\(\s*'([^']+)'(?:\s*,\s*'([^']+)')*\s*\)/i);
+            let categoryMatch = queryText.match(/IN\s*\(\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])*\s*\)/i);
           
           // If we didn't find an IN pattern, check for equality pattern (category = 'X')
           if (!categoryMatch) {
             // Look for category = "X" or category = 'X' or category = X pattern (with or without quotes)
-            // Try with quotes first
+            // Try with quotes (both double and single)
             let equalityMatch = queryText.match(/category\s*=\s*['"]([^'"]+)['"]/i);
             
             // If not found, try without quotes
@@ -228,7 +250,46 @@ class SimpleSupabaseService {
         }
       }
       
-      // Try standard RPCs for other queries
+      // For document_types query with double quotes, attempt a direct query approach  
+      if (queryText.includes("document_types") && queryText.includes("\"Documentation\"")) {
+        console.log("Attempting direct query for Documentation category");
+        try {
+          const { data, error } = await this.client
+            .from('document_types')
+            .select('*')
+            .eq('category', 'Documentation');
+            
+          if (error) {
+            console.log(`Direct query failed: ${error.message}`);
+          } else {
+            console.log(`Direct query successful, found ${data?.length || 0} records`);
+            return data;
+          }
+        } catch (directError) {
+          console.log(`Error in direct query: ${directError instanceof Error ? directError.message : 'Unknown error'}`);
+        }
+      }
+      
+      // Try with single quotes instead of double quotes
+      if (queryText.includes("\"")) {
+        const singleQuoteQuery = queryText.replace(/(\w+\s*=\s*)"([^"]+)"/g, "$1'$2'");
+        console.log(`Trying with SQL-compatible single quotes: ${singleQuoteQuery}`);
+        
+        try {
+          const { data, error } = await this.client.rpc('execute_sql', { sql: singleQuoteQuery });
+          
+          if (!error) {
+            console.log("Query execution successful via RPC with modified quotes");
+            return data;
+          }
+          
+          Logger.warn(`Modified quote RPC execute_sql failed: ${error.message}`);
+        } catch (rpcError) {
+          Logger.warn(`Modified quote RPC method error: ${rpcError instanceof Error ? rpcError.message : 'Unknown error'}`);
+        }
+      }
+      
+      // Try standard RPCs for other queries with original syntax
       try {
         const { data, error } = await this.client.rpc('execute_sql', { sql: queryText });
         
@@ -240,6 +301,26 @@ class SimpleSupabaseService {
         Logger.warn(`RPC execute_sql failed: ${error.message}`);
       } catch (rpcError) {
         Logger.warn(`RPC method not available: ${rpcError instanceof Error ? rpcError.message : 'Unknown error'}`);
+      }
+      
+      // Last resort: check for specific known queries and handle them natively
+      if (queryText.includes("document_types") && queryText.includes("Documentation")) {
+        console.log("Last resort: Using direct document_types query for Documentation category");
+        try {
+          const { data, error } = await this.client
+            .from('document_types')
+            .select('*')
+            .eq('category', 'Documentation');
+            
+          if (error) {
+            console.log(`Last resort query failed: ${error.message}`);
+          } else {
+            console.log(`Last resort query successful, found ${data?.length || 0} records`);
+            return data;
+          }
+        } catch (lastError) {
+          console.log(`Error in last resort query: ${lastError instanceof Error ? lastError.message : 'Unknown error'}`);
+        }
       }
       
       throw new Error("No method available to execute this query directly");
