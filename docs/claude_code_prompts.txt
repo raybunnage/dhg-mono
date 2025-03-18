@@ -1,38 +1,9 @@
-On the "Docs" page under the documentation_files you will find
-the following collasable folder structures under which all the documentation_files are listed
-
-## Document Types List
-- Code Documentation Markdown (24)
-- Deployment Environment Guide (17)
-- Git Repository Journal (5)
-- Presentation Announcement (29)
-- Script Report (9)
-- Solution Guide (18)
-- Technical Specification (29)
-- External Library Documentation (8)
-- README (2)
-- Uncategorized (1)
+for the scripts/cli-pipeline/display-doc-paths.ts now provide a new service that will identify all the file
 
 
-get rid of the above categories and replace them with the following folders ujnder which files the files will be listed according to the folder they are found on in their file_path:
-
-This has a mapping between the document_type (on the left) and the category to display on the right:
+on the "Scripts" page on the first tab on tne left side provide command: scripts/cli-pipeline/display-doc-paths.ts and a button to run it.  On the right side provide an interactive terminal window for it to be launched in and to watch its progress. Can you do this?
 
 
-```javascript
-export const DEFAULT_DOCUMENT_TYPE_MAPPING = {
-  'Code Documentation Markdown': 'code-documentation',
-  'Deployment Environment Guide': 'deployment-environment',
-  'Git Repository Journal': 'git-repository',
-  'Script Report': 'script-reports',
-  'Solution Guide': 'solution-guides',
-  'Technical Specification': 'technical-specs'
-  'Cli Pipeline Markdown' : 'cli-pipeline'
-  'README': 'readmes',
-  'External Library Documentation': 'external-library',
-  'No document type' : "Uncategorized" 
-};
-```
 
 
 
