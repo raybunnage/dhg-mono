@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '../supabase-client';
 import { PathUpdate } from './path-normalizer';
 
 export async function updateFilePaths(

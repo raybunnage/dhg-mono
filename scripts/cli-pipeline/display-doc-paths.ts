@@ -5,7 +5,6 @@
  * This is a minimal script that just connects and counts records
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config as loadDotEnv } from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -21,7 +20,11 @@ import {
 import { 
   updateFilePaths 
 } from '../../packages/cli/src/services/file-management/db-updater';
-import type { SupabaseClient as PackageSupabaseClient } from '../../packages/cli/node_modules/@supabase/supabase-js';
+import { 
+  SupabaseClient, 
+  SupabaseClientService, 
+  getSupabaseClient 
+} from '../../packages/cli/src/services/supabase-client';
 
 /**
  * Prompt the user to confirm they want to update the file paths
@@ -140,44 +143,47 @@ async function countDocumentationFiles() {
     console.log(`- Key Length: ${supabaseKey.length} chars`);
     console.log(`- Key Preview: ${supabaseKey.substring(0, 10)}...`);
     
-    // Create Supabase client
+    // Create Supabase client using our shared service
     console.log('\nCreating Supabase client...');
     
-    // Try with both anon key and service role key
     let connectionSuccess = false;
     let supabase;
     
     try {
-      console.log('Attempt 1: Using service role key...');
-      supabase = createClient(supabaseUrl, supabaseKey);
+      console.log('Using SupabaseClientService...');
+      const supabaseService = SupabaseClientService.getInstance();
+      supabase = supabaseService.initialize(supabaseUrl, supabaseKey);
       
       // Test the connection
       console.log('Testing connection...');
-      const { error: testError } = await supabase.from('documentation_files').select('count', { count: 'exact', head: true });
+      const connectionTest = await supabaseService.testConnection();
       
-      if (testError) {
-        console.error(`Service role key connection failed: ${testError.message}`);
-        // Will try anon key next
+      if (!connectionTest.success) {
+        console.error(`Connection failed: ${connectionTest.error}`);
+        if (connectionTest.details) {
+          console.error('Error details:', connectionTest.details);
+        }
       } else {
-        console.log('Connection with service role key successful!');
+        console.log('Connection successful!');
         connectionSuccess = true;
       }
     } catch (error) {
-      console.error('Error creating Supabase client with service role key:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('Error creating Supabase client:', error instanceof Error ? error.message : 'Unknown error');
     }
     
     // Try with anon key if service key failed
     if (!connectionSuccess && process.env.SUPABASE_ANON_KEY) {
       try {
         console.log('\nAttempt 2: Trying with anon key instead...');
-        supabase = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY);
+        const supabaseService = SupabaseClientService.getInstance();
+        supabase = supabaseService.initialize(supabaseUrl, process.env.SUPABASE_ANON_KEY as string);
         
         // Test the connection
         console.log('Testing connection with anon key...');
-        const { error: anonTestError } = await supabase.from('documentation_files').select('count', { count: 'exact', head: true });
+        const connectionTest = await supabaseService.testConnection();
         
-        if (anonTestError) {
-          console.error(`Anon key connection failed: ${anonTestError.message}`);
+        if (!connectionTest.success) {
+          console.error(`Anon key connection failed: ${connectionTest.error}`);
         } else {
           console.log('Connection with anon key successful!');
           connectionSuccess = true;
@@ -319,7 +325,7 @@ async function countDocumentationFiles() {
               const shouldUpdate = await promptUserForUpdate(pathsToUpdate);
               if (shouldUpdate) {
                 console.log('\nUpdating file paths in the database...');
-                const result = await updateFilePaths(supabase as unknown as PackageSupabaseClient, pathsToUpdate);
+                const result = await updateFilePaths(supabase, pathsToUpdate);
                 
                 console.log('\nUpdate complete!');
                 console.log(`- Successfully updated: ${result.successCount} records`);
@@ -342,7 +348,7 @@ async function countDocumentationFiles() {
             // Use the status checker service
             const shouldCheckExistence = await promptUserForDeletionCheck();
             if (shouldCheckExistence) {
-              const result = await updateDeletionStatus(supabase as unknown as PackageSupabaseClient, allRecords);
+              const result = await updateDeletionStatus(supabase, allRecords);
               
               // Verify the database counts after update
               try {
@@ -426,17 +432,18 @@ async function promptForAction(): Promise<string> {
   });
 }
 
-// Fix the duplicate initSupabaseConnection function by keeping only one version:
+// Use our shared Supabase client service instead
 async function initSupabaseConnection(): Promise<SupabaseClient> {
   console.log('Initializing database connection...');
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const client = getSupabaseClient(true); // Force initialization from env if needed
   
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing Supabase credentials!');
+  // Test the connection
+  const connectionTest = await SupabaseClientService.getInstance().testConnection();
+  if (!connectionTest.success) {
+    throw new Error(`Failed to connect to Supabase: ${connectionTest.error}`);
   }
   
-  return createClient(supabaseUrl, supabaseKey);
+  return client;
 }
 
 // Run the function with menu
@@ -467,7 +474,7 @@ async function main() {
           if (error) {
             console.error(`Error fetching records: ${error.message}`);
           } else if (records) {
-            await updateDeletionStatus(supabase as unknown as PackageSupabaseClient, records);
+            await updateDeletionStatus(supabase, records);
           }
           break;
           
