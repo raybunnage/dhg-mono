@@ -21,6 +21,7 @@ import {
 import { 
   updateFilePaths 
 } from '../../packages/cli/src/services/file-management/db-updater';
+import type { SupabaseClient as PackageSupabaseClient } from '../../packages/cli/node_modules/@supabase/supabase-js';
 
 /**
  * Prompt the user to confirm they want to update the file paths
@@ -318,7 +319,7 @@ async function countDocumentationFiles() {
               const shouldUpdate = await promptUserForUpdate(pathsToUpdate);
               if (shouldUpdate) {
                 console.log('\nUpdating file paths in the database...');
-                const result = await updateFilePaths(supabase, pathsToUpdate);
+                const result = await updateFilePaths(supabase as unknown as PackageSupabaseClient, pathsToUpdate);
                 
                 console.log('\nUpdate complete!');
                 console.log(`- Successfully updated: ${result.successCount} records`);
@@ -341,7 +342,7 @@ async function countDocumentationFiles() {
             // Use the status checker service
             const shouldCheckExistence = await promptUserForDeletionCheck();
             if (shouldCheckExistence) {
-              const result = await updateDeletionStatus(supabase, allRecords);
+              const result = await updateDeletionStatus(supabase as unknown as PackageSupabaseClient, allRecords);
               
               // Verify the database counts after update
               try {
@@ -466,7 +467,7 @@ async function main() {
           if (error) {
             console.error(`Error fetching records: ${error.message}`);
           } else if (records) {
-            await updateDeletionStatus(supabase, records);
+            await updateDeletionStatus(supabase as unknown as PackageSupabaseClient, records);
           }
           break;
           
