@@ -25,6 +25,10 @@ import {
 import { 
   updateFilePaths 
 } from '../../packages/cli/src/services/file-management/db-updater';
+import {
+  FileDiscoveryService,
+  DiscoveryResult
+} from '../../packages/cli/src/services/file-management/file-discovery';
 import { 
   SupabaseClient, 
   SupabaseClientService, 
@@ -88,6 +92,107 @@ async function promptUserForDeletionCheck(): Promise<boolean> {
       resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
     });
   });
+}
+
+/**
+ * Prompt the user to confirm they want to add the discovered files to the database
+ */
+async function promptUserForFileAddition(files: DiscoveryResult): Promise<boolean> {
+  // Create readline interface
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  
+  console.log('\n=== ADD NEW DOCUMENTATION FILES TO DATABASE ===');
+  console.log(`Found ${files.newFiles.length} new documentation files that are not in the database.`);
+  console.log('This will:');
+  console.log('1. Add each file to the documentation_files table');
+  console.log('2. Extract titles and summaries from the files');
+  console.log('3. Calculate file hashes and gather metadata');
+  
+  if (files.newFiles.length === 0) {
+    console.log('\nNo new files to add. All documentation files are already in the database.');
+    rl.close();
+    return false;
+  }
+  
+  // Display a sample of the files that will be added
+  console.log('\nSample of files that will be added:');
+  console.log('----------------------------------');
+  
+  const sampleSize = Math.min(files.newFiles.length, 10);
+  for (let i = 0; i < sampleSize; i++) {
+    console.log(`${i + 1}. ${files.newFiles[i].file_path}`);
+    if (files.newFiles[i].title) {
+      console.log(`   Title: ${files.newFiles[i].title}`);
+    }
+  }
+  
+  if (files.newFiles.length > sampleSize) {
+    console.log(`... and ${files.newFiles.length - sampleSize} more files`);
+  }
+  
+  return new Promise((resolve) => {
+    rl.question(`\nDo you want to add these ${files.newFiles.length} files to the database? (y/n): `, (answer) => {
+      rl.close();
+      resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
+    });
+  });
+}
+
+/**
+ * Discover new documentation files and add them to the database
+ */
+async function discoverAndAddNewFiles(): Promise<void> {
+  console.log('\n=== DISCOVERING NEW DOCUMENTATION FILES ===');
+  
+  try {
+    // Initialize Supabase connection
+    const supabase = await initSupabaseConnection();
+    
+    // Create file discovery service
+    const discoveryService = new FileDiscoveryService(supabase);
+    
+    // First discover files without inserting them
+    console.log('Scanning project for documentation files...');
+    const discoveryResult = await discoveryService.discoverNewFiles(false);
+    
+    // Display stats
+    console.log('\nDISCOVERY RESULTS:');
+    console.log(`- Total files scanned: ${discoveryResult.totalScanned}`);
+    console.log(`- Existing files in database: ${discoveryResult.existingCount}`);
+    console.log(`- New files discovered: ${discoveryResult.newFiles.length}`);
+    
+    if (discoveryResult.errors.length > 0) {
+      console.log('\nErrors encountered during discovery:');
+      discoveryResult.errors.forEach((error, index) => {
+        console.log(`${index + 1}. ${error}`);
+      });
+    }
+    
+    // Prompt user to add files to database
+    const shouldAddFiles = await promptUserForFileAddition(discoveryResult);
+    
+    if (shouldAddFiles) {
+      console.log('\nAdding files to database...');
+      const insertResult = await discoveryService.discoverNewFiles(true);
+      
+      console.log('\nINSERT RESULTS:');
+      console.log(`- Files successfully added: ${insertResult.newFiles.length}`);
+      
+      if (insertResult.errors.length > 0) {
+        console.log('\nErrors encountered during insertion:');
+        insertResult.errors.forEach((error, index) => {
+          console.log(`${index + 1}. ${error}`);
+        });
+      }
+    } else {
+      console.log('\nNo files were added to the database.');
+    }
+  } catch (error) {
+    console.error('\nError discovering and adding files:', error instanceof Error ? error.message : 'Unknown error');
+  }
 }
 
 async function countDocumentationFiles() {
@@ -326,14 +431,15 @@ async function promptForAction(): Promise<string> {
   console.log('\n=== CHOOSE AN ACTION ===');
   console.log('1. Count and verify documentation files');
   console.log('2. Check file existence and update deletion status');
-  console.log('3. Exit');
+  console.log('3. Discover and add new documentation files');
+  console.log('4. Exit');
   console.log();
   console.log('Note: Document organization features have been moved to:');
   console.log('packages/cli/src/services/document-organization');
   console.log('Use packages/cli/src/scripts/organize-docs.ts for organization tasks.');
   
   return new Promise((resolve) => {
-    rl.question('\nEnter your choice (1-3): ', (answer) => {
+    rl.question('\nEnter your choice (1-4): ', (answer) => {
       rl.close();
       resolve(answer.trim());
     });
@@ -439,6 +545,11 @@ async function main() {
           break;
           
         case '3':
+          // Discover and add new documentation files
+          await discoverAndAddNewFiles();
+          break;
+          
+        case '4':
           console.log('Exiting...');
           exit = true;
           break;
