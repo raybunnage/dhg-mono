@@ -283,6 +283,176 @@ async function updateDeletionStatus(
   }
 }
 
+/**
+ * This functionality has been moved to:
+ * packages/cli/src/services/document-organization/file-organizer.ts
+ * 
+ * @deprecated Use the file-organizer service instead
+ */
+async function findAndMoveDocumentByType(
+  supabase: SupabaseClient,
+  documentType: string,
+  targetFolder: string
+): Promise<void> {
+  console.log(`\n=== FINDING A FILE WITH DOCUMENT TYPE: ${documentType} ===`);
+  
+  try {
+    // First find out what columns are in document_types
+    console.log(`Checking document_types table structure...`);
+    const { data: docTypeColumns, error: columnsError } = await supabase
+      .from('document_types')
+      .select('*')
+      .limit(1);
+      
+    if (columnsError) {
+      console.error(`Error checking document types: ${columnsError.message}`);
+      return;
+    }
+    
+    if (!docTypeColumns || docTypeColumns.length === 0) {
+      console.error(`No document types found in the database.`);
+      return;
+    }
+    
+    console.log(`Document type columns:`, Object.keys(docTypeColumns[0]));
+    
+    // Try all possible column names for the type
+    const possibleColumns = ['name', 'type', 'document_type'];
+    let nameColumn = null;
+    
+    for (const col of possibleColumns) {
+      if (Object.keys(docTypeColumns[0]).includes(col)) {
+        nameColumn = col;
+        break;
+      }
+    }
+    
+    if (!nameColumn) {
+      console.error(`Could not find name or type column in document_types table.`);
+      return;
+    }
+    
+    // Find document_type_id for the document type
+    console.log(`Looking up document_type_id for "${documentType}" using column "${nameColumn}"...`);
+    const { data: docTypes, error: docTypeError } = await supabase
+      .from('document_types')
+      .select('*')
+      .eq(nameColumn, documentType);
+    
+    if (docTypeError) {
+      console.error(`Error looking up document type: ${docTypeError.message}`);
+      return;
+    }
+    
+    if (!docTypes || docTypes.length === 0) {
+      console.error(`Document type "${documentType}" not found in the database.`);
+      console.log('Available document types:');
+      
+      // List all available document types
+      const { data: allDocTypes, error: allDocError } = await supabase
+        .from('document_types')
+        .select('*');
+        
+      if (allDocError) {
+        console.error(`Error fetching all document types: ${allDocError.message}`);
+        return;
+      }
+      
+      if (allDocTypes && allDocTypes.length > 0) {
+        allDocTypes.forEach((dt: any, index: number) => {
+          const typeName = nameColumn ? dt[nameColumn] : `[Type ${index}]`;
+          console.log(`- ${typeName} (id: ${dt.id})`);
+        });
+      }
+      
+      return;
+    }
+    
+    const docTypeId = docTypes[0].id;
+    console.log(`Found document_type_id: ${docTypeId}`);
+    
+    // Find a file with this document type and is_deleted = false
+    console.log(`Finding an active file with document type "${documentType}"...`);
+    const { data: files, error: fileError } = await supabase
+      .from('documentation_files')
+      .select('id, file_path, title, document_type_id')
+      .eq('document_type_id', docTypeId)
+      .eq('is_deleted', false)
+      .limit(1);
+      
+    if (fileError) {
+      console.error(`Error finding file: ${fileError.message}`);
+      return;
+    }
+    
+    if (!files || files.length === 0) {
+      console.error(`No active files found with document type "${documentType}".`);
+      return;
+    }
+    
+    const file = files[0];
+    console.log(`Found file: ${file.title} (${file.file_path})`);
+    
+    // Check if the file exists
+    const rootDir = process.cwd();
+    const sourcePath = path.join(rootDir, file.file_path);
+    
+    if (!fs.existsSync(sourcePath)) {
+      console.error(`File not found on disk: ${sourcePath}`);
+      return;
+    }
+    
+    // Ensure target directory exists
+    const targetDir = path.join(rootDir, 'docs', targetFolder);
+    if (!fs.existsSync(targetDir)) {
+      console.log(`Creating target directory: ${targetDir}`);
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    
+    // Get the filename from the path
+    const fileName = path.basename(file.file_path);
+    
+    // Determine target path
+    const targetPath = path.join(targetDir, fileName);
+    
+    // Move the file
+    console.log(`Moving file from: ${sourcePath}`);
+    console.log(`To: ${targetPath}`);
+    
+    try {
+      // Copy the file first
+      fs.copyFileSync(sourcePath, targetPath);
+      console.log(`File copied successfully.`);
+      
+      // Update the file_path in the database
+      const newFilePath = `docs/${targetFolder}/${fileName}`;
+      console.log(`Updating file_path in database to: ${newFilePath}`);
+      
+      const { error: updateError } = await supabase
+        .from('documentation_files')
+        .update({ file_path: newFilePath })
+        .eq('id', file.id);
+        
+      if (updateError) {
+        console.error(`Error updating file path in database: ${updateError.message}`);
+        return;
+      }
+      
+      console.log(`Database updated successfully.`);
+      
+      // Delete the original file
+      fs.unlinkSync(sourcePath);
+      console.log(`Original file deleted.`);
+      
+      console.log(`✅ File successfully moved and database updated!`);
+    } catch (error) {
+      console.error('Error moving file:', error instanceof Error ? error.message : 'Unknown error');
+    }
+  } catch (error) {
+    console.error('Unexpected error:', error instanceof Error ? error.message : 'Unknown error');
+  }
+}
+
 // Load environment variables
 console.log('======= DOCUMENTATION FILES COUNT =======');
 console.log('Loading environment variables...');
@@ -378,6 +548,18 @@ async function countDocumentationFiles() {
     originalPath: string;
     normalizedPath: string;
   }> = [];
+  
+  // Document type mapping for file organization
+  const documentTypeMapping = {
+    'Code Documentation Markdown': 'code-documentation',
+    'Deployment Environment Guide': 'deployment-environment',
+    'External Library Documentation': 'external-library',
+    'Git Repository Journal': 'git-repository',
+    'README': 'readmes',
+    'Script Report': 'script-reports',
+    'Solution Guide': 'solution-guides',
+    'Technical Specification': 'technical-specs'
+  };
   
   try {
     // ==== GET SERVICE KEY, PRIORITIZING .ENV FILE KEY ====
@@ -692,8 +874,353 @@ async function countDocumentationFiles() {
   }
 }
 
-// Run the function
-countDocumentationFiles()
+/**
+ * Prompt user to choose an action
+ */
+async function promptForAction(): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  
+  console.log('\n=== CHOOSE AN ACTION ===');
+  console.log('1. Count and verify documentation files');
+  console.log('2. Check file existence and update deletion status');
+  console.log('3. Exit');
+  console.log();
+  console.log('Note: Document organization features have been moved to:');
+  console.log('packages/cli/src/services/document-organization');
+  console.log('Use packages/cli/src/scripts/organize-docs.ts for organization tasks.');
+  
+  return new Promise((resolve) => {
+    rl.question('\nEnter your choice (1-3): ', (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+/**
+ * This functionality has been moved to:
+ * packages/cli/src/services/document-organization/file-organizer.ts
+ * 
+ * @deprecated Use the file-organizer service instead
+ */
+async function listAllDocumentTypes(supabase: SupabaseClient): Promise<void> {
+  console.log('\n=== LISTING ALL DOCUMENT TYPES ===');
+  
+  try {
+    // Get the first record to determine column names
+    const { data: firstDocType, error: firstError } = await supabase
+      .from('document_types')
+      .select('*')
+      .limit(1);
+      
+    if (firstError) {
+      console.error(`Error checking document types: ${firstError.message}`);
+      return;
+    }
+    
+    if (!firstDocType || firstDocType.length === 0) {
+      console.error(`No document types found in the database.`);
+      return;
+    }
+    
+    // Determine which column contains the type name
+    const possibleColumns = ['name', 'type', 'document_type'];
+    let nameColumn = null;
+    
+    for (const col of possibleColumns) {
+      if (Object.keys(firstDocType[0]).includes(col)) {
+        nameColumn = col;
+        break;
+      }
+    }
+    
+    if (!nameColumn) {
+      console.error(`Could not find name or type column in document_types table.`);
+      return;
+    }
+    
+    // Get all document types
+    const { data: allTypes, error: allError } = await supabase
+      .from('document_types')
+      .select('*')
+      .order(nameColumn);
+      
+    if (allError) {
+      console.error(`Error fetching all document types: ${allError.message}`);
+      return;
+    }
+    
+    if (!allTypes || allTypes.length === 0) {
+      console.log('No document types found.');
+      return;
+    }
+    
+    console.log(`Found ${allTypes.length} document types:\n`);
+    console.log(`ID | ${nameColumn.toUpperCase()} | CATEGORY | FILE COUNT`);
+    console.log('-'.repeat(80));
+    
+    allTypes.forEach((type: any) => {
+      const typeId = type.id;
+      const typeName = type[nameColumn];
+      const category = type.category || 'N/A';
+      const count = type.current_num_of_type || '0';
+      
+      console.log(`${typeId} | ${typeName} | ${category} | ${count}`);
+    });
+    
+  } catch (error) {
+    console.error('Error listing document types:', error instanceof Error ? error.message : 'Unknown error');
+  }
+}
+
+/**
+ * This functionality has been moved to:
+ * packages/cli/src/services/document-organization/file-organizer.ts
+ * 
+ * @deprecated Use the file-organizer service instead
+ */
+async function moveAllFilesByDocumentType(
+  supabase: SupabaseClient,
+  documentTypeMapping: Record<string, string>
+): Promise<void> {
+  console.log('\n=== MOVING ALL FILES BASED ON DOCUMENT TYPE MAPPING ===');
+  
+  try {
+    // Get all document types
+    const { data: docTypes, error: docTypeError } = await supabase
+      .from('document_types')
+      .select('*');
+      
+    if (docTypeError) {
+      console.error(`Error fetching document types: ${docTypeError.message}`);
+      return;
+    }
+    
+    if (!docTypes || docTypes.length === 0) {
+      console.error('No document types found in database.');
+      return;
+    }
+    
+    // Determine which column contains the type name
+    const possibleColumns = ['name', 'type', 'document_type'];
+    let nameColumn = null;
+    
+    for (const col of possibleColumns) {
+      if (Object.keys(docTypes[0]).includes(col)) {
+        nameColumn = col;
+        break;
+      }
+    }
+    
+    if (!nameColumn) {
+      console.error(`Could not find name or type column in document_types table.`);
+      return;
+    }
+    
+    // Process each document type in our mapping
+    for (const [documentType, targetFolder] of Object.entries(documentTypeMapping)) {
+      console.log(`\nProcessing document type: "${documentType}" -> ${targetFolder}`);
+      
+      // Find the document type ID
+      const matchingDocType = docTypes.find(dt => dt[nameColumn] === documentType);
+      
+      if (!matchingDocType) {
+        console.log(`Document type "${documentType}" not found in the database. Skipping.`);
+        continue;
+      }
+      
+      const docTypeId = matchingDocType.id;
+      console.log(`Found document_type_id: ${docTypeId}`);
+      
+      // Find all active files with this document type
+      const { data: files, error: fileError } = await supabase
+        .from('documentation_files')
+        .select('id, file_path, title, document_type_id')
+        .eq('document_type_id', docTypeId)
+        .eq('is_deleted', false);
+        
+      if (fileError) {
+        console.error(`Error finding files: ${fileError.message}`);
+        continue;
+      }
+      
+      if (!files || files.length === 0) {
+        console.log(`No active files found with document type "${documentType}". Skipping.`);
+        continue;
+      }
+      
+      console.log(`Found ${files.length} files with document type "${documentType}"`);
+      
+      // Create target directory
+      const rootDir = process.cwd();
+      const targetDir = path.join(rootDir, 'docs', targetFolder);
+      
+      if (!fs.existsSync(targetDir)) {
+        console.log(`Creating target directory: ${targetDir}`);
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+      
+      // Process each file
+      let successCount = 0;
+      let skipCount = 0;
+      let errorCount = 0;
+      
+      for (const file of files) {
+        try {
+          // Check if file already has the correct path
+          if (file.file_path.startsWith(`docs/${targetFolder}/`)) {
+            console.log(`File "${file.title}" already in correct location. Skipping.`);
+            skipCount++;
+            continue;
+          }
+          
+          // Check if the file exists
+          const sourcePath = path.join(rootDir, file.file_path);
+          
+          if (!fs.existsSync(sourcePath)) {
+            console.log(`File not found on disk: ${sourcePath}. Skipping.`);
+            skipCount++;
+            continue;
+          }
+          
+          // Get the filename from the path
+          const fileName = path.basename(file.file_path);
+          
+          // Determine target path
+          const targetPath = path.join(targetDir, fileName);
+          
+          // Skip if target file already exists
+          if (fs.existsSync(targetPath)) {
+            console.log(`Target file already exists: ${targetPath}. Skipping.`);
+            skipCount++;
+            continue;
+          }
+          
+          // Move the file
+          console.log(`Moving: ${file.file_path} -> docs/${targetFolder}/${fileName}`);
+          
+          // Copy the file first
+          fs.copyFileSync(sourcePath, targetPath);
+          
+          // Update the file_path in the database
+          const newFilePath = `docs/${targetFolder}/${fileName}`;
+          
+          const { error: updateError } = await supabase
+            .from('documentation_files')
+            .update({ file_path: newFilePath })
+            .eq('id', file.id);
+            
+          if (updateError) {
+            console.error(`Error updating file path in database: ${updateError.message}`);
+            errorCount++;
+            // Don't delete the source file if db update failed
+            continue;
+          }
+          
+          // Delete the original file
+          fs.unlinkSync(sourcePath);
+          successCount++;
+          
+        } catch (error) {
+          console.error(`Error processing file "${file.title}":`, error instanceof Error ? error.message : 'Unknown error');
+          errorCount++;
+        }
+      }
+      
+      console.log(`Document type "${documentType}" processing complete:`);
+      console.log(`- ${successCount} files moved successfully`);
+      console.log(`- ${skipCount} files skipped`);
+      console.log(`- ${errorCount} errors`);
+    }
+    
+    console.log('\nAll document types processed!');
+    
+  } catch (error) {
+    console.error('Error moving files:', error instanceof Error ? error.message : 'Unknown error');
+  }
+}
+
+// Initialize Supabase connection
+async function initSupabaseConnection(): Promise<SupabaseClient> {
+  console.log('Initializing database connection...');
+  // Setup function to get database connection
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase credentials!');
+    process.exit(1);
+  }
+  
+  return createClient(supabaseUrl, supabaseKey);
+}
+
+// Initialize Supabase connection (remaining in this file for compatibility)
+async function initSupabaseConnection(): Promise<SupabaseClient> {
+  console.log('Initializing database connection...');
+  // Setup function to get database connection
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase credentials!');
+  }
+  
+  return createClient(supabaseUrl, supabaseKey);
+}
+
+// Run the function with menu
+async function main() {
+  try {
+    let supabase;
+    let exit = false;
+    
+    while (!exit) {
+      const choice = await promptForAction();
+      
+      switch (choice) {
+        case '1':
+          await countDocumentationFiles();
+          break;
+          
+        case '2':
+          // We need to initialize the database connection first
+          if (!supabase) {
+            supabase = await initSupabaseConnection();
+          }
+          
+          // Get all active records
+          const { data: records, error } = await supabase
+            .from('documentation_files')
+            .select('*');
+            
+          if (error) {
+            console.error(`Error fetching records: ${error.message}`);
+          } else if (records) {
+            await updateDeletionStatus(supabase, records);
+          }
+          break;
+          
+        case '3':
+          console.log('Exiting...');
+          exit = true;
+          break;
+          
+        default:
+          console.log('Invalid choice, please try again.');
+      }
+    }
+  } catch (error) {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  }
+}
+
+// Run the main function
+main()
   .then(() => console.log('Done!'))
   .catch(error => {
     console.error('Fatal error:', error);

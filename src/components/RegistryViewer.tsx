@@ -1,1 +1,0 @@
-// Need a working example of a component making Supabase queries 

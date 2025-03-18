@@ -1,3 +1,16 @@
+
+Code Documentation Markdown : code-documentation
+Deployment Environment Guide : deployment-environment
+External Library Documentation  : external-library
+Git Repository Journal : git-repository
+README - readmes
+Script Report : script-reports
+Solution Guide : solution-guides
+Technical Specification : solution-guides
+
+
+
+
 Now write a new script and put it into the packages/cli-pipeline Category
 
 0) make it compatible with the cli pipeline approach
