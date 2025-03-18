@@ -29,6 +29,11 @@ import {
   FileDiscoveryService,
   DiscoveryResult
 } from '../../packages/cli/src/services/file-management/file-discovery';
+import {
+  DocumentTypeChecker,
+  DocumentationFileWithoutType,
+  DocumentTypeCheckResult
+} from '../../packages/cli/src/services/document-type-checker';
 import { 
   SupabaseClient, 
   SupabaseClientService, 
@@ -92,6 +97,199 @@ async function promptUserForDeletionCheck(): Promise<boolean> {
       resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
     });
   });
+}
+
+/**
+ * Check for files without document type assignments using execute_sql RPC
+ */
+async function checkFilesWithoutDocumentType(): Promise<void> {
+  console.log('\n=== CHECKING FOR FILES WITHOUT DOCUMENT TYPE ASSIGNMENTS ===');
+  
+  try {
+    // Initialize Supabase connection
+    console.log('Initializing Supabase connection...');
+    const supabase = await initSupabaseConnection();
+    
+    console.log('Using execute_sql RPC function to find files without document types...');
+    
+    // First, get counts using execute_sql RPC
+    const totalFilesQuery = `
+      SELECT COUNT(*) as count
+      FROM documentation_files
+      WHERE is_deleted = false
+    `;
+    
+    const filesWithTypeQuery = `
+      SELECT COUNT(*) as count
+      FROM documentation_files
+      WHERE is_deleted = false AND document_type_id IS NOT NULL
+    `;
+    
+    const filesWithoutTypeQuery = `
+      SELECT COUNT(*) as count
+      FROM documentation_files
+      WHERE is_deleted = false AND document_type_id IS NULL
+    `;
+    
+    const unassignedFilesQuery = `
+      SELECT id, file_path, title, summary, created_at, updated_at
+      FROM documentation_files
+      WHERE is_deleted = false AND document_type_id IS NULL
+      ORDER BY file_path
+    `;
+    
+    // Execute queries using execute_sql RPC
+    console.log('Running count queries...');
+    console.log('DEBUG: Using execute_sql RPC function with the following queries:');
+    console.log(`1. Total files query: ${totalFilesQuery}`);
+    console.log(`2. Files with type query: ${filesWithTypeQuery}`);
+    console.log(`3. Files without type query: ${filesWithoutTypeQuery}`);
+    console.log(`4. Unassigned files query: ${unassignedFilesQuery}`);
+    
+    // Get total files count
+    console.log('\nExecuting total files count query...');
+    const { data: totalData, error: totalError } = await supabase.rpc('execute_sql', {
+      sql: totalFilesQuery
+    });
+    
+    if (totalError) {
+      console.error(`Error getting total count: ${totalError.message}`);
+      return;
+    }
+    
+    console.log(`DEBUG: Total files query response: ${JSON.stringify(totalData)}`);
+    const totalFiles = totalData && totalData[0] ? parseInt(totalData[0].count, 10) : 0;
+    console.log(`DEBUG: Parsed total files count: ${totalFiles}`);
+    
+    // Get files with type count
+    console.log('\nExecuting files with type count query...');
+    const { data: withTypeData, error: withTypeError } = await supabase.rpc('execute_sql', {
+      sql: filesWithTypeQuery
+    });
+    
+    if (withTypeError) {
+      console.error(`Error getting with-type count: ${withTypeError.message}`);
+      return;
+    }
+    
+    console.log(`DEBUG: Files with type query response: ${JSON.stringify(withTypeData)}`);
+    const filesWithType = withTypeData && withTypeData[0] ? parseInt(withTypeData[0].count, 10) : 0;
+    console.log(`DEBUG: Parsed files with type count: ${filesWithType}`);
+    
+    // Get files without type count
+    console.log('\nExecuting files without type count query...');
+    const { data: withoutTypeData, error: withoutTypeError } = await supabase.rpc('execute_sql', {
+      sql: filesWithoutTypeQuery
+    });
+    
+    if (withoutTypeError) {
+      console.error(`Error getting without-type count: ${withoutTypeError.message}`);
+      return;
+    }
+    
+    console.log(`DEBUG: Files without type query response: ${JSON.stringify(withoutTypeData)}`);
+    const filesWithoutType = withoutTypeData && withoutTypeData[0] ? parseInt(withoutTypeData[0].count, 10) : 0;
+    console.log(`DEBUG: Parsed files without type count: ${filesWithoutType}`);
+    
+    // Get the actual files without document types
+    console.log('\nFetching files without document types...');
+    const { data: unassignedFiles, error: unassignedError } = await supabase.rpc('execute_sql', {
+      sql: unassignedFilesQuery
+    });
+    
+    if (unassignedError) {
+      console.error(`Error getting unassigned files: ${unassignedError.message}`);
+      return;
+    }
+    
+    console.log(`DEBUG: Unassigned files query response received, found: ${unassignedFiles ? unassignedFiles.length : 0} records`);
+    if (unassignedFiles) {
+      console.log(`DEBUG: First record (if any): ${unassignedFiles.length > 0 ? JSON.stringify(unassignedFiles[0]) : 'No records'}`);
+    }
+    
+    // Display statistics
+    console.log('\nDOCUMENTATION FILES DOCUMENT TYPE ASSIGNMENT STATS:');
+    console.log('--------------------------------------------------------------');
+    console.log(`Total active files: ${totalFiles}`);
+    console.log(`Files with document type assigned: ${filesWithType}`);
+    console.log(`Files WITHOUT document type assigned: ${filesWithoutType}`);
+    console.log(`Assignment percentage: ${totalFiles > 0 ? Math.round((filesWithType / totalFiles) * 100) : 0}%`);
+    console.log('--------------------------------------------------------------');
+    
+    if (totalFiles === 0) {
+      console.log('\n⚠️ No documentation files found in the database.');
+      return;
+    }
+    
+    if (filesWithoutType === 0) {
+      console.log('\n✅ Great! All documentation files have document types assigned!');
+      return;
+    }
+    
+    // Display files without document types
+    console.log('\nFILES MISSING DOCUMENT TYPE ASSIGNMENTS:');
+    console.log('--------------------------------------------------------------');
+    
+    // Check if we got results from the SQL query
+    if (unassignedFiles && unassignedFiles.length > 0) {
+      console.log('ID | FILE PATH | TITLE');
+      console.log('--------------------------------------------------------------');
+      
+      unassignedFiles.forEach((file: DocumentationFileWithoutType, index: number) => {
+        console.log(`${index + 1}. ${file.id} | ${file.file_path} | ${file.title || '[No Title]'}`);
+      });
+      
+      console.log('--------------------------------------------------------------');
+      console.log(`Total: ${unassignedFiles.length} files without document type assignments`);
+    } else {
+      console.log(`No files found in RPC query results, but count query indicated ${filesWithoutType} files without types.`);
+      console.log('\nTrying alternative approach with standard Supabase query...');
+      
+      // Fallback to standard Supabase query
+      try {
+        // Use standard Supabase direct query as fallback
+        const { data: directQueryFiles, error: directQueryError } = await supabase
+          .from('documentation_files')
+          .select('id, file_path, title, summary, created_at, updated_at')
+          .is('document_type_id', null)
+          .eq('is_deleted', false)
+          .order('file_path');
+          
+        if (directQueryError) {
+          console.error(`Error in direct query fallback: ${directQueryError.message}`);
+        } else if (directQueryFiles && directQueryFiles.length > 0) {
+          console.log('Results from direct Supabase query without RPC:');
+          console.log('ID | FILE PATH | TITLE');
+          console.log('--------------------------------------------------------------');
+          
+          directQueryFiles.forEach((file: DocumentationFileWithoutType, index: number) => {
+            console.log(`${index + 1}. ${file.id} | ${file.file_path} | ${file.title || '[No Title]'}`);
+          });
+          
+          console.log('--------------------------------------------------------------');
+          console.log(`Total: ${directQueryFiles.length} files without document type assignments (from direct query)`);
+        } else {
+          console.log('No files found using direct query approach either.');
+          console.log(`This is unusual because count query indicated ${filesWithoutType} files without types.`);
+          console.log('Logging SQL queries for debugging:');
+          console.log(`Total files query: ${totalFilesQuery}`);
+          console.log(`Files without type query: ${filesWithoutTypeQuery}`);
+          console.log(`Unassigned files query: ${unassignedFilesQuery}`);
+        }
+      } catch (fallbackError) {
+        console.error('Error in fallback query approach:', fallbackError instanceof Error ? fallbackError.message : 'Unknown error');
+      }
+    }
+    
+    console.log('--------------------------------------------------------------');
+    console.log('\nTo assign document types to these files, you can:');
+    console.log('1. Use the documentation UI in the web interface');
+    console.log('2. Run the documentation processor: packages/cli/src/commands/documentation-processor.ts');
+    console.log('3. Use the ClassifyDocument AI tool to automatically classify these files');
+    
+  } catch (error) {
+    console.error('\nError checking files without document types:', error instanceof Error ? error.message : 'Unknown error');
+  }
 }
 
 /**
@@ -432,14 +630,15 @@ async function promptForAction(): Promise<string> {
   console.log('1. Count and verify documentation files');
   console.log('2. Check file existence and update deletion status');
   console.log('3. Discover and add new documentation files');
-  console.log('4. Exit');
+  console.log('4. Check files without document type assignments');
+  console.log('5. Exit');
   console.log();
   console.log('Note: Document organization features have been moved to:');
   console.log('packages/cli/src/services/document-organization');
   console.log('Use packages/cli/src/scripts/organize-docs.ts for organization tasks.');
   
   return new Promise((resolve) => {
-    rl.question('\nEnter your choice (1-4): ', (answer) => {
+    rl.question('\nEnter your choice (1-5): ', (answer) => {
       rl.close();
       resolve(answer.trim());
     });
@@ -550,6 +749,11 @@ async function main() {
           break;
           
         case '4':
+          // Check files without document type assignments
+          await checkFilesWithoutDocumentType();
+          break;
+          
+        case '5':
           console.log('Exiting...');
           exit = true;
           break;

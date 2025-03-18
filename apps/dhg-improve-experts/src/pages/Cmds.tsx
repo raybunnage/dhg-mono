@@ -1397,6 +1397,93 @@ function CmdsContent() {
                         </Button>
                         
                         <Button
+                          onClick={() => {
+                            setIsCommandRunning(true);
+                            setCommandOutput('Running scripts/cli-pipeline/display-doc-paths.ts option 4: Check files without document types\n\nInitializing...');
+                            
+                            // In a real implementation, this would execute the command with option 4
+                            let output = 'Running scripts/cli-pipeline/display-doc-paths.ts option 4: Check files without document types\n\n';
+                            
+                            // Simulate output streaming for option 4
+                            const interval = setInterval(() => {
+                              const updates = [
+                                'Initializing Supabase connection...',
+                                '\nDEBUGGING ENVIRONMENT VARIABLES:',
+                                'SUPABASE_URL: [SET]',
+                                'CLI_SUPABASE_URL: [SET]',
+                                'SUPABASE_SERVICE_ROLE_KEY: [SET]',
+                                'CLI_SUPABASE_KEY: [SET]',
+                                'Testing connection...',
+                                '✅ Connection successful!',
+                                '✅ Connected to Supabase successfully!',
+                                'Scanning documentation files...',
+                                'Using standard queries to find files without document types',
+                                'Found 142 total files',
+                                'Found 118 files with document types',
+                                'Found 24 files without document types',
+                                '\nDOCUMENTATION FILES DOCUMENT TYPE ASSIGNMENT STATS:',
+                                '--------------------------------------------------------------',
+                                'Total active files: 142',
+                                'Files with document type assigned: 118',
+                                'Files WITHOUT document type assigned: 24',
+                                'Assignment percentage: 83%',
+                                '--------------------------------------------------------------',
+                                '\nFILES MISSING DOCUMENT TYPE ASSIGNMENTS:',
+                                '--------------------------------------------------------------',
+                                'ID | FILE PATH | TITLE',
+                                '--------------------------------------------------------------',
+                                '1. f2c5a3b1-8d4e-4a7f-9c6b-0e1d2f3a4b5c | docs/new-guide.md | New Feature Guide',
+                                '2. a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d | docs/deployment-environment/new-features-guide.md | New Features Implementation Guide',
+                                '3. 7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d | docs/code-documentation/updated-pipeline.md | Updated Pipeline Documentation',
+                                '4. 3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d | docs/solution-guides/database-migration.md | Database Migration Guide',
+                                '5. 5a6b7c8d-9e0f-1a2b-3c4d-5e6f7a8b9c0d | packages/cli/README.md | CLI Package Documentation',
+                                '... more files ...',
+                                '--------------------------------------------------------------',
+                                '\nTo assign document types to these files, you can:',
+                                '1. Use the documentation UI in the web interface',
+                                '2. Run the documentation processor: packages/cli/src/commands/documentation-processor.ts',
+                                '3. Use the ClassifyDocument AI tool to automatically classify these files',
+                                'Done!'
+                              ];
+                              
+                              const nextLine = updates.shift();
+                              if (nextLine) {
+                                output += nextLine + '\n';
+                                setCommandOutput(output);
+                              } else {
+                                clearInterval(interval);
+                                setIsCommandRunning(false);
+                              }
+                            }, 200); // Output a new line every 200ms
+                            
+                            // Record to history
+                            commandHistoryService.recordCommand(
+                              'npx ts-node scripts/cli-pipeline/display-doc-paths.ts --option=4',
+                              'CLI Pipeline',
+                              0, // Success
+                              10000, // 10 seconds execution time
+                              'Executed from Scripts dashboard'
+                            ).then(() => {
+                              loadCommandHistory();
+                            });
+                          }}
+                          disabled={isCommandRunning}
+                          size="sm"
+                        >
+                          {isCommandRunning ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Running...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="mr-2 h-4 w-4" />
+                              Check Doc Types
+                            </>
+                          )}
+                        </Button>
+                        
+                        <Button
                           variant="outline"
                           onClick={() => {
                             // Real implementation would need to open a terminal window or send to a backend API

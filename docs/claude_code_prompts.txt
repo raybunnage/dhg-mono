@@ -1,4 +1,26 @@
-for the scripts/cli-pipeline/display-doc-paths.ts now provide a new service that will identify all the file
+
+now we are interested in adding the functionality of the scripts/cli-pipeline/prompt-lookup.ts to the 
+scripts/cli-pipeline/display-doc-paths.ts script. This command proves that we can load a prompt by name and its associated file_relationships and retrieve all the information that is needed for an ai api call to claude 3.7   I need you to do all the things you can do in the scripts/cli-pipeline/prompt-lookup.ts file - but now this data will next be submitted to claude 3.7 just for these docoumentation_files that do not have a documentation type.  Again add this functionallity by first looking for existing functionalithy in packages/cli and if necessary create a new service there to assist with this progress.  Do not add all the code in the  scripts/cli-pipeline/display-doc-paths.ts but rather import it fomr an existing (adjusted) - or new services that you create in the packages/cli. I do not want you to break scripts/cli-pipeline/prompt-lookup.ts.
+
+=== CHOOSE AN ACTION ===
+1. Count and verify documentation files
+2. Check file existence and update deletion status
+3. Discover and add new documentation files
+4. Check files without document type assignments
+5. Exit
+
+Note: Document organization features have been moved to:
+packages/cli/src/services/document-organization
+Use packages/cli/src/scripts/organize-docs.ts for organization tasks.
+
+Enter your choice (1-5): (node:15305) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+5
+Exiting...
+Done!
+raybunnage@Rays-Laptop dhg-mono % 
+
+for the scripts/cli-pipeline/display-doc-paths.ts now provide a new option and create a new service under packages/cli (if the functionality doesn't exist) that will identify all the file_paths of the documentation_files that do not have a document_type assigned yet because most likely they are new or were moved to a different folder. It should display those when the new option is chosen like it does the others. Keep the other functionatliy intact and if necessary create a new dedicated service for this functionality
 
 
 on the "Scripts" page on the first tab on tne left side provide command: scripts/cli-pipeline/display-doc-paths.ts and a button to run it.  On the right side provide an interactive terminal window for it to be launched in and to watch its progress. Can you do this?
