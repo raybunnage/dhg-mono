@@ -213,7 +213,7 @@ export class DocumentationService {
           const subDirFileIds = await this.scanDirectory(itemPath);
           fileIds.push(...subDirFileIds);
         } else if (stats.isFile() && item.endsWith('.md')) {
-          // Process markdown files
+          // Process markdown files (note: .txt files are already excluded by the extension check)
           const fileId = await this.processMarkdownFile(itemPath);
           fileIds.push(fileId);
         }

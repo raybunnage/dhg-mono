@@ -90,7 +90,7 @@ function Docs() {
       if (error) throw error;
 
       // Filter out files with missing file_path or any other issues
-      // Also exclude files under the file_types folder
+      // Also exclude files under the file_types folder and .txt files
       const validFiles = (data || []).filter(file => 
         file && file.file_path && 
         // Only include files that exist (should be all, but double-check)
@@ -98,7 +98,9 @@ function Docs() {
         // Exclude files under the file_types folder at the repo root
         // The path could be like "/file_types/..." or start with "file_types/..."
         !file.file_path.includes('/file_types/') && 
-        !file.file_path.startsWith('file_types/')
+        !file.file_path.startsWith('file_types/') &&
+        // Exclude .txt files
+        !file.file_path.endsWith('.txt')
       );
 
       console.log(`Fetched ${data?.length || 0} files, ${validFiles.length} valid files after filtering`);
@@ -116,19 +118,25 @@ function Docs() {
     }
   };
 
-  // Build document type groups from files
+  // Document type mapping to define which folders files should be grouped into
+  const DEFAULT_DOCUMENT_TYPE_MAPPING = {
+    'Code Documentation Markdown': 'code-documentation',
+    'Deployment Environment Guide': 'deployment-environment',
+    'Git Repository Journal': 'git-repository',
+    'Script Report': 'script-reports',
+    'Solution Guide': 'solution-guides',
+    'Technical Specification': 'technical-specs',
+    'Cli Pipeline Markdown' : 'cli-pipeline',
+    'README': 'readmes',
+    'External Library Documentation': 'external-library',
+    'No document type' : "Uncategorized" 
+  };
+
+  // Build document type groups based on folder path rather than document type
   const buildDocumentTypeGroups = (files: DocumentationFile[], types: DocumentType[]): DocumentTypeGroup[] => {
-    // Create a map for quick document type lookup
+    // Create a map for quick document type lookup (still needed for duplicate detection)
     const typeMap = new Map<string, DocumentType>();
     types.forEach(type => typeMap.set(type.id, type));
-    
-    // Create a default "Unknown" type for files without a document_type_id
-    const defaultGroup: DocumentTypeGroup = {
-      id: 'unknown',
-      name: 'Uncategorized',
-      files: [],
-      isExpanded: true
-    };
     
     // Create a map to track filename occurrences for detecting duplicates
     // We'll store file paths in a map keyed by filename
@@ -185,7 +193,7 @@ function Docs() {
       console.log(`Found ${duplicatesFound.length} genuine duplicate filenames:`, duplicatesFound);
     }
     
-    // Group files by document_type_id
+    // Group files by their folder path instead of document_type_id
     const groups: Record<string, DocumentationFile[]> = {};
     
     files.forEach(file => {
@@ -200,12 +208,21 @@ function Docs() {
         return;
       }
       
-      // Get document_type_id, defaulting to unknown if not found
-      const typeId = file.document_type_id || 'unknown';
+      // Extract the directory path from file_path
+      const pathParts = file.file_path.split('/');
+      // Get the folder name (ignoring the filename at the end)
+      // We focus on the first part after 'docs/' if it exists
+      let folderName = 'Uncategorized';
+      
+      // Check if the file is in the docs directory
+      const docsIndex = pathParts.indexOf('docs');
+      if (docsIndex !== -1 && pathParts.length > docsIndex + 1) {
+        folderName = pathParts[docsIndex + 1];
+      }
       
       // Create group array if it doesn't exist
-      if (!groups[typeId]) {
-        groups[typeId] = [];
+      if (!groups[folderName]) {
+        groups[folderName] = [];
       }
       
       // Check if this file has duplicate filenames
@@ -223,7 +240,7 @@ function Docs() {
       const duplicatePath = duplicatePathMap.get(file.file_path);
       
       // Add the file to its group with the duplicate flag and duplicate path
-      groups[typeId].push({
+      groups[folderName].push({
         ...file,
         // Add custom properties to indicate duplicate and duplicate path
         metadata: {
@@ -237,28 +254,22 @@ function Docs() {
     // Convert groups to array of DocumentTypeGroup
     const result: DocumentTypeGroup[] = [];
     
-    Object.entries(groups).forEach(([typeId, files]) => {
+    Object.entries(groups).forEach(([folderName, files]) => {
       // Skip empty groups
       if (files.length === 0) return;
       
-      // Get document type from map
-      const documentType = typeMap.get(typeId);
-      
-      // Get group name
-      const groupName = documentType ? documentType.document_type : 'Uncategorized';
-      
       // Determine if this group should be expanded by default
-      // External Library Documentation and Readme should be collapsed
       const shouldBeExpanded = 
-        groupName !== 'External Library Documentation' && 
-        groupName !== 'Readme' &&
-        !groupName.toLowerCase().includes('external library') && 
-        !groupName.toLowerCase().includes('readme');
+        folderName !== 'external-library' && 
+        folderName !== 'readmes';
+      
+      // Map folder names to display names
+      const displayName = folderName.charAt(0).toUpperCase() + folderName.slice(1).replace(/-/g, ' ');
       
       // Create group
       const group: DocumentTypeGroup = {
-        id: typeId,
-        name: groupName,
+        id: folderName, // Use folder name as ID
+        name: displayName, // Use folder name as display name
         files: files.sort((a, b) => {
           // Sort files by created_at (newest first)
           const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -274,11 +285,10 @@ function Docs() {
     // Sort groups alphabetically by name
     result.sort((a, b) => a.name.localeCompare(b.name));
     
-    // Move "External Library Documentation" and "Readme" to the end
+    // Move "External Library" and "Readmes" to the end
     // and make them collapsed by default
     const externalLibIndex = result.findIndex(group => 
-      group.name === 'External Library Documentation' || 
-      group.name.toLowerCase().includes('external library')
+      group.name === 'External library'
     );
     
     if (externalLibIndex !== -1) {
@@ -288,8 +298,7 @@ function Docs() {
     }
     
     const readmeIndex = result.findIndex(group => 
-      group.name === 'Readme' || 
-      group.name.toLowerCase().includes('readme')
+      group.name === 'Readmes'
     );
     
     if (readmeIndex !== -1) {
@@ -299,7 +308,7 @@ function Docs() {
     }
     
     // Move "Uncategorized" to the end if it exists
-    const uncategorizedIndex = result.findIndex(group => group.id === 'unknown');
+    const uncategorizedIndex = result.findIndex(group => group.id === 'Uncategorized');
     if (uncategorizedIndex !== -1) {
       const uncategorized = result.splice(uncategorizedIndex, 1)[0];
       result.push(uncategorized);
@@ -377,7 +386,7 @@ function Docs() {
       if (error) throw error;
 
       // Filter out files with missing file_path or any other issues
-      // Also exclude files under the file_types folder
+      // Also exclude files under the file_types folder and .txt files
       let validFiles = (data || []).filter(file => 
         file && file.file_path && 
         // Only include files that exist (should be all, but double-check)
@@ -385,7 +394,9 @@ function Docs() {
         // Exclude files under the file_types folder at the repo root
         // The path could be like "/file_types/..." or start with "file_types/..."
         !file.file_path.includes('/file_types/') && 
-        !file.file_path.startsWith('file_types/')
+        !file.file_path.startsWith('file_types/') &&
+        // Exclude .txt files
+        !file.file_path.endsWith('.txt')
       );
       
       // Client-side filtering to ensure proper tag matching

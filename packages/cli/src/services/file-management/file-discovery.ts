@@ -48,8 +48,8 @@ export class FileDiscoveryService {
    */
   private docExtensions = [
     '.md',
-    '.mdx',
-    '.txt'
+    '.mdx'
+    // '.txt' files are excluded as per requirements
   ];
   
   /**
