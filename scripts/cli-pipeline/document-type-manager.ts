@@ -1,0 +1,772 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import * as fs from 'fs';
+import * as path from 'path';
+import { config as loadDotEnv } from 'dotenv';
+import { ClaudeService } from '../../packages/cli/src/services/claude-service';
+
+// Initialize environment variables
+loadDotEnv();
+
+interface FileStatus {
+  id: string;
+  file_path: string;
+  exists_on_disk: boolean;
+  document_type_id: string | null;
+  document_type: string | null;
+  title: string | null;
+  is_deleted: boolean;
+}
+
+interface DocumentType {
+  id: string;
+  document_type: string;
+  description: string | null;
+  category: string | null;
+}
+
+interface PromptRelationship {
+  id: string;
+  prompt_id: string;
+  asset_path: string;
+  relationship_type: string;
+  relationship_context?: string;
+}
+
+interface Prompt {
+  id: string;
+  name: string;
+  content: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  metadata?: Record<string, any>;
+}
+
+interface PromptLookupResult {
+  prompt: Prompt | null;
+  relationships: PromptRelationship[];
+  files: Record<string, string>;
+  documentTypes: DocumentType[];
+}
+
+interface ClassificationResult {
+  success: boolean;
+  document_type_id?: string;
+  document_type_name?: string;
+  confidence?: number;
+  error?: string;
+}
+
+class DocumentTypeManager {
+  private supabase: SupabaseClient;
+  private claudeService: ClaudeService;
+  private rootDir: string;
+
+  constructor() {
+    // Setup Supabase connection
+    let supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');
+    }
+
+    // Make sure the URL has proper protocol
+    if (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
+      supabaseUrl = 'https://' + supabaseUrl;
+      console.log(`Adding https:// prefix to Supabase URL: ${supabaseUrl}`);
+    }
+
+    console.log(`Connecting to Supabase at: ${supabaseUrl}`);
+    this.supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Setup Claude service
+    // Try different environment variable names for Claude API key
+    let claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.CLI_CLAUDE_API_KEY;
+    
+    if (!claudeApiKey) {
+      throw new Error('Missing Claude API key. Please set CLAUDE_API_KEY, ANTHROPIC_API_KEY, or CLI_CLAUDE_API_KEY environment variable.');
+    }
+    
+    console.log(`Claude API key present (length: ${claudeApiKey.length})`);
+    console.log(`API key starts with: ${claudeApiKey.substring(0, 10)}...`);
+    
+    try {
+      this.claudeService = new ClaudeService(claudeApiKey);
+      console.log('Claude service initialized successfully.');
+    } catch (error) {
+      console.error('Error initializing Claude service:', error instanceof Error ? error.message : 'Unknown error');
+      throw new Error('Failed to initialize Claude service. Check your API key.');
+    }
+    
+    // Set root directory
+    this.rootDir = process.cwd();
+  }
+
+  /**
+   * List all document types in the database
+   */
+  async listDocumentTypes(): Promise<DocumentType[]> {
+    try {
+      console.log('\n=== LISTING ALL DOCUMENT TYPES ===');
+      
+      const { data: documentTypes, error } = await this.supabase
+        .from('document_types')
+        .select('id, document_type, description, category')
+        .order('document_type');
+        
+      if (error) {
+        throw new Error(`Error fetching document types: ${error.message}`);
+      }
+      
+      if (!documentTypes || documentTypes.length === 0) {
+        console.log('No document types found in the database.');
+        return [];
+      }
+      
+      console.log(`Found ${documentTypes.length} document types:`);
+      documentTypes.forEach(type => {
+        console.log(`- ${type.document_type} (${type.category || 'No category'}): ${type.description || 'No description'}`);
+      });
+      
+      return documentTypes;
+    } catch (error) {
+      console.error('Error listing document types:', error instanceof Error ? error.message : 'Unknown error');
+      return [];
+    }
+  }
+
+  /**
+   * List all file paths in the database and check their existence on disk
+   */
+  async listAllFilePaths(): Promise<FileStatus[]> {
+    try {
+      console.log('\n=== LISTING ALL FILE PATHS ===');
+      
+      const { data: files, error } = await this.supabase
+        .from('documentation_files')
+        .select('id, file_path, document_type_id, title, is_deleted')
+        .order('file_path');
+        
+      if (error) {
+        throw new Error(`Error fetching files: ${error.message}`);
+      }
+      
+      if (!files || files.length === 0) {
+        console.log('No files found in the database.');
+        return [];
+      }
+      
+      console.log(`Found ${files.length} files in the database.`);
+      
+      // Get document types for reference
+      const { data: documentTypes, error: typeError } = await this.supabase
+        .from('document_types')
+        .select('id, document_type');
+        
+      if (typeError) {
+        console.warn(`Warning: Could not fetch document types: ${typeError.message}`);
+      }
+      
+      // Create lookup map for document types
+      const typeMap = new Map<string, string>();
+      if (documentTypes) {
+        documentTypes.forEach(type => {
+          typeMap.set(type.id, type.document_type);
+        });
+      }
+      
+      // Check each file's existence on disk
+      const fileStatusList: FileStatus[] = [];
+      
+      for (const file of files) {
+        const filePath = path.join(this.rootDir, file.file_path);
+        const existsOnDisk = fs.existsSync(filePath);
+        
+        const fileStatus: FileStatus = {
+          id: file.id,
+          file_path: file.file_path,
+          exists_on_disk: existsOnDisk,
+          document_type_id: file.document_type_id,
+          document_type: file.document_type_id ? typeMap.get(file.document_type_id) || null : null,
+          title: file.title,
+          is_deleted: file.is_deleted
+        };
+        
+        fileStatusList.push(fileStatus);
+      }
+      
+      // Display file status summary
+      console.log('\nFile Status Summary:');
+      console.log(`- Total files: ${fileStatusList.length}`);
+      console.log(`- Files that exist on disk: ${fileStatusList.filter(f => f.exists_on_disk).length}`);
+      console.log(`- Files that don't exist on disk: ${fileStatusList.filter(f => !f.exists_on_disk).length}`);
+      console.log(`- Files marked as deleted: ${fileStatusList.filter(f => f.is_deleted).length}`);
+      console.log(`- Files with document type assigned: ${fileStatusList.filter(f => f.document_type_id !== null).length}`);
+      
+      return fileStatusList;
+    } catch (error) {
+      console.error('Error listing file paths:', error instanceof Error ? error.message : 'Unknown error');
+      return [];
+    }
+  }
+
+  /**
+   * Update file status based on disk existence
+   */
+  async updateFileStatus(): Promise<void> {
+    try {
+      console.log('\n=== UPDATING FILE STATUS BASED ON DISK EXISTENCE ===');
+      
+      // Get all files
+      const fileStatusList = await this.listAllFilePaths();
+      
+      if (fileStatusList.length === 0) {
+        console.log('No files to update.');
+        return;
+      }
+      
+      // Files to mark as deleted (don't exist on disk but not already marked deleted)
+      const filesToMarkDeleted = fileStatusList.filter(f => !f.exists_on_disk && !f.is_deleted);
+      
+      // Files to mark as not deleted (exist on disk but marked deleted)
+      const filesToMarkNotDeleted = fileStatusList.filter(f => f.exists_on_disk && f.is_deleted);
+      
+      console.log(`Found ${filesToMarkDeleted.length} files to mark as deleted.`);
+      console.log(`Found ${filesToMarkNotDeleted.length} files to mark as not deleted.`);
+      
+      // Update files that don't exist on disk to is_deleted=true
+      if (filesToMarkDeleted.length > 0) {
+        const { error: deleteError } = await this.supabase
+          .from('documentation_files')
+          .update({ is_deleted: true, updated_at: new Date().toISOString() })
+          .in('id', filesToMarkDeleted.map(f => f.id));
+          
+        if (deleteError) {
+          console.error(`Error marking files as deleted: ${deleteError.message}`);
+        } else {
+          console.log(`Successfully marked ${filesToMarkDeleted.length} files as deleted.`);
+        }
+      }
+      
+      // Update files that exist on disk to is_deleted=false
+      if (filesToMarkNotDeleted.length > 0) {
+        const { error: undeleteError } = await this.supabase
+          .from('documentation_files')
+          .update({ is_deleted: false, updated_at: new Date().toISOString() })
+          .in('id', filesToMarkNotDeleted.map(f => f.id));
+          
+        if (undeleteError) {
+          console.error(`Error marking files as not deleted: ${undeleteError.message}`);
+        } else {
+          console.log(`Successfully marked ${filesToMarkNotDeleted.length} files as not deleted.`);
+        }
+      }
+      
+      console.log('File status update complete.');
+    } catch (error) {
+      console.error('Error updating file status:', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+
+  /**
+   * Lookup a prompt by name and fetch its content, relationships, and document types
+   */
+  async lookupPrompt(promptName: string): Promise<PromptLookupResult> {
+    try {
+      console.log(`\n=== LOOKING UP PROMPT: ${promptName} ===`);
+      
+      // Initialize result object
+      const result: PromptLookupResult = {
+        prompt: null,
+        relationships: [],
+        files: {},
+        documentTypes: []
+      };
+      
+      // Step 1: Get prompt from database
+      const { data: prompt, error: promptError } = await this.supabase
+        .from('prompts')
+        .select('*')
+        .eq('name', promptName)
+        .single();
+        
+      if (promptError) {
+        console.error(`Error fetching prompt: ${promptError.message}`);
+        
+        // Try to find prompt in prompts directory
+        const promptPath = path.join(this.rootDir, 'prompts', `${promptName}.md`);
+        if (fs.existsSync(promptPath)) {
+          console.log(`Found prompt file at ${promptPath}`);
+          const content = fs.readFileSync(promptPath, 'utf8');
+          
+          // Create a minimal prompt object
+          result.prompt = {
+            id: 'local-file',
+            name: promptName,
+            content,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+        } else {
+          console.error(`Prompt not found in database or on disk: ${promptName}`);
+        }
+      } else {
+        console.log(`Found prompt in database: ${prompt.name}`);
+        result.prompt = prompt;
+      }
+      
+      // If we don't have a prompt, return early
+      if (!result.prompt) {
+        return result;
+      }
+      
+      // Step 2: Get relationships if prompt is from database
+      if (result.prompt.id !== 'local-file') {
+        // Try with prompt_relationships first (correct table name)
+        const { data: promptRelationships, error: promptRelError } = await this.supabase
+          .from('prompt_relationships')
+          .select('*')
+          .eq('prompt_id', result.prompt.id);
+          
+        if (promptRelError) {
+          // Fall back to file_relationships if prompt_relationships failed
+          console.log(`Could not fetch from prompt_relationships: ${promptRelError.message}`);
+          console.log('Trying file_relationships table as fallback...');
+          
+          const { data: fileRelationships, error: fileRelError } = await this.supabase
+            .from('file_relationships')
+            .select('*')
+            .eq('prompt_id', result.prompt.id);
+            
+          if (fileRelError) {
+            console.error(`Error fetching relationships: ${fileRelError.message}`);
+          } else if (fileRelationships && fileRelationships.length > 0) {
+            console.log(`Found ${fileRelationships.length} relationships in file_relationships table for prompt ${promptName}`);
+            result.relationships = fileRelationships;
+          }
+        } else if (promptRelationships && promptRelationships.length > 0) {
+          console.log(`Found ${promptRelationships.length} relationships in prompt_relationships table for prompt ${promptName}`);
+          result.relationships = promptRelationships;
+          
+          // Load the content of each related file
+          for (const rel of promptRelationships) {
+            try {
+              const filePath = path.join(this.rootDir, rel.asset_path);
+              if (fs.existsSync(filePath)) {
+                const content = fs.readFileSync(filePath, 'utf8');
+                result.files[rel.asset_path] = content;
+                console.log(`Loaded content for: ${rel.asset_path}`);
+              } else {
+                console.warn(`Related file not found: ${rel.asset_path}`);
+              }
+            } catch (fileError) {
+              console.error(`Error reading related file: ${rel.asset_path}`, fileError);
+            }
+          }
+        } else {
+          console.log(`No relationships found for prompt ${promptName}`);
+        }
+      }
+      
+      // Step 3: Get document types (needed for classification)
+      // First, check if we have a database query in the prompt metadata
+      let documentTypes = null;
+      
+      if (result.prompt?.metadata?.database_query || result.prompt?.metadata?.databaseQuery) {
+        const queryText = result.prompt.metadata.database_query || result.prompt.metadata.databaseQuery;
+        console.log(`\nFound database query in prompt metadata:`);
+        console.log(queryText);
+        
+        try {
+          console.log(`Executing database query from prompt metadata...`);
+          
+          // If it's a document_types query, try to execute it directly
+          if (queryText.includes('document_types')) {
+            // Look for specific patterns in the query
+            if (queryText.toLowerCase().includes("category = 'documentation'") || 
+                queryText.toLowerCase().includes('category = "documentation"')) {
+              console.log('Using direct table access for document_types with Documentation category');
+              
+              const { data, error } = await this.supabase
+                .from('document_types')
+                .select('*')
+                .eq('category', 'Documentation');
+                
+              if (error) {
+                console.error(`Error executing direct query: ${error.message}`);
+              } else if (data && data.length > 0) {
+                console.log(`Found ${data.length} document types using direct query`);
+                documentTypes = data;
+              }
+            } else if (queryText.toLowerCase().includes("category in (")) {
+              // Try to extract categories from IN clause
+              const categoryMatch = queryText.match(/category\s+in\s*\(\s*['"](.*?)['"](?:\s*,\s*['"]?(.*?)['"]?)*\s*\)/i);
+              if (categoryMatch) {
+                const categories = categoryMatch
+                  .slice(1)
+                  .filter(Boolean)
+                  .map((cat: string) => cat.trim());
+                  
+                if (categories.length > 0) {
+                  console.log(`Executing IN query with categories: ${categories.join(', ')}`);
+                  
+                  const { data, error } = await this.supabase
+                    .from('document_types')
+                    .select('*')
+                    .in('category', categories);
+                    
+                  if (error) {
+                    console.error(`Error executing IN query: ${error.message}`);
+                  } else if (data && data.length > 0) {
+                    console.log(`Found ${data.length} document types using IN query`);
+                    documentTypes = data;
+                  }
+                }
+              }
+            }
+          }
+          
+          // If we still don't have results, try to use execute_sql RPC
+          if (!documentTypes) {
+            try {
+              console.log('Trying execute_sql RPC method');
+              const { data, error } = await this.supabase.rpc('execute_sql', { sql: queryText });
+              
+              if (error) {
+                console.error(`Error executing SQL via RPC: ${error.message}`);
+              } else if (data && data.length > 0) {
+                console.log(`Found ${data.length} results using RPC query execution`);
+                documentTypes = data;
+              }
+            } catch (rpcError) {
+              console.error(`RPC method error: ${rpcError instanceof Error ? rpcError.message : 'Unknown error'}`);
+            }
+          }
+        } catch (queryError) {
+          console.error(`Error executing query from metadata: ${queryError instanceof Error ? queryError.message : 'Unknown error'}`);
+        }
+      }
+      
+      // If we couldn't get document types from metadata query, fall back to direct table access
+      if (!documentTypes) {
+        console.log('\nFalling back to direct table access for document types');
+        const { data, error: typeError } = await this.supabase
+          .from('document_types')
+          .select('id, document_type, description, category')
+          .eq('category', 'Documentation');
+          
+        if (typeError) {
+          console.error(`Error fetching document types: ${typeError.message}`);
+        } else if (data && data.length > 0) {
+          console.log(`Found ${data.length} document types for category: Documentation`);
+          documentTypes = data;
+        } else {
+          console.warn('No document types found for category: Documentation');
+        }
+      }
+      
+      if (documentTypes && documentTypes.length > 0) {
+        result.documentTypes = documentTypes;
+        console.log(`\nSample document types (first 3):`);
+        documentTypes.slice(0, 3).forEach((type: { document_type: string; description?: string; category?: string }) => {
+          console.log(`- ${type.document_type}: ${type.description || 'No description'} (Category: ${type.category || 'None'})`);
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error looking up prompt:', error instanceof Error ? error.message : 'Unknown error');
+      return {
+        prompt: null,
+        relationships: [],
+        files: {},
+        documentTypes: []
+      };
+    }
+  }
+
+  /**
+   * Classify a document using Claude 3.7 and a prompt
+   */
+  async classifyDocument(documentPath: string, promptName: string): Promise<ClassificationResult> {
+    try {
+      console.log(`\n=== CLASSIFYING DOCUMENT: ${documentPath} ===`);
+      
+      // Step 1: Check if file exists
+      const fullPath = path.resolve(this.rootDir, documentPath);
+      if (!fs.existsSync(fullPath)) {
+        return {
+          success: false,
+          error: `File not found: ${fullPath}`
+        };
+      }
+      
+      // Step 2: Read the document content
+      const documentContent = fs.readFileSync(fullPath, 'utf8');
+      console.log(`Read ${documentContent.length} characters from ${documentPath}`);
+      
+      // Step 3: Look up the prompt
+      const promptData = await this.lookupPrompt(promptName);
+      
+      if (!promptData.prompt) {
+        return {
+          success: false,
+          error: `Prompt not found: ${promptName}`
+        };
+      }
+      
+      if (promptData.documentTypes.length === 0) {
+        return {
+          success: false,
+          error: 'No document types found for classification'
+        };
+      }
+      
+      // Step 4: Build the system prompt for Claude
+      let systemPrompt = `${promptData.prompt.content}\n\n`;
+      systemPrompt += `Here are the available document types you can choose from:\n`;
+      
+      promptData.documentTypes.forEach(type => {
+        systemPrompt += `- ${type.document_type} (ID: ${type.id}): ${type.description || 'No description'}\n`;
+      });
+      
+      systemPrompt += `\nAnalyze the following document and classify it as one of these document types. Return your response as a JSON object with document_type_id, document_type_name, and confidence (0-1).`;
+      
+      // Step 5: Create context object with related information
+      const contextObject = {
+        documentTypes: promptData.documentTypes,
+        filePath: documentPath,
+        relationships: promptData.relationships.length
+      };
+      
+      // Step 6: Call Claude API
+      console.log('Calling Claude API for classification...');
+      const claudeResponse = await this.claudeService.classifyDocument(
+        documentContent,
+        systemPrompt,
+        JSON.stringify(contextObject)
+      );
+      
+      if (!claudeResponse.success) {
+        return {
+          success: false,
+          error: `Claude API error: ${claudeResponse.error}`
+        };
+      }
+      
+      // Step 7: Extract the classification from the response
+      const responseContent = claudeResponse.result;
+      console.log('Received response from Claude API');
+      
+      try {
+        // Try to extract JSON from the response
+        const jsonMatch = 
+          typeof responseContent === 'string' 
+            ? responseContent.match(/```json\s*({[\s\S]*?})\s*```/) || 
+              responseContent.match(/{[\s\S]*?}/)
+            : null;
+            
+        // If we have content array in the format from Claude completion API
+        const contentText = 
+          typeof responseContent === 'object' && 
+          responseContent.content && 
+          Array.isArray(responseContent.content) && 
+          responseContent.content[0]?.text
+            ? responseContent.content[0].text
+            : null;
+            
+        let jsonStr = '';
+        
+        if (jsonMatch && (jsonMatch[1] || jsonMatch[0])) {
+          jsonStr = jsonMatch[1] || jsonMatch[0];
+        } else if (contentText) {
+          // Try to extract from content text if we didn't find it in the direct response
+          const contentMatch = contentText.match(/```json\s*({[\s\S]*?})\s*```/) || 
+                              contentText.match(/{[\s\S]*?}/);
+          
+          if (contentMatch && (contentMatch[1] || contentMatch[0])) {
+            jsonStr = contentMatch[1] || contentMatch[0];
+          } else {
+            console.error('Could not extract JSON from Claude response');
+            return {
+              success: false,
+              error: 'Could not extract JSON from Claude response'
+            };
+          }
+        } else {
+          console.error('Could not extract JSON from Claude response');
+          return {
+            success: false,
+            error: 'Could not extract JSON from Claude response'
+          };
+        }
+        
+        // Parse the extracted JSON
+        const classification = JSON.parse(jsonStr);
+        
+        return {
+          success: true,
+          document_type_id: classification.document_type_id,
+          document_type_name: classification.document_type_name,
+          confidence: classification.confidence
+        };
+      } catch (parseError) {
+        console.error('Error parsing Claude response:', parseError);
+        return {
+          success: false,
+          error: `Error parsing Claude response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
+        };
+      }
+    } catch (error) {
+      console.error('Error classifying document:', error);
+      return {
+        success: false,
+        error: `Error classifying document: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Update document type for a file in the database
+   */
+  async updateDocumentType(filePath: string, documentTypeId: string): Promise<boolean> {
+    try {
+      console.log(`\n=== UPDATING DOCUMENT TYPE FOR: ${filePath} ===`);
+      
+      // Get the file ID from the database
+      const { data: file, error: fileError } = await this.supabase
+        .from('documentation_files')
+        .select('id')
+        .eq('file_path', filePath)
+        .single();
+        
+      if (fileError) {
+        console.error(`Error fetching file: ${fileError.message}`);
+        return false;
+      }
+      
+      if (!file) {
+        console.error(`File not found in database: ${filePath}`);
+        return false;
+      }
+      
+      // Update the document type
+      const { error: updateError } = await this.supabase
+        .from('documentation_files')
+        .update({
+          document_type_id: documentTypeId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', file.id);
+        
+      if (updateError) {
+        console.error(`Error updating document type: ${updateError.message}`);
+        return false;
+      }
+      
+      console.log(`Successfully updated document type for ${filePath} to ${documentTypeId}`);
+      return true;
+    } catch (error) {
+      console.error('Error updating document type:', error instanceof Error ? error.message : 'Unknown error');
+      return false;
+    }
+  }
+}
+
+/**
+ * Main function to run the document type manager
+ */
+async function main() {
+  const manager = new DocumentTypeManager();
+  
+  // Get command line arguments
+  const args = process.argv.slice(2);
+  const command = args[0];
+  
+  if (!command) {
+    console.log(`
+Usage: ts-node document-type-manager.ts <command> [options]
+
+Commands:
+  list-types                 List all document types
+  list-files                 List all file paths and their status
+  update-status              Update file status based on disk existence
+  lookup-prompt <promptName> Look up a prompt and its relationships
+  classify <filePath>        Classify a document using the default prompt
+    `);
+    return;
+  }
+  
+  switch (command) {
+    case 'list-types':
+      await manager.listDocumentTypes();
+      break;
+      
+    case 'list-files':
+      await manager.listAllFilePaths();
+      break;
+      
+    case 'update-status':
+      await manager.updateFileStatus();
+      break;
+      
+    case 'lookup-prompt':
+      const lookupPromptName = args[1];
+      if (!lookupPromptName) {
+        console.error('Please provide a prompt name');
+        return;
+      }
+      await manager.lookupPrompt(lookupPromptName);
+      break;
+      
+    case 'classify':
+      const filePath = args[1];
+      if (!filePath) {
+        console.error('Please provide a file path to classify');
+        return;
+      }
+      
+      // Use the default prompt for classification
+      const classifyPromptName = args[2] || 'markdown-document-classification-prompt';
+      
+      const result = await manager.classifyDocument(filePath, classifyPromptName);
+      if (result.success) {
+        console.log(`\nClassification Result:`);
+        console.log(`- Document Type: ${result.document_type_name}`);
+        console.log(`- Document Type ID: ${result.document_type_id}`);
+        console.log(`- Confidence: ${result.confidence}`);
+        
+        // Ask if user wants to update the document type
+        if (result.document_type_id) {
+          const readline = require('readline').createInterface({
+            input: process.stdin,
+            output: process.stdout
+          });
+          
+          readline.question('Do you want to update the document type in the database? (y/n) ', async (answer: string) => {
+            if (answer.toLowerCase() === 'y') {
+              await manager.updateDocumentType(filePath, result.document_type_id!);
+            }
+            readline.close();
+          });
+        }
+      } else {
+        console.error(`Classification failed: ${result.error}`);
+      }
+      break;
+      
+    default:
+      console.error(`Unknown command: ${command}`);
+  }
+}
+
+// Run the main function
+if (require.main === module) {
+  main().catch(error => {
+    console.error('Unhandled error:', error);
+    process.exit(1);
+  });
+}
+
+export { DocumentTypeManager };
