@@ -6,13 +6,166 @@
  */
 
 import * as dotenv from 'dotenv';
+import * as path from 'path';
+import config from '../../packages/cli/src/utils/config';
+import { Logger } from '../../packages/cli/src/utils/logger';
+import { ErrorHandler } from '../../packages/cli/src/utils/error-handler';
 
 // Load environment variables from different .env files
 dotenv.config(); // Load base .env
-dotenv.config({ path: '.env.development' }); // Load environment specific
-dotenv.config({ path: '.env.local' }); // Load local overrides
+dotenv.config({ path: path.resolve(process.cwd(), '.env.development') }); // Load environment specific
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') }); // Load local overrides
+
+/**
+ * Configuration service for CLI scripts
+ * Provides a common interface for accessing configuration values
+ */
+class ConfigService {
+  private static instance: ConfigService;
+  
+  // Allow manual override of values for testing
+  private supabaseUrlOverride: string | null = null;
+  private supabaseKeyOverride: string | null = null;
+  private claudeApiKeyOverride: string | null = null;
+  
+  private constructor() {
+    // Private constructor to ensure singleton
+    Logger.info('ConfigService initialized');
+  }
+  
+  /**
+   * Get the singleton instance
+   */
+  public static getInstance(): ConfigService {
+    if (!ConfigService.instance) {
+      ConfigService.instance = new ConfigService();
+    }
+    return ConfigService.instance;
+  }
+  
+  /**
+   * Get Supabase URL from config or environment
+   */
+  public getSupabaseUrl(): string {
+    // First check for override
+    if (this.supabaseUrlOverride) {
+      return this.supabaseUrlOverride;
+    }
+    
+    // Then try main config utility from packages/cli
+    try {
+      if (config && config.supabaseUrl) {
+        return config.supabaseUrl;
+      }
+    } catch (error) {
+      Logger.warn('Could not access packages/cli config, falling back to env vars');
+    }
+    
+    // Fall back to environment variables with priorities
+    const envVars = [
+      'CLI_SUPABASE_URL',
+      'SUPABASE_URL',
+      'VITE_SUPABASE_URL'
+    ];
+    
+    for (const varName of envVars) {
+      if (process.env[varName] && !process.env[varName]?.includes('${')) {
+        return process.env[varName] as string;
+      }
+    }
+    
+    throw new Error('Supabase URL not found in config or environment variables');
+  }
+  
+  /**
+   * Get Supabase API key from config or environment
+   */
+  public getSupabaseKey(): string {
+    // First check for override
+    if (this.supabaseKeyOverride) {
+      return this.supabaseKeyOverride;
+    }
+    
+    // Then try main config utility from packages/cli
+    try {
+      if (config && config.supabaseKey) {
+        return config.supabaseKey;
+      }
+    } catch (error) {
+      console.warn('Could not access packages/cli config, falling back to env vars');
+    }
+    
+    // Fall back to environment variables with priorities
+    const envVars = [
+      'CLI_SUPABASE_KEY',
+      'SUPABASE_SERVICE_ROLE_KEY',
+      'VITE_SUPABASE_SERVICE_ROLE_KEY'
+    ];
+    
+    for (const varName of envVars) {
+      if (process.env[varName] && !process.env[varName]?.includes('${')) {
+        return process.env[varName] as string;
+      }
+    }
+    
+    throw new Error('Supabase API key not found in config or environment variables');
+  }
+  
+  /**
+   * Get Claude API key from config or environment
+   */
+  public getClaudeApiKey(): string {
+    // First check for override
+    if (this.claudeApiKeyOverride) {
+      return this.claudeApiKeyOverride;
+    }
+    
+    // Then try main config utility from packages/cli
+    try {
+      if (config && config.anthropicApiKey) {
+        return config.anthropicApiKey;
+      }
+    } catch (error) {
+      console.warn('Could not access packages/cli config, falling back to env vars');
+    }
+    
+    // Fall back to environment variables with priorities
+    const envVars = [
+      'CLAUDE_API_KEY',
+      'ANTHROPIC_API_KEY',
+      'CLI_CLAUDE_API_KEY',
+      'VITE_ANTHROPIC_API_KEY'
+    ];
+    
+    for (const varName of envVars) {
+      if (process.env[varName] && !process.env[varName]?.includes('${')) {
+        return process.env[varName] as string;
+      }
+    }
+    
+    throw new Error('Claude API key not found in config or environment variables');
+  }
+  
+  // Allow manual override for testing
+  public setSupabaseUrl(url: string): void {
+    this.supabaseUrlOverride = url;
+  }
+  
+  public setSupabaseKey(key: string): void {
+    this.supabaseKeyOverride = key;
+  }
+  
+  public setClaudeApiKey(key: string): void {
+    this.claudeApiKeyOverride = key;
+  }
+  
+  public clearOverrides(): void {
+    this.supabaseUrlOverride = null;
+    this.supabaseKeyOverride = null;
+    this.claudeApiKeyOverride = null;
+  }
+}
 import * as fs from 'fs';
-import * as path from 'path';
 import * as readline from 'readline';
 import { 
   normalizePath, 
@@ -43,6 +196,18 @@ import {
   PromptDocumentClassifier,
   DocumentTypeAssignment
 } from '../../packages/cli/src/services/prompt-document-classifier';
+import { ClaudeService } from '../../packages/cli/src/services/claude-service';
+import { FileService } from '../../packages/cli/src/services/file-service';
+import {
+  DocumentClassificationService,
+  ClassificationResult,
+  DocumentInfo
+} from '../../packages/cli/src/services/document-classification-service';
+import { 
+  PromptQueryService,
+  PromptQueryResult,
+  Prompt
+} from '../../packages/cli/src/services/prompt-query-service';
 
 /**
  * Prompt the user to confirm they want to update the file paths
@@ -105,8 +270,9 @@ async function promptUserForDeletionCheck(): Promise<boolean> {
 
 /**
  * Check for files without document type assignments using execute_sql RPC
+ * @returns Promise<{success: boolean, error?: string, filesWithoutType?: number}>
  */
-async function checkFilesWithoutDocumentType(): Promise<void> {
+async function checkFilesWithoutDocumentType(): Promise<{success: boolean, error?: string, filesWithoutType?: number}> {
   console.log('\n=== CHECKING FOR FILES WITHOUT DOCUMENT TYPE ASSIGNMENTS ===');
   
   try {
@@ -114,7 +280,29 @@ async function checkFilesWithoutDocumentType(): Promise<void> {
     console.log('Initializing Supabase connection...');
     const supabase = await initSupabaseConnection();
     
-    console.log('Using execute_sql RPC function to find files without document types...');
+    // Initialize our shared PromptQueryService
+    console.log('Initializing shared PromptQueryService...');
+    const configService = ConfigService.getInstance();
+    const supabaseUrl = configService.getSupabaseUrl();
+    const supabaseKey = configService.getSupabaseKey();
+    
+    if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
+      return {
+        success: false,
+        error: `Invalid Supabase URL: URL must start with http:// or https://`
+      };
+    }
+    
+    if (!supabaseKey) {
+      return {
+        success: false,
+        error: 'Missing Supabase API key'
+      };
+    }
+    
+    const promptQueryService = new PromptQueryService(supabaseUrl, supabaseKey);
+    
+    console.log('Using PromptQueryService to execute queries...');
     
     // First, get counts using execute_sql RPC
     const totalFilesQuery = `
@@ -142,9 +330,9 @@ async function checkFilesWithoutDocumentType(): Promise<void> {
       ORDER BY file_path
     `;
     
-    // Execute queries using execute_sql RPC
-    console.log('Running count queries...');
-    console.log('DEBUG: Using execute_sql RPC function with the following queries:');
+    // Execute queries using our shared PromptQueryService
+    console.log('Running count queries using shared PromptQueryService...');
+    console.log('DEBUG: Using shared PromptQueryService with the following queries:');
     console.log(`1. Total files query: ${totalFilesQuery}`);
     console.log(`2. Files with type query: ${filesWithTypeQuery}`);
     console.log(`3. Files without type query: ${filesWithoutTypeQuery}`);
@@ -152,13 +340,14 @@ async function checkFilesWithoutDocumentType(): Promise<void> {
     
     // Get total files count
     console.log('\nExecuting total files count query...');
-    const { data: totalData, error: totalError } = await supabase.rpc('execute_sql', {
-      sql: totalFilesQuery
-    });
+    const totalData: any[] | null = await promptQueryService.executeQuery(totalFilesQuery);
     
-    if (totalError) {
-      console.error(`Error getting total count: ${totalError.message}`);
-      return;
+    if (!totalData) {
+      console.error('Error getting total count: No data returned from query');
+      return {
+        success: false,
+        error: 'Error getting total count: No data returned from query'
+      };
     }
     
     console.log(`DEBUG: Total files query response: ${JSON.stringify(totalData)}`);
@@ -167,13 +356,14 @@ async function checkFilesWithoutDocumentType(): Promise<void> {
     
     // Get files with type count
     console.log('\nExecuting files with type count query...');
-    const { data: withTypeData, error: withTypeError } = await supabase.rpc('execute_sql', {
-      sql: filesWithTypeQuery
-    });
+    const withTypeData: any[] | null = await promptQueryService.executeQuery(filesWithTypeQuery);
     
-    if (withTypeError) {
-      console.error(`Error getting with-type count: ${withTypeError.message}`);
-      return;
+    if (!withTypeData) {
+      console.error('Error getting with-type count: No data returned from query');
+      return {
+        success: false,
+        error: 'Error getting with-type count: No data returned from query'
+      };
     }
     
     console.log(`DEBUG: Files with type query response: ${JSON.stringify(withTypeData)}`);
@@ -182,13 +372,14 @@ async function checkFilesWithoutDocumentType(): Promise<void> {
     
     // Get files without type count
     console.log('\nExecuting files without type count query...');
-    const { data: withoutTypeData, error: withoutTypeError } = await supabase.rpc('execute_sql', {
-      sql: filesWithoutTypeQuery
-    });
+    const withoutTypeData: any[] | null = await promptQueryService.executeQuery(filesWithoutTypeQuery);
     
-    if (withoutTypeError) {
-      console.error(`Error getting without-type count: ${withoutTypeError.message}`);
-      return;
+    if (!withoutTypeData) {
+      console.error('Error getting without-type count: No data returned from query');
+      return {
+        success: false,
+        error: 'Error getting without-type count: No data returned from query'
+      };
     }
     
     console.log(`DEBUG: Files without type query response: ${JSON.stringify(withoutTypeData)}`);
@@ -197,13 +388,14 @@ async function checkFilesWithoutDocumentType(): Promise<void> {
     
     // Get the actual files without document types
     console.log('\nFetching files without document types...');
-    const { data: unassignedFiles, error: unassignedError } = await supabase.rpc('execute_sql', {
-      sql: unassignedFilesQuery
-    });
+    const unassignedFiles: any[] | null = await promptQueryService.executeQuery(unassignedFilesQuery);
     
-    if (unassignedError) {
-      console.error(`Error getting unassigned files: ${unassignedError.message}`);
-      return;
+    if (!unassignedFiles) {
+      console.error('Error getting unassigned files: No data returned from query');
+      return {
+        success: false,
+        error: 'Error getting unassigned files: No data returned from query'
+      };
     }
     
     console.log(`DEBUG: Unassigned files query response received, found: ${unassignedFiles ? unassignedFiles.length : 0} records`);
@@ -222,12 +414,18 @@ async function checkFilesWithoutDocumentType(): Promise<void> {
     
     if (totalFiles === 0) {
       console.log('\n⚠️ No documentation files found in the database.');
-      return;
+      return {
+        success: true,
+        filesWithoutType: 0
+      };
     }
     
     if (filesWithoutType === 0) {
       console.log('\n✅ Great! All documentation files have document types assigned!');
-      return;
+      return {
+        success: true,
+        filesWithoutType: 0
+      };
     }
     
     // Display files without document types
@@ -293,8 +491,18 @@ async function checkFilesWithoutDocumentType(): Promise<void> {
     console.log('4. Automatically assign document types using Claude 3.7 (option 5 in the main menu)');
     
   } catch (error) {
-    console.error('\nError checking files without document types:', error instanceof Error ? error.message : 'Unknown error');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('\nError checking files without document types:', errorMessage);
+    return {
+      success: false,
+      error: errorMessage
+    };
   }
+  
+  return {
+    success: true,
+    filesWithoutType: 0 // Default value when no error but count couldn't be determined
+  };
 }
 
 /**
@@ -398,7 +606,205 @@ async function discoverAndAddNewFiles(): Promise<void> {
   }
 }
 
-async function countDocumentationFiles() {
+/**
+ * Process a single document (the newest) with Claude 3.7
+ * @returns Promise<{success: boolean, error?: string, documentUpdated?: boolean}>
+ */
+async function processDocumentsWithoutTypes(): Promise<{success: boolean, error?: string, documentUpdated?: boolean}> {
+  console.log('\n=== PROCESS NEWEST DOCUMENT WITH CLAUDE 3.7 ===');
+  
+  try {
+    // Initialize Supabase connection
+    console.log('Initializing Supabase connection...');
+    const supabase = await initSupabaseConnection();
+    
+    // Get configuration values from our singleton ConfigService
+    const configService = ConfigService.getInstance();
+    
+    // Get configuration values from ConfigService
+    const claudeApiKey = configService.getClaudeApiKey();
+    const supabaseUrl = configService.getSupabaseUrl();
+    const supabaseKey = configService.getSupabaseKey();
+    
+    // Initialize our shared PromptQueryService - will be used by the DocumentClassificationService
+    console.log('Initializing shared PromptQueryService...');
+    const promptQueryService = new PromptQueryService(supabaseUrl, supabaseKey);
+    
+    // Prompt for classification prompt name
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    // Display information to the user
+    console.log('\nThis will use Claude 3.7 to classify the newest document, regardless of its current document type assignment.');
+    console.log('You will need to provide the name of the classification prompt to use.');
+    console.log('Recommended prompt: markdown-document-classification-prompt');
+    console.log('\nNOTE: This process will:');
+    console.log('1. Retrieve the specified prompt and its related document types');
+    console.log('2. Run the newest document through Claude 3.7');
+    console.log('3. Display the classification result (will NOT update the database)');
+    
+    const promptName = await new Promise<string>((resolve) => {
+      rl.question('\nEnter the prompt name to use for classification [markdown-document-classification-prompt]: ', (answer) => {
+        rl.close();
+        resolve(answer.trim() || 'markdown-document-classification-prompt');
+      });
+    });
+    
+    console.log(`\nProcessing the newest document using prompt: ${promptName}`);
+    
+    // First, check if the prompt exists using our shared service
+    console.log(`Looking up prompt with shared PromptQueryService: ${promptName}`);
+    const promptResult: PromptQueryResult = await promptQueryService.getPromptWithQueryResults(promptName);
+    
+    if (!promptResult.prompt) {
+      console.error(`Prompt not found: ${promptName}`);
+      if (promptResult.error) {
+        console.error(`Error: ${promptResult.error}`);
+      }
+      return {
+        success: false,
+        error: `Prompt not found: ${promptName}`,
+        documentUpdated: false
+      };
+    }
+    
+    console.log(`✅ Found prompt in database: ${promptName}`);
+    if (promptResult.databaseQueryResults) {
+      console.log(`✅ Successfully executed database query - found ${promptResult.databaseQueryResults.length} document types`);
+    }
+    
+    // Initialize the document classification service
+    // Use values from the ConfigService instead of direct env vars
+    const classificationService = new DocumentClassificationService(
+      supabase, 
+      claudeApiKey,
+      supabaseUrl,
+      supabaseKey
+    );
+    
+    // Get the newest document
+    console.log('\nFetching the newest document...');
+    const newestDocument = await classificationService.getNewestDocument();
+    
+    if (!newestDocument) {
+      console.error('Failed to find any documents in the database');
+      return {
+        success: false,
+        error: 'Failed to find any documents in the database'
+      };
+    }
+    
+    console.log('\n=== NEWEST DOCUMENT DETAILS ===');
+    console.log(`ID: ${newestDocument.id}`);
+    console.log(`Path: ${newestDocument.file_path}`);
+    console.log(`Title: ${newestDocument.title || '[No Title]'}`);
+    console.log(`Current Document Type ID: ${newestDocument.document_type_id || '[None]'}`);
+    
+    // Perform the classification with debug output
+    console.log(`\nClassifying document using prompt: ${promptName}`);
+    console.log('This process will connect to Claude 3.7 API and may take a few moments...');
+    
+    // These are all handled by the service now
+    const result = await classificationService.classifyDocument(
+      newestDocument.file_path,
+      promptName,
+      false // do not output to markdown
+    );
+    
+    if (!result.success) {
+      console.error(`\nError classifying document: ${result.error}`);
+      return {
+        success: false,
+        error: `Error classifying document: ${result.error}`,
+        documentUpdated: false
+      };
+    }
+    
+    // Display the raw API response for debugging
+    console.log('\n=== RAW CLAUDE API RESPONSE ===');
+    console.log(JSON.stringify(result.rawResponse, null, 2));
+    
+    // Display the extracted JSON result
+    console.log('\n=== CLASSIFICATION RESULT ===');
+    console.log(JSON.stringify(result.jsonResponse, null, 2));
+    
+    // Display the comparison
+    console.log('\n=== CLASSIFICATION COMPARISON ===');
+    console.log(`Current document_type_id: ${newestDocument.document_type_id || '[None]'}`);
+    console.log(`Claude's document_type_id: ${result.document_type_id}`);
+    console.log(`Claude's document_type_name: ${result.document_type_name}`);
+    console.log(`Claude's confidence: ${result.confidence}`);
+    
+    console.log('\nDocument classification complete. No changes were made to the database.');
+    
+    // Offer to update the document type
+    const updateRl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    const shouldUpdate = await new Promise<boolean>((resolve) => {
+      updateRl.question('\nWould you like to update the document type in the database? (y/n): ', (answer) => {
+        updateRl.close();
+        resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
+      });
+    });
+    
+    if (shouldUpdate && result.document_type_id) {
+      console.log(`\nUpdating document type to ${result.document_type_name} (${result.document_type_id})...`);
+      const updateResult = await classificationService.updateDocumentType(
+        newestDocument.id,
+        result.document_type_id
+      );
+      
+      if (updateResult.success) {
+        console.log('✅ Document type updated successfully!');
+        return {
+          success: true,
+          documentUpdated: true
+        };
+      } else {
+        console.error(`❌ Failed to update document type: ${updateResult.error}`);
+        return {
+          success: false,
+          error: updateResult.error,
+          documentUpdated: false
+        };
+      }
+    } else {
+      console.log('No changes made to the database.');
+      return {
+        success: true,
+        documentUpdated: false
+      };
+    }
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('\nError processing document:', errorMessage);
+    if (error instanceof Error && error.stack) {
+      console.error('Stack trace:', error.stack);
+    }
+    return {
+      success: false,
+      error: errorMessage,
+      documentUpdated: false
+    };
+  }
+  
+  return {
+    success: true,
+    documentUpdated: false // Default to false unless explicitly set to true in the function
+  };
+}
+
+/**
+ * Count documentation files and check for path normalization issues
+ * @returns Promise<{success: boolean, error?: string, count?: number}>
+ */
+async function countDocumentationFiles(): Promise<{success: boolean, error?: string, count?: number}> {
   const pathsToUpdate: PathUpdate[] = [];
   
   try {
@@ -617,108 +1023,22 @@ async function countDocumentationFiles() {
     }
 
   } catch (error) {
-    console.error('Unexpected error:', error instanceof Error ? error.message : 'Unknown error');
-    process.exit(1);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Unexpected error:', errorMessage);
+    return {
+      success: false,
+      error: errorMessage
+    };
   }
-}
-
-/**
- * Process documents without document types using Claude 3.7
- */
-async function processDocumentsWithoutTypes(): Promise<void> {
-  console.log('\n=== PROCESS DOCUMENTS WITHOUT TYPES USING CLAUDE 3.7 ===');
   
-  try {
-    // Initialize Supabase connection
-    console.log('Initializing Supabase connection...');
-    const supabase = await initSupabaseConnection();
-    
-    // Get Claude API key
-    const claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
-    
-    if (!claudeApiKey) {
-      console.error('Claude API key not found in environment variables.');
-      console.error('Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY in your environment.');
-      return;
-    }
-    
-    // Get supabase URL and key
-    const supabaseUrl = process.env.SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-    
-    // Prompt for classification prompt name
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
-    
-    // Display information to the user
-    console.log('\nThis will use Claude 3.7 to classify documents that currently have no document type assignment.');
-    console.log('You will need to provide the name of the classification prompt to use.');
-    console.log('Recommended prompt: markdown-document-classification-prompt');
-    console.log('\nNOTE: This process will:');
-    console.log('1. Retrieve the specified prompt and its related document types');
-    console.log('2. Run the content of each unclassified document through Claude 3.7');
-    console.log('3. Save the assigned document types back to the database');
-    
-    const promptName = await new Promise<string>((resolve) => {
-      rl.question('\nEnter the prompt name to use for classification [markdown-document-classification-prompt]: ', (answer) => {
-        resolve(answer.trim() || 'markdown-document-classification-prompt');
-      });
-    });
-    
-    // Get limit of documents to process
-    const limitStr = await new Promise<string>((resolve) => {
-      rl.question('\nMaximum number of documents to process [10]: ', (answer) => {
-        resolve(answer.trim() || '10');
-      });
-    });
-    
-    // Get whether to output to markdown
-    const outputToMarkdownStr = await new Promise<string>((resolve) => {
-      rl.question('\nOutput results to markdown files? (y/n) [n]: ', (answer) => {
-        rl.close();
-        resolve(answer.trim().toLowerCase());
-      });
-    });
-    
-    const limit = parseInt(limitStr, 10);
-    const outputToMarkdown = outputToMarkdownStr === 'y' || outputToMarkdownStr === 'yes';
-    
-    console.log(`\nProcessing up to ${limit} documents using prompt: ${promptName}`);
-    console.log(`Output to markdown: ${outputToMarkdown ? 'Yes' : 'No'}`);
-    
-    // Initialize the prompt document classifier
-    const classifier = new PromptDocumentClassifier(supabaseUrl, supabaseKey, claudeApiKey);
-    
-    // Process the documents without document types
-    console.log('\nProcessing documents...');
-    const results = await classifier.processDocumentsWithoutTypes(promptName, limit, outputToMarkdown);
-    
-    // Display results
-    console.log('\n=== PROCESSING RESULTS ===');
-    console.log('--------------------------------------------------------------');
-    console.log(`Total documents processed: ${results.processed}`);
-    console.log(`Successfully classified: ${results.successful}`);
-    console.log(`Failed to classify: ${results.failed}`);
-    console.log(`Success rate: ${results.processed > 0 ? Math.round((results.successful / results.processed) * 100) : 0}%`);
-    
-    if (results.errors.length > 0) {
-      console.log('\nErrors encountered during processing:');
-      results.errors.forEach((error, index) => {
-        console.log(`${index + 1}. ${error}`);
-      });
-    }
-    
-    console.log('\nDocument classification complete.');
-    
-  } catch (error) {
-    console.error('\nError processing documents without types:', error instanceof Error ? error.message : 'Unknown error');
-  }
+  return {
+    success: true
+  };
 }
 
 /**
- * Prompt user to choose an action
+ * Prompt user to choose an action from the menu
+ * @returns Promise<string> The user's choice
  */
 async function promptForAction(): Promise<string> {
   const rl = readline.createInterface({
@@ -726,7 +1046,7 @@ async function promptForAction(): Promise<string> {
     output: process.stdout
   });
   
-  console.log('\n=== CHOOSE AN ACTION ===');
+  Logger.info('\n=== CHOOSE AN ACTION ===');
   console.log('1. Count and verify documentation files');
   console.log('2. Check file existence and update deletion status');
   console.log('3. Discover and add new documentation files');
@@ -746,101 +1066,129 @@ async function promptForAction(): Promise<string> {
   });
 }
 
-// Use our shared Supabase client service instead
+/**
+ * Initialize the Supabase connection using the singleton pattern
+ * Leverages the shared SupabaseClientService from packages/cli
+ * @returns Promise<SupabaseClient>
+ */
 async function initSupabaseConnection(): Promise<SupabaseClient> {
-  console.log('Initializing database connection...');
+  Logger.info('Initializing database connection using shared SupabaseClientService...');
   
-  // Debug environment variables
-  console.log('\nDEBUGGING ENVIRONMENT VARIABLES:');
-  console.log(`SUPABASE_URL: ${process.env.SUPABASE_URL || '[NOT SET]'}`);
-  console.log(`CLI_SUPABASE_URL: ${process.env.CLI_SUPABASE_URL || '[NOT SET]'}`);
-  console.log(`SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]'}`);
-  console.log(`CLI_SUPABASE_KEY: ${process.env.CLI_SUPABASE_KEY ? '[SET]' : '[NOT SET]'}`);
-  
-  // Check if URL is properly set
-  const cliSupabaseUrl = process.env.CLI_SUPABASE_URL;
-  // If CLI_SUPABASE_URL contains a variable reference (${}) that wasn't interpolated
-  const supabaseUrl = (cliSupabaseUrl && !cliSupabaseUrl.includes('${')) ? cliSupabaseUrl : process.env.SUPABASE_URL;
-  
-  // Check for key and make sure it doesn't contain variable references
-  const cliKey = process.env.CLI_SUPABASE_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  let supabaseKey = null;
-  if (cliKey && !cliKey.includes('${')) {
-    supabaseKey = cliKey;
-    console.log('Using CLI_SUPABASE_KEY');
-  } else if (serviceRoleKey) {
-    supabaseKey = serviceRoleKey;
-    console.log('Using SUPABASE_SERVICE_ROLE_KEY');
-  }
-  
-  // Debug the key format (first few characters)
-  if (supabaseKey) {
-    console.log(`Key format check: ${supabaseKey.substring(0, 20)}...`);
-    // Verify the format (JWT tokens typically start with "ey")
-    if (!supabaseKey.startsWith('ey')) {
-      console.warn('WARNING: Key doesn\'t look like a JWT token (should start with "ey")');
-    }
-  }
-  
-  if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
-    console.error(`Invalid Supabase URL: "${supabaseUrl}"`);
-    throw new Error('Invalid Supabase URL. It must start with http:// or https://');
-  }
-  
-  if (!supabaseKey) {
-    throw new Error('Missing Supabase API key');
-  }
-  
-  // Initialize the client directly
+  // Get the singleton instance
   const supabaseService = SupabaseClientService.getInstance();
-  const client = supabaseService.initialize(supabaseUrl, supabaseKey);
   
-  // Test the connection
-  console.log('Testing connection...');
-  const connectionTest = await supabaseService.testConnection();
-  if (!connectionTest.success) {
-    console.error(`Connection test failed: ${connectionTest.error}`);
-    if (connectionTest.details) {
-      console.error('Error details:', connectionTest.details);
-    }
-    throw new Error(`Failed to connect to Supabase: ${connectionTest.error}`);
+  // Check if the client is already initialized
+  if (supabaseService.isInitialized()) {
+    Logger.info('Using existing Supabase client from singleton');
+    return supabaseService.getClient(false);
   }
   
-  console.log('✅ Connection successful!');
-  return client;
+  try {
+    // Try to initialize from environment
+    const client = supabaseService.initializeFromEnv();
+    
+    if (!client) {
+      throw new Error('Failed to initialize Supabase client from environment variables');
+    }
+    
+    // Test the connection
+    console.log('Testing connection...');
+    const connectionTest = await supabaseService.testConnection();
+    
+    if (!connectionTest.success) {
+      throw new Error(`Connection test failed: ${connectionTest.error}`);
+    }
+    
+    console.log('✅ Connection successful!');
+    return client;
+  } catch (error) {
+    // If automatic initialization fails, try manual initialization with detailed logging
+    console.error('Automatic initialization failed, trying manual initialization');
+    
+    // Debug environment variables
+    console.log('\nDEBUGGING ENVIRONMENT VARIABLES:');
+    console.log(`SUPABASE_URL: ${process.env.SUPABASE_URL || '[NOT SET]'}`);
+    console.log(`CLI_SUPABASE_URL: ${process.env.CLI_SUPABASE_URL || '[NOT SET]'}`);
+    console.log(`SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]'}`);
+    console.log(`CLI_SUPABASE_KEY: ${process.env.CLI_SUPABASE_KEY ? '[SET]' : '[NOT SET]'}`);
+    
+    // Use ConfigService to get credentials
+    const config = ConfigService.getInstance();
+    const supabaseUrl = config.getSupabaseUrl();
+    const supabaseKey = config.getSupabaseKey();
+    
+    // Initialize the client directly
+    if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
+      throw new Error(`Invalid Supabase URL: ${supabaseUrl}. It must start with http:// or https://`);
+    }
+    
+    if (!supabaseKey) {
+      throw new Error('Missing Supabase API key');
+    }
+    
+    const client = supabaseService.initialize(supabaseUrl, supabaseKey);
+    
+    // Test the connection
+    const connectionTest = await supabaseService.testConnection();
+    if (!connectionTest.success) {
+      console.error(`Connection test failed: ${connectionTest.error}`);
+      if (connectionTest.details) {
+        console.error('Error details:', connectionTest.details);
+      }
+      throw new Error(`Failed to connect to Supabase: ${connectionTest.error}`);
+    }
+    
+    console.log('✅ Connection successful!');
+    return client;
+  }
 }
 
 // Run the function with menu
 async function main() {
   try {
-    let supabase;
+    // Initialize a shared Supabase client that we'll reuse - singleton pattern
+    // Proper typed variable with clear initialization state
+    let supabase: SupabaseClient | undefined;
     let exit = false;
+    
+    // Log startup with appropriate level
+    Logger.info('Starting documentation management script');
     
     while (!exit) {
       const choice = await promptForAction();
       
       switch (choice) {
         case '1':
-          await countDocumentationFiles();
+          // Use typed return values for consistent error handling
+          const countResult = await countDocumentationFiles();
+          if (!countResult.success) {
+            Logger.error(`Failed to count documentation files: ${countResult.error}`);
+          }
           break;
           
         case '2':
-          // We need to initialize the database connection first
-          if (!supabase) {
-            supabase = await initSupabaseConnection();
-          }
-          
-          // Get all active records
-          const { data: records, error } = await supabase
-            .from('documentation_files')
-            .select('*');
+          try {
+            // Use the singleton pattern from SupabaseClientService for connection management
+            if (!supabase) {
+              // Get supabase client through proper initialization
+              supabase = await initSupabaseConnection();
+            }
             
-          if (error) {
-            console.error(`Error fetching records: ${error.message}`);
-          } else if (records) {
-            await updateDeletionStatus(supabase, records);
+            // Get all active records
+            const { data: records, error } = await supabase
+              .from('documentation_files')
+              .select('*');
+              
+            if (error) {
+              Logger.error(`Error fetching records: ${error.message}`);
+            } else if (records) {
+              // Call service with proper error handling
+              await updateDeletionStatus(supabase, records);
+            }
+          } catch (error) {
+            // Use Logger instead of console.error
+            Logger.error('Error updating deletion status:', error instanceof Error ? error.message : 'Unknown error');
+            ErrorHandler.handle(error as Error);
           }
           break;
           
@@ -851,33 +1199,47 @@ async function main() {
           
         case '4':
           // Check files without document type assignments
-          await checkFilesWithoutDocumentType();
+          // Proper typed return values and consistent error handling
+          const checkResult = await checkFilesWithoutDocumentType();
+          if (!checkResult.success) {
+            Logger.error(`Failed to check for files without document types: ${checkResult.error}`);
+          } else {
+            Logger.info(`Found ${checkResult.filesWithoutType || 0} files without document types`);
+          }
           break;
           
         case '5':
           // Process documents without types using Claude 3.7
-          await processDocumentsWithoutTypes();
+          // Use typed result with consistent error handling pattern
+          const processResult = await processDocumentsWithoutTypes();
+          if (!processResult.success) {
+            Logger.error(`Failed to process documents: ${processResult.error}`);
+          } else if (processResult.documentUpdated) {
+            Logger.info('✅ Successfully updated document type in database');
+          }
           break;
           
         case '6':
-          console.log('Exiting...');
+          Logger.info('Exiting script...');
           exit = true;
           break;
           
         default:
-          console.log('Invalid choice, please try again.');
+          Logger.warn('Invalid choice, please try again.');
       }
     }
   } catch (error) {
-    console.error('Fatal error:', error);
+    // Use the shared ErrorHandler utility for consistent error handling
+    ErrorHandler.handle(error as Error);
     process.exit(1);
   }
 }
 
 // Run the main function
 main()
-  .then(() => console.log('Done!'))
+  .then(() => Logger.info('Script completed successfully'))
   .catch(error => {
-    console.error('Fatal error:', error);
+    // Use ErrorHandler from utilities
+    ErrorHandler.handle(error as Error);
     process.exit(1);
   });

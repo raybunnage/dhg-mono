@@ -3,6 +3,10 @@
 # SUPER SIMPLE SCRIPT - DISPLAY DOCUMENTATION FILE PATHS
 # This script uses direct REST API call to Supabase
 
+# Change to the project root directory to ensure env files are found
+cd "$(dirname "$0")/../.."
+echo "Current directory: $(pwd)"
+
 echo "===== DOCUMENTATION FILE PATHS ====="
 echo ""
 

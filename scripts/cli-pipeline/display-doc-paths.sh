@@ -3,6 +3,10 @@
 # Script to display file paths from documentation_files table
 # Simple utility that extracts and displays file_path for each document record
 
+# Change to the project root directory to ensure env files are found
+cd "$(dirname "$0")/../.."
+echo "Current directory: $(pwd)"
+
 echo "Display Documentation File Paths"
 echo "==============================="
 

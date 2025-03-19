@@ -1,3 +1,92 @@
+ 
+now I need a .cursor rule - if no specific path is specified for a markdown file - see if the file falls neatly into one of these document_types and 
+
+
+Please verify all TypeScript code compiles without errors before
+  submitting changes. Add proper types to all parameters, return
+  values, and variables to avoid type errors."
+
+
+  Write up a relativelyh short markdown file that I can paste in before I request you to do something. If you can reflet on the common problems you have to repeateedly fix and provide text to guide you in the future that would be helopful.
+
+  For examople:  you gave me the following text to add to prevent typescript errors:
+  "Please verify all TypeScript code compiles without errors before
+  submitting changes. Add proper types to all parameters, return
+  values, and variables to avoid type errors."
+
+  Also, write up an informative short statement about each of the files that have significatn functionality in my packages/cli pipelihne approach:  here is the tree listing all the key files so far: Extensive work has gone into factoring out the key servcies, perefecting them to work properly and reusing them in differen cli pipeline commands:  
+
+  packages/cli/
+├── src/
+│   ├── commands/
+│   │   ├── analyze-script.ts
+│   │   ├── batch-analyze-scripts.ts
+│   │   ├── classify-markdown.ts
+│   │   ├── documentation-processor.ts
+│   │   ├── examine-markdown.ts
+│   │   ├── index.ts
+│   │   ├── scan-scripts.ts
+│   │   ├── validate-assets.ts
+│   │   └── workflow.ts
+│   ├── services/
+│   │   ├── claude-service.ts
+│   │   ├── document-classification-service.ts
+│   │   ├── document-organization/
+│   │   │   ├── file-organizer.ts
+│   │   │   └── index.ts
+│   │   ├── document-type-checker.ts
+│   │   ├── file-management/
+│   │   │   ├── db-updater.ts
+│   │   │   ├── file-discovery.ts
+│   │   │   ├── path-normalizer.ts
+│   │   │   └── status-checker.ts
+│   │   ├── file-service.ts
+│   │   ├── index.ts
+│   │   ├── prompt-document-classifier.ts
+│   │   ├── prompt-query-service.ts
+│   │   ├── report-service.ts
+│   │   ├── supabase-client.ts
+│   │   └── supabase-service.ts
+│   ├── models/
+│   │   ├── document-type.ts
+│   │   ├── index.ts
+│   │   ├── prompt.ts
+│   │   └── relationship.ts
+│   └── utils/
+│       ├── config.ts
+│       ├── error-handler.ts
+│       ├── logger.ts
+│       └── rate-limiter.ts
+├── package.json
+└── tsconfig.json
+
+Lets see what you come up with that I can feed into claude code. Write your markdown file into docs/cli-pipeline folder
+
+
+
+Please extract the query execution logic
+  from prompt-lookup.ts into a shared utility class that both the scripts/cli-pipeline/display-doc-paths.ts and the scripts/cli-pipeline/display-doc-paths.ts can use. Make it so this shared service is used by both since the scripts/cli-pipeline/display-doc-paths.ts is working properlyu. 
+
+ For now, I see that you have directly adapted the working pattern into the
+  document-classification-service.ts file, ensuring it follows the
+  same approach that's already working. However, can you refact it to use this shared sservice for the query that is working so I don't have such an issue debugging the code for scripts/cli-pipeline/display-doc-paths.ts.   Thanks.
+  
+
+The best pattern would be to extract the query execution logic
+  from prompt-lookup.ts into a shared utility class that both
+  services can use.
+  2. For now, I've directly adapted the working pattern into the
+  document-classification-service.ts file, ensuring it follows the
+  same approach that's already working.
+  3. The main issue was that the new service wasn't applying the
+  same pattern for database access that was proven to work in
+  prompt-lookup.ts.
+
+when you output the markdown files from the scripts/cli-pipeline/prompt-lookup.ts you need to write them to the folder: docs/cli-pipeline which is now designated for the markdown outputs for this script
+
+when you output the markdown file from the scripts/cli-pipeline/script-report.sh you will need to write it into the folder: docs/cli-pipeline  
+
+
 
 now we are interested in adding the functionality of the scripts/cli-pipeline/prompt-lookup.ts to the 
 scripts/cli-pipeline/display-doc-paths.ts script. This command proves that we can load a prompt by name and its associated file_relationships and retrieve all the information that is needed for an ai api call to claude 3.7   I need you to do all the things you can do in the scripts/cli-pipeline/prompt-lookup.ts file - but now this data will next be submitted to claude 3.7 just for these docoumentation_files that do not have a documentation type.  Again add this functionallity by first looking for existing functionalithy in packages/cli and if necessary create a new service there to assist with this progress.  Do not add all the code in the  scripts/cli-pipeline/display-doc-paths.ts but rather import it fomr an existing (adjusted) - or new services that you create in the packages/cli. I do not want you to break scripts/cli-pipeline/prompt-lookup.ts.

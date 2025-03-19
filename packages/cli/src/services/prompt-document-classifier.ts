@@ -562,7 +562,7 @@ ${results.join('\n')}
       systemPrompt += `Here are the available document types you can choose from:\n`;
       
       documentTypes.forEach((type: any) => {
-        systemPrompt += `- ${type.name}: ${type.description || 'No description'}\n`;
+        systemPrompt += `- ${type.document_type || 'Unnamed'}: ${type.description || 'No description'}\n`;
       });
       
       systemPrompt += `\nAnalyze the following document and classify it as one of these document types. Return your response as a JSON object with document_type_id, document_type_name, and confidence (0-1).`;
@@ -572,7 +572,7 @@ ${results.join('\n')}
       const claudeResponse = await this.claudeService.classifyDocument(
         documentContent,
         systemPrompt, 
-        { documentTypes, filePath: documentPath }
+        JSON.stringify({ documentTypes, filePath: documentPath })
       );
       
       if (!claudeResponse.success) {
@@ -587,7 +587,7 @@ ${results.join('\n')}
       
       try {
         // Extract JSON from the Claude response
-        const responseContent = claudeResponse.response?.content || '';
+        const responseContent = claudeResponse.result || '';
         const jsonMatch = responseContent.match(/```json\s*({[\s\S]*?})\s*```/) || 
                          responseContent.match(/{[\s\S]*?}/);
                          
@@ -626,7 +626,7 @@ ${documentContent.substring(0, 500)}... (truncated)
 - Confidence: ${documentTypeAssignment.confidence}
 
 ## Claude Response
-${claudeResponse.response?.content || 'No response content'}
+${claudeResponse.result || 'No response content'}
 `;
           
           const fileName = `document-classification-${path.basename(documentPath).replace(/[^a-z0-9]/gi, '-').toLowerCase()}.md`;

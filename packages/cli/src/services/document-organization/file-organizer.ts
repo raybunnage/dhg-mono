@@ -12,7 +12,8 @@ export const DEFAULT_DOCUMENT_TYPE_MAPPING = {
   'README': 'readmes',
   'Script Report': 'script-reports',
   'Solution Guide': 'solution-guides',
-  'Technical Specification': 'technical-specs'
+  'Technical Specification': 'technical-specs',
+  'Cli Pipeline Markdown': 'cli-pipeline'
 };
 
 /**
@@ -58,19 +59,11 @@ export async function listAllDocumentTypes(
       throw new Error('No document types found in the database.');
     }
     
-    // Determine which column contains the type name
-    const possibleColumns = ['name', 'type', 'document_type'];
-    let nameColumn = null;
+    // Use the document_type column for the type name, which is the correct column in this database
+    const nameColumn = 'document_type';
     
-    for (const col of possibleColumns) {
-      if (Object.keys(firstDocType[0]).includes(col)) {
-        nameColumn = col;
-        break;
-      }
-    }
-    
-    if (!nameColumn) {
-      throw new Error('Could not find name or type column in document_types table.');
+    if (!Object.keys(firstDocType[0]).includes(nameColumn)) {
+      throw new Error('Could not find document_type column in document_types table.');
     }
     
     // Get all document types
@@ -126,19 +119,11 @@ export async function findAndMoveDocumentByType(
       return { success: false, message: 'No document types found in the database.' };
     }
     
-    // Determine which column contains the type name
-    const possibleColumns = ['name', 'type', 'document_type'];
-    let nameColumn = null;
+    // Use the document_type column for the type name, which is the correct column in this database
+    const nameColumn = 'document_type';
     
-    for (const col of possibleColumns) {
-      if (Object.keys(firstDocType[0]).includes(col)) {
-        nameColumn = col;
-        break;
-      }
-    }
-    
-    if (!nameColumn) {
-      return { success: false, message: 'Could not find name or type column in document_types table.' };
+    if (!Object.keys(firstDocType[0]).includes(nameColumn)) {
+      return { success: false, message: 'Could not find document_type column in document_types table.' };
     }
     
     // Find document_type_id for the document type
@@ -295,19 +280,11 @@ export async function moveAllFilesByDocumentType(
       throw new Error('No document types found in database.');
     }
     
-    // Determine which column contains the type name
-    const possibleColumns = ['name', 'type', 'document_type'];
-    let nameColumn = null;
+    // Use the document_type column for the type name, which is the correct column in this database
+    const nameColumn = 'document_type';
     
-    for (const col of possibleColumns) {
-      if (Object.keys(docTypes[0]).includes(col)) {
-        nameColumn = col;
-        break;
-      }
-    }
-    
-    if (!nameColumn) {
-      throw new Error('Could not find name or type column in document_types table.');
+    if (!Object.keys(docTypes[0]).includes(nameColumn)) {
+      throw new Error('Could not find document_type column in document_types table.');
     }
     
     // Process each document type in our mapping
