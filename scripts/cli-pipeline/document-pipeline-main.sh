@@ -288,34 +288,55 @@ show_untyped_files() {
 show_recent_files() {
   echo "=== Showing 20 most recent files ==="
   
-  SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-  npx ts-node -e "
+  # Run as direct node execution to avoid bash interpolation issues
+  node -e "
     const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient('$SUPABASE_URL', '$SUPABASE_SERVICE_ROLE_KEY');
+    const fs = require('fs');
     
     async function showRecentFiles() {
-      const { data, error } = await supabase
-        .from('documentation_files')
-        .select('id, file_path, file_name, document_type, updated_at')
-        .eq('is_deleted', false)
-        .order('updated_at', { ascending: false })
-        .limit(20);
+      try {
+        const supabase = createClient(
+          process.env.SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY
+        );
         
-      if (error) {
-        console.error('Error fetching files:', error);
-        return;
-      }
-      
-      console.log('20 Most Recent Files:');
-      console.log('----------------------------');
-      
-      for (const file of data) {
-        console.log(`ID: ${file.id}`);
-        console.log(`Path: ${file.file_path}`);
-        console.log(`Name: ${file.file_name}`);
-        console.log(`Type: ${file.document_type || 'UNCLASSIFIED'}`);
-        console.log(`Updated: ${new Date(file.updated_at).toLocaleString()}`);
+        console.log('Fetching 20 most recent files...');
+        
+        const { data, error } = await supabase
+          .from('documentation_files')
+          .select('id, file_path, title, document_type_id, last_modified_at')
+          .eq('is_deleted', false)
+          .order('last_modified_at', { ascending: false })
+          .limit(20);
+          
+        if (error) {
+          console.error('Error fetching files:', error);
+          return;
+        }
+        
+        if (!data || data.length === 0) {
+          console.log('No recent files found.');
+          return;
+        }
+        
+        console.log('20 Most Recent Files:');
         console.log('----------------------------');
+        
+        for (const file of data) {
+          // Check if file exists on disk
+          const fileExists = fs.existsSync(file.file_path);
+          const fileStatus = fileExists ? 'EXISTS' : 'MISSING';
+          
+          console.log(\`ID: \${file.id}\`);
+          console.log(\`Path: \${file.file_path}\`);
+          console.log(\`Title: \${file.title || 'No title'}\`);
+          console.log(\`Type: \${file.document_type_id || 'UNCLASSIFIED'}\`);
+          console.log(\`Status: \${fileStatus}\`);
+          console.log(\`Updated: \${file.last_modified_at ? new Date(file.last_modified_at).toLocaleString() : 'No update date'}\`);
+          console.log('----------------------------');
+        }
+      } catch (err) {
+        console.error('Error in showRecentFiles:', err);
       }
     }
     
@@ -327,44 +348,77 @@ show_recent_files() {
 classify_recent_files() {
   echo "=== Classifying 20 most recent files ==="
   
-  # Get 20 most recent files
-  RECENT_FILES=$(SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-    npx ts-node -e "
+  # Get 20 most recent files using node directly to avoid bash interpolation issues
+  RECENT_FILES=$(node -e "
     const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient('$SUPABASE_URL', '$SUPABASE_SERVICE_ROLE_KEY');
     const fs = require('fs');
     
     async function getRecentFiles() {
-      const { data, error } = await supabase
-        .from('documentation_files')
-        .select('id, file_path')
-        .eq('is_deleted', false)
-        .order('updated_at', { ascending: false })
-        .limit(20);
+      try {
+        const supabase = createClient(
+          process.env.SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY
+        );
         
-      if (error) {
-        console.error('Error fetching files:', error);
-        return;
+        const { data, error } = await supabase
+          .from('documentation_files')
+          .select('id, file_path')
+          .eq('is_deleted', false)
+          .order('last_modified_at', { ascending: false })
+          .limit(20);
+          
+        if (error) {
+          console.error('Error fetching files:', error);
+          return '[]';
+        }
+        
+        if (!data || data.length === 0) {
+          console.log('No recent files found for classification.');
+          return '[]';
+        }
+        
+        // Filter for files that exist on disk
+        const existingFiles = data.filter(f => fs.existsSync(f.file_path));
+        
+        if (existingFiles.length === 0) {
+          console.log('No files found on disk for classification.');
+          return '[]';
+        }
+        
+        console.log(\`Found \${existingFiles.length} files to classify\`);
+        return JSON.stringify(existingFiles);
+      } catch (err) {
+        console.error('Error in getRecentFiles:', err);
+        return '[]';
       }
-      
-      // Filter for files that exist on disk
-      const existingFiles = data.filter(f => fs.existsSync(f.file_path));
-      console.log(JSON.stringify(existingFiles));
     }
     
-    getRecentFiles();
+    // Run the async function and output the result
+    getRecentFiles().then(result => {
+      process.stdout.write(result);
+    });
   ")
+  
+  # Check if we have files to process
+  if [ "$RECENT_FILES" = "[]" ] || [ -z "$RECENT_FILES" ]; then
+    echo "No files found for classification"
+    return
+  fi
   
   # Process each file with rate limiting
   echo "$RECENT_FILES" | jq -c '.[]' | while read -r file; do
     FILE_PATH=$(echo "$file" | jq -r '.file_path')
     
-    echo "Classifying file: $FILE_PATH"
-    "$DOC_MANAGER" classify "$FILE_PATH" "markdown-document-classification-prompt"
-    
-    # Rate limiting for API calls (30 seconds between classifications)
-    echo "Waiting 30 seconds for rate limiting..."
-    sleep 30
+    if [ -f "$FILE_PATH" ]; then
+      echo "Classifying file: $FILE_PATH"
+      "$DOC_MANAGER" classify "$FILE_PATH" "markdown-document-classification-prompt"
+      
+      # Rate limiting for API calls (30 seconds between classifications)
+      echo "Waiting 30 seconds for rate limiting..."
+      sleep 30
+    else
+      echo "File does not exist on disk, skipping: $FILE_PATH"
+    fi
   done
   
   echo "Classification of recent files complete"

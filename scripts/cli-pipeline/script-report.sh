@@ -8,10 +8,10 @@ echo "Generating shell script report..."
 # Define important locations
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-REPORT_DIR="$REPO_ROOT/docs"
+REPORT_DIR="$REPO_ROOT/docs/cli-pipeline"
 REPORT_FILE="$REPORT_DIR/script-report.md"
 
-# Ensure docs directory exists
+# Ensure output directory exists
 mkdir -p "$REPORT_DIR"
 
 # Initialize counters as global variables

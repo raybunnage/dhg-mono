@@ -9,15 +9,16 @@ import fs from 'fs';
 // Helper function to write results to a markdown file
 async function writeResultsToMarkdown(fileName: string, content: string): Promise<boolean> {
   try {
-    const docsDir = path.join(process.cwd(), 'docs');
+    // Use docs/cli-pipeline directory for output files
+    const outDir = path.join(process.cwd(), 'docs', 'cli-pipeline');
     
-    // Create docs directory if it doesn't exist
-    if (!fs.existsSync(docsDir)) {
-      console.log(`Creating docs directory at ${docsDir}`);
-      fs.mkdirSync(docsDir, { recursive: true });
+    // Create output directory if it doesn't exist
+    if (!fs.existsSync(outDir)) {
+      console.log(`Creating output directory at ${outDir}`);
+      fs.mkdirSync(outDir, { recursive: true });
     }
     
-    const filePath = path.join(docsDir, fileName);
+    const filePath = path.join(outDir, fileName);
     fs.writeFileSync(filePath, content, 'utf8');
     console.log(`\nResults saved to: ${filePath}`);
     return true;
