@@ -357,6 +357,12 @@ class DocumentTypeManager {
                 const content = fs.readFileSync(filePath, 'utf8');
                 result.files[rel.asset_path] = content;
                 console.log(`Loaded content for: ${rel.asset_path}`);
+                
+                // Display the relationship context if available
+                if (rel.relationship_context) {
+                  console.log(`Relationship context for ${rel.asset_path}:`);
+                  console.log(rel.relationship_context);
+                }
               } else {
                 console.warn(`Related file not found: ${rel.asset_path}`);
               }
@@ -524,21 +530,44 @@ class DocumentTypeManager {
       }
       
       // Step 4: Build the system prompt for Claude
-      let systemPrompt = `${promptData.prompt.content}\n\n`;
-      systemPrompt += `Here are the available document types you can choose from:\n`;
+      // Use the prompt content from the database as is, don't modify it
+      let systemPrompt = promptData.prompt.content;
       
-      promptData.documentTypes.forEach(type => {
-        systemPrompt += `- ${type.document_type} (ID: ${type.id}): ${type.description || 'No description'}\n`;
-      });
+      // If the prompt doesn't have the document types listed, we'll add them
+      if (!systemPrompt.includes('document types you can choose from') && 
+          !systemPrompt.includes('document_type_id')) {
+        systemPrompt += `\n\nHere are the available document types you can choose from:\n`;
+        
+        promptData.documentTypes.forEach(type => {
+          systemPrompt += `- ${type.document_type} (ID: ${type.id}): ${type.description || 'No description'}\n`;
+        });
+        
+        systemPrompt += `\nAnalyze the following document and classify it as one of these document types. Return your response as a JSON object with document_type_id, document_type_name, and confidence (0-1).`;
+      }
       
-      systemPrompt += `\nAnalyze the following document and classify it as one of these document types. Return your response as a JSON object with document_type_id, document_type_name, and confidence (0-1).`;
+      console.log('\n=== SYSTEM PROMPT ===');
+      console.log(systemPrompt.substring(0, 500) + '...');
+      console.log('(Truncated for display)');
       
       // Step 5: Create context object with related information
       const contextObject = {
         documentTypes: promptData.documentTypes,
         filePath: documentPath,
-        relationships: promptData.relationships.length
+        relationships: promptData.relationships.map(rel => ({
+          id: rel.id,
+          asset_path: rel.asset_path,
+          relationship_type: rel.relationship_type,
+          relationship_context: rel.relationship_context || null
+        })),
+        files: Object.keys(promptData.files).map(filePath => ({
+          path: filePath,
+          content_summary: `${promptData.files[filePath].substring(0, 100)}...`
+        }))
       };
+      
+      console.log('\n=== CONTEXT OBJECT ===');
+      console.log(JSON.stringify(contextObject, null, 2).substring(0, 500) + '...');
+      console.log('(Truncated for display)');
       
       // Step 6: Call Claude API
       console.log('Calling Claude API for classification...');
@@ -557,7 +586,16 @@ class DocumentTypeManager {
       
       // Step 7: Extract the classification from the response
       const responseContent = claudeResponse.result;
-      console.log('Received response from Claude API');
+      console.log('\n=== FULL CLAUDE API RESPONSE ===');
+      
+      // Display the full response for debugging
+      if (typeof responseContent === 'string') {
+        console.log(responseContent);
+      } else if (typeof responseContent === 'object') {
+        console.log(JSON.stringify(responseContent, null, 2));
+      } else {
+        console.log(`Response is of type: ${typeof responseContent}`);
+      }
       
       try {
         // Try to extract JSON from the response
@@ -580,6 +618,7 @@ class DocumentTypeManager {
         
         if (jsonMatch && (jsonMatch[1] || jsonMatch[0])) {
           jsonStr = jsonMatch[1] || jsonMatch[0];
+          console.log('\nExtracted JSON from direct response');
         } else if (contentText) {
           // Try to extract from content text if we didn't find it in the direct response
           const contentMatch = contentText.match(/```json\s*({[\s\S]*?})\s*```/) || 
@@ -587,8 +626,10 @@ class DocumentTypeManager {
           
           if (contentMatch && (contentMatch[1] || contentMatch[0])) {
             jsonStr = contentMatch[1] || contentMatch[0];
+            console.log('\nExtracted JSON from content text');
           } else {
             console.error('Could not extract JSON from Claude response');
+            console.log('Content text:', contentText.substring(0, 500) + '...');
             return {
               success: false,
               error: 'Could not extract JSON from Claude response'
@@ -602,8 +643,14 @@ class DocumentTypeManager {
           };
         }
         
+        console.log('\n=== EXTRACTED JSON ===');
+        console.log(jsonStr);
+        
         // Parse the extracted JSON
         const classification = JSON.parse(jsonStr);
+        
+        console.log('\n=== PARSED CLASSIFICATION ===');
+        console.log(JSON.stringify(classification, null, 2));
         
         return {
           success: true,
