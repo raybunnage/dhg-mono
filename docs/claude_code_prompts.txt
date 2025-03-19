@@ -1,4 +1,20 @@
  
+
+now write a script that acts like a main program and calls the /scripts/cli-pipeline/document-manager.sh appropriately with the different options:
+
+1) mark files with is_deleted = false if they exist on disk
+2) mark files with is_deleted = true if they do not exist on disk
+3) find new files on disk that aren't in the documnentation_files and insert the new records into the documentation_files
+4) shows all the documentation_files that don't have a document_type if they exist on disk
+5) shows the most 20 recent files based on updated dates 
+6) passes the 20 most recent files whether they have a document_type or not and passes them off to the   ./scripts/cli-pipeline/document-manager.sh classify function with the proper file_path parameter to process them with rate limitiing in mind
+
+
+
+
+with classify and passses the name of each documentation_file that is chosen
+
+
 now I need a .cursor rule - if no specific path is specified for a markdown file - see if the file falls neatly into one of these document_types and 
 
 
