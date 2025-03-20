@@ -622,6 +622,29 @@ async function updateDocumentationFiles() {
           const fileHash = calculateHash(file.fullPath);
           const metadata = getFileMetadata(file.fullPath);
           
+          // Check if there's a deleted file with the same basename
+          // that might have a document_type_id we should preserve
+          let documentTypeId = null;
+          
+          try {
+            const basename = path.basename(file.path);
+            
+            // First check if any deleted file with same basename exists
+            const { data: existingFile } = await supabase
+              .from('documentation_files')
+              .select('id, file_path, document_type_id')
+              .eq('title', title)
+              .eq('is_deleted', true)
+              .maybeSingle();
+              
+            if (existingFile && existingFile.document_type_id) {
+              documentTypeId = existingFile.document_type_id;
+              console.log(`Found document_type_id ${documentTypeId} from deleted file with same name: ${existingFile.file_path}`);
+            }
+          } catch (err) {
+            console.log(`No matching document_type_id found for ${file.path}`);
+          }
+          
           filesToInsert.push({
             file_path: file.path,
             title: title,
@@ -631,7 +654,8 @@ async function updateDocumentationFiles() {
             metadata: metadata,
             created_at: timestamp,
             updated_at: timestamp,
-            is_deleted: false
+            is_deleted: false,
+            document_type_id: documentTypeId // Preserve document type ID if found
           });
         } catch (error) {
           console.error(\`Error preparing file \${file.path} for insertion: \${error.message}\`);

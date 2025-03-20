@@ -45,6 +45,9 @@ show_usage() {
 sync_files() {
   echo "=== Synchronizing files with database ==="
   
+  # Make sure supabase module is installed
+  npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
+  
   # Get all files from documentation_files with their hashes to detect changes
   echo "Getting all files from the database..."
   DB_FILES=$(SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
@@ -323,7 +326,12 @@ EOL
 
 # Function to find new files on disk and insert them into the database
 find_new_files() {
-  echo "=== Finding new files on disk ==="
+  # Check if DRY_RUN mode is enabled
+  if [ -n "$DRY_RUN" ]; then
+    echo "=== Finding new files on disk (DRY RUN MODE - WILL NOT INSERT) ==="
+  else
+    echo "=== Finding new files on disk ==="
+  fi
   
   # Get existing file paths from database - doing this in one shot
   echo "Getting existing file paths from the database..."
@@ -344,15 +352,43 @@ find_new_files() {
   # Create a temporary directory for all our temp files
   TEMP_DIR=$(mktemp -d)
   
+  # Make sure supabase module is installed
+  npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
+  
+  # Create a package.json in the temp directory to help with dependency installation
+  cat > "$TEMP_DIR/package.json" << 'EOL'
+{
+  "name": "temp-file-processor",
+  "version": "1.0.0",
+  "description": "Temporary file processor",
+  "main": "file_processor.js",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1"
+  }
+}
+EOL
+
+  # Pre-install dependencies in the temp directory
+  (cd "$TEMP_DIR" && npm install --silent >/dev/null 2>&1)
+  
   # Directly print file paths to avoid problems with linebreaks in filenames
   # Use -type f first to avoid traversing non-file paths (much faster)
   echo "Finding markdown files on disk (excluding system, archive, and backup directories)..."
-  cd "$PWD"
-  find . -type f -not -path "*/node_modules/*" -not -path "*/.git/*" \
-    -not -path "./script-analysis-results/*" -not -path "*/script-analysis-results/*" \
+  
+  # Get absolute path to current directory
+  ABS_PWD=$(pwd)
+  
+  # Use find with absolute paths but store paths relative to project root
+  find "$ABS_PWD" -type f -not -path "*/node_modules/*" -not -path "*/.git/*" \
+    -not -path "*/script-analysis-results/*" -not -path "*/script-analysis-results/*" \
     -not -path "*/archive/*" -not -path "*/_archive/*" -not -path "*/backup/*" -not -path "*/file_types/*" \
     -not -path "*/dist/*" \
-    -name "*.md" | sed 's|^\./||' > "$TEMP_DIR/all_files.txt"
+    -name "*.md" | sed "s|$ABS_PWD/||" > "$TEMP_DIR/all_files.txt"
+  
+  # Log the first few files found for verification
+  echo "First 10 files found:"
+  head -10 "$TEMP_DIR/all_files.txt"
+  
   DISK_FILES=$(cat "$TEMP_DIR/all_files.txt")
   DISK_FILES_PATH="$TEMP_DIR/disk_files.txt"
   DB_FILES_PATH="$TEMP_DIR/db_files.txt"
@@ -378,11 +414,27 @@ find_new_files() {
   # Create a more efficient TypeScript script for batch processing using CommonJS
   cat > "$PROCESSOR_SCRIPT" << 'EOL'
 // Using CommonJS style to avoid module resolution issues
+// First make sure we have the dependency installed
+try {
+  require('@supabase/supabase-js');
+} catch (e) {
+  console.log('Installing @supabase/supabase-js...');
+  require('child_process').execSync('npm install --no-save @supabase/supabase-js', {stdio: 'inherit'});
+}
+
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
 const { promisify } = require('util');
+
+// Function to generate a UUID v4
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 const statAsync = promisify(fs.stat);
 const readFileAsync = promisify(fs.readFile);
@@ -391,25 +443,37 @@ const readFileAsync = promisify(fs.readFile);
 
 // Faster hashing function - only hash first 8KB of the file plus size/mtime
 async function quickFileHash(filePath, stats) {
-  // For small files, hash entire content
-  if (stats.size <= 8192) {
-    const content = await readFileAsync(filePath, 'utf8');
-    return crypto.createHash('md5').update(content).digest('hex') + '-' + stats.size;
-  }
+  // Get project root from environment variable and ensure filePath is absolute
+  const projectRoot = process.env.PROJECT_ROOT || process.cwd();
+  const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(projectRoot, filePath);
   
-  // For larger files, hash first 8KB + file stats for a quick fingerprint
-  return new Promise((resolve, reject) => {
-    const stream = fs.createReadStream(filePath, { start: 0, end: 8191 });
-    const hash = crypto.createHash('md5');
+  try {
+    // For small files, hash entire content
+    if (stats.size <= 8192) {
+      const content = await readFileAsync(absolutePath, 'utf8');
+      return crypto.createHash('md5').update(content).digest('hex') + '-' + stats.size;
+    }
     
-    stream.on('data', (chunk) => hash.update(chunk));
-    stream.on('end', () => {
-      // Add file size and mtime to ensure uniqueness
-      hash.update(`${stats.size}-${stats.mtimeMs}`);
-      resolve(hash.digest('hex') + '-' + stats.size);
+    // For larger files, hash first 8KB + file stats for a quick fingerprint
+    return new Promise((resolve, reject) => {
+      const stream = fs.createReadStream(absolutePath, { start: 0, end: 8191 });
+      const hash = crypto.createHash('md5');
+      
+      stream.on('data', (chunk) => hash.update(chunk));
+      stream.on('end', () => {
+        // Add file size and mtime to ensure uniqueness
+        hash.update(`${stats.size}-${stats.mtimeMs}`);
+        resolve(hash.digest('hex') + '-' + stats.size);
+      });
+      stream.on('error', (err) => {
+        console.error(`Error reading file ${absolutePath}:`, err.message);
+        reject(err);
+      });
     });
-    stream.on('error', reject);
-  });
+  } catch (err) {
+    console.error(`Error processing file ${absolutePath}:`, err.message);
+    throw err;
+  }
 }
 
 async function processFiles() {
@@ -458,16 +522,65 @@ async function processFiles() {
     const now = new Date().toISOString();
     const filePromises = newFilePaths.map(async (filePath) => {
       try {
-        // Check if file still exists
-        const stats = await statAsync(filePath);
+        // Get project root from environment variable
+        const projectRoot = process.env.PROJECT_ROOT || process.cwd();
+        console.log(`Using project root: ${projectRoot}`);
+        // Create absolute path using project root
+        const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(projectRoot, filePath);
+        
+        console.log(`[Batch ${batchIndex}] Processing file: ${filePath}`);
+        
+        // Check if file exists and get stats
+        if (!fs.existsSync(absolutePath)) {
+          console.error(`[Batch ${batchIndex}] File does not exist: ${absolutePath}`);
+          return null;
+        }
+        
+        const stats = await statAsync(absolutePath);
         
         // Get file info
-        const filename = path.basename(filePath);
+        const filename = path.basename(absolutePath);
         
         // Generate quick hash
-        const fileHash = await quickFileHash(filePath, stats);
+        const fileHash = await quickFileHash(absolutePath, stats);
         
-        // Create metadata
+        // First check if this file already exists in the database but with a different path
+        // This is critical to preserve metadata and document_type_id when files are moved
+        const { data: existingFile } = await supabase
+          .from('documentation_files')
+          .select('*')
+          .eq('title', filename)
+          .eq('is_deleted', true) // Look in deleted files for possible moves
+          .maybeSingle();
+        
+        // If we found a match, use its metadata and other fields
+        if (existingFile && existingFile.metadata) {
+          console.log(`[Batch ${batchIndex}] Found existing file in database with title: ${filename}`);
+          console.log(`[Batch ${batchIndex}] Using existing metadata and document_type_id: ${existingFile.document_type_id || 'null'}`);
+          
+          // Update the existing metadata with new size and modified time
+          const updatedMetadata = {
+            ...existingFile.metadata,
+            size: stats.size,
+            modified: now
+          };
+          
+          // Use relative path for storage - this is very important
+          return {
+            id: uuidv4(), // Generate a new UUID for this record
+            file_path: filePath, // Store the relative path, not the absolute path
+            title: filename,
+            is_deleted: false,
+            last_indexed_at: now,
+            last_modified_at: now,
+            file_hash: fileHash,
+            metadata: updatedMetadata,
+            document_type_id: existingFile.document_type_id // Preserve document type ID
+          };
+        }
+        
+        // If no existing file found, create new metadata
+        console.log(`[Batch ${batchIndex}] No existing file found with title: ${filename}, creating new record`);
         const metadata = {
           size: stats.size,
           isPrompt: false,
@@ -475,15 +588,42 @@ async function processFiles() {
           modified: now
         };
         
-        // Return the record
+        // Important: Check if this file exists in database but with a different path
+        // This could happen if files were moved but kept same name
+        const basename = path.basename(absolutePath);
+        let existingDocumentTypeId = null;
+        
+        try {
+          // Query to see if we have a file with same basename but different path
+          // and get its document_type_id if available
+          const { data } = await supabase
+            .from('documentation_files')
+            .select('document_type_id, is_deleted')
+            .eq('title', filename)
+            .eq('is_deleted', true) // Look in deleted files for possible moves
+            .maybeSingle();
+          
+          if (data && data.document_type_id) {
+            console.log(`[Batch ${batchIndex}] Found existing document_type_id: ${data.document_type_id} for file: ${basename}`);
+            existingDocumentTypeId = data.document_type_id;
+          }
+        } catch (err) {
+          console.log(`[Batch ${batchIndex}] No matching document_type_id found for ${basename}`);
+        }
+        
+        // Return the record, preserving document_type_id if found
+        // IMPORTANT: Use relative path, not absolute path
+        // CRITICAL: Generate a UUID for the id field to ensure Supabase constraint is satisfied
         return {
-          file_path: filePath,
+          id: uuidv4(), // Generate a UUID for new records
+          file_path: filePath, // Store the relative path, not absolute
           title: filename,
           is_deleted: false,
           last_indexed_at: now,
           last_modified_at: now,
           file_hash: fileHash,
-          metadata: metadata
+          metadata: metadata,
+          document_type_id: existingDocumentTypeId // Preserve document type ID if found
         };
       } catch (err) {
         console.error(`[Batch ${batchIndex}] Error processing ${filePath}:`, err.message);
@@ -501,17 +641,43 @@ async function processFiles() {
     
     console.log(`[Batch ${batchIndex}] Inserting ${processedRecords.length} files...`);
     
-    // Insert in larger chunks of 25 for better throughput
+    // Just log the files in dry-run mode (don't insert)
+    console.log(`[Batch ${batchIndex}] DRY RUN - Would insert ${processedRecords.length} files...`);
+    
+    // Log each file that would be inserted
+    for (const record of processedRecords) {
+      // Get file path relative to project root for display
+      const relPath = record.file_path.replace(process.cwd(), '').replace(/^\//, '');
+      console.log(`[Batch ${batchIndex}] Would insert: ${relPath} (with ${record.document_type_id ? 'document_type_id: ' + record.document_type_id : 'no document_type_id'})`);
+      
+      // Make sure the path format is correct
+      if (!relPath.match(/^(docs|packages|apps|prompts|scripts)/)) {
+        console.log(`[Batch ${batchIndex}] WARNING: Path may not be relative to project root: ${relPath}`);
+      }
+    }
+    
+    // Insert records in the database - uncomment to actually insert
     for (let i = 0; i < processedRecords.length; i += 25) {
       const chunk = processedRecords.slice(i, i + 25);
+      
+      // Verify that all records have UUIDs before inserting
+      const validChunk = chunk.map(record => {
+        if (!record.id) {
+          console.log(`[Batch ${batchIndex}] Adding missing UUID for record: ${record.file_path}`);
+          record.id = uuidv4();
+        }
+        return record;
+      });
+      
       const { data, error } = await supabase
         .from('documentation_files')
-        .insert(chunk);
+        .insert(validChunk);
         
       if (error) {
         console.error(`[Batch ${batchIndex}] Error inserting chunk ${i}:`, error);
+        console.error(`[Batch ${batchIndex}] Error details: ${JSON.stringify(error)}`);
       } else {
-        console.log(`[Batch ${batchIndex}] Successfully inserted ${chunk.length} files (chunk ${Math.floor(i/25) + 1})`);
+        console.log(`[Batch ${batchIndex}] Successfully inserted ${validChunk.length} files (chunk ${Math.floor(i/25) + 1})`);
       }
     }
     
@@ -547,10 +713,48 @@ EOL
         # Only process if we have files
         if [ ${#BATCH_PATHS[@]} -gt 0 ]; then
           echo "Starting batch $BATCH_COUNT with ${#BATCH_PATHS[@]} files..."
-          # Install required modules in temp directory first
-          cd "$TEMP_DIR" && npm init -y >/dev/null 2>&1 && npm install @supabase/supabase-js >/dev/null 2>&1
-          cd "$TEMP_DIR" && SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-            node "$PROCESSOR_SCRIPT" "$BATCH_COUNT" "${BATCH_PATHS[@]}"
+          
+          # Create a simpler script for listing files
+          echo "Checking the relative paths for all files in batch $BATCH_COUNT"
+          # Create a simpler script that just lists the files
+          LIST_SCRIPT="$TEMP_DIR/list_files.js"
+          cat > "$LIST_SCRIPT" << 'EOLL'
+const fs = require('fs');
+const path = require('path');
+
+// Just list all files to confirm they exist and show their paths
+async function listFiles() {
+  const filePaths = process.argv.slice(2);
+  console.log(`Checking ${filePaths.length} files:`);
+  
+  for (const filePath of filePaths) {
+    // Check if file exists
+    const fullPath = path.join(process.cwd(), filePath);
+    const exists = fs.existsSync(fullPath);
+    const fileInfo = exists 
+      ? `EXISTS - ${filePath}` 
+      : `MISSING - ${filePath} (full path: ${fullPath})`;
+    
+    console.log(fileInfo);
+  }
+}
+
+listFiles();
+EOLL
+          
+          # Run the simplified script
+          node "$LIST_SCRIPT" "${BATCH_PATHS[@]}"
+          
+          # Also run the actual processor that will insert to the database
+          if [ -z "$DRY_RUN" ]; then
+            # Install dependencies if needed
+            npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
+            
+            # Run the processor from within the temp directory where dependencies are installed
+            # Pass the project root directory as an environment variable
+            (cd "$TEMP_DIR" && PROJECT_ROOT="$ABS_PWD" SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+              node "file_processor.js" "$BATCH_COUNT" "${BATCH_PATHS[@]}")
+          fi
         fi
       ) &
       
@@ -578,6 +782,9 @@ EOL
 # Function to show all documentation files without a document type
 show_untyped_files() {
   echo "=== Showing files without document types ==="
+  
+  # Make sure supabase module is installed
+  npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
   
   # Run as a direct js function to avoid bash interpolation issues
   node -e "
@@ -641,6 +848,9 @@ show_untyped_files() {
 show_recent_files() {
   echo "=== Showing 20 most recent files ==="
   
+  # Make sure supabase module is installed
+  npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
+  
   # Run as direct node execution to avoid bash interpolation issues
   node -e "
     const { createClient } = require('@supabase/supabase-js');
@@ -700,6 +910,9 @@ show_recent_files() {
 # Function to classify the 20 most recent files
 classify_recent_files() {
   echo "=== Classifying 20 most recent files ==="
+  
+  # Make sure supabase module is installed
+  npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
   
   # Get 20 most recent files using node directly to avoid bash interpolation issues
   RECENT_FILES=$(node -e "
@@ -811,6 +1024,9 @@ classify_recent_files() {
 # Function to clean script-analysis-results files from the database
 clean_script_results() {
   echo "=== Removing script-analysis-results files from the database ==="
+  
+  # Make sure supabase module is installed
+  npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
   
   # Use npx ts-node approach instead of a standalone Node.js script
   # This ensures all required dependencies are available
