@@ -181,7 +181,7 @@ export class DocumentSummaryReportService {
           `[${doc.status_recommendation}]` : '';
         
         reportLines.push(`### ${docNumber}. ${doc.file_path} ${statusRec}`);
-        reportLines.push(`**Type**: ${doc.document_type_name} | **Deleted**: ${doc.is_deleted ? 'Yes' : 'No'}`);
+        reportLines.push(`**Type**: ${doc.document_type_name}`);
         if (doc.summary) {
           reportLines.push(`**Summary**: ${doc.summary.substring(0, 150) + (doc.summary.length > 150 ? '...' : '')}`);
         }

@@ -682,14 +682,14 @@ class DocumentTypeManager {
   /**
    * Update document type for a file in the database
    */
-  async updateDocumentType(filePath: string, documentTypeId: string): Promise<boolean> {
+  async updateDocumentType(filePath: string, documentTypeId: string, classificationData?: any): Promise<boolean> {
     try {
       console.log(`\n=== UPDATING DOCUMENT TYPE FOR: ${filePath} ===`);
       
       // Get the file ID from the database
       const { data: file, error: fileError } = await this._supabase
         .from('documentation_files')
-        .select('id')
+        .select('id, metadata')
         .eq('file_path', filePath)
         .single();
         
@@ -703,21 +703,60 @@ class DocumentTypeManager {
         return false;
       }
       
-      // Update the document type
+      // Build update object with document type and any additional data
+      const updateData: any = {
+        document_type_id: documentTypeId,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Include summary, title, and tags if provided in the classification data
+      if (classificationData) {
+        if (classificationData.summary) {
+          console.log(`Including summary in update: ${classificationData.summary.substring(0, 50)}...`);
+          updateData.summary = classificationData.summary;
+        }
+        
+        if (classificationData.title) {
+          console.log(`Including title in update: ${classificationData.title}`);
+          updateData.title = classificationData.title;
+        }
+        
+        if (classificationData.ai_generated_tags && Array.isArray(classificationData.ai_generated_tags)) {
+          console.log(`Including ${classificationData.ai_generated_tags.length} tags in update`);
+          updateData.ai_generated_tags = classificationData.ai_generated_tags;
+        }
+      }
+      
+      // Get file stats and update size in metadata
+      try {
+        const fullPath = path.resolve(this.rootDir, filePath);
+        const fileStats = fs.statSync(fullPath);
+        console.log(`Adding file size to metadata: ${fileStats.size} bytes`);
+        
+        // Use existing metadata or initialize new object
+        const metadata = file.metadata || {};
+        updateData.metadata = {
+          ...metadata,
+          size: fileStats.size,
+          lastClassified: new Date().toISOString()
+        };
+      } catch (statsError) {
+        console.error(`Error getting file stats: ${statsError instanceof Error ? statsError.message : 'Unknown error'}`);
+      }
+      
+      // Update the document record with all data
       const { error: updateError } = await this._supabase
         .from('documentation_files')
-        .update({
-          document_type_id: documentTypeId,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', file.id);
         
       if (updateError) {
-        console.error(`Error updating document type: ${updateError.message}`);
+        console.error(`Error updating document: ${updateError.message}`);
         return false;
       }
       
-      console.log(`Successfully updated document type for ${filePath} to ${documentTypeId}`);
+      console.log(`Successfully updated document record for ${filePath}:`);
+      console.log(JSON.stringify(updateData, null, 2));
       return true;
     } catch (error) {
       console.error('Error updating document type:', error instanceof Error ? error.message : 'Unknown error');
@@ -795,19 +834,62 @@ Commands:
         // If document ID is provided directly, update without prompting
         if (documentId && result.document_type_id) {
           console.log(`Updating document type for ID: ${documentId}`);
+          
+          // Build the complete update object including summary, title, and tags if available
+          const updateObj: any = {
+            document_type_id: result.document_type_id,
+            updated_at: new Date().toISOString()
+          };
+          
+          // Extract additional fields from the classification result if available
+          if (classification.summary) {
+            console.log(`Adding summary to document record: ${classification.summary.substring(0, 50)}...`);
+            updateObj.summary = classification.summary;
+          }
+          
+          if (classification.title) {
+            console.log(`Adding title to document record: ${classification.title}`);
+            updateObj.title = classification.title;
+          }
+          
+          if (classification.ai_generated_tags && Array.isArray(classification.ai_generated_tags)) {
+            console.log(`Adding ${classification.ai_generated_tags.length} tags to document record`);
+            updateObj.ai_generated_tags = classification.ai_generated_tags;
+          }
+          
+          // Get file stats and update size in metadata
+          try {
+            const fileStats = fs.statSync(filePath);
+            console.log(`Adding file size to metadata: ${fileStats.size} bytes`);
+            
+            // First get existing metadata
+            const { data: existingData } = await manager.supabase
+              .from('documentation_files')
+              .select('metadata')
+              .eq('id', documentId)
+              .single();
+            
+            const metadata = existingData?.metadata || {};
+            updateObj.metadata = {
+              ...metadata,
+              size: fileStats.size,
+              lastClassified: new Date().toISOString()
+            };
+          } catch (statsError) {
+            console.error(`Error getting file stats: ${statsError instanceof Error ? statsError.message : 'Unknown error'}`);
+          }
+          
           // Use the public getter to access the supabase client
           const { error } = await manager.supabase
             .from('documentation_files')
-            .update({
-              document_type_id: result.document_type_id,
-              updated_at: new Date().toISOString()
-            })
+            .update(updateObj)
             .eq('id', documentId);
             
           if (error) {
-            console.error(`Error updating document type: ${error.message}`);
+            console.error(`Error updating document: ${error.message}`);
           } else {
-            console.log(`Successfully updated document type for ID ${documentId} to ${result.document_type_id}`);
+            console.log(`Successfully updated document for ID ${documentId}:`);
+            console.log(JSON.stringify(updateObj, null, 2));
           }
         }
         // Otherwise ask if user wants to update the document type by file path
@@ -819,7 +901,8 @@ Commands:
           
           readline.question('Do you want to update the document type in the database? (y/n) ', async (answer: string) => {
             if (answer.toLowerCase() === 'y') {
-              await manager.updateDocumentType(filePath, result.document_type_id!);
+              // Pass along the entire classification object to include summary, title, tags, etc.
+              await manager.updateDocumentType(filePath, result.document_type_id!, classification);
             }
             readline.close();
           });

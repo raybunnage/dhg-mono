@@ -612,39 +612,39 @@ function Docs() {
     
     setLoading(true);
     try {
-      let updateResult;
+      let deleteResult;
       
       // Check if we're deleting by ID or by path
       if (!byPath && file.id) {
-        // Mark the file as deleted in the database by ID
-        const { error: updateError } = await supabase
+        // Hard delete the file from the database by ID
+        const { error: deleteError, data } = await supabase
           .from('documentation_files')
-          .update({ is_deleted: true })
+          .delete()
           .eq('id', file.id);
         
-        if (updateError) {
-          throw updateError;
+        if (deleteError) {
+          throw deleteError;
         }
         
-        updateResult = { success: true };
+        deleteResult = { success: true };
       } else if (byPath && file.file_path) {
-        // Mark the file as deleted in the database by file_path
-        const { error: updateError } = await supabase
+        // Hard delete the file from the database by file_path
+        const { error: deleteError, data } = await supabase
           .from('documentation_files')
-          .update({ is_deleted: true })
+          .delete()
           .eq('file_path', file.file_path);
         
-        if (updateError) {
-          throw updateError;
+        if (deleteError) {
+          throw deleteError;
         }
         
-        updateResult = { success: true };
+        deleteResult = { success: true };
       } else {
         throw new Error('Missing file ID or path for deletion');
       }
       
-      if (updateResult.success) {
-        // Call API to request physical file deletion
+      if (deleteResult.success) {
+        // Call API to request physical file deletion on disk
         try {
           const response = await fetch('/api/docs-sync', {
             method: 'POST',
@@ -663,12 +663,12 @@ function Docs() {
           }
         } catch (apiError) {
           console.error('Error calling delete file API:', apiError);
-          // Continue anyway as the db update is more important
+          // Continue anyway as the db deletion is already done
         }
         
         // Extract just the filename for the success message
         const fileName = file.file_path.split('/').pop();
-        toast.success(`File "${fileName}" has been marked as deleted`);
+        toast.success(`File "${fileName}" has been permanently deleted`);
         
         // Update the UI
         // Remove the file from the current documentationFiles list
@@ -1339,7 +1339,7 @@ function Docs() {
                     const fileName = selectedFile.file_path.split('/').pop();
                     
                     const confirmDelete = window.confirm(
-                      `Are you sure you want to delete the file "${fileName}"?\n\nThis will mark the file as deleted in the database and can be used to remove the file from the filesystem.`
+                      `Are you sure you want to delete the file "${fileName}"?\n\nWARNING: This will permanently delete the file from both the database and filesystem. This action cannot be undone.`
                     );
                     if (confirmDelete) {
                       handleDeleteFile(selectedFile);
@@ -1717,7 +1717,7 @@ function Docs() {
                 onClick={() => {
                   // Confirm deletion
                   const confirmDelete = window.confirm(
-                    `Are you sure you want to delete the duplicate file: "${duplicateFileInfo.file_path}"?`
+                    `Are you sure you want to delete the duplicate file: "${duplicateFileInfo.file_path}"?\n\nWARNING: This will permanently delete the file from both the database and filesystem. This action cannot be undone.`
                   );
                   
                   if (confirmDelete) {
