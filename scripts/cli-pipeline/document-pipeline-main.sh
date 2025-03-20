@@ -29,16 +29,17 @@ fi
 # Function to display script usage
 show_usage() {
   echo "Document Pipeline Main Script"
-  echo "Usage: $0 [option]"
+  echo "Usage: $0 [option] [count]"
   echo "Options:"
-  echo "  sync           - Synchronize database with files on disk (mark files as deleted/not deleted)"
-  echo "  find-new       - Find and insert new files on disk into the database"
-  echo "  show-untyped   - Show all documentation files without a document type"
-  echo "  show-recent    - Show the 20 most recent files based on update date"
-  echo "  classify-recent - Classify the 20 most recent files"
+  echo "  sync                 - Synchronize database with files on disk (mark files as deleted/not deleted)"
+  echo "  find-new             - Find and insert new files on disk into the database"
+  echo "  show-untyped         - Show all documentation files without a document type"
+  echo "  show-recent          - Show the 20 most recent files based on update date"
+  echo "  classify-recent      - Classify the 20 most recent files"
+  echo "  classify-untyped [n] - Classify untyped files, optionally specify number to process (default: 10)"
   echo "  clean-script-results - Remove script-analysis-results files from the database"
-  echo "  all            - Run the complete pipeline (sync, find-new, classify-recent)"
-  echo "  help           - Show this help message"
+  echo "  all                  - Run the complete pipeline (sync, find-new, classify-recent)"
+  echo "  help                 - Show this help message"
 }
 
 # Function to mark files as deleted/not deleted based on disk presence
@@ -1021,6 +1022,190 @@ classify_recent_files() {
   echo "Classification of recent files complete"
 }
 
+# Function to classify untyped files
+classify_untyped_files() {
+  # Set default limit if not provided
+  local limit=${1:-10}
+  
+  echo "=== Classifying $limit untyped files ==="
+  
+  # Make sure supabase module is installed
+  npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
+  
+  # Create a temporary directory with a script file
+  TEMP_DIR=$(mktemp -d)
+  TEMP_SCRIPT="$TEMP_DIR/get_files.js"
+  
+  # Create package.json in the temp directory
+  cat > "$TEMP_DIR/package.json" << 'EOL'
+{
+  "name": "temp-file-processor",
+  "version": "1.0.0",
+  "description": "Temporary file processor",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1"
+  }
+}
+EOL
+
+  # Install dependencies in the temp directory
+  (cd "$TEMP_DIR" && npm install --silent >/dev/null 2>&1)
+  
+  # Create the script file
+  cat > "$TEMP_SCRIPT" << 'EOF'
+const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
+
+async function getUntypedFiles() {
+  try {
+    const limit = process.argv[2] || 10;
+    const projectRoot = process.argv[3] || process.cwd();
+    console.error('Connecting to Supabase...');
+    console.error('Project root:', projectRoot);
+    
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+    
+    console.error(`Looking for up to ${limit} untyped files...`);
+    
+    const { data, error } = await supabase
+      .from('documentation_files')
+      .select('id, file_path')
+      .is('document_type_id', null)
+      .eq('is_deleted', false)
+      .order('last_modified_at', { ascending: false })
+      .limit(Number(limit));
+      
+    if (error) {
+      console.error('Error fetching files:', error);
+      return JSON.stringify({ error: error.message });
+    }
+    
+    if (!data || data.length === 0) {
+      console.error('No untyped files found for classification.');
+      return JSON.stringify([]);
+    }
+    
+    console.error(`Found ${data.length} untyped files in database`);
+    
+    // Filter for files that exist on disk
+    const existingFiles = data.filter(f => {
+      // Check relative to project root
+      const fullPath = path.resolve(projectRoot, f.file_path);
+      const exists = fs.existsSync(fullPath);
+      if (!exists) {
+        console.error(`File does not exist: ${f.file_path} (Checked path: ${fullPath})`);
+      } else {
+        console.error(`File exists: ${f.file_path} (Full path: ${fullPath})`);
+      }
+      return exists;
+    });
+    
+    if (existingFiles.length === 0) {
+      console.error('No untyped files found on disk for classification.');
+      return JSON.stringify([]);
+    }
+    
+    console.error(`Found ${existingFiles.length} untyped files to classify`);
+    return existingFiles;
+  } catch (err) {
+    console.error('Error in getUntypedFiles:', err);
+    return { error: err.message || 'Unknown error' };
+  }
+}
+
+// Run the function and print only the JSON result to stdout (for capturing)
+// All logs go to stderr and won't be captured in the variable
+getUntypedFiles().then(result => {
+  console.log(JSON.stringify(result));
+});
+EOF
+
+  # Save current directory as PROJECT_ROOT
+  PROJECT_ROOT=$(pwd)
+  
+  # Run the temporary script from the temp directory and capture only the output (not logs)
+  cd "$TEMP_DIR"
+  UNTYPED_FILES=$(SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+    node "get_files.js" "$limit" "$PROJECT_ROOT")
+  cd "$PROJECT_ROOT"
+    
+  # Clean up temp directory
+  rm -rf "$TEMP_DIR"
+  
+  # Check if we have files to process
+  if [ "$UNTYPED_FILES" = "[]" ] || [ -z "$UNTYPED_FILES" ] || [[ "$UNTYPED_FILES" == *"Error"* ]]; then
+    echo "No untyped files found for classification or error retrieving files"
+    echo "Raw response: $UNTYPED_FILES"
+    return
+  fi
+  
+  # Verify JSON format before proceeding
+  echo "$UNTYPED_FILES" | jq empty >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo "Error: Invalid JSON returned from database query"
+    echo "Raw response: $UNTYPED_FILES"
+    return
+  fi
+  
+  # Save raw output to a file for inspection
+  echo "$UNTYPED_FILES" > /tmp/untyped_files_raw.json
+  echo "Raw output saved to /tmp/untyped_files_raw.json"
+  
+  # Process files in batches with parallel execution
+  # Create a temporary directory for batch files
+  BATCH_DIR=$(mktemp -d)
+  BATCH_SIZE=5  # Process 5 files in parallel
+  COUNTER=0
+  BATCH_NUM=1
+  
+  echo "$UNTYPED_FILES" | jq -c '.[]' | while read -r file; do
+    FILE_PATH=$(echo "$file" | jq -r '.file_path')
+    FILE_ID=$(echo "$file" | jq -r '.id')
+    
+    if [ -f "$FILE_PATH" ]; then
+      # Add file info (path and ID) to current batch
+      echo "$FILE_PATH|$FILE_ID" >> "$BATCH_DIR/batch_$BATCH_NUM.txt"
+      COUNTER=$((COUNTER + 1))
+      
+      # If batch is full, start a new batch
+      if [ $COUNTER -ge $BATCH_SIZE ]; then
+        COUNTER=0
+        BATCH_NUM=$((BATCH_NUM + 1))
+      fi
+    else
+      echo "File does not exist on disk, skipping: $FILE_PATH"
+    fi
+  done
+  
+  # Process all batches in parallel with a reasonable rate limit per batch
+  echo "Starting parallel classification of $(find $BATCH_DIR -type f | wc -l) batches..."
+  
+  find "$BATCH_DIR" -type f | while read -r batch_file; do
+    (
+      echo "Processing batch: $batch_file"
+      cat "$batch_file" | while IFS="|" read -r doc_path doc_id; do
+        echo "Classifying file: $doc_path (ID: $doc_id)"
+        "$DOC_MANAGER" classify "$doc_path" "markdown-document-classification-prompt" "$doc_id"
+        # Reduced rate limiting per file in batch (10 seconds instead of 30)
+        sleep 10
+      done
+    ) &
+  done
+  
+  # Wait for all background processes to finish
+  echo "Waiting for all classification processes to complete..."
+  wait
+  
+  # Clean up
+  rm -rf "$BATCH_DIR"
+  
+  echo "Classification of untyped files complete"
+}
+
 # Function to clean script-analysis-results files from the database
 clean_script_results() {
   echo "=== Removing script-analysis-results files from the database ==="
@@ -1124,6 +1309,11 @@ case "$1" in
     ;;
   "classify-recent")
     classify_recent_files
+    ;;
+  "classify-untyped")
+    # Get the count parameter if provided, default to 10
+    limit=${2:-10}
+    classify_untyped_files "$limit"
     ;;
   "clean-script-results")
     clean_script_results

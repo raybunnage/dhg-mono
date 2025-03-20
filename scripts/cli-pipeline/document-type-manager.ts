@@ -58,7 +58,7 @@ interface ClassificationResult {
 }
 
 class DocumentTypeManager {
-  private supabase: SupabaseClient;
+  private _supabase: SupabaseClient;
   private claudeService: ClaudeService;
   private rootDir: string;
 
@@ -78,7 +78,7 @@ class DocumentTypeManager {
     }
 
     console.log(`Connecting to Supabase at: ${supabaseUrl}`);
-    this.supabase = createClient(supabaseUrl, supabaseKey);
+    this._supabase = createClient(supabaseUrl, supabaseKey);
     
     // Setup Claude service
     // Try different environment variable names for Claude API key
@@ -102,6 +102,11 @@ class DocumentTypeManager {
     // Set root directory
     this.rootDir = process.cwd();
   }
+  
+  // Add a public getter for the supabase client
+  public get supabase(): SupabaseClient {
+    return this._supabase;
+  }
 
   /**
    * List all document types in the database
@@ -110,7 +115,7 @@ class DocumentTypeManager {
     try {
       console.log('\n=== LISTING ALL DOCUMENT TYPES ===');
       
-      const { data: documentTypes, error } = await this.supabase
+      const { data: documentTypes, error } = await this._supabase
         .from('document_types')
         .select('id, document_type, description, category')
         .order('document_type');
@@ -143,7 +148,7 @@ class DocumentTypeManager {
     try {
       console.log('\n=== LISTING ALL FILE PATHS ===');
       
-      const { data: files, error } = await this.supabase
+      const { data: files, error } = await this._supabase
         .from('documentation_files')
         .select('id, file_path, document_type_id, title, is_deleted')
         .order('file_path');
@@ -160,7 +165,7 @@ class DocumentTypeManager {
       console.log(`Found ${files.length} files in the database.`);
       
       // Get document types for reference
-      const { data: documentTypes, error: typeError } = await this.supabase
+      const { data: documentTypes, error: typeError } = await this._supabase
         .from('document_types')
         .select('id, document_type');
         
@@ -237,7 +242,7 @@ class DocumentTypeManager {
       
       // Update files that don't exist on disk to is_deleted=true
       if (filesToMarkDeleted.length > 0) {
-        const { error: deleteError } = await this.supabase
+        const { error: deleteError } = await this._supabase
           .from('documentation_files')
           .update({ is_deleted: true, updated_at: new Date().toISOString() })
           .in('id', filesToMarkDeleted.map(f => f.id));
@@ -251,7 +256,7 @@ class DocumentTypeManager {
       
       // Update files that exist on disk to is_deleted=false
       if (filesToMarkNotDeleted.length > 0) {
-        const { error: undeleteError } = await this.supabase
+        const { error: undeleteError } = await this._supabase
           .from('documentation_files')
           .update({ is_deleted: false, updated_at: new Date().toISOString() })
           .in('id', filesToMarkNotDeleted.map(f => f.id));
@@ -285,7 +290,7 @@ class DocumentTypeManager {
       };
       
       // Step 1: Get prompt from database
-      const { data: prompt, error: promptError } = await this.supabase
+      const { data: prompt, error: promptError } = await this._supabase
         .from('prompts')
         .select('*')
         .eq('name', promptName)
@@ -324,7 +329,7 @@ class DocumentTypeManager {
       // Step 2: Get relationships if prompt is from database
       if (result.prompt.id !== 'local-file') {
         // Try with prompt_relationships first (correct table name)
-        const { data: promptRelationships, error: promptRelError } = await this.supabase
+        const { data: promptRelationships, error: promptRelError } = await this._supabase
           .from('prompt_relationships')
           .select('*')
           .eq('prompt_id', result.prompt.id);
@@ -334,7 +339,7 @@ class DocumentTypeManager {
           console.log(`Could not fetch from prompt_relationships: ${promptRelError.message}`);
           console.log('Trying file_relationships table as fallback...');
           
-          const { data: fileRelationships, error: fileRelError } = await this.supabase
+          const { data: fileRelationships, error: fileRelError } = await this._supabase
             .from('file_relationships')
             .select('*')
             .eq('prompt_id', result.prompt.id);
@@ -394,7 +399,7 @@ class DocumentTypeManager {
                 queryText.toLowerCase().includes('category = "documentation"')) {
               console.log('Using direct table access for document_types with Documentation category');
               
-              const { data, error } = await this.supabase
+              const { data, error } = await this._supabase
                 .from('document_types')
                 .select('*')
                 .eq('category', 'Documentation');
@@ -417,7 +422,7 @@ class DocumentTypeManager {
                 if (categories.length > 0) {
                   console.log(`Executing IN query with categories: ${categories.join(', ')}`);
                   
-                  const { data, error } = await this.supabase
+                  const { data, error } = await this._supabase
                     .from('document_types')
                     .select('*')
                     .in('category', categories);
@@ -437,7 +442,7 @@ class DocumentTypeManager {
           if (!documentTypes) {
             try {
               console.log('Trying execute_sql RPC method');
-              const { data, error } = await this.supabase.rpc('execute_sql', { sql: queryText });
+              const { data, error } = await this._supabase.rpc('execute_sql', { sql: queryText });
               
               if (error) {
                 console.error(`Error executing SQL via RPC: ${error.message}`);
@@ -457,7 +462,7 @@ class DocumentTypeManager {
       // If we couldn't get document types from metadata query, fall back to direct table access
       if (!documentTypes) {
         console.log('\nFalling back to direct table access for document types');
-        const { data, error: typeError } = await this.supabase
+        const { data, error: typeError } = await this._supabase
           .from('document_types')
           .select('id, document_type, description, category')
           .eq('category', 'Documentation');
@@ -682,7 +687,7 @@ class DocumentTypeManager {
       console.log(`\n=== UPDATING DOCUMENT TYPE FOR: ${filePath} ===`);
       
       // Get the file ID from the database
-      const { data: file, error: fileError } = await this.supabase
+      const { data: file, error: fileError } = await this._supabase
         .from('documentation_files')
         .select('id')
         .eq('file_path', filePath)
@@ -699,7 +704,7 @@ class DocumentTypeManager {
       }
       
       // Update the document type
-      const { error: updateError } = await this.supabase
+      const { error: updateError } = await this._supabase
         .from('documentation_files')
         .update({
           document_type_id: documentTypeId,
@@ -777,6 +782,9 @@ Commands:
       // Use the default prompt for classification
       const classifyPromptName = args[2] || 'markdown-document-classification-prompt';
       
+      // Check if a document ID is provided directly (from batch classification)
+      const documentId = args[3];
+      
       const result = await manager.classifyDocument(filePath, classifyPromptName);
       if (result.success) {
         console.log(`\nClassification Result:`);
@@ -784,8 +792,26 @@ Commands:
         console.log(`- Document Type ID: ${result.document_type_id}`);
         console.log(`- Confidence: ${result.confidence}`);
         
-        // Ask if user wants to update the document type
-        if (result.document_type_id) {
+        // If document ID is provided directly, update without prompting
+        if (documentId && result.document_type_id) {
+          console.log(`Updating document type for ID: ${documentId}`);
+          // Use the public getter to access the supabase client
+          const { error } = await manager.supabase
+            .from('documentation_files')
+            .update({
+              document_type_id: result.document_type_id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', documentId);
+            
+          if (error) {
+            console.error(`Error updating document type: ${error.message}`);
+          } else {
+            console.log(`Successfully updated document type for ID ${documentId} to ${result.document_type_id}`);
+          }
+        }
+        // Otherwise ask if user wants to update the document type by file path
+        else if (result.document_type_id) {
           const readline = require('readline').createInterface({
             input: process.stdin,
             output: process.stdout
