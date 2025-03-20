@@ -51,11 +51,13 @@ case "$1" in
       # No file path provided, use default
       FILE_PATH="$DEFAULT_DOC_PATH"
       PROMPT_NAME="$DEFAULT_PROMPT"
+      DOCUMENT_ID=""
       echo "No file path provided, using default: $FILE_PATH"
     else
       # Use provided file path
       FILE_PATH="$2"
       PROMPT_NAME="${3:-$DEFAULT_PROMPT}"
+      DOCUMENT_ID="$4"  # Optional document ID
       
       # Verify file exists
       if [ ! -f "$FILE_PATH" ]; then
@@ -67,9 +69,16 @@ case "$1" in
     
     echo "Classifying document: $FILE_PATH"
     echo "Using prompt: $PROMPT_NAME"
+    if [ -n "$DOCUMENT_ID" ]; then
+      echo "Using document ID: $DOCUMENT_ID"
+    fi
     
     # Run the classification command
-    run_ts_script classify "$FILE_PATH" "$PROMPT_NAME"
+    if [ -n "$DOCUMENT_ID" ]; then
+      run_ts_script classify "$FILE_PATH" "$PROMPT_NAME" "$DOCUMENT_ID"
+    else
+      run_ts_script classify "$FILE_PATH" "$PROMPT_NAME"
+    fi
     ;;
     
   "list-types")
