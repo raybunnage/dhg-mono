@@ -1,4 +1,231 @@
- 
+ NOw I want you to create a technical specification for exactly how to implement the scripts table - which already exists in supabase
+
+here are the script table fields
+[
+  {
+    "column_name": "id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": "gen_random_uuid()",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "file_path",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "title",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "summary",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "language",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "ai_generated_tags",
+    "data_type": "ARRAY",
+    "character_maximum_length": null,
+    "column_default": "'{}'::text[]",
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "manual_tags",
+    "data_type": "ARRAY",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "last_modified_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "last_indexed_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": "now()",
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "file_hash",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "metadata",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": "'{}'::jsonb",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": "now()",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": "now()",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "is_deleted",
+    "data_type": "boolean",
+    "character_maximum_length": null,
+    "column_default": "false",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "script_type_id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "package_json_references",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": "'[]'::jsonb",
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "ai_assessment",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "assessment_quality_score",
+    "data_type": "integer",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "assessment_created_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "assessment_updated_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "assessment_model",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "assessment_version",
+    "data_type": "integer",
+    "character_maximum_length": null,
+    "column_default": "1",
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "assessment_date",
+    "data_type": "date",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "document_type_id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  }
+]
+
+I need you to apply the functionality of the scripts/cli-pipeline/document-manager.sh and scripts/cli-pipeline/document-pipeline-main.sh the scripts files.
+
+We will need a new scripts/cli-pipeline/script-manager and scripts/cli-pipeline/script-pipeline-main.sh - with simnilar optiohs for finding, syncing, adding and classifying scripts just as we do markdown files.  Scripts can be .sh or .js files that have been created and exist on disk.  
+
+I want you to reuse the packages/cli services as much as possible so we don't have to reinvent the wheel.   I want you to add new services if necessary to support the main scripts. 
+
+I want you to write a beautiful techincal specification telling an ai engine exactly how to do this - safely - step by step. It should especially include this step you wanted me to ask you since yuou always have typescript errors after writing code:
+
+Please verify all TypeScript code compiles without errors before
+  submitting changes. Add proper types to all parameters, return
+  values, and variables to avoid type errors.
+
+It should adhere to the guidance you provided in the following document:
+
+
+These are the options I want you to write the script for only it should be focused on the scripts table I gave you at the beginning.
+
+For the prompt extraction I already have a prompt with the name:  "script-analysis-prompt" in the prompts database and you should be able to reuse the prompt_relationships code you have in the packages/cli/src/services/prompt-query-service.ts and possible the packages/cli/src/services/prompt-document-classifier.ts as well.  Write it to help it get built step by step with plenty of logging to let you know what is going on. 
+
+Usage: scripts/cli-pipeline/document-pipeline-main.sh [option] [count]
+Options:
+  sync                      - Synchronize database with files on disk (mark files as deleted/not deleted)
+  find-new                  - Find and insert new files on disk into the database
+  show-untyped              - Show all documentation files without a document type
+  show-recent               - Show the 20 most recent files based on update date
+  classify-recent           - Classify the 20 most recent files
+  classify-untyped [n]      - Classify untyped files, optionally specify number to process (default: 10)
+  clean-script-results      - Remove script-analysis-results files from the database
+  generate-summary [n] [i]  - Generate a summary report of documents
+                              n: Number of documents (default: 50, use 'all' for all documents)
+                              i: Include deleted (true/false, default: false)
+  all                       - Run the complete pipeline (sync, find-new, classify-recent)
+  help                      - Show this help message
+
+LETS see what you can write up to guide your creation of these new scripts.
+
+
+
+
+Document pipeline process complete
+raybunnage@Rays-Laptop dhg-mono %  
+
+
+
+Please verify all TypeScript code compiles without errors before
+  submitting changes. Add proper types to all parameters, return
+  values, and variables to avoid type errors."
+
+
+
+
+
+
+
 
 
 can you make the scripts/cli-pipeline/document-pipeline-main.sh script or the scripts/cli-pipeline/document-manager.sh it calls faster - perhaps by working in batches - let me know the ways you can speed it up?
