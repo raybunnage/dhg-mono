@@ -489,169 +489,15 @@ function Docs() {
     }
   };
 
-  // Run the markdown-report.sh script
-  const runMarkdownReport = async () => {
-    setLoading(true);
-    
-    // Show a toast notification that the process has started
-    const toastId = toast.loading('Running markdown report...');
-    
-    try {
-      // Run directly with a shell script instead of using API
-      // This avoids potential 404 errors with the API endpoint
-      console.log('Preparing to run markdown report script using direct fetch...');
-      
-      // Making sure to force regeneration 
-      // (The script itself handles the file creation and will overwrite existing files)
-      toast.loading('Generating markdown report...', { id: toastId });
-      
-      // Uses fetch to trigger both of the required scripts in sequence
-      // We're using a GET request to a local shell script that runs markdown-report.sh
-      const startReport = await fetch('/scripts/generate-report-and-sync-db.sh', { 
-        method: 'GET',
-        cache: 'no-cache' // Ensure fresh execution
-      });
-      
-      // If this fails, we'll try the backup API method
-      if (!startReport.ok) {
-        console.warn('Direct script execution failed, trying API fallback...');
-        
-        // Fallback to API
-        const response = await fetch('/api/docs-sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ action: 'report' })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Server responded with status ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('Markdown report API response:', result);
-        
-        if (result.success) {
-          toast.success('Markdown report generated successfully', { id: toastId });
-          // After generating the report, sync with the database
-          await syncDocumentationToDatabase();
-          fetchDocumentationFiles(); // Refresh the data
-        } else {
-          toast.error(`Failed to generate markdown report: ${result.message || 'Unknown error'}`, { id: toastId });
-          console.error('Markdown report error details:', result);
-        }
-      } else {
-        // Direct script approach worked
-        toast.success('Markdown report generated successfully', { id: toastId });
-        console.log('Markdown report script executed directly');
-        
-        // Refresh the data after a short delay to allow processing
-        setTimeout(() => fetchDocumentationFiles(), 2000);
-      }
-    } catch (error) {
-      console.error('Error running markdown report:', error);
-      toast.error(`Error running markdown report: ${error.message}`, { id: toastId });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Helper function to sync documentation to database
-  const syncDocumentationToDatabase = async () => {
-    try {
-      const response = await fetch('/api/docs-sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ action: 'sync' })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Server responded with status ${response.status}`);
-      }
-      
-      const result = await response.json();
-      console.log('Documentation sync result:', result);
-      
-      if (!result.success) {
-        console.error('Documentation sync error:', result.message || 'Unknown error');
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Error syncing documentation to database:', error);
-      return { 
-        success: false, 
-        message: `Error: ${error.message}` 
-      };
-    }
-  };
-  
-  // Run the update-docs-database.sh script
-  const updateDocsDatabase = async () => {
-    setLoading(true);
-    try {
-      // Execute update-docs-database.sh via API endpoint
-      const response = await fetch('/api/docs-sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ action: 'update' })
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        alert(`Documentation database updated successfully`);
-        fetchDocumentationFiles(); // Refresh the data
-      } else {
-        alert(`Failed to update docs database: ${result.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Error updating docs database:', error);
-      alert(`Error updating docs database: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Process docs with AI batch processing
-  const processDocsWithAI = async () => {
-    setLoading(true);
-    try {
-      // Execute process-docs-batch.sh via API endpoint
-      const response = await fetch('/api/docs-process-queue', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          action: 'process',
-          options: {
-            all: true,
-            limit: 20,
-            batchSize: 5
-          }
-        })
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        alert(`Started AI processing of documentation: ${result.message}`);
-        // Wait a bit to allow processing to start before refreshing
-        setTimeout(() => fetchDocumentationFiles(), 2000);
-      } else {
-        alert(`Failed to start AI processing: ${result.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Error starting AI processing:', error);
-      alert(`Error starting AI processing: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // These functions have been removed from the UI
+  // Documentation processing is now handled by CLI scripts:
+  //  - scripts/cli-pipeline/document-pipeline-main.sh
+  //
+  // Functions previously here:
+  // - runMarkdownReport
+  // - syncDocumentationToDatabase
+  // - updateDocsDatabase 
+  // - processDocsWithAI
 
   // Fetch file details by path
   const fetchFileDetailsByPath = async (filePath: string): Promise<DocumentationFile | null> => {
@@ -1273,27 +1119,7 @@ function Docs() {
               >
                 Search
               </button>
-              <button
-                onClick={runMarkdownReport}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                title="Generate markdown report using markdown-report.sh"
-              >
-                Sync Database
-              </button>
-              <button
-                onClick={updateDocsDatabase}
-                className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600"
-                title="Run update-docs-database.sh to update documentation in database"
-              >
-                Update Docs
-              </button>
-              <button
-                onClick={processDocsWithAI}
-                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
-                title="Run AI processing on documentation files (limit 20)"
-              >
-                Process AI
-              </button>
+              {/* UI actions removed - now handled by CLI scripts */}
             </div>
             
             {/* File selection and reprocessing controls */}
