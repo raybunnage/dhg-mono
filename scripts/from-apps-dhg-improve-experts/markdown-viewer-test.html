@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Viewer Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #1e1e1e;
+      color: #ffffff;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #ffffff;
+    }
+    input[type="text"] {
+      padding: 8px;
+      width: 70%;
+      margin-right: 10px;
+      background-color: #2d2d2d;
+      color: #e0e0e0;
+      border: 1px solid #3e3e3e;
+      border-radius: 4px;
+    }
+    button {
+      padding: 8px 12px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #content {
+      border: 1px solid #3e3e3e;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 4px;
+      min-height: 300px;
+      background-color: #252526;
+      color: #e0e0e0;
+    }
+    #content h1, #content h2, #content h3, #content h4, #content h5 {
+      color: #e0e0e0;
+    }
+    #content code {
+      background-color: #1e1e1e;
+      padding: 2px 4px;
+      border-radius: 3px;
+      color: #d7ba7d;
+    }
+    #content strong {
+      color: #569cd6;
+    }
+    #content em {
+      color: #ce9178;
+    }
+    .loading {
+      color: #999;
+      font-style: italic;
+    }
+    .error {
+      color: #f48771;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Local Markdown Viewer Test</h1>
+  <div>
+    <p>Enter a markdown file path (e.g., "README.md") to view its content.</p>
+    <div>
+      <input type="text" id="pathInput" placeholder="File path (e.g., README.md)">
+      <button onclick="fetchMarkdown()">View</button>
+    </div>
+  </div>
+
+  <div id="content">
+    <p>Content will appear here...</p>
+  </div>
+
+  <script>
+    async function fetchMarkdown() {
+      const pathInput = document.getElementById('pathInput');
+      const contentDiv = document.getElementById('content');
+      const path = pathInput.value.trim();
+      
+      if (!path) {
+        contentDiv.innerHTML = '<p class="error">Please enter a file path</p>';
+        return;
+      }
+      
+      contentDiv.innerHTML = '<p class="loading">Loading...</p>';
+      
+      try {
+        // Fetch from local server
+        const response = await fetch(`http://localhost:3001/api/markdown-file?path=${encodeURIComponent(path)}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Display the content
+          contentDiv.innerHTML = `
+            <h2>${data.title}</h2>
+            <p><em>File path: ${data.file_path}</em></p>
+            <div>${marked(data.content)}</div>
+          `;
+        } else {
+          contentDiv.innerHTML = `<p class="error">Error: ${data.error}</p>`;
+          if (data.tried_paths) {
+            contentDiv.innerHTML += '<p>Tried the following paths:</p><ul>';
+            data.tried_paths.forEach(p => {
+              contentDiv.innerHTML += `<li>${p}</li>`;
+            });
+            contentDiv.innerHTML += '</ul>';
+          }
+        }
+      } catch (error) {
+        contentDiv.innerHTML = `
+          <p class="error">Failed to load markdown file: ${error.message}</p>
+          <p>Make sure the markdown server is running at http://localhost:3001</p>
+          <p>Run: <code>./start-markdown-server.sh</code></p>
+        `;
+      }
+    }
+    
+    // Simple markdown parser (you can use a more sophisticated one if needed)
+    function marked(text) {
+      return text
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^#### (.*$)/gm, '<h4>$1</h4>')
+        .replace(/^##### (.*$)/gm, '<h5>$1</h5>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n\n/g, '<br><br>');
+    }
+  </script>
+</body>
+</html>
