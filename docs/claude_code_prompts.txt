@@ -1,4 +1,6 @@
  
+
+
 can you make the scripts/cli-pipeline/document-pipeline-main.sh script or the scripts/cli-pipeline/document-manager.sh it calls faster - perhaps by working in batches - let me know the ways you can speed it up?
 
 

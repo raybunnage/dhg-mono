@@ -233,7 +233,7 @@ export const validateExpertProfile = (response: any) => {
 export async function processWithAI({
   systemPrompt,
   userMessage,
-  temperature = 0.7,
+  temperature = 0,
   requireJsonOutput = false,
   validateResponse,
   signal
@@ -502,6 +502,7 @@ async function extractDocumentStructure(content: string) {
     const message = await anthropic.messages.create({
       model: MODEL_NAME,  // Fixed model name
       max_tokens: 1024,
+      temperature: 0,
       messages: [{
         role: 'user',
         content: `Analyze this document and identify its main sections and structure: ${content}`
@@ -517,6 +518,7 @@ async function identifyExpertise(structuredContent: string) {
   const response = await anthropic.messages.create({
     model: MODEL_NAME,  // Fixed model name
     max_tokens: 1024,
+    temperature: 0,
     messages: [{
       role: 'user',
       content: `Identify areas of expertise from this content. Return as JSON with areas array containing name, confidence (0-1), and evidence array: ${structuredContent}`

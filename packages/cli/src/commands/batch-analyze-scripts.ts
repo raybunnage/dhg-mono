@@ -241,7 +241,7 @@ async function processScript(
     const analysisResult = await claudeService.sendPrompt({
       prompt: completePrompt,
       model: config.defaultModel,
-      temperature: 0.2,
+      temperature: 0,
       maxTokens: 4000,
     });
 

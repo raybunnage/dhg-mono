@@ -800,7 +800,7 @@ export function ClassifyDocument() {
       const result = await processWithAI({
         systemPrompt,
         userMessage,
-        temperature: 0.7,
+        temperature: 0,
         requireJsonOutput: false
       });
       
@@ -1314,7 +1314,7 @@ export function ClassifyDocument() {
                 content: content.slice(0, 15000)
               }
             }),
-            temperature: 0.1,
+            temperature: 0,
             requireJsonOutput: true,
             validateResponse: (response) => {
               const parsed = ClassificationResponseSchema.safeParse(response);

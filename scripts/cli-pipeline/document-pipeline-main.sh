@@ -31,15 +31,18 @@ show_usage() {
   echo "Document Pipeline Main Script"
   echo "Usage: $0 [option] [count]"
   echo "Options:"
-  echo "  sync                 - Synchronize database with files on disk (mark files as deleted/not deleted)"
-  echo "  find-new             - Find and insert new files on disk into the database"
-  echo "  show-untyped         - Show all documentation files without a document type"
-  echo "  show-recent          - Show the 20 most recent files based on update date"
-  echo "  classify-recent      - Classify the 20 most recent files"
-  echo "  classify-untyped [n] - Classify untyped files, optionally specify number to process (default: 10)"
-  echo "  clean-script-results - Remove script-analysis-results files from the database"
-  echo "  all                  - Run the complete pipeline (sync, find-new, classify-recent)"
-  echo "  help                 - Show this help message"
+  echo "  sync                      - Synchronize database with files on disk (mark files as deleted/not deleted)"
+  echo "  find-new                  - Find and insert new files on disk into the database"
+  echo "  show-untyped              - Show all documentation files without a document type"
+  echo "  show-recent               - Show the 20 most recent files based on update date"
+  echo "  classify-recent           - Classify the 20 most recent files"
+  echo "  classify-untyped [n]      - Classify untyped files, optionally specify number to process (default: 10)"
+  echo "  clean-script-results      - Remove script-analysis-results files from the database"
+  echo "  generate-summary [n] [i]  - Generate a summary report of documents"
+  echo "                              n: Number of documents (default: 50, use 'all' for all documents)"
+  echo "                              i: Include deleted (true/false, default: false)"
+  echo "  all                       - Run the complete pipeline (sync, find-new, classify-recent)"
+  echo "  help                      - Show this help message"
 }
 
 # Function to mark files as deleted/not deleted based on disk presence
@@ -1293,6 +1296,28 @@ clean_script_results() {
   echo "Clean up complete"
 }
 
+# Function to generate summary report using document manager script
+generate_summary_report() {
+  # Set default limit if not provided
+  local limit=${1:-50}
+  local include_deleted=${2:-false}
+  
+  echo "=== Generating document summary report ==="
+  echo "Limit: $limit, Include deleted: $include_deleted"
+  
+  # Create reports directory if it doesn't exist
+  mkdir -p "reports"
+  
+  # Set output path for the report
+  local output_path="reports/document-summary-$(date +%Y-%m-%d).md"
+  
+  # Call the document manager script with the summary-report command
+  "$DOC_MANAGER" summary-report "$limit" "$include_deleted" "$output_path"
+  
+  echo "Document summary report generation complete"
+  echo "Report saved to: $output_path"
+}
+
 # Main script logic
 case "$1" in
   "sync")
@@ -1317,6 +1342,16 @@ case "$1" in
     ;;
   "clean-script-results")
     clean_script_results
+    ;;
+  "generate-summary")
+    # Get the limit and include_deleted parameters if provided
+    if [ "$2" = "all" ]; then
+      limit="all"
+    else
+      limit=${2:-50}
+    fi
+    include_deleted=${3:-false}
+    generate_summary_report "$limit" "$include_deleted"
     ;;
   "all")
     echo "=== Running complete document pipeline ==="

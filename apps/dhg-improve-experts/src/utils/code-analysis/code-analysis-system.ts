@@ -637,7 +637,7 @@ Rules:
 
 Return only valid JSON matching the required structure.`,
       userMessage: reactPrompt,
-      temperature: 0.1,
+      temperature: 0,
       requireJsonOutput: true,
       validateResponse: (response) => {
         try {
@@ -722,7 +722,7 @@ Return only valid JSON matching the required structure.`,
     return processWithAI({
       systemPrompt: "You are a specialized code analysis system. Analyze the code and provide a detailed analysis matching the CodeAnalysis interface structure. Return only valid JSON.",
       userMessage: analysisPrompt,
-      temperature: 0.1,
+      temperature: 0,
       requireJsonOutput: true,
       validateResponse: (response) => {
         try {

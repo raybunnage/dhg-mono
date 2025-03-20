@@ -106,7 +106,7 @@ export const analyzeScriptCommand = new Command('analyze-script')
       const analysisResult = await claudeService.sendPrompt({
         prompt: completePrompt,
         model: config.defaultModel,
-        temperature: 0.2,
+        temperature: 0,
         maxTokens: 4000,
       });
 

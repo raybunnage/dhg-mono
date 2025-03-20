@@ -39,6 +39,33 @@ run_ts_script() {
   npx ts-node ./scripts/cli-pipeline/document-type-manager.ts "$@"
 }
 
+# Define a function for running the summary report script
+run_summary_report() {
+  # Run the summary report script with explicit environment variables
+  SUPABASE_URL="$SUPABASE_URL" \
+  SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  npx ts-node ./scripts/cli-pipeline/document-summary-report.ts "$@"
+}
+
+# Show usage information
+show_usage() {
+  echo "Document Manager Script"
+  echo "Usage: $0 [command] [options]"
+  echo ""
+  echo "Commands:"
+  echo "  classify <file_path> [prompt_name] [document_id]  Classify a document"
+  echo "  list-types                                        List all document types"
+  echo "  list-files                                        List all file paths"
+  echo "  update-status                                     Update file status based on disk existence"
+  echo "  lookup-prompt [prompt_name]                       Look up a prompt and its relationships"
+  echo "  summary-report [limit] [include_deleted] [path]   Generate a summary report of documents"
+  echo "                                                    limit: Number of documents (default: 50)"
+  echo "                                                    include_deleted: true/false (default: false)"
+  echo "                                                    path: Output file path (optional)"
+  echo "  help                                              Show this help message"
+  echo ""
+}
+
 # Process commands
 case "$1" in
   "classify")
@@ -99,8 +126,23 @@ case "$1" in
     run_ts_script lookup-prompt "$PROMPT_NAME"
     ;;
     
+  "summary-report")
+    # Parse arguments for the summary report
+    LIMIT="${2:-50}"
+    INCLUDE_DELETED="${3:-false}"
+    OUTPUT_PATH="$4"
+    
+    # Run the summary report command
+    echo "Generating document summary report..."
+    run_summary_report report "$LIMIT" "$INCLUDE_DELETED" "$OUTPUT_PATH"
+    ;;
+    
+  "help")
+    show_usage
+    ;;
+    
   *)
     # Show usage if no command or unknown command
-    run_ts_script
+    show_usage
     ;;
 esac
