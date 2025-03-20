@@ -110,7 +110,7 @@ Guidelines for categorization:
       const result = await processWithAI({
         systemPrompt: "You are a code analysis system specializing in analyzing JavaScript/TypeScript code. You extract functions and provide detailed metadata about them. Your analysis is used to add functions to a function registry.",
         userMessage: analysisPrompt,
-        temperature: 0.1,
+        temperature: 0,
         requireJsonOutput: true
       });
 

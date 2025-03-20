@@ -2926,7 +2926,7 @@ Make sure the query is valid PostgreSQL SQL and follows best practices.
                         // Use the AI processing function to make the API call
                         const result = await processWithAI({
                           messages: [{ role: 'user', content: fullPrompt }],
-                          temperature: 0.2,
+                          temperature: 0,
                           maxTokens: 4000,
                           model: 'claude-3-7-sonnet-20250219'
                         });
