@@ -575,6 +575,8 @@ async function processFiles() {
             file_path: filePath, // Store the relative path, not the absolute path
             title: filename,
             is_deleted: false,
+            created_at: now, // Explicitly set the created_at timestamp
+            updated_at: now, // Explicitly set the updated_at timestamp
             last_indexed_at: now,
             last_modified_at: now,
             file_hash: fileHash,
@@ -585,8 +587,9 @@ async function processFiles() {
         
         // If no existing file found, create new metadata
         console.log(`[Batch ${batchIndex}] No existing file found with title: ${filename}, creating new record`);
+        // Make sure file size is captured in metadata
         const metadata = {
-          size: stats.size,
+          size: stats.size, // Ensure file size is explicitly set
           isPrompt: false,
           created: now,
           modified: now
@@ -623,6 +626,8 @@ async function processFiles() {
           file_path: filePath, // Store the relative path, not absolute
           title: filename,
           is_deleted: false,
+          created_at: now, // Explicitly set the created_at timestamp
+          updated_at: now, // Explicitly set the updated_at timestamp
           last_indexed_at: now,
           last_modified_at: now,
           file_hash: fileHash,
@@ -653,6 +658,8 @@ async function processFiles() {
       // Get file path relative to project root for display
       const relPath = record.file_path.replace(process.cwd(), '').replace(/^\//, '');
       console.log(`[Batch ${batchIndex}] Would insert: ${relPath} (with ${record.document_type_id ? 'document_type_id: ' + record.document_type_id : 'no document_type_id'})`);
+      console.log(`[Batch ${batchIndex}] Timestamp fields: created_at=${record.created_at}, updated_at=${record.updated_at}`);
+      console.log(`[Batch ${batchIndex}] Size in metadata: ${record.metadata?.size || 'Not set'} bytes`);
       
       // Make sure the path format is correct
       if (!relPath.match(/^(docs|packages|apps|prompts|scripts)/)) {
