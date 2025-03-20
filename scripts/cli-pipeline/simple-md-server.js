@@ -48,14 +48,14 @@ const server = http.createServer((req, res) => {
       return;
     }
     
-    // Project root
-    const projectRoot = __dirname;
+    // Project root - need to go up to the repository root
+    const projectRoot = path.join(__dirname, '..', '..');
     
     // Try multiple locations
     const possiblePaths = [
       path.join(projectRoot, normalizedPath),
-      path.join(projectRoot, '..', normalizedPath),
-      path.join(projectRoot, '..', '..', normalizedPath),
+      path.join(__dirname, normalizedPath),
+      path.join(__dirname, '..', normalizedPath),
     ];
     
     // Try to find the file
@@ -89,14 +89,14 @@ const server = http.createServer((req, res) => {
   else if (pathname === '/api/markdown-files') {
     // List all markdown files
     try {
-      const projectRoot = __dirname;
-      const cmd = `find ${projectRoot}/.. -name "*.md" -type f -not -path "*/node_modules/*" -not -path "*/.git/*" | head -20`;
+      const projectRoot = path.join(__dirname, '..', '..');
+      const cmd = `find ${projectRoot} -name "*.md" -type f -not -path "*/node_modules/*" -not -path "*/.git/*" | head -20`;
       
       const output = execSync(cmd, { encoding: 'utf8' }).trim();
       const files = output.split('\n').filter(Boolean);
       
       // Normalize paths
-      const relativePaths = files.map(f => f.replace(projectRoot, '').replace(/^\/+/, ''));
+      const relativePaths = files.map(f => f.replace(projectRoot + '/', ''));
       
       sendJson(res, 200, {
         total: relativePaths.length,
