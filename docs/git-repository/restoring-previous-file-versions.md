@@ -18,6 +18,8 @@ git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- scripts/markdown-report.sh
 
 git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- scripts/script-report.sh
 
+git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- docs/cli-pipeline/CLI_PIPELINE_GUIDANCE.md
+
 git log -n 5 --pretty=format:"%h - %an, %ar : %s" -- scripts/validate-ai-assets.sh
 
 
@@ -29,6 +31,8 @@ git log -n 5 -p -- path/to/file.sh
 
 # 3. Restore the file from the identified commit
 git checkout abc123 -- path/to/file.sh
+
+git checkout fe19d1c -- docs/cli-pipeline/CLI_PIPELINE_GUIDANCE.md
 
 # real things Example: Restore the markdown report script from commit 91272de
 git checkout 12d3da3 -- scripts/markdown-report.sh
