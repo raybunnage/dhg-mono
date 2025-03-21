@@ -29,11 +29,9 @@ function show_help() {
   echo "  help                      - Show this help message"
 }
 
-# Check for required environment variables
-if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_KEY}" ]; then
-  echo "⚠️ Warning: SUPABASE_URL and/or SUPABASE_KEY environment variables not set."
-  echo "    Some commands may fail without proper database credentials."
-fi
+# We no longer need to check for environment variables here since we use config service
+# The ScriptManagementService handles loading credentials correctly
+# This comment is kept to document the change
 
 # Main logic
 option=$1
