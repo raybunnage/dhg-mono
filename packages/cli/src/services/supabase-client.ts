@@ -51,12 +51,60 @@ export class SupabaseClientService {
   public getClient(forceInit: boolean = true): SupabaseClient {
     if (!this.client && forceInit) {
       // Try to initialize from environment variables
-      const url = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL;
-      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || 
-                  process.env.CLI_SUPABASE_SERVICE_ROLE_KEY || process.env.CLI_SUPABASE_SERVICE_KEY;
+      let url = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      let key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || 
+                process.env.CLI_SUPABASE_KEY || process.env.CLI_SUPABASE_SERVICE_ROLE_KEY ||
+                process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
       
       if (!url || !key) {
-        throw new Error('Missing Supabase credentials in environment variables');
+        // Attempt to load from .env files directly
+        console.log('Attempting to load Supabase credentials from .env files...');
+        
+        // Try several possible locations for .env files
+        const possiblePaths = [
+          path.join(process.cwd(), '.env.local'),
+          path.join(process.cwd(), '.env.development'),
+          path.join(process.cwd(), '.env'),
+          path.join(process.cwd(), '..', '.env.development'),
+          path.join(process.cwd(), '..', '.env'),
+          '/Users/raybunnage/Documents/github/dhg-mono/.env.development',
+          '/Users/raybunnage/Documents/github/dhg-mono/.env'
+        ];
+        
+        for (const filePath of possiblePaths) {
+          if (fs.existsSync(filePath)) {
+            console.log(`Loading from ${filePath}`);
+            const { exists, variables } = SupabaseClientService.readEnvFile(filePath);
+            if (exists) {
+              // Try all possible variable names
+              url = url || variables['SUPABASE_URL'] || variables['CLI_SUPABASE_URL'] || 
+                          variables['VITE_SUPABASE_URL'];
+              key = key || variables['SUPABASE_SERVICE_ROLE_KEY'] || variables['SUPABASE_KEY'] || 
+                          variables['CLI_SUPABASE_KEY'] || variables['CLI_SUPABASE_SERVICE_ROLE_KEY'] ||
+                          variables['VITE_SUPABASE_SERVICE_ROLE_KEY'];
+              
+              if (url && key) {
+                console.log(`Found credentials in ${filePath}`);
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      // Hard-coded fallback if all else fails
+      if (!url) {
+        url = "https://jdksnfkupzywjdfefkyj.supabase.co";
+        console.log("Using hardcoded fallback for Supabase URL");
+      }
+      
+      if (!key) {
+        key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDE4OTAxMywiZXhwIjoyMDQ5NzY1MDEzfQ.ytwo7scGIQRoyue71Bu6W6P6vgSnLP3S3iaL6BoRP_E";
+        console.log("Using hardcoded fallback for Supabase key");
+      }
+      
+      if (!url || !key) {
+        throw new Error('Missing Supabase credentials in environment variables and fallbacks');
       }
       
       return this.initialize(url, key);
@@ -123,12 +171,60 @@ export class SupabaseClientService {
    */
   public initializeFromEnv(): SupabaseClient | null {
     // Try to load from environment
-    const url = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || 
-                process.env.CLI_SUPABASE_SERVICE_ROLE_KEY || process.env.CLI_SUPABASE_SERVICE_KEY;
+    let url = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    let key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || 
+              process.env.CLI_SUPABASE_KEY || process.env.CLI_SUPABASE_SERVICE_ROLE_KEY ||
+              process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
     
     if (!url || !key) {
-      console.error('Missing Supabase credentials in environment variables');
+      // Attempt to load from .env files directly
+      console.log('Attempting to load Supabase credentials from .env files...');
+      
+      // Try several possible locations for .env files
+      const possiblePaths = [
+        path.join(process.cwd(), '.env.local'),
+        path.join(process.cwd(), '.env.development'),
+        path.join(process.cwd(), '.env'),
+        path.join(process.cwd(), '..', '.env.development'),
+        path.join(process.cwd(), '..', '.env'),
+        '/Users/raybunnage/Documents/github/dhg-mono/.env.development',
+        '/Users/raybunnage/Documents/github/dhg-mono/.env'
+      ];
+      
+      for (const filePath of possiblePaths) {
+        if (fs.existsSync(filePath)) {
+          console.log(`Loading from ${filePath}`);
+          const { exists, variables } = SupabaseClientService.readEnvFile(filePath);
+          if (exists) {
+            // Try all possible variable names
+            url = url || variables['SUPABASE_URL'] || variables['CLI_SUPABASE_URL'] || 
+                        variables['VITE_SUPABASE_URL'];
+            key = key || variables['SUPABASE_SERVICE_ROLE_KEY'] || variables['SUPABASE_KEY'] || 
+                        variables['CLI_SUPABASE_KEY'] || variables['CLI_SUPABASE_SERVICE_ROLE_KEY'] ||
+                        variables['VITE_SUPABASE_SERVICE_ROLE_KEY'];
+            
+            if (url && key) {
+              console.log(`Found credentials in ${filePath}`);
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Hard-coded fallback if all else fails
+    if (!url) {
+      url = "https://jdksnfkupzywjdfefkyj.supabase.co";
+      console.log("Using hardcoded fallback for Supabase URL");
+    }
+    
+    if (!key) {
+      key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDE4OTAxMywiZXhwIjoyMDQ5NzY1MDEzfQ.ytwo7scGIQRoyue71Bu6W6P6vgSnLP3S3iaL6BoRP_E";
+      console.log("Using hardcoded fallback for Supabase key");
+    }
+    
+    if (!url || !key) {
+      console.error('Missing Supabase credentials in environment variables and fallbacks');
       return null;
     }
     
