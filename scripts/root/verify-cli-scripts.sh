@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
+
+# Change to project root directory
+cd "$PROJECT_ROOT"
+
 echo "Verifying CLI script setup..."
 
 # 1. Check for any remaining references to old path

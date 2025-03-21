@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Usage: ./scripts/deploy.sh <app> <environment>
-# Example: ./scripts/deploy.sh dhg-a development
+# Usage: ./scripts/root/deploy.sh <app> <environment>
+# Example: ./scripts/root/deploy.sh dhg-a development
 
 APP=$1
 ENV=$2
 
 if [ -z "$APP" ] || [ -z "$ENV" ]; then
-  echo "Usage: ./scripts/deploy.sh <app> <environment>"
+  echo "Usage: ./scripts/root/deploy.sh <app> <environment>"
   exit 1
 fi
 

@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e  # Exit on any error
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
+
+# Change to project root directory
+cd "$PROJECT_ROOT"
+
 # Function to check for duplicates
 check_duplicates() {
   local pattern=$1
@@ -16,7 +23,7 @@ check_duplicates() {
 # Usage check
 if [ -z "$1" ]; then
   echo "Error: Migration name required"
-  echo "Usage: ./scripts/create-migration.sh <migration_name>"
+  echo "Usage: ./scripts/root/create-migration.sh <migration_name>"
   exit 1
 fi
 

@@ -21,6 +21,7 @@
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
 
 # Check if ts-node is installed
 if ! command -v ts-node &> /dev/null; then
@@ -38,5 +39,5 @@ fi
 CATEGORY="$1"
 COMMAND="${@:2}"
 
-# Execute the command tracker
-ts-node "$SCRIPT_DIR/command-history-tracker.ts" "$CATEGORY" "$COMMAND" 
+# Execute the command tracker from the correct location
+ts-node "$PROJECT_ROOT/scripts/cli-pipeline/command-history-tracker.ts" "$CATEGORY" "$COMMAND" 

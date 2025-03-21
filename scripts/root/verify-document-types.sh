@@ -6,11 +6,18 @@
 # 2. Makes sure scripts preserve document_type_id and metadata
 # 3. Creates a backup of the table if requested
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
+
+# Change to project root directory
+cd "$PROJECT_ROOT"
+
 # Load environment variables from .env file
-if [ -f .env ]; then
+if [ -f "$PROJECT_ROOT/.env" ]; then
   echo "Loading environment variables from .env..."
   set -a
-  source .env
+  source "$PROJECT_ROOT/.env"
   set +a
 else
   echo "Error: .env file not found."

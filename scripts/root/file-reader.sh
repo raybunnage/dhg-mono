@@ -16,8 +16,9 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
-# Define the file path
-REPO_ROOT="$(pwd)"
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+REPO_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
 FILE_PATH="$REPO_ROOT/docs/markdown-report.md"
 
 echo -e "${BOLD}${BLUE}=== Markdown Report File Reader ===${NC}\n"

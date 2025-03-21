@@ -5,8 +5,9 @@
 
 echo "Generating markdown files report..."
 
-# Define important locations
-REPO_ROOT="$(pwd)"
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+REPO_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
 REPORT_FILE="$REPO_ROOT/docs/markdown-report.md"
 
 # Ensure docs directory exists

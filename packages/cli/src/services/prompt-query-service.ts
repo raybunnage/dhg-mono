@@ -27,7 +27,10 @@ export interface PromptQueryResult {
 export class PromptQueryService {
   private client: SupabaseClient;
   
-  constructor(url: string, key: string) {
+  constructor(config: { url?: string; key?: string } = {}) {
+    const url = config.url || process.env.SUPABASE_URL || '';
+    const key = config.key || process.env.SUPABASE_SERVICE_KEY || '';
+    
     if (!url || !key) {
       Logger.warn('PromptQueryService initialized with empty URL or key');
     }
