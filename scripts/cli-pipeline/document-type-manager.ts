@@ -55,6 +55,9 @@ interface ClassificationResult {
   document_type_name?: string;
   confidence?: number;
   error?: string;
+  summary?: string;
+  title?: string;
+  ai_generated_tags?: string[];
 }
 
 class DocumentTypeManager {
@@ -842,19 +845,19 @@ Commands:
           };
           
           // Extract additional fields from the classification result if available
-          if (classification.summary) {
-            console.log(`Adding summary to document record: ${classification.summary.substring(0, 50)}...`);
-            updateObj.summary = classification.summary;
+          if (result.summary) {
+            console.log(`Adding summary to document record: ${result.summary.substring(0, 50)}...`);
+            updateObj.summary = result.summary;
           }
           
-          if (classification.title) {
-            console.log(`Adding title to document record: ${classification.title}`);
-            updateObj.title = classification.title;
+          if (result.title) {
+            console.log(`Adding title to document record: ${result.title}`);
+            updateObj.title = result.title;
           }
           
-          if (classification.ai_generated_tags && Array.isArray(classification.ai_generated_tags)) {
-            console.log(`Adding ${classification.ai_generated_tags.length} tags to document record`);
-            updateObj.ai_generated_tags = classification.ai_generated_tags;
+          if (result.ai_generated_tags && Array.isArray(result.ai_generated_tags)) {
+            console.log(`Adding ${result.ai_generated_tags.length} tags to document record`);
+            updateObj.ai_generated_tags = result.ai_generated_tags;
           }
           
           // Get file stats and update size in metadata
@@ -902,7 +905,7 @@ Commands:
           readline.question('Do you want to update the document type in the database? (y/n) ', async (answer: string) => {
             if (answer.toLowerCase() === 'y') {
               // Pass along the entire classification object to include summary, title, tags, etc.
-              await manager.updateDocumentType(filePath, result.document_type_id!, classification);
+              await manager.updateDocumentType(filePath, result.document_type_id!, result);
             }
             readline.close();
           });
