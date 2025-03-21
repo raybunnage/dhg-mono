@@ -12,10 +12,10 @@ const { spawn } = require('child_process');
 const SCRIPT_DIR = __dirname;
 const ROOT_DIR = path.join(SCRIPT_DIR, '../..');
 
-// Hardcoded credentials from .env.development as fallback
-const FALLBACK_URL = "https://jdksnfkupzywjdfefkyj.supabase.co";
-const FALLBACK_SERVICE_KEY = "***REMOVED***";
-const FALLBACK_ANON_KEY = "***REMOVED***";
+// Remove these hardcoded credentials
+const FALLBACK_URL = process.env.SUPABASE_URL || "";
+const FALLBACK_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const FALLBACK_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 
 /**
  * Read environment variables from .env file
@@ -102,20 +102,20 @@ function getSupabaseCredentials() {
     }
   }
   
-  // Use fallbacks if needed
+  // Modify the getSupabaseCredentials function to handle missing credentials better
   if (!url) {
-    url = FALLBACK_URL;
-    console.log('Using fallback URL:', url);
+    console.error('❌ No Supabase URL found in environment variables or .env files');
+    process.exit(1);
   }
   
   if (!serviceKey) {
-    serviceKey = FALLBACK_SERVICE_KEY;
-    console.log('Using fallback service role key');
+    console.error('❌ No Supabase service key found in environment variables or .env files');
+    process.exit(1);
   }
   
   if (!anonKey) {
-    anonKey = FALLBACK_ANON_KEY;
-    console.log('Using fallback anon key');
+    console.error('❌ No Supabase anon key found in environment variables or .env files');
+    process.exit(1);
   }
   
   return { url, serviceKey, anonKey };
@@ -236,7 +236,18 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 async function findScripts() {
   const ROOT_DIR = '${ROOT_DIR}';
   const SCRIPT_EXTENSIONS = ['.sh', '.js'];
-  const EXCLUDE_DIRS = ['node_modules', '.git', 'dist', 'build'];
+  const EXCLUDE_DIRS = [
+    'node_modules', 
+    '.git', 
+    'dist', 
+    'build', 
+    '_archive', 
+    'script-analysis-results', 
+    'file_types',
+    'backup',
+    '.backups',
+    'registry_archives'
+  ];
   
   console.log('Finding script files...');
   
@@ -246,7 +257,18 @@ async function findScripts() {
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!EXCLUDE_DIRS.includes(entry.name)) {
+        // Check if directory should be excluded (exact match or contains excluded terms)
+        const shouldExclude = 
+          EXCLUDE_DIRS.includes(entry.name) || 
+          entry.name.toLowerCase().includes('archive') || 
+          entry.name.toLowerCase().includes('backup') ||
+          entry.name.toLowerCase().includes('.backups') ||
+          dir.includes('node_modules') ||    // Skip nested node_modules directories
+          dir.includes('/_archive/') ||      // Skip nested archive directories
+          dir.includes('/.backups/') ||      // Skip nested backup directories
+          dir.includes('/registry_archives/');
+        
+        if (!shouldExclude) {
           yield* findFiles(fullPath);
         }
       } else if (entry.isFile() && SCRIPT_EXTENSIONS.includes(path.extname(entry.name))) {
