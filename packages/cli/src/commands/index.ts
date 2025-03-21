@@ -7,6 +7,7 @@ import { registerDocumentProcessorCommand } from './documentation-processor';
 import { scanScriptsCommand } from './scan-scripts';
 import { analyzeScriptCommand } from './analyze-script';
 import { batchAnalyzeScriptsCommand } from './batch-analyze-scripts';
+import { registerScriptCommands } from './script-commands';
 
 /**
  * Register all commands with the Commander program
@@ -23,4 +24,7 @@ export const registerCommands = (program: Command): void => {
   program.addCommand(scanScriptsCommand);
   program.addCommand(analyzeScriptCommand);
   program.addCommand(batchAnalyzeScriptsCommand);
+  
+  // Script management commands
+  registerScriptCommands(program);
 };

@@ -17,11 +17,15 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
-# Define important locations
-REPO_ROOT="$(pwd)"
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+REPO_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
 ENV_FILE="$REPO_ROOT/apps/dhg-improve-experts/.env.development"
 TARGET_FILE="$REPO_ROOT/docs/markdown-report.md"
 REPORT_FILE="$REPO_ROOT/docs/markdown-classification-report.md"
+
+# Change to project root directory
+cd "$REPO_ROOT"
 
 echo -e "${BOLD}${BLUE}=== Markdown Classifier ===${NC}\n"
 

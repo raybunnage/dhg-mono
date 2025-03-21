@@ -1,3 +1,25 @@
+ Prompt Formula:
+​“Reflect on 5-7 different possible sources of the problem, distill those down to 1-2 most likely sources, and then add logs to validate your assumptions before we move on to implementing the actual code fix.”
+
+Quick Description:
+​Vibe coding—using AI to create apps, games, websites, and more without extensive coding expertise—is getting more popular by the day. But even when letting AI handle the heavy lifting, things inevitably go wrong, and that’s where this prompt shines.
+
+It's the ideal first step when you hit an unexpected snag. Instead of immediately asking the AI to rewrite or debug blindly, this prompt instructs the AI to pause, analyze the situation carefully, and pinpoint the most likely culprits. By narrowing down the issue first and strategically adding logs, you avoid wasting time and get more precise results from your AI assistant.
+
+How to Use:
+
+Pause when you encounter a problem in your AI-generated code.
+Copy and paste this prompt directly into your AI coding assistant like Cursor or ChatGPT.
+Send the prompt! Allow the AI to reflect and identify potential sources of the issue.
+Review the identified likely sources and logs suggested.
+Ask your AI coding assistant to implement solutions.
+If you're diving into vibe coding, keep this prompt handy—it's a must-have tool to keep your projects moving forward smoothly.
+
+📢 Join The AI Advantage Community!
+​If you want to learn more advanced ways to use ChatGPT and other LLMs—plus courses, workflow guides, practical lectures, personalized support, and more—you should check out The AI Advantage Community. We dare say it’s the best place on the internet for people who actually want to use AI in their professional and personal lives.
+
+
+ 
  NOw I want you to create a technical specification for exactly how to implement the scripts table - which already exists in supabase
 
 here are the script table fields

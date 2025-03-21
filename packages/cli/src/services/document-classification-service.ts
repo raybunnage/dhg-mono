@@ -62,7 +62,10 @@ export class DocumentClassificationService {
     this.fileService = new FileService();
     
     // Initialize the shared prompt query service
-    this.promptQueryService = new PromptQueryService(this.supabaseUrl, this.supabaseKey);
+    this.promptQueryService = new PromptQueryService({
+      url: this.supabaseUrl,
+      key: this.supabaseKey
+    });
     
     this.debug = debug;
     
