@@ -39,6 +39,36 @@ async function processScriptClassification(
 export function registerScriptCommands(program: Command): void {
   const scriptService = new ScriptManagementService();
   
+  // Command to test Supabase connection
+  program
+    .command('supabase-test')
+    .description('Test Supabase connectivity')
+    .action(async () => {
+      try {
+        const { SupabaseClientService } = require('../services/supabase-client');
+        const supabaseService = SupabaseClientService.getInstance();
+        
+        console.log('Initializing Supabase client...');
+        const client = supabaseService.getClient();
+        
+        console.log('Testing connection...');
+        const result = await supabaseService.testConnection();
+        
+        if (result.success) {
+          console.log('✅ Supabase connection successful!');
+        } else {
+          console.error('❌ Supabase connection failed:', result.error);
+          if (result.details) {
+            console.error('Details:', JSON.stringify(result.details, null, 2));
+          }
+          process.exit(1);
+        }
+      } catch (error) {
+        console.error('Error testing Supabase connection:', error);
+        process.exit(1);
+      }
+    });
+  
   // Command to sync scripts
   program
     .command('script-sync')
@@ -244,8 +274,7 @@ export function registerScriptCommands(program: Command): void {
         const includeDeleted = options.includeDeleted === 'true';
         
         const reportPath = await scriptService.generateSummary({
-          limit: count,
-          includeDeleted
+          limit: count
         });
         
         if (reportPath) {
