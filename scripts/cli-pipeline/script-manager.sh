@@ -8,6 +8,7 @@ export NODE_ENV="${NODE_ENV:-development}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CLI_DIR="${ROOT_DIR}/packages/cli"
 SCRIPT_REPORTS_DIR="${ROOT_DIR}/script-analysis-results"
+SUPABASE_CONNECT="${ROOT_DIR}/scripts/fix/supabase-connect.js"
 
 # Create reports directory if it doesn't exist
 mkdir -p "${SCRIPT_REPORTS_DIR}"
@@ -15,6 +16,12 @@ mkdir -p "${SCRIPT_REPORTS_DIR}"
 # Log configuration
 LOG_FILE="${SCRIPT_REPORTS_DIR}/script-pipeline-$(date +%Y-%m-%d_%H-%M-%S).log"
 exec > >(tee -a "${LOG_FILE}") 2>&1
+
+# First, check if supabase-connect.js exists
+if [ ! -f "${SUPABASE_CONNECT}" ]; then
+  echo "Error: Cannot find supabase-connect.js at ${SUPABASE_CONNECT}"
+  exit 1
+fi
 
 # Skip CLI check since we'll use direct script implementation
 # Comment out CLI build check for now
@@ -29,157 +36,52 @@ exec > >(tee -a "${LOG_FILE}") 2>&1
 #   fi
 # fi
 
+# Function to run a command with Supabase environment
+function run_with_supabase() {
+  echo "Running command with fixed Supabase environment: $@"
+  node "${SUPABASE_CONNECT}" testSupabaseConnection
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ Supabase connection failed. Check your credentials."
+    return 1
+  fi
+  
+  # Run the command using runCommand from supabase-connect.js
+  node "${SUPABASE_CONNECT}" runCommand "$@"
+  return $?
+}
+
 # Function to synchronize database with files on disk
 function sync_scripts() {
   echo "🔄 Syncing scripts database with files on disk..."
   
-  # Find all script files 
-  echo "Finding script files..."
-  local script_count=$(find "${ROOT_DIR}" -type f \( -name "*.sh" -o -name "*.js" \) \
-    -not -path "*/node_modules/*" \
-    -not -path "*/.git/*" \
-    -not -path "*/dist/*" \
-    -not -path "*/build/*" \
-    -not -path "*/backup/*" \
-    -not -path "*/archive/*" \
-    -not -path "*/_archive/*" \
-    -not -path "*/file_types/*" \
-    -not -path "*/script-analysis-results/*" | wc -l)
+  # Find script files using supabase-connect.js
+  node "${SUPABASE_CONNECT}" findAndSyncScripts
   
-  echo "Found $script_count script files"
-  
-  # Check if Node.js is available
-  if command -v node &> /dev/null; then
-    echo "Running sync using direct Node.js script..."
-    
-    # Use the existing script in root/sync-scripts-direct.js if available
-    SYNC_SCRIPT="${ROOT_DIR}/scripts/root/sync-scripts-direct.js"
-    
-    if [ -f "${SYNC_SCRIPT}" ]; then
-      echo "Using existing sync script: ${SYNC_SCRIPT}"
-      cd "${ROOT_DIR}"
-      node "${SYNC_SCRIPT}"
-      return $?
-    else
-      # Run the direct Node.js command to use our updated ScriptManagementService
-      echo "Using inline Node.js command..."
-      cd "${ROOT_DIR}"
-      
-      node -e "
-      try {
-        const path = require('path');
-        const servicePath = path.resolve('./packages/cli/src/services/script-management-service');
-        console.log('Loading service from:', servicePath);
-        
-        const { ScriptManagementService } = require(servicePath);
-        
-        async function runSync() {
-          try {
-            console.log('Creating script management service...');
-            const scriptService = new ScriptManagementService();
-            
-            console.log('Discovering scripts...');
-            const scripts = await scriptService.discoverScripts(process.cwd());
-            console.log(\`Discovered \${scripts.length} scripts\`);
-            
-            if (scripts.length > 0) {
-              console.log('Syncing with database...');
-              const result = await scriptService.syncWithDatabase(scripts);
-              console.log('Sync complete!');
-              console.log(\`Added: \${result.added}, Updated: \${result.updated}, Deleted: \${result.deleted}, Errors: \${result.errors}\`);
-            } else {
-              console.log('No scripts found to sync.');
-            }
-          } catch (error) {
-            console.error('Error during sync:', error);
-            process.exit(1);
-          }
-        }
-        
-        runSync().catch(err => {
-          console.error('Unexpected error:', err);
-          process.exit(1);
-        });
-      } catch (error) {
-        console.error('Script setup error:', error);
-        process.exit(1);
-      }
-      "
-      return $?
-    fi
-  else
-    echo "⚠️ Node.js not found. Cannot run sync."
+  # Check for success
+  if [ $? -ne 0 ]; then
+    echo "❌ Script sync failed!"
     return 1
   fi
+  
+  echo "✅ Script sync completed successfully"
+  return 0
 }
 
 # Function to find and insert new script files
 function find_new_scripts() {
   echo "🔍 Finding new script files..."
+
+  # Find script files using the supabase-connect.js
+  node "${SUPABASE_CONNECT}" findAndSyncScripts
   
-  # Find all script files
-  echo "Finding recently modified script files..."
-  local script_files=$(find "${ROOT_DIR}" -type f \( -name "*.sh" -o -name "*.js" \) \
-    -not -path "*/node_modules/*" \
-    -not -path "*/.git/*" \
-    -not -path "*/dist/*" \
-    -not -path "*/build/*" \
-    -not -path "*/backup/*" \
-    -not -path "*/archive/*" \
-    -not -path "*/_archive/*" \
-    -not -path "*/file_types/*" \
-    -not -path "*/script-analysis-results/*" \
-    -mtime -7)
-  local script_count=$(echo "$script_files" | wc -l)
-  
-  echo "Found $script_count script files modified in the last 7 days"
-  
-  # Create the path to our direct sync script
-  DIRECT_SYNC_SCRIPT="${ROOT_DIR}/scripts/root/final-sync.js"
-  
-  # Check if Node.js is available
-  if command -v node &> /dev/null; then
-    # Check if we have Supabase credentials
-    if [ -n "${SUPABASE_URL}" ] && [ -n "${SUPABASE_KEY}" ]; then
-      echo "Supabase credentials found. Attempting to add new scripts to database..."
-      
-      # Check if our direct sync script exists
-      if [ -f "${DIRECT_SYNC_SCRIPT}" ]; then
-        # Use the enhanced direct sync script for finding and adding new scripts
-        cd "${ROOT_DIR}"
-        echo "Using direct sync script to find and add new scripts..."
-        echo "SUPABASE_KEY will be requested interactively if not set"
-        
-        # Run the script with environmental variables set
-        SUPABASE_URL="${SUPABASE_URL}" SUPABASE_KEY="${SUPABASE_KEY}" node "${DIRECT_SYNC_SCRIPT}"
-        return $?
-      else
-        echo "Direct sync script not found, using regular sync instead..."
-        # Fall back to the sync_scripts function
-        sync_scripts
-        return $?
-      fi
-    else
-      echo "⚠️ Supabase credentials missing. Using simulation mode."
-    fi
-  else
-    echo "⚠️ Node.js not found. Using simulation mode."
+  # Check for success
+  if [ $? -ne 0 ]; then
+    echo "❌ Finding new scripts failed!"
+    return 1
   fi
   
-  # Simple implementation that lists the scripts (fallback)
-  echo "Recent scripts found:"
-  echo "$script_files" | head -n 10
-  if [ "$script_count" -gt 10 ]; then
-    echo "... and $(($script_count - 10)) more"
-  fi
-  
-  echo "✅ New script discovery simulation completed successfully"
-  echo "NOTE: This is a simplified implementation. To run the full implementation:"
-  echo "1. Ensure Node.js is installed"
-  echo "2. Set SUPABASE_URL and SUPABASE_KEY environment variables"
-  echo "3. Run one of the following commands:"
-  echo "   - script-pipeline-main.sh find-new (to use this script)"
-  echo "   - node scripts/root/final-sync.js (to use the direct script)"
+  echo "✅ New script discovery completed successfully"
   return 0
 }
 
