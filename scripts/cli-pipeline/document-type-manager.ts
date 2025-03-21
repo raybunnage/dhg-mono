@@ -14,7 +14,6 @@ interface FileStatus {
   document_type_id: string | null;
   document_type: string | null;
   title: string | null;
-  is_deleted: boolean;
 }
 
 interface DocumentType {
@@ -58,6 +57,11 @@ interface ClassificationResult {
   summary?: string;
   title?: string;
   ai_generated_tags?: string[];
+  status_recommendation?: string;
+  ai_assessment?: {
+    status_recommendation?: string;
+    [key: string]: any;
+  };
 }
 
 class DocumentTypeManager {
@@ -153,7 +157,7 @@ class DocumentTypeManager {
       
       const { data: files, error } = await this._supabase
         .from('documentation_files')
-        .select('id, file_path, document_type_id, title, is_deleted')
+        .select('id, file_path, document_type_id, title')
         .order('file_path');
         
       if (error) {
@@ -197,8 +201,7 @@ class DocumentTypeManager {
           exists_on_disk: existsOnDisk,
           document_type_id: file.document_type_id,
           document_type: file.document_type_id ? typeMap.get(file.document_type_id) || null : null,
-          title: file.title,
-          is_deleted: file.is_deleted
+          title: file.title
         };
         
         fileStatusList.push(fileStatus);
@@ -209,7 +212,6 @@ class DocumentTypeManager {
       console.log(`- Total files: ${fileStatusList.length}`);
       console.log(`- Files that exist on disk: ${fileStatusList.filter(f => f.exists_on_disk).length}`);
       console.log(`- Files that don't exist on disk: ${fileStatusList.filter(f => !f.exists_on_disk).length}`);
-      console.log(`- Files marked as deleted: ${fileStatusList.filter(f => f.is_deleted).length}`);
       console.log(`- Files with document type assigned: ${fileStatusList.filter(f => f.document_type_id !== null).length}`);
       
       return fileStatusList;
@@ -234,40 +236,22 @@ class DocumentTypeManager {
         return;
       }
       
-      // Files to mark as deleted (don't exist on disk but not already marked deleted)
-      const filesToMarkDeleted = fileStatusList.filter(f => !f.exists_on_disk && !f.is_deleted);
+      // Files to delete (don't exist on disk)
+      const filesToDelete = fileStatusList.filter(f => !f.exists_on_disk);
       
-      // Files to mark as not deleted (exist on disk but marked deleted)
-      const filesToMarkNotDeleted = fileStatusList.filter(f => f.exists_on_disk && f.is_deleted);
+      console.log(`Found ${filesToDelete.length} files to delete from database.`);
       
-      console.log(`Found ${filesToMarkDeleted.length} files to mark as deleted.`);
-      console.log(`Found ${filesToMarkNotDeleted.length} files to mark as not deleted.`);
-      
-      // Update files that don't exist on disk to is_deleted=true
-      if (filesToMarkDeleted.length > 0) {
+      // Hard delete files that don't exist on disk
+      if (filesToDelete.length > 0) {
         const { error: deleteError } = await this._supabase
           .from('documentation_files')
-          .update({ is_deleted: true, updated_at: new Date().toISOString() })
-          .in('id', filesToMarkDeleted.map(f => f.id));
+          .delete()
+          .in('id', filesToDelete.map(f => f.id));
           
         if (deleteError) {
-          console.error(`Error marking files as deleted: ${deleteError.message}`);
+          console.error(`Error deleting files: ${deleteError.message}`);
         } else {
-          console.log(`Successfully marked ${filesToMarkDeleted.length} files as deleted.`);
-        }
-      }
-      
-      // Update files that exist on disk to is_deleted=false
-      if (filesToMarkNotDeleted.length > 0) {
-        const { error: undeleteError } = await this._supabase
-          .from('documentation_files')
-          .update({ is_deleted: false, updated_at: new Date().toISOString() })
-          .in('id', filesToMarkNotDeleted.map(f => f.id));
-          
-        if (undeleteError) {
-          console.error(`Error marking files as not deleted: ${undeleteError.message}`);
-        } else {
-          console.log(`Successfully marked ${filesToMarkNotDeleted.length} files as not deleted.`);
+          console.log(`Successfully deleted ${filesToDelete.length} files from database.`);
         }
       }
       
@@ -728,6 +712,17 @@ class DocumentTypeManager {
           console.log(`Including ${classificationData.ai_generated_tags.length} tags in update`);
           updateData.ai_generated_tags = classificationData.ai_generated_tags;
         }
+        
+        // Extract status_recommendation if available in the classification data
+        // or from the AI assessment data
+        if (classificationData.status_recommendation) {
+          console.log(`Including status_recommendation in update: ${classificationData.status_recommendation}`);
+          updateData.status_recommendation = classificationData.status_recommendation;
+        } 
+        else if (classificationData.ai_assessment?.status_recommendation) {
+          console.log(`Including status_recommendation from ai_assessment: ${classificationData.ai_assessment.status_recommendation}`);
+          updateData.status_recommendation = classificationData.ai_assessment.status_recommendation;
+        }
       }
       
       // Get file stats and update size in metadata
@@ -738,6 +733,22 @@ class DocumentTypeManager {
         
         // Use existing metadata or initialize new object
         const metadata = file.metadata || {};
+        
+        // Check if status_recommendation exists in metadata and move it to the main field
+        if (metadata.status_recommendation && !updateData.status_recommendation) {
+          console.log(`Moving status_recommendation from metadata to main field: ${metadata.status_recommendation}`);
+          updateData.status_recommendation = metadata.status_recommendation;
+        }
+        else if (metadata.ai_assessment?.status_recommendation && !updateData.status_recommendation) {
+          console.log(`Moving status_recommendation from metadata.ai_assessment to main field: ${metadata.ai_assessment.status_recommendation}`);
+          updateData.status_recommendation = metadata.ai_assessment.status_recommendation;
+        }
+        else if (metadata.processed_content?.assessment?.status_recommendation && !updateData.status_recommendation) {
+          console.log(`Moving status_recommendation from metadata.processed_content.assessment to main field: ${metadata.processed_content.assessment.status_recommendation}`);
+          updateData.status_recommendation = metadata.processed_content.assessment.status_recommendation;
+        }
+        
+        // Update metadata
         updateData.metadata = {
           ...metadata,
           size: fileStats.size,
@@ -858,6 +869,16 @@ Commands:
           if (result.ai_generated_tags && Array.isArray(result.ai_generated_tags)) {
             console.log(`Adding ${result.ai_generated_tags.length} tags to document record`);
             updateObj.ai_generated_tags = result.ai_generated_tags;
+          }
+          
+          // Add status_recommendation if available
+          if (result.status_recommendation) {
+            console.log(`Adding status_recommendation to document record: ${result.status_recommendation}`);
+            updateObj.status_recommendation = result.status_recommendation;
+          }
+          else if (result.ai_assessment?.status_recommendation) {
+            console.log(`Adding status_recommendation from ai_assessment: ${result.ai_assessment.status_recommendation}`);
+            updateObj.status_recommendation = result.ai_assessment.status_recommendation;
           }
           
           // Get file stats and update size in metadata

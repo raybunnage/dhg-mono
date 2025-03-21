@@ -591,11 +591,11 @@ export type Database = {
           file_hash: string | null
           file_path: string
           id: string
-          is_deleted: boolean | null
           last_indexed_at: string
           last_modified_at: string
           manual_tags: string[] | null
           metadata: Json | null
+          status_recommendation: string | null
           summary: string | null
           title: string
           updated_at: string | null
@@ -606,11 +606,11 @@ export type Database = {
           file_hash?: string | null
           file_path: string
           id?: string
-          is_deleted?: boolean | null
           last_indexed_at: string
           last_modified_at: string
           manual_tags?: string[] | null
           metadata?: Json | null
+          status_recommendation?: string | null
           summary?: string | null
           title: string
           updated_at?: string | null
@@ -621,11 +621,11 @@ export type Database = {
           file_hash?: string | null
           file_path?: string
           id?: string
-          is_deleted?: boolean | null
           last_indexed_at?: string
           last_modified_at?: string
           manual_tags?: string[] | null
           metadata?: Json | null
+          status_recommendation?: string | null
           summary?: string | null
           title?: string
           updated_at?: string | null

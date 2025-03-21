@@ -62,26 +62,10 @@ function Docs() {
       // First fetch document types
       const types = await fetchDocumentTypes();
       
-      // Check if the is_deleted column exists by trying to filter by it
-      const checkResponse = await supabase
-        .from('documentation_files')
-        .select('id')
-        .limit(1);
-      
-      const hasIsDeletedColumn = !checkResponse.error || 
-        !checkResponse.error.message.includes('column "is_deleted" does not exist');
-        
-      // Query adjusted based on whether is_deleted column exists
+      // Simple query since we no longer have is_deleted column - files in the DB are all valid
       let query = supabase
         .from('documentation_files')
         .select('*', { count: 'exact' });
-        
-      // Filter out soft-deleted files if the column exists
-      if (hasIsDeletedColumn) {
-        query = query.eq('is_deleted', false);
-      } else {
-        console.log('Note: is_deleted column not found, not filtering deleted files');
-      }
       
       const { data, error, count } = await query
         .order('created_at', { ascending: false })
@@ -93,8 +77,6 @@ function Docs() {
       // Also exclude files under the file_types folder and .txt files
       const validFiles = (data || []).filter(file => 
         file && file.file_path && 
-        // Only include files that exist (should be all, but double-check)
-        !(hasIsDeletedColumn && file.is_deleted === true) &&
         // Exclude files under the file_types folder at the repo root
         // The path could be like "/file_types/..." or start with "file_types/..."
         !file.file_path.includes('/file_types/') && 
@@ -203,10 +185,7 @@ function Docs() {
         return;
       }
       
-      if (file.is_deleted) {
-        console.warn(`File ${file.file_path} is marked as deleted, skipping`);
-        return;
-      }
+      // No need to check is_deleted anymore as deleted files are now removed from the database
       
       // Extract the directory path from file_path
       const pathParts = file.file_path.split('/');
@@ -326,24 +305,10 @@ function Docs() {
       // Get document types first
       const types = await fetchDocumentTypes();
       
-      // Check if the is_deleted column exists
-      const checkResponse = await supabase
-        .from('documentation_files')
-        .select('id')
-        .limit(1);
-      
-      const hasIsDeletedColumn = !checkResponse.error || 
-        !checkResponse.error.message.includes('column "is_deleted" does not exist');
-        
       // Create query with enhanced search criteria
       let query = supabase
         .from('documentation_files')
         .select('*');
-      
-      // Filter out soft-deleted files if the column exists
-      if (hasIsDeletedColumn) {
-        query = query.eq('is_deleted', false);
-      }
       
       let hasTextSearch = false;
       
@@ -389,8 +354,6 @@ function Docs() {
       // Also exclude files under the file_types folder and .txt files
       let validFiles = (data || []).filter(file => 
         file && file.file_path && 
-        // Only include files that exist (should be all, but double-check)
-        !(hasIsDeletedColumn && file.is_deleted === true) &&
         // Exclude files under the file_types folder at the repo root
         // The path could be like "/file_types/..." or start with "file_types/..."
         !file.file_path.includes('/file_types/') && 
@@ -560,12 +523,7 @@ function Docs() {
   
   // Select a file to view
   const selectFile = (file: DocumentationFile) => {
-    // Verify file is not deleted before selecting
-    if (file && file.is_deleted) {
-      console.warn(`Attempted to select deleted file: ${file.file_path}`);
-      alert(`This file has been deleted or is no longer available: ${file.file_path}`);
-      return;
-    }
+    // No need to check is_deleted anymore as deleted files are removed from the database
     
     // Verify file has a valid path
     if (!file || !file.file_path) {
@@ -616,7 +574,7 @@ function Docs() {
       
       // Check if we're deleting by ID or by path
       if (!byPath && file.id) {
-        // Hard delete the file from the database by ID
+        // Delete the file from the database by ID
         const { error: deleteError, data } = await supabase
           .from('documentation_files')
           .delete()
@@ -628,7 +586,7 @@ function Docs() {
         
         deleteResult = { success: true };
       } else if (byPath && file.file_path) {
-        // Hard delete the file from the database by file_path
+        // Delete the file from the database by file_path
         const { error: deleteError, data } = await supabase
           .from('documentation_files')
           .delete()
