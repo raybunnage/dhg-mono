@@ -2,7 +2,44 @@
 
 This directory contains tools to help debug and fix Supabase credential issues in the DHG monorepo.
 
-## Available Tools
+## NEW COMPREHENSIVE SOLUTION
+
+We've developed a new, more robust solution to the Supabase connectivity issues.
+
+Run the following to fix ALL Supabase credential issues in one step:
+
+```bash
+# Make sure the script is executable
+chmod +x ./scripts/debug/supabase-fix.sh
+
+# Run the fix script
+./scripts/debug/supabase-fix.sh
+```
+
+The new `supabase-fix.sh` script will:
+1. Check for existing Supabase credentials in environment variables
+2. Look for credentials in .env files
+3. Prompt you to enter credentials if none are found
+4. Create utility scripts that ensure credentials are available everywhere
+
+After running the fix, you can use the new utilities:
+
+1. **Run any command with Supabase credentials:**
+   ```bash
+   ./scripts/run-with-supabase.sh your-command-here
+   ```
+
+2. **Generate a script summary report with the fixed implementation:**
+   ```bash
+   ./scripts/debug/generate-summary-fixed.sh
+   ```
+
+3. **Set Supabase environment variables in your current shell:**
+   ```bash
+   source ./scripts/run-with-supabase.sh
+   ```
+
+## Previous Tools (Less Comprehensive)
 
 1. **debug-supabase.sh**
    - Diagnoses the current state of Supabase environment variables
@@ -23,25 +60,6 @@ This directory contains tools to help debug and fix Supabase credential issues i
    - Runs any command with normalized Supabase environment variables
    - Usage: `./set-supabase-env.sh <command> [args]`
    - Example: `./set-supabase-env.sh ../cli-pipeline/script-pipeline-main.sh generate-summary`
-
-## Quick Fix
-
-To quickly fix the issue with missing Supabase credentials:
-
-1. **Diagnose the issue**:
-   ```bash
-   ./debug-supabase.sh
-   ```
-
-2. **Set up environment variable compatibility**:
-   ```bash
-   ./fix-supabase-env.sh
-   ```
-
-3. **Run the generate-summary command with the wrapper**:
-   ```bash
-   ./set-supabase-env.sh ../cli-pipeline/script-pipeline-main.sh generate-summary
-   ```
 
 ## Root Causes
 
