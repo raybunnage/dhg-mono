@@ -50,10 +50,9 @@ export class SupabaseClientService {
    */
   public getClient(forceInit: boolean = true): SupabaseClient {
     if (!this.client && forceInit) {
-      // Try to initialize from environment variables
-      let url = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      let key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || 
-                process.env.CLI_SUPABASE_KEY || process.env.CLI_SUPABASE_SERVICE_ROLE_KEY ||
+      // Try to initialize from environment variables - using standardized variable names
+      let url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      let key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY ||
                 process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
       
       if (!url || !key) {
@@ -76,11 +75,9 @@ export class SupabaseClientService {
             console.log(`Loading from ${filePath}`);
             const { exists, variables } = SupabaseClientService.readEnvFile(filePath);
             if (exists) {
-              // Try all possible variable names
-              url = url || variables['SUPABASE_URL'] || variables['CLI_SUPABASE_URL'] || 
-                          variables['VITE_SUPABASE_URL'];
+              // Try standardized variable names first, then fallbacks
+              url = url || variables['SUPABASE_URL'] || variables['VITE_SUPABASE_URL'];
               key = key || variables['SUPABASE_SERVICE_ROLE_KEY'] || variables['SUPABASE_KEY'] || 
-                          variables['CLI_SUPABASE_KEY'] || variables['CLI_SUPABASE_SERVICE_ROLE_KEY'] ||
                           variables['VITE_SUPABASE_SERVICE_ROLE_KEY'];
               
               if (url && key) {
@@ -146,11 +143,19 @@ export class SupabaseClientService {
         content.split('\n').forEach(line => {
           // Skip comments and empty lines
           if (line.trim() && !line.trim().startsWith('#')) {
-            const [key, ...valueParts] = line.split('=');
-            const value = valueParts.join('='); // Rejoin in case value contains =
-            
-            if (key) {
-              envVars[key.trim()] = value ? value.trim() : null;
+            // Use regex to properly handle complex values with = signs
+            const match = line.match(/^([^=]+)=(.*)$/);
+            if (match) {
+              const key = match[1].trim();
+              let value = match[2].trim();
+              
+              // Remove quotes if present (like in bash)
+              if ((value.startsWith('"') && value.endsWith('"')) ||
+                  (value.startsWith("'") && value.endsWith("'"))) {
+                value = value.substring(1, value.length - 1);
+              }
+              
+              envVars[key] = value;
             }
           }
         });
@@ -166,14 +171,13 @@ export class SupabaseClientService {
   }
   
   /**
-   * Initialize from environment variables, trying multiple env var names
+   * Initialize from environment variables using standardized variable names
    * @returns The initialized client or null if required environment variables are missing
    */
   public initializeFromEnv(): SupabaseClient | null {
-    // Try to load from environment
-    let url = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    let key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || 
-              process.env.CLI_SUPABASE_KEY || process.env.CLI_SUPABASE_SERVICE_ROLE_KEY ||
+    // Try to load from environment - using standardized variable names
+    let url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    let key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || 
               process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
     
     if (!url || !key) {
@@ -196,11 +200,9 @@ export class SupabaseClientService {
           console.log(`Loading from ${filePath}`);
           const { exists, variables } = SupabaseClientService.readEnvFile(filePath);
           if (exists) {
-            // Try all possible variable names
-            url = url || variables['SUPABASE_URL'] || variables['CLI_SUPABASE_URL'] || 
-                        variables['VITE_SUPABASE_URL'];
+            // Try standardized variable names
+            url = url || variables['SUPABASE_URL'] || variables['VITE_SUPABASE_URL'];
             key = key || variables['SUPABASE_SERVICE_ROLE_KEY'] || variables['SUPABASE_KEY'] || 
-                        variables['CLI_SUPABASE_KEY'] || variables['CLI_SUPABASE_SERVICE_ROLE_KEY'] ||
                         variables['VITE_SUPABASE_SERVICE_ROLE_KEY'];
             
             if (url && key) {
@@ -244,60 +246,69 @@ export class SupabaseClientService {
       console.log('Testing connection with URL:', this.url);
       console.log('API Key length:', this.key ? this.key.length : 0);
       
-      // Simple connection test using REST API
-      const { data: projectData, error: projectError } = await this.client.rpc('get_project_info');
-      if (projectError) {
-        console.error('Error getting project info:', projectError);
-      } else {
-        console.log('Project info:', projectData);
+      // Try to access the scripts table first (most common)
+      console.log('Testing access to scripts table...');
+      const { error: scriptsError, status: scriptsStatus } = await this.client
+        .from('scripts')
+        .select('count', { count: 'exact', head: true });
+      
+      if (!scriptsError) {
+        console.log('✅ Successfully connected to scripts table');
+        return { success: true };
       }
       
-      // Try to access a common table
+      console.error('Error accessing scripts table:', scriptsError);
+      
+      // Try to access documentation_files table
       console.log('Testing access to documentation_files table...');
       const { error, status, statusText } = await this.client
         .from('documentation_files')
         .select('count', { count: 'exact', head: true });
       
-      console.log('Status:', status, statusText);
-      
-      if (error) {
-        console.error('Error accessing documentation_files:', error);
-        
-        // Try another table as a fallback
-        console.log('Testing access to document_types table...');
-        const { error: error2, status: status2, statusText: statusText2 } = await this.client
-          .from('document_types')
-          .select('count', { count: 'exact', head: true });
-        
-        console.log('Status 2:', status2, statusText2);
-        
-        if (error2) {
-          console.error('Error accessing document_types:', error2);
-          
-          // Try a simple database ping
-          console.log('Testing simple database ping...');
-          const { error: pingError } = await this.client.rpc('ping');
-          
-          if (pingError) {
-            console.error('Ping error:', pingError);
-          }
-          
-          return { 
-            success: false, 
-            error: 'Connection test failed for both tables', 
-            details: { 
-              firstError: JSON.stringify(error), 
-              secondError: JSON.stringify(error2),
-              status1: status,
-              status2: status2,
-              statusText1: statusText,
-              statusText2: statusText2
-            } 
-          };
-        }
+      if (!error) {
+        console.log('✅ Successfully connected to documentation_files table');
+        return { success: true };
       }
       
-      return { success: true };
+      console.error('Error accessing documentation_files:', error);
+      
+      // Try another table as a fallback
+      console.log('Testing access to document_types table...');
+      const { error: error2, status: status2, statusText: statusText2 } = await this.client
+        .from('document_types')
+        .select('count', { count: 'exact', head: true });
+      
+      if (!error2) {
+        console.log('✅ Successfully connected to document_types table');
+        return { success: true };
+      }
+      
+      console.error('Error accessing document_types:', error2);
+      
+      // Try a simple database ping as last resort
+      console.log('Testing simple database ping...');
+      const { data: pingData, error: pingError } = await this.client.rpc('ping');
+      
+      if (!pingError) {
+        console.log('✅ Successfully pinged database');
+        return { success: true };
+      }
+      
+      console.error('Ping error:', pingError);
+      
+      return { 
+        success: false, 
+        error: 'Connection test failed for all tables', 
+        details: { 
+          scriptsError: JSON.stringify(scriptsError),
+          docsError: JSON.stringify(error), 
+          typesError: JSON.stringify(error2),
+          pingError: JSON.stringify(pingError),
+          scriptsStatus,
+          docsStatus: status,
+          typesStatus: status2
+        } 
+      };
     } catch (error) {
       console.error('Unexpected error during connection test:', error);
       return { 
