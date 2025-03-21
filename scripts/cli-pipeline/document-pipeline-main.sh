@@ -91,55 +91,35 @@ EOL
   
   # Create JS file for batch updating existing files (no changes)
   cat > "$EXIST_BATCH" << 'EOL'
-const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-
-async function batchUpdate() {
-  const fileIds = process.argv.slice(2);
-  if (fileIds.length === 0) return;
-  
-  console.log(`Batch updating ${fileIds.length} files as not deleted`);
-  
-  // Split into chunks of 50 for better performance
-  for (let i = 0; i < fileIds.length; i += 50) {
-    const chunk = fileIds.slice(i, i + 50);
-    const { data, error } = await supabase
-      .from('documentation_files')
-      .update({ is_deleted: false })
-      .in('id', chunk);
-      
-    if (error) console.error('Error batch updating files:', error);
-    else console.log(`Updated ${chunk.length} files successfully`);
-  }
-}
-
-batchUpdate();
+// No changes needed for existing files in our new model
+// This script is kept for compatibility but doesn't need to do anything
+console.log('No changes needed for existing files');
 EOL
 
   cat > "$DELETED_BATCH" << 'EOL'
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-async function batchUpdate() {
+async function batchDelete() {
   const fileIds = process.argv.slice(2);
   if (fileIds.length === 0) return;
   
-  console.log(`Batch updating ${fileIds.length} files as deleted`);
+  console.log(`Batch deleting ${fileIds.length} files`);
   
   // Split into chunks of 50 for better performance
   for (let i = 0; i < fileIds.length; i += 50) {
     const chunk = fileIds.slice(i, i + 50);
     const { data, error } = await supabase
       .from('documentation_files')
-      .update({ is_deleted: true })
+      .delete()
       .in('id', chunk);
       
-    if (error) console.error('Error batch updating files:', error);
-    else console.log(`Updated ${chunk.length} files successfully`);
+    if (error) console.error('Error batch deleting files:', error);
+    else console.log(`Deleted ${chunk.length} files successfully`);
   }
 }
 
-batchUpdate();
+batchDelete();
 EOL
 
   # Create batch update script for modified files
@@ -227,7 +207,6 @@ async function batchUpdate() {
             id: fileId,
             file_path: filePath,
             title: filename,
-            is_deleted: false,
             last_modified_at: now,
             last_indexed_at: now,
             file_hash: newHash,
@@ -303,16 +282,14 @@ EOL
   EXIST_COUNT=$(wc -l < "$EXIST_IDS_FILE")
   DELETED_COUNT=$(wc -l < "$DELETED_IDS_FILE")
   
-  # Update existing files in batch (just mark as not deleted)
+  # No updates needed for existing files in new model
   if [ $EXIST_COUNT -gt 0 ]; then
-    echo "Updating $EXIST_COUNT existing files in batch..."
-    (cd "$TEMP_DIR" && SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-      node "$EXIST_BATCH" $(cat "$EXIST_IDS_FILE"))
+    echo "No updates needed for $EXIST_COUNT existing files..."
   fi
   
-  # Update deleted files in batch
+  # Delete files in batch (hard delete)
   if [ $DELETED_COUNT -gt 0 ]; then
-    echo "Updating $DELETED_COUNT deleted files in batch..."
+    echo "Deleting $DELETED_COUNT files in batch..."
     (cd "$TEMP_DIR" && SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
       node "$DELETED_BATCH" $(cat "$DELETED_IDS_FILE"))
   fi
@@ -548,13 +525,14 @@ async function processFiles() {
         // Generate quick hash
         const fileHash = await quickFileHash(absolutePath, stats);
         
-        // First check if this file already exists in the database but with a different path
-        // This is critical to preserve metadata and document_type_id when files are moved
+        // Check if this file already exists in the database with a different path
+        // Note: With hard deletes, we can't easily find moved files from deleted records
+        // Instead we just check for any files with the same title that might be similar
         const { data: existingFile } = await supabase
           .from('documentation_files')
           .select('*')
           .eq('title', filename)
-          .eq('is_deleted', true) // Look in deleted files for possible moves
+          .neq('file_path', filePath) // Look for different path with same filename
           .maybeSingle();
         
         // If we found a match, use its metadata and other fields
@@ -574,7 +552,6 @@ async function processFiles() {
             id: uuidv4(), // Generate a new UUID for this record
             file_path: filePath, // Store the relative path, not the absolute path
             title: filename,
-            is_deleted: false,
             created_at: now, // Explicitly set the created_at timestamp
             updated_at: now, // Explicitly set the updated_at timestamp
             last_indexed_at: now,
@@ -602,12 +579,13 @@ async function processFiles() {
         
         try {
           // Query to see if we have a file with same basename but different path
-          // and get its document_type_id if available
+          // This logic has changed since we no longer have is_deleted field
+          // Instead, we look for any other file with the same title in case we
+          // can preserve document type
           const { data } = await supabase
             .from('documentation_files')
-            .select('document_type_id, is_deleted')
+            .select('document_type_id')
             .eq('title', filename)
-            .eq('is_deleted', true) // Look in deleted files for possible moves
             .maybeSingle();
           
           if (data && data.document_type_id) {
@@ -625,7 +603,6 @@ async function processFiles() {
           id: uuidv4(), // Generate a UUID for new records
           file_path: filePath, // Store the relative path, not absolute
           title: filename,
-          is_deleted: false,
           created_at: now, // Explicitly set the created_at timestamp
           updated_at: now, // Explicitly set the updated_at timestamp
           last_indexed_at: now,
@@ -815,7 +792,6 @@ show_untyped_files() {
           .from('documentation_files')
           .select('id, file_path, title, last_modified_at')
           .is('document_type_id', null)
-          .eq('is_deleted', false)
           .order('last_modified_at', { ascending: false });
           
         if (error) {
@@ -879,7 +855,6 @@ show_recent_files() {
         const { data, error } = await supabase
           .from('documentation_files')
           .select('id, file_path, title, document_type_id, last_modified_at')
-          .eq('is_deleted', false)
           .order('last_modified_at', { ascending: false })
           .limit(20);
           
@@ -940,7 +915,6 @@ classify_recent_files() {
         const { data, error } = await supabase
           .from('documentation_files')
           .select('id, file_path')
-          .eq('is_deleted', false)
           .order('last_modified_at', { ascending: false })
           .limit(20);
           
@@ -1085,7 +1059,6 @@ async function getUntypedFiles() {
       .from('documentation_files')
       .select('id, file_path')
       .is('document_type_id', null)
-      .eq('is_deleted', false)
       .order('last_modified_at', { ascending: false })
       .limit(Number(limit));
       
