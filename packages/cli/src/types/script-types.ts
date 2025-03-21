@@ -12,7 +12,6 @@ export interface Script {
   metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
-  is_deleted: boolean;
   script_type_id: string | null;
   package_json_references: PackageReference[] | null;
   ai_assessment: ScriptAssessment | null;
@@ -83,5 +82,4 @@ export interface ClassificationResult {
 
 export interface SummaryOptions {
   limit: number;
-  includeDeleted: boolean;
 }

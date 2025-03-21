@@ -166,7 +166,7 @@ export class ScriptManagementService {
       // Get existing scripts from database using class instance
       const { data: dbScripts, error } = await this.supabase
         .from('scripts')
-        .select('id, file_path, file_hash, is_deleted');
+        .select('id, file_path, file_hash');
       
       if (error) {
         Logger.error("Error fetching scripts from database:", error);
@@ -202,33 +202,33 @@ export class ScriptManagementService {
         Logger.debug(`  - ${path}`);
       });
       
-      // Mark scripts that no longer exist as deleted
+      // Delete scripts that no longer exist on disk
       const toDelete = normalizedDbScripts.filter(dbScript => 
-        !diskScriptPathSet.has(dbScript.normalizedPath) && !dbScript.is_deleted
+        !diskScriptPathSet.has(dbScript.normalizedPath)
       );
       
       if (toDelete.length > 0) {
-        Logger.info(`Marking ${toDelete.length} scripts as deleted...`);
+        Logger.info(`Deleting ${toDelete.length} scripts that no longer exist on disk...`);
         const { error: deleteError } = await this.supabase
           .from('scripts')
-          .update({ is_deleted: true, updated_at: new Date().toISOString() })
+          .delete()
           .in('id', toDelete.map(script => script.id));
         
         if (deleteError) {
-          Logger.error("Error marking scripts as deleted:", deleteError);
+          Logger.error("Error deleting scripts:", deleteError);
           result.errors += toDelete.length;
         } else {
           result.deleted = toDelete.length;
         }
       }
       
-      // Mark existing scripts that are found as not deleted and update them
+      // Update existing scripts or add new ones
       for (const script of normalizedDiskScripts) {
         const dbScript = dbScriptMap.get(script.normalizedPath);
         
         if (dbScript) {
-          // Update existing script if hash changed or was previously marked as deleted
-          if (dbScript.file_hash !== script.file_hash || dbScript.is_deleted) {
+          // Update existing script if hash changed
+          if (dbScript.file_hash !== script.file_hash) {
             Logger.info(`Updating script: ${script.file_path} (normalized: ${script.normalizedPath})`);
             const { error: updateError } = await this.supabase
               .from('scripts')
@@ -236,8 +236,7 @@ export class ScriptManagementService {
                 file_path: script.file_path, // Update with the correct relative path
                 last_modified_at: script.last_modified_at,
                 file_hash: script.file_hash,
-                updated_at: new Date().toISOString(),
-                is_deleted: false // Explicitly mark as not deleted
+                updated_at: new Date().toISOString()
               })
               .eq('id', dbScript.id);
             
@@ -256,7 +255,6 @@ export class ScriptManagementService {
             .insert({
               ...script,
               metadata: {},
-              is_deleted: false, // Explicitly mark as not deleted
               last_indexed_at: new Date().toISOString()
             });
           
@@ -480,9 +478,8 @@ export class ScriptManagementService {
     try {
       const { data, error } = await this.supabase
         .from('scripts')
-        .select('id, file_path, title, language, summary, ai_generated_tags, manual_tags, last_modified_at, last_indexed_at, file_hash, metadata, created_at, updated_at, is_deleted, script_type_id, package_json_references, ai_assessment, assessment_quality_score, assessment_created_at, assessment_updated_at, assessment_model, assessment_version, assessment_date, document_type_id')
+        .select('id, file_path, title, language, summary, ai_generated_tags, manual_tags, last_modified_at, last_indexed_at, file_hash, metadata, created_at, updated_at, script_type_id, package_json_references, ai_assessment, assessment_quality_score, assessment_created_at, assessment_updated_at, assessment_model, assessment_version, assessment_date, document_type_id')
         .is('script_type_id', null)
-        .eq('is_deleted', false)
         .order('created_at', { ascending: false })
         .limit(limit);
       
@@ -510,8 +507,7 @@ export class ScriptManagementService {
     try {
       const { data, error } = await this.supabase
         .from('scripts')
-        .select('id, file_path, title, language, updated_at, summary, ai_generated_tags, manual_tags, last_modified_at, last_indexed_at, file_hash, metadata, created_at, is_deleted, script_type_id, package_json_references, ai_assessment, assessment_quality_score, assessment_created_at, assessment_updated_at, assessment_model, assessment_version, assessment_date, document_type_id')
-        .eq('is_deleted', false)
+        .select('id, file_path, title, language, updated_at, summary, ai_generated_tags, manual_tags, last_modified_at, last_indexed_at, file_hash, metadata, created_at, script_type_id, package_json_references, ai_assessment, assessment_quality_score, assessment_created_at, assessment_updated_at, assessment_model, assessment_version, assessment_date, document_type_id')
         .order('updated_at', { ascending: false })
         .limit(limit);
       
@@ -567,7 +563,7 @@ export class ScriptManagementService {
    * @returns Path to the generated report
    */
   async generateSummary(options: SummaryOptions): Promise<string | null> {
-    Logger.info(`Generating summary for ${options.limit === -1 ? 'all' : options.limit} scripts (include deleted: ${options.includeDeleted})`);
+    Logger.info(`Generating summary for ${options.limit === -1 ? 'all' : options.limit} scripts`);
     
     try {
       // Fetch scripts from the database with full details needed for categorization
@@ -583,17 +579,12 @@ export class ScriptManagementService {
           manual_tags,
           script_type_id,
           document_type_id,
-          is_deleted,
           created_at,
           updated_at,
           last_modified_at,
           ai_assessment,
           assessment_quality_score
         `);
-      
-      if (!options.includeDeleted) {
-        query = query.eq('is_deleted', false);
-      }
       
       if (options.limit !== -1) {
         query = query.limit(options.limit);
@@ -652,8 +643,7 @@ export class ScriptManagementService {
       // Generate the report
       let report = `# Script Analysis Summary Report\n\n`;
       report += `Generated: ${new Date().toISOString()}\n`;
-      report += `Total Scripts: ${scripts.length}\n`;
-      report += `Includes Deleted: ${options.includeDeleted}\n\n`;
+      report += `Total Scripts: ${scripts.length}\n\n`;
       
       // Summary statistics
       report += `## Summary Statistics\n\n`;
@@ -682,23 +672,22 @@ export class ScriptManagementService {
         report += `\n`;
       }
       
-      // First add a table with file_path and is_deleted status for quick reference
-      report += `## File Path Status Overview\n\n`;
-      report += `| ID | File Path | Status | Category | Last Updated |\n`;
-      report += `| --- | --- | --- | --- | --- |\n`;
+      // First add a table with file_path for quick reference
+      report += `## File Path Overview\n\n`;
+      report += `| ID | File Path | Category | Last Updated |\n`;
+      report += `| --- | --- | --- | --- |\n`;
       
       // Show up to 20 files in the table, then indicate there are more
       scripts.slice(0, 20).forEach(script => {
-        const status = script.is_deleted ? '🔴 DELETED' : '🟢 ACTIVE';
         const updatedAt = script.updated_at ? new Date(script.updated_at).toISOString().split('T')[0] : 'N/A';
         const category = this.categorizeScript(script as Script);
         // Only show first part of ID to save space
         const shortId = script.id.substring(0, 8) + '...';
-        report += `| ${shortId} | \`${script.file_path}\` | ${status} | ${category} | ${updatedAt} |\n`;
+        report += `| ${shortId} | \`${script.file_path}\` | ${category} | ${updatedAt} |\n`;
       });
       
       if (scripts.length > 20) {
-        report += `| ... | ... | ... | ... | ... |\n`;
+        report += `| ... | ... | ... | ... |\n`;
       }
       
       report += `\n\n`;
@@ -743,7 +732,6 @@ export class ScriptManagementService {
           report += `### ${script.title}\n`;
           report += `- **File Path**: \`${script.file_path}\`\n`;
           report += `- **Type**: ${typeName}\n`;
-          report += `- **Status**: ${script.is_deleted ? 'Deleted' : 'Active'}\n`;
           report += `- **Language**: ${script.language || 'Unknown'}\n`;
           
           // Tags section
