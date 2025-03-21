@@ -1,3 +1,91 @@
+ Please verify all TypeScript code compiles without errors before
+  submitting changes. Add proper types to all parameters, return
+  values, and variables to avoid type errors.
+
+  Handling Supabase Dependencies in CLI Scripts
+
+  The Problem
+
+  Scripts often fail with the error: Error: Cannot find module '@supabase/supabase-js'
+
+  The Solution
+
+  Follow these established patterns used in existing scripts:
+
+  Method 1: Check and install dependencies before use
+
+  # Check if the module is installed
+  if ! npm list @supabase/supabase-js &> /dev/null; then
+    echo "Installing @supabase/supabase-js..."
+    npm install --no-save @supabase/supabase-js &> /dev/null
+  fi
+
+  Method 2: For Node.js scripts, include dependency check in script
+
+  try {
+    require('@supabase/supabase-js');
+  } catch (e) {
+    console.log('Installing @supabase/supabase-js...');
+    require('child_process').execSync('npm install --no-save @supabase/supabase-js', {stdio:
+  'inherit'});
+  }
+
+  Method 3: Create package.json in temporary directories
+
+  # Create package.json with dependencies
+  cat > "$TEMP_DIR/package.json" << 'EOL'
+  {
+    "name": "temp-script",
+    "dependencies": {
+      "@supabase/supabase-js": "^2.48.1"
+    }
+  }
+  EOL
+
+  # Install dependencies in the temp directory
+  (cd "$TEMP_DIR" && npm install --silent)
+
+  Always follow these patterns instead of assuming dependencies are globally available.
+ 
+
+future prompt:
+
+despite trying to help you it seems getting the credential for supabaswe continues to elude yuou as you see in this current report even after I gave you some ways to fix it:
+
+raybunnage@Rays-Laptop dhg-mono %  ./scripts/cli-pipeline/script-pipeline-main.sh generate-summary
+📊 Generating summary report for 50 scripts (include deleted: false)...
+Installing dependencies in temporary directory...
+Executing summary report generator...
+Generating summary report with limit: 50, includeDeleted: false
+Missing Supabase credentials. Cannot generate report.
+✅ Summary report generation completed successfully
+Report saved to: /Users/raybunnage/Documents/github/dhg-mono/script-analysis-results/script-summary-2025-03-20.md
+raybunnage@Rays-Laptop dhg-mono % 
+
+
+So you have suggested I could  make Supabase dependencies globally available, you would:
+
+  1. Install the packages globally with npm/pnpm:
+    - npm install -g @supabase/supabase-js
+    - This makes them available system-wide
+  2. Create a shared node_modules directory in the project root:
+    - Install dependencies once at the top level
+    - Configure NODE_PATH environment variable to include this location
+  3. Set up package hoisting in the monorepo:
+    - Configure pnpm or other package manager to hoist common dependencies
+    - Ensure the workspace configuration properly shares packages
+  4. Create a dedicated shared package:
+    - Make a "common-dependencies" package in the monorepo
+    - All scripts would import from this package instead of directly
+  5. Implement a custom module resolution system:
+    - Configure Node.js to look in specific locations for modules
+    - Use symlinks or module aliases to map dependencies
+
+
+​“Reflect on 5-7 different possible sources this problem, distill those down to 1-2 most likely sources, and then add logs to validate your assumptions before we move on to implementing the actual code fix.”  We want to think this trhough and we would need some tests of your apporach after you build it to make sure it works. So first thihk it thorugh carefully
+
+
+
  Prompt Formula:
 ​“Reflect on 5-7 different possible sources of the problem, distill those down to 1-2 most likely sources, and then add logs to validate your assumptions before we move on to implementing the actual code fix.”
 

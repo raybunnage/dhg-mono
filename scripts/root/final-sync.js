@@ -3,55 +3,34 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-// Use Supabase URL from environment or default
-const supabaseUrl = process.env.SUPABASE_URL || "https://jdksnfkupzywjdfefkyj.supabase.co";
+// Get required credentials from environment variables
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+// Verify credentials exist
+if (!supabaseUrl) {
+  console.error("Error: SUPABASE_URL environment variable is required");
+  process.exit(1);
+}
+
+if (!supabaseKey) {
+  console.error("Error: SUPABASE_KEY environment variable is required");
+  process.exit(1);
+}
+
 console.log(`Using Supabase URL: ${supabaseUrl}`);
+console.log("Using Supabase key from environment variables");
 
-// Check if SUPABASE_KEY is already in the environment
-if (process.env.SUPABASE_KEY) {
-  console.log("Using Supabase key from environment variables");
+try {
+  // Dynamically load Supabase client
+  const { createClient } = require('@supabase/supabase-js');
+  const supabase = createClient(supabaseUrl, supabaseKey);
   
-  try {
-    // Dynamically load Supabase client
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(supabaseUrl, process.env.SUPABASE_KEY);
-    
-    // Run the script sync
-    runScriptSync(supabase);
-  } catch (error) {
-    console.error("Error:", error.message);
-    process.exit(1);
-  }
-} else {
-  // Prompt for Supabase key if not provided in environment
-  console.log("Please enter your Supabase key:");
-  const readline = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  // Using readline for direct input
-  readline.question('Supabase Key: ', async (supabaseKey) => {
-    readline.close();
-    
-    // Check if the key was provided
-    if (!supabaseKey) {
-      console.error("Error: Supabase key is required");
-      process.exit(1);
-    }
-    
-    try {
-      // Dynamically load Supabase client
-      const { createClient } = require('@supabase/supabase-js');
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      // Run the script sync
-      await runScriptSync(supabase);
-    } catch (error) {
-      console.error("Error:", error.message);
-      process.exit(1);
-    }
-  });
+  // Run the script sync
+  runScriptSync(supabase);
+} catch (error) {
+  console.error("Error:", error.message);
+  process.exit(1);
 }
 
 // Helper functions
@@ -121,6 +100,21 @@ async function discoverScripts(rootDir) {
   return scanDirectory(rootDir);
 }
 
+// Function to normalize file paths for consistent comparison
+function normalizePath(filePath) {
+  if (!filePath) return '';
+  
+  // Remove any leading /Users, /home, etc. paths and normalize to project-relative paths
+  const normalizedPath = filePath
+    .replace(/^\/Users\/[^\/]+\/Documents\/github\/dhg-mono\//, '')
+    .replace(/^\/Users\/[^\/]+\/[^\/]+\/dhg-mono\//, '')
+    .replace(/^\/home\/[^\/]+\/[^\/]+\/dhg-mono\//, '')
+    .replace(/^.*?dhg-mono\//, '')
+    .replace(/^\/?/, ''); // Remove leading slash
+    
+  return normalizedPath;
+}
+
 // Function to sync scripts with database
 async function syncWithDatabase(supabase, scripts) {
   console.log("Synchronizing scripts with database...");
@@ -133,6 +127,14 @@ async function syncWithDatabase(supabase, scripts) {
   };
   
   try {
+    // Log the discovered scripts
+    console.log(`Processing ${scripts.length} scripts found on disk:`);
+    scripts.forEach((script, index) => {
+      if (index < 5) { // Only log first 5 to avoid excessive logging
+        console.log(`  ${index + 1}. ${script.file_path}`);
+      }
+    });
+    
     // Get existing scripts from database
     const { data: dbScripts, error } = await supabase
       .from('scripts')
@@ -148,19 +150,39 @@ async function syncWithDatabase(supabase, scripts) {
       throw new Error("No scripts data returned from database");
     }
     
-    // Create maps for efficient lookups
-    const dbScriptMap = new Map(dbScripts.map(script => [script.file_path, script]));
-    const diskScriptPaths = new Set(scripts.map(script => script.file_path));
+    console.log(`Found ${dbScripts.length} scripts in database`);
+    
+    // Normalize all paths to ensure consistent comparison
+    // This ensures scripts will be found even if database has absolute paths
+    const normalizedDbScripts = dbScripts.map(script => ({
+      ...script,
+      normalizedPath: normalizePath(script.file_path)
+    }));
+    
+    const normalizedDiskScripts = scripts.map(script => ({
+      ...script,
+      normalizedPath: normalizePath(script.file_path)
+    }));
+    
+    // Create maps and sets for efficient lookups
+    const dbScriptMap = new Map(normalizedDbScripts.map(script => [script.normalizedPath, script]));
+    const diskScriptPathSet = new Set(normalizedDiskScripts.map(script => script.normalizedPath));
+    
+    // Log some of the normalized paths for debugging
+    console.log("Normalized disk paths sample:");
+    Array.from(diskScriptPathSet).slice(0, 3).forEach(path => {
+      console.log(`  - ${path}`);
+    });
     
     // Mark scripts that no longer exist as deleted
-    const toDelete = dbScripts.filter(dbScript => 
-      !diskScriptPaths.has(dbScript.file_path) && !dbScript.is_deleted
+    const toDelete = normalizedDbScripts.filter(dbScript => 
+      !diskScriptPathSet.has(dbScript.normalizedPath) && !dbScript.is_deleted
     );
     
     if (toDelete.length > 0) {
       console.log(`Marking ${toDelete.length} scripts as deleted...`);
       console.log("Scripts being marked as deleted:");
-      toDelete.forEach(script => console.log(`- ${script.file_path}`));
+      toDelete.forEach(script => console.log(`- ${script.file_path} (normalized: ${script.normalizedPath})`));
       
       const { error: deleteError } = await supabase
         .from('scripts')
@@ -175,45 +197,22 @@ async function syncWithDatabase(supabase, scripts) {
       }
     }
     
-    // Mark scripts that exist on disk but are marked as deleted as not deleted
-    const toRestore = dbScripts.filter(dbScript => 
-      diskScriptPaths.has(dbScript.file_path) && dbScript.is_deleted
-    );
-    
-    if (toRestore.length > 0) {
-      console.log(`Restoring ${toRestore.length} scripts previously marked as deleted...`);
-      console.log("Scripts being restored:");
-      toRestore.forEach(script => console.log(`- ${script.file_path}`));
-      
-      const { error: restoreError } = await supabase
-        .from('scripts')
-        .update({ is_deleted: false, updated_at: new Date().toISOString() })
-        .in('id', toRestore.map(script => script.id));
-      
-      if (restoreError) {
-        console.error("Error restoring scripts:", restoreError.message);
-        result.errors += toRestore.length;
-      } else {
-        // Add these to the updated count since we're updating their status
-        result.updated += toRestore.length;
-      }
-    }
-    
     // Process each script for insert or update
-    for (const script of scripts) {
-      const dbScript = dbScriptMap.get(script.file_path);
+    for (const script of normalizedDiskScripts) {
+      const dbScript = dbScriptMap.get(script.normalizedPath);
       
       if (dbScript) {
         // Update existing script if hash changed or was previously marked as deleted
         if (dbScript.file_hash !== script.file_hash || dbScript.is_deleted) {
-          console.log(`Updating script: ${script.file_path}`);
+          console.log(`Updating script: ${script.file_path} (normalized: ${script.normalizedPath})`);
           const { error: updateError } = await supabase
             .from('scripts')
             .update({
+              file_path: script.file_path, // Update with the correct relative path
               last_modified_at: script.last_modified_at,
               file_hash: script.file_hash,
               updated_at: new Date().toISOString(),
-              is_deleted: false
+              is_deleted: false // Explicitly mark as not deleted
             })
             .eq('id', dbScript.id);
           
@@ -232,6 +231,7 @@ async function syncWithDatabase(supabase, scripts) {
           .insert({
             ...script,
             metadata: {},
+            is_deleted: false, // Explicitly mark as not deleted
             last_indexed_at: new Date().toISOString()
           });
         

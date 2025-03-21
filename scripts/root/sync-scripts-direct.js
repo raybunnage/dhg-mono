@@ -1,34 +1,31 @@
 // Direct script to run the sync functionality
-const path = require('path');
+// This uses the updated ScriptManagementService that properly normalizes paths
 
-// Mock some services that might be needed
-const Logger = {
-  info: (...args) => console.log('[INFO]', ...args),
-  warn: (...args) => console.warn('[WARN]', ...args),
-  error: (...args) => console.error('[ERROR]', ...args)
-};
-
-// Import the actual service we need
 try {
-  const { ScriptManagementService } = require(path.join(__dirname, '../packages/cli/src/services/script-management-service'));
+  // Import the service using absolute path resolution
+  const path = require('path');
+  const rootDir = path.resolve(__dirname, '../');
+  const servicePath = path.resolve(rootDir, 'packages/cli/src/services/script-management-service');
+  
+  console.log('Root directory:', rootDir);
+  console.log('Loading service from:', servicePath);
+  
+  // Load the ScriptManagementService
+  const { ScriptManagementService } = require(servicePath);
   
   async function runSync() {
     try {
-      // Check that we have the required environment variables
-      if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
-        console.error('ERROR: SUPABASE_URL and SUPABASE_KEY environment variables must be set.');
-        console.error('Please set these variables and try again.');
-        process.exit(1);
-      }
-      
       console.log('Creating script management service...');
+      // Create new instance (will load config automatically)
       const scriptService = new ScriptManagementService();
       
       console.log('Discovering scripts...');
-      const scripts = await scriptService.discoverScripts(process.cwd());
+      // Discover scripts from current directory
+      const scripts = await scriptService.discoverScripts(rootDir);
       console.log(`Discovered ${scripts.length} scripts`);
       
       if (scripts.length > 0) {
+        // Actual sync operation
         console.log('Syncing with database...');
         const result = await scriptService.syncWithDatabase(scripts);
         console.log('Sync complete!');
@@ -37,14 +34,18 @@ try {
         console.log('No scripts found to sync.');
       }
     } catch (error) {
-      console.error('Error during sync:', error);
+      console.error('Error during sync operation:', error);
       process.exit(1);
     }
   }
   
-  // Run the sync function
-  runSync();
+  // Run the sync function and handle any errors
+  runSync().catch(err => {
+    console.error('Unexpected error:', err);
+    process.exit(1);
+  });
 } catch (importError) {
   console.error('Failed to import required modules:', importError);
+  console.error('Error details:', importError);
   process.exit(1);
 }

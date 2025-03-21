@@ -1,11 +1,12 @@
 import { FileService } from './file-service';
-import { SupabaseClientService, getSupabaseClient } from './supabase-client';
+import { SupabaseClientService, getSupabaseClient, SupabaseClient } from './supabase-client';
 import { PromptQueryService } from './prompt-query-service';
 import { ClaudeService } from './claude-service';
 import { createHash } from 'crypto';
 import * as path from 'path';
 import { promises as fs } from 'fs';
 import { Logger } from '../utils/logger';
+import config from '../utils/config';
 import {
   Script, 
   ScriptFile, 
@@ -17,20 +18,37 @@ export class ScriptManagementService {
   private fileService: FileService;
   private promptQueryService: PromptQueryService;
   private claudeService: ClaudeService;
+  private supabase: SupabaseClient;
   private readonly scriptExtensions = ['.sh', '.js'];
   private readonly excludeDirs = ['node_modules', '.git', 'dist', 'build'];
   private rootDir: string;
   
   constructor() {
     this.fileService = new FileService();
-    this.promptQueryService = new PromptQueryService({});
     
-    // Initialize Claude service with API key from environment
-    const claudeApiKey = process.env.CLAUDE_API_KEY || '';
-    this.claudeService = new ClaudeService(claudeApiKey);
+    // Get Supabase client using singleton service
+    const supabaseService = SupabaseClientService.getInstance();
+    if (!supabaseService.isInitialized()) {
+      // Initialize with values from config
+      Logger.info('Initializing Supabase client from config...');
+      this.supabase = supabaseService.initialize(config.supabaseUrl, config.supabaseKey);
+    } else {
+      Logger.info('Using existing Supabase client instance');
+      this.supabase = supabaseService.getClient(false);
+    }
+    
+    // Initialize prompt service with Supabase URL and key from config
+    this.promptQueryService = new PromptQueryService({
+      supabaseUrl: config.supabaseUrl,
+      supabaseKey: config.supabaseKey
+    });
+    
+    // Initialize Claude service with API key from config
+    this.claudeService = new ClaudeService(config.anthropicApiKey);
     
     // Store root directory for path conversions
     this.rootDir = process.cwd();
+    Logger.debug(`Root directory: ${this.rootDir}`);
   }
   
   /**
@@ -137,10 +155,16 @@ export class ScriptManagementService {
     };
     
     try {
-      const supabase = getSupabaseClient();
+      // Log the discovered scripts
+      Logger.info(`Processing ${scripts.length} scripts found on disk:`);
+      scripts.forEach((script, index) => {
+        if (index < 5) { // Only log first 5 to avoid excessive logging
+          Logger.debug(`  ${index + 1}. ${script.file_path}`);
+        }
+      });
       
-      // Get existing scripts from database
-      const { data: dbScripts, error } = await supabase
+      // Get existing scripts from database using class instance
+      const { data: dbScripts, error } = await this.supabase
         .from('scripts')
         .select('id, file_path, file_hash, is_deleted');
       
@@ -154,18 +178,38 @@ export class ScriptManagementService {
         throw new Error("No scripts data returned from database");
       }
       
-      // Create map and set for efficient lookups
-      const dbScriptMap = new Map(dbScripts.map(script => [script.file_path, script]));
-      const diskScriptPaths = new Set(scripts.map(script => script.file_path));
+      Logger.info(`Found ${dbScripts.length} scripts in database`);
+      
+      // Normalize all paths to ensure consistent comparison
+      // This ensures scripts will be found even if database has absolute paths
+      const normalizedDbScripts = dbScripts.map(script => ({
+        ...script,
+        normalizedPath: this.normalizePath(script.file_path)
+      }));
+      
+      const normalizedDiskScripts = scripts.map(script => ({
+        ...script,
+        normalizedPath: this.normalizePath(script.file_path)
+      }));
+      
+      // Create maps and sets for efficient lookups
+      const dbScriptMap = new Map(normalizedDbScripts.map(script => [script.normalizedPath, script]));
+      const diskScriptPathSet = new Set(normalizedDiskScripts.map(script => script.normalizedPath));
+      
+      // Log some of the normalized paths for debugging
+      Logger.debug("Normalized disk paths sample:");
+      Array.from(diskScriptPathSet).slice(0, 3).forEach(path => {
+        Logger.debug(`  - ${path}`);
+      });
       
       // Mark scripts that no longer exist as deleted
-      const toDelete = dbScripts.filter(dbScript => 
-        !diskScriptPaths.has(dbScript.file_path) && !dbScript.is_deleted
+      const toDelete = normalizedDbScripts.filter(dbScript => 
+        !diskScriptPathSet.has(dbScript.normalizedPath) && !dbScript.is_deleted
       );
       
       if (toDelete.length > 0) {
         Logger.info(`Marking ${toDelete.length} scripts as deleted...`);
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await this.supabase
           .from('scripts')
           .update({ is_deleted: true, updated_at: new Date().toISOString() })
           .in('id', toDelete.map(script => script.id));
@@ -178,21 +222,22 @@ export class ScriptManagementService {
         }
       }
       
-      // Process each script for insert or update
-      for (const script of scripts) {
-        const dbScript = dbScriptMap.get(script.file_path);
+      // Mark existing scripts that are found as not deleted and update them
+      for (const script of normalizedDiskScripts) {
+        const dbScript = dbScriptMap.get(script.normalizedPath);
         
         if (dbScript) {
           // Update existing script if hash changed or was previously marked as deleted
           if (dbScript.file_hash !== script.file_hash || dbScript.is_deleted) {
-            Logger.info(`Updating script: ${script.file_path}`);
-            const { error: updateError } = await supabase
+            Logger.info(`Updating script: ${script.file_path} (normalized: ${script.normalizedPath})`);
+            const { error: updateError } = await this.supabase
               .from('scripts')
               .update({
+                file_path: script.file_path, // Update with the correct relative path
                 last_modified_at: script.last_modified_at,
                 file_hash: script.file_hash,
                 updated_at: new Date().toISOString(),
-                is_deleted: false
+                is_deleted: false // Explicitly mark as not deleted
               })
               .eq('id', dbScript.id);
             
@@ -206,11 +251,12 @@ export class ScriptManagementService {
         } else {
           // Insert new script
           Logger.info(`Inserting new script: ${script.file_path}`);
-          const { error: insertError } = await supabase
+          const { error: insertError } = await this.supabase
             .from('scripts')
             .insert({
               ...script,
               metadata: {},
+              is_deleted: false, // Explicitly mark as not deleted
               last_indexed_at: new Date().toISOString()
             });
           
@@ -230,6 +276,24 @@ export class ScriptManagementService {
       Logger.error("Error during script synchronization:", error);
       throw new Error(`Failed to synchronize scripts: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+  
+  /**
+   * Normalizes a file path for consistent comparison
+   * Handles both absolute and relative paths
+   */
+  private normalizePath(filePath: string): string {
+    if (!filePath) return '';
+    
+    // Remove any leading /Users, /home, etc. paths and normalize to project-relative paths
+    const normalizedPath = filePath
+      .replace(/^\/Users\/[^\/]+\/Documents\/github\/dhg-mono\//, '')
+      .replace(/^\/Users\/[^\/]+\/[^\/]+\/dhg-mono\//, '')
+      .replace(/^\/home\/[^\/]+\/[^\/]+\/dhg-mono\//, '')
+      .replace(/^.*?dhg-mono\//, '')
+      .replace(/^\/?/, ''); // Remove leading slash
+      
+    return normalizedPath;
   }
   
   /**
@@ -375,9 +439,8 @@ export class ScriptManagementService {
     
     try {
       const now = new Date().toISOString();
-      const supabase = getSupabaseClient();
       
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('scripts')
         .update({
           script_type_id: result.scriptTypeId,
@@ -415,9 +478,7 @@ export class ScriptManagementService {
     Logger.info(`Getting up to ${limit} untyped scripts...`);
     
     try {
-      const supabase = getSupabaseClient();
-      
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('scripts')
         .select('id, file_path, title, language, summary, ai_generated_tags, manual_tags, last_modified_at, last_indexed_at, file_hash, metadata, created_at, updated_at, is_deleted, script_type_id, package_json_references, ai_assessment, assessment_quality_score, assessment_created_at, assessment_updated_at, assessment_model, assessment_version, assessment_date, document_type_id')
         .is('script_type_id', null)
@@ -447,9 +508,7 @@ export class ScriptManagementService {
     Logger.info(`Getting up to ${limit} recent scripts...`);
     
     try {
-      const supabase = getSupabaseClient();
-      
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('scripts')
         .select('id, file_path, title, language, updated_at, summary, ai_generated_tags, manual_tags, last_modified_at, last_indexed_at, file_hash, metadata, created_at, is_deleted, script_type_id, package_json_references, ai_assessment, assessment_quality_score, assessment_created_at, assessment_updated_at, assessment_model, assessment_version, assessment_date, document_type_id')
         .eq('is_deleted', false)
@@ -477,9 +536,7 @@ export class ScriptManagementService {
     Logger.info("Cleaning script analysis results...");
     
     try {
-      const supabase = getSupabaseClient();
-      
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('scripts')
         .update({
           ai_assessment: null,
@@ -513,10 +570,8 @@ export class ScriptManagementService {
     Logger.info(`Generating summary for ${options.limit === -1 ? 'all' : options.limit} scripts (include deleted: ${options.includeDeleted})`);
     
     try {
-      const supabase = getSupabaseClient();
-      
-      // Fetch scripts from the database
-      let query = supabase
+      // Fetch scripts from the database with full details needed for categorization
+      let query = this.supabase
         .from('scripts')
         .select(`
           id, 
@@ -525,10 +580,15 @@ export class ScriptManagementService {
           language, 
           summary,
           ai_generated_tags,
+          manual_tags,
           script_type_id,
+          document_type_id,
+          is_deleted,
           created_at,
           updated_at,
-          is_deleted
+          last_modified_at,
+          ai_assessment,
+          assessment_quality_score
         `);
       
       if (!options.includeDeleted) {
@@ -553,68 +613,185 @@ export class ScriptManagementService {
         return null;
       }
       
-      // Generate the report
-      let report = `# Script Summary Report\n\n`;
-      report += `Generated: ${new Date().toISOString()}\n`;
-      report += `Total Scripts: ${scripts.length}\n\n`;
+      // Get script types for name lookup
+      const { data: scriptTypes } = await this.supabase
+        .from('script_types')
+        .select('id, name, description');
       
-      // Group by script type
-      const scriptsByType = this.groupByScriptType(scripts as Script[]);
+      // Create a map of script types for easier access
+      const scriptTypeMap = new Map<string, {id: string, name: string, description?: string}>();
+      if (scriptTypes) {
+        scriptTypes.forEach(type => {
+          scriptTypeMap.set(type.id, type);
+        });
+      }
       
-      // Generate the report sections
-      for (const [typeId, typeScripts] of Object.entries(scriptsByType)) {
-        // Get type name if possible
-        let typeName = 'Unclassified';
+      // Categorize scripts into the four categories specified in the technical spec
+      const categorizedScripts: Record<'AI' | 'Integration' | 'Operations' | 'Development', Script[]> = {
+        'AI': [],
+        'Integration': [],
+        'Operations': [],
+        'Development': []
+      };
+      
+      // Count used script types
+      const scriptTypeCounts: Record<string, number> = {};
+      
+      // Process each script
+      scripts.forEach(script => {
+        // Categorize the script
+        const category = this.categorizeScript(script as Script);
+        categorizedScripts[category].push(script as Script);
         
-        if (typeId !== 'null') {
-          const { data } = await supabase
-            .from('script_types')
-            .select('name')
-            .eq('id', typeId)
-            .single();
-          
-          if (data && data.name) {
-            typeName = data.name;
-          }
+        // Increment script type counter
+        if (script.script_type_id) {
+          scriptTypeCounts[script.script_type_id] = (scriptTypeCounts[script.script_type_id] || 0) + 1;
+        }
+      });
+      
+      // Generate the report
+      let report = `# Script Analysis Summary Report\n\n`;
+      report += `Generated: ${new Date().toISOString()}\n`;
+      report += `Total Scripts: ${scripts.length}\n`;
+      report += `Includes Deleted: ${options.includeDeleted}\n\n`;
+      
+      // Summary statistics
+      report += `## Summary Statistics\n\n`;
+      report += `| Category | Count | Percentage |\n`;
+      report += `| --- | --- | --- |\n`;
+      
+      const totalScripts = scripts.length;
+      for (const [category, categoryScripts] of Object.entries(categorizedScripts)) {
+        const percentage = ((categoryScripts.length / totalScripts) * 100).toFixed(1);
+        report += `| ${category} | ${categoryScripts.length} | ${percentage}% |\n`;
+      }
+      
+      report += `\n`;
+      
+      // Show script types distribution if we have any
+      if (Object.keys(scriptTypeCounts).length > 0) {
+        report += `### Script Type Distribution\n\n`;
+        report += `| Script Type | Count |\n`;
+        report += `| --- | --- |\n`;
+        
+        for (const [typeId, count] of Object.entries(scriptTypeCounts)) {
+          const typeName = scriptTypeMap.get(typeId)?.name || 'Unknown';
+          report += `| ${typeName} | ${count} |\n`;
         }
         
-        report += `## ${typeName} (${typeScripts.length})\n\n`;
+        report += `\n`;
+      }
+      
+      // First add a table with file_path and is_deleted status for quick reference
+      report += `## File Path Status Overview\n\n`;
+      report += `| ID | File Path | Status | Category | Last Updated |\n`;
+      report += `| --- | --- | --- | --- | --- |\n`;
+      
+      // Show up to 20 files in the table, then indicate there are more
+      scripts.slice(0, 20).forEach(script => {
+        const status = script.is_deleted ? '🔴 DELETED' : '🟢 ACTIVE';
+        const updatedAt = script.updated_at ? new Date(script.updated_at).toISOString().split('T')[0] : 'N/A';
+        const category = this.categorizeScript(script as Script);
+        // Only show first part of ID to save space
+        const shortId = script.id.substring(0, 8) + '...';
+        report += `| ${shortId} | \`${script.file_path}\` | ${status} | ${category} | ${updatedAt} |\n`;
+      });
+      
+      if (scripts.length > 20) {
+        report += `| ... | ... | ... | ... | ... |\n`;
+      }
+      
+      report += `\n\n`;
+      
+      // Generate detailed sections by category
+      for (const [category, categoryScripts] of Object.entries(categorizedScripts)) {
+        if (categoryScripts.length === 0) continue;
         
-        for (const script of typeScripts) {
-          report += `### ${script.title}\n`;
-          report += `- Path: ${script.file_path}\n`;
-          report += `- Language: ${script.language}\n`;
+        report += `## ${category} Scripts (${categoryScripts.length})\n\n`;
+        
+        // Add a brief description based on the category
+        switch (category) {
+          case 'AI':
+            report += `Scripts related to AI/ML models, prompts, and configurations.\n\n`;
+            break;
+          case 'Integration':
+            report += `Scripts for external system integrations.\n\n`;
+            break;
+          case 'Operations':
+            report += `Scripts for operational tasks and infrastructure.\n\n`;
+            break;
+          case 'Development':
+            report += `Scripts for development tools and processes.\n\n`;
+            break;
+        }
+        
+        // Sort scripts by updated date
+        categoryScripts.sort((a, b) => {
+          const dateA = new Date(a.updated_at || 0);
+          const dateB = new Date(b.updated_at || 0);
+          return dateB.getTime() - dateA.getTime();
+        });
+        
+        // Add script details
+        for (const script of categoryScripts) {
+          const typeName = script.script_type_id ? 
+            (scriptTypeMap.get(script.script_type_id)?.name || 'Unknown Type') : 
+            'No Type';
           
-          if (script.ai_generated_tags && script.ai_generated_tags.length > 0) {
-            report += `- Tags: ${script.ai_generated_tags.join(', ')}\n`;
+          const quality = this.assessScriptQuality(script as Script);
+          
+          report += `### ${script.title}\n`;
+          report += `- **File Path**: \`${script.file_path}\`\n`;
+          report += `- **Type**: ${typeName}\n`;
+          report += `- **Status**: ${script.is_deleted ? 'Deleted' : 'Active'}\n`;
+          report += `- **Language**: ${script.language || 'Unknown'}\n`;
+          
+          // Tags section
+          const allTags = [
+            ...(script.ai_generated_tags || []),
+            ...(script.manual_tags || [])
+          ];
+          
+          if (allTags.length > 0) {
+            report += `- **Tags**: ${allTags.join(', ')}\n`;
           }
           
+          // Summary section
           if (script.summary) {
+            report += `- **Summary**:\n`;
+            
             if (typeof script.summary === 'object') {
-              report += `- Description: ${script.summary.description || 'N/A'}\n`;
-              report += `- Purpose: ${script.summary.purpose || 'N/A'}\n`;
-              
-              if (script.summary.key_functions && script.summary.key_functions.length > 0) {
-                report += `- Key Functions: ${script.summary.key_functions.join(', ')}\n`;
+              if (script.summary.description) {
+                report += `  - Description: ${script.summary.description}\n`;
               }
-            } else {
-              report += `- Summary: ${JSON.stringify(script.summary)}\n`;
+              if (script.summary.purpose) {
+                report += `  - Purpose: ${script.summary.purpose}\n`;
+              }
+              if (script.summary.key_functions && script.summary.key_functions.length > 0) {
+                report += `  - Key Functions: ${script.summary.key_functions.join(', ')}\n`;
+              }
+            } else if (typeof script.summary === 'string') {
+              report += `  ${script.summary}\n`;
             }
           }
           
-          report += `- Created: ${script.created_at}\n`;
-          report += `- Updated: ${script.updated_at}\n`;
+          // Assessment section
+          report += `- **Quality Assessment**:\n`;
+          report += `  - Code Quality: ${quality.code_quality}\n`;
+          report += `  - Maintainability: ${quality.maintainability}\n`;
+          report += `  - Utility: ${quality.utility}\n`;
+          report += `  - Documentation: ${quality.documentation}\n`;
           
-          if (script.is_deleted) {
-            report += `- Status: Deleted\n`;
-          }
+          // Dates
+          report += `- **Created**: ${new Date(script.created_at).toISOString()}\n`;
+          report += `- **Updated**: ${new Date(script.updated_at).toISOString()}\n`;
           
           report += `\n`;
         }
       }
       
       // Create reports directory if it doesn't exist
-      const reportsDir = 'reports';
+      const reportsDir = 'docs/script-reports';
       try {
         await fs.mkdir(reportsDir, { recursive: true });
       } catch (mkdirError) {
@@ -650,5 +827,82 @@ export class ScriptManagementService {
     }
     
     return result;
+  }
+  
+  /**
+   * Categorizes a script into one of the predefined categories
+   * @param script - Script to categorize
+   * @returns Category name (AI, Integration, Operations, or Development)
+   */
+  private categorizeScript(script: Script): 'AI' | 'Integration' | 'Operations' | 'Development' {
+    // Default to 'Development' if no category is found
+    let category: 'AI' | 'Integration' | 'Operations' | 'Development' = 'Development';
+    
+    const tags = script.ai_generated_tags || [];
+    const summary = script.summary || null;
+    const title = script.title || '';
+    const filePath = script.file_path || '';
+    
+    // Check for AI related scripts
+    if (
+      tags.some(tag => /ai|claude|openai|gpt|llm|ml|model|prompt/i.test(tag)) ||
+      filePath.includes('prompts') ||
+      (summary && summary.description && 
+       /ai|claude|openai|gpt|llm|ml|model|prompt/i.test(summary.description))
+    ) {
+      category = 'AI';
+    }
+    // Check for Integration related scripts
+    else if (
+      tags.some(tag => /api|integration|connect|external|supabase|database|google/i.test(tag)) ||
+      filePath.includes('integration') ||
+      (summary && summary.description && 
+       /api|integration|connect|external|supabase|database|google/i.test(summary.description))
+    ) {
+      category = 'Integration';
+    }
+    // Check for Operations related scripts
+    else if (
+      tags.some(tag => /deploy|build|ci|cd|pipeline|release|backup|setup|config/i.test(tag)) ||
+      filePath.includes('deploy') || filePath.includes('setup') || filePath.includes('config') ||
+      (summary && summary.description && 
+       /deploy|build|ci|cd|pipeline|release|backup|setup|config/i.test(summary.description))
+    ) {
+      category = 'Operations';
+    }
+    
+    return category;
+  }
+  
+  /**
+   * Assesses the quality of a script based on AI assessment or default values
+   * @param script - Script to assess
+   * @returns Quality assessment with various metrics
+   */
+  private assessScriptQuality(script: Script): {
+    code_quality: string;
+    maintainability: string;
+    utility: string;
+    documentation: string;
+  } {
+    const hasAssessment = script.ai_assessment !== null;
+    
+    // If we have AI assessment, use it
+    if (hasAssessment && script.ai_assessment) {
+      return {
+        code_quality: script.ai_assessment.quality || 'Unknown',
+        maintainability: script.ai_assessment.maintainability || 'Unknown',
+        utility: 'Unknown', // Not in current schema, could add later
+        documentation: script.ai_assessment.documentation_quality || 'Unknown'
+      };
+    }
+    
+    // Otherwise use simple heuristics
+    return {
+      code_quality: 'Not analyzed',
+      maintainability: 'Not analyzed',
+      utility: 'Not analyzed',
+      documentation: 'Not analyzed'
+    };
   }
 }
