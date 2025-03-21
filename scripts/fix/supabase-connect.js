@@ -58,12 +58,23 @@ function readEnvFile(filePath) {
  * Get Supabase credentials from environment or .env files
  */
 function getSupabaseCredentials() {
-  // Try environment variables first
-  let url = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  let serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || 
-                   process.env.CLI_SUPABASE_KEY || process.env.CLI_SUPABASE_SERVICE_ROLE_KEY ||
-                   process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-  let anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  // Primary variables - simplified to use standardized names
+  let url = process.env.SUPABASE_URL;
+  let serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  let anonKey = process.env.SUPABASE_ANON_KEY;
+  
+  // Client-side variables as fallback
+  if (!url) {
+    url = process.env.VITE_SUPABASE_URL;
+  }
+  
+  if (!serviceKey) {
+    serviceKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+  }
+  
+  if (!anonKey) {
+    anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  }
   
   if (url && serviceKey) {
     console.log('Found Supabase credentials in environment variables');
@@ -83,16 +94,21 @@ function getSupabaseCredentials() {
     if (fs.existsSync(envFile)) {
       const { exists, variables } = readEnvFile(envFile);
       if (exists) {
-        // Check for URL
-        url = url || variables.SUPABASE_URL || variables.CLI_SUPABASE_URL || variables.VITE_SUPABASE_URL;
+        // Check for URL (primary first, then fallbacks)
+        if (!url) {
+          url = variables.SUPABASE_URL || variables.VITE_SUPABASE_URL;
+        }
         
-        // Check for service key
-        serviceKey = serviceKey || variables.SUPABASE_SERVICE_ROLE_KEY || variables.SUPABASE_KEY || 
-                      variables.CLI_SUPABASE_KEY || variables.CLI_SUPABASE_SERVICE_ROLE_KEY ||
+        // Check for service key (primary first, then fallbacks)
+        if (!serviceKey) {
+          serviceKey = variables.SUPABASE_SERVICE_ROLE_KEY || variables.SUPABASE_KEY || 
                       variables.VITE_SUPABASE_SERVICE_ROLE_KEY;
+        }
         
-        // Check for anon key
-        anonKey = anonKey || variables.SUPABASE_ANON_KEY || variables.VITE_SUPABASE_ANON_KEY;
+        // Check for anon key (primary first, then fallbacks)
+        if (!anonKey) {
+          anonKey = variables.SUPABASE_ANON_KEY || variables.VITE_SUPABASE_ANON_KEY;
+        }
         
         if (url && serviceKey) {
           console.log(`Found credentials in ${envFile}`);
@@ -173,17 +189,17 @@ async function testSupabaseConnection() {
 function runCommand(command, args) {
   const { url, serviceKey, anonKey } = getSupabaseCredentials();
   
-  // Set environment variables for child process
+  // Set environment variables for child process using standardized names
   const env = {
     ...process.env,
+    // Core variables
     SUPABASE_URL: url,
     SUPABASE_SERVICE_ROLE_KEY: serviceKey,
-    SUPABASE_KEY: serviceKey,
-    CLI_SUPABASE_URL: url,
-    CLI_SUPABASE_KEY: serviceKey,
-    VITE_SUPABASE_URL: url,
-    VITE_SUPABASE_SERVICE_ROLE_KEY: serviceKey,
+    SUPABASE_KEY: serviceKey, // For backward compatibility
     SUPABASE_ANON_KEY: anonKey,
+    
+    // Client-side variables
+    VITE_SUPABASE_URL: url,
     VITE_SUPABASE_ANON_KEY: anonKey
   };
   

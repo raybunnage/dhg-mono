@@ -20,7 +20,18 @@ export class ScriptManagementService {
   private claudeService: ClaudeService;
   private supabase: SupabaseClient;
   private readonly scriptExtensions = ['.sh', '.js'];
-  private readonly excludeDirs = ['node_modules', '.git', 'dist', 'build'];
+  private readonly excludeDirs = [
+    'node_modules', 
+    '.git', 
+    'dist', 
+    'build', 
+    '_archive', 
+    'script-analysis-results', 
+    'file_types',
+    'backup',
+    '.backups',
+    'registry_archives'
+  ];
   private rootDir: string;
   
   constructor() {

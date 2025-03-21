@@ -114,6 +114,9 @@ supabase/schema-info.tmp.json
 # Archive directories
 **/_archive/
 **/._archive/ # Also catch potential typos/variants
+scripts/.archived_scripts/
+scripts/.archived_scripts/**/*
+**/scripts/.archived_scripts/
 
 # Env backups
 .backups/env/
