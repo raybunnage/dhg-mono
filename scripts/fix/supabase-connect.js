@@ -302,13 +302,25 @@ async function findScripts() {
     // Convert to path relative to root dir
     const relativePath = path.relative(ROOT_DIR, filePath);
     
-    scripts.push({
+    // Get file creation date - use birthtime if available, or ctime as fallback
+    const fileCreationDate = stats.birthtime || stats.ctime;
+    
+    // Store file size, creation date (in metadata), and modification date
+    const scriptObject = {
       file_path: relativePath,
       title: path.basename(filePath),
       language: path.extname(filePath) === '.sh' ? 'bash' : 'javascript',
       last_modified_at: stats.mtime.toISOString(),
-      file_hash: hash
-    });
+      file_hash: hash,
+      // Create metadata object with file details including the actual creation date
+      metadata: {
+        file_size: stats.size,
+        file_created_at: fileCreationDate.toISOString(),
+        file_modified_at: stats.mtime.toISOString()
+      }
+    };
+    
+    scripts.push(scriptObject);
   }
   
   console.log(\`Found \${scripts.length} script files\`);
@@ -329,7 +341,7 @@ async function syncScripts(scripts) {
   // Get existing scripts
   const { data: dbScripts, error } = await supabase
     .from('scripts')
-    .select('id, file_path, file_hash');
+    .select('id, file_path, file_hash, metadata');
     
   if (error) {
     console.error('Error fetching scripts:', error.message);
@@ -362,9 +374,21 @@ async function syncScripts(scripts) {
     const existingScript = dbScriptMap.get(normalizedPath);
     
     if (existingScript) {
-      // Update if hash has changed
-      if (existingScript.file_hash !== script.file_hash) {
-        console.log(\`Updating script: \${script.file_path}\`);
+      // Update if hash has changed, file size has changed, or file metadata dates don't match
+      const existingMetadata = existingScript.metadata || {};
+      const existingFileSize = existingMetadata.file_size;
+      const existingFileCreatedAt = existingMetadata.file_created_at;
+      const currentFileSize = script.metadata ? script.metadata.file_size : null;
+      const currentFileCreatedAt = script.metadata ? script.metadata.file_created_at : null;
+      
+      if (existingScript.file_hash !== script.file_hash || 
+          existingFileSize !== currentFileSize ||
+          existingFileCreatedAt !== currentFileCreatedAt) {
+        
+        console.log("Updating script " + script.file_path + 
+                   " - hash changed: " + (existingScript.file_hash !== script.file_hash) + 
+                   ", size changed: " + (existingFileSize !== currentFileSize) + 
+                   ", file_created_at changed: " + (existingFileCreatedAt !== currentFileCreatedAt));
         
         const { error: updateError } = await supabase
           .from('scripts')
@@ -372,6 +396,12 @@ async function syncScripts(scripts) {
             file_path: script.file_path,
             last_modified_at: script.last_modified_at,
             file_hash: script.file_hash,
+            metadata: {
+              ...existingMetadata,
+              file_size: script.metadata.file_size,
+              file_created_at: script.metadata.file_created_at,
+              file_modified_at: script.metadata.file_modified_at
+            },
             updated_at: new Date().toISOString()
           })
           .eq('id', existingScript.id);
@@ -391,7 +421,7 @@ async function syncScripts(scripts) {
         .from('scripts')
         .insert({
           ...script,
-          metadata: {},
+          // The metadata with file_size is already included in the script object
           last_indexed_at: new Date().toISOString()
         });
         

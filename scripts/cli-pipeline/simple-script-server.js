@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 const server = http.createServer((req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   // Handle preflight
@@ -115,6 +115,81 @@ const server = http.createServer((req, res) => {
     } catch (error) {
       console.error('Error finding files:', error);
       sendJson(res, 500, { error: 'Server error' });
+    }
+  }
+  // Handle DELETE request for script file
+  else if (pathname === '/api/script-file' && req.method === 'DELETE') {
+    const filePath = url.searchParams.get('path');
+    
+    if (!filePath) {
+      sendJson(res, 400, { error: 'File path required' });
+      return;
+    }
+    
+    // Security check
+    const normalizedPath = path.normalize(filePath);
+    // Allow .sh, .js, .ts, .py files
+    const allowedExtensions = ['.sh', '.js', '.ts', '.py'];
+    if (!allowedExtensions.some(ext => normalizedPath.endsWith(ext))) {
+      sendJson(res, 400, { 
+        error: 'Only script files allowed (.sh, .js, .ts, .py)',
+        extensions: allowedExtensions
+      });
+      return;
+    }
+    
+    // Project root - need to go up to the repository root
+    const projectRoot = path.join(__dirname, '..', '..');
+    
+    // Try multiple locations
+    const possiblePaths = [
+      path.join(projectRoot, normalizedPath),
+      path.join(__dirname, normalizedPath),
+      path.join(__dirname, '..', normalizedPath),
+      path.join(projectRoot, 'scripts', normalizedPath)
+    ];
+    
+    // Try to find and delete the file
+    let fileFound = false;
+    for (const tryPath of possiblePaths) {
+      try {
+        if (fs.existsSync(tryPath)) {
+          fileFound = true;
+          console.log(`Deleting file: ${tryPath}`);
+          
+          try {
+            // Delete the file
+            fs.unlinkSync(tryPath);
+            
+            sendJson(res, 200, {
+              success: true,
+              message: `File ${normalizedPath} deleted successfully`,
+              file_path: normalizedPath
+            });
+            return;
+          } catch (unlinkError) {
+            console.error(`Error unlinking ${tryPath}:`, unlinkError);
+            // Send a 500 error specifically for the deletion failure
+            sendJson(res, 500, { 
+              error: `Failed to delete file: ${unlinkError.message}`,
+              file_path: normalizedPath
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error(`Error checking ${tryPath}:`, error);
+      }
+    }
+    
+    // If we got here and fileFound is still false, the file wasn't found
+    if (!fileFound) {
+      // Return success anyway to avoid error toast when file is already gone
+      sendJson(res, 200, {
+        success: true,
+        message: `File ${normalizedPath} was already deleted or not found`,
+        file_path: normalizedPath
+      });
     }
   }
   else {
