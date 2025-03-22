@@ -20,6 +20,18 @@ function Scripts() {
   const [selectedScript, setSelectedScript] = useState<Script | null>(null);
   const [loading, setLoading] = useState(false);
   const [showScriptSummary, setShowScriptSummary] = useState(false);
+  // Initialize with all folders expanded by default
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set([
+    'cli-pipeline',
+    'supabase',
+    'packages',
+    '', // root folder
+    'deployment',
+    'fix',
+    'from-apps-dhg-improve-experts',
+    'whisper'
+    // Note: Other folders will be expanded when they're encountered
+  ]));
 
   // Fetch document types from the database
   const fetchDocumentTypes = async () => {
@@ -65,6 +77,47 @@ function Scripts() {
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Function to organize scripts into a folder structure
+  const organizeScriptsByFolder = () => {
+    // Create a folder structure based on file paths
+    const folderStructure: { [folderPath: string]: Script[] } = {};
+    
+    scripts.forEach(script => {
+      if (!script.file_path) return;
+      
+      const pathParts = script.file_path.split('/');
+      // Remove the filename to get the folder path
+      pathParts.pop();
+      const folderPath = pathParts.join('/');
+      
+      if (!folderStructure[folderPath]) {
+        folderStructure[folderPath] = [];
+      }
+      folderStructure[folderPath].push(script);
+    });
+    
+    // Sort scripts in each folder by created_at (newest first)
+    Object.keys(folderStructure).forEach(folder => {
+      folderStructure[folder].sort((a, b) => {
+        // First try to use file creation date from metadata if available
+        const fileCreatedAtA = a.metadata?.file_created_at ? new Date(a.metadata.file_created_at).getTime() : null;
+        const fileCreatedAtB = b.metadata?.file_created_at ? new Date(b.metadata.file_created_at).getTime() : null;
+        
+        // If both have metadata file dates, use those
+        if (fileCreatedAtA && fileCreatedAtB) {
+          return fileCreatedAtB - fileCreatedAtA; // Descending order
+        }
+        
+        // Otherwise fall back to database created_at date
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateB - dateA; // Descending order
+      });
+    });
+    
+    return folderStructure;
   };
 
   // Handle the search functionality
@@ -294,59 +347,160 @@ function Scripts() {
             </div>
           </div>
           
-          {/* Script list */}
+          {/* Script list with folder structure */}
           <div className="p-4 overflow-auto flex-grow" style={{ maxHeight: 'calc(100vh - 250px)' }}>
             {scripts.length > 0 ? (
               <div className="space-y-2">
-                {scripts.map(script => (
-                  <div 
-                    key={script.id}
-                    className={`p-3 hover:bg-gray-100 rounded my-1 cursor-pointer ${selectedScript?.id === script.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
-                    onClick={() => selectScript(script)}
-                  >
-                    <div className="flex items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium">{script.title || script.file_path.split('/').pop()}</div>
-                          
-                          {/* Status recommendation badge */}
-                          {script.ai_assessment?.status_recommendation && (
-                            <div className={`text-xs px-2 py-1 rounded-full ml-2 ${
-                              script.ai_assessment.status_recommendation === 'KEEP' 
-                                ? 'bg-green-100 text-green-800'
-                                : script.ai_assessment.status_recommendation === 'UPDATE'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-amber-100 text-amber-800'
-                            }`}>
-                              {script.ai_assessment.status_recommendation}
-                            </div>
-                          )}
+                {(() => {
+                  // Organize scripts by folder
+                  const folderStructure = organizeScriptsByFolder();
+                  
+                  // Custom sort order for folders
+                  const folderPriority = {
+                    'cli-pipeline': 1,
+                    'supabase': 2,
+                    '': 4, // root folder (moved down below packages)
+                    'deployment': 5,
+                    'fix': 6,
+                    'from-apps-dhg-improve-experts': 7
+                  };
+                  
+                  // Custom sort function for folders with explicit order:
+                  // 1. Folders starting with "Scripts"
+                  // 2. cli-pipeline 
+                  // 3. supabase
+                  // 4. packages
+                  // 5. root
+                  // 6. deployment
+                  // 7. fix
+                  // 8. from-apps-dhg-improve-experts
+                  // 9. app folders
+                  // 10. whisper
+                  // 11. others alphabetically
+                  const folderPaths = Object.keys(folderStructure).sort((a, b) => {
+                    // Function to get folder's position in the order
+                    const getFolderRank = (folder) => {
+                      if (folder.startsWith('Scripts') || folder.startsWith('scripts')) return 1;
+                      if (folder === 'cli-pipeline') return 2;
+                      if (folder === 'supabase') return 3;
+                      if (folder.startsWith('packages')) return 4;
+                      if (folder === '') return 5; // root folder
+                      if (folder === 'deployment') return 6;
+                      if (folder === 'fix') return 7;
+                      if (folder === 'from-apps-dhg-improve-experts') return 8;
+                      if (folder.startsWith('app')) return 9;
+                      if (folder === 'whisper') return 10;
+                      return 11; // other folders
+                    };
+                    
+                    const rankA = getFolderRank(a);
+                    const rankB = getFolderRank(b);
+                    
+                    // First sort by rank
+                    if (rankA !== rankB) {
+                      return rankA - rankB;
+                    }
+                    
+                    // If same rank, sort alphabetically
+                    return a.localeCompare(b);
+                  });
+                  
+                  // Auto-expand all folders on first load
+                  // We'll do this once outside of the component
+                  if (folderPaths.length > 0 && expandedFolders.size < folderPaths.length + 5) { // +5 accounts for pre-defined folders
+                    // Schedule this for after current render cycle
+                    setTimeout(() => {
+                      const allFolders = new Set(expandedFolders);
+                      folderPaths.forEach(path => allFolders.add(path));
+                      setExpandedFolders(allFolders);
+                    }, 0);
+                  }
+                
+                  return folderPaths.map(folderPath => {
+                    const isExpanded = expandedFolders.has(folderPath);
+                    const toggleFolder = () => {
+                      const newExpanded = new Set(expandedFolders);
+                      if (isExpanded) {
+                        newExpanded.delete(folderPath);
+                      } else {
+                        newExpanded.add(folderPath);
+                      }
+                      setExpandedFolders(newExpanded);
+                    };
+                    
+                    return (
+                      <div key={folderPath} className="folder-group mb-2">
+                        {/* Folder header */}
+                        <div 
+                          className="flex items-center p-2 bg-gray-100 rounded cursor-pointer hover:bg-gray-200"
+                          onClick={toggleFolder}
+                        >
+                          <span className="mr-2">{isExpanded ? '▼' : '▶'}</span>
+                          <span className="font-medium">📁 {folderPath || 'Root'}</span>
+                          <span className="ml-2 text-xs text-gray-500">({folderStructure[folderPath].length} scripts)</span>
                         </div>
                         
-                        <div className="text-xs text-gray-500 mt-1">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              Size: {formatFileSize(script.metadata?.file_size)}
-                            </div>
-                            <div>
-                              Created: {getFileCreationDate(script)}
-                            </div>
+                        {/* Scripts in folder */}
+                        {isExpanded && (
+                          <div className="pl-6 mt-1 space-y-1">
+                            {folderStructure[folderPath].map(script => (
+                              <div 
+                                key={script.id}
+                                className={`p-3 hover:bg-gray-100 rounded my-1 cursor-pointer ${
+                                  selectedScript?.id === script.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                                }`}
+                                onClick={() => selectScript(script)}
+                              >
+                                <div className="flex items-start">
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <div className="font-medium">{script.title || script.file_path.split('/').pop()}</div>
+                                      
+                                      {/* Status recommendation badge */}
+                                      {script.ai_assessment?.status_recommendation && (
+                                        <div className={`text-xs px-2 py-1 rounded-full ml-2 ${
+                                          script.ai_assessment.status_recommendation === 'KEEP' 
+                                            ? 'bg-green-100 text-green-800'
+                                            : script.ai_assessment.status_recommendation === 'UPDATE'
+                                              ? 'bg-yellow-100 text-yellow-800'
+                                              : 'bg-amber-100 text-amber-800'
+                                        }`}>
+                                          {script.ai_assessment.status_recommendation}
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="text-xs text-gray-500 mt-1 truncate break-all">
+                                      Path: {script.file_path}
+                                    </div>
+                                    
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      <div className="flex items-center justify-between">
+                                        <div>
+                                          Size: {formatFileSize(script.metadata?.file_size)}
+                                        </div>
+                                        <div>
+                                          Created: {getFileCreationDate(script)}
+                                        </div>
+                                      </div>
+                                      <div className="mt-1">
+                                        {script.document_type_id && (
+                                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                            {documentTypes.find(dt => dt.id === script.document_type_id)?.document_type || 'Unknown Type'}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          <div className="mt-1 truncate text-gray-400">
-                            {script.file_path}
-                          </div>
-                          <div className="mt-1">
-                            {script.document_type_id && (
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                                {documentTypes.find(dt => dt.id === script.document_type_id)?.document_type || 'Unknown Type'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                        )}
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  });
+                })()}
               </div>
             ) : (
               <div className="text-center text-gray-500 py-10">
@@ -460,7 +614,73 @@ function Scripts() {
                   {selectedScript.summary ? (
                     <div className="bg-white p-3 rounded border mb-4">
                       <h3 className="text-sm font-medium mb-2">Summary:</h3>
-                      <pre className="text-sm whitespace-pre-wrap">{selectedScript.summary}</pre>
+                      
+                      {/* Description section */}
+                      {selectedScript.summary.description && (
+                        <div className="mb-4">
+                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Brief</h4>
+                          <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.description}</p>
+                        </div>
+                      )}
+                      
+                      {/* Purpose section */}
+                      {selectedScript.summary.purpose && (
+                        <div className="mb-4">
+                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Purpose</h4>
+                          <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.purpose}</p>
+                        </div>
+                      )}
+                      
+                      {/* Recommendation section */}
+                      {selectedScript.summary.recommendation && (
+                        <div className="mb-4">
+                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Recommendation</h4>
+                          <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.recommendation}</p>
+                        </div>
+                      )}
+                      
+                      {/* Integration section */}
+                      {selectedScript.summary.integration && (
+                        <div className="mb-4">
+                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Integration</h4>
+                          <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.integration}</p>
+                        </div>
+                      )}
+                      
+                      {/* Importance section */}
+                      {selectedScript.summary.importance && (
+                        <div className="mb-4">
+                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Importance</h4>
+                          <div className="flex items-center">
+                            {/* Add visual importance indicator */}
+                            {selectedScript.summary.importance.toLowerCase().includes('critical') && (
+                              <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                            )}
+                            {selectedScript.summary.importance.toLowerCase().includes('high') && (
+                              <span className="inline-block w-3 h-3 rounded-full bg-orange-500 mr-2"></span>
+                            )}
+                            {selectedScript.summary.importance.toLowerCase().includes('medium') && (
+                              <span className="inline-block w-3 h-3 rounded-full bg-yellow-400 mr-2"></span>
+                            )}
+                            {selectedScript.summary.importance.toLowerCase().includes('low') && (
+                              <span className="inline-block w-3 h-3 rounded-full bg-blue-400 mr-2"></span>
+                            )}
+                            <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.importance}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Dependencies section */}
+                      {selectedScript.summary.dependencies && selectedScript.summary.dependencies.length > 0 && (
+                        <div className="mb-4">
+                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Dependencies</h4>
+                          <ul className="list-disc pl-5 text-sm">
+                            {selectedScript.summary.dependencies.map((dep, index) => (
+                              <li key={index}>{dep}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="bg-white p-3 rounded border mb-4">

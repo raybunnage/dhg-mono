@@ -50,8 +50,8 @@ export class ScriptManagementService {
     
     // Initialize prompt service with Supabase URL and key from config
     this.promptQueryService = new PromptQueryService({
-      supabaseUrl: config.supabaseUrl,
-      supabaseKey: config.supabaseKey
+      url: config.supabaseUrl,
+      key: config.supabaseKey
     });
     
     // Initialize Claude service with API key from config
@@ -213,13 +213,20 @@ export class ScriptManagementService {
         Logger.debug(`  - ${path}`);
       });
       
-      // Delete scripts that no longer exist on disk
+      // Filter scripts in DB that no longer exist on disk
       const toDelete = normalizedDbScripts.filter(dbScript => 
         !diskScriptPathSet.has(dbScript.normalizedPath)
       );
       
       if (toDelete.length > 0) {
-        Logger.info(`Deleting ${toDelete.length} scripts that no longer exist on disk...`);
+        Logger.info(`Removing ${toDelete.length} scripts that no longer exist on disk...`);
+        
+        // Simple but effective enhancement to log problematic files
+        if (toDelete.some(script => script.file_path.includes('temp-sync-scripts'))) {
+          Logger.info("Found the specific temp-sync-scripts.js file. Ensuring it gets deleted.");
+        }
+        
+        // Direct delete in bulk for simplicity
         const { error: deleteError } = await this.supabase
           .from('scripts')
           .delete()
@@ -230,6 +237,30 @@ export class ScriptManagementService {
           result.errors += toDelete.length;
         } else {
           result.deleted = toDelete.length;
+          
+          // Special verification for problematic files
+          const specificPath = "scripts/fix/temp-sync-scripts.js";
+          const hasSpecificPath = toDelete.some(script => script.file_path === specificPath);
+          
+          if (hasSpecificPath) {
+            Logger.info(`Verified deletion of problematic file: ${specificPath}`);
+            // Force double-check for the problem file
+            const { count } = await this.supabase
+              .from('scripts')
+              .select('*', { count: 'exact', head: true })
+              .eq('file_path', specificPath);
+              
+            if (count && count > 0) {
+              Logger.warn(`Problem file still exists in DB despite deletion attempt. Count: ${count}`);
+              // One more direct attempt for the specific file
+              await this.supabase
+                .from('scripts')
+                .delete()
+                .eq('file_path', specificPath);
+            } else {
+              Logger.info("Problem file successfully removed from database!");
+            }
+          }
         }
       }
       
@@ -294,17 +325,24 @@ export class ScriptManagementService {
   private normalizePath(filePath: string): string {
     if (!filePath) return '';
     
-    // Remove any leading /Users, /home, etc. paths and normalize to project-relative paths
-    const normalizedPath = filePath
+    // First strip any absolute path to make it relative to the project root
+    let normalizedPath = filePath;
+    
+    // Handle various possible absolute path patterns
+    normalizedPath = normalizedPath
       .replace(/^\/Users\/[^\/]+\/Documents\/github\/dhg-mono\//, '')
       .replace(/^\/Users\/[^\/]+\/[^\/]+\/dhg-mono\//, '')
       .replace(/^\/home\/[^\/]+\/[^\/]+\/dhg-mono\//, '')
       .replace(/^.*?dhg-mono\//, '')
       .replace(/^\/?/, ''); // Remove leading slash
-      
+    
+    // Clean up the path - normalize slashes, remove duplicate slashes, etc.
+    normalizedPath = path.normalize(normalizedPath).replace(/\\/g, '/');
+    
     return normalizedPath;
   }
   
+
   /**
    * Classifies a script using the AI service
    * @param filePath - Path to the script file
@@ -397,11 +435,43 @@ export class ScriptManagementService {
         const jsonStr = jsonMatch[1].trim();
         const parsedResult = JSON.parse(jsonStr);
         
+        // Handle the new detailed summary format
+        let summary = parsedResult.summary || null;
+        
+        // Process detailed summary if present in the new format
+        if (parsedResult.summary && typeof parsedResult.summary === 'object') {
+          // Convert detailed summary structure to match database schema
+          if (parsedResult.summary.detailed) {
+            const detailedSummary = parsedResult.summary.detailed;
+            
+            // Store the entire detailed structure in the summary object
+            summary = {
+              description: parsedResult.summary.brief || '',
+              purpose: detailedSummary.purpose || '',
+              dependencies: [],
+              inputs: [],
+              outputs: [],
+              key_functions: [],
+              // Add new detailed fields
+              recommendation: detailedSummary.recommendation || '',
+              integration: detailedSummary.integration || '',
+              importance: detailedSummary.importance || ''
+            };
+            
+            // Also store the full detailed summary in metadata for reference
+            parsedResult.metadata = parsedResult.metadata || {};
+            parsedResult.metadata.detailed_summary = detailedSummary;
+          }
+        }
+        
+        Logger.info(`Parsed detailed summary: ${JSON.stringify(summary)}`);
+        
         return {
           scriptTypeId: parsedResult.script_type_id || null,
-          summary: parsedResult.summary || null,
+          summary: summary,
           aiGeneratedTags: parsedResult.tags || [],
-          aiAssessment: parsedResult.assessment || null
+          aiAssessment: parsedResult.assessment || null,
+          metadata: parsedResult.metadata || {}
         };
       }
       
@@ -417,14 +487,21 @@ export class ScriptManagementService {
       // Extract summary (first paragraph)
       const summaryMatch = aiResponse.match(/^(.+?)(?:\n\n|\n$)/);
       const summary = summaryMatch ? 
-        { description: summaryMatch[1].trim(), purpose: '' } : 
+        { 
+          description: summaryMatch[1].trim(), 
+          purpose: '',
+          recommendation: '',
+          integration: '',
+          importance: ''
+        } : 
         null;
       
       return {
         scriptTypeId: null,
         summary,
         aiGeneratedTags: tags,
-        aiAssessment: null
+        aiAssessment: null,
+        metadata: {}
       };
     } catch (error) {
       Logger.error("Error parsing AI response:", error);
@@ -432,7 +509,8 @@ export class ScriptManagementService {
         scriptTypeId: null,
         summary: null,
         aiGeneratedTags: [],
-        aiAssessment: null
+        aiAssessment: null,
+        metadata: {}
       };
     }
   }
@@ -449,6 +527,34 @@ export class ScriptManagementService {
     try {
       const now = new Date().toISOString();
       
+      // Get current script metadata first, to preserve existing metadata
+      const { data: existingScript, error: fetchError } = await this.supabase
+        .from('scripts')
+        .select('metadata')
+        .eq('id', scriptId)
+        .single();
+      
+      if (fetchError) {
+        Logger.error(`Error fetching existing script metadata: ${fetchError.message}`);
+      }
+      
+      // Merge existing metadata with new metadata from the result
+      const existingMetadata = existingScript?.metadata || {};
+      const newMetadata = result.metadata || {};
+      const mergedMetadata = { ...existingMetadata, ...newMetadata };
+      
+      // Add summary details to metadata for better searchability
+      if (result.summary) {
+        mergedMetadata.summary_details = {
+          recommendation: result.summary.recommendation,
+          integration: result.summary.integration,
+          importance: result.summary.importance
+        };
+      }
+      
+      // Log the enhanced metadata
+      Logger.info(`Enhanced metadata: ${JSON.stringify(mergedMetadata)}`);
+      
       const { error } = await this.supabase
         .from('scripts')
         .update({
@@ -456,6 +562,7 @@ export class ScriptManagementService {
           summary: result.summary,
           ai_generated_tags: result.aiGeneratedTags,
           ai_assessment: result.aiAssessment,
+          metadata: mergedMetadata,
           assessment_created_at: now,
           assessment_updated_at: now,
           assessment_model: 'claude-3-7-sonnet-20250219',
