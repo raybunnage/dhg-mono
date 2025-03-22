@@ -135,44 +135,17 @@ function show_recent_scripts() {
 
 # Function to classify recent scripts
 function classify_recent_scripts() {
+  local count=${1:-10}
   echo "🧠 Classifying recent scripts..."
   
-  # Find recent script files
+  # Check if ts-node is installed
+  if ! command -v ts-node &> /dev/null; then
+    echo "Error: ts-node is not installed. Cannot run the script classification."
+    return 1
+  fi
+  
+  # Find recent script files to classify
   echo "Finding recently modified script files for classification..."
-  local recent_scripts=$(find "${ROOT_DIR}" -type f \( -name "*.sh" -o -name "*.js" \) \
-    -not -path "*/node_modules/*" \
-    -not -path "*/.git/*" \
-    -not -path "*/dist/*" \
-    -not -path "*/build/*" \
-    -not -path "*/backup/*" \
-    -not -path "*/archive/*" \
-    -not -path "*/_archive/*" \
-    -not -path "*/file_types/*" \
-    -not -path "*/script-analysis-results/*" \
-    -mtime -7 | head -n 5)
-  
-  # For each script, show a simulated classification
-  echo "$recent_scripts" | while read script; do
-    echo "Simulating classification for: $script"
-    echo "  - Type: Shell Script"
-    echo "  - Summary: Script utility for managing files"
-    echo "  - Tags: utility, shell, automation"
-    echo ""
-  done
-  
-  echo "✅ Classification simulation completed successfully"
-  echo "NOTE: This is a simplified implementation since the CLI is not built."
-  echo "In a full implementation, this would use Claude API to classify scripts."
-  return 0
-}
-
-# Function to classify untyped scripts
-function classify_untyped_scripts() {
-  local count=${1:-10}
-  echo "🧠 Classifying ${count} untyped scripts..."
-  
-  # Find some script files to simulate classification
-  echo "Finding scripts for classification..."
   local scripts_to_classify=$(find "${ROOT_DIR}" -type f \( -name "*.sh" -o -name "*.js" \) \
     -not -path "*/node_modules/*" \
     -not -path "*/.git/*" \
@@ -183,26 +156,151 @@ function classify_untyped_scripts() {
     -not -path "*/_archive/*" \
     -not -path "*/file_types/*" \
     -not -path "*/script-analysis-results/*" \
-    | head -n $count)
+    -mtime -7 | head -n $count)
   
-  # For each script, show a simulated classification
+  # Check if we found any scripts
+  if [ -z "$scripts_to_classify" ]; then
+    echo "❌ No recent scripts found for classification."
+    return 1
+  fi
+  
+  # Path to our permanent TypeScript script
+  SCRIPT_ANALYZER="${SCRIPT_DIR}/analyze-script.ts"
+  
+  # Check if the script exists
+  if [ ! -f "${SCRIPT_ANALYZER}" ]; then
+    echo "Error: Script analyzer not found at ${SCRIPT_ANALYZER}"
+    return 1
+  fi
+  
+  # For each script, use ts-node to run the analysis
+  local success_count=0
+  local failure_count=0
+  
   echo "$scripts_to_classify" | while read script; do
-    echo "Simulating classification for: $script"
-    if [[ "$script" == *".sh" ]]; then
-      echo "  - Type: Shell Script"
-      echo "  - Summary: Bash utility script"
-      echo "  - Tags: bash, utility, automation"
+    echo "Processing script: $script"
+    
+    # Execute the script analyzer
+    cd "${ROOT_DIR}"
+    ts-node "${SCRIPT_ANALYZER}" "$script"
+    
+    if [ $? -eq 0 ]; then
+      echo "✅ Successfully classified script: $script"
+      ((success_count++))
     else
-      echo "  - Type: JavaScript"
-      echo "  - Summary: JavaScript utility function"
-      echo "  - Tags: javascript, utility, web"
+      echo "❌ Failed to classify script: $script"
+      ((failure_count++))
     fi
-    echo ""
   done
   
-  echo "✅ Classification simulation completed successfully"
-  echo "NOTE: This is a simplified implementation since the CLI is not built."
-  echo "In a full implementation, this would use Claude API to classify untyped scripts."
+  echo "✅ Classification completed: $success_count successful, $failure_count failed."
+  return 0
+}
+
+# Function to classify untyped scripts
+function classify_untyped_scripts() {
+  local count=${1:-10}
+  echo "🧠 Classifying ${count} untyped scripts..."
+  
+  # Check if ts-node is installed
+  if ! command -v ts-node &> /dev/null; then
+    echo "Error: ts-node is not installed. Cannot run the script classification."
+    return 1
+  fi
+  
+  # Check for Claude API key and provide guidance if missing
+  if [ -z "$CLAUDE_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$CLI_CLAUDE_API_KEY" ]; then
+    echo "⚠️ No Claude API key found in environment variables."
+    
+    # Look for any existing keys
+    if [ -n "$VITE_ANTHROPIC_API_KEY" ]; then
+      echo "✅ Found VITE_ANTHROPIC_API_KEY - copying to CLAUDE_API_KEY for script use"
+      export CLAUDE_API_KEY="$VITE_ANTHROPIC_API_KEY"
+    else
+      echo "❌ Missing Claude API key. Please set one of these environment variables:"
+      echo "   - CLAUDE_API_KEY"
+      echo "   - ANTHROPIC_API_KEY"
+      echo "   - CLI_CLAUDE_API_KEY"
+      echo "Example: export CLAUDE_API_KEY=your_api_key"
+      return 1
+    fi
+  fi
+  
+  # If ANTHROPIC_API_KEY is set but CLAUDE_API_KEY isn't, use it
+  if [ -z "$CLAUDE_API_KEY" ] && [ -n "$ANTHROPIC_API_KEY" ]; then
+    echo "ℹ️ Using ANTHROPIC_API_KEY as CLAUDE_API_KEY"
+    export CLAUDE_API_KEY="$ANTHROPIC_API_KEY"
+  fi
+  
+  # If CLI_CLAUDE_API_KEY is set but CLAUDE_API_KEY isn't, use it
+  if [ -z "$CLAUDE_API_KEY" ] && [ -n "$CLI_CLAUDE_API_KEY" ]; then
+    echo "ℹ️ Using CLI_CLAUDE_API_KEY as CLAUDE_API_KEY"
+    export CLAUDE_API_KEY="$CLI_CLAUDE_API_KEY"
+  fi
+  
+  # Verify we now have a Claude API key
+  if [ -z "$CLAUDE_API_KEY" ]; then
+    echo "❌ Still missing Claude API key after attempted fix."
+    return 1
+  else
+    echo "✅ CLAUDE_API_KEY is set and has value"
+  fi
+  
+  # Find untyped scripts to classify
+  echo "Finding untyped scripts for classification..."
+  local scripts_to_classify=$(find "${ROOT_DIR}" -type f \( -name "*.sh" -o -name "*.js" \) \
+    -not -path "*/node_modules/*" \
+    -not -path "*/.git/*" \
+    -not -path "*/dist/*" \
+    -not -path "*/build/*" \
+    -not -path "*/backup/*" \
+    -not -path "*/archive/*" \
+    -not -path "*/_archive/*" \
+    -not -path "*/file_types/*" \
+    -not -path "*/script-analysis-results/*" \
+    -mtime -7 | head -n $count)
+  
+  # Check if we found any scripts
+  if [ -z "$scripts_to_classify" ]; then
+    echo "❌ No untyped scripts found for classification."
+    return 1
+  fi
+  
+  # Path to our permanent TypeScript script
+  SCRIPT_ANALYZER="${SCRIPT_DIR}/analyze-script.ts"
+  
+  # Check if the script exists
+  if [ ! -f "${SCRIPT_ANALYZER}" ]; then
+    echo "Error: Script analyzer not found at ${SCRIPT_ANALYZER}"
+    return 1
+  fi
+  
+  # For each script, use ts-node to run the analysis
+  local success_count=0
+  local failure_count=0
+  
+  echo "$scripts_to_classify" | while read script; do
+    echo "Processing script: $script"
+    
+    # Execute the script analyzer
+    cd "${ROOT_DIR}"
+    # Pass through all important environment variables
+    CLAUDE_API_KEY="$CLAUDE_API_KEY" \
+    ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+    CLI_CLAUDE_API_KEY="$CLI_CLAUDE_API_KEY" \
+    VITE_ANTHROPIC_API_KEY="$VITE_ANTHROPIC_API_KEY" \
+    ts-node "${SCRIPT_ANALYZER}" "$script"
+    
+    if [ $? -eq 0 ]; then
+      echo "✅ Successfully classified script: $script"
+      ((success_count++))
+    else
+      echo "❌ Failed to classify script: $script"
+      ((failure_count++))
+    fi
+  done
+  
+  echo "✅ Classification completed: $success_count successful, $failure_count failed."
   return 0
 }
 
@@ -618,6 +716,30 @@ function run_complete_pipeline() {
   echo "🚀 Running complete script pipeline..."
   local success=true
   
+  # Ensure the environment variables are set
+  if [ -z "$CLAUDE_API_KEY" ]; then
+    echo "⚠️ CLAUDE_API_KEY environment variable is not set. Script classification will fail."
+    echo "Please export CLAUDE_API_KEY=your_api_key before running this pipeline."
+    success=false
+  else
+    echo "✅ CLAUDE_API_KEY environment variable is set."
+  fi
+  
+  if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+    echo "⚠️ SUPABASE_URL or SUPABASE_KEY environment variables are not set."
+    echo "Database operations will not work properly."
+    success=false
+  else
+    echo "✅ Supabase environment variables are set."
+  fi
+  
+  # If environment variables are missing, exit early
+  if [ "$success" = false ]; then
+    echo "⚠️ Missing required environment variables. Please set them and try again."
+    return 1
+  fi
+  
+  # Run the pipeline steps
   sync_scripts
   if [ $? -ne 0 ]; then
     success=false
@@ -628,7 +750,8 @@ function run_complete_pipeline() {
     success=false
   fi
   
-  classify_recent_scripts
+  # Maximum of 5 scripts to classify for better performance
+  classify_recent_scripts 5
   if [ $? -ne 0 ]; then
     success=false
   fi

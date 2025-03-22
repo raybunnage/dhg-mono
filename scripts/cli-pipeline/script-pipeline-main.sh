@@ -10,6 +10,19 @@ if [ ! -f "${MANAGER_SCRIPT}" ]; then
   exit 1
 fi
 
+# Check for Claude API key environment variables before continuing
+# This provides early feedback to users
+if [ -z "$CLAUDE_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$CLI_CLAUDE_API_KEY" ] && [ -z "$VITE_ANTHROPIC_API_KEY" ]; then
+  echo "⚠️ WARNING: No Claude API key found in environment variables."
+  echo "For using classify features, you need to set one of these environment variables:"
+  echo "   - CLAUDE_API_KEY"
+  echo "   - ANTHROPIC_API_KEY"
+  echo "   - CLI_CLAUDE_API_KEY"
+  echo ""
+  echo "Example: export CLAUDE_API_KEY=your_api_key"
+  echo ""
+fi
+
 source "${MANAGER_SCRIPT}"
 
 # Display usage information
@@ -27,6 +40,14 @@ function show_help() {
   echo "                              i: Include deleted (true/false, default: false)"
   echo "  all                       - Run the complete pipeline (sync, find-new, classify-recent)"
   echo "  help                      - Show this help message"
+  echo ""
+  echo "Environment Variables Required:"
+  echo "  For classification (classify-recent, classify-untyped):"
+  echo "    CLAUDE_API_KEY or ANTHROPIC_API_KEY     - Your Claude API key"
+  echo ""
+  echo "  For database operations (all commands):"
+  echo "    SUPABASE_URL                            - Your Supabase URL"
+  echo "    SUPABASE_SERVICE_ROLE_KEY               - Your Supabase service role key"
 }
 
 # We no longer need to check for environment variables here since we use config service

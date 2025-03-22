@@ -456,18 +456,38 @@ function Scripts() {
                                     <div className="flex items-center justify-between">
                                       <div className="font-medium">{script.title || script.file_path.split('/').pop()}</div>
                                       
-                                      {/* Status recommendation badge */}
-                                      {script.ai_assessment?.status_recommendation && (
-                                        <div className={`text-xs px-2 py-1 rounded-full ml-2 ${
-                                          script.ai_assessment.status_recommendation === 'KEEP' 
-                                            ? 'bg-green-100 text-green-800'
-                                            : script.ai_assessment.status_recommendation === 'UPDATE'
-                                              ? 'bg-yellow-100 text-yellow-800'
-                                              : 'bg-amber-100 text-amber-800'
-                                        }`}>
-                                          {script.ai_assessment.status_recommendation}
-                                        </div>
-                                      )}
+                                      <div className="flex items-center">
+                                        {/* Importance indicator */}
+                                        {script.summary?.importance && (
+                                          <div className="mr-1">
+                                            {script.summary.importance.toLowerCase().includes('critical') && (
+                                              <span className="inline-block w-3 h-3 rounded-full bg-red-500" title="Critical Importance"></span>
+                                            )}
+                                            {script.summary.importance.toLowerCase().includes('high') && (
+                                              <span className="inline-block w-3 h-3 rounded-full bg-orange-500" title="High Importance"></span>
+                                            )}
+                                            {script.summary.importance.toLowerCase().includes('medium') && (
+                                              <span className="inline-block w-3 h-3 rounded-full bg-yellow-400" title="Medium Importance"></span>
+                                            )}
+                                            {script.summary.importance.toLowerCase().includes('low') && (
+                                              <span className="inline-block w-3 h-3 rounded-full bg-blue-400" title="Low Importance"></span>
+                                            )}
+                                          </div>
+                                        )}
+                                      
+                                        {/* Status recommendation badge */}
+                                        {script.ai_assessment?.status_recommendation && (
+                                          <div className={`text-xs px-2 py-1 rounded-full ml-1 ${
+                                            script.ai_assessment.status_recommendation === 'KEEP' 
+                                              ? 'bg-green-100 text-green-800'
+                                              : script.ai_assessment.status_recommendation === 'UPDATE'
+                                                ? 'bg-yellow-100 text-yellow-800'
+                                                : 'bg-amber-100 text-amber-800'
+                                          }`}>
+                                            {script.ai_assessment.status_recommendation}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                     
                                     <div className="text-xs text-gray-500 mt-1 truncate break-all">
@@ -613,7 +633,13 @@ function Scripts() {
                 <div className="p-4 bg-gray-50 border-b">
                   {selectedScript.summary ? (
                     <div className="bg-white p-3 rounded border mb-4">
-                      <h3 className="text-sm font-medium mb-2">Summary:</h3>
+                      <h3 className="text-sm font-medium mb-2">
+                        Summary
+                        {selectedScript.summary.recommendation && selectedScript.summary.importance ? 
+                          <span className="text-xs text-green-600 ml-2">(Enhanced with detailed analysis)</span> : 
+                          ''
+                        }:
+                      </h3>
                       
                       {/* Description section */}
                       {selectedScript.summary.description && (

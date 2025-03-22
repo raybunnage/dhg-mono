@@ -2,6 +2,7 @@ import { FileService } from './file-service';
 import { SupabaseClientService, getSupabaseClient, SupabaseClient } from './supabase-client';
 import { PromptQueryService } from './prompt-query-service';
 import { ClaudeService } from './claude-service';
+import { ScriptClaudeService } from './script-claude-service';
 import { createHash } from 'crypto';
 import * as path from 'path';
 import { promises as fs } from 'fs';
@@ -18,6 +19,7 @@ export class ScriptManagementService {
   private fileService: FileService;
   private promptQueryService: PromptQueryService;
   private claudeService: ClaudeService;
+  private scriptClaudeService: ScriptClaudeService; // Add the new script-specific Claude service
   private supabase: SupabaseClient;
   private readonly scriptExtensions = ['.sh', '.js'];
   private readonly excludeDirs = [
@@ -54,8 +56,9 @@ export class ScriptManagementService {
       key: config.supabaseKey
     });
     
-    // Initialize Claude service with API key from config
+    // Initialize Claude services with API key from config
     this.claudeService = new ClaudeService(config.anthropicApiKey);
+    this.scriptClaudeService = new ScriptClaudeService(config.anthropicApiKey);
     
     // Store root directory for path conversions
     this.rootDir = process.cwd();
@@ -368,35 +371,22 @@ export class ScriptManagementService {
         throw new Error("Script analysis prompt not found in database");
       }
       
-      // Prepare prompt with script content
+      // Fetch script types to include in the prompt
+      const { data: scriptTypes } = await this.supabase
+        .from('script_types')
+        .select('id, name, description, category');
+      
+      // Get script content
       const scriptContent = fileResult.content || '';
       
-      const fullPrompt = prompt.content
-        .replace('{{SCRIPT_CONTENT}}', scriptContent)
-        .replace('{{FILE_PATH}}', relativePath);
-      
-      // Call Claude API
-      Logger.info(`Calling Claude API for script analysis...`);
-      
-      // First prepare the Claude request structure
-      const messages = [
-        {
-          role: 'user' as const,
-          content: [
-            {
-              type: 'text' as const,
-              text: fullPrompt
-            }
-          ]
-        }
-      ];
-      
-      const response = await this.claudeService.callClaudeApi({
-        model: 'claude-3-7-sonnet-20250219',
-        max_tokens: 4000,
-        temperature: 0,
-        messages
-      });
+      // Use the specialized ScriptClaudeService
+      Logger.info(`Using ScriptClaudeService for script analysis...`);
+      const response = await this.scriptClaudeService.analyzeScript(
+        scriptContent,
+        relativePath,
+        prompt.content,
+        scriptTypes || []
+      );
       
       if (!response.success || !response.result) {
         throw new Error(`Claude API call failed: ${response.error || 'Unknown error'}`);
