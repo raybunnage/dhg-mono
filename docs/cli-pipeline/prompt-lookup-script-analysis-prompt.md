@@ -1,6 +1,6 @@
 # Prompt Lookup: script-analysis-prompt
 
-Generated: 2025-03-22T02:02:39.703Z
+Generated: 2025-03-22T04:33:13.750Z
 
 
 === PROMPT DETAILS FROM DATABASE ===
@@ -8,18 +8,13 @@ ID: 43f058d8-6df7-4a01-8f8e-c1eec944defe
 Name: script-analysis-prompt
 Description: No description
 Created: 3/16/2025, 4:27:22 AM
-Updated: 3/17/2025, 1:54:12 PM
+Updated: 3/22/2025, 3:52:40 AM
 
 === PROMPT CONTENT FROM DATABASE ===
-"# Script Analysis and Classification Prompt\n\nYou are an expert script analyzer on a development team tasked with classifying and assessing shell scripts (.sh) and JavaScript scripts (.js) in a monorepo. Your job is to analyze the provided script file and determine its purpose, quality, and relevance, then create a detailed assessment with recommendations.\n\n## Input Context\n\nYou'll be provided with:\n1. The content of a script file to analyze (.sh or .js)\n2. Information about package.json files that may reference the script\n3. The file path and metadata of the script\n4. Optional context about the repository structure and other similar scripts\n\n## Instructions\n\n1. Carefully read the script content.\n2. Determine the primary purpose of the script.\n3. Assess the script's quality, relevancy, and potential value.\n4. Check if the script is referenced in package.json files.\n5. Detect if this script may be a duplicate of another script based on filename and purpose.\n6. Generate appropriate tags that capture the script's key functionality.\n7. Determine a recommended status (ACTIVE, UPDATE_NEEDED, OBSOLETE, DUPLICATE, UNUSED).\n8. Structure your response in the specified JSON format.\n\nYour assessment should consider:\n- How well the script is written (comments, error handling, structure)\n- Whether the script is referenced in package.json files\n- The script's creation/modification date and its recency\n- The script's complexity and completeness\n- Whether the script appears to be a duplicate of another script\n- The script's practical value to developers\n\n## Evaluation Criteria\n\n### Script Status Recommendations\n\n- **ACTIVE**: Script is well-written, clearly useful, referenced in package.json, and recently modified.\n- **UPDATE_NEEDED**: Script is useful but has issues (poor error handling, outdated syntax, unclear purpose, etc.).\n- **OBSOLETE**: Script appears to be outdated, uses deprecated approaches, or hasn't been modified in a long time.\n- **DUPLICATE**: Script functionality appears to be a duplicate of another script in the repository.\n- **UNUSED**: Script isn't referenced in any package.json file and doesn't appear to be actively used.\n\n### Script Quality Assessment (1-10 scale)\n\n- **Code Quality (1-10)**: How well-written is the code? Considerations:\n  - Proper error handling\n  - Good comments and documentation\n  - Clean, consistent style\n  - Well-structured with logical flow\n  - Follows best practices for the language\n\n- **Maintainability (1-10)**: How easy is it to maintain? Considerations:\n  - Clear variable/function names\n  - Modular design\n  - Lack of hardcoded values\n  - Well-documented parameters and return values\n  - Appropriate level of abstraction\n\n- **Utility (1-10)**: How useful is the script? Considerations:\n  - Solves a clear problem\n  - Is referenced in package.json\n  - Has a unique purpose\n  - Handles edge cases appropriately\n  - Works in various environments\n\n- **Documentation (1-10)**: How well is the script documented? Considerations:\n  - Has a clear header/description\n  - Documents parameters and usage\n  - Explains complex logic\n  - Includes examples or usage instructions\n  - Describes expected inputs/outputs\n\n### Usage Status\n\n- **DIRECTLY_REFERENCED**: Script is directly referenced in package.json scripts\n- **INDIRECTLY_REFERENCED**: Script is called by another script that is referenced in package.json\n- **NOT_REFERENCED**: Script is not referenced in any package.json file\n\n## Response Format\n\nProvide your assessment in the following JSON format:\n\n```json\n{\n  \"id\": \"{{auto-generated UUID}}\",\n  \"file_path\": \"{{file_path}}\",\n  \"title\": \"{{script title/name}}\",\n  \"summary\": {\n    \"brief\": \"{{brief summary of the script}}\",\n    \"detailed\": {\n      \"purpose\": \"{{script purpose}}\",\n      \"key_components\": \"{{main functionality}}\",\n      \"practical_application\": \"{{how the script would be used}}\"\n    }\n  },\n  \"language\": \"{{sh|js|bash|node}}\",\n  \"ai_generated_tags\": [\"{{tag1}}\", \"{{tag2}}\", \"{{tag3}}\", \"{{tag4}}\", \"{{tag5}}\"],\n  \"manual_tags\": null,\n  \"last_modified_at\": \"{{last_modified_date if available}}\",\n  \"last_indexed_at\": \"{{current_datetime}}\",\n  \"file_hash\": \"{{file_hash if available}}\",\n  \"metadata\": {\n    \"size\": {{file_size_in_bytes}},\n    \"has_shebang\": {{true|false}},\n    \"shebang\": \"{{shebang_line}}\",\n    \"is_executable\": {{true|false}}\n  },\n  \"created_at\": \"{{creation_date if available, otherwise current_datetime}}\",\n  \"updated_at\": \"{{current_datetime}}\",\n  \"is_deleted\": false,\n  \"script_type_id\": \"{{matched script type id or null}}\",\n  \"package_json_references\": [\n    {\n      \"file\": \"{{package.json location}}\",\n      \"script_key\": \"{{script key in package.json}}\",\n      \"command\": \"{{full command}}\"\n    }\n  ],\n  \"ai_assessment\": {\n    \"script_type\": \"{{UTILITY|DEPLOYMENT|DATABASE|BUILD|SETUP|OTHER}}\",\n    \"script_quality\": {\n      \"code_quality\": {{1-10 score}},\n      \"maintainability\": {{1-10 score}},\n      \"utility\": {{1-10 score}},\n      \"documentation\": {{1-10 score}}\n    },\n    \"current_relevance\": {\n      \"score\": {{1-10 score}},\n      \"reasoning\": \"{{brief explanation of current relevance score}}\"\n    },\n    \"potential_relevance\": {\n      \"score\": {{1-10 score}},\n      \"reasoning\": \"{{brief explanation of potential future relevance}}\"\n    },\n    \"usage_status\": \"{{DIRECTLY_REFERENCED|INDIRECTLY_REFERENCED|NOT_REFERENCED}}\",\n    \"status_recommendation\": \"{{ACTIVE|UPDATE_NEEDED|OBSOLETE|DUPLICATE|UNUSED}}\",\n    \"possible_duplicates\": [\n      \"{{similar_script_path1}}\",\n      \"{{similar_script_path2}}\"\n    ],\n    \"confidence\": {{1-10 score}},\n    \"reasoning\": \"{{explanation of the overall assessment and recommendations}}\"\n  },\n  \"assessment_quality_score\": {{1-10 overall quality score}},\n  \"assessment_created_at\": \"{{current_datetime}}\",\n  \"assessment_updated_at\": \"{{current_datetime}}\",\n  \"assessment_model\": \"Claude 3.7 Sonnet\",\n  \"assessment_version\": 1,\n  \"assessment_date\": \"{{current_date}}\"\n}\n```\n\n## Example Workflow\n\nWhen analyzing a script, follow this general process:\n1. Understand the script's content, purpose, and functionality\n2. Check if it's referenced in package.json files\n3. Evaluate code quality, comments, and error handling\n4. Assess relevance to current development practices\n5. Generate meaningful tags based on content\n6. Check for potential duplicates based on filename and functionality\n7. Make a status recommendation with supporting reasoning\n\nFor JSONB storage compatibility, ensure:\n- All JSON is properly formatted and validated\n- Nested objects are used for structured data\n- Text fields have reasonable length limitations\n- Date fields follow ISO 8601 format (YYYY-MM-DDTHH:MM:SS.sss+00:00)\n- Numeric scores are integers in the specified ranges\n\n## Example Assessment\n\nHere's an abbreviated example assessment for a database backup script:\n\n```json\n{\n  \"title\": \"Database Backup Script\",\n  \"summary\": {\n    \"brief\": \"Automated PostgreSQL database backup script with compression and retention policies\",\n    \"detailed\": {\n      \"purpose\": \"Create automated backups of PostgreSQL databases\",\n      \"key_components\": \"Database connection, backup creation, compression, rotation\",\n      \"practical_application\": \"Used in CI/CD pipeline for nightly database backups\"\n    }\n  },\n  \"language\": \"bash\",\n  \"ai_generated_tags\": [\"database\", \"backup\", \"postgres\", \"automation\", \"retention\"],\n  \"ai_assessment\": {\n    \"script_type\": \"DATABASE\",\n    \"script_quality\": {\n      \"code_quality\": 8,\n      \"maintainability\": 7,\n      \"utility\": 9,\n      \"documentation\": 8\n    },\n    \"usage_status\": \"DIRECTLY_REFERENCED\",\n    \"status_recommendation\": \"ACTIVE\",\n    \"reasoning\": \"This script is well-written, actively used in package.json, and serves a critical infrastructure purpose. The error handling could be improved, but overall it's a high-quality script that should be maintained.\"\n  }\n}\n```\n"
+"# Script Analysis and Classification Prompt\n\nYou are an expert script analyzer on a development team tasked with classifying and assessing shell scripts (.sh) and JavaScript scripts (.js) in a monorepo. Your job is to analyze the provided script file and determine its purpose, quality, and relevance, then create a detailed assessment with recommendations.\n\n## Input Context\n\nYou'll be provided with:\n1. The content of a script file to analyze (.sh or .js)\n2. Information about package.json files that may reference the script\n3. A query that extracts the metadata for the file in json format \n4. Optional context about the repository structure and other similar scripts\n\n## Instructions\n\n1. Carefully read the script content.\n2. Determine the primary purpose of the script.\n3. Assess the script's quality, relevancy, and potential value.\n4. Check if the script is referenced in package.json files.\n5. Detect if this script may be a duplicate of another script based on filename and purpose.\n6. Generate appropriate tags that capture the script's key functionality.\n7. Determine a recommended status (ACTIVE, UPDATE_NEEDED, OBSOLETE, DUPLICATE, UNUSED).\n8. Structure your response in the specified JSON format.\n\nYour assessment should consider:\n- How well the script is written (comments, error handling, structure)\n- Whether the script is referenced in package.json files\n- The script's creation/modification date and its recency\n- The script's complexity and completeness\n- Whether the script appears to be a duplicate of another script\n- The script's practical value to developers\n\n## Evaluation Criteria\n\n### Script Status Recommendations\n\n- **ACTIVE**: Script is well-written, clearly useful, referenced in package.json, and recently modified.\n- **UPDATE_NEEDED**: Script is useful but has issues (poor error handling, outdated syntax, unclear purpose, etc.).\n- **OBSOLETE**: Script appears to be outdated, uses deprecated approaches, or hasn't been modified in a long time.\n- **DUPLICATE**: Script functionality appears to be a duplicate of another script in the repository.\n- **UNUSED**: Script isn't referenced in any package.json file and doesn't appear to be actively used.\n\n### Script Quality Assessment (1-10 scale)\n\n- **Code Quality (1-10)**: How well-written is the code? Considerations:\n  - Proper error handling\n  - Good comments and documentation\n  - Clean, consistent style\n  - Well-structured with logical flow\n  - Follows best practices for the language\n\n- **Maintainability (1-10)**: How easy is it to maintain? Considerations:\n  - Clear variable/function names\n  - Modular design\n  - Lack of hardcoded values\n  - Well-documented parameters and return values\n  - Appropriate level of abstraction\n\n- **Utility (1-10)**: How useful is the script? Considerations:\n  - Solves a clear problem\n  - Is referenced in package.json\n  - Has a unique purpose\n  - Handles edge cases appropriately\n  - Works in various environments\n\n- **Documentation (1-10)**: How well is the script documented? Considerations:\n  - Has a clear header/description\n  - Documents parameters and usage\n  - Explains complex logic\n  - Includes examples or usage instructions\n  - Describes expected inputs/outputs\n\n### Usage Status\n\n- **DIRECTLY_REFERENCED**: Script is directly referenced in package.json scripts\n- **INDIRECTLY_REFERENCED**: Script is called by another script that is referenced in package.json\n- **NOT_REFERENCED**: Script is not referenced in any package.json file\n\n## Response Format\n\nProvide your assessment in the following JSON format:\n\n```json\n{\n  \"id\": \"{{auto-generated UUID}}\",\n  \"file_path\": \"{{file_path}}\",\n  \"title\": \"{{script title/name}}\",\n  \"summary\": {\n    \"brief\": \"{{brief summary of the script}}\",\n    \"detailed\": {\n      \"purpose\": \"{{script purpose}}\",\n      \"key_components\": \"{{main functionality}}\",\n      \"practical_application\": \"{{how the script would be used}}\"\n    }\n  },\n  \"language\": \"{{sh|js|bash|node}}\",\n  \"ai_generated_tags\": [\"{{tag1}}\", \"{{tag2}}\", \"{{tag3}}\", \"{{tag4}}\", \"{{tag5}}\"],\n  \"manual_tags\": null,\n  \"last_modified_at\": \"{{last_modified_date if available}}\",\n  \"last_indexed_at\": \"{{current_datetime}}\",\n  \"file_hash\": \"{{file_hash if available}}\",\n  \"metadata\": {\n    \"size\": {{file_size_in_bytes}},\n    \"has_shebang\": {{true|false}},\n    \"shebang\": \"{{shebang_line}}\",\n    \"is_executable\": {{true|false}}\n  },\n  \"created_at\": \"{{creation_date if available, otherwise current_datetime}}\",\n  \"updated_at\": \"{{current_datetime}}\",\n  \"is_deleted\": false,\n  \"script_type_id\": \"{{matched script type id or null}}\",\n  \"package_json_references\": [\n    {\n      \"file\": \"{{package.json location}}\",\n      \"script_key\": \"{{script key in package.json}}\",\n      \"command\": \"{{full command}}\"\n    }\n  ],\n  \"ai_assessment\": {\n    \"script_type\": \"{{UTILITY|DEPLOYMENT|DATABASE|BUILD|SETUP|OTHER}}\",\n    \"script_quality\": {\n      \"code_quality\": {{1-10 score}},\n      \"maintainability\": {{1-10 score}},\n      \"utility\": {{1-10 score}},\n      \"documentation\": {{1-10 score}}\n    },\n    \"current_relevance\": {\n      \"score\": {{1-10 score}},\n      \"reasoning\": \"{{brief explanation of current relevance score}}\"\n    },\n    \"potential_relevance\": {\n      \"score\": {{1-10 score}},\n      \"reasoning\": \"{{brief explanation of potential future relevance}}\"\n    },\n    \"usage_status\": \"{{DIRECTLY_REFERENCED|INDIRECTLY_REFERENCED|NOT_REFERENCED}}\",\n    \"status_recommendation\": \"{{ACTIVE|UPDATE_NEEDED|OBSOLETE|DUPLICATE|UNUSED}}\",\n    \"possible_duplicates\": [\n      \"{{similar_script_path1}}\",\n      \"{{similar_script_path2}}\"\n    ],\n    \"confidence\": {{1-10 score}},\n    \"reasoning\": \"{{explanation of the overall assessment and recommendations}}\"\n  },\n  \"assessment_quality_score\": {{1-10 overall quality score}},\n  \"assessment_created_at\": \"{{current_datetime}}\",\n  \"assessment_updated_at\": \"{{current_datetime}}\",\n  \"assessment_model\": \"Claude 3.7 Sonnet\",\n  \"assessment_version\": 1,\n  \"assessment_date\": \"{{current_date}}\"\n}\n```\n\n## Example Workflow\n\nWhen analyzing a script, follow this general process:\n1. Understand the script's content, purpose, and functionality\n2. Check if it's referenced in package.json files\n3. Evaluate code quality, comments, and error handling\n4. Assess relevance to current development practices\n5. Generate meaningful tags based on content\n6. Check for potential duplicates based on filename and functionality\n7. Make a status recommendation with supporting reasoning\n\nFor JSONB storage compatibility, ensure:\n- All JSON is properly formatted and validated\n- Nested objects are used for structured data\n- Text fields have reasonable length limitations\n- Date fields follow ISO 8601 format (YYYY-MM-DDTHH:MM:SS.sss+00:00)\n- Numeric scores are integers in the specified ranges\n\n## Example Assessment\n\nHere's an abbreviated example assessment for a database backup script:\n\n```json\n{\n  \"title\": \"Database Backup Script\",\n  \"summary\": {\n    \"brief\": \"Automated PostgreSQL database backup script with compression and retention policies\",\n    \"detailed\": {\n      \"purpose\": \"Create automated backups of PostgreSQL databases\",\n      \"key_components\": \"Database connection, backup creation, compression, rotation\",\n      \"practical_application\": \"Used in CI/CD pipeline for nightly database backups\"\n    }\n  },\n  \"language\": \"bash\",\n  \"ai_generated_tags\": [\"database\", \"backup\", \"postgres\", \"automation\", \"retention\"],\n  \"ai_assessment\": {\n    \"script_type\": \"DATABASE\",\n    \"script_quality\": {\n      \"code_quality\": 8,\n      \"maintainability\": 7,\n      \"utility\": 9,\n      \"documentation\": 8\n    },\n    \"usage_status\": \"DIRECTLY_REFERENCED\",\n    \"status_recommendation\": \"ACTIVE\",\n    \"reasoning\": \"This script is well-written, actively used in package.json, and serves a critical infrastructure purpose. The error handling could be improved, but overall it's a high-quality script that should be maintained.\"\n  }\n}\n```\n"
 
-=== RELATIONSHIPS (1) ===
-
-Relationship ID: 455ba75b-5173-47fa-b8fc-6c8a7557cd1f
-Type: reference
-Asset Path: docs/script-report.md
-Context: this is provided for the metadata about the scripts - such as created date, updated date, etc. to help in assessing the value of a particular scipt
-Could not read file: File not found: /Users/raybunnage/Documents/github/dhg-mono/docs/script-report.md
+=== RELATIONSHIPS (0) ===
+No relationships found in database
 
 === PROMPT METADATA ===
 {
@@ -34,7 +29,8 @@ Could not read file: File not found: /Users/raybunnage/Documents/github/dhg-mono
       "commitId": "none"
     },
     "fileName": "script-analysis-prompt.md",
-    "createdAt": "2025-03-16T04:27:21.845Z"
+    "createdAt": "2025-03-16T04:27:21.845Z",
+    "lastModified": "2025-03-22T03:51:38.265Z"
   },
   "aiEngine": {
     "model": "claude-3-sonnet-20240229",
@@ -55,20 +51,21 @@ Could not read file: File not found: /Users/raybunnage/Documents/github/dhg-mono
     "00000000-0000-4000-a000-000000000001",
     "00000000-0000-4000-a000-000000000005"
   ],
+  "databaseQuery2": "SELECT metadata FROM scripts WHERE id = :script_id;",
   "packageJsonFiles": [
     {
       "id": "00000000-0000-4000-a000-000000000001",
       "path": "/package.json",
       "title": "Root package.json",
-      "context": "abc",
+      "context": "",
       "settings": {
-        "description": "",
-        "document_type_id": "d2480114-93b8-4f8b-8910-6b6d5f68d8a5",
+        "description": "Package.json file relationship",
+        "document_type_id": null,
         "relationship_type": "reference",
-        "relationship_context": "abc"
+        "relationship_context": ""
       },
-      "description": "",
-      "document_type_id": "d2480114-93b8-4f8b-8910-6b6d5f68d8a5",
+      "description": "Package.json file relationship",
+      "document_type_id": null,
       "relationship_type": "reference"
     },
     {
@@ -91,7 +88,7 @@ Could not read file: File not found: /Users/raybunnage/Documents/github/dhg-mono
 
 === DATABASE QUERY RESULTS ===
 Query: SELECT * FROM document_types WHERE category IN ('AI', 'Development', 'Integration', 'Operations');
-Executing query: SELECT * FROM document_types WHERE category IN ('AI', 'Development', 'Integration', 'Operations');
+Executing query: SELECT * FROM document_types WHERE category IN ('AI', 'Development', 'Integration', 'Operations')
 Raw IN clause: 'AI', 'Development', 'Integration', 'Operations'
 Extracted category matches: ["'AI'","'Development'","'Integration'","'Operations'"]
 Detected IN query with categories: AI, Development, Integration, Operations
@@ -481,11 +478,29 @@ Records found: 9
   }
 ]
 
+=== DATABASE QUERY2 RESULTS ===
+Query: SELECT metadata FROM scripts WHERE id = :script_id
+Warning: :script_id parameter found but no relationships available for replacement
+Using sample script ID from initialization: 6b6bda1e-0bee-4d14-a8bf-8a3a717b0a54
+Modified query: SELECT metadata FROM scripts WHERE id = '6b6bda1e-0bee-4d14-a8bf-8a3a717b0a54'
+Executing query: SELECT metadata FROM scripts WHERE id = '6b6bda1e-0bee-4d14-a8bf-8a3a717b0a54'
+Query execution successful via RPC
+Records found: 1
+[
+  {
+    "metadata": {
+      "file_size": 501,
+      "file_created_at": "2025-02-11T01:31:12.219Z",
+      "file_modified_at": "2025-02-11T01:31:12.219Z"
+    }
+  }
+]
+
 === PACKAGE.JSON FILES ===
 
 Package.json: /package.json
 Title: Root package.json
-Context: abc
+Context: No context
 File Content (72 lines, 4165 bytes):
 ---
 {

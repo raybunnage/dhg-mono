@@ -219,6 +219,7 @@ export class PromptDocumentClassifier {
     files: Record<string, string>;
     metadata: Record<string, any> | null;
     databaseQueryResults: any[] | null;
+    databaseQuery2Results: any[] | null;
   }> {
     // Create a results array to collect all output for markdown
     const results: string[] = [];
@@ -238,7 +239,8 @@ export class PromptDocumentClassifier {
         relationships: [] as Relationship[],
         files: {} as Record<string, string>,
         metadata: null as Record<string, any> | null,
-        databaseQueryResults: null as any[] | null
+        databaseQueryResults: null as any[] | null,
+        databaseQuery2Results: null as any[] | null
       };
       
       // Step 1: Find prompt by name
@@ -477,6 +479,116 @@ export class PromptDocumentClassifier {
             if (outputToMarkdown) {
               console.log(`Error executing query: ${error instanceof Error ? error.message : 'Unknown error'}`);
               console.log('Database query could not be executed due to connection issues.');
+            }
+          }
+        }
+        
+        // If there's a second database query in the metadata, execute it
+        if (promptData.prompt.metadata.databaseQuery2) {
+          try {
+            // Get the second query
+            let queryText = promptData.prompt.metadata.databaseQuery2;
+            
+            // Remove trailing semicolons which cause syntax errors in RPC calls
+            queryText = queryText.trim().replace(/;+$/, '');
+            
+            if (outputToMarkdown) {
+              console.log('\n=== DATABASE QUERY2 RESULTS ===');
+              console.log(`Query: ${queryText}`);
+            }
+            
+            // Check if we need to replace a parameter
+            if (queryText.includes(":script_id")) {
+              if (promptData.relationships && promptData.relationships.length > 0) {
+                // Get the first relationship's asset ID to use as script_id
+                const scriptId = promptData.relationships[0].asset_id;
+                
+                if (outputToMarkdown) {
+                  console.log(`Replacing :script_id parameter with: ${scriptId}`);
+                }
+                
+                // Always surround with single quotes to ensure proper SQL syntax
+                let replacement = scriptId;
+                if (!replacement.startsWith("'") && !replacement.endsWith("'")) {
+                  replacement = `'${replacement}'`;
+                }
+                
+                queryText = queryText.replace(/:script_id/g, replacement);
+                
+                if (outputToMarkdown) {
+                  console.log(`Modified query: ${queryText}`);
+                }
+              } else {
+                if (outputToMarkdown) {
+                  console.log("Warning: :script_id parameter found but no relationships available for replacement");
+                }
+                
+                // Try to look up the script ID directly based on context
+                try {
+                  if (promptData.files && Object.keys(promptData.files).length > 0) {
+                    const filePath = Object.keys(promptData.files)[0];
+                    
+                    if (outputToMarkdown) {
+                      console.log(`Attempting to find script ID for file: ${filePath}`);
+                    }
+                    
+                    // Query the scripts table for the script ID
+                    const { data, error } = await this.supabaseClient
+                      .from('scripts')
+                      .select('id')
+                      .eq('file_path', filePath)
+                      .single();
+                      
+                    if (data && data.id) {
+                      if (outputToMarkdown) {
+                        console.log(`Found script ID ${data.id} for file: ${filePath}`);
+                      }
+                      
+                      queryText = queryText.replace(/:script_id/g, `'${data.id}'`);
+                    } else {
+                      if (outputToMarkdown) {
+                        console.log(`No script found for file: ${filePath}`);
+                        console.log("Using fallback script ID to avoid query errors");
+                      }
+                      
+                      queryText = queryText.replace(/:script_id/g, "'00000000-0000-0000-0000-000000000000'");
+                    }
+                  } else {
+                    if (outputToMarkdown) {
+                      console.log("No files available to lookup script ID, using fallback");
+                    }
+                    
+                    queryText = queryText.replace(/:script_id/g, "'00000000-0000-0000-0000-000000000000'");
+                  }
+                } catch (error) {
+                  if (outputToMarkdown) {
+                    console.log(`Error finding script ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    console.log("Using fallback script ID to avoid query errors");
+                  }
+                  
+                  queryText = queryText.replace(/:script_id/g, "'00000000-0000-0000-0000-000000000000'");
+                }
+              }
+            }
+            
+            // Execute the second query from metadata
+            const data = await this.queryExecutor.executeCustomQuery(queryText);
+            
+            // Store the second query results
+            promptData.databaseQuery2Results = data;
+            
+            if (outputToMarkdown) {
+              // Add count of records returned to help with troubleshooting
+              const recordCount = Array.isArray(data) ? data.length : 1;
+              console.log(`Records found: ${recordCount}`);
+              console.log(JSON.stringify(data, null, 2));
+            }
+          } catch (error) {
+            Logger.error(`Error executing second query: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            
+            if (outputToMarkdown) {
+              console.log(`Error executing second query: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              console.log('Second database query could not be executed due to connection issues.');
             }
           }
         }
