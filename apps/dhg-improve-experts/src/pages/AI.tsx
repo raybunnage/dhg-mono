@@ -84,7 +84,8 @@ interface DocumentationFile {
   file_path: string;
   title: string;
   metadata?: {
-    size?: number;
+    file_size?: number; // Changed from size to file_size
+    size?: number; // Kept for backwards compatibility
     created?: string;
     modified?: string;
     isPrompt?: boolean;
@@ -2253,9 +2254,9 @@ const AI: React.FC = () => {
                                 new Date(file.last_modified_at).toLocaleDateString() : 
                                 new Date(file.updated_at).toLocaleDateString()}
                             </div>
-                            {file.metadata?.size && (
+                            {(file.metadata?.file_size || file.metadata?.size) && (
                               <div className="mt-1 text-xs text-gray-500">
-                                Size: {Math.round(file.metadata.size / 1024)} KB
+                                Size: {Math.round((file.metadata?.file_size || file.metadata?.size) / 1024)} KB
                               </div>
                             )}
                           </div>

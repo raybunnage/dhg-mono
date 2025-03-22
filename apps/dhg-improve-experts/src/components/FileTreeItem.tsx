@@ -114,9 +114,9 @@ export const FileTreeItem = ({ file, level = 0, showOnlyDocs = false }: FileTree
         {/* File Name */}
         <span className={`flex-1 ${isProcessed ? 'text-gray-500' : 'text-gray-900'}`}>
           {file.name}
-          {!isFolder && file.metadata?.size && (  // And here
+          {!isFolder && (file.metadata?.file_size || file.metadata?.size) && (  // Check for file_size or fallback to size
             <span className="text-gray-500 text-sm ml-2">
-              {formatFileSize(file.metadata.size)}
+              {formatFileSize(file.metadata.file_size || file.metadata.size)}
             </span>
           )}
           {presentationInfo && (

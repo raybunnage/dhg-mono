@@ -24,7 +24,8 @@ type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'] & 
 };
 
 interface FileMetadata {
-  size?: string | number;
+  file_size?: string | number;
+  size?: string | number; // Keep for backwards compatibility
   quotaBytesUsed?: string | number;
   fileSize?: string | number;
   [key: string]: any;
@@ -83,7 +84,7 @@ const debugVideoFile = (file: FileNode | null, stage: string) => {
   console.log('Basic Info:', {
     name: file.name,
     mime_type: file.mime_type,
-    size: (file.metadata as FileMetadata)?.size || 'unknown'
+    size: (file.metadata as FileMetadata)?.file_size || (file.metadata as FileMetadata)?.size || 'unknown'
   });
   
   console.log('IDs:', {
@@ -506,7 +507,7 @@ export function FileViewer({ file }: FileViewerProps) {
                   <div className="mb-4">
                     <h3 className="text-lg font-medium">{file.name}</h3>
                     <p className="text-sm text-gray-500">
-                      Size: {formatFileSize((file.metadata as FileMetadata)?.size || 0)}
+                      Size: {formatFileSize((file.metadata as FileMetadata)?.file_size || (file.metadata as FileMetadata)?.size || 0)}
                     </p>
                   </div>
                   

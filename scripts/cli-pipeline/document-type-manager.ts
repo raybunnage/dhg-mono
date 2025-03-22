@@ -751,9 +751,15 @@ class DocumentTypeManager {
         // Update metadata
         updateData.metadata = {
           ...metadata,
-          size: fileStats.size,
+          file_size: fileStats.size, // Changed from 'size' to 'file_size'
           lastClassified: new Date().toISOString()
         };
+        
+        // Remove 'size' if it exists to ensure we're using 'file_size' consistently
+        if (updateData.metadata.size !== undefined) {
+          console.log(`Converting 'size' (${updateData.metadata.size}) to 'file_size' for ${file.file_path}`);
+          delete updateData.metadata.size;
+        }
       } catch (statsError) {
         console.error(`Error getting file stats: ${statsError instanceof Error ? statsError.message : 'Unknown error'}`);
       }

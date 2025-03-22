@@ -1,4 +1,4 @@
-#!/bin/bash
+##!/bin/bash
 
 # Main document pipeline script that orchestrates the document management process
 # This script calls document-manager.sh with various options to manage documentation files
@@ -31,11 +31,11 @@ show_usage() {
   echo "Document Pipeline Main Script"
   echo "Usage: $0 [option] [count]"
   echo "Options:"
-  echo "  sync                      - Synchronize database with files on disk (mark files as deleted/not deleted)"
+  echo "  sync                      - Synchronize database with files on disk (standardize metadata, hard delete missing files)"
   echo "  find-new                  - Find and insert new files on disk into the database"
   echo "  show-untyped              - Show all documentation files without a document type"
   echo "  show-recent               - Show the 20 most recent files based on update date"
-  echo "  classify-recent           - Classify the 20 most recent files"
+  echo "  classify-recent [n]       - Classify the n most recent files (default: 20)"
   echo "  classify-untyped [n]      - Classify untyped files, optionally specify number to process (default: 10)"
   echo "  clean-script-results      - Remove script-analysis-results files from the database"
   echo "  generate-summary [n] [i]  - Generate a summary report of documents"
@@ -45,7 +45,10 @@ show_usage() {
   echo "  help                      - Show this help message"
 }
 
-# Function to mark files as deleted/not deleted based on disk presence
+# Function to synchronize database with files on disk:
+# 1. Standardize metadata (convert 'size' to 'file_size', ensure created dates)
+# 2. Hard delete records for files that no longer exist on disk
+# 3. Update modified files with new content hashes and metadata
 sync_files() {
   echo "=== Synchronizing files with database ==="
   
@@ -89,11 +92,134 @@ EOL
   # Install dependencies
   (cd "$TEMP_DIR" && npm install --silent @supabase/supabase-js >/dev/null 2>&1)
   
-  # Create JS file for batch updating existing files (no changes)
+  # Create JS file for standardizing metadata in all existing files
   cat > "$EXIST_BATCH" << 'EOL'
-// No changes needed for existing files in our new model
-// This script is kept for compatibility but doesn't need to do anything
-console.log('No changes needed for existing files');
+const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
+
+async function standardizeMetadata() {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const fileIds = process.argv.slice(2);
+  
+  if (fileIds.length === 0) {
+    console.log('No files to process');
+    return;
+  }
+  
+  console.log(`Processing metadata for ${fileIds.length} files...`);
+  
+  // Process in batches to avoid timeout issues
+  const BATCH_SIZE = 25;
+  let updatedCount = 0;
+  let sizeConversionCount = 0;
+  let createdAddedCount = 0;
+  let errorCount = 0;
+  
+  // Process each batch
+  for (let i = 0; i < fileIds.length; i += BATCH_SIZE) {
+    const batchIds = fileIds.slice(i, i + BATCH_SIZE);
+    console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(fileIds.length/BATCH_SIZE)}...`);
+    
+    // Get files in this batch
+    const { data: files, error } = await supabase
+      .from('documentation_files')
+      .select('id, file_path, metadata')
+      .in('id', batchIds);
+      
+    if (error) {
+      console.error(`Error fetching batch: ${error.message}`);
+      continue;
+    }
+    
+    // Process each file in the batch
+    for (const file of files) {
+      try {
+        const { id, file_path, metadata } = file;
+        
+        // Skip files that don't exist
+        const fullPath = path.resolve(process.cwd(), file_path);
+        if (!fs.existsSync(fullPath)) {
+          console.log(`File doesn't exist, skipping: ${file_path}`);
+          continue;
+        }
+
+        // Get file stats
+        const stats = fs.statSync(fullPath);
+        const now = new Date().toISOString();
+        
+        // Create a new metadata object or use existing one
+        const updatedMetadata = metadata ? { ...metadata } : {};
+        let changesMade = false;
+        
+        // Check if there's a 'size' field to convert
+        if (updatedMetadata.size !== undefined) {
+          console.log(`Converting 'size' (${updatedMetadata.size}) to 'file_size' for ${file_path}`);
+          updatedMetadata.file_size = updatedMetadata.size;
+          delete updatedMetadata.size;
+          sizeConversionCount++;
+          changesMade = true;
+        } else if (!updatedMetadata.file_size) {
+          // If no file_size exists, add it
+          console.log(`Adding missing file_size for ${file_path}`);
+          updatedMetadata.file_size = stats.size;
+          sizeConversionCount++;
+          changesMade = true;
+        }
+        
+        // Check if there's a 'created' field
+        if (!updatedMetadata.created) {
+          // Use filesystem birthtime (creation time) if available, otherwise use ctime
+          const created = stats.birthtime ? stats.birthtime.toISOString() : stats.ctime.toISOString();
+          console.log(`Adding missing created date for ${file_path}: ${created}`);
+          updatedMetadata.created = created;
+          createdAddedCount++;
+          changesMade = true;
+        }
+        
+        // Only update if changes were made
+        if (changesMade) {
+          // Update the record
+          const { error: updateError } = await supabase
+            .from('documentation_files')
+            .update({ 
+              metadata: updatedMetadata,
+              last_modified_at: now
+            })
+            .eq('id', id);
+            
+          if (updateError) {
+            console.error(`Error updating metadata for ${file_path}: ${updateError.message}`);
+            errorCount++;
+          } else {
+            console.log(`Successfully updated metadata for ${file_path}`);
+            updatedCount++;
+          }
+        }
+      } catch (err) {
+        console.error(`Error processing file:`, err);
+        errorCount++;
+      }
+    }
+    
+    // Add a small delay between batches to avoid rate limiting
+    if (i + BATCH_SIZE < fileIds.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  
+  console.log('\nMetadata Standardization Summary:');
+  console.log(`Total files processed: ${fileIds.length}`);
+  console.log(`Size conversions: ${sizeConversionCount}`);
+  console.log(`Created dates added: ${createdAddedCount}`);
+  console.log(`Successful updates: ${updatedCount}`);
+  console.log(`Failed updates: ${errorCount}`);
+}
+
+standardizeMetadata().catch(error => {
+  console.error('Error in standardizeMetadata:', error);
+  process.exit(1);
+});
 EOL
 
   cat > "$DELETED_BATCH" << 'EOL'
@@ -104,19 +230,54 @@ async function batchDelete() {
   const fileIds = process.argv.slice(2);
   if (fileIds.length === 0) return;
   
-  console.log(`Batch deleting ${fileIds.length} files`);
+  console.log(`Hard deleting ${fileIds.length} files from database`);
+  
+  // First, log the files being deleted for reference
+  try {
+    const { data: filesToDelete, error: fetchError } = await supabase
+      .from('documentation_files')
+      .select('id, file_path, title')
+      .in('id', fileIds);
+      
+    if (fetchError) {
+      console.error('Error fetching files to delete:', fetchError);
+    } else if (filesToDelete && filesToDelete.length > 0) {
+      console.log('Files that will be deleted:');
+      filesToDelete.forEach(file => {
+        console.log(`- ${file.file_path} (${file.title || 'No title'})`);
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching files to delete:', error);
+  }
   
   // Split into chunks of 50 for better performance
   for (let i = 0; i < fileIds.length; i += 50) {
     const chunk = fileIds.slice(i, i + 50);
-    const { data, error } = await supabase
-      .from('documentation_files')
-      .delete()
-      .in('id', chunk);
-      
-    if (error) console.error('Error batch deleting files:', error);
-    else console.log(`Deleted ${chunk.length} files successfully`);
+    console.log(`Processing deletion batch ${Math.floor(i/50) + 1}/${Math.ceil(fileIds.length/50)}...`);
+    
+    try {
+      const { data, error } = await supabase
+        .from('documentation_files')
+        .delete()
+        .in('id', chunk);
+        
+      if (error) {
+        console.error('Error batch deleting files:', error);
+      } else {
+        console.log(`Successfully hard deleted ${chunk.length} files from database`);
+      }
+    } catch (deleteError) {
+      console.error('Exception during batch delete:', deleteError);
+    }
+    
+    // Add small delay between batches
+    if (i + 50 < fileIds.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
   }
+  
+  console.log(`Hard deletion complete. Removed ${fileIds.length} files from database.`);
 }
 
 batchDelete();
@@ -167,54 +328,70 @@ async function batchUpdate() {
       const newHash = await quickFileHash(filePath);
       if (!newHash) continue;
       
-      // If hash changed or is empty, prepare update
+      // Always update all files to standardize metadata
+      // This will ensure 'size' becomes 'file_size' and created dates are added
       // Console.log actual contents for debugging
       const content = fs.readFileSync(filePath, 'utf8');
       console.log(`File ${filePath}: First 100 chars: "${content.substring(0, 100).replace(/\n/g, '\\n')}..."`);
       
-      if (!oldHash || newHash !== oldHash) {
-        console.log(`File ${filePath} changed: old hash "${oldHash}", new hash "${newHash}"`);
-        const now = new Date().toISOString();
-        const filename = path.basename(filePath);
-        const stats = fs.statSync(filePath);
-        
+      // Force update for all files (removed hash check condition)
+      console.log(`Processing file ${filePath} with hash "${newHash}"`);
+      const now = new Date().toISOString();
+      const filename = path.basename(filePath);
+      const stats = fs.statSync(filePath);
+      
+      try {
+        // Get current metadata if any
+        let currentMetadata = {};
         try {
-          // Get current metadata if any
-          let currentMetadata = {};
-          try {
-            const { data } = await supabase
-              .from('documentation_files')
-              .select('metadata')
-              .eq('id', fileId)
-              .single();
-            
-            if (data && data.metadata) {
-              currentMetadata = data.metadata;
-            }
-          } catch (e) {
-            console.log(`Could not get existing metadata for ${filePath}: ${e.message}`);
+          const { data } = await supabase
+            .from('documentation_files')
+            .select('metadata')
+            .eq('id', fileId)
+            .single();
+          
+          if (data && data.metadata) {
+            currentMetadata = data.metadata;
           }
-          
-          // Preserve existing metadata fields, just update size and modified
-          const updatedMetadata = {
-            ...currentMetadata,
-            size: stats.size,
-            modified: now
-          };
-          
-          // Add to updates
-          updates.push({
-            id: fileId,
-            file_path: filePath,
-            title: filename,
-            last_modified_at: now,
-            last_indexed_at: now,
-            file_hash: newHash,
-            metadata: updatedMetadata
-          });
-        } catch (err) {
-          console.error(`Error preparing update for ${filePath}:`, err.message);
+        } catch (e) {
+          console.log(`Could not get existing metadata for ${filePath}: ${e.message}`);
         }
+        
+        // Create a clean metadata object
+        const updatedMetadata = { ...currentMetadata };
+        
+        // Remove the old 'size' field if it exists, and ensure the file_size exists
+        if (updatedMetadata.size !== undefined) {
+          console.log(`Converting 'size' (${updatedMetadata.size}) to 'file_size' for ${filePath}`);
+          delete updatedMetadata.size;
+        }
+        
+        // Set file_size (regardless of whether size existed before)
+        updatedMetadata.file_size = stats.size;
+        
+        // Update modified date
+        updatedMetadata.modified = now;
+        
+        // Add created date if it doesn't exist
+        if (!updatedMetadata.created) {
+          console.log(`Adding missing created date for ${filePath}`);
+          // Use filesystem birthtime (creation time) if available, otherwise use ctime
+          const created = stats.birthtime ? stats.birthtime.toISOString() : stats.ctime.toISOString();
+          updatedMetadata.created = created;
+        }
+        
+        // Add to updates
+        updates.push({
+          id: fileId,
+          file_path: filePath,
+          title: filename,
+          last_modified_at: now,
+          last_indexed_at: now,
+          file_hash: newHash,
+          metadata: updatedMetadata
+        });
+      } catch (err) {
+        console.error(`Error preparing update for ${filePath}:`, err.message);
       }
     } catch (err) {
       console.error(`Error processing ${filePath}:`, err.message);
@@ -231,6 +408,20 @@ async function batchUpdate() {
       // Update each file individually for accurate metadata
       for (const item of batch) {
         const { id, ...updateData } = item;
+        
+        // Log detailed metadata update for debugging
+        console.log(`Updating metadata for ${item.file_path}:`);
+        console.log(`  - ID: ${id}`);
+        if (item.metadata) {
+          console.log(`  - Metadata keys: ${Object.keys(item.metadata).join(', ')}`);
+          console.log(`  - file_size: ${item.metadata.file_size}`);
+          console.log(`  - created: ${item.metadata.created}`);
+          console.log(`  - modified: ${item.metadata.modified}`);
+          if (item.metadata.size) {
+            console.log(`  - WARNING: 'size' property still exists: ${item.metadata.size}`);
+          }
+        }
+        
         const { error } = await supabase
           .from('documentation_files')
           .update(updateData)
@@ -238,6 +429,8 @@ async function batchUpdate() {
           
         if (error) {
           console.error(`Error updating file ${item.file_path}:`, error);
+        } else {
+          console.log(`Successfully updated ${item.file_path}`);
         }
       }
       
@@ -282,14 +475,16 @@ EOL
   EXIST_COUNT=$(wc -l < "$EXIST_IDS_FILE")
   DELETED_COUNT=$(wc -l < "$DELETED_IDS_FILE")
   
-  # No updates needed for existing files in new model
+  # Run metadata standardization on all existing files
   if [ $EXIST_COUNT -gt 0 ]; then
-    echo "No updates needed for $EXIST_COUNT existing files..."
+    echo "Standardizing metadata for $EXIST_COUNT existing files..."
+    (cd "$TEMP_DIR" && SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+      node "$EXIST_BATCH" $(cat "$EXIST_IDS_FILE"))
   fi
   
-  # Delete files in batch (hard delete)
+  # Hard delete files that no longer exist on disk
   if [ $DELETED_COUNT -gt 0 ]; then
-    echo "Deleting $DELETED_COUNT files in batch..."
+    echo "Hard deleting $DELETED_COUNT files that no longer exist on disk..."
     (cd "$TEMP_DIR" && SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
       node "$DELETED_BATCH" $(cat "$DELETED_IDS_FILE"))
   fi
@@ -307,12 +502,7 @@ EOL
 
 # Function to find new files on disk and insert them into the database
 find_new_files() {
-  # Check if DRY_RUN mode is enabled
-  if [ -n "$DRY_RUN" ]; then
-    echo "=== Finding new files on disk (DRY RUN MODE - WILL NOT INSERT) ==="
-  else
-    echo "=== Finding new files on disk ==="
-  fi
+  echo "=== Finding new files on disk ==="
   
   # Get existing file paths from database - doing this in one shot
   echo "Getting existing file paths from the database..."
@@ -540,12 +730,26 @@ async function processFiles() {
           console.log(`[Batch ${batchIndex}] Found existing file in database with title: ${filename}`);
           console.log(`[Batch ${batchIndex}] Using existing metadata and document_type_id: ${existingFile.document_type_id || 'null'}`);
           
-          // Update the existing metadata with new size and modified time
-          const updatedMetadata = {
-            ...existingFile.metadata,
-            size: stats.size,
-            modified: now
-          };
+          // Create a clean metadata object from existing data
+          const updatedMetadata = { ...existingFile.metadata };
+          
+          // Remove the old 'size' field if it exists
+          if (updatedMetadata.size !== undefined) {
+            console.log(`[Batch ${batchIndex}] Converting 'size' (${updatedMetadata.size}) to 'file_size' for ${filePath}`);
+            delete updatedMetadata.size;
+          }
+          
+          // Set file_size and modified date
+          updatedMetadata.file_size = stats.size;
+          updatedMetadata.modified = now;
+          
+          // Add created date if it doesn't exist
+          if (!updatedMetadata.created) {
+            console.log(`[Batch ${batchIndex}] Adding missing created date for ${filePath}`);
+            // Use filesystem birthtime (creation time) if available, otherwise use ctime
+            const created = stats.birthtime ? stats.birthtime.toISOString() : stats.ctime.toISOString();
+            updatedMetadata.created = created;
+          }
           
           // Use relative path for storage - this is very important
           return {
@@ -564,13 +768,18 @@ async function processFiles() {
         
         // If no existing file found, create new metadata
         console.log(`[Batch ${batchIndex}] No existing file found with title: ${filename}, creating new record`);
-        // Make sure file size is captured in metadata
+        // Create metadata with file_size and dates
         const metadata = {
-          size: stats.size, // Ensure file size is explicitly set
+          file_size: stats.size, // Use file_size instead of size
           isPrompt: false,
-          created: now,
           modified: now
         };
+        
+        // Always use filesystem birthtime (creation time) if available, otherwise use ctime
+        const created = stats.birthtime ? stats.birthtime.toISOString() : stats.ctime.toISOString();
+        metadata.created = created;
+        
+        console.log(`[Batch ${batchIndex}] New file ${filePath} with file_size: ${stats.size}, created: ${created}`);
         
         // Important: Check if this file exists in database but with a different path
         // This could happen if files were moved but kept same name
@@ -627,16 +836,13 @@ async function processFiles() {
     
     console.log(`[Batch ${batchIndex}] Inserting ${processedRecords.length} files...`);
     
-    // Just log the files in dry-run mode (don't insert)
-    console.log(`[Batch ${batchIndex}] DRY RUN - Would insert ${processedRecords.length} files...`);
-    
-    // Log each file that would be inserted
+    // Log each file that will be inserted
     for (const record of processedRecords) {
       // Get file path relative to project root for display
       const relPath = record.file_path.replace(process.cwd(), '').replace(/^\//, '');
-      console.log(`[Batch ${batchIndex}] Would insert: ${relPath} (with ${record.document_type_id ? 'document_type_id: ' + record.document_type_id : 'no document_type_id'})`);
+      console.log(`[Batch ${batchIndex}] Inserting: ${relPath} (with ${record.document_type_id ? 'document_type_id: ' + record.document_type_id : 'no document_type_id'})`);
       console.log(`[Batch ${batchIndex}] Timestamp fields: created_at=${record.created_at}, updated_at=${record.updated_at}`);
-      console.log(`[Batch ${batchIndex}] Size in metadata: ${record.metadata?.size || 'Not set'} bytes`);
+      console.log(`[Batch ${batchIndex}] Size in metadata: ${record.metadata?.file_size || 'Not set'} bytes`);
       
       // Make sure the path format is correct
       if (!relPath.match(/^(docs|packages|apps|prompts|scripts)/)) {
@@ -733,16 +939,13 @@ EOLL
           # Run the simplified script
           node "$LIST_SCRIPT" "${BATCH_PATHS[@]}"
           
-          # Also run the actual processor that will insert to the database
-          if [ -z "$DRY_RUN" ]; then
-            # Install dependencies if needed
-            npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
-            
-            # Run the processor from within the temp directory where dependencies are installed
-            # Pass the project root directory as an environment variable
-            (cd "$TEMP_DIR" && PROJECT_ROOT="$ABS_PWD" SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-              node "file_processor.js" "$BATCH_COUNT" "${BATCH_PATHS[@]}")
-          fi
+          # Install dependencies if needed
+          npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
+          
+          # Run the processor from within the temp directory where dependencies are installed
+          # Pass the project root directory as an environment variable
+          (cd "$TEMP_DIR" && PROJECT_ROOT="$ABS_PWD" SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+            node "file_processor.js" "$BATCH_COUNT" "${BATCH_PATHS[@]}")
         fi
       ) &
       
@@ -771,13 +974,29 @@ EOLL
 show_untyped_files() {
   echo "=== Showing files without document types ==="
   
-  # Make sure supabase module is installed
-  npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
+  # Create a temporary file instead of using node -e to avoid deprecation warnings
+  TEMP_DIR=$(mktemp -d)
   
-  # Run as a direct js function to avoid bash interpolation issues
-  node -e "
-    const { createClient } = require('@supabase/supabase-js');
-    const fs = require('fs');
+  # Create a package.json to ensure we can use dependencies
+  cat > "$TEMP_DIR/package.json" << 'EOL'
+{
+  "name": "temp-script",
+  "version": "1.0.0",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1"
+  }
+}
+EOL
+
+  # Install dependencies in the temp directory
+  (cd "$TEMP_DIR" && npm install --silent)
+  
+  SCRIPT_FILE="$TEMP_DIR/show_untyped.js"
+  
+  cat > "$SCRIPT_FILE" << 'EOL'
+const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
     
     async function showUntypedFiles() {
       const supabase = createClient(
@@ -807,41 +1026,99 @@ show_untyped_files() {
         console.log('Files without document types:');
         console.log('----------------------------');
         
+        // Debug output
+        console.log(`Total untyped files from database: ${data.length}`);
+        
         let existingFileCount = 0;
+        const projectRoot = process.cwd();
+        
+        console.log(`Current working directory: ${projectRoot}`);
         
         for (const file of data) {
-          // Check if file exists on disk
-          if (fs.existsSync(file.file_path)) {
-            existingFileCount++;
-            console.log(\`ID: \${file.id}\`);
-            console.log(\`Path: \${file.file_path}\`);
-            console.log(\`Title: \${file.title || 'No title'}\`);
-            console.log(\`Updated: \${file.last_modified_at ? new Date(file.last_modified_at).toLocaleString() : 'No update date'}\`);
-            console.log('----------------------------');
+          // Store original path from database
+          const originalPath = file.file_path;
+          
+          // Try different path resolution strategies
+          const absoluteFromFile = path.isAbsolute(originalPath) ? originalPath : null;
+          const relativeToProject = path.join(projectRoot, originalPath);
+          
+          // First check if the path as stored in DB exists directly
+          let fileExists = false;
+          let usedPath = '';
+          
+          try {
+            if (fs.existsSync(originalPath)) {
+              fileExists = true;
+              usedPath = originalPath;
+            } else if (absoluteFromFile && fs.existsSync(absoluteFromFile)) {
+              fileExists = true;
+              usedPath = absoluteFromFile;
+            } else if (fs.existsSync(relativeToProject)) {
+              fileExists = true;
+              usedPath = relativeToProject;
+            }
+            
+            if (fileExists) {
+              existingFileCount++;
+              console.log(`ID: ${file.id}`);
+              console.log(`Path in DB: ${originalPath}`);
+              console.log(`Resolved path: ${usedPath}`);
+              console.log(`Title: ${file.title || 'No title'}`);
+              console.log(`Updated: ${file.last_modified_at ? new Date(file.last_modified_at).toLocaleString() : 'No update date'}`);
+              console.log('----------------------------');
+            } else {
+              console.log(`File doesn't exist at any path:`);
+              console.log(`Original path: ${originalPath}`);
+              console.log(`Project relative: ${relativeToProject}`);
+              console.log('----------------------------');
+            }
+          } catch (err) {
+            console.error(`Error checking file ${originalPath}:`, err.message);
           }
         }
         
-        console.log(\`Total untyped files that exist on disk: \${existingFileCount}\`);
+        console.log(`Total untyped files that exist on disk: ${existingFileCount}`);
       } catch (err) {
         console.error('Error in showUntypedFiles:', err);
       }
     }
-    
-    showUntypedFiles();
-  "
+showUntypedFiles();
+EOL
+
+  # Execute the script from the temp directory with environment variables
+  (cd "$TEMP_DIR" && SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" node "$SCRIPT_FILE")
+  
+  # Clean up
+  rm -rf "$TEMP_DIR"
 }
 
 # Function to show the 20 most recent files
 show_recent_files() {
   echo "=== Showing 20 most recent files ==="
   
-  # Make sure supabase module is installed
-  npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
+  # Create a temporary file instead of using node -e to avoid deprecation warnings
+  TEMP_DIR=$(mktemp -d)
   
-  # Run as direct node execution to avoid bash interpolation issues
-  node -e "
-    const { createClient } = require('@supabase/supabase-js');
-    const fs = require('fs');
+  # Create a package.json to ensure we can use dependencies
+  cat > "$TEMP_DIR/package.json" << 'EOL'
+{
+  "name": "temp-script",
+  "version": "1.0.0",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1"
+  }
+}
+EOL
+
+  # Install dependencies in the temp directory
+  (cd "$TEMP_DIR" && npm install --silent)
+  
+  SCRIPT_FILE="$TEMP_DIR/show_recent.js"
+  
+  cat > "$SCRIPT_FILE" << 'EOL'
+const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
     
     async function showRecentFiles() {
       try {
@@ -876,37 +1153,48 @@ show_recent_files() {
           const fileExists = fs.existsSync(file.file_path);
           const fileStatus = fileExists ? 'EXISTS' : 'MISSING';
           
-          console.log(\`ID: \${file.id}\`);
-          console.log(\`Path: \${file.file_path}\`);
-          console.log(\`Title: \${file.title || 'No title'}\`);
-          console.log(\`Type: \${file.document_type_id || 'UNCLASSIFIED'}\`);
-          console.log(\`Status: \${fileStatus}\`);
-          console.log(\`Updated: \${file.last_modified_at ? new Date(file.last_modified_at).toLocaleString() : 'No update date'}\`);
+          console.log(`ID: ${file.id}`);
+          console.log(`Path: ${file.file_path}`);
+          console.log(`Title: ${file.title || 'No title'}`);
+          console.log(`Type: ${file.document_type_id || 'UNCLASSIFIED'}`);
+          console.log(`Status: ${fileStatus}`);
+          console.log(`Updated: ${file.last_modified_at ? new Date(file.last_modified_at).toLocaleString() : 'No update date'}`);
           console.log('----------------------------');
         }
       } catch (err) {
         console.error('Error in showRecentFiles:', err);
       }
     }
-    
-    showRecentFiles();
-  "
+showRecentFiles();
+EOL
+
+  # Execute the script from the temp directory with environment variables
+  (cd "$TEMP_DIR" && SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" node "$SCRIPT_FILE")
+  
+  # Clean up
+  rm -rf "$TEMP_DIR"
 }
 
-# Function to classify the 20 most recent files
+# Function to classify the most recent files
 classify_recent_files() {
-  echo "=== Classifying 20 most recent files ==="
+  # Set default limit if not provided
+  local limit=${1:-20}
+  
+  echo "=== Classifying $limit most recent files ==="
   
   # Make sure supabase module is installed
   npm list @supabase/supabase-js >/dev/null 2>&1 || npm install --no-save @supabase/supabase-js >/dev/null 2>&1
   
-  # Get 20 most recent files using node directly to avoid bash interpolation issues
+  # Get most recent files using node directly to avoid bash interpolation issues
   RECENT_FILES=$(node -e "
     const { createClient } = require('@supabase/supabase-js');
     const fs = require('fs');
     
     async function getRecentFiles() {
       try {
+        const limit = parseInt(process.argv[1] || '20', 10);
+        console.error('Getting ' + limit + ' most recent files...');
+        
         const supabase = createClient(
           process.env.SUPABASE_URL,
           process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -916,7 +1204,7 @@ classify_recent_files() {
           .from('documentation_files')
           .select('id, file_path')
           .order('last_modified_at', { ascending: false })
-          .limit(20);
+          .limit(limit);
           
         if (error) {
           console.error('Error fetching files:', error);
@@ -936,7 +1224,7 @@ classify_recent_files() {
           return '[]';
         }
         
-        console.log(\`Found \${existingFiles.length} files to classify\`);
+        console.log(`Found ${existingFiles.length} files to classify`);
         return JSON.stringify(existingFiles);
       } catch (err) {
         console.error('Error in getRecentFiles:', err);
@@ -948,7 +1236,7 @@ classify_recent_files() {
     getRecentFiles().then(result => {
       process.stdout.write(result);
     });
-  ")
+  " "$limit")
   
   # Check if we have files to process
   if [ "$RECENT_FILES" = "[]" ] || [ -z "$RECENT_FILES" ]; then
@@ -1160,7 +1448,7 @@ EOF
         BATCH_NUM=$((BATCH_NUM + 1))
       fi
     else
-      echo "File does not exist on disk, skipping: $FILE_PATH"
+      echo "File doesn't exist on disk, skipping: $FILE_PATH"
     fi
   done
   
@@ -1236,17 +1524,17 @@ clean_script_results() {
           return;
         }
         
-        console.log(\`Found \${data.length} script-analysis-results files to remove:\`);
+        console.log(`Found ${data.length} script-analysis-results files to remove:`);
         
         // Show files to be removed with proper typing
         data.forEach((file: DocumentFile) => {
-          console.log(\`  - \${file.file_path}\`);
+          console.log(`  - ${file.file_path}`);
         });
         
         // Get all file IDs with proper typing
         const fileIds = data.map((file: DocumentFile) => file.id);
         
-        console.log(\`Removing \${fileIds.length} files in batch...\`);
+        console.log(`Removing ${fileIds.length} files in batch...`);
         
         // Process in batches of 50
         for (let i = 0; i < fileIds.length; i += 50) {
@@ -1258,9 +1546,9 @@ clean_script_results() {
             .in('id', batchIds);
             
           if (deleteError) {
-            console.error(\`Error deleting batch \${i}:\`, deleteError);
+            console.error(`Error deleting batch ${i}:`, deleteError);
           } else {
-            console.log(\`Successfully removed batch \${Math.floor(i/50) + 1} (\${batchIds.length} files)\`);
+            console.log(`Successfully removed batch ${Math.floor(i/50) + 1} (${batchIds.length} files)`);
           }
         }
         
@@ -1313,7 +1601,9 @@ case "$1" in
     show_recent_files
     ;;
   "classify-recent")
-    classify_recent_files
+    # Get the count parameter if provided, default to 20
+    limit=${2:-20}
+    classify_recent_files "$limit"
     ;;
   "classify-untyped")
     # Get the count parameter if provided, default to 10
