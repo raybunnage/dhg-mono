@@ -4,6 +4,7 @@
 
  "status_recommendation": "KEEP"
 
+pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
 
 on the "Scripts" page show the script files from the "scripts" tables in supabase on the left side in cards. For now just display them in alphabetical order and put a search text box above them and add a "Search" button that will just search the text in the script table for the titles and match the text that I type so far to filter on them.  On each card I want the file_path, the size, the created and updated date and the document_type from the document_types table based on the document_type_id on the scripts record (which has yet to be filled in.)    On the right side I want you to do something similar to the "Docs" page - first have a collapsible section on the right side where you display the summmary and status_recommendation field as well as the most important assessment fields - they will be filled in soon.  Below that i need a view window where I dispaly the .sh or .js file.  To do that I need a script that is similar to scripts/cli-pipeline/simple-md-server.js that is a simple viewer of .sh or .js files - hopefully showing the files in dark mode - I expect to run the script for this in its on command window just like I do for simple-md-view.  Finally on the top right above the summary tab can you create the "Copy Content" button and "Delete" button just like you did for me on the "Docs" page.  Thanks.
 
@@ -2139,7 +2140,7 @@ I noticed that when I check the table all the records were marked as is_deleted 
 
 
 
-pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+
 
 on the "Supabsae" page 
 under the "Tables & Views" tab
