@@ -452,21 +452,87 @@ EOL
   # Create empty files
   touch "$EXIST_IDS_FILE" "$DELETED_IDS_FILE" "$UPDATED_FILES_FILE"
   
-  # Process each file and add to appropriate file
+  # Get absolute path to current directory
+  ABS_PWD=$(pwd)
+  echo "Current working directory: $ABS_PWD"
+  
+  # Create a temporary script for better path resolution
+  PATH_CHECK_SCRIPT="$TEMP_DIR/path_check.js"
+  cat > "$PATH_CHECK_SCRIPT" << 'EOL'
+const fs = require('fs');
+const path = require('path');
+
+// Get the file data and project root from command line
+const fileData = JSON.parse(process.argv[2]);
+const projectRoot = process.argv[3];
+
+// Get file details
+const filePath = fileData.file_path;
+const fileId = fileData.id;
+const fileHash = fileData.file_hash || "";
+
+// Try different path resolution strategies
+const directPath = filePath;
+const absolutePath = path.isAbsolute(filePath) ? filePath : null;
+const relativePath = path.join(projectRoot, filePath);
+
+// Check if file exists using multiple methods
+let fileExists = false;
+let resolvedPath = null;
+
+if (fs.existsSync(directPath)) {
+  fileExists = true;
+  resolvedPath = directPath;
+} else if (absolutePath && fs.existsSync(absolutePath)) {
+  fileExists = true;
+  resolvedPath = absolutePath;
+} else if (fs.existsSync(relativePath)) {
+  fileExists = true;
+  resolvedPath = relativePath;
+}
+
+// Output the result
+if (fileExists) {
+  console.log(JSON.stringify({
+    status: "exists",
+    id: fileId,
+    path: filePath,
+    resolvedPath: resolvedPath,
+    hash: fileHash
+  }));
+} else {
+  console.log(JSON.stringify({
+    status: "missing",
+    id: fileId,
+    path: filePath,
+    triedPaths: [directPath, absolutePath, relativePath].filter(Boolean)
+  }));
+}
+EOL
+
+  # Process each file with better path resolution
   echo "$DB_FILES" | jq -c '.[]' | while read -r file; do
-    FILE_PATH=$(echo "$file" | jq -r '.file_path')
-    FILE_ID=$(echo "$file" | jq -r '.id')
-    FILE_HASH=$(echo "$file" | jq -r '.file_hash // ""')
+    # Use the Node.js script for better path resolution
+    RESULT=$(node "$PATH_CHECK_SCRIPT" "$file" "$ABS_PWD")
     
-    # Check if file exists on disk
-    if [ -f "$FILE_PATH" ]; then
-      echo "File exists: $FILE_PATH"
+    # Parse the result
+    STATUS=$(echo "$RESULT" | jq -r '.status')
+    FILE_ID=$(echo "$RESULT" | jq -r '.id')
+    FILE_PATH=$(echo "$RESULT" | jq -r '.path')
+    
+    if [ "$STATUS" = "exists" ]; then
+      RESOLVED_PATH=$(echo "$RESULT" | jq -r '.resolvedPath')
+      FILE_HASH=$(echo "$RESULT" | jq -r '.hash')
+      
+      echo "File exists: $FILE_PATH (resolved to: $RESOLVED_PATH)"
       echo "$FILE_ID" >> "$EXIST_IDS_FILE"
       
       # Store file info for hash checking
-      echo "$FILE_ID|$FILE_PATH|$FILE_HASH" >> "$UPDATED_FILES_FILE"
+      echo "$FILE_ID|$RESOLVED_PATH|$FILE_HASH" >> "$UPDATED_FILES_FILE"
     else
+      TRIED_PATHS=$(echo "$RESULT" | jq -r '.triedPaths | join(", ")')
       echo "File missing: $FILE_PATH"
+      echo "Tried paths: $TRIED_PATHS"
       echo "$FILE_ID" >> "$DELETED_IDS_FILE"
     fi
   done
@@ -1030,9 +1096,11 @@ const path = require('path');
         console.log(`Total untyped files from database: ${data.length}`);
         
         let existingFileCount = 0;
-        const projectRoot = process.cwd();
+        // Use the actual project root passed as an environment variable instead of cwd
+        const projectRoot = process.env.ACTUAL_PROJECT_ROOT || process.cwd();
         
-        console.log(`Current working directory: ${projectRoot}`);
+        console.log(`Current working directory: ${process.cwd()}`);
+        console.log(`Using project root: ${projectRoot}`);
         
         for (const file of data) {
           // Store original path from database
@@ -1085,8 +1153,10 @@ const path = require('path');
 showUntypedFiles();
 EOL
 
-  # Execute the script from the temp directory with environment variables
-  (cd "$TEMP_DIR" && SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" node "$SCRIPT_FILE")
+  # Execute the script with environment variables, passing the actual project path
+  PROJECT_ROOT=$(pwd)
+  SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+    ACTUAL_PROJECT_ROOT="$PROJECT_ROOT" node "$SCRIPT_FILE"
   
   # Clean up
   rm -rf "$TEMP_DIR"
@@ -1122,6 +1192,11 @@ const path = require('path');
     
     async function showRecentFiles() {
       try {
+        // Use the actual project root passed as an environment variable instead of cwd
+        const projectRoot = process.env.ACTUAL_PROJECT_ROOT || process.cwd();
+        console.log(`Current working directory: ${process.cwd()}`);
+        console.log(`Using project root: ${projectRoot}`);
+
         const supabase = createClient(
           process.env.SUPABASE_URL,
           process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -1168,8 +1243,10 @@ const path = require('path');
 showRecentFiles();
 EOL
 
-  # Execute the script from the temp directory with environment variables
-  (cd "$TEMP_DIR" && SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" node "$SCRIPT_FILE")
+  # Execute the script with environment variables, passing the actual project path
+  PROJECT_ROOT=$(pwd)
+  SUPABASE_URL="$SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+    ACTUAL_PROJECT_ROOT="$PROJECT_ROOT" node "$SCRIPT_FILE"
   
   # Clean up
   rm -rf "$TEMP_DIR"

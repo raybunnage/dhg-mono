@@ -757,7 +757,7 @@ class DocumentTypeManager {
         
         // Remove 'size' if it exists to ensure we're using 'file_size' consistently
         if (updateData.metadata.size !== undefined) {
-          console.log(`Converting 'size' (${updateData.metadata.size}) to 'file_size' for ${file.file_path}`);
+          console.log(`Converting 'size' (${updateData.metadata.size}) to 'file_size' for ${filePath}`);
           delete updateData.metadata.size;
         }
       } catch (statsError) {
