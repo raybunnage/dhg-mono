@@ -65,6 +65,7 @@ interface DatabasePrompt {
     };
     relatedAssets?: string[]; // Array of related asset IDs
     databaseQuery?: string; // SQL query for database retrieval
+    databaseQuery2?: string; // Second SQL query for database retrieval
     packageJsonFiles?: any[]; // Package.json files with relationship settings
   };
   document_type_id: string | null;
@@ -127,6 +128,7 @@ const AI: React.FC = () => {
   const [selectedPromptForView, setSelectedPromptForView] = useState<string | null>(null);
   const [promptRelationshipsMap, setPromptRelationshipsMap] = useState<Record<string, DocumentationFile[]>>({});
   const [databaseQuery, setDatabaseQuery] = useState<string>('');
+  const [databaseQuery2, setDatabaseQuery2] = useState<string>('');
   // New state for storing individual asset relationship settings
   const [assetRelationshipSettings, setAssetRelationshipSettings] = useState<Record<string, {
     relationship_type: string;
@@ -972,11 +974,18 @@ const AI: React.FC = () => {
     setRelationshipDescription(`This defines how the ${prompt.name} prompt interacts with the selected documentation files.`);
     setRelationshipDocumentTypeId('none');
     
-    // Load the database query from metadata if available
+    // Load the database queries from metadata if available
     if (prompt.metadata.databaseQuery) {
       setDatabaseQuery(prompt.metadata.databaseQuery);
     } else {
       setDatabaseQuery('');
+    }
+    
+    // Load the second database query from metadata if available
+    if (prompt.metadata.databaseQuery2) {
+      setDatabaseQuery2(prompt.metadata.databaseQuery2);
+    } else {
+      setDatabaseQuery2('');
     }
     
     // Clear existing relationship settings
@@ -1329,6 +1338,7 @@ const AI: React.FC = () => {
         ...selectedRelationshipPrompt.metadata,
         relatedAssets: selectedRelatedAssets,
         databaseQuery: databaseQuery, // Save the database query in metadata
+        databaseQuery2: databaseQuery2, // Save the second database query in metadata
         packageJsonFiles: documentationFiles
           .filter(file => file.metadata?.isPackageJson && selectedRelatedAssets.includes(file.id))
           .map(file => {
@@ -2255,16 +2265,35 @@ const AI: React.FC = () => {
                     
                     {selectedPromptForView && selectedPromptForView !== 'none' && (
                       <div className="mt-4">
-                        {/* Display database query if available */}
-                        {selectedPromptForView && databasePrompts.find(p => p.id === selectedPromptForView)?.metadata.databaseQuery && (
+                        {/* Display database queries if available */}
+                        {selectedPromptForView && (databasePrompts.find(p => p.id === selectedPromptForView)?.metadata.databaseQuery || 
+                                                 databasePrompts.find(p => p.id === selectedPromptForView)?.metadata.databaseQuery2) && (
                           <div className="mb-4 border-t pt-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-sm font-medium">Database Query</h3>
-                              <Badge className="bg-blue-100 text-blue-800 border border-blue-200 font-mono">SQL</Badge>
-                            </div>
-                            <div className="border rounded-md p-3 bg-gray-50 font-mono text-xs overflow-x-auto">
-                              {databasePrompts.find(p => p.id === selectedPromptForView)?.metadata.databaseQuery}
-                            </div>
+                            {/* First database query */}
+                            {databasePrompts.find(p => p.id === selectedPromptForView)?.metadata.databaseQuery && (
+                              <div className="mb-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="text-sm font-medium">Primary Database Query</h3>
+                                  <Badge className="bg-blue-100 text-blue-800 border border-blue-200 font-mono">SQL</Badge>
+                                </div>
+                                <div className="border rounded-md p-3 bg-gray-50 font-mono text-xs overflow-x-auto">
+                                  {databasePrompts.find(p => p.id === selectedPromptForView)?.metadata.databaseQuery}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Second database query */}
+                            {databasePrompts.find(p => p.id === selectedPromptForView)?.metadata.databaseQuery2 && (
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="text-sm font-medium">Secondary Database Query</h3>
+                                  <Badge className="bg-blue-100 text-blue-800 border border-blue-200 font-mono">SQL</Badge>
+                                </div>
+                                <div className="border rounded-md p-3 bg-gray-50 font-mono text-xs overflow-x-auto">
+                                  {databasePrompts.find(p => p.id === selectedPromptForView)?.metadata.databaseQuery2}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                         
@@ -2676,23 +2705,45 @@ const AI: React.FC = () => {
               
               {/* Database Query Section */}
               <div className="border-t pt-4 mt-4 bg-white">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="databaseQuery" className="text-sm font-medium">
-                      Database Query
-                      <span className="ml-2 text-xs text-muted-foreground">(Saved with prompt)</span>
-                    </Label>
-                    <Badge className="bg-blue-100 text-blue-800 border border-blue-200 font-mono">SQL</Badge>
+                <div className="space-y-4">
+                  {/* First Database Query */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="databaseQuery" className="text-sm font-medium">
+                        Database Query
+                        <span className="ml-2 text-xs text-muted-foreground">(Primary)</span>
+                      </Label>
+                      <Badge className="bg-blue-100 text-blue-800 border border-blue-200 font-mono">SQL</Badge>
+                    </div>
+                    <Textarea 
+                      id="databaseQuery" 
+                      placeholder="SELECT * FROM documentations WHERE category = 'guides'" 
+                      className="font-mono text-sm h-24"
+                      value={databaseQuery}
+                      onChange={(e) => setDatabaseQuery(e.target.value)}
+                    />
                   </div>
-                  <Textarea 
-                    id="databaseQuery" 
-                    placeholder="SELECT * FROM documentations WHERE category = 'guides'" 
-                    className="font-mono text-sm h-24"
-                    value={databaseQuery}
-                    onChange={(e) => setDatabaseQuery(e.target.value)}
-                  />
+                  
+                  {/* Second Database Query */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="databaseQuery2" className="text-sm font-medium">
+                        Database Query 2
+                        <span className="ml-2 text-xs text-muted-foreground">(Secondary)</span>
+                      </Label>
+                      <Badge className="bg-blue-100 text-blue-800 border border-blue-200 font-mono">SQL</Badge>
+                    </div>
+                    <Textarea 
+                      id="databaseQuery2" 
+                      placeholder="SELECT * FROM related_data WHERE prompt_id = :prompt_id" 
+                      className="font-mono text-sm h-24"
+                      value={databaseQuery2}
+                      onChange={(e) => setDatabaseQuery2(e.target.value)}
+                    />
+                  </div>
+                  
                   <p className="text-xs text-muted-foreground">
-                    This query will be stored with the prompt's metadata and can be used for dynamic data retrieval.
+                    These queries will be stored with the prompt's metadata and can be used for dynamic data retrieval.
                   </p>
                 </div>
               </div>

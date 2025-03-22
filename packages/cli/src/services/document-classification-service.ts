@@ -720,12 +720,14 @@ export class DocumentClassificationService {
       let promptData;
       
       // Check if the direct method worked
-      if (promptQueryResult.prompt && promptQueryResult.databaseQueryResults) {
+      if (promptQueryResult.prompt && (promptQueryResult.databaseQueryResults || promptQueryResult.databaseQuery2Results)) {
         this.logDebug(`Successfully got prompt and query results directly`, {
           promptName,
           hasPrompt: true,
           queryResultsCount: Array.isArray(promptQueryResult.databaseQueryResults) ? 
-            promptQueryResult.databaseQueryResults.length : 0
+            promptQueryResult.databaseQueryResults.length : 0,
+          query2ResultsCount: Array.isArray(promptQueryResult.databaseQuery2Results) ? 
+            promptQueryResult.databaseQuery2Results.length : 0
         });
         
         // Convert to the format expected by the classifier
@@ -733,6 +735,7 @@ export class DocumentClassificationService {
           prompt: promptQueryResult.prompt,
           metadata: promptQueryResult.prompt.metadata || null,
           databaseQueryResults: promptQueryResult.databaseQueryResults,
+          databaseQuery2Results: promptQueryResult.databaseQuery2Results,
           relationships: [],
           files: {}
         };
@@ -757,6 +760,8 @@ export class DocumentClassificationService {
       debugInfo.steps[debugInfo.steps.length - 1].filesCount = Object.keys(promptData.files || {}).length;
       debugInfo.steps[debugInfo.steps.length - 1].databaseQueryResultsCount = 
         Array.isArray(promptData.databaseQueryResults) ? promptData.databaseQueryResults.length : 0;
+      debugInfo.steps[debugInfo.steps.length - 1].databaseQuery2ResultsCount = 
+        Array.isArray(promptData.databaseQuery2Results) ? promptData.databaseQuery2Results.length : 0;
       
       if (!promptData.prompt) {
         this.logDebug(`Prompt not found with any method: ${promptName}`, {
@@ -919,12 +924,18 @@ export class DocumentClassificationService {
       
       const contextObj = { 
         documentTypes: Array.isArray(documentTypes) ? documentTypes.slice(0, 5) : documentTypes, 
-        filePath: documentPath
+        filePath: documentPath,
+        databaseQueryResults: promptData.databaseQueryResults,
+        databaseQuery2Results: promptData.databaseQuery2Results
       };
       
-      // Log whether the context includes type information
+      // Log whether the context includes type information and database query results
       debugInfo.steps[debugInfo.steps.length - 1].contextHasDocumentTypes = 
         Array.isArray(contextObj.documentTypes) && contextObj.documentTypes.length > 0;
+      debugInfo.steps[debugInfo.steps.length - 1].contextHasDbQuery1Results = 
+        Array.isArray(contextObj.databaseQueryResults) && contextObj.databaseQueryResults?.length > 0;
+      debugInfo.steps[debugInfo.steps.length - 1].contextHasDbQuery2Results = 
+        Array.isArray(contextObj.databaseQuery2Results) && contextObj.databaseQuery2Results?.length > 0;
       
       // Step 9: Call Claude API for classification
       debugInfo.steps.push({

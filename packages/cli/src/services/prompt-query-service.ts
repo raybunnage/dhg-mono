@@ -14,6 +14,7 @@ export interface Prompt {
 export interface PromptQueryResult {
   prompt: Prompt | null;
   databaseQueryResults: any[] | null;
+  databaseQuery2Results: any[] | null;
   error?: string;
 }
 
@@ -107,7 +108,20 @@ export class PromptQueryService {
    */
   async executeQuery(queryText: string): Promise<any[] | null> {
     try {
+      // Remove trailing semicolons which cause syntax errors in RPC calls
+      queryText = queryText.trim().replace(/;+$/, '');
+      
       Logger.debug(`Executing query: ${queryText}`);
+      
+      // Check if the query contains an unquoted UUID (common issue with parameter substitution)
+      const uuidPattern = /WHERE\s+\w+\s*=\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*(?:;|$|AND|OR)/i;
+      if (uuidPattern.test(queryText)) {
+        Logger.warn("Query contains an unquoted UUID. Adding quotes to prevent SQL error.");
+        queryText = queryText.replace(uuidPattern, (match, uuid) => {
+          return match.replace(uuid, `'${uuid}'`);
+        });
+        Logger.debug(`Fixed query: ${queryText}`);
+      }
       
       // Special handling for document_types with Documentation category
       if (queryText.includes("document_types") && 
@@ -270,29 +284,99 @@ export class PromptQueryService {
       if (!prompt.metadata) {
         return {
           prompt,
-          databaseQueryResults: null
+          databaseQueryResults: null,
+          databaseQuery2Results: null
         };
       }
       
-      // Check for database query in either field
+      // Check for first database query in either field
       const queryText = prompt.metadata.database_query || prompt.metadata.databaseQuery;
+      // Check for second database query
+      const queryText2 = prompt.metadata.databaseQuery2;
       
-      if (!queryText) {
+      if (!queryText && !queryText2) {
         return {
           prompt,
-          databaseQueryResults: null
+          databaseQueryResults: null,
+          databaseQuery2Results: null
         };
       }
       
-      Logger.debug(`Found database query in prompt metadata: ${queryText}`);
+      // Execute the first query if it exists
+      let queryResults = null;
+      if (queryText) {
+        Logger.debug(`Found database query in prompt metadata: ${queryText}`);
+        queryResults = await this.executeQuery(queryText);
+      }
       
-      // Step 3: Execute the query
-      const queryResults = await this.executeQuery(queryText);
+      // Execute the second query if it exists
+      let query2Results = null;
+      if (queryText2) {
+        Logger.debug(`Found second database query in prompt metadata: ${queryText2}`);
+        
+        // Check if we need to replace a parameter (typically for script_id)
+        // Remove trailing semicolons which cause syntax errors in RPC calls
+        let modifiedQuery2 = queryText2.trim().replace(/;+$/, '');
+        
+        if (modifiedQuery2.includes(":script_id")) {
+          // Get relationships to find the script_id
+          const relationships = await this.getRelationshipsByPromptId(prompt.id);
+          
+          if (relationships && relationships.length > 0) {
+            // Get the first relationship's asset ID to use as script_id
+            const scriptId = relationships[0].asset_id;
+            Logger.debug(`Replacing :script_id parameter with: ${scriptId}`);
+            
+            // Always surround with single quotes to ensure proper SQL syntax
+            let replacement = scriptId;
+            if (!replacement.startsWith("'") && !replacement.endsWith("'")) {
+              replacement = `'${replacement}'`;
+            }
+            
+            modifiedQuery2 = queryText2.replace(/:script_id/g, replacement);
+            Logger.debug(`Modified second query: ${modifiedQuery2}`);
+          } else {
+            Logger.warn("Warning: :script_id parameter found but no relationships available for replacement");
+            
+            // Try alternative strategies to find a valid script ID
+            try {
+              // Try to get the most recent script from the database as a fallback
+              const { data, error } = await this.client
+                .from('scripts')
+                .select('id')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+                
+              if (data && data.id) {
+                Logger.debug(`Using most recent script ID as fallback: ${data.id}`);
+                
+                // Always surround with single quotes to ensure proper SQL syntax
+                let replacement = data.id;
+                if (!replacement.startsWith("'") && !replacement.endsWith("'")) {
+                  replacement = `'${replacement}'`;
+                }
+                
+                modifiedQuery2 = queryText2.replace(/:script_id/g, replacement);
+              } else {
+                Logger.warn("Could not find any script in the database, using fallback ID");
+                modifiedQuery2 = queryText2.replace(/:script_id/g, "'00000000-0000-0000-0000-000000000000'");
+              }
+            } catch (error) {
+              Logger.error(`Error finding fallback script ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              modifiedQuery2 = queryText2.replace(/:script_id/g, "'00000000-0000-0000-0000-000000000000'");
+            }
+          }
+        }
+        
+        query2Results = await this.executeQuery(modifiedQuery2);
+      }
       
-      // Return the results
+      // Return both query results
       return {
         prompt,
-        databaseQueryResults: queryResults
+        databaseQueryResults: queryResults,
+        databaseQuery2Results: query2Results
       };
     } catch (error) {
       Logger.error(`Error in getPromptWithQueryResults: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -300,6 +384,7 @@ export class PromptQueryService {
       return {
         prompt: null,
         databaseQueryResults: null,
+        databaseQuery2Results: null,
         error: `Exception: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }

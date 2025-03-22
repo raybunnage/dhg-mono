@@ -42,6 +42,7 @@ interface Prompt {
 interface Relationship {
   id: string;
   prompt_id: string;
+  asset_id?: string;     // Add asset_id property
   asset_path: string;
   document_type_id?: string;
   relationship_type: string;
@@ -52,7 +53,7 @@ interface Relationship {
 
 // Use a standalone class specifically for executing custom queries that aren't in the SupabaseService
 class CustomQueryExecutor {
-  private client: SupabaseClient;
+  public client: SupabaseClient;
   
   constructor(url: string, key: string) {
     this.client = createClient(url, key);
@@ -60,7 +61,21 @@ class CustomQueryExecutor {
   
   async executeCustomQuery(queryText: string): Promise<any> {
     try {
+      // Remove trailing semicolons which cause syntax errors in RPC calls
+      queryText = queryText.trim().replace(/;+$/, '');
+      
+      // Debug the query format
       console.log(`Executing query: ${queryText}`);
+      
+      // Check if the query contains an unquoted UUID (common issue with parameter substitution)
+      const uuidPattern = /WHERE\s+\w+\s*=\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*(?:;|$|AND|OR)/i;
+      if (uuidPattern.test(queryText)) {
+        console.log("WARNING: Query may contain an unquoted UUID. Adding quotes to prevent SQL error.");
+        queryText = queryText.replace(uuidPattern, (match, uuid) => {
+          return match.replace(uuid, `'${uuid}'`);
+        });
+        console.log(`Fixed query: ${queryText}`);
+      }
       
       // Check for specific known queries and handle them directly
       if (queryText.includes("document_types")) {
@@ -382,6 +397,91 @@ async function lookupPrompt(promptName: string, outputToMarkdown: boolean = fals
         }
       }
       
+      // If there's a second database query in the metadata, execute it
+      if (prompt.metadata.databaseQuery2) {
+        console.log('\n=== DATABASE QUERY2 RESULTS ===');
+        try {
+          // Get the second query
+          let queryText = prompt.metadata.databaseQuery2;
+          
+          // Remove trailing semicolons which cause syntax errors in RPC calls
+          queryText = queryText.trim().replace(/;+$/, '');
+          
+          console.log(`Query: ${queryText}`);
+          
+          // Check if we need to replace a parameter
+          if (queryText.includes(":script_id")) {
+            if (relationships && relationships.length > 0) {
+              // Get the first relationship's asset ID or asset_path to use as script_id
+              const scriptId = relationships[0].asset_id || relationships[0].id || relationships[0].asset_path.split('/').pop();
+              console.log(`Replacing :script_id parameter with: ${scriptId}`);
+              queryText = queryText.replace(/:script_id/g, `'${scriptId}'`);
+              console.log(`Modified query: ${queryText}`);
+            } else {
+              console.log("Warning: :script_id parameter found but no relationships available for replacement");
+              
+              // Check if we have a sample script ID from the global context
+              if ((global as any).sampleScriptId) {
+                const scriptId = (global as any).sampleScriptId;
+                console.log(`Using sample script ID from initialization: ${scriptId}`);
+                
+                // Always surround with single quotes to ensure proper SQL syntax
+                let replacement = scriptId;
+                if (!replacement.startsWith("'") && !replacement.endsWith("'")) {
+                  replacement = `'${replacement}'`;
+                }
+                
+                queryText = queryText.replace(/:script_id/g, replacement);
+                console.log(`Modified query: ${queryText}`);
+              } else {
+                console.log("Attempting to find a script ID from the database...");
+                
+                // Try to extract the document ID from the file path if no relationships are available
+                try {
+                  // Query for any script ID in the database as a fallback
+                  const { data, error } = await queryExecutor.client
+                    .from('scripts')
+                    .select('id, file_path')
+                    .limit(1)
+                    .single();
+                    
+                  if (data && data.id) {
+                    console.log(`Found script ID ${data.id} from database lookup`);
+                    // Always surround with single quotes to ensure proper SQL syntax
+                    let replacement = data.id;
+                    if (!replacement.startsWith("'") && !replacement.endsWith("'")) {
+                      replacement = `'${replacement}'`;
+                    }
+                    
+                    queryText = queryText.replace(/:script_id/g, replacement);
+                    console.log(`Modified query: ${queryText}`);
+                  } else {
+                    console.log("No scripts found in the database");
+                    console.log("Using fallback script ID to avoid query errors");
+                    queryText = queryText.replace(/:script_id/g, "'00000000-0000-0000-0000-000000000000'");
+                  }
+                } catch (error) {
+                  console.log(`Error finding script ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                  console.log("Using fallback script ID to avoid query errors");
+                  queryText = queryText.replace(/:script_id/g, "'00000000-0000-0000-0000-000000000000'");
+                }
+              }
+            }
+          }
+          
+          // Execute the second query from metadata
+          const data = await queryExecutor.executeCustomQuery(queryText);
+          
+          // Add count of records returned to help with troubleshooting
+          const recordCount = Array.isArray(data) ? data.length : 1;
+          console.log(`Records found: ${recordCount}`);
+          console.log(JSON.stringify(data, null, 2));
+        } catch (error) {
+          console.log(`Error executing second query: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          console.log('Second database query could not be executed due to connection issues.');
+        }
+      }
+      
       // Step 5: Process package.json files referenced in metadata
       if (prompt.metadata.packageJsonFiles && Array.isArray(prompt.metadata.packageJsonFiles)) {
         console.log('\n=== PACKAGE.JSON FILES ===');
@@ -476,14 +576,65 @@ ${results.join('\n')}
   }
 }
 
-// Run the function with the provided prompt name or default to "script-analysis-prompt"
-const promptName = process.argv[2] || 'script-analysis-prompt';
-// Always output to markdown file
-const outputToMarkdown = true;
+// Function to load a sample script ID from the database
+async function getSampleScriptId(supabaseClient: SupabaseClient): Promise<string | null> {
+  try {
+    console.log('Fetching a sample script ID from the database...');
+    const { data, error } = await supabaseClient
+      .from('scripts')
+      .select('id, file_path')
+      .limit(1)
+      .single();
+      
+    if (error) {
+      console.log(`Error fetching sample script: ${error.message}`);
+      return null;
+    }
+    
+    if (data && data.id) {
+      console.log(`Found sample script: ID=${data.id}, Path=${data.file_path}`);
+      return data.id;
+    }
+    
+    console.log('No scripts found in the database');
+    return null;
+  } catch (error) {
+    console.error(`Error getting sample script ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return null;
+  }
+}
 
-lookupPrompt(promptName, outputToMarkdown)
-  .then(() => console.log('Prompt lookup complete'))
-  .catch(err => {
+// Main execution
+async function main() {
+  try {
+    // Initialize Supabase client for sample script ID
+    const supabaseUrl = process.env.SUPABASE_URL || '';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    
+    // Get a sample script ID first
+    const sampleScriptId = await getSampleScriptId(supabaseClient);
+    
+    // Set the sample script ID as a global variable for use in query replacement
+    if (sampleScriptId) {
+      (global as any).sampleScriptId = sampleScriptId;
+      console.log(`Using sample script ID for demonstration: ${sampleScriptId}`);
+    } else {
+      console.log('No sample script ID found. Will use fallback UUID.');
+      (global as any).sampleScriptId = '00000000-0000-0000-0000-000000000000';
+    }
+    
+    // Run the prompt lookup with the provided prompt name or default
+    const promptName = process.argv[2] || 'script-analysis-prompt';
+    // Always output to markdown file
+    const outputToMarkdown = true;
+    
+    await lookupPrompt(promptName, outputToMarkdown);
+    console.log('Prompt lookup complete');
+  } catch (err) {
     Logger.error('Fatal error:', err);
     process.exit(1);
-  });
+  }
+}
+
+main();
