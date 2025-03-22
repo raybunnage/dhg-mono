@@ -1417,11 +1417,20 @@ function Docs() {
                                     </div>
                                   )}
                                   
-                                  {/* Show status recommendation if available from any source */}
-                                  {(selectedFile.status_recommendation || 
-                                   selectedFile.processed_content?.assessment?.status_recommendation ||
-                                   selectedFile.ai_assessment?.status_recommendation) && (
-                                    <div className={`mt-4 p-2 rounded-md border ${
+                                  {/* Document details section for type and status recommendation */}
+                                  <div className="mt-4 grid grid-cols-2 gap-4">
+                                    {/* Document Type */}
+                                    <div className="p-2 rounded-md border bg-blue-50 border-blue-200">
+                                      <strong>Document Type</strong>: {
+                                        (() => {
+                                          const docType = documentTypes.find(type => type.id === selectedFile.document_type_id);
+                                          return docType ? docType.document_type : 'Uncategorized';
+                                        })()
+                                      }
+                                    </div>
+                                    
+                                    {/* Status Recommendation */}
+                                    <div className={`p-2 rounded-md border ${
                                       (selectedFile.status_recommendation === 'KEEP' || 
                                        selectedFile.processed_content?.assessment?.status_recommendation === 'KEEP' ||
                                        selectedFile.ai_assessment?.status_recommendation === 'KEEP') 
@@ -1435,10 +1444,11 @@ function Docs() {
                                       <strong>Status Recommendation</strong>: {
                                         selectedFile.status_recommendation || 
                                         selectedFile.processed_content?.assessment?.status_recommendation ||
-                                        selectedFile.ai_assessment?.status_recommendation
+                                        selectedFile.ai_assessment?.status_recommendation || 
+                                        'Not evaluated'
                                       }
                                     </div>
-                                  )}
+                                  </div>
                                 </div>
                               );
                             }
@@ -1455,11 +1465,20 @@ function Docs() {
                                     <p key={idx} className="mb-2" dangerouslySetInnerHTML={{ __html: paragraph }} />
                                   ))}
                                 
-                                {/* Add status recommendation to text mode too */}
-                                {(selectedFile.status_recommendation || 
-                                  selectedFile.processed_content?.assessment?.status_recommendation ||
-                                  selectedFile.ai_assessment?.status_recommendation) && (
-                                  <div className={`mt-4 p-2 rounded-md border ${
+                                {/* Document details section for type and status recommendation */}
+                                <div className="mt-4 grid grid-cols-2 gap-4">
+                                  {/* Document Type */}
+                                  <div className="p-2 rounded-md border bg-blue-50 border-blue-200">
+                                    <strong>Document Type</strong>: {
+                                      (() => {
+                                        const docType = documentTypes.find(type => type.id === selectedFile.document_type_id);
+                                        return docType ? docType.document_type : 'Uncategorized';
+                                      })()
+                                    }
+                                  </div>
+                                  
+                                  {/* Status Recommendation */}
+                                  <div className={`p-2 rounded-md border ${
                                     (selectedFile.status_recommendation === 'KEEP' || 
                                      selectedFile.processed_content?.assessment?.status_recommendation === 'KEEP' ||
                                      selectedFile.ai_assessment?.status_recommendation === 'KEEP') 
@@ -1473,10 +1492,11 @@ function Docs() {
                                     <strong>Status Recommendation</strong>: {
                                       selectedFile.status_recommendation || 
                                       selectedFile.processed_content?.assessment?.status_recommendation ||
-                                      selectedFile.ai_assessment?.status_recommendation
+                                      selectedFile.ai_assessment?.status_recommendation ||
+                                      'Not evaluated'
                                     }
                                   </div>
-                                )}
+                                </div>
                               </>
                             );
                           } catch (error) {
@@ -1493,11 +1513,20 @@ function Docs() {
                                     <p key={idx} className="mb-2" dangerouslySetInnerHTML={{ __html: paragraph }} />
                                   ))}
                                 
-                                {/* Add status recommendation to text mode too */}
-                                {(selectedFile.status_recommendation || 
-                                  selectedFile.processed_content?.assessment?.status_recommendation ||
-                                  selectedFile.ai_assessment?.status_recommendation) && (
-                                  <div className={`mt-4 p-2 rounded-md border ${
+                                {/* Document details section for type and status recommendation */}
+                                <div className="mt-4 grid grid-cols-2 gap-4">
+                                  {/* Document Type */}
+                                  <div className="p-2 rounded-md border bg-blue-50 border-blue-200">
+                                    <strong>Document Type</strong>: {
+                                      (() => {
+                                        const docType = documentTypes.find(type => type.id === selectedFile.document_type_id);
+                                        return docType ? docType.document_type : 'Uncategorized';
+                                      })()
+                                    }
+                                  </div>
+                                  
+                                  {/* Status Recommendation */}
+                                  <div className={`p-2 rounded-md border ${
                                     (selectedFile.status_recommendation === 'KEEP' || 
                                      selectedFile.processed_content?.assessment?.status_recommendation === 'KEEP' ||
                                      selectedFile.ai_assessment?.status_recommendation === 'KEEP') 
@@ -1511,10 +1540,11 @@ function Docs() {
                                     <strong>Status Recommendation</strong>: {
                                       selectedFile.status_recommendation || 
                                       selectedFile.processed_content?.assessment?.status_recommendation ||
-                                      selectedFile.ai_assessment?.status_recommendation
+                                      selectedFile.ai_assessment?.status_recommendation ||
+                                      'Not evaluated'
                                     }
                                   </div>
-                                )}
+                                </div>
                               </>
                             );
                           }
@@ -1526,6 +1556,39 @@ function Docs() {
                     <div className="bg-white p-3 rounded border mb-4">
                       <h3 className="text-sm font-medium mb-2">Summary:</h3>
                       <p className="text-sm text-gray-500 italic">No summary available for this file.</p>
+                      
+                      {/* Document details section for type and status recommendation even when no summary */}
+                      <div className="mt-4 grid grid-cols-2 gap-4">
+                        {/* Document Type */}
+                        <div className="p-2 rounded-md border bg-blue-50 border-blue-200">
+                          <strong>Document Type</strong>: {
+                            (() => {
+                              const docType = documentTypes.find(type => type.id === selectedFile.document_type_id);
+                              return docType ? docType.document_type : 'Uncategorized';
+                            })()
+                          }
+                        </div>
+                        
+                        {/* Status Recommendation */}
+                        <div className={`p-2 rounded-md border ${
+                          (selectedFile.status_recommendation === 'KEEP' || 
+                           selectedFile.processed_content?.assessment?.status_recommendation === 'KEEP' ||
+                           selectedFile.ai_assessment?.status_recommendation === 'KEEP') 
+                            ? 'bg-green-50 border-green-200'
+                            : (selectedFile.status_recommendation === 'UPDATE' ||
+                               selectedFile.processed_content?.assessment?.status_recommendation === 'UPDATE' ||
+                               selectedFile.ai_assessment?.status_recommendation === 'UPDATE')
+                              ? 'bg-yellow-50 border-yellow-200'
+                              : 'bg-amber-50 border-amber-200'
+                        }`}>
+                          <strong>Status Recommendation</strong>: {
+                            selectedFile.status_recommendation || 
+                            selectedFile.processed_content?.assessment?.status_recommendation ||
+                            selectedFile.ai_assessment?.status_recommendation || 
+                            'Not evaluated'
+                          }
+                        </div>
+                      </div>
                     </div>
                   )}
                   
