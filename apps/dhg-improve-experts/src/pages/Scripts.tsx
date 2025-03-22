@@ -49,6 +49,7 @@ function Scripts() {
         .from('scripts')
         .select('*', { count: 'exact' });
 
+      // Fetch scripts ordered by created_at in descending order (newest first)
       const { data, error, count } = await query
         .order('created_at', { ascending: false })
         .limit(500);
@@ -68,33 +69,83 @@ function Scripts() {
 
   // Handle the search functionality
   const handleSearch = async () => {
+    console.log("Search button clicked");
     setLoading(true);
+    
     try {
+      console.log(`Search query: "${searchQuery}"`);
+      
+      // First log all current scripts to see what we're working with
+      console.log(`Current scripts count before search: ${scripts.length}`);
+      
+      // Client-side filtering fallback
+      if (searchQuery.trim()) {
+        console.log("Performing client-side filtering as a fallback");
+        const lowercaseQuery = searchQuery.toLowerCase().trim();
+        
+        // Filter scripts on the client side
+        const filteredScripts = scripts.filter(script => {
+          const scriptTitle = (script.title || '').toLowerCase();
+          const scriptPath = (script.file_path || '').toLowerCase();
+          const matchesTitle = scriptTitle.includes(lowercaseQuery);
+          const matchesPath = scriptPath.includes(lowercaseQuery);
+          
+          // Debug log for each script
+          console.log(`Script "${script.title || script.file_path}" - Matches title: ${matchesTitle}, Matches path: ${matchesPath}`);
+          
+          return matchesTitle || matchesPath;
+        });
+        
+        // Sort filtered scripts by created_at in descending order (newest first)
+        filteredScripts.sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dateB - dateA; // Sort descending
+        });
+        
+        console.log(`Client-side filtering found ${filteredScripts.length} matching scripts`);
+        setScripts(filteredScripts);
+        setLoading(false);
+        return;
+      }
+      
+      // Server-side search (original) - keeping for reference but using client-side above
       let query = supabase
         .from('scripts')
         .select('*');
 
       if (searchQuery.trim()) {
-        query = query.or(
-          `file_path.ilike.%${searchQuery}%,` +
-          `title.ilike.%${searchQuery}%,` +
-          `summary.ilike.%${searchQuery}%,` +
-          `ai_generated_tags.cs.{${searchQuery}},` +
-          `manual_tags.cs.{${searchQuery}}`
-        );
+        // Clean the search query to avoid SQL injection
+        const cleanQuery = searchQuery.trim().replace(/'/g, "''");
+        
+        // Use proper PostgREST filter syntax
+        query = query.or([
+          `file_path.ilike.%${cleanQuery}%`,
+          `title.ilike.%${cleanQuery}%`,
+          `summary::text.ilike.%${cleanQuery}%`
+        ]);
+        
+        // Print the query for debugging
+        console.log(`Searching for scripts with query: "${cleanQuery}"`);
       }
 
+      // Order search results by created_at in descending order (newest first)
       const { data, error } = await query
-        .order('file_path', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase query error:", error);
+        throw error;
+      }
 
-      console.log(`Search found ${data?.length || 0} scripts`);
+      console.log(`Supabase search found ${data?.length || 0} scripts`);
+      console.log("First few results:", data?.slice(0, 3));
       
       setScripts(data || []);
     } catch (error: any) {
       console.error('Error searching scripts:', error);
+      toast.error(`Search error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -134,7 +185,25 @@ function Scripts() {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
   
-  // Handle script deletion
+  // Get the actual file creation date from metadata if available, otherwise use DB created_at
+  const getFileCreationDate = (script: Script) => {
+    const fileCreatedAt = script.metadata?.file_created_at;
+    if (fileCreatedAt) {
+      return formatDate(fileCreatedAt);
+    }
+    return formatDate(script.created_at);
+  };
+  
+  // Get the actual file modification date from metadata if available
+  const getFileModificationDate = (script: Script) => {
+    const fileModifiedAt = script.metadata?.file_modified_at;
+    if (fileModifiedAt) {
+      return formatDate(fileModifiedAt);
+    }
+    return formatDate(script.last_modified_at || script.updated_at);
+  };
+  
+  // Handle script deletion (delete both file and database record)
   const handleDeleteScript = async (script: Script) => {
     if (!script) {
       toast.error('Invalid script selected for deletion');
@@ -143,6 +212,21 @@ function Scripts() {
     
     setLoading(true);
     try {
+      // First, try to delete the file from disk
+      try {
+        const result = await scriptFileService.deleteFile(script.file_path);
+        console.log('File deletion result:', result);
+        // Show toast for successful file deletion
+        if (result.success) {
+          toast.success(`File "${script.file_path}" deleted from disk`);
+        }
+      } catch (fileError: any) {
+        console.error('Error deleting file:', fileError);
+        // Continue with database deletion regardless of file deletion success
+        // Don't show toast error since we'll delete the database record anyway
+      }
+      
+      // Then, delete from database regardless
       const { error: deleteError } = await supabase
         .from('scripts')
         .delete()
@@ -242,10 +326,10 @@ function Scripts() {
                         <div className="text-xs text-gray-500 mt-1">
                           <div className="flex items-center justify-between">
                             <div>
-                              Size: {formatFileSize(script.metadata?.size)}
+                              Size: {formatFileSize(script.metadata?.file_size)}
                             </div>
                             <div>
-                              Created: {formatDate(script.created_at)}
+                              Created: {getFileCreationDate(script)}
                             </div>
                           </div>
                           <div className="mt-1 truncate text-gray-400">
@@ -338,7 +422,7 @@ function Scripts() {
                     const fileName = selectedScript.file_path.split('/').pop();
                     
                     const confirmDelete = window.confirm(
-                      `Are you sure you want to delete the script "${fileName}"?\n\nThis will remove the script from the database but will not delete the actual file.`
+                      `Are you sure you want to delete the script "${fileName}"?\n\nThis will PERMANENTLY delete both the file from disk AND remove its record from the database. This action cannot be undone.`
                     );
                     if (confirmDelete) {
                       handleDeleteScript(selectedScript);
@@ -390,9 +474,11 @@ function Scripts() {
                     <div>
                       <h3 className="text-sm font-medium mb-1">File Information:</h3>
                       <ul className="text-xs text-gray-600">
-                        <li>Size: {formatFileSize(selectedScript.metadata?.size)}</li>
-                        <li>Created: {formatDate(selectedScript.created_at)}</li>
-                        <li>Updated: {formatDate(selectedScript.updated_at)}</li>
+                        <li>Size: {formatFileSize(selectedScript.metadata?.file_size)}</li>
+                        <li>File Created: {getFileCreationDate(selectedScript)}</li>
+                        <li>File Modified: {getFileModificationDate(selectedScript)}</li>
+                        <li>DB Record Created: {formatDate(selectedScript.created_at)}</li>
+                        <li>DB Record Updated: {formatDate(selectedScript.updated_at)}</li>
                         <li>Last Indexed: {formatDate(selectedScript.last_indexed_at)}</li>
                       </ul>
                     </div>

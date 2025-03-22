@@ -29,6 +29,29 @@ class ScriptFileService {
     }
   }
   
+  // Delete a script file from disk
+  async deleteFile(filePath: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/script-file?path=${encodeURIComponent(filePath)}`, {
+        method: 'DELETE',
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete script file');
+      }
+      
+      return {
+        success: true,
+        message: data.message || 'File deleted successfully'
+      };
+    } catch (error: any) {
+      console.error('Error deleting script file:', error);
+      throw error;
+    }
+  }
+  
   // List available script files
   async listScriptFiles(): Promise<{ total: number; files: string[] }> {
     try {

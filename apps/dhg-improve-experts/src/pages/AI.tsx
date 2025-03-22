@@ -91,8 +91,8 @@ interface DocumentationFile {
   last_modified_at?: string;
   created_at: string;
   updated_at: string;
-  is_deleted: boolean;
   document_type_id?: string | null;
+  status_recommendation?: string | null;
 }
 
 const AI: React.FC = () => {
@@ -212,10 +212,10 @@ const AI: React.FC = () => {
   const loadDocumentationFiles = async () => {
     setIsLoading(prev => ({ ...prev, loadingDocFiles: true }));
     try {
+      // Modified to remove the is_deleted filter which was removed from the table
       const { data, error } = await supabase
         .from('documentation_files')
         .select('*')
-        .eq('is_deleted', false)
         .order('last_modified_at', { ascending: false });
         
       if (error) throw error;
@@ -234,7 +234,6 @@ const AI: React.FC = () => {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               last_modified_at: new Date().toISOString(),
-              is_deleted: false,
               metadata: { isPackageJson: true }
             },
             {
@@ -244,7 +243,6 @@ const AI: React.FC = () => {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               last_modified_at: new Date().toISOString(),
-              is_deleted: false,
               metadata: { isPackageJson: true }
             },
             {
@@ -254,7 +252,6 @@ const AI: React.FC = () => {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               last_modified_at: new Date().toISOString(),
-              is_deleted: false,
               metadata: { isPackageJson: true }
             },
             {
@@ -264,7 +261,6 @@ const AI: React.FC = () => {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               last_modified_at: new Date().toISOString(),
-              is_deleted: false,
               metadata: { isPackageJson: true }
             },
             {
@@ -274,7 +270,6 @@ const AI: React.FC = () => {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               last_modified_at: new Date().toISOString(),
-              is_deleted: false,
               metadata: { isPackageJson: true }
             }
           ];
