@@ -31,6 +31,10 @@ export interface ScriptSummary {
   inputs?: string[];
   outputs?: string[];
   key_functions?: string[];
+  // New detailed summary fields
+  recommendation?: string;
+  integration?: string;
+  importance?: string;
 }
 
 export interface PackageReference {
@@ -78,6 +82,7 @@ export interface ClassificationResult {
   summary: ScriptSummary | null;
   aiGeneratedTags: string[];
   aiAssessment: ScriptAssessment | null;
+  metadata?: Record<string, any>; // Add metadata field for additional information
 }
 
 export interface SummaryOptions {

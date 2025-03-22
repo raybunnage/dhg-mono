@@ -251,6 +251,7 @@ export function registerScriptCommands(program: Command): void {
         process.exit(1);
       }
     });
+
   
   // Command to generate summary
   program
