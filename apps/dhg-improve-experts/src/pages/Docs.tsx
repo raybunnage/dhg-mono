@@ -891,7 +891,7 @@ function Docs() {
                     
                     <div className="text-xs text-gray-500 mt-1">
                       <div className="flex items-center justify-between">
-                        <div>Size: {formatFileSize(file.metadata?.size)}</div>
+                        <div>Size: {formatFileSize(file.metadata?.file_size || file.metadata?.size)}</div>
                         <div>Created: {formatDate(file.created_at)}</div>
                       </div>
                       <div className="mt-1 truncate text-gray-400">

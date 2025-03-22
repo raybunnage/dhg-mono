@@ -56,10 +56,11 @@ interface MarkdownFile {
   title: string;
   hash: string;
   metadata: {
-    size: number;
+    file_size: number;
     created?: string | undefined;
     modified?: string | undefined;
     isPrompt: boolean;
+    size?: number; // Keep for backwards compatibility
   };
 }
 
@@ -69,10 +70,11 @@ interface DocumentationFile {
   title: string;
   file_hash: string;
   metadata: {
-    size: number;
+    file_size: number;
     created?: string;
     modified?: string;
     isPrompt: boolean;
+    size?: number; // Keep for backwards compatibility
   };
   is_deleted: boolean;
 }
@@ -414,7 +416,7 @@ async function syncMarkdownFiles() {
               title,
               file_hash: hash,
               metadata: {
-                size: fileResult.stats?.size || 0,
+                file_size: fileResult.stats?.size || 0, // Changed from 'size' to 'file_size'
                 created: fileResult.stats?.modified.toISOString(),
                 modified: fileResult.stats?.modified.toISOString(),
                 isPrompt: isPromptFile(fileResult.content, filePath),
@@ -435,7 +437,7 @@ async function syncMarkdownFiles() {
               title,
               file_hash: hash,
               metadata: {
-                size: fileResult.stats?.size || 0,
+                file_size: fileResult.stats?.size || 0, // Changed from 'size' to 'file_size'
                 created: fileResult.stats?.modified.toISOString(),
                 modified: fileResult.stats?.modified.toISOString(),
                 isPrompt: isPromptFile(fileResult.content, filePath),
@@ -556,7 +558,7 @@ async function findMarkdownFiles(repoRoot: string): Promise<MarkdownFile[]> {
             title,
             hash,
             metadata: {
-              size: fileResult.stats?.size || 0,
+              file_size: fileResult.stats?.size || 0, // Changed from 'size' to 'file_size'
               created: fileResult.stats?.modified.toISOString(),
               modified: fileResult.stats?.modified.toISOString(),
               isPrompt,

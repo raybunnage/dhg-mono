@@ -11,7 +11,8 @@ type Json = Database['public']['Tables']['sources_google']['Row']['metadata'];
 
 // First, let's define a proper metadata type based on what we know exists
 interface FileMetadata {
-  size?: string | number;
+  file_size?: string | number; // Primary field for file size
+  size?: string | number; // Keep for backwards compatibility
   quotaBytesUsed?: string | number;
   fileSize?: string | number;
   [key: string]: any; // Allow other properties since it's Json type
@@ -549,6 +550,7 @@ export function FileTree({ files, onSelectionChange, onFileClick }: FileTreeProp
                   <span>{item.name}</span>
                   <span className="text-gray-500 text-sm">
                     {formatFileSize(
+                      (item.metadata as FileMetadata)?.file_size || 
                       (item.metadata as FileMetadata)?.size || 
                       (item.metadata as FileMetadata)?.quotaBytesUsed || 
                       (item.metadata as FileMetadata)?.fileSize || 
