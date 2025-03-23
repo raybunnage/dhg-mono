@@ -674,8 +674,11 @@ async function saveClassificationToDatabase(
     console.log(`- script_type_id: ${classification.script_type_id || 'null'}`);
     
     if (classification.document_type_classification) {
-      console.log(`- document_type_id: ${classification.document_type_classification.selected_document_type_id}`);
+      console.log(`- document_type_id (from classification.document_type_classification.selected_document_type_id): ${classification.document_type_classification.selected_document_type_id}`);
       console.log(`- document_type_name: ${classification.document_type_classification.document_type_name}`);
+      console.log(`- document_type confidence: ${classification.document_type_classification.classification_confidence}`);
+    } else {
+      console.log(`- NO document_type_classification found in the AI response`);
     }
     
     console.log(`- summary fields: ${Object.keys(classification.summary || {}).join(', ') || 'none'}`);
@@ -706,6 +709,7 @@ async function saveClassificationToDatabase(
     
     const updateData = {
       script_type_id: classification.script_type_id || null,
+      document_type_id: classification.document_type_classification?.selected_document_type_id || null,
       summary: classification.summary || null,
       ai_generated_tags: classification.tags || [],
       ai_assessment: classification.assessment || null,
@@ -723,7 +727,7 @@ async function saveClassificationToDatabase(
       .from('scripts')
       .update(updateData)
       .eq('id', scriptId)
-      .select();
+      .select('id, script_type_id, document_type_id, updated_at');
     
     if (updateError) {
       console.error('❌ Error updating script classification:', updateError.message);
@@ -732,6 +736,23 @@ async function saveClassificationToDatabase(
     
     console.log('✅ Successfully updated script classification in database');
     console.log(`Database update result: ${JSON.stringify(updateResult)}`);
+    
+    // Verify if document_type_id was actually saved
+    if (updateResult && updateResult.length > 0) {
+      const updatedScript = updateResult[0];
+      console.log(`📊 VERIFICATION - Updated script record:`);
+      console.log(`- ID: ${updatedScript.id}`);
+      console.log(`- script_type_id: ${updatedScript.script_type_id || 'null'}`);
+      console.log(`- document_type_id: ${updatedScript.document_type_id || 'null'}`);
+      console.log(`- updated_at: ${updatedScript.updated_at}`);
+      
+      if (updatedScript.document_type_id !== classification.document_type_classification?.selected_document_type_id) {
+        console.warn(`⚠️ WARNING: document_type_id in database (${updatedScript.document_type_id}) doesn't match the one we tried to save (${classification.document_type_classification?.selected_document_type_id})`);
+      } else {
+        console.log(`✅ VERIFICATION SUCCESS: document_type_id properly saved in database`);
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error('❌ Error in saveClassificationToDatabase:', error instanceof Error ? error.message : 'Unknown error');
