@@ -125,17 +125,43 @@ async function classifyScript(): Promise<void> {
     console.log('Retrieved script analysis prompt from database');
     
     // Step 2: Read the script file content
+    console.log(`Attempting to read script file: ${scriptPath}`);
     if (!fs.existsSync(scriptPath)) {
       console.error(`Script file not found: ${scriptPath}`);
       process.exit(1);
     }
     
+    try {
+      const scriptContent: string = fs.readFileSync(scriptPath, 'utf8');
+      console.log(`✅ Successfully read script file (${scriptContent.length} bytes)`);
+      console.log(`Script begins with: ${scriptContent.substring(0, 50)}...`);
+    } catch (readError) {
+      console.error(`Error reading script file: ${readError instanceof Error ? readError.message : 'Unknown error'}`);
+      process.exit(1);
+    }
+    
     const scriptContent: string = fs.readFileSync(scriptPath, 'utf8');
     
-    // Step 3: Replace placeholders in the prompt
-    let finalPrompt: string = prompt.content
-      .replace('{{SCRIPT_CONTENT}}', scriptContent)
-      .replace('{{FILE_PATH}}', scriptPath);
+    // Step 3: Create a modified prompt that adds the script content and file path
+    console.log('Creating prompt with script content and path added...');
+    
+    // Add our own sections to the prompt rather than looking for placeholders
+    let finalPrompt: string = prompt.content + `\n\n## Script to Analyze\n\nFile Path: ${scriptPath}\n\n` +
+      "```\n" + scriptContent + "\n```\n";
+    
+    // Debug info about the prompt
+    console.log(`Prompt length: ${finalPrompt.length} characters`);
+    console.log(`Prompt contains script content: ${finalPrompt.includes(scriptContent.substring(0, 20))}`);
+    console.log(`Prompt contains file path: ${finalPrompt.includes(scriptPath)}`);
+    
+    // Write the prompt to a file for debugging
+    const debugDir = path.join(path.dirname(scriptPath), 'debug');
+    if (!fs.existsSync(debugDir)) {
+      fs.mkdirSync(debugDir, { recursive: true });
+    }
+    const debugFile = path.join(debugDir, 'last-prompt.txt');
+    fs.writeFileSync(debugFile, finalPrompt, 'utf8');
+    console.log(`Wrote prompt to ${debugFile} for debugging`);
     
     // Step 4: Call Claude API to analyze the script
     console.log('Calling Claude API for script classification...');

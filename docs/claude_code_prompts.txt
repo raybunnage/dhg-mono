@@ -1,4 +1,4 @@
- Please verify all TypeScript code compiles without errors before
+ If you need to Please verify all TypeScript code compiles without errors before
   submitting changes. Add proper types to all parameters, return
   values, and variables to avoid type errors.
 
