@@ -3137,6 +3137,55 @@ Documentation for auditing expert profiles and data.`
     try {
       console.log(`Attempting to archive file: ${filePath}`);
       
+      // First, try using the docs-archive-server.js standalone server (running on port 3003)
+      if (window.location.hostname === 'localhost') {
+        try {
+          console.log(`Trying standalone archive server at http://localhost:3003/api/doc-file/archive for: ${filePath}`);
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          
+          const archiveResponse = await fetch('http://localhost:3003/api/doc-file/archive', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              path: filePath 
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (archiveResponse.ok) {
+            try {
+              const responseData = await archiveResponse.json();
+              console.log('Standalone server archive response:', responseData);
+              
+              if (responseData.success) {
+                return {
+                  success: true,
+                  message: responseData.message || 'File archived successfully via standalone server',
+                  newPath: responseData.newPath || ''
+                };
+              }
+            } catch (parseError) {
+              console.warn('Error parsing standalone server response:', parseError);
+            }
+          }
+        } catch (standaloneServerError) {
+          if (standaloneServerError.name !== 'AbortError') {
+            console.warn('Standalone archive server not available, continuing with API endpoint', standaloneServerError);
+          } else {
+            console.warn('Timeout occurred when trying to contact the standalone server');
+          }
+        }
+      }
+      
+      // Fall back to the original API endpoint
+      console.log('Falling back to /api/docs-sync endpoint for archiving');
+      
       const response = await fetch('/api/docs-sync', {
         method: 'POST',
         headers: {
@@ -3153,7 +3202,7 @@ Documentation for auditing expert profiles and data.`
       try {
         const text = await response.text();
         data = text ? JSON.parse(text) : {};
-        console.log('Archive response:', data);
+        console.log('Archive response from API endpoint:', data);
       } catch (parseError) {
         console.error('Error parsing API response:', parseError);
         // If we can't parse the response, check if the operation might have succeeded anyway
@@ -3190,10 +3239,50 @@ Documentation for auditing expert profiles and data.`
     try {
       console.log(`Attempting to delete file: ${filePath}`);
       
-      // First try the local markdown server if we're in dev mode
+      // First try our standalone docs-archive-server if we're in dev mode
       if (window.location.hostname === 'localhost') {
         try {
-          console.log(`Trying local markdown server for deletion: ${filePath}`);
+          console.log(`Trying standalone docs-archive-server for deletion: ${filePath}`);
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          
+          const deleteResponse = await fetch(
+            `http://localhost:3003/api/doc-file?path=${encodeURIComponent(filePath)}`,
+            { 
+              method: 'DELETE',
+              signal: controller.signal 
+            }
+          );
+          
+          clearTimeout(timeoutId);
+          
+          if (deleteResponse.ok) {
+            try {
+              const responseData = await deleteResponse.json();
+              console.log('Standalone server deletion response:', responseData);
+              
+              if (responseData.success) {
+                return {
+                  success: true,
+                  message: responseData.message || 'File deleted successfully via standalone server'
+                };
+              }
+            } catch (parseError) {
+              console.warn('Error parsing standalone server response:', parseError);
+            }
+          }
+        } catch (standaloneServerError) {
+          if (standaloneServerError.name !== 'AbortError') {
+            console.warn('Standalone server not available, continuing with API endpoint', standaloneServerError);
+          } else {
+            console.warn('Timeout occurred when trying to contact the standalone server');
+          }
+        }
+        
+        // If standalone server doesn't work, try the old local markdown server as another fallback
+        try {
+          console.log(`Trying legacy local markdown server for deletion: ${filePath}`);
           
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -3211,21 +3300,21 @@ Documentation for auditing expert profiles and data.`
           if (deleteResponse.ok) {
             try {
               const responseData = await deleteResponse.json();
-              console.log('Local server deletion response:', responseData);
+              console.log('Legacy local server deletion response:', responseData);
               
               if (responseData.success) {
                 return {
                   success: true,
-                  message: responseData.message || 'File deleted successfully via local server'
+                  message: responseData.message || 'File deleted successfully via legacy local server'
                 };
               }
             } catch (parseError) {
-              console.warn('Error parsing local server response:', parseError);
+              console.warn('Error parsing legacy local server response:', parseError);
             }
           }
         } catch (localServerError) {
           if (localServerError.name !== 'AbortError') {
-            console.warn('Local markdown server not available, continuing with API endpoint', localServerError);
+            console.warn('Legacy local markdown server not available, continuing with API endpoint', localServerError);
           }
         }
       }
