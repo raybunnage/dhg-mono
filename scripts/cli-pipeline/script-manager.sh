@@ -144,57 +144,101 @@ function classify_recent_scripts() {
     return 1
   fi
   
-  # Find recent script files to classify
-  echo "Finding recently modified script files for classification..."
-  local scripts_to_classify=$(find "${ROOT_DIR}" -type f \( -name "*.sh" -o -name "*.js" \) \
-    -not -path "*/node_modules/*" \
-    -not -path "*/.git/*" \
-    -not -path "*/dist/*" \
-    -not -path "*/build/*" \
-    -not -path "*/backup/*" \
-    -not -path "*/archive/*" \
-    -not -path "*/_archive/*" \
-    -not -path "*/file_types/*" \
-    -not -path "*/script-analysis-results/*" \
-    -mtime -7 | head -n $count)
-  
-  # Check if we found any scripts
-  if [ -z "$scripts_to_classify" ]; then
-    echo "❌ No recent scripts found for classification."
-    return 1
+  # Check for Claude API key and provide guidance if missing
+  if [ -z "$CLAUDE_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$CLI_CLAUDE_API_KEY" ]; then
+    echo "⚠️ No Claude API key found in environment variables."
+    
+    # Look for any existing keys
+    if [ -n "$VITE_ANTHROPIC_API_KEY" ]; then
+      echo "✅ Found VITE_ANTHROPIC_API_KEY - copying to CLAUDE_API_KEY for script use"
+      export CLAUDE_API_KEY="$VITE_ANTHROPIC_API_KEY"
+      export ANTHROPIC_API_KEY="$VITE_ANTHROPIC_API_KEY"
+    else
+      # Try loading from .env.local if it exists
+      if [ -f "${ROOT_DIR}/.env.local" ]; then
+        echo "🔍 Checking .env.local for API keys..."
+        if grep -q "CLAUDE_API_KEY=" "${ROOT_DIR}/.env.local"; then
+          echo "✅ Found CLAUDE_API_KEY in .env.local, loading environment variables"
+          source "${ROOT_DIR}/.env.local"
+        elif grep -q "ANTHROPIC_API_KEY=" "${ROOT_DIR}/.env.local"; then
+          echo "✅ Found ANTHROPIC_API_KEY in .env.local, loading environment variables"
+          source "${ROOT_DIR}/.env.local"
+        else
+          echo "❌ Missing Claude API key in .env.local"
+        fi
+      fi
+      
+      # If we still don't have any API keys, fail
+      if [ -z "$CLAUDE_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$CLI_CLAUDE_API_KEY" ]; then
+        echo "❌ Missing Claude API key. Please set one of these environment variables:"
+        echo "   - CLAUDE_API_KEY"
+        echo "   - ANTHROPIC_API_KEY"
+        echo "   - CLI_CLAUDE_API_KEY"
+        echo "Example: export CLAUDE_API_KEY=your_api_key"
+        return 1
+      fi
+    fi
   fi
   
-  # Path to our permanent TypeScript script
-  SCRIPT_ANALYZER="${SCRIPT_DIR}/analyze-script.ts"
+  # If ANTHROPIC_API_KEY is set but CLAUDE_API_KEY isn't, use it
+  if [ -z "$CLAUDE_API_KEY" ] && [ -n "$ANTHROPIC_API_KEY" ]; then
+    echo "ℹ️ Using ANTHROPIC_API_KEY as CLAUDE_API_KEY"
+    export CLAUDE_API_KEY="$ANTHROPIC_API_KEY"
+  fi
+  
+  # If CLI_CLAUDE_API_KEY is set but CLAUDE_API_KEY isn't, use it
+  if [ -z "$CLAUDE_API_KEY" ] && [ -n "$CLI_CLAUDE_API_KEY" ]; then
+    echo "ℹ️ Using CLI_CLAUDE_API_KEY as CLAUDE_API_KEY"
+    export CLAUDE_API_KEY="$CLI_CLAUDE_API_KEY"
+  fi
+  
+  # Make sure ANTHROPIC_API_KEY is also set for the config service
+  if [ -n "$CLAUDE_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ]; then
+    echo "ℹ️ Setting ANTHROPIC_API_KEY from CLAUDE_API_KEY"
+    export ANTHROPIC_API_KEY="$CLAUDE_API_KEY"
+  fi
+  
+  # Verify we now have a Claude API key
+  if [ -z "$CLAUDE_API_KEY" ]; then
+    echo "❌ Still missing Claude API key after attempted fix."
+    return 1
+  else
+    echo "✅ CLAUDE_API_KEY is set and has value"
+  fi
+  
+  # Path to our improved script analyzer
+  CLASSIFY_SCRIPT="${SCRIPT_DIR}/classify-script-with-prompt.sh"
   
   # Check if the script exists
-  if [ ! -f "${SCRIPT_ANALYZER}" ]; then
-    echo "Error: Script analyzer not found at ${SCRIPT_ANALYZER}"
+  if [ ! -f "${CLASSIFY_SCRIPT}" ]; then
+    echo "❌ Error: Script classifier not found at ${CLASSIFY_SCRIPT}"
     return 1
   fi
   
-  # For each script, use ts-node to run the analysis
-  local success_count=0
-  local failure_count=0
+  # Run the improved script classifier with the specified count
+  echo "🚀 Classifying ${count} recent scripts using classify-script-with-prompt.sh..."
+  cd "${ROOT_DIR}"
   
-  echo "$scripts_to_classify" | while read script; do
-    echo "Processing script: $script"
-    
-    # Execute the script analyzer
-    cd "${ROOT_DIR}"
-    ts-node "${SCRIPT_ANALYZER}" "$script"
-    
-    if [ $? -eq 0 ]; then
-      echo "✅ Successfully classified script: $script"
-      ((success_count++))
-    else
-      echo "❌ Failed to classify script: $script"
-      ((failure_count++))
-    fi
-  done
+  # Execute the improved classifier with the appropriate count
+  NODE_ENV="${NODE_ENV}" \
+  CLAUDE_API_KEY="$CLAUDE_API_KEY" \
+  ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+  CLI_CLAUDE_API_KEY="$CLI_CLAUDE_API_KEY" \
+  VITE_ANTHROPIC_API_KEY="$VITE_ANTHROPIC_API_KEY" \
+  SUPABASE_URL="$SUPABASE_URL" \
+  SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  "${CLASSIFY_SCRIPT}" "${count}"
   
-  echo "✅ Classification completed: $success_count successful, $failure_count failed."
-  return 0
+  local script_exit_code=$?
+  
+  if [ $script_exit_code -eq 0 ]; then
+    echo "✅ Successfully classified recent scripts"
+    return 0
+  else
+    echo "❌ Failed to classify recent scripts (exit code: $script_exit_code)"
+    return 1
+  fi
 }
 
 # Function to classify untyped scripts
@@ -294,55 +338,37 @@ function classify_untyped_scripts() {
     fi
   fi
   
-  # Query for untyped scripts
-  echo "Finding untyped scripts in the repository..."
+  # Path to our improved script analyzer
+  CLASSIFY_SCRIPT="${SCRIPT_DIR}/classify-script-with-prompt.sh"
   
-  # Use the CLI to find and classify untyped scripts
-  export NODE_ENV="${NODE_ENV:-development}"
-  local success_count=0
-  local failure_count=0
+  # Check if the script exists
+  if [ ! -f "${CLASSIFY_SCRIPT}" ]; then
+    echo "❌ Error: Script classifier not found at ${CLASSIFY_SCRIPT}"
+    return 1
+  fi
   
-  # For each script to classify (based on count)
-  for ((i=1; i<=$count; i++)); do
-    echo "Classifying script $i of $count..."
-    
-    # Use our new classify-script-with-prompt.sh which has all the debugging info and randomly selects scripts
-    cd "${ROOT_DIR}"
-    
-    # Make sure SCRIPT_DIR is defined
-    if [ -z "${SCRIPT_DIR}" ]; then
-      SCRIPT_DIR="${ROOT_DIR}/scripts/cli-pipeline"
-      echo "Setting SCRIPT_DIR to ${SCRIPT_DIR}"
-    fi
-    
-    # Execute the newer classify-script-with-prompt.sh script
-    NODE_ENV="${NODE_ENV}" \
-    CLAUDE_API_KEY="$CLAUDE_API_KEY" \
-    ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
-    CLI_CLAUDE_API_KEY="$CLI_CLAUDE_API_KEY" \
-    VITE_ANTHROPIC_API_KEY="$VITE_ANTHROPIC_API_KEY" \
-    SUPABASE_URL="$SUPABASE_URL" \
-    SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-    SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-    "${SCRIPT_DIR}/classify-script-with-prompt.sh"
-    
-    local script_exit_code=$?
-    
-    if [ $script_exit_code -eq 0 ]; then
-      echo "✅ Successfully classified script with new classify-script-with-prompt.sh"
-      ((success_count++))
-    else
-      echo "❌ Failed to classify script with classify-script-with-prompt.sh (exit code: $script_exit_code)"
-      ((failure_count++))
-      # Don't continue if we encounter an error
-      break
-    fi
-  done
+  # Use the improved script classifier to process multiple scripts at once
+  echo "🚀 Classifying ${count} untyped scripts using classify-script-with-prompt.sh..."
+  cd "${ROOT_DIR}"
   
-  echo "✅ Classification completed: $success_count successful, $failure_count failed."
-  if [ $success_count -gt 0 ]; then
+  # Execute the improved classifier with the appropriate count
+  NODE_ENV="${NODE_ENV:-development}" \
+  CLAUDE_API_KEY="$CLAUDE_API_KEY" \
+  ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+  CLI_CLAUDE_API_KEY="$CLI_CLAUDE_API_KEY" \
+  VITE_ANTHROPIC_API_KEY="$VITE_ANTHROPIC_API_KEY" \
+  SUPABASE_URL="$SUPABASE_URL" \
+  SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  "${CLASSIFY_SCRIPT}" "${count}"
+  
+  local script_exit_code=$?
+  
+  if [ $script_exit_code -eq 0 ]; then
+    echo "✅ Successfully classified untyped scripts"
     return 0
   else
+    echo "❌ Failed to classify untyped scripts (exit code: $script_exit_code)"
     return 1
   fi
 }
