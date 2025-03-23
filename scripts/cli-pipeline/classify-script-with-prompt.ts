@@ -24,9 +24,31 @@ import * as http from 'http';
 import { IncomingMessage } from 'http';
 import { FileService } from '../../packages/cli/src/services/file-service';
 
+// Add global declaration for TypeScript
+declare global {
+  namespace NodeJS {
+    interface Global {
+      scriptMetadata: {
+        file_size?: number;
+        has_shebang?: boolean;
+        shebang?: string | null;
+        is_executable?: boolean;
+      };
+    }
+  }
+}
+
 // Initialize services
 let supabase: SupabaseClient;
 const fileService = new FileService();
+
+// Initialize the global metadata object
+global.scriptMetadata = {
+  file_size: 0,
+  has_shebang: false,
+  shebang: null,
+  is_executable: false
+};
 
 // Types from prompt-lookup.ts
 interface Prompt {
@@ -209,6 +231,7 @@ async function getUntypedScript(): Promise<Script | null> {
 
 /**
  * Get script content from file path
+ * Also populates metadata about the script file
  */
 function getScriptContent(scriptPath: string): string | null {
   try {
@@ -219,7 +242,31 @@ function getScriptContent(scriptPath: string): string | null {
     }
     
     const scriptContent: string = fs.readFileSync(scriptPath, 'utf8');
-    console.log(`✅ Successfully read script file (${scriptContent.length} bytes)`);
+    
+    // Get file stats to determine if it has a shebang, is executable, etc.
+    try {
+      const stats = fs.statSync(scriptPath);
+      const isExecutable = !!(stats.mode & 0o111); // Check if any execute bit is set
+      
+      // If the global metadata object doesn't exist, create it
+      if (!global.scriptMetadata) {
+        global.scriptMetadata = {};
+      }
+      
+      // Store metadata using file_size instead of size
+      global.scriptMetadata = {
+        file_size: scriptContent.length,
+        has_shebang: scriptContent.startsWith('#!'),
+        shebang: scriptContent.startsWith('#!') ? scriptContent.split('\n')[0] : null,
+        is_executable: isExecutable
+      };
+      
+      console.log(`✅ Successfully read script file (${scriptContent.length} bytes)`);
+      console.log(`📊 Script metadata: ${JSON.stringify(global.scriptMetadata)}`);
+    } catch (statError) {
+      console.error(`⚠️ Could not get file stats: ${statError instanceof Error ? statError.message : 'Unknown error'}`);
+    }
+    
     return scriptContent;
   } catch (error) {
     console.error(`❌ Error reading script file: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -509,6 +556,14 @@ async function callClaudeAPI(finalPrompt: string): Promise<Classification | null
                     const parsedResult: Classification = JSON.parse(jsonStr);
                     console.log('✅ Successfully parsed JSON result from Claude API');
                     
+                    // Add the metadata we collected when reading the script file
+                    if (global.scriptMetadata) {
+                      parsedResult.metadata = {
+                        ...parsedResult.metadata,
+                        ...global.scriptMetadata
+                      };
+                    }
+                    
                     // Log the document type classification specifically
                     if (parsedResult.document_type_classification) {
                       console.log('📊 DOCUMENT TYPE CLASSIFICATION RESULT:');
@@ -538,6 +593,14 @@ async function callClaudeAPI(finalPrompt: string): Promise<Classification | null
                       try {
                         const parsedResult: Classification = JSON.parse(jsonSubstring);
                         console.log('✅ Successfully parsed JSON result using fallback method');
+                        
+                        // Add the metadata we collected when reading the script file
+                        if (global.scriptMetadata) {
+                          parsedResult.metadata = {
+                            ...parsedResult.metadata,
+                            ...global.scriptMetadata
+                          };
+                        }
                         
                         // Log the document type classification specifically
                         if (parsedResult.document_type_classification) {
@@ -636,13 +699,20 @@ async function saveClassificationToDatabase(
     console.log(`✅ Verified script exists in database (ID: ${scriptId}, Path: ${scriptCheck.file_path})`);
     
     // Now update the script with classification data
+    // Note: We convert the 'size' property to 'file_size' for compatibility with the UI
+    let metadata = classification.metadata || {};
+    if (metadata.size && !metadata.file_size) {
+      metadata.file_size = metadata.size;
+      delete metadata.size;
+    }
+    
     const updateData = {
       script_type_id: classification.script_type_id || null,
       summary: classification.summary || null,
       ai_generated_tags: classification.tags || [],
       ai_assessment: classification.assessment || null,
       metadata: {
-        ...(classification.metadata || {}),
+        ...metadata,
         document_type_classification: classification.document_type_classification || null
       },
       updated_at: new Date().toISOString()

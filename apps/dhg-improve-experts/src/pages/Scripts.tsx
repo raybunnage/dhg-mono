@@ -131,71 +131,66 @@ function Scripts() {
       // First log all current scripts to see what we're working with
       console.log(`Current scripts count before search: ${scripts.length}`);
       
-      // Client-side filtering fallback
-      if (searchQuery.trim()) {
-        console.log("Performing client-side filtering as a fallback");
-        const lowercaseQuery = searchQuery.toLowerCase().trim();
-        
-        // Filter scripts on the client side
-        const filteredScripts = scripts.filter(script => {
-          const scriptTitle = (script.title || '').toLowerCase();
-          const scriptPath = (script.file_path || '').toLowerCase();
-          const matchesTitle = scriptTitle.includes(lowercaseQuery);
-          const matchesPath = scriptPath.includes(lowercaseQuery);
-          
-          // Debug log for each script
-          console.log(`Script "${script.title || script.file_path}" - Matches title: ${matchesTitle}, Matches path: ${matchesPath}`);
-          
-          return matchesTitle || matchesPath;
-        });
-        
-        // Sort filtered scripts by created_at in descending order (newest first)
-        filteredScripts.sort((a, b) => {
-          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return dateB - dateA; // Sort descending
-        });
-        
-        console.log(`Client-side filtering found ${filteredScripts.length} matching scripts`);
-        setScripts(filteredScripts);
-        setLoading(false);
+      if (!searchQuery.trim()) {
+        // If search is empty, fetch all scripts
+        await fetchScripts();
         return;
       }
       
-      // Server-side search (original) - keeping for reference but using client-side above
-      let query = supabase
-        .from('scripts')
-        .select('*');
-
-      if (searchQuery.trim()) {
-        // Clean the search query to avoid SQL injection
-        const cleanQuery = searchQuery.trim().replace(/'/g, "''");
-        
-        // Use proper PostgREST filter syntax
-        query = query.or([
-          `file_path.ilike.%${cleanQuery}%`,
-          `title.ilike.%${cleanQuery}%`,
-          `summary::text.ilike.%${cleanQuery}%`
-        ]);
-        
-        // Print the query for debugging
-        console.log(`Searching for scripts with query: "${cleanQuery}"`);
-      }
-
-      // Order search results by created_at in descending order (newest first)
-      const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (error) {
-        console.error("Supabase query error:", error);
-        throw error;
-      }
-
-      console.log(`Supabase search found ${data?.length || 0} scripts`);
-      console.log("First few results:", data?.slice(0, 3));
+      // Always perform client-side filtering for better performance
+      // and to ensure we can search any part of the title
+      console.log("Performing client-side filtering");
+      const lowercaseQuery = searchQuery.toLowerCase().trim();
       
-      setScripts(data || []);
+      // Fetch all scripts first if we don't have many
+      // This ensures we're searching against the full set
+      if (scripts.length < 100) {
+        const { data: allScripts } = await supabase
+          .from('scripts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(500);
+          
+        if (allScripts && allScripts.length > 0) {
+          console.log(`Fetched ${allScripts.length} scripts for comprehensive search`);
+          
+          // Filter from the full dataset
+          const filteredScripts = allScripts.filter(script => {
+            // Get the title - if it's not available, use the filename from the path
+            const scriptTitle = (script.title || (script.file_path ? script.file_path.split('/').pop() : '')).toLowerCase();
+            const scriptPath = (script.file_path || '').toLowerCase();
+            
+            return scriptTitle.includes(lowercaseQuery) || scriptPath.includes(lowercaseQuery);
+          });
+          
+          console.log(`Client-side filtering found ${filteredScripts.length} matching scripts`);
+          setScripts(filteredScripts);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // If we have many scripts already loaded, just filter the current set
+      const filteredScripts = scripts.filter(script => {
+        const scriptTitle = (script.title || (script.file_path ? script.file_path.split('/').pop() : '')).toLowerCase();
+        const scriptPath = (script.file_path || '').toLowerCase();
+        
+        const matchesTitle = scriptTitle.includes(lowercaseQuery);
+        const matchesPath = scriptPath.includes(lowercaseQuery);
+        
+        return matchesTitle || matchesPath;
+      });
+      
+      // Sort filtered scripts by created_at in descending order (newest first)
+      filteredScripts.sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateB - dateA; // Sort descending
+      });
+      
+      console.log(`Client-side filtering found ${filteredScripts.length} matching scripts`);
+      setScripts(filteredScripts);
+      setLoading(false);
     } catch (error: any) {
       console.error('Error searching scripts:', error);
       toast.error(`Search error: ${error.message}`);
@@ -223,8 +218,13 @@ function Scripts() {
     setSelectedScript(script);
   };
 
-  // Format file size
-  const formatFileSize = (sizeInBytes: number | undefined) => {
+  // Format file size - handles both file_size and size in metadata
+  const formatFileSize = (metadata: any) => {
+    if (!metadata) return 'Unknown size';
+    
+    // Check for file_size first (new format)
+    const sizeInBytes = metadata.file_size || metadata.size;
+    
     if (!sizeInBytes) return 'Unknown size';
     if (sizeInBytes < 1024) return `${sizeInBytes} B`;
     if (sizeInBytes < 1024 * 1024) return `${(sizeInBytes / 1024).toFixed(1)} KB`;
@@ -497,7 +497,7 @@ function Scripts() {
                                     <div className="text-xs text-gray-500 mt-1">
                                       <div className="flex items-center justify-between">
                                         <div>
-                                          Size: {formatFileSize(script.metadata?.file_size)}
+                                          Size: {formatFileSize(script.metadata)}
                                         </div>
                                         <div>
                                           Created: {getFileCreationDate(script)}
@@ -641,70 +641,127 @@ function Scripts() {
                         }:
                       </h3>
                       
-                      {/* Description section */}
-                      {selectedScript.summary.description && (
+                      {/* Brief section - formatted with bold heading */}
+                      {selectedScript.summary.brief && (
                         <div className="mb-4">
-                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Brief</h4>
-                          <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.description}</p>
+                          <h4 className="text-xs font-bold mb-1 text-gray-700">Brief</h4>
+                          <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.brief}</p>
                         </div>
                       )}
                       
-                      {/* Purpose section */}
-                      {selectedScript.summary.purpose && (
-                        <div className="mb-4">
-                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Purpose</h4>
-                          <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.purpose}</p>
+                      {/* Display detailed fields if present */}
+                      {selectedScript.summary.detailed && (
+                        <div className="grid grid-cols-1 gap-4">
+                          {/* Purpose section - formatted with bold heading */}
+                          {selectedScript.summary.detailed.purpose && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-bold mb-1 text-gray-700">Purpose</h4>
+                              <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.detailed.purpose}</p>
+                            </div>
+                          )}
+                          
+                          {/* Recommendation section - formatted with bold heading */}
+                          {selectedScript.summary.detailed.recommendation && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-bold mb-1 text-gray-700">Recommendation</h4>
+                              <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.detailed.recommendation}</p>
+                            </div>
+                          )}
+                          
+                          {/* Integration section - formatted with bold heading */}
+                          {selectedScript.summary.detailed.integration && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-bold mb-1 text-gray-700">Integration</h4>
+                              <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.detailed.integration}</p>
+                            </div>
+                          )}
+                          
+                          {/* Importance section - formatted with bold heading */}
+                          {selectedScript.summary.detailed.importance && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-bold mb-1 text-gray-700">Importance</h4>
+                              <div className="flex items-center">
+                                {/* Add visual importance indicator */}
+                                {selectedScript.summary.detailed.importance.toLowerCase().includes('critical') && (
+                                  <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                                )}
+                                {selectedScript.summary.detailed.importance.toLowerCase().includes('high') && (
+                                  <span className="inline-block w-3 h-3 rounded-full bg-orange-500 mr-2"></span>
+                                )}
+                                {selectedScript.summary.detailed.importance.toLowerCase().includes('medium') && (
+                                  <span className="inline-block w-3 h-3 rounded-full bg-yellow-400 mr-2"></span>
+                                )}
+                                {selectedScript.summary.detailed.importance.toLowerCase().includes('low') && (
+                                  <span className="inline-block w-3 h-3 rounded-full bg-blue-400 mr-2"></span>
+                                )}
+                                <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.detailed.importance}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                       
-                      {/* Recommendation section */}
-                      {selectedScript.summary.recommendation && (
-                        <div className="mb-4">
-                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Recommendation</h4>
-                          <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.recommendation}</p>
-                        </div>
-                      )}
-                      
-                      {/* Integration section */}
-                      {selectedScript.summary.integration && (
-                        <div className="mb-4">
-                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Integration</h4>
-                          <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.integration}</p>
-                        </div>
-                      )}
-                      
-                      {/* Importance section */}
-                      {selectedScript.summary.importance && (
-                        <div className="mb-4">
-                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Importance</h4>
-                          <div className="flex items-center">
-                            {/* Add visual importance indicator */}
-                            {selectedScript.summary.importance.toLowerCase().includes('critical') && (
-                              <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                            )}
-                            {selectedScript.summary.importance.toLowerCase().includes('high') && (
-                              <span className="inline-block w-3 h-3 rounded-full bg-orange-500 mr-2"></span>
-                            )}
-                            {selectedScript.summary.importance.toLowerCase().includes('medium') && (
-                              <span className="inline-block w-3 h-3 rounded-full bg-yellow-400 mr-2"></span>
-                            )}
-                            {selectedScript.summary.importance.toLowerCase().includes('low') && (
-                              <span className="inline-block w-3 h-3 rounded-full bg-blue-400 mr-2"></span>
-                            )}
-                            <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.importance}</p>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Dependencies section */}
-                      {selectedScript.summary.dependencies && selectedScript.summary.dependencies.length > 0 && (
-                        <div className="mb-4">
-                          <h4 className="text-xs font-semibold mb-1 text-gray-700">Dependencies</h4>
-                          <ul className="list-disc pl-5 text-sm">
-                            {selectedScript.summary.dependencies.map((dep, index) => (
-                              <li key={index}>{dep}</li>
-                            ))}
-                          </ul>
+                      {/* Legacy format support for scripts that don't use the detailed structure */}
+                      {!selectedScript.summary.detailed && (
+                        <div className="grid grid-cols-1 gap-4">
+                          {/* Purpose section */}
+                          {selectedScript.summary.purpose && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-bold mb-1 text-gray-700">Purpose</h4>
+                              <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.purpose}</p>
+                            </div>
+                          )}
+                          
+                          {/* Recommendation section */}
+                          {selectedScript.summary.recommendation && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-bold mb-1 text-gray-700">Recommendation</h4>
+                              <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.recommendation}</p>
+                            </div>
+                          )}
+                          
+                          {/* Integration section */}
+                          {selectedScript.summary.integration && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-bold mb-1 text-gray-700">Integration</h4>
+                              <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.integration}</p>
+                            </div>
+                          )}
+                          
+                          {/* Importance section */}
+                          {selectedScript.summary.importance && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-bold mb-1 text-gray-700">Importance</h4>
+                              <div className="flex items-center">
+                                {/* Add visual importance indicator */}
+                                {selectedScript.summary.importance.toLowerCase().includes('critical') && (
+                                  <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                                )}
+                                {selectedScript.summary.importance.toLowerCase().includes('high') && (
+                                  <span className="inline-block w-3 h-3 rounded-full bg-orange-500 mr-2"></span>
+                                )}
+                                {selectedScript.summary.importance.toLowerCase().includes('medium') && (
+                                  <span className="inline-block w-3 h-3 rounded-full bg-yellow-400 mr-2"></span>
+                                )}
+                                {selectedScript.summary.importance.toLowerCase().includes('low') && (
+                                  <span className="inline-block w-3 h-3 rounded-full bg-blue-400 mr-2"></span>
+                                )}
+                                <p className="text-sm whitespace-pre-wrap">{selectedScript.summary.importance}</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Dependencies section */}
+                          {selectedScript.summary.dependencies && selectedScript.summary.dependencies.length > 0 && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-bold mb-1 text-gray-700">Dependencies</h4>
+                              <ul className="list-disc pl-5 text-sm">
+                                {selectedScript.summary.dependencies.map((dep, index) => (
+                                  <li key={index}>{dep}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -720,7 +777,7 @@ function Scripts() {
                     <div>
                       <h3 className="text-sm font-medium mb-1">File Information:</h3>
                       <ul className="text-xs text-gray-600">
-                        <li>Size: {formatFileSize(selectedScript.metadata?.file_size)}</li>
+                        <li>Size: {formatFileSize(selectedScript.metadata)}</li>
                         <li>File Created: {getFileCreationDate(selectedScript)}</li>
                         <li>File Modified: {getFileModificationDate(selectedScript)}</li>
                         <li>DB Record Created: {formatDate(selectedScript.created_at)}</li>
