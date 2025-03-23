@@ -4,6 +4,8 @@
 
  "status_recommendation": "KEEP"
 
+ write up a documentation file and put it in the docs/solution-guides folder off the root analyzing everything you neeed to know about how the scripts/cli-pipeline/classify-script-with-prompt.ts is working properlgy to find the prompt from the prompts database and to retrieve all the information for the call to claude as I will be using this functionality for othe rscripts and I want to be able to tell you how to write it correctly in other cases using the current implmenetaiton as a working example. Give jme all the gory detrails I need to to direct the ai properly when creating new instances of this functionality encapsulated in this script.
+
  on the "AI" page when under the "Database" tab when you click "Set Relatinonships" and a dialog pops up called "Manage Prompt Relationships" down at the bottom where a text window appears under "Database Query" add a second database query text field and a second databasequery2 to the prompts metadata field table.  It turns out I need 2 queries per prompt. And of course save this second query when you save the prompt.
 
 pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
