@@ -52,6 +52,34 @@ class ScriptFileService {
     }
   }
   
+  // Archive a script file (move it to .archived_scripts folder)
+  async archiveFile(filePath: string): Promise<{ success: boolean; message: string; new_path: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/script-file/archive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path: filePath }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to archive script file');
+      }
+      
+      return {
+        success: true,
+        message: data.message || 'File archived successfully',
+        new_path: data.new_path || ''
+      };
+    } catch (error: any) {
+      console.error('Error archiving script file:', error);
+      throw error;
+    }
+  }
+  
   // List available script files
   async listScriptFiles(): Promise<{ total: number; files: string[] }> {
     try {
