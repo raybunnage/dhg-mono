@@ -60,7 +60,8 @@ function Scripts() {
       
       let query = supabase
         .from('scripts')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact' })
+        .not('file_path', 'ilike', '%.archived_scripts%'); // Skip archived scripts
         
       // Apply filter for scripts with or without summaries
       if (showWithSummaries === 'withSummary') {
@@ -78,7 +79,12 @@ function Scripts() {
 
       console.log(`Fetched ${data?.length || 0} scripts`);
       
-      setScripts(data || []);
+      // Additional client-side filtering to make sure we exclude all archived scripts
+      const filteredScripts = data?.filter(script => 
+        script.file_path && !script.file_path.includes('.archived_scripts')
+      ) || [];
+      
+      setScripts(filteredScripts);
       setTotalRecords(count || 0);
     } catch (error: any) {
       console.error('Error fetching scripts:', error);
@@ -95,10 +101,16 @@ function Scripts() {
     scripts.forEach(script => {
       if (!script.file_path) return;
       
+      // Skip any scripts in .archived_scripts folders
+      if (script.file_path.includes('/.archived_scripts/')) return;
+      
       const pathParts = script.file_path.split('/');
       // Remove the filename to get the folder path
       pathParts.pop();
       const folderPath = pathParts.join('/');
+      
+      // Skip folders with .archived_scripts in the name
+      if (folderPath.includes('.archived_scripts')) return;
       
       if (!folderStructure[folderPath]) {
         folderStructure[folderPath] = [];
@@ -164,6 +176,9 @@ function Scripts() {
           
           // Filter from the full dataset
           const filteredScripts = allScripts.filter(script => {
+            // Skip any scripts in .archived_scripts folders
+            if (script.file_path && script.file_path.includes('.archived_scripts')) return false;
+            
             // Get the title - if it's not available, use the filename from the path
             const scriptTitle = (script.title || (script.file_path ? script.file_path.split('/').pop() : '')).toLowerCase();
             const scriptPath = (script.file_path || '').toLowerCase();
@@ -180,6 +195,9 @@ function Scripts() {
       
       // If we have many scripts already loaded, just filter the current set
       const filteredScripts = scripts.filter(script => {
+        // Skip any scripts in .archived_scripts folders
+        if (script.file_path && script.file_path.includes('.archived_scripts')) return false;
+        
         const scriptTitle = (script.title || (script.file_path ? script.file_path.split('/').pop() : '')).toLowerCase();
         const scriptPath = (script.file_path || '').toLowerCase();
         
@@ -595,12 +613,14 @@ function Scripts() {
                                           Created: {getFileCreationDate(script)}
                                         </div>
                                       </div>
-                                      <div className="mt-1">
-                                        {script.document_type_id && (
-                                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                                            {documentTypes.find(dt => dt.id === script.document_type_id)?.document_type || 'Unknown Type'}
-                                          </span>
-                                        )}
+                                      <div className="mt-1 flex justify-between items-center">
+                                        <div>
+                                          {script.document_type_id && (
+                                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                              Document Type: {documentTypes.find(dt => dt.id === script.document_type_id)?.document_type || 'Unknown Type'}
+                                            </span>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>

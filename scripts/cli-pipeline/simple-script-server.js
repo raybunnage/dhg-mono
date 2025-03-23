@@ -103,7 +103,8 @@ const server = http.createServer(async (req, res) => {
     // List all script files
     try {
       const projectRoot = path.join(__dirname, '..', '..');
-      const cmd = `find ${projectRoot}/scripts -name "*.sh" -o -name "*.js" -o -name "*.ts" -o -name "*.py" -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/${ARCHIVED_SCRIPTS_FOLDER}/*" | head -100`;
+      // Exclude .archived_scripts folders regardless of where they are in the path
+      const cmd = `find ${projectRoot}/scripts -name "*.sh" -o -name "*.js" -o -name "*.ts" -o -name "*.py" -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/.archived_scripts/*" -not -path "*/\\.archived_scripts/*" | head -100`;
       
       const output = execSync(cmd, { encoding: 'utf8' }).trim();
       const files = output.split('\n').filter(Boolean);
