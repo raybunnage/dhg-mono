@@ -901,8 +901,13 @@ Commands:
           
           // Extract additional fields from the classification result if available
           if (result.summary) {
-            console.log(`Adding summary to document record: ${result.summary.substring(0, 50)}...`);
-            updateObj.summary = result.summary;
+            if (typeof result.summary === 'string') {
+              console.log(`Adding summary to document record: ${result.summary.substring(0, 50)}...`);
+              updateObj.summary = result.summary;
+            } else {
+              console.log(`Adding summary object to document record`);
+              updateObj.summary = result.summary;
+            }
           }
           
           if (result.title) {
