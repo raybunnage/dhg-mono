@@ -462,12 +462,45 @@ This archiving pattern provides a non-destructive way to clean up active files w
 
 ## API Deployment Fix Summary
 
-The document archiving functionality was fixed on 2025-03-23. The issue was that while the API code was correctly implemented, it wasn't properly configured as a Netlify serverless function. The following changes were made:
+The document archiving functionality was fixed on 2025-03-23. Two approaches were implemented to ensure reliable archiving across all environments:
+
+### 1. Netlify Function Approach
+
+This approach fixed the issue where the API wasn't properly configured as a Netlify serverless function:
 
 1. Created a standalone Netlify function in `/netlify/functions/docs-sync.js` that implements the same functionality as the original API
-
 2. Updated the Netlify configuration to include the functions directory and a redirect rule in `netlify.toml`
-
 3. Ensured compatibility with both the development server and production Netlify environment
 
-This fix enables the Archive button on the Docs page to work properly in the production environment, providing a consistent user experience across all deployment environments.
+### 2. Standalone Server Approach (Recommended)
+
+This approach provides a more robust solution that doesn't rely on Netlify functions:
+
+1. Created a standalone server in `scripts/docs-archive-server.js` based on the successful script archiving server model
+2. The server handles file operations directly with more reliable path resolution
+3. Updated `markdownFileService.ts` to try the standalone server first, then fall back to the Netlify function
+4. Created a simple startup script `run-docs-archive-server.sh` for easy server launching
+
+## Running the Standalone Server
+
+To use the standalone server approach (recommended for all environments):
+
+1. Start the docs archive server:
+   ```bash
+   # From the repository root
+   ./scripts/run-docs-archive-server.sh
+   ```
+
+2. The server will run on port 3003 and handle all document file operations
+3. The `markdownFileService` will automatically detect and use this server if it's running
+
+## Benefits of Standalone Server Approach
+
+1. Works in all environments (local, staging, production)
+2. More reliable file path resolution
+3. Direct file system access without Netlify function constraints
+4. Simpler debugging with detailed console logs
+5. No deployment configuration needed
+6. Based on the proven script-server model that's already working in production
+
+Both approaches enable the Archive button on the Docs page to work properly across all deployment environments, providing a consistent user experience.
