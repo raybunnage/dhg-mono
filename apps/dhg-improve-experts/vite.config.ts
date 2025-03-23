@@ -66,67 +66,56 @@ export default defineConfig(({ mode }) => {
           server.middlewares.use('/api/docs-sync', async (req: IncomingMessage, res: ServerResponse) => {
             if (req.method === 'POST') {
               try {
-                console.log('POST request to /api/docs-sync received - executing shell script');
-                const { exec } = require('child_process');
-                const { promisify } = require('util');
-                const path = require('path');
-                const execPromise = promisify(exec);
+                // Read the request body
+                let bodyData = '';
+                req.on('data', (chunk) => {
+                  bodyData += chunk;
+                });
                 
-                // Get the project root directory
-                const projectRoot = process.cwd();
-                
-                // Path to the update script
-                const scriptPath = path.join(projectRoot, 'scripts', 'update-docs-database.sh');
-                
-                try {
-                  // Check if script exists
-                  await execPromise(`test -f "${scriptPath}"`);
-                  
-                  // Make it executable
-                  await execPromise(`chmod +x "${scriptPath}"`);
-                  
-                  // Ensure proper environment variables are available to the script
-                  const env = {
-                    ...process.env,
-                    // Add Supabase environment variables if they exist
-                    SUPABASE_URL: env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-                    SUPABASE_KEY: env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY
-                  };
-                  
-                  // Execute the script with environment variables
-                  console.log(`Executing script: ${scriptPath}`);
-                  const { stdout, stderr } = await execPromise(`cd "${projectRoot}" && "${scriptPath}"`, { 
-                    env,
-                    // Increase max buffer size to handle larger outputs
-                    maxBuffer: 1024 * 1024 * 10 // 10 MB
-                  });
-                  
-                  const result = {
-                    success: !stderr || stderr.trim() === '',
-                    message: 'Documentation database update completed',
-                    output: stdout + (stderr ? `\nErrors:\n${stderr}` : '')
-                  };
-                  
-                  console.log(`Script execution completed with status: ${result.success ? 'success' : 'with errors'}`);
-                  
-                  res.statusCode = result.success ? 200 : 500;
-                  res.setHeader('Content-Type', 'application/json');
-                  res.end(JSON.stringify(result));
-                } catch (execError) {
-                  console.error('Error executing script:', execError);
-                  
-                  // Include both stderr and stdout in the response for debugging
-                  const stdout = execError.stdout || '';
-                  const stderr = execError.stderr || '';
-                  
-                  res.statusCode = 500;
-                  res.setHeader('Content-Type', 'application/json');
-                  res.end(JSON.stringify({
-                    success: false,
-                    message: `Error executing script: ${execError.message || 'Unknown error'}`,
-                    output: stdout + (stderr ? `\nErrors:\n${stderr}` : '')
-                  }));
-                }
+                req.on('end', async () => {
+                  try {
+                    const body = JSON.parse(bodyData);
+                    const { action, fileId, filePath, newPath } = body;
+                    
+                    console.log(`POST request to /api/docs-sync received with action: ${action}`);
+                    
+                    // Import our API handler
+                    const { default: docsSync } = await import('./src/api/docs-sync');
+                    
+                    // Create a proper request and response objects
+                    const request = {
+                      method: 'POST',
+                      headers: req.headers,
+                      body
+                    };
+                    
+                    const response = {
+                      status: (code) => {
+                        res.statusCode = code;
+                        return response;
+                      },
+                      setHeader: (name, value) => {
+                        res.setHeader(name, value);
+                        return response;
+                      },
+                      json: (data) => {
+                        res.setHeader('Content-Type', 'application/json');
+                        res.end(JSON.stringify(data));
+                      }
+                    };
+                    
+                    // Call our API handler
+                    await docsSync(request, response);
+                  } catch (parseError) {
+                    console.error('Error parsing request body:', parseError);
+                    res.statusCode = 400;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({
+                      success: false,
+                      message: `Error parsing request: ${parseError.message || 'Invalid JSON'}`
+                    }));
+                  }
+                });
               } catch (error) {
                 console.error('Error in docs-sync middleware:', error);
                 res.statusCode = 500;

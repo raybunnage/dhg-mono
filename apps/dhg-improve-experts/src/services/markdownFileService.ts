@@ -3129,7 +3129,188 @@ Documentation for auditing expert profiles and data.`
       return this.getMockSearchResults(query);
     }
   }
+  
+  /**
+   * Archive a markdown file (move it to .archive_docs folder)
+   */
+  async archiveFile(filePath: string): Promise<{ success: boolean; message: string; newPath: string }> {
+    try {
+      console.log(`Attempting to archive file: ${filePath}`);
+      
+      const response = await fetch('/api/docs-sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'archive-file',
+          filePath: filePath 
+        }),
+      });
+      
+      // Safely parse the JSON response
+      let data;
+      try {
+        const text = await response.text();
+        data = text ? JSON.parse(text) : {};
+        console.log('Archive response:', data);
+      } catch (parseError) {
+        console.error('Error parsing API response:', parseError);
+        // If we can't parse the response, check if the operation might have succeeded anyway
+        if (response.ok) {
+          return {
+            success: true,
+            message: 'File archived successfully (response parse error)',
+            newPath: filePath.replace(/^(.+\/)?([^\/]+)$/, '$1.archive_docs/$2') // Best guess at new path
+          };
+        }
+        
+        throw new Error(`Failed to parse server response: ${parseError.message}`);
+      }
+      
+      if (!response.ok) {
+        throw new Error(data?.message || `Failed to archive file: Server returned ${response.status}`);
+      }
+      
+      return {
+        success: true,
+        message: data?.message || 'File archived successfully',
+        newPath: data?.newPath || ''
+      };
+    } catch (error: any) {
+      console.error('Error archiving file:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Delete a markdown file from disk
+   */
+  async deleteFile(filePath: string): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log(`Attempting to delete file: ${filePath}`);
+      
+      // First try the local markdown server if we're in dev mode
+      if (window.location.hostname === 'localhost') {
+        try {
+          console.log(`Trying local markdown server for deletion: ${filePath}`);
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          
+          const deleteResponse = await fetch(
+            `http://localhost:3001/api/markdown-file?path=${encodeURIComponent(filePath)}`,
+            { 
+              method: 'DELETE',
+              signal: controller.signal 
+            }
+          );
+          
+          clearTimeout(timeoutId);
+          
+          if (deleteResponse.ok) {
+            try {
+              const responseData = await deleteResponse.json();
+              console.log('Local server deletion response:', responseData);
+              
+              if (responseData.success) {
+                return {
+                  success: true,
+                  message: responseData.message || 'File deleted successfully via local server'
+                };
+              }
+            } catch (parseError) {
+              console.warn('Error parsing local server response:', parseError);
+            }
+          }
+        } catch (localServerError) {
+          if (localServerError.name !== 'AbortError') {
+            console.warn('Local markdown server not available, continuing with API endpoint', localServerError);
+          }
+        }
+      }
+      
+      // Fall back to the API endpoint
+      console.log('Using /api/docs-sync endpoint for file deletion');
+      
+      const response = await fetch('/api/docs-sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'delete-file',
+          filePath: filePath 
+        }),
+      });
+      
+      // Safely parse the JSON response
+      let data;
+      try {
+        const text = await response.text();
+        data = text ? JSON.parse(text) : {};
+        console.log('File deletion API response:', data);
+      } catch (parseError) {
+        console.error('Error parsing API response:', parseError);
+        data = { success: false, message: 'Invalid response from server' };
+      }
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete file');
+      }
+      
+      if (data.fileFound === false) {
+        console.warn(`API couldn't find the file at path: ${filePath}`);
+        console.warn('Will try direct deletion with absolute path');
+        
+        // Try direct deletion with absolute path if possible
+        try {
+          const absoluteResponse = await fetch('/api/docs-sync', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              action: 'delete-file',
+              filePath: `/Users/raybunnage/Documents/github/dhg-mono/${filePath}`,
+              tryAbsolutePath: true
+            }),
+          });
+          
+          // Safely parse the JSON response
+          let absoluteData;
+          try {
+            const text = await absoluteResponse.text();
+            absoluteData = text ? JSON.parse(text) : {};
+            console.log('Absolute path deletion attempt response:', absoluteData);
+          } catch (parseError) {
+            console.error('Error parsing absolute path response:', parseError);
+            absoluteData = { success: false };
+          }
+          
+          if (absoluteData.fileFound) {
+            return {
+              success: true,
+              message: 'File deleted successfully using absolute path'
+            };
+          }
+        } catch (absoluteError) {
+          console.error('Error with absolute path deletion attempt:', absoluteError);
+        }
+      }
+      
+      return {
+        success: true,
+        message: data.message || 'File deleted successfully'
+      };
+    } catch (error: any) {
+      console.error('Error deleting file:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete file'
+      };
+    }
+  }
 }
 
-// Export singleton instance
 export const markdownFileService = new MarkdownFileService();

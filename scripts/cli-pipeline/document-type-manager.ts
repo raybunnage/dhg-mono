@@ -590,45 +590,70 @@ class DocumentTypeManager {
       }
       
       try {
-        // Try to extract JSON from the response
-        const jsonMatch = 
-          typeof responseContent === 'string' 
-            ? responseContent.match(/```json\s*({[\s\S]*?})\s*```/) || 
-              responseContent.match(/{[\s\S]*?}/)
-            : null;
-            
-        // If we have content array in the format from Claude completion API
-        const contentText = 
-          typeof responseContent === 'object' && 
-          responseContent.content && 
-          Array.isArray(responseContent.content) && 
-          responseContent.content[0]?.text
-            ? responseContent.content[0].text
-            : null;
-            
+        // Try to extract JSON from the response in different formats
         let jsonStr = '';
+        let contentText = '';
         
-        if (jsonMatch && (jsonMatch[1] || jsonMatch[0])) {
-          jsonStr = jsonMatch[1] || jsonMatch[0];
-          console.log('\nExtracted JSON from direct response');
-        } else if (contentText) {
-          // Try to extract from content text if we didn't find it in the direct response
-          const contentMatch = contentText.match(/```json\s*({[\s\S]*?})\s*```/) || 
-                              contentText.match(/{[\s\S]*?}/);
+        // Direct string response
+        if (typeof responseContent === 'string') {
+          console.log('Response content is a string');
           
-          if (contentMatch && (contentMatch[1] || contentMatch[0])) {
-            jsonStr = contentMatch[1] || contentMatch[0];
-            console.log('\nExtracted JSON from content text');
+          // Try to match JSON within code blocks or directly in the string
+          const jsonMatch = responseContent.match(/```json\s*({[\s\S]*?})\s*```/) || 
+                           responseContent.match(/{[\s\S]*?}/);
+                           
+          if (jsonMatch && (jsonMatch[1] || jsonMatch[0])) {
+            jsonStr = jsonMatch[1] || jsonMatch[0];
+            console.log('\nExtracted JSON from direct string response');
           } else {
-            console.error('Could not extract JSON from Claude response');
-            console.log('Content text:', contentText.substring(0, 500) + '...');
-            return {
-              success: false,
-              error: 'Could not extract JSON from Claude response'
-            };
+            contentText = responseContent;
           }
-        } else {
+        } 
+        // Object response structure (new Claude API format)
+        else if (typeof responseContent === 'object') {
+          console.log('Response content is an object');
+          
+          // Claude v2 format: content array with text objects
+          if (responseContent.content && Array.isArray(responseContent.content)) {
+            contentText = responseContent.content[0]?.text || '';
+            console.log(`Found content array with ${responseContent.content.length} items`);
+            
+            // Try to extract JSON from contentText 
+            const contentMatch = contentText.match(/```json\s*({[\s\S]*?})\s*```/) || 
+                               contentText.match(/{[\s\S]*?}/);
+                               
+            if (contentMatch && (contentMatch[1] || contentMatch[0])) {
+              jsonStr = contentMatch[1] || contentMatch[0];
+              console.log('\nExtracted JSON from content text');
+            }
+          }
+          // Direct JSON response or other format
+          else if (typeof JSON.stringify(responseContent) === 'string') {
+            // Just use the full object as JSON
+            jsonStr = JSON.stringify(responseContent);
+            console.log('\nUsing whole response object as JSON');
+          }
+        }
+        
+        // If we couldn't extract JSON through normal means, try alternative approaches
+        if (!jsonStr && contentText) {
+          console.log('Attempting alternative JSON extraction methods');
+          
+          // Try more aggressive JSON extraction for malformed responses
+          // Find anything that looks like JSON object with our expected fields
+          const looseMatch = contentText.match(/\{[^{]*?"document_type_id"[^}]*?\}/);
+          if (looseMatch) {
+            console.log('Found loose JSON match with document_type_id field');
+            jsonStr = looseMatch[0];
+          }
+        }
+        
+        // Last resort if we still don't have JSON
+        if (!jsonStr) {
           console.error('Could not extract JSON from Claude response');
+          console.log('Raw response content:', typeof responseContent === 'string' 
+            ? responseContent.substring(0, 500) + '...' 
+            : JSON.stringify(responseContent).substring(0, 500) + '...');
           return {
             success: false,
             error: 'Could not extract JSON from Claude response'
@@ -644,12 +669,25 @@ class DocumentTypeManager {
         console.log('\n=== PARSED CLASSIFICATION ===');
         console.log(JSON.stringify(classification, null, 2));
         
-        return {
+        // Ensure we're returning expected fields by checking and extracting them
+        const result: ClassificationResult = {
           success: true,
           document_type_id: classification.document_type_id,
           document_type_name: classification.document_type_name,
-          confidence: classification.confidence
+          confidence: classification.confidence,
+          // Include additional fields if available
+          summary: classification.summary,
+          title: classification.title,
+          ai_generated_tags: classification.ai_generated_tags,
+          status_recommendation: classification.status_recommendation
         };
+        
+        // Also check for ai_assessment object that might contain status_recommendation
+        if (classification.ai_assessment) {
+          result.ai_assessment = classification.ai_assessment;
+        }
+        
+        return result;
       } catch (parseError) {
         console.error('Error parsing Claude response:', parseError);
         return {
