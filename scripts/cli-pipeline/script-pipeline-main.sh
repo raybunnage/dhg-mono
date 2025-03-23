@@ -1,26 +1,46 @@
 #!/bin/bash
 # script-pipeline-main.sh - Main pipeline for managing scripts
 
-# Source the script manager (with error handling)
+# Get script directory and root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 MANAGER_SCRIPT="${SCRIPT_DIR}/script-manager.sh"
 
+# Load environment variables from .env.development
+if [ -f "${ROOT_DIR}/.env.development" ]; then
+  echo "Loading environment variables from .env.development..."
+  set -a # automatically export all variables
+  source "${ROOT_DIR}/.env.development"
+  set +a
+fi
+
+# Load local environment variables if they exist (these override .env.development)
+if [ -f "${ROOT_DIR}/.env.local" ]; then
+  echo "Loading environment variables from .env.local..."
+  set -a
+  source "${ROOT_DIR}/.env.local"
+  set +a
+fi
+
+# Ensure we have a valid CLAUDE_API_KEY (copy from ANTHROPIC_API_KEY if needed)
+if [ -z "$CLAUDE_API_KEY" ] && [ -n "$ANTHROPIC_API_KEY" ]; then
+  echo "Setting CLAUDE_API_KEY from ANTHROPIC_API_KEY"
+  export CLAUDE_API_KEY="$ANTHROPIC_API_KEY"
+fi
+
+# Check for script manager
 if [ ! -f "${MANAGER_SCRIPT}" ]; then
   echo "Error: Cannot find script-manager.sh at ${MANAGER_SCRIPT}"
   exit 1
 fi
 
-# Check for Claude API key environment variables before continuing
-# This provides early feedback to users
-if [ -z "$CLAUDE_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$CLI_CLAUDE_API_KEY" ] && [ -z "$VITE_ANTHROPIC_API_KEY" ]; then
-  echo "⚠️ WARNING: No Claude API key found in environment variables."
-  echo "For using classify features, you need to set one of these environment variables:"
-  echo "   - CLAUDE_API_KEY"
-  echo "   - ANTHROPIC_API_KEY"
-  echo "   - CLI_CLAUDE_API_KEY"
+# Verify API key status after loading environment files
+if [ -z "$CLAUDE_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ]; then
+  echo "⚠️ WARNING: No Claude API key found after loading environment files."
+  echo "Verify .env.development has ANTHROPIC_API_KEY set."
   echo ""
-  echo "Example: export CLAUDE_API_KEY=your_api_key"
-  echo ""
+else
+  echo "✅ API key found in environment variables."
 fi
 
 source "${MANAGER_SCRIPT}"

@@ -76,9 +76,14 @@ export class SupabaseClientService {
             const { exists, variables } = SupabaseClientService.readEnvFile(filePath);
             if (exists) {
               // Try standardized variable names first, then fallbacks
-              url = url || variables['SUPABASE_URL'] || variables['VITE_SUPABASE_URL'];
-              key = key || variables['SUPABASE_SERVICE_ROLE_KEY'] || variables['SUPABASE_KEY'] || 
-                          variables['VITE_SUPABASE_SERVICE_ROLE_KEY'];
+              // Use non-null assertion (!) to handle null values from the variables map
+              const supabaseUrl = variables['SUPABASE_URL'] || variables['VITE_SUPABASE_URL'];
+              const supabaseKey = variables['SUPABASE_SERVICE_ROLE_KEY'] || variables['SUPABASE_KEY'] || 
+                                variables['VITE_SUPABASE_SERVICE_ROLE_KEY'];
+              
+              // Only assign if the values are not null or undefined
+              if (supabaseUrl) url = url || supabaseUrl;
+              if (supabaseKey) key = key || supabaseKey;
               
               if (url && key) {
                 console.log(`Found credentials in ${filePath}`);
@@ -201,9 +206,14 @@ export class SupabaseClientService {
           const { exists, variables } = SupabaseClientService.readEnvFile(filePath);
           if (exists) {
             // Try standardized variable names
-            url = url || variables['SUPABASE_URL'] || variables['VITE_SUPABASE_URL'];
-            key = key || variables['SUPABASE_SERVICE_ROLE_KEY'] || variables['SUPABASE_KEY'] || 
-                        variables['VITE_SUPABASE_SERVICE_ROLE_KEY'];
+            // Use non-null assertion (!) to handle null values from the variables map
+            const supabaseUrl = variables['SUPABASE_URL'] || variables['VITE_SUPABASE_URL'];
+            const supabaseKey = variables['SUPABASE_SERVICE_ROLE_KEY'] || variables['SUPABASE_KEY'] || 
+                              variables['VITE_SUPABASE_SERVICE_ROLE_KEY'];
+            
+            // Only assign if the values are not null or undefined
+            if (supabaseUrl) url = url || supabaseUrl;
+            if (supabaseKey) key = key || supabaseKey;
             
             if (url && key) {
               console.log(`Found credentials in ${filePath}`);
