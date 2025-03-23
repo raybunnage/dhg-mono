@@ -265,7 +265,7 @@ async function findScripts() {
     'registry_archives'
   ];
   
-  console.log('Finding script files...');
+  console.log('Finding script files (no file limit)...');
   
   // Simple recursive function to find files
   async function* findFiles(dir) {
@@ -323,7 +323,7 @@ async function findScripts() {
     scripts.push(scriptObject);
   }
   
-  console.log(\`Found \${scripts.length} script files\`);
+  console.log(\`Found \${scripts.length} script files (processing all of them)\`);
   return scripts;
 }
 
