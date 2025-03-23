@@ -874,10 +874,60 @@ async function classifyUntypedScript(): Promise<boolean> {
 }
 
 /**
+ * Process multiple untyped scripts sequentially
+ * @param count Number of scripts to process
+ */
+async function processMultipleScripts(count: number): Promise<void> {
+  console.log(`🚀 Starting script classification process for ${count} scripts...`);
+  
+  let successCount = 0;
+  let failureCount = 0;
+  
+  for (let i = 0; i < count; i++) {
+    console.log(`\n================================`);
+    console.log(`🔄 Processing script ${i + 1} of ${count}...`);
+    console.log(`================================\n`);
+    
+    const success = await classifyUntypedScript();
+    
+    if (success) {
+      successCount++;
+      console.log(`✅ Script ${i + 1} classification completed successfully (${successCount} success, ${failureCount} failures so far)`);
+    } else {
+      failureCount++;
+      console.log(`❌ Script ${i + 1} classification failed (${successCount} success, ${failureCount} failures so far)`);
+    }
+    
+    // Add a small delay between scripts to avoid rate limiting
+    if (i < count - 1) {
+      console.log('⏳ Waiting 2 seconds before processing next script...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  }
+  
+  console.log(`\n🏁 Finished processing ${count} scripts`);
+  console.log(`📊 Results: ${successCount} successful, ${failureCount} failed`);
+}
+
+/**
  * Main execution function
  */
 async function main(): Promise<void> {
   try {
+    // Check if a count argument was provided
+    const args = process.argv.slice(2);
+    let scriptCount = 1; // Default to 1 script
+    
+    // Parse the count argument if provided
+    if (args.length > 0) {
+      const countArg = parseInt(args[0], 10);
+      if (!isNaN(countArg) && countArg > 0) {
+        scriptCount = countArg;
+      } else {
+        console.warn(`⚠️ Invalid count argument: "${args[0]}". Using default count of 1.`);
+      }
+    }
+    
     // Initialize Supabase client
     const supabaseUrl: string = process.env.SUPABASE_URL || '';
     const supabaseKey: string = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -901,16 +951,22 @@ async function main(): Promise<void> {
     // Initialize the Supabase client
     supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Run the classification
-    console.log('🚀 Starting script classification process...');
-    const success: boolean = await classifyUntypedScript();
-    
-    if (success) {
-      console.log('✅ Script classification completed successfully');
-      process.exit(0);
+    if (scriptCount === 1) {
+      // Run a single classification
+      console.log('🚀 Starting script classification process for 1 script...');
+      const success: boolean = await classifyUntypedScript();
+      
+      if (success) {
+        console.log('✅ Script classification completed successfully');
+        process.exit(0);
+      } else {
+        console.log('⚠️ Script classification failed');
+        process.exit(1);
+      }
     } else {
-      console.log('⚠️ Script classification failed');
-      process.exit(1);
+      // Process multiple scripts
+      await processMultipleScripts(scriptCount);
+      process.exit(0);
     }
   } catch (error) {
     console.error('❌ Fatal error:', error instanceof Error ? error.message : 'Unknown error');
