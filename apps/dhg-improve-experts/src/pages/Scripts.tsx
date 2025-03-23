@@ -20,6 +20,7 @@ function Scripts() {
   const [selectedScript, setSelectedScript] = useState<Script | null>(null);
   const [loading, setLoading] = useState(false);
   const [showScriptSummary, setShowScriptSummary] = useState(false);
+  const [showWithSummaries, setShowWithSummaries] = useState<'all' | 'withSummary' | 'withoutSummary'>('all');
   // Initialize with all folders expanded by default
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set([
     'cli-pipeline',
@@ -60,6 +61,13 @@ function Scripts() {
       let query = supabase
         .from('scripts')
         .select('*', { count: 'exact' });
+        
+      // Apply filter for scripts with or without summaries
+      if (showWithSummaries === 'withSummary') {
+        query = query.not('summary', 'is', null);
+      } else if (showWithSummaries === 'withoutSummary') {
+        query = query.is('summary', null);
+      }
 
       // Fetch scripts ordered by created_at in descending order (newest first)
       const { data, error, count } = await query
@@ -307,11 +315,61 @@ function Scripts() {
       setLoading(false);
     }
   };
+  
+  // Handle script archiving (move file to .archived_scripts folder and update the database record)
+  const handleArchiveScript = async (script: Script) => {
+    if (!script) {
+      toast.error('Invalid script selected for archiving');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // First, try to archive the file (move it to .archived_scripts folder)
+      const result = await scriptFileService.archiveFile(script.file_path);
+      console.log('File archive result:', result);
+      
+      if (result.success) {
+        // Update the file path in the database to the new archived location
+        const { error: updateError } = await supabase
+          .from('scripts')
+          .update({
+            file_path: result.new_path,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', script.id);
+        
+        if (updateError) {
+          throw updateError;
+        }
+        
+        // Extract just the filename for the success message
+        const fileName = script.file_path.split('/').pop();
+        toast.success(`Script "${fileName}" has been archived`);
+        
+        // Update the UI by removing this script from the list
+        // (archived scripts won't show in the list since they're in .archived_scripts)
+        setScripts(prev => prev.filter(s => s.id !== script.id));
+        
+        // If the currently selected script was archived, clear selection
+        if (selectedScript?.id === script.id) {
+          setSelectedScript(null);
+        }
+      } else {
+        throw new Error('Failed to archive the script file');
+      }
+    } catch (error: any) {
+      console.error('Error archiving script:', error);
+      toast.error(`Failed to archive script: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Initial data load
+  // Fetch scripts when filter changes or on initial load
   useEffect(() => {
     fetchScripts();
-  }, []);
+  }, [showWithSummaries]);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -321,13 +379,47 @@ function Scripts() {
         <div className="col-span-1 flex flex-col bg-white rounded-lg shadow">
           {/* Search and Actions section */}
           <div className="p-4 border-b">
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-wrap justify-between gap-2 mb-3">
               <button
                 onClick={handleSearch}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
                 Search
               </button>
+              
+              {/* Summary filter toggle */}
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setShowWithSummaries('all')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    showWithSummaries === 'all' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setShowWithSummaries('withSummary')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    showWithSummaries === 'withSummary' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  With Summary
+                </button>
+                <button
+                  onClick={() => setShowWithSummaries('withoutSummary')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    showWithSummaries === 'withoutSummary' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  No Summary
+                </button>
+              </div>
             </div>
             <input
               type="text"
@@ -585,6 +677,31 @@ function Scripts() {
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                   </svg>
                   Copy Content
+                </button>
+                
+                {/* Archive button */}
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    
+                    // Extract just the filename from the file_path
+                    const fileName = selectedScript.file_path.split('/').pop();
+                    
+                    const confirmArchive = window.confirm(
+                      `Are you sure you want to archive the script "${fileName}"?\n\nThis will move the file to the .archived_scripts folder and update its path in the database. The script will no longer appear in the list but will still exist on disk.`
+                    );
+                    if (confirmArchive) {
+                      handleArchiveScript(selectedScript);
+                    }
+                  }}
+                  className="mr-3 bg-amber-50 hover:bg-amber-100 text-amber-600 hover:text-amber-700 text-xs px-3 py-1 rounded-md flex items-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <path d="M21 8v13H3V8"></path>
+                    <path d="M1 3h22v5H1z"></path>
+                    <path d="M10 12h4"></path>
+                  </svg>
+                  Archive
                 </button>
                 
                 {/* Delete button */}
