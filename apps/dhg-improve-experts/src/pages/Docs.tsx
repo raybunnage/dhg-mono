@@ -37,6 +37,7 @@ function Docs() {
   const [selectedDocumentType, setSelectedDocumentType] = useState<string | null>(null);
   const [showDuplicatePopup, setShowDuplicatePopup] = useState(false);
   const [duplicateFileInfo, setDuplicateFileInfo] = useState<DocumentationFile | null>(null);
+  const [showWithSummaries, setShowWithSummaries] = useState<'all' | 'withSummary' | 'withoutSummary'>('all');
 
   // Fetch document types from the database
   const fetchDocumentTypes = async () => {
@@ -67,6 +68,13 @@ function Docs() {
         .from('documentation_files')
         .select('*', { count: 'exact' });
       
+      // Apply filter for files with or without summaries
+      if (showWithSummaries === 'withSummary') {
+        query = query.not('summary', 'is', null);
+      } else if (showWithSummaries === 'withoutSummary') {
+        query = query.is('summary', null);
+      }
+      
       const { data, error, count } = await query
         .order('created_at', { ascending: false })
         .limit(500);
@@ -74,13 +82,16 @@ function Docs() {
       if (error) throw error;
 
       // Filter out files with missing file_path or any other issues
-      // Also exclude files under the file_types folder and .txt files
+      // Also exclude files under the file_types folder, .txt files, and files in .archive_docs folders
       const validFiles = (data || []).filter(file => 
         file && file.file_path && 
         // Exclude files under the file_types folder at the repo root
         // The path could be like "/file_types/..." or start with "file_types/..."
         !file.file_path.includes('/file_types/') && 
         !file.file_path.startsWith('file_types/') &&
+        // Exclude files in .archive_docs folders
+        !file.file_path.includes('/.archive_docs/') &&
+        !file.file_path.startsWith('.archive_docs/') &&
         // Exclude .txt files
         !file.file_path.endsWith('.txt')
       );
@@ -302,6 +313,13 @@ function Docs() {
     try {
       console.log('Starting search with query:', searchQuery, 'Selected tags:', selectedTags);
       
+      // If there's no search query and tags are selected, use the more reliable tag toggle function
+      if (!searchQuery.trim() && selectedTags.length > 0) {
+        console.log('Delegating to toggleTag for more reliable filtering');
+        toggleTag(selectedTags[0]);
+        return;
+      }
+      
       // Get document types first
       const types = await fetchDocumentTypes();
       
@@ -310,38 +328,38 @@ function Docs() {
         .from('documentation_files')
         .select('*');
       
-      let hasTextSearch = false;
+      // Apply filter for files with or without summaries
+      if (showWithSummaries === 'withSummary') {
+        query = query.not('summary', 'is', null);
+      } else if (showWithSummaries === 'withoutSummary') {
+        query = query.is('summary', null);
+      }
       
       // Build advanced search for multiple fields including metadata
       if (searchQuery.trim()) {
-        hasTextSearch = true;
         query = query.or(
           `file_path.ilike.%${searchQuery}%,` +
           `title.ilike.%${searchQuery}%,` +
           `summary.ilike.%${searchQuery}%,` +
-          `ai_generated_tags.cs.{${searchQuery}},` +
-          `manual_tags.cs.{${searchQuery}},` +
+          `ai_generated_tags::text ilike '%${searchQuery}%',` +
+          `manual_tags::text ilike '%${searchQuery}%',` +
           `metadata->category.ilike.%${searchQuery}%,` +
           `status_recommendation.ilike.%${searchQuery}%`
         );
+        
+        console.log(`Added text search criteria for: "${searchQuery}"`);
       }
       
-      // Filter by selected tags (if any)
+      // Add tag filtering if tags are selected
       if (selectedTags.length > 0) {
-        console.log('Filtering by selected tags:', selectedTags);
+        const singleTag = selectedTags[0].trim().toLowerCase();
+        console.log(`Adding tag filter criteria for: "${singleTag}"`);
         
-        console.log('Setting up simple tag filter for:', selectedTags);
-        
-        // The simplest and most direct approach:
-        // Just filter on the first selected tag
-        if (selectedTags.length > 0) {
-          const singleTag = selectedTags[0].trim().toLowerCase();
-          
-          // This uses the array containment operator directly
-          query = query.or(`ai_generated_tags::text ilike '%${singleTag}%',manual_tags::text ilike '%${singleTag}%'`);
-          
-          console.log(`Filtering on tag: "${singleTag}"`);
-        }
+        // Use more reliable string matching since we're dealing with arrays in JSON
+        query = query.or(
+          `ai_generated_tags::text ilike '%${singleTag}%',` + 
+          `manual_tags::text ilike '%${singleTag}%'`
+        );
       }
       
       const { data, error } = await query
@@ -350,68 +368,158 @@ function Docs() {
 
       if (error) throw error;
 
+      console.log(`Database query returned ${data?.length || 0} files`);
+
       // Filter out files with missing file_path or any other issues
-      // Also exclude files under the file_types folder and .txt files
+      // Also exclude files under the file_types folder, .txt files, and files in .archive_docs folders
       let validFiles = (data || []).filter(file => 
         file && file.file_path && 
         // Exclude files under the file_types folder at the repo root
         // The path could be like "/file_types/..." or start with "file_types/..."
         !file.file_path.includes('/file_types/') && 
         !file.file_path.startsWith('file_types/') &&
+        // Exclude files in .archive_docs folders
+        !file.file_path.includes('/.archive_docs/') &&
+        !file.file_path.startsWith('.archive_docs/') &&
         // Exclude .txt files
         !file.file_path.endsWith('.txt')
       );
       
-      // Client-side filtering to ensure proper tag matching
-      // This is needed to ensure each document has EXACTLY the tag that was selected
+      // Simple and direct client-side filtering by tag
       if (selectedTags.length > 0) {
-        console.log(`Client-side filtering for files matching ${selectedTags.length} selected tags...`);
+        console.log(`[DEBUG SEARCH] Client-side filtering for tag: ${selectedTags[0]}`);
         
         const startingCount = validFiles.length;
+        const selectedTag = selectedTags[0].toLowerCase().trim();
         
-        validFiles = validFiles.filter(file => {
-          try {
-            // Extract and normalize all tags from this file
-            const fileTags: string[] = [];
-            
-            // Process ai_generated_tags
-            if (file.ai_generated_tags && Array.isArray(file.ai_generated_tags)) {
-              fileTags.push(...file.ai_generated_tags
-                .filter(Boolean)
-                .map(tag => String(tag).toLowerCase().trim()));
+        // Enhanced debugging - dump the first few file tags before filtering
+        console.log('=== DEBUG SEARCH: EXAMINING TAG DATA FORMAT ===');
+        validFiles.slice(0, 5).forEach((file, idx) => {
+          console.log(`File ${idx+1}: ${file.file_path}`);
+          console.log(`  ai_generated_tags:`, file.ai_generated_tags);
+          console.log(`  typeof ai_generated_tags:`, typeof file.ai_generated_tags);
+          console.log(`  isArray:`, Array.isArray(file.ai_generated_tags));
+          
+          // Try to parse if it's a JSON string
+          if (typeof file.ai_generated_tags === 'string') {
+            try {
+              console.log(`  Parsed from string:`, JSON.parse(file.ai_generated_tags));
+            } catch (e) {
+              console.log(`  Not parseable as JSON`);
             }
-            
-            // Process manual_tags
-            if (file.manual_tags && Array.isArray(file.manual_tags)) {
-              fileTags.push(...file.manual_tags
-                .filter(Boolean)
-                .map(tag => String(tag).toLowerCase().trim()));
-            }
-            
-            // Simple logging to debug available tags
-            if (Math.random() < 0.1) { // Log only 10% of files to avoid console spam
-              console.log(`File tags for ${file.file_path}:`, fileTags);
-            }
-            
-            // For each selected tag, check if it exists in this file's tags
-            // Using simple array.includes for exact matching
-            const hasRequiredTags = selectedTags.every(selectedTag => {
-              const normalizedSelectedTag = selectedTag.toLowerCase().trim();
-              return fileTags.includes(normalizedSelectedTag);
-            });
-            
-            if (hasRequiredTags) {
-              console.log(`✅ MATCH: "${file.file_path}" matches all tags:`, selectedTags);
-            }
-            
-            return hasRequiredTags;
-          } catch (error) {
-            console.error('Error in client-side tag filtering:', error);
-            return false;
           }
+          
+          // Show manual tags too
+          console.log(`  manual_tags:`, file.manual_tags);
+          console.log(`  typeof manual_tags:`, typeof file.manual_tags);
+          console.log(`  isArray:`, Array.isArray(file.manual_tags));
+          console.log('---');
         });
         
-        console.log(`Client-side filtering reduced results from ${startingCount} to ${validFiles.length} files`);
+        // Filter files with the selected tag
+        validFiles = validFiles.filter(file => {
+          // Initialize match as false
+          let hasTag = false;
+          let tagSourceInfo = ''; // For debugging
+          
+          // Check AI generated tags with enhanced debugging
+          let aiTags = [];
+          
+          // Handle different formats of ai_generated_tags
+          if (file.ai_generated_tags) {
+            if (Array.isArray(file.ai_generated_tags)) {
+              aiTags = file.ai_generated_tags;
+              tagSourceInfo = 'from array';
+            } else if (typeof file.ai_generated_tags === 'string') {
+              // Try to parse JSON string
+              try {
+                const parsed = JSON.parse(file.ai_generated_tags);
+                if (Array.isArray(parsed)) {
+                  aiTags = parsed;
+                  tagSourceInfo = 'from JSON string array';
+                } else if (parsed && typeof parsed === 'object') {
+                  // If it's an object, extract values
+                  aiTags = Object.values(parsed).filter(Boolean);
+                  tagSourceInfo = 'from JSON string object values';
+                }
+              } catch (e) {
+                // If it's not valid JSON, maybe it's a comma-separated string?
+                aiTags = file.ai_generated_tags.split(',').map(t => t.trim()).filter(t => t !== '');
+                tagSourceInfo = 'from comma-separated string';
+              }
+            }
+          }
+          
+          // Check each AI tag
+          for (const tag of aiTags) {
+            if (tag && typeof tag === 'string') {
+              const normalizedTag = tag.toLowerCase().trim();
+              if (normalizedTag === selectedTag || 
+                  normalizedTag.includes(selectedTag) || 
+                  selectedTag.includes(normalizedTag)) {
+                hasTag = true;
+                tagSourceInfo += ` - matched "${normalizedTag}"`;
+                break;
+              }
+            }
+          }
+          
+          // If not found in AI tags, check manual tags
+          if (!hasTag && file.manual_tags) {
+            let manualTags = [];
+            
+            if (Array.isArray(file.manual_tags)) {
+              manualTags = file.manual_tags;
+              tagSourceInfo = 'from manual array';
+            } else if (typeof file.manual_tags === 'string') {
+              // Try to parse JSON string
+              try {
+                const parsed = JSON.parse(file.manual_tags);
+                if (Array.isArray(parsed)) {
+                  manualTags = parsed;
+                  tagSourceInfo = 'from manual JSON string array';
+                } else if (parsed && typeof parsed === 'object') {
+                  // If it's an object, extract values
+                  manualTags = Object.values(parsed).filter(Boolean);
+                  tagSourceInfo = 'from manual JSON string object values';
+                }
+              } catch (e) {
+                // If it's not valid JSON, maybe it's a comma-separated string?
+                manualTags = file.manual_tags.split(',').map(t => t.trim()).filter(t => t !== '');
+                tagSourceInfo = 'from manual comma-separated string';
+              }
+            }
+            
+            // Check each manual tag
+            for (const tag of manualTags) {
+              if (tag && typeof tag === 'string') {
+                const normalizedTag = tag.toLowerCase().trim();
+                if (normalizedTag === selectedTag || 
+                    normalizedTag.includes(selectedTag) || 
+                    selectedTag.includes(normalizedTag)) {
+                  hasTag = true;
+                  tagSourceInfo += ` - matched "${normalizedTag}"`;
+                  break;
+                }
+              }
+            }
+          }
+          
+          // Enhanced logging for all files
+          const fileTags = aiTags.concat(Array.isArray(file.manual_tags) ? file.manual_tags : []);
+          console.log(`[DEBUG SEARCH] File: ${file.file_path.padEnd(50)} | Tags: ${JSON.stringify(fileTags).padEnd(30)} | Match: ${hasTag ? '✅' : '❌'} ${tagSourceInfo}`);
+          
+          return hasTag;
+        });
+        
+        console.log(`[DEBUG SEARCH] Tag filtering reduced results from ${startingCount} to ${validFiles.length} files`);
+        
+        // Debug output of results
+        console.log('=== SEARCH FILTERING RESULTS ===');
+        console.log(`Matched files (${validFiles.length}):`);
+        validFiles.slice(0, 10).forEach((file, i) => {
+          console.log(`${i+1}. ${file.file_path}`);
+        });
       }
 
       // Log detailed results if tag filtering was applied
@@ -561,6 +669,62 @@ function Docs() {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
   
+  // Handle document archiving (move to .archive_docs folder)
+  const handleArchiveFile = async (file: DocumentationFile) => {
+    if (!file) {
+      toast.error('Invalid file selected for archiving');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Use markdownFileService to archive the file
+      const result = await markdownFileService.archiveFile(file.file_path);
+      
+      if (result.success) {
+        // Update the file path in the database to reflect the new archived location
+        const { error: updateError } = await supabase
+          .from('documentation_files')
+          .update({
+            file_path: result.newPath,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', file.id);
+        
+        if (updateError) {
+          throw updateError;
+        }
+        
+        // Extract just the filename for the success message
+        const fileName = file.file_path.split('/').pop();
+        toast.success(`File "${fileName}" has been archived`);
+        
+        // Update the UI
+        // Since we filter out archived files, just remove this file from the list
+        setDocumentationFiles(prev => prev.filter(f => f.id !== file.id));
+        
+        // Rebuild groups to reflect the archived file
+        const updatedGroups = buildDocumentTypeGroups(
+          documentationFiles.filter(f => f.id !== file.id),
+          documentTypes
+        );
+        setDocumentTypeGroups(updatedGroups);
+        
+        // If the currently selected file was archived, clear selection
+        if (selectedFile?.id === file.id) {
+          setSelectedFile(null);
+        }
+      } else {
+        throw new Error(result.message || 'Failed to archive file');
+      }
+    } catch (error) {
+      console.error('Error archiving file:', error);
+      toast.error(`Failed to archive file: ${error.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle document deletion
   const handleDeleteFile = async (file: DocumentationFile, byPath: boolean = false) => {
     if (!file) {
@@ -570,6 +734,21 @@ function Docs() {
     
     setLoading(true);
     try {
+      // First, try to delete the file from disk using markdownFileService
+      try {
+        const result = await markdownFileService.deleteFile(file.file_path);
+        console.log('File deletion result:', result);
+        // Show toast for successful file deletion
+        if (result.success) {
+          toast.success(`File "${file.file_path.split('/').pop()}" deleted from disk`);
+        }
+      } catch (fileError: any) {
+        console.error('Error deleting file from disk:', fileError);
+        // Continue with database deletion regardless of file deletion success
+        // Don't show toast error since we'll delete the database record anyway
+      }
+      
+      // Then, delete from database regardless of whether the file deletion succeeded
       let deleteResult;
       
       // Check if we're deleting by ID or by path
@@ -602,31 +781,9 @@ function Docs() {
       }
       
       if (deleteResult.success) {
-        // Call API to request physical file deletion on disk
-        try {
-          const response = await fetch('/api/docs-sync', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-              action: 'delete-file',
-              fileId: file.id || null,
-              filePath: file.file_path 
-            })
-          });
-          
-          if (!response.ok) {
-            console.warn(`API returned status ${response.status} when attempting to delete file physically`);
-          }
-        } catch (apiError) {
-          console.error('Error calling delete file API:', apiError);
-          // Continue anyway as the db deletion is already done
-        }
-        
         // Extract just the filename for the success message
         const fileName = file.file_path.split('/').pop();
-        toast.success(`File "${fileName}" has been permanently deleted`);
+        toast.success(`File "${fileName}" has been removed from the database`);
         
         // Update the UI
         // Remove the file from the current documentationFiles list
@@ -913,11 +1070,23 @@ function Docs() {
     try {
       // Skip trying to use the database function since it's not available
       // Instead, directly use the client-side extraction
-      console.log('Using client-side tag extraction');
+      console.log('[DEBUG TAGS] Using client-side tag extraction');
+      console.log(`[DEBUG TAGS] Processing ${documentationFiles.length} files for tag extraction`);
+      
+      // Show sample of input files
+      console.log('[DEBUG TAGS] Sample input files:', documentationFiles.slice(0, 3).map(file => ({
+        path: file.file_path,
+        ai_tags_type: file.ai_generated_tags ? typeof file.ai_generated_tags : 'undefined',
+        ai_tags: file.ai_generated_tags,
+        manual_tags_type: file.manual_tags ? typeof file.manual_tags : 'undefined',
+        manual_tags: file.manual_tags
+      })));
+      
       const extractedTags = extractTagsFromFiles(documentationFiles);
+      console.log(`[DEBUG TAGS] Extracted ${extractedTags.length} unique tags`);
       setTags(extractedTags);
     } catch (error) {
-      console.error('Error in tag fetching:', error);
+      console.error('[DEBUG TAGS] Error in tag fetching:', error);
       // Set empty tags array in case of error
       setTags([]);
     }
@@ -928,6 +1097,45 @@ function Docs() {
     // Create a map to count tag occurrences
     const tagMap = new Map<string, number>();
     
+    console.log(`[DEBUG EXTRACT] Starting tag extraction from ${files.length} files`);
+    
+    // Track stats for debugging
+    const stats = {
+      totalFiles: files.length,
+      filesWithAiTags: 0,
+      filesWithManualTags: 0,
+      totalTagsFound: 0,
+      aiTagsArray: 0,
+      aiTagsString: 0,
+      manualTagsArray: 0,
+      manualTagsString: 0,
+      parsingErrors: 0
+    };
+    
+    // Examine the first 3 files in detail to understand their structure
+    if (files.length > 0) {
+      const sampleFiles = files.slice(0, 3);
+      sampleFiles.forEach((file, index) => {
+        console.log(`[DEBUG EXTRACT] File ${index + 1} structure:`, {
+          path: file.file_path,
+          ai_tags_type: file.ai_generated_tags ? typeof file.ai_generated_tags : 'undefined',
+          ai_tags_isArray: file.ai_generated_tags ? Array.isArray(file.ai_generated_tags) : false,
+          ai_tags_sample: file.ai_generated_tags ? 
+            (Array.isArray(file.ai_generated_tags) ? 
+              file.ai_generated_tags.slice(0, 3) : 
+              file.ai_generated_tags) 
+            : null,
+          manual_tags_type: file.manual_tags ? typeof file.manual_tags : 'undefined',
+          manual_tags_isArray: file.manual_tags ? Array.isArray(file.manual_tags) : false,
+          manual_tags_sample: file.manual_tags ? 
+            (Array.isArray(file.manual_tags) ? 
+              file.manual_tags.slice(0, 3) : 
+              file.manual_tags) 
+            : null
+        });
+      });
+    }
+    
     // Process each file
     files.forEach(file => {
       if (!file) return;
@@ -936,15 +1144,32 @@ function Docs() {
         // Extract AI generated tags (handle both string[] and JSON string)
         let aiTags: string[] = [];
         if (file.ai_generated_tags) {
+          stats.filesWithAiTags++;
+          
           if (Array.isArray(file.ai_generated_tags)) {
-            aiTags = file.ai_generated_tags;
+            stats.aiTagsArray++;
+            aiTags = file.ai_generated_tags.filter(Boolean);
+            console.log(`[DEBUG EXTRACT] Array ai_generated_tags for ${file.file_path}:`, aiTags);
           } else if (typeof file.ai_generated_tags === 'string') {
+            stats.aiTagsString++;
+            console.log(`[DEBUG EXTRACT] String ai_generated_tags for ${file.file_path}:`, file.ai_generated_tags);
+            
             // Try to parse JSON string if that's how it's stored
             try {
-              aiTags = JSON.parse(file.ai_generated_tags);
+              const parsed = JSON.parse(file.ai_generated_tags);
+              console.log(`[DEBUG EXTRACT] Parsed ai_generated_tags:`, parsed);
+              
+              if (Array.isArray(parsed)) {
+                aiTags = parsed.filter(Boolean);
+              } else if (parsed && typeof parsed === 'object') {
+                // If it's an object, extract values
+                aiTags = Object.values(parsed).filter(Boolean);
+              }
             } catch (e) {
+              stats.parsingErrors++;
+              console.log(`[DEBUG EXTRACT] Failed to parse ai_generated_tags as JSON, treating as comma-separated: ${file.ai_generated_tags}`);
               // If it's not valid JSON, maybe it's a comma-separated string?
-              aiTags = file.ai_generated_tags.split(',').map(t => t.trim());
+              aiTags = file.ai_generated_tags.split(',').map(t => t.trim()).filter(t => t !== '');
             }
           }
         }
@@ -952,21 +1177,52 @@ function Docs() {
         // Extract manual tags (handle both string[] and JSON string)
         let manualTags: string[] = [];
         if (file.manual_tags) {
+          stats.filesWithManualTags++;
+          
           if (Array.isArray(file.manual_tags)) {
-            manualTags = file.manual_tags;
+            stats.manualTagsArray++;
+            manualTags = file.manual_tags.filter(Boolean);
+            console.log(`[DEBUG EXTRACT] Array manual_tags for ${file.file_path}:`, manualTags);
           } else if (typeof file.manual_tags === 'string') {
+            stats.manualTagsString++;
+            console.log(`[DEBUG EXTRACT] String manual_tags for ${file.file_path}:`, file.manual_tags);
+            
             // Try to parse JSON string if that's how it's stored
             try {
-              manualTags = JSON.parse(file.manual_tags);
+              const parsed = JSON.parse(file.manual_tags);
+              console.log(`[DEBUG EXTRACT] Parsed manual_tags:`, parsed);
+              
+              if (Array.isArray(parsed)) {
+                manualTags = parsed.filter(Boolean);
+              } else if (parsed && typeof parsed === 'object') {
+                // If it's an object, extract values
+                manualTags = Object.values(parsed).filter(Boolean);
+              }
             } catch (e) {
+              stats.parsingErrors++;
+              console.log(`[DEBUG EXTRACT] Failed to parse manual_tags as JSON, treating as comma-separated: ${file.manual_tags}`);
               // If it's not valid JSON, maybe it's a comma-separated string?
-              manualTags = file.manual_tags.split(',').map(t => t.trim());
+              manualTags = file.manual_tags.split(',').map(t => t.trim()).filter(t => t !== '');
             }
           }
         }
         
+        // Always log for debugging - remove random factor
+        console.log(`[DEBUG EXTRACT] Tags for ${file.file_path}: AI=${aiTags.length}, Manual=${manualTags.length}`);
+        
         // Combine and count all tags
-        [...aiTags, ...manualTags].forEach(tag => {
+        const fileTags = [...aiTags, ...manualTags];
+        stats.totalTagsFound += fileTags.length;
+        
+        // For files with tags, log the full details (limit to avoid console flooding)
+        if ((aiTags.length > 0 || manualTags.length > 0) && Math.random() < 0.2) {
+          console.log(`[DEBUG EXTRACT] TAGS FOUND in ${file.file_path}:`, { 
+            aiTags: aiTags.length > 0 ? aiTags : 'none', 
+            manualTags: manualTags.length > 0 ? manualTags : 'none' 
+          });
+        }
+        
+        fileTags.forEach(tag => {
           if (tag && typeof tag === 'string' && tag.trim() !== '') {
             // Normalize the tag (lowercase, trim)
             const normalizedTag = tag.trim().toLowerCase();
@@ -975,7 +1231,7 @@ function Docs() {
           }
         });
       } catch (error) {
-        console.error('Error processing tags for file:', file.file_path, error);
+        console.error('[DEBUG EXTRACT] Error processing tags for file:', file.file_path, error);
       }
     });
     
@@ -985,26 +1241,260 @@ function Docs() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 30); // Limit to top 30 tags
     
+    console.log('[DEBUG EXTRACT] Tag extraction stats:', stats);
+    console.log('[DEBUG EXTRACT] Final extracted tags:', tagArray);
     return tagArray;
   };
   
-  // Toggle tag selection
-  const toggleTag = (tag: string) => {
+  // Toggle tag selection and perform immediate filtering
+  const toggleTag = async (tag: string) => {
     // Always work with lowercase normalized tags for consistency
     const normalizedTag = tag.trim().toLowerCase();
+    console.log(`[DEBUG FILTER] Tag clicked: "${normalizedTag}"`);
     
-    setSelectedTags(prev => {
-      // If tag is already selected, remove it
-      if (prev.includes(normalizedTag)) {
-        const result = prev.filter(t => t !== normalizedTag);
-        console.log(`Tag "${normalizedTag}" removed, selected tags now:`, result);
-        return result;
+    // If tag is already selected, clear selection
+    if (selectedTags.includes(normalizedTag)) {
+      console.log(`[DEBUG FILTER] Clearing tag: "${normalizedTag}"`);
+      await setSelectedTags([]);
+      // Fetch all files when clearing filters
+      fetchDocumentationFiles();
+    } else {
+      // Otherwise, set it as the only selected tag
+      console.log(`[DEBUG FILTER] Setting tag: "${normalizedTag}"`);
+      await setSelectedTags([normalizedTag]);
+      
+      // Directly filter the files by tag
+      setLoading(true);
+      try {
+        console.log(`[DEBUG FILTER] Directly filtering for tag: "${normalizedTag}"`);
+        console.log(`[DEBUG FILTER] Using Supabase query with: ai_generated_tags::text ilike '%${normalizedTag}%' OR manual_tags::text ilike '%${normalizedTag}%'`);
+        
+        const { data, error } = await supabase
+          .from('documentation_files')
+          .select('*')
+          .or(`ai_generated_tags::text ilike '%${normalizedTag}%',manual_tags::text ilike '%${normalizedTag}%'`)
+          .order('created_at', { ascending: false })
+          .limit(200);
+        
+        if (error) {
+          console.error('[DEBUG FILTER] Supabase query error:', error);
+          throw error;
+        }
+        
+        console.log(`[DEBUG FILTER] Supabase query returned ${data?.length || 0} raw results`);
+        
+        // Log database results for detailed inspection
+        if (data && data.length > 0) {
+          const sampleResults = data.slice(0, 3);
+          console.log('[DEBUG FILTER] Sample database results:', sampleResults.map(file => ({
+            id: file.id,
+            file_path: file.file_path,
+            ai_tags_type: file.ai_generated_tags ? typeof file.ai_generated_tags : 'undefined',
+            ai_tags: file.ai_generated_tags,
+            manual_tags_type: file.manual_tags ? typeof file.manual_tags : 'undefined',
+            manual_tags: file.manual_tags
+          })));
+        }
+        
+        // Filter out files with missing file_path or any other issues
+        const validFiles = (data || []).filter(file => 
+          file && file.file_path && 
+          !file.file_path.includes('/file_types/') && 
+          !file.file_path.startsWith('file_types/') &&
+          !file.file_path.includes('/.archive_docs/') &&
+          !file.file_path.startsWith('.archive_docs/') &&
+          !file.file_path.endsWith('.txt')
+        );
+        
+        console.log(`[DEBUG FILTER] After path filtering: ${validFiles.length} valid files (excluded ${(data?.length || 0) - validFiles.length} invalid paths)`);
+        
+        // Apply client-side filtering to ensure accuracy
+        const results = {
+          exactMatches: 0,
+          partialMatches: 0,
+          noMatches: 0,
+          matchDetails: [] as {path: string, matches: boolean, matchType: string, tags: string[]}[]
+        };
+        
+        const exactMatches = validFiles.filter(file => {
+          // Extract tags from the file
+          const fileTags: string[] = [];
+          let aiTagsFormatted: string[] = [];
+          let manualTagsFormatted: string[] = [];
+          
+          // Track full details for logging
+          const fileDetails = {
+            path: file.file_path,
+            matches: false,
+            matchType: 'none',
+            tags: [] as string[]
+          };
+          
+          // Process AI generated tags
+          if (file.ai_generated_tags) {
+            if (Array.isArray(file.ai_generated_tags)) {
+              file.ai_generated_tags.forEach(tag => {
+                if (tag && typeof tag === 'string') {
+                  const normalizedFileTag = tag.toLowerCase().trim();
+                  fileTags.push(normalizedFileTag);
+                  aiTagsFormatted.push(normalizedFileTag);
+                  fileDetails.tags.push(normalizedFileTag);
+                }
+              });
+            } else if (typeof file.ai_generated_tags === 'string') {
+              // Try to parse JSON string
+              try {
+                const parsed = JSON.parse(file.ai_generated_tags);
+                if (Array.isArray(parsed)) {
+                  parsed.forEach(tag => {
+                    if (tag && typeof tag === 'string') {
+                      const normalizedFileTag = tag.toLowerCase().trim();
+                      fileTags.push(normalizedFileTag);
+                      aiTagsFormatted.push(normalizedFileTag);
+                      fileDetails.tags.push(normalizedFileTag);
+                    }
+                  });
+                } else if (parsed && typeof parsed === 'object') {
+                  Object.values(parsed).forEach(tag => {
+                    if (tag && typeof tag === 'string') {
+                      const normalizedFileTag = tag.toString().toLowerCase().trim();
+                      fileTags.push(normalizedFileTag);
+                      aiTagsFormatted.push(normalizedFileTag);
+                      fileDetails.tags.push(normalizedFileTag);
+                    }
+                  });
+                }
+              } catch (e) {
+                // If not valid JSON, treat as comma-separated string
+                const tags = file.ai_generated_tags.split(',').map(t => t.trim()).filter(Boolean);
+                tags.forEach(tag => {
+                  const normalizedFileTag = tag.toLowerCase().trim();
+                  fileTags.push(normalizedFileTag);
+                  aiTagsFormatted.push(normalizedFileTag);
+                  fileDetails.tags.push(normalizedFileTag);
+                });
+              }
+            }
+          }
+          
+          // Process manual tags
+          if (file.manual_tags) {
+            if (Array.isArray(file.manual_tags)) {
+              file.manual_tags.forEach(tag => {
+                if (tag && typeof tag === 'string') {
+                  const normalizedFileTag = tag.toLowerCase().trim();
+                  fileTags.push(normalizedFileTag);
+                  manualTagsFormatted.push(normalizedFileTag);
+                  fileDetails.tags.push(normalizedFileTag);
+                }
+              });
+            } else if (typeof file.manual_tags === 'string') {
+              // Try to parse JSON string
+              try {
+                const parsed = JSON.parse(file.manual_tags);
+                if (Array.isArray(parsed)) {
+                  parsed.forEach(tag => {
+                    if (tag && typeof tag === 'string') {
+                      const normalizedFileTag = tag.toLowerCase().trim();
+                      fileTags.push(normalizedFileTag);
+                      manualTagsFormatted.push(normalizedFileTag);
+                      fileDetails.tags.push(normalizedFileTag);
+                    }
+                  });
+                } else if (parsed && typeof parsed === 'object') {
+                  Object.values(parsed).forEach(tag => {
+                    if (tag && typeof tag === 'string') {
+                      const normalizedFileTag = tag.toString().toLowerCase().trim();
+                      fileTags.push(normalizedFileTag);
+                      manualTagsFormatted.push(normalizedFileTag);
+                      fileDetails.tags.push(normalizedFileTag);
+                    }
+                  });
+                }
+              } catch (e) {
+                // If not valid JSON, treat as comma-separated string
+                const tags = file.manual_tags.split(',').map(t => t.trim()).filter(Boolean);
+                tags.forEach(tag => {
+                  const normalizedFileTag = tag.toLowerCase().trim();
+                  fileTags.push(normalizedFileTag);
+                  manualTagsFormatted.push(normalizedFileTag);
+                  fileDetails.tags.push(normalizedFileTag);
+                });
+              }
+            }
+          }
+          
+          // Debug: Log tag counts for this file
+          console.log(`[DEBUG FILTER] File ${file.file_path} has ${fileTags.length} tags: AI=${aiTagsFormatted.length}, Manual=${manualTagsFormatted.length}`);
+          
+          // Check if the file has the selected tag (exact or partial match)
+          let hasExactMatch = false;
+          let hasPartialMatch = false;
+          
+          for (const fileTag of fileTags) {
+            if (fileTag === normalizedTag) {
+              // Exact match
+              hasExactMatch = true;
+              console.log(`[DEBUG FILTER] EXACT MATCH: "${file.file_path}" has tag "${fileTag}" matching "${normalizedTag}"`);
+              fileDetails.matches = true;
+              fileDetails.matchType = 'exact';
+              break;
+            } else if (fileTag.includes(normalizedTag) || normalizedTag.includes(fileTag)) {
+              // Partial match
+              hasPartialMatch = true;
+              console.log(`[DEBUG FILTER] PARTIAL MATCH: "${file.file_path}" has tag "${fileTag}" partially matching "${normalizedTag}"`);
+              fileDetails.matches = true;
+              fileDetails.matchType = 'partial';
+              // Don't break - continue checking for exact matches
+            }
+          }
+          
+          // Log no matches
+          if (!hasExactMatch && !hasPartialMatch) {
+            results.noMatches++;
+            console.log(`[DEBUG FILTER] NO MATCH: "${file.file_path}" has tags [${fileTags.join(', ')}] but none match "${normalizedTag}"`);
+          } else {
+            // Record match type for stats
+            if (hasExactMatch) results.exactMatches++;
+            else if (hasPartialMatch) results.partialMatches++;
+          }
+          
+          // Add to match details
+          results.matchDetails.push(fileDetails);
+          
+          return hasExactMatch || hasPartialMatch;
+        });
+        
+        console.log(`[DEBUG FILTER] Match statistics:
+          - Total files checked: ${validFiles.length}
+          - Exact matches: ${results.exactMatches}
+          - Partial matches: ${results.partialMatches}
+          - No matches: ${results.noMatches}
+        `);
+        
+        console.log('[DEBUG FILTER] First 10 match details:', results.matchDetails.slice(0, 10));
+        
+        console.log(`[DEBUG FILTER] After exact matching: ${exactMatches.length} files with tag "${normalizedTag}"`);
+        
+        // Log final files to display
+        const filesToDisplay = exactMatches.length > 0 ? exactMatches : validFiles;
+        console.log(`[DEBUG FILTER] Final files to display: ${filesToDisplay.length}`);
+        console.log('[DEBUG FILTER] Sample files being displayed:', filesToDisplay.slice(0, 5).map(f => f.file_path));
+        
+        setDocumentationFiles(filesToDisplay);
+        
+        // Update document type groups with filtered files
+        const types = await fetchDocumentTypes();
+        const groups = buildDocumentTypeGroups(filesToDisplay, types);
+        console.log(`[DEBUG FILTER] Document groups created: ${groups.length} groups`);
+        setDocumentTypeGroups(groups);
+      } catch (error) {
+        console.error('[DEBUG FILTER] Error filtering by tag:', error);
+        fetchDocumentationFiles(); // fallback to fetching all
+      } finally {
+        setLoading(false);
       }
-      // Otherwise, add it
-      const result = [...prev, normalizedTag];
-      console.log(`Tag "${normalizedTag}" added, selected tags now:`, result);
-      return result;
-    });
+    }
   };
   
   // Helper function for debugging tag issues
@@ -1050,10 +1540,10 @@ function Docs() {
     }
   };
   
-  // Initial data load
+  // Initial data load and refetch when filter changes
   useEffect(() => {
     fetchDocumentationFiles();
-  }, []);
+  }, [showWithSummaries]);
   
   // Fetch tags whenever documentation files change
   useEffect(() => {
@@ -1070,14 +1560,47 @@ function Docs() {
         <div className="col-span-1 flex flex-col bg-white rounded-lg shadow">
           {/* Search and Actions section */}
           <div className="p-4 border-b">
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-wrap justify-between gap-2 mb-3">
               <button
                 onClick={handleSearch}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
                 Search
               </button>
-              {/* UI actions removed - now handled by CLI scripts */}
+              
+              {/* Summary filter toggle */}
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setShowWithSummaries('all')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    showWithSummaries === 'all' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setShowWithSummaries('withSummary')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    showWithSummaries === 'withSummary' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  With Summary
+                </button>
+                <button
+                  onClick={() => setShowWithSummaries('withoutSummary')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    showWithSummaries === 'withoutSummary' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  No Summary
+                </button>
+              </div>
             </div>
             
             {/* File selection and reprocessing controls */}
@@ -1143,7 +1666,7 @@ function Docs() {
                 <button 
                   onClick={() => {
                     setSelectedTags([]);
-                    setTimeout(handleSearch, 0); // Schedule a search after state update
+                    fetchDocumentationFiles(); // Refresh all files when clearing tags
                   }} 
                   className="text-xs text-blue-600 hover:text-blue-800"
                 >
@@ -1157,48 +1680,46 @@ function Docs() {
                   Loading tags or no tags found in current documents...
                 </div>
               ) : (
-                tags.map(({tag, count}) => {
-                  // Format the tag for display (capitalize first letter of each word)
-                  const displayTag = tag
-                    .split(' ')
-                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(' ');
+                (() => {
+                  console.log('[DEBUG PILLS] Rendering tag pills with tags:', tags);
+                  console.log('[DEBUG PILLS] Selected tags:', selectedTags);
                   
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() => {
-                        // Direct approach: set just this one tag and search immediately
-                        const clickedTag = tag.trim().toLowerCase();
-                        console.log(`Tag clicked: "${clickedTag}"`);
-                        
-                        // If it's already selected, clear it
-                        if (selectedTags.includes(clickedTag)) {
-                          setSelectedTags([]);
-                        } else {
-                          // Otherwise, set just this one tag
-                          setSelectedTags([clickedTag]);
-                        }
-                        
-                        // Use setTimeout to ensure state is updated before search
-                        setTimeout(() => handleSearch(), 50);
-                      }}
-                      className={`text-xs px-3 py-1.5 rounded-full flex items-center transition-colors ${
-                        selectedTags.includes(tag.trim().toLowerCase())
-                          ? 'bg-blue-500 text-white font-medium shadow-sm'
-                          : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
-                      }`}
-                      title={`Filter by '${displayTag}' tag (${count} documents)`}
-                    >
-                      <span>{displayTag}</span>
-                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                        selectedTags.includes(tag.trim().toLowerCase())
-                          ? 'bg-blue-400 text-white'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>{count}</span>
-                    </button>
-                  );
-                })
+                  return tags.map(({tag, count}, index) => {
+                    // Format the tag for display (capitalize first letter of each word)
+                    const displayTag = tag
+                      .split(' ')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ');
+                    
+                    const normalizedTag = tag.trim().toLowerCase();
+                    const isSelected = selectedTags.includes(normalizedTag);
+                    
+                    console.log(`[DEBUG PILLS] Tag ${index+1}: "${tag}" (normalized: "${normalizedTag}"), count: ${count}, selected: ${isSelected}`);
+                    
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => {
+                          console.log('[DEBUG PILLS] Tag button clicked:', tag);
+                          toggleTag(tag);
+                        }}
+                        className={`text-xs px-3 py-1.5 rounded-full flex items-center transition-colors ${
+                          isSelected
+                            ? 'bg-blue-500 text-white font-medium shadow-sm'
+                            : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
+                        }`}
+                        title={`Filter by '${displayTag}' tag (${count} documents)`}
+                      >
+                        <span>{displayTag}</span>
+                        <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                          isSelected
+                            ? 'bg-blue-400 text-white'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>{count}</span>
+                      </button>
+                    );
+                  });
+                })()
               )}
             </div>
           </div>
@@ -1250,6 +1771,31 @@ function Docs() {
                   </div>
                 )}
                 
+                {/* Archive button */}
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent summary toggle
+                    
+                    // Extract just the filename from the file_path
+                    const fileName = selectedFile.file_path.split('/').pop();
+                    
+                    const confirmArchive = window.confirm(
+                      `Are you sure you want to archive the file "${fileName}"?\n\nThis will move the file to an .archive_docs folder and update its path in the database. The file will no longer appear in the list but will still exist on disk.`
+                    );
+                    if (confirmArchive) {
+                      handleArchiveFile(selectedFile);
+                    }
+                  }}
+                  className="ml-auto mr-3 bg-amber-50 hover:bg-amber-100 text-amber-600 hover:text-amber-700 text-xs px-3 py-1 rounded-md flex items-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <path d="M21 8v13H3V8"></path>
+                    <path d="M1 3h22v5H1z"></path>
+                    <path d="M10 12h4"></path>
+                  </svg>
+                  Archive
+                </button>
+
                 {/* Copy content button */}
                 <button 
                   onClick={async (e) => {
@@ -1279,7 +1825,7 @@ function Docs() {
                       toast.error('Failed to copy content to clipboard');
                     }
                   }}
-                  className="ml-auto mr-3 bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 text-xs px-3 py-1 rounded-md flex items-center"
+                  className="mr-3 bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 text-xs px-3 py-1 rounded-md flex items-center"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -1297,10 +1843,40 @@ function Docs() {
                     const fileName = selectedFile.file_path.split('/').pop();
                     
                     const confirmDelete = window.confirm(
-                      `Are you sure you want to delete the file "${fileName}"?\n\nWARNING: This will permanently delete the file from both the database and filesystem. This action cannot be undone.`
+                      `Are you sure you want to delete the file "${fileName}"?\n\nWARNING: This will permanently delete the file from both the database and filesystem. This action cannot be undone.\n\nFull path: ${selectedFile.file_path}`
                     );
                     if (confirmDelete) {
-                      handleDeleteFile(selectedFile);
+                      // Show a loading toast that we'll update with the result
+                      const toastId = toast.loading(`Attempting to delete ${fileName}...`);
+                      
+                      // Try with absolute path first as a test
+                      markdownFileService.deleteFile(selectedFile.file_path)
+                        .then(result => {
+                          console.log('File deletion result:', result);
+                          
+                          // Now call handleDeleteFile to update the database
+                          handleDeleteFile(selectedFile)
+                            .then(() => {
+                              // Update the toast on success
+                              toast.success(`File "${fileName}" has been permanently deleted`, {
+                                id: toastId,
+                                duration: 5000
+                              });
+                            })
+                            .catch(error => {
+                              // Even if DB update failed, file might be deleted
+                              toast.error(`Database update failed: ${error.message}`, {
+                                id: toastId,
+                                duration: 5000
+                              });
+                            });
+                        })
+                        .catch(error => {
+                          toast.error(`Failed to delete file: ${error.message}`, {
+                            id: toastId,
+                            duration: 5000
+                          });
+                        });
                     }
                   }}
                   className="mr-3 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs px-3 py-1 rounded-md flex items-center"

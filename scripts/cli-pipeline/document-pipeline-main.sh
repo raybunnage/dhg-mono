@@ -1491,12 +1491,33 @@ EOF
     return
   fi
   
-  # Verify JSON format before proceeding
-  echo "$UNTYPED_FILES" | jq empty >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
+  # Verify JSON format before proceeding - with better error handling
+  if ! echo "$UNTYPED_FILES" | jq -e . >/dev/null 2>&1; then
     echo "Error: Invalid JSON returned from database query"
     echo "Raw response: $UNTYPED_FILES"
-    return
+    
+    # Try to clean up the JSON response
+    echo "Attempting to fix JSON response..."
+    
+    # If it's a TypeError related to the .filter method, the output might have both stderr and stdout
+    # Try to extract just the JSON part
+    CLEANED_JSON=$(echo "$UNTYPED_FILES" | grep -o '\[.*\]' || echo "")
+    
+    if [ -n "$CLEANED_JSON" ]; then
+      echo "Extracted potential JSON array: $CLEANED_JSON"
+      
+      # Verify if the cleaned JSON is valid
+      if echo "$CLEANED_JSON" | jq -e . >/dev/null 2>&1; then
+        echo "Successfully cleaned JSON response"
+        UNTYPED_FILES="$CLEANED_JSON"
+      else
+        echo "Could not clean JSON response, aborting operation"
+        return 1
+      fi
+    else
+      echo "Could not extract JSON from response, aborting operation"
+      return 1
+    fi
   fi
   
   # Save raw output to a file for inspection
