@@ -104,18 +104,31 @@ const server = http.createServer(async (req, res) => {
     try {
       const projectRoot = path.join(__dirname, '..', '..');
       // Exclude .archived_scripts folders regardless of where they are in the path
-      const cmd = `find ${projectRoot}/scripts -name "*.sh" -o -name "*.js" -o -name "*.ts" -o -name "*.py" -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/.archived_scripts/*" -not -path "*/\\.archived_scripts/*" | head -100`;
+      const cmd = `find ${projectRoot}/scripts \\( -name "*.sh" -o -name "*.js" -o -name "*.ts" -o -name "*.py" \\) -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/.archived_scripts/*" | head -100`;
       
-      const output = execSync(cmd, { encoding: 'utf8' }).trim();
-      const files = output.split('\n').filter(Boolean);
+      console.log(`Executing find command: ${cmd}`);
       
-      // Normalize paths
-      const relativePaths = files.map(f => f.replace(projectRoot + '/', ''));
-      
-      sendJson(res, 200, {
-        total: relativePaths.length,
-        files: relativePaths
-      });
+      try {
+        const output = execSync(cmd, { encoding: 'utf8' }).trim();
+        const files = output.split('\n').filter(Boolean);
+        
+        console.log(`Found ${files.length} script files`);
+        
+        // Normalize paths
+        const relativePaths = files.map(f => f.replace(projectRoot + '/', ''));
+        
+        sendJson(res, 200, {
+          total: relativePaths.length,
+          files: relativePaths
+        });
+      } catch (cmdError) {
+        console.error('Error executing find command:', cmdError);
+        // Send a more graceful response with the error
+        sendJson(res, 500, { 
+          error: 'Error listing script files',
+          details: cmdError.message
+        });
+      }
     } catch (error) {
       console.error('Error finding files:', error);
       sendJson(res, 500, { error: 'Server error' });
