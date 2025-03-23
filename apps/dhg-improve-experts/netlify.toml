@@ -3,6 +3,7 @@
   base = "apps/dhg-improve-experts"
   command = "pnpm build"
   publish = "dist"
+  functions = "netlify/functions"
 
 # App-specific environment overrides
 [context.production]
@@ -24,7 +25,15 @@
   NODE_VERSION = "20.9.0"
   NPM_FLAGS = "--version"
 
+# Add API endpoints for the docs-sync API
+[[redirects]]
+  from = "/api/docs-sync"
+  to = "/.netlify/functions/docs-sync"
+  status = 200
+  force = true
+
+# Default SPA redirect
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 
+  status = 200
