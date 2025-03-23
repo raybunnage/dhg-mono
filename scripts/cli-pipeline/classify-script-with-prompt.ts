@@ -26,16 +26,14 @@ import { FileService } from '../../packages/cli/src/services/file-service';
 
 // Add global declaration for TypeScript
 declare global {
-  namespace NodeJS {
-    interface Global {
-      scriptMetadata: {
-        file_size?: number;
-        has_shebang?: boolean;
-        shebang?: string | null;
-        is_executable?: boolean;
-      };
-    }
+  interface ScriptMetadata {
+    file_size?: number;
+    has_shebang?: boolean;
+    shebang?: string | null;
+    is_executable?: boolean;
   }
+  
+  var scriptMetadata: ScriptMetadata;
 }
 
 // Initialize services
@@ -248,18 +246,16 @@ function getScriptContent(scriptPath: string): string | null {
       const stats = fs.statSync(scriptPath);
       const isExecutable = !!(stats.mode & 0o111); // Check if any execute bit is set
       
-      // If the global metadata object doesn't exist, create it
-      if (!global.scriptMetadata) {
-        global.scriptMetadata = {};
-      }
-      
       // Store metadata using file_size instead of size
-      global.scriptMetadata = {
+      const scriptMetadata: ScriptMetadata = {
         file_size: scriptContent.length,
         has_shebang: scriptContent.startsWith('#!'),
         shebang: scriptContent.startsWith('#!') ? scriptContent.split('\n')[0] : null,
         is_executable: isExecutable
       };
+      
+      // Assign to global
+      global.scriptMetadata = scriptMetadata;
       
       console.log(`✅ Successfully read script file (${scriptContent.length} bytes)`);
       console.log(`📊 Script metadata: ${JSON.stringify(global.scriptMetadata)}`);
@@ -557,10 +553,11 @@ async function callClaudeAPI(finalPrompt: string): Promise<Classification | null
                     console.log('✅ Successfully parsed JSON result from Claude API');
                     
                     // Add the metadata we collected when reading the script file
-                    if (global.scriptMetadata) {
+                    const scriptMetadata = global.scriptMetadata;
+                    if (scriptMetadata) {
                       parsedResult.metadata = {
                         ...parsedResult.metadata,
-                        ...global.scriptMetadata
+                        ...scriptMetadata
                       };
                     }
                     
@@ -595,10 +592,11 @@ async function callClaudeAPI(finalPrompt: string): Promise<Classification | null
                         console.log('✅ Successfully parsed JSON result using fallback method');
                         
                         // Add the metadata we collected when reading the script file
-                        if (global.scriptMetadata) {
+                        const scriptMetadata = global.scriptMetadata;
+                        if (scriptMetadata) {
                           parsedResult.metadata = {
                             ...parsedResult.metadata,
-                            ...global.scriptMetadata
+                            ...scriptMetadata
                           };
                         }
                         
