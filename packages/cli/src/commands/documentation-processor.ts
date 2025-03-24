@@ -15,7 +15,6 @@ import {
 interface DocumentationFile {
   id: string;
   file_path: string;
-  is_deleted: boolean;
   document_type_id?: string | null;
   classification?: any;
   metadata?: any;
@@ -125,7 +124,7 @@ async function getFilesToProcess(supabaseService: SupabaseService, limit?: numbe
         from: 'documentation_files',
         select: '*',
         filters: [
-          { field: 'is_deleted', operator: 'eq', value: false }
+          // is_deleted field has been removed
         ],
         order: { field: 'created_at', ascending: false },
         limit: limit || 1000
@@ -259,15 +258,15 @@ async function processFileById(id: string): Promise<boolean> {
     
     // Check if file exists on disk
     if (!fs.existsSync(fullPath)) {
-      Logger.warn(`File ${fullPath} does not exist on disk. Marking as deleted.`);
+      Logger.warn(`File ${fullPath} does not exist on disk. Deleting record.`);
       
       try {
         await ErrorHandler.wrap(async () => {
-          return await supabaseService.update('documentation_files', id, { is_deleted: true });
-        }, `Failed to mark file as deleted`);
+          return await supabaseService.delete('documentation_files', id);
+        }, `Failed to delete file record`);
       } catch (error) {
         if (error instanceof Error) {
-          Logger.error(`Failed to mark file as deleted: ${error.message}`);
+          Logger.error(`Failed to delete file record: ${error.message}`);
         }
       }
       

@@ -150,7 +150,6 @@ export async function findAndMoveDocumentByType(
       .from('documentation_files')
       .select('id, file_path, title, document_type_id')
       .eq('document_type_id', docTypeId)
-      .eq('is_deleted', false)
       .limit(1);
       
     if (fileError) {
@@ -311,12 +310,11 @@ export async function moveAllFilesByDocumentType(
       const docTypeId = matchingDocType.id;
       console.log(`Found document_type_id: ${docTypeId}`);
       
-      // Find all active files with this document type
+      // Find all files with this document type
       const { data: files, error: fileError } = await supabase
         .from('documentation_files')
         .select('id, file_path, title, document_type_id')
-        .eq('document_type_id', docTypeId)
-        .eq('is_deleted', false);
+        .eq('document_type_id', docTypeId);
         
       if (fileError) {
         console.error(`Error finding files: ${fileError.message}`);

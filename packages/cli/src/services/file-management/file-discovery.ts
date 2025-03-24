@@ -348,7 +348,6 @@ export class FileDiscoveryService {
         last_indexed_at: now,
         created_at: now,
         updated_at: now,
-        is_deleted: false,
         ai_generated_tags: [],
         manual_tags: [],
         document_type_id: defaultDocTypeId,

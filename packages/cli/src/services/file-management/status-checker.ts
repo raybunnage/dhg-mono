@@ -5,7 +5,6 @@ import * as path from 'path';
 export interface DocumentationFile {
   id: string;
   file_path?: string;
-  is_deleted?: boolean;
   [key: string]: any;
 }
 
@@ -37,27 +36,17 @@ export async function updateDeletionStatus(
         
         const absolutePath = path.join(rootDir, record.file_path);
         const exists = fs.existsSync(absolutePath);
-        const isCurrentlyDeleted = record.is_deleted === true;
         
-        if (exists && isCurrentlyDeleted) {
-          const { error } = await supabase
-            .from('documentation_files')
-            .update({ is_deleted: false })
-            .eq('id', record.id);
-            
-          if (error) {
-            failureCount++;
-            return false;
-          }
-          
+        if (exists) {
           existingCount++;
           successCount++;
-          console.log(`✅ Record ${record.id}: File exists, marked as NOT deleted`);
+          console.log(`✅ Record ${record.id}: File exists`);
           return true;
-        } else if (!exists && !isCurrentlyDeleted) {
+        } else {
+          // Since we don't use is_deleted anymore, hard delete the record
           const { error } = await supabase
             .from('documentation_files')
-            .update({ is_deleted: true })
+            .delete()
             .eq('id', record.id);
             
           if (error) {
@@ -67,16 +56,7 @@ export async function updateDeletionStatus(
           
           missingCount++;
           successCount++;
-          console.log(`❌ Record ${record.id}: File missing, marked as deleted`);
-          return true;
-        } else {
-          if (exists) {
-            existingCount++;
-            console.log(`✓ Record ${record.id}: File exists, already marked correctly`);
-          } else {
-            missingCount++;
-            console.log(`✓ Record ${record.id}: File missing, already marked correctly`);
-          }
+          console.log(`❌ Record ${record.id}: File missing, record deleted from database`);
           return true;
         }
       } catch (error) {
@@ -91,4 +71,4 @@ export async function updateDeletionStatus(
   }
   
   return { existingCount, missingCount, successCount, failureCount };
-} 
+}
