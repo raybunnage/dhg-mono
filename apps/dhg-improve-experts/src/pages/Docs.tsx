@@ -201,13 +201,19 @@ function Docs() {
       // Extract the directory path from file_path
       const pathParts = file.file_path.split('/');
       // Get the folder name (ignoring the filename at the end)
-      // We focus on the first part after 'docs/' if it exists
+      // We focus on the first part after 'docs/' or 'prompts/' if it exists
       let folderName = 'Uncategorized';
       
       // Check if the file is in the docs directory
       const docsIndex = pathParts.indexOf('docs');
       if (docsIndex !== -1 && pathParts.length > docsIndex + 1) {
         folderName = pathParts[docsIndex + 1];
+      }
+      
+      // Check if the file is in the prompts directory
+      const promptsIndex = pathParts.indexOf('prompts');
+      if (promptsIndex !== -1) {
+        folderName = 'Prompts';
       }
       
       // Create group array if it doesn't exist
