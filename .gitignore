@@ -117,24 +117,13 @@ supabase/schema-info.tmp.json
 scripts/.archived_scripts/
 scripts/.archived_scripts/**/*
 **/scripts/.archived_scripts/
-**/.archived/
-**/.archived_*/
-**/archived/
-**/.archived_files/
-**/.archived_components/
-**/.archived_pages/
-**/.archived_docs/
-**/.archived_tests/
-**/.archived_styles/
-**/.archived_utils/
-**/.archived_services/
-**/.archived_hooks/
-**/.archived_types/
-**/.archived_config/
-**/.archived_assets/
-**/.archived_data/
-**/*[._]archived*/
-**/*[._]archive*/
+scripts/cli-pipeline/.backup_scripts/
+scripts/cli-pipeline/.backup_scripts/**/*
+**/scripts/cli-pipeline/.backup_scripts/
+
+# Ensure all nested backup script folders are caught
+scripts/**/.backup_scripts/
+scripts/**/.backup_scripts/**/*
 
 # Env backups
 .backups/env/
