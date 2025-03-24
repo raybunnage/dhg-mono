@@ -281,6 +281,18 @@ function Docs() {
     // Sort groups alphabetically by name
     result.sort((a, b) => a.name.localeCompare(b.name));
     
+    // Extract the "Prompts" group if it exists
+    const promptsIndex = result.findIndex(group => group.name === 'Prompts');
+    if (promptsIndex !== -1) {
+      // Remove it from current position
+      const prompts = result.splice(promptsIndex, 1)[0];
+      // Ensure it's expanded by default
+      prompts.isExpanded = true;
+      // Insert it roughly halfway through the list
+      const halfwayIndex = Math.floor(result.length / 2);
+      result.splice(halfwayIndex, 0, prompts);
+    }
+    
     // Move "External Library" and "Readmes" to the end
     // and make them collapsed by default
     const externalLibIndex = result.findIndex(group => 
