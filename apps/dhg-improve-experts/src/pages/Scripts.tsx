@@ -543,9 +543,20 @@ function Scripts() {
                         {/* Folder header */}
                         <div 
                           className="flex items-center p-2 bg-gray-100 rounded cursor-pointer hover:bg-gray-200"
-                          onClick={toggleFolder}
+                          onClick={(e) => {
+                            // Stop propagation to prevent event bubbling
+                            e.stopPropagation();
+                            toggleFolder();
+                          }}
                         >
-                          <span className="mr-2">{isExpanded ? '▼' : '▶'}</span>
+                          <span 
+                            className="mr-2 cursor-pointer" 
+                            onClick={(e) => {
+                              // Stop propagation to prevent event bubbling
+                              e.stopPropagation();
+                              toggleFolder();
+                            }}
+                          >{isExpanded ? '▼' : '▶'}</span>
                           <span className="font-medium">📁 {folderPath || 'Root'}</span>
                           <span className="ml-2 text-xs text-gray-500">({folderStructure[folderPath].length} scripts)</span>
                         </div>
@@ -755,14 +766,23 @@ function Scripts() {
               {/* Collapsible summary section */}
               <div 
                 className="p-3 bg-gray-50 flex justify-between items-center cursor-pointer border-b"
-                onClick={() => setShowScriptSummary(!showScriptSummary)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowScriptSummary(!showScriptSummary);
+                }}
               >
                 <div className="flex items-center">
                   <h2 className="text-lg font-semibold">{selectedScript.title || selectedScript.file_path.split('/').pop()}</h2>
                 </div>
                 <div className="flex items-center">
                   <span className="text-sm text-gray-500 mr-2">{selectedScript.file_path}</span>
-                  <span>{showScriptSummary ? '▲' : '▼'}</span>
+                  <span 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowScriptSummary(!showScriptSummary);
+                    }}
+                    className="cursor-pointer"
+                  >{showScriptSummary ? '▲' : '▼'}</span>
                 </div>
               </div>
               
