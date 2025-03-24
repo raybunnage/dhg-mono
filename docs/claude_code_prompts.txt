@@ -1,3 +1,11 @@
+ Now I want a prompt to analyze the "Pages" in my apps/dhg-improve-experts app. 
+So I need you to look through my src folder in the just named folder  and identify the code that is driving the display of the the various pages I have in the app.  Most of them will have a dedicated page or more of code that is driving the ui and the ui intereactivity.  You will find many of them in the src/pages folder, but some might live elsewhere.  Thins I want to know about them 
+1) how well written are they - mention the good and bad things
+2) how big are they - and how would you refactor them if possible.
+3) most importantly - I now have a pretty solid packages/cli cli pipeline with many services that I've used to create some important scripts.   I would like to know specifically which of these servicdes I could reuse to refactor the code so that not everything was written from scratch and so I can leverage my chared packages/cli code 
+ 
+ 
+ 
  still has an error on the archiving - can you troubelshoot what    │
 │   is going on and fix it.  Please look at the "Scritps" page where   │
 │   your archive button is correctly working       
