@@ -547,7 +547,6 @@ export class SupabaseService {
           .from('documentation_files')
           .select('*')
           .eq('file_path', normPath)
-          .eq('is_deleted', false)
           .limit(1);
         
         if (error) {
@@ -567,7 +566,6 @@ export class SupabaseService {
         .from('documentation_files')
         .select('*')
         .ilike('file_path', `%${filename}%`)
-        .eq('is_deleted', false)
         .limit(1);
       
       if (error) {

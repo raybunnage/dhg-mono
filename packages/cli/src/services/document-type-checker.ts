@@ -13,7 +13,6 @@ export interface DocumentationFile {
   updated_at: string;
   file_hash?: string;
   content_hash?: string;
-  is_deleted?: boolean;
   ai_generated_tags?: string[];
   manual_tags?: string[];
   metadata?: Record<string, any>;
@@ -129,7 +128,6 @@ export class DocumentTypeChecker {
         const { data: allFiles, error: allFilesError } = await this.supabase
           .from('documentation_files')
           .select('id, file_path, title, summary, document_type_id, created_at, updated_at')
-          .eq('is_deleted', false)
           .order('file_path');
         
         if (allFilesError) {
@@ -247,18 +245,17 @@ export class DocumentTypeChecker {
       BEGIN
         -- Count all active files
         SELECT COUNT(*) INTO total_files 
-        FROM documentation_files 
-        WHERE is_deleted = false;
+        FROM documentation_files;
         
         -- Count files with document types
         SELECT COUNT(*) INTO files_with_type 
         FROM documentation_files 
-        WHERE is_deleted = false AND document_type_id IS NOT NULL;
+        WHERE document_type_id IS NOT NULL;
         
         -- Get the count of files without document types directly with a simple query
         SELECT COUNT(*) INTO files_without_type
         FROM documentation_files
-        WHERE is_deleted = false AND document_type_id IS NULL;
+        WHERE document_type_id IS NULL;
         
         -- Get files without document types using a simple direct query
         SELECT json_agg(
@@ -272,7 +269,7 @@ export class DocumentTypeChecker {
           )
         ) INTO unassigned_files
         FROM documentation_files 
-        WHERE is_deleted = false AND document_type_id IS NULL
+        WHERE document_type_id IS NULL
         ORDER BY file_path;
         
         -- Build the result object
@@ -328,8 +325,7 @@ export class DocumentTypeChecker {
       const { data, error } = await this.supabase
         .from('documentation_files')
         .select('id, file_path, title, summary, created_at, updated_at')
-        .is('document_type_id', null)
-        .eq('is_deleted', false);
+        .is('document_type_id', null);
       
       if (error) {
         Logger.error(`Error executing direct SQL query: ${error.message}`);

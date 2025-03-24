@@ -290,7 +290,6 @@ export class DocumentClassificationService {
       const { data: newestDocuments, error: fetchError } = await this.supabase
         .from('documentation_files')
         .select('id, file_path, title, document_type_id')
-        .eq('is_deleted', false)
         .order('created_at', { ascending: false })
         .limit(1);
         

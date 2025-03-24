@@ -845,7 +845,6 @@ ${claudeResponse.result || 'No response content'}
         .from('documentation_files')
         .select('id, file_path, title')
         .is('document_type_id', null)
-        .eq('is_deleted', false)
         .order('file_path')
         .limit(limit);
         
