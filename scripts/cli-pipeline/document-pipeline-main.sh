@@ -616,11 +616,20 @@ EOL
   ABS_PWD=$(pwd)
   
   # Use find with absolute paths but store paths relative to project root
-  find "$ABS_PWD" -type f -not -path "*/node_modules/*" -not -path "*/.git/*" \
+  # Explicitly include both docs and prompts directories to ensure they're found
+  # First, search in docs directory
+  find "$ABS_PWD/docs" "$ABS_PWD/prompts" -type f -not -path "*/node_modules/*" -not -path "*/.git/*" \
     -not -path "*/script-analysis-results/*" -not -path "*/script-analysis-results/*" \
     -not -path "*/archive/*" -not -path "*/_archive/*" -not -path "*/backup/*" -not -path "*/file_types/*" \
-    -not -path "*/dist/*" \
+    -not -path "*/dist/*" -not -path "*/.archive_docs/*" \
     -name "*.md" | sed "s|$ABS_PWD/||" > "$TEMP_DIR/all_files.txt"
+    
+  # Then search in other directories that might contain markdown docs
+  find "$ABS_PWD" -maxdepth 2 -type f -not -path "*/node_modules/*" -not -path "*/.git/*" \
+    -not -path "*/script-analysis-results/*" -not -path "*/script-analysis-results/*" \
+    -not -path "*/archive/*" -not -path "*/_archive/*" -not -path "*/backup/*" -not -path "*/file_types/*" \
+    -not -path "*/dist/*" -not -path "*/.archive_docs/*" \
+    -name "*.md" | sed "s|$ABS_PWD/||" >> "$TEMP_DIR/all_files.txt"
   
   # Log the first few files found for verification
   echo "First 10 files found:"
@@ -805,6 +814,13 @@ async function processFiles() {
             delete updatedMetadata.size;
           }
           
+          // Check if this is a prompt file based on path
+          const isPrompt = filePath.includes('/prompts/') || filePath.startsWith('prompts/');
+          if (isPrompt) {
+            console.log(`[Batch ${batchIndex}] Identified as a prompt file: ${filePath}`);
+            updatedMetadata.isPrompt = true;
+          }
+          
           // Set file_size and modified date
           updatedMetadata.file_size = stats.size;
           updatedMetadata.modified = now;
@@ -835,9 +851,17 @@ async function processFiles() {
         // If no existing file found, create new metadata
         console.log(`[Batch ${batchIndex}] No existing file found with title: ${filename}, creating new record`);
         // Create metadata with file_size and dates
+        // Determine if this is a prompt file based on the path
+        const isPrompt = filePath.includes('/prompts/') || filePath.startsWith('prompts/');
+        
+        // Log if this is a prompt file
+        if (isPrompt) {
+          console.log(`[Batch ${batchIndex}] Identified as a prompt file: ${filePath}`);
+        }
+        
         const metadata = {
           file_size: stats.size, // Use file_size instead of size
-          isPrompt: false,
+          isPrompt: isPrompt,
           modified: now
         };
         
@@ -913,6 +937,24 @@ async function processFiles() {
       // Make sure the path format is correct
       if (!relPath.match(/^(docs|packages|apps|prompts|scripts)/)) {
         console.log(`[Batch ${batchIndex}] WARNING: Path may not be relative to project root: ${relPath}`);
+      }
+      
+      // If this is a prompts directory file, make sure to add it with a specific tag
+      if (relPath.startsWith('prompts/')) {
+        console.log(`[Batch ${batchIndex}] Found prompt file in prompts directory: ${relPath}`);
+        if (!record.ai_generated_tags) {
+          record.ai_generated_tags = [];
+        }
+        
+        // Add prompt-related tags if not already present
+        const promptTags = ['prompt', 'ai-prompt', 'claude-prompt', 'prompt-template'];
+        promptTags.forEach(tag => {
+          if (!record.ai_generated_tags.includes(tag)) {
+            record.ai_generated_tags.push(tag);
+          }
+        });
+        
+        console.log(`[Batch ${batchIndex}] Added prompt-related tags to: ${relPath}`);
       }
     }
     
