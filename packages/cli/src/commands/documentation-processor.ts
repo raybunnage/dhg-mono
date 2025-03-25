@@ -282,7 +282,7 @@ async function processFileById(id: string): Promise<boolean> {
     
     Logger.info('File read successfully', {
       path: fileResult.path,
-      size: fileResult.stats?.size
+      file_size: fileResult.stats?.size
     });
     
     // Get classification prompt

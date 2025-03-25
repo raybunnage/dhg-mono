@@ -208,7 +208,7 @@ export class FileDiscoveryService {
       const stats = fs.statSync(filePath);
       
       return {
-        size_bytes: stats.size,
+        file_size: stats.size,
         created_at: stats.birthtime.toISOString(),
         modified_at: stats.mtime.toISOString(),
         extension: path.extname(filePath).replace('.', ''),

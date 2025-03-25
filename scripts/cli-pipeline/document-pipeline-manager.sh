@@ -317,7 +317,7 @@ function walkDir(dir, fileList = []) {
         const relativePath = path.relative(rootDir, filePath);
         fileList.push({
           path: relativePath,
-          size: stat.size,
+          file_size: stat.size,
           mtime: stat.mtime
         });
       }
