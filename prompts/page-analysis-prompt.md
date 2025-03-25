@@ -1,3 +1,6 @@
+
+
+
 I've created three detailed documentation files for the
   Home, Viewer, and Viewer2 pages from the application. Each
   document follows the requested format and includes:
