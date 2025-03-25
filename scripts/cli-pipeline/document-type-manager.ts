@@ -945,7 +945,7 @@ Commands:
             const metadata = existingData?.metadata || {};
             updateObj.metadata = {
               ...metadata,
-              size: fileStats.size,
+              file_size: fileStats.size,
               lastClassified: new Date().toISOString()
             };
           } catch (statsError) {

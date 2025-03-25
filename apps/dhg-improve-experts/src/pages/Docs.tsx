@@ -640,7 +640,7 @@ function Docs() {
         updated_at: null,
         title: filePath.split('/').pop() || '',
         metadata: {
-          size: 0
+          file_size: 0
         }
       } as DocumentationFile);
       setShowDuplicatePopup(true);
@@ -2191,7 +2191,7 @@ function Docs() {
                     <div>
                       <h3 className="text-sm font-medium mb-1">File Information:</h3>
                       <ul className="text-xs text-gray-600">
-                        <li>Size: {formatFileSize(selectedFile.metadata?.size)}</li>
+                        <li>Size: {formatFileSize(selectedFile.metadata?.file_size || selectedFile.metadata?.size)}</li>
                         <li>Created: {formatDate(selectedFile.created_at)}</li>
                         <li>Updated: {formatDate(selectedFile.updated_at)}</li>
                         <li>Last Modified: {formatDate(selectedFile.last_modified_at)}</li>
@@ -2312,7 +2312,7 @@ function Docs() {
             <div className="grid grid-cols-2 gap-4 mb-4 pb-3 border-b">
               <div>
                 <div className="font-medium text-blue-800 mb-1">Size</div>
-                <div>{formatFileSize(duplicateFileInfo.metadata?.size)}</div>
+                <div>{formatFileSize(duplicateFileInfo.metadata?.file_size || duplicateFileInfo.metadata?.size)}</div>
               </div>
               <div>
                 <div className="font-medium text-blue-800 mb-1">Created</div>
