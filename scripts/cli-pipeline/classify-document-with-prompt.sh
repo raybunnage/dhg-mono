@@ -51,6 +51,27 @@ const Anthropic = require('@anthropic-ai/sdk');
 const fs = require('fs');
 const path = require('path');
 
+// Function to refresh schema cache
+async function refreshSchemaCache(supabase) {
+  console.log('Refreshing Supabase schema cache...');
+  try {
+    const { data, error } = await supabase.rpc('pg_notify', { 
+      channel: 'pgrst',
+      payload: 'reload schema'
+    });
+    
+    if (error) {
+      console.error('Error refreshing schema cache:', error);
+    } else {
+      console.log('Schema cache refresh request sent successfully');
+      // Wait a moment for the cache to refresh
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+  } catch (error) {
+    console.error('Error with schema refresh:', error);
+  }
+}
+
 // Get environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -83,8 +104,8 @@ async function readFile(filePath) {
 async function getDocumentTypes() {
   const { data, error } = await supabase
     .from('document_types')
-    .select('id, name, description')
-    .order('name');
+    .select('id, document_type, description')
+    .order('document_type');
     
   if (error) {
     console.error('Error fetching document types:', error);
@@ -98,8 +119,7 @@ async function getDocumentTypes() {
 async function getDocumentsToClassify() {
   let query = supabase
     .from('documentation_files')
-    .select('id, file_path, title, language')
-    .eq('is_deleted', false);
+    .select('id, file_path, title, language');
   
   if (mode === 'untyped') {
     // Get untyped documents
@@ -121,7 +141,25 @@ async function getDocumentsToClassify() {
     return [];
   }
   
-  return data;
+  // Filter out files from excluded directories
+  const excludedPaths = [
+    'file_types', 
+    'backup', 
+    'archive', 
+    '_archive', 
+    'script-analysis-results', 
+    'reports'
+  ];
+  
+  const filteredData = data.filter(file => {
+    // Check if the file path contains any of the excluded directory names
+    const isExcluded = excludedPaths.some(path => file.file_path.includes(path));
+    return !isExcluded;
+  });
+  
+  console.log(`Filtered ${data.length - filteredData.length} files from excluded directories`);
+  
+  return filteredData;
 }
 
 // Function to classify a document using Claude
@@ -137,7 +175,7 @@ async function classifyDocument(document, documentTypes) {
     
     // Prepare prompt for Claude
     const documentTypesText = documentTypes.map(type => 
-      `- ${type.name}: ${type.description || 'No description available'}`
+      `- ${type.document_type}: ${type.description || 'No description available'}`
     ).join('\n');
     
     const prompt = `You are a document classification system. Analyze the document content below and identify the most appropriate document type from the provided list.
@@ -202,9 +240,9 @@ Your classification should be based on the document content, structure, and purp
 // Function to update the document with the classification
 async function updateDocumentClassification(documentId, classification, documentTypes) {
   try {
-    // Find the document type ID based on the name
+    // Find the document type ID based on the document_type field
     const documentType = documentTypes.find(type => 
-      type.name.toLowerCase() === classification.document_type.toLowerCase()
+      type.document_type.toLowerCase() === classification.document_type.toLowerCase()
     );
     
     if (!documentType) {
@@ -212,13 +250,32 @@ async function updateDocumentClassification(documentId, classification, document
       return false;
     }
     
-    // Update the document in the database
+    // First, get the current metadata
+    const { data: currentDoc, error: fetchError } = await supabase
+      .from('documentation_files')
+      .select('metadata')
+      .eq('id', documentId)
+      .single();
+    
+    if (fetchError) {
+      console.error(`Error fetching current metadata:`, fetchError);
+      return false;
+    }
+
+    // Prepare the updated metadata
+    const currentMetadata = currentDoc.metadata || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      ai_classification_confidence: classification.confidence,
+      ai_classification_reasoning: classification.reasoning
+    };
+    
+    // Update the document in the database with the classification info in metadata
     const { error } = await supabase
       .from('documentation_files')
       .update({
         document_type_id: documentType.id,
-        ai_classification_confidence: classification.confidence,
-        ai_classification_reasoning: classification.reasoning,
+        metadata: updatedMetadata,
         updated_at: new Date()
       })
       .eq('id', documentId);
@@ -239,6 +296,9 @@ async function updateDocumentClassification(documentId, classification, document
 async function runDocumentClassification() {
   try {
     console.log(`Starting document classification in ${mode} mode, processing up to ${count} documents`);
+    
+    // Refresh schema cache first to ensure we have the latest schema
+    await refreshSchemaCache(supabase);
     
     // Get document types
     const documentTypes = await getDocumentTypes();
