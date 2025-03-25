@@ -546,6 +546,7 @@ function Scripts() {
                           onClick={(e) => {
                             // Stop propagation to prevent event bubbling
                             e.stopPropagation();
+                            e.preventDefault();
                             toggleFolder();
                           }}
                         >
@@ -554,6 +555,7 @@ function Scripts() {
                             onClick={(e) => {
                               // Stop propagation to prevent event bubbling
                               e.stopPropagation();
+                              e.preventDefault();
                               toggleFolder();
                             }}
                           >{isExpanded ? '▼' : '▶'}</span>
@@ -768,6 +770,7 @@ function Scripts() {
                 className="p-3 bg-gray-50 flex justify-between items-center cursor-pointer border-b"
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   setShowScriptSummary(!showScriptSummary);
                 }}
               >
@@ -779,6 +782,7 @@ function Scripts() {
                   <span 
                     onClick={(e) => {
                       e.stopPropagation();
+                      e.preventDefault();
                       setShowScriptSummary(!showScriptSummary);
                     }}
                     className="cursor-pointer"

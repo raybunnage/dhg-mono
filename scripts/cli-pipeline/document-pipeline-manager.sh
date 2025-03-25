@@ -6,14 +6,16 @@ export NODE_ENV="${NODE_ENV:-development}"
 
 # Define paths and directories
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-DOCUMENT_REPORTS_DIR="${ROOT_DIR}/document-analysis-results"
+DOCUMENT_REPORTS_DIR="${ROOT_DIR}/reports"
+DOCUMENT_LOGS_DIR="${ROOT_DIR}/document-analysis-results"
 SUPABASE_CONNECT="${ROOT_DIR}/scripts/fix/supabase-connect.js"
 
-# Create reports directory if it doesn't exist
+# Create directories if they don't exist
 mkdir -p "${DOCUMENT_REPORTS_DIR}"
+mkdir -p "${DOCUMENT_LOGS_DIR}"
 
 # Log configuration
-LOG_FILE="${DOCUMENT_REPORTS_DIR}/document-pipeline-$(date +%Y-%m-%d_%H-%M-%S).log"
+LOG_FILE="${DOCUMENT_LOGS_DIR}/document-pipeline-$(date +%Y-%m-%d_%H-%M-%S).log"
 exec > >(tee -a "${LOG_FILE}") 2>&1
 
 # First, check if supabase-connect.js exists
@@ -299,13 +301,20 @@ function walkDir(dir, fileList = []) {
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
     
-    // Skip node_modules, git, and other non-documentation directories
+    // Skip node_modules, git, archive, backup, and other non-documentation directories
     if (stat.isDirectory()) {
+      // List of directories to exclude
+      const excludedDirs = [
+        'node_modules', 'dist', 'build', '.git',
+        'file_types', 'backup', 'archive', '_archive',
+        'script-analysis-results', 'reports'
+      ];
+      
       if (
         !file.startsWith('.') &&
-        file !== 'node_modules' &&
-        file !== 'dist' &&
-        file !== 'build'
+        !excludedDirs.includes(file) &&
+        !filePath.includes('backup') &&
+        !filePath.includes('archive')
       ) {
         walkDir(filePath, fileList);
       }
