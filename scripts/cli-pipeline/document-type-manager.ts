@@ -711,6 +711,17 @@ class DocumentTypeManager {
     try {
       console.log(`\n=== UPDATING DOCUMENT TYPE FOR: ${filePath} ===`);
       
+      // Refresh schema cache to avoid issues with metadata fields
+      try {
+        console.log('Refreshing schema cache before update...');
+        await this._supabase.rpc('pg_notify', { 
+          channel: 'pgrst',
+          payload: 'reload schema'
+        }).catch(e => console.log('Schema refresh attempt: ', e?.message || 'Error'));
+      } catch (cacheError) {
+        console.log('Schema cache refresh not critical, continuing...');
+      }
+      
       // Get the file ID from the database
       const { data: file, error: fileError } = await this._supabase
         .from('documentation_files')
