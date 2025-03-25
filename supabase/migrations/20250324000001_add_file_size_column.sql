@@ -1,4 +1,7 @@
--- Add file_size column to documentation_files table if it doesn't exist
+-- Migration to add a file_size column to the documentation_files table
+-- This solves the schema cache issue where scripts expect a file_size column
+
+-- First, add the file_size column if it doesn't exist
 DO $$
 BEGIN
     -- Check if the column already exists
@@ -11,17 +14,21 @@ BEGIN
         -- Add the new column
         ALTER TABLE documentation_files
         ADD COLUMN file_size BIGINT;
-
-        -- Copy data from size column in metadata if it exists
+        
+        -- Add a comment explaining the column
+        COMMENT ON COLUMN documentation_files.file_size IS 'Size of the file in bytes, dedicated column for better query performance';
+        
+        -- Copy data from metadata.file_size or metadata.size to the new column
+        UPDATE documentation_files
+        SET file_size = (metadata->>'file_size')::BIGINT
+        WHERE metadata->>'file_size' IS NOT NULL;
+        
+        -- Also check the legacy size field in metadata
         UPDATE documentation_files
         SET file_size = (metadata->>'size')::BIGINT
-        WHERE metadata->>'size' IS NOT NULL;
+        WHERE file_size IS NULL AND metadata->>'size' IS NOT NULL;
     END IF;
 END $$;
 
--- Add a comment explaining the column
-COMMENT ON COLUMN documentation_files.file_size IS 'Size of the file in bytes, moved from metadata.size to a dedicated column for better query performance';
-
--- Refresh the Supabase cache so API calls recognize the new column
--- This is important to avoid "Could not find column" errors
+-- Force a refresh of the schema cache
 SELECT pg_notify('pgrst', 'reload schema');

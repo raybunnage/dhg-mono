@@ -422,14 +422,18 @@ async function findNewFiles() {
           // Extract filename without extension for title
           const title = path.basename(file.path, ext);
           
+          // Generate a UUID for the new file
+          const fileId = crypto.randomUUID();
+          
           // Add new file to the database
           const { error: insertError } = await supabase
             .from('documentation_files')
             .insert({
+              id: fileId,
               file_path: file.path,
               title: title,
               file_hash: fileHash,
-              file_size: file.size,
+              file_size: file.file_size, // Using the proper field name
               language: language,
               created_at: new Date(),
               updated_at: new Date(),
@@ -535,7 +539,6 @@ async function showUntypedFiles() {
       .from('documentation_files')
       .select('id, file_path, title, language, created_at, updated_at')
       .is('document_type_id', null)
-      .eq('is_deleted', false)
       .order('updated_at', { ascending: false })
       .limit(20);
     
@@ -557,10 +560,10 @@ async function showUntypedFiles() {
     console.log('----------------------------------------|--------------------------|----------------------------------------|------------------');
     
     data.forEach((file, index) => {
-      const id = file.id.substring(0, 8) + '...'; // Show only first 8 chars of UUID
+      const id = file.id ? file.id.substring(0, 8) + '...' : 'No ID'; // Show only first 8 chars of UUID
       const title = (file.title || 'No title').padEnd(24).substring(0, 24);
       const path = (file.file_path || 'No path').padEnd(39).substring(0, 39);
-      const updated = new Date(file.updated_at).toISOString().split('T')[0];
+      const updated = file.updated_at ? new Date(file.updated_at).toISOString().split('T')[0] : 'No date';
       
       console.log(`${id} | ${title} | ${path} | ${updated}`);
     });
@@ -656,7 +659,6 @@ async function showRecentFiles() {
         created_at, 
         updated_at
       `)
-      .eq('is_deleted', false)
       .order('updated_at', { ascending: false })
       .limit(20);
     
@@ -678,11 +680,11 @@ async function showRecentFiles() {
     console.log('-----------|--------------------------|--------------------------|----------------------------------------|------------------');
     
     data.forEach((file, index) => {
-      const id = file.id.substring(0, 8) + '...'; // Show only first 8 chars of UUID
+      const id = file.id ? file.id.substring(0, 8) + '...' : 'No ID'; // Show only first 8 chars of UUID
       const title = (file.title || 'No title').padEnd(24).substring(0, 24);
       const type = ((file.document_type && file.document_type.name) || 'Untyped').padEnd(24).substring(0, 24);
       const path = (file.file_path || 'No path').padEnd(39).substring(0, 39);
-      const updated = new Date(file.updated_at).toISOString().split('T')[0];
+      const updated = file.updated_at ? new Date(file.updated_at).toISOString().split('T')[0] : 'No date';
       
       console.log(`${id} | ${title} | ${type} | ${path} | ${updated}`);
     });
@@ -1142,10 +1144,7 @@ async function generateSummaryReport() {
         file_size
       `);
       
-    // Add filter for deleted status if needed
-    if (!includeDeleted) {
-      query = query.eq('is_deleted', false);
-    }
+    // No filtering for deleted status as we're using hard deletes now
     
     // Apply limit (only if not -1, which means all documents)
     if (documentLimit !== -1) {
@@ -1208,8 +1207,7 @@ async function generateSummaryReport() {
     // Start generating the report
     let report = `# Document Analysis Summary Report\n\n`;
     report += `Generated: ${new Date().toISOString()}\n`;
-    report += `Total Documents: ${documents.length}\n`;
-    report += `Includes Deleted: ${includeDeleted}\n\n`;
+    report += `Total Documents: ${documents.length}\n\n`;
     
     // Summary statistics
     report += `## Summary Statistics\n\n`;
@@ -1238,22 +1236,21 @@ async function generateSummaryReport() {
       report += `\n`;
     }
     
-    // Add a file path and deleted status table for quick reference
-    report += `## File Path Status Overview\n\n`;
-    report += `| ID | File Path | Type | Status | Category | Last Updated |\n`;
-    report += `| --- | --- | --- | --- | --- | --- |\n`;
+    // Add a file path table for quick reference
+    report += `## File Path Overview\n\n`;
+    report += `| ID | File Path | Type | Category | Last Updated |\n`;
+    report += `| --- | --- | --- | --- | --- |\n`;
     
     documents.slice(0, 20).forEach(document => {
       const id = document.id.substring(0, 8) + '...'; // Show only first 8 chars of UUID
       const type = document.document_type ? document.document_type.name : 'Untyped';
-      const status = document.is_deleted ? '🔴 DELETED' : '🟢 ACTIVE';
       const updatedAt = document.updated_at ? new Date(document.updated_at).toISOString().split('T')[0] : 'N/A';
       const category = categorizeDocument(document);
-      report += `| ${id} | \`${document.file_path}\` | ${type} | ${status} | ${category} | ${updatedAt} |\n`;
+      report += `| ${id} | \`${document.file_path}\` | ${type} | ${category} | ${updatedAt} |\n`;
     });
     
     if (documents.length > 20) {
-      report += `| ... | ... | ... | ... | ... | ... |\n`;
+      report += `| ... | ... | ... | ... | ... |\n`;
     }
     
     report += `\n\n`;
@@ -1297,7 +1294,6 @@ async function generateSummaryReport() {
         report += `### ${document.title || path.basename(document.file_path)}\n`;
         report += `- **File Path**: \`${document.file_path}\`\n`;
         report += `- **Type**: ${typeName}\n`;
-        report += `- **Status**: ${document.is_deleted ? 'Deleted' : 'Active'}\n`;
         report += `- **Language**: ${document.language || 'Unknown'}\n`;
         report += `- **Size**: ${document.file_size ? (document.file_size / 1024).toFixed(2) + ' KB' : 'Unknown'}\n`;
         
