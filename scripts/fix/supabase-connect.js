@@ -227,6 +227,82 @@ function runCommand(command, args) {
 }
 
 /**
+ * Find untyped scripts in the database
+ */
+async function findUntypedScripts() {
+  try {
+    // First make sure we can connect to Supabase
+    const connected = await testSupabaseConnection();
+    if (!connected) {
+      console.error('❌ Unable to connect to Supabase. Cannot find untyped scripts.');
+      process.exit(1);
+    }
+    
+    // Create a script to query untyped scripts
+    const scriptContent = `
+    const { createClient } = require('@supabase/supabase-js');
+    
+    // Initialize Supabase client
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+    
+    async function getUntypedScripts() {
+      console.log('Querying database for untyped scripts...');
+      
+      const { data, error, count } = await supabase
+        .from('scripts')
+        .select('*', { count: 'exact' })
+        .is('script_type_id', null)
+        .is('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(100);
+        
+      if (error) {
+        console.error('Error fetching untyped scripts:', error.message);
+        process.exit(1);
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('No untyped scripts found.');
+        return;
+      }
+      
+      console.log(\`Found \${data.length} untyped scripts\`);
+      console.log('\\nUntyped Scripts:');
+      
+      data.forEach((script, index) => {
+        console.log(\`\${index + 1}. \${script.file_path} (ID: \${script.id})\`);
+      });
+      
+      console.log(\`\\nTotal: \${data.length} untyped scripts found.\`);
+    }
+    
+    getUntypedScripts();
+    `;
+    
+    // Create a temporary file
+    const tempScriptPath = path.join(SCRIPT_DIR, 'temp-untyped-scripts.js');
+    
+    // Write the temporary script file
+    fs.writeFileSync(tempScriptPath, scriptContent);
+    
+    try {
+      // Run the temporary script
+      await runCommand('node', [tempScriptPath]);
+    } finally {
+      // Clean up by removing the temporary file
+      if (fs.existsSync(tempScriptPath)) {
+        fs.unlinkSync(tempScriptPath);
+      }
+    }
+    
+    console.log('✅ Untyped scripts query completed successfully');
+  } catch (error) {
+    console.error('❌ Error querying untyped scripts:', error.message);
+    process.exit(1);
+  }
+}
+
+/**
  * Find scripts and sync with database
  */
 async function findAndSyncScripts() {
@@ -500,5 +576,31 @@ run();
   }
 }
 
-// Run the main function
-findAndSyncScripts();
+// Main command handler
+const command = process.argv[2];
+
+if (command === 'testSupabaseConnection') {
+  testSupabaseConnection();
+} else if (command === 'findAndSyncScripts') {
+  findAndSyncScripts();
+} else if (command === 'runCommand') {
+  // Take the remaining arguments and run as a command
+  const commandToRun = process.argv[3];
+  const args = process.argv.slice(4);
+  
+  if (!commandToRun) {
+    console.error('No command specified');
+    process.exit(1);
+  }
+  
+  runCommand(commandToRun, args)
+    .catch(error => {
+      console.error('Command execution failed:', error);
+      process.exit(1);
+    });
+} else if (command === 'findUntypedScripts') {
+  findUntypedScripts();
+} else {
+  // Default behavior for backward compatibility
+  findAndSyncScripts();
+}

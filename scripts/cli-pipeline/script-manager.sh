@@ -89,24 +89,20 @@ function find_new_scripts() {
 function show_untyped_scripts() {
   echo "📋 Showing untyped scripts..."
   
-  # In a full implementation, this would query the database for untyped scripts
-  # For now, we'll just list some script files without classification information
+  # First, check if supabase-connect.js exists
+  if [ ! -f "${SUPABASE_CONNECT}" ]; then
+    echo "Error: Cannot find supabase-connect.js at ${SUPABASE_CONNECT}"
+    return 1
+  fi
   
-  echo "Untyped Scripts (simulated):"
-  find "${ROOT_DIR}" -type f \( -name "*.sh" -o -name "*.js" \) \
-    -not -path "*/node_modules/*" \
-    -not -path "*/.git/*" \
-    -not -path "*/dist/*" \
-    -not -path "*/build/*" \
-    -not -path "*/backup/*" \
-    -not -path "*/archive/*" \
-    -not -path "*/_archive/*" \
-    -not -path "*/file_types/*" \
-    -not -path "*/script-analysis-results/*" \
-    | head -n 20 | awk '{printf "%d. %s\n", NR, $0}'
+  # Use the new findUntypedScripts implementation from supabase-connect.js
+  node "${SUPABASE_CONNECT}" findUntypedScripts
   
-  echo "NOTE: This is a simplified implementation since the CLI is not built."
-  echo "In a full implementation, this would show scripts without type classifications."
+  if [ $? -ne 0 ]; then
+    echo "❌ Failed to retrieve untyped scripts from database"
+    return 1
+  fi
+  
   return 0
 }
 
