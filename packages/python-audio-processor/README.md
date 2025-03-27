@@ -9,6 +9,7 @@ A shared Python library for audio processing using Modal and OpenAI's Whisper.
 - Quick audio analysis for testing Modal integration
 - GPU acceleration via Modal cloud
 - CLI tools for easy usage
+- Processing time estimation to avoid timeout costs
 
 ## Installation
 
@@ -82,8 +83,57 @@ By default, Modal is used for remote processing. You'll need to:
 
 This will give you credentials for using Modal's cloud processing.
 
+## Estimating Processing Time
+
+To avoid timeouts and prevent unnecessary costs, you can use the estimator script:
+
+```bash
+# Basic usage
+./scripts/estimate_modal_time.sh /path/to/audio.m4a
+
+# Specify a different model size
+./scripts/estimate_modal_time.sh /path/to/audio.m4a --model medium
+
+# Estimate for parallel processing with multiple GPUs
+./scripts/estimate_modal_time.sh /path/to/audio.m4a --model medium --gpus 3
+
+# Compare performance across different GPU types
+./scripts/estimate_modal_time.sh /path/to/audio.m4a --model medium --gpus 3 --gpu-type A10G
+```
+
+This will analyze your audio file and recommend appropriate timeout settings based on:
+
+- Audio duration and quality
+- File size and complexity
+- Selected Whisper model (tiny, base, small, medium, large)
+- Parallel processing capabilities (1-3 GPUs)
+- GPU type performance and cost tradeoffs (T4, A10G, A100)
+
+The tool provides comprehensive cost-performance analysis including:
+- Processing time estimates for different configurations
+- Cost calculations based on GPU type and processing time
+- Recommendations for the most cost-efficient setup
+- Code snippets showing the recommended Modal configuration
+
 ## Technical Details
 
-- GPU Type: T4 (cost-effective at $0.80/hour)
-- Timeout: 60 seconds for the test script, 120 seconds for summarization
-- Models: Uses the "small" Whisper model by default, can be changed
+### GPU Options and Cost/Performance
+
+Modal offers various GPU types with different performance characteristics:
+
+| GPU Type | Performance | Cost/Hour | Best For |
+|----------|-------------|-----------|----------|
+| T4       | 1.0x (base) | $0.60     | Cost-efficiency, smaller files |
+| A10G     | ~2.5x faster| $1.20     | Balance of speed/cost, medium files |
+| A100     | ~5x faster  | $3.50     | Fastest processing, very large files |
+
+For typical audio files:
+- T4 is the most cost-efficient option for most use cases
+- A10G provides a good balance for medium and large models
+- A100 is best when speed is critical and cost is secondary
+
+### Models and Timeouts
+
+- Models: "tiny", "base", "small", "medium", "large" (increasing accuracy but slower)
+- Timeout: Use the estimator tool to determine appropriate timeouts based on your configuration
+- Parallel Processing: Up to 3 GPUs recommended for files longer than 5 minutes
