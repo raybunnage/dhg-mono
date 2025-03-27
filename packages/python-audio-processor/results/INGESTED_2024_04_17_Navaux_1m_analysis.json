@@ -1,0 +1,48 @@
+{
+  "metadata": {
+    "processing_time": 0.43442606925964355,
+    "gpu_used": true,
+    "gpu_info": {
+      "device_name": "Tesla T4",
+      "device_capability": "7.5",
+      "total_memory": "14.56 GB"
+    }
+  },
+  "audio_properties": {
+    "duration": 60.0,
+    "sample_rate": 32000,
+    "channels": 1
+  },
+  "basic_features": {
+    "mean_values": [
+      -0.000282488064840436
+    ],
+    "std_values": [
+      0.0719509944319725
+    ]
+  },
+  "frequency_analysis": {
+    "dominant_frequencies": [
+      {
+        "frequency_hz": 125.0,
+        "magnitude": 12.609418869018555
+      },
+      {
+        "frequency_hz": 109.375,
+        "magnitude": 11.426961898803711
+      },
+      {
+        "frequency_hz": 375.0,
+        "magnitude": 8.187111854553223
+      },
+      {
+        "frequency_hz": 250.0,
+        "magnitude": 8.088738441467285
+      },
+      {
+        "frequency_hz": 234.375,
+        "magnitude": 7.570679664611816
+      }
+    ]
+  }
+}

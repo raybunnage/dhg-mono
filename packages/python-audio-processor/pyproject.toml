@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "whisperx"
+version = "0.1.0"
+description = "Audio processing with Whisper and Modal for GPU acceleration"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+dependencies = [
+    "modal>=0.55.4277",
+    "faster-whisper>=0.10.0",
+    "tqdm>=4.65.0",
+    "torch>=2.0.0",
+    "numpy>=1.20.0",
+    "soundfile>=0.12.1",
+    "ffmpeg-python>=0.2.0",
+]
+
+[project.scripts]
+whisperx-summary = "whisperx.cli:summary_cmd"
+whisperx-transcribe = "whisperx.cli:transcribe_cmd"
+
+[tool.hatch.build.targets.wheel]
+packages = ["whisperx"]
