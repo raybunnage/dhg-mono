@@ -2,6 +2,100 @@
 
 This file documents the files created and updated by Claude Code in the code documentation directory.
 
+## Technical Specification Documentation
+
+The following table provides a detailed overview of the technical specification documentation, organized by category with the most recent files in each category listed first:
+
+### AI/ML
+
+| Filename | Creation Date | Description |
+|----------|--------------|-------------|
+| claude_code_prompts.md | Mar 27, 2025 | Collection of prompts used with Claude for code assistance |
+| prompt-management-implementation-plan.md | Mar 24, 2025 | Outlines implementation plan for a prompt management system with content hashing |
+| python-ai-services-technical-spec.md | Mar 22, 2025 | Technical specification for Python-based AI services |
+| document-classification-prompt.md | Mar 21, 2025 | Prompt template for document classification |
+| markdown-document-classification-prompt.md | Mar 21, 2025 | Prompt template for markdown document classification |
+| ai_columns_review.md | Mar 20, 2025 | Review of AI-related database columns and schema |
+| enhanced-analysis-prompt.md | Mar 19, 2025 | Prompt template for enhanced content analysis |
+| doc-assessment-prompt.md | Mar 18, 2025 | Prompt template for document assessment |
+
+### Audio Processing
+
+| Filename | Creation Date | Description |
+|----------|--------------|-------------|
+| audio-processing-pipeline-db-schema.md | Mar 26, 2025 | Summarizes database schema for the DHG Presenter audio processing pipeline |
+| monorepo-integrated-audio-processing.md | Mar 25, 2025 | Outlines reorganization of monorepo to better support audio processing workflows |
+
+### Database
+
+| Filename | Creation Date | Description |
+|----------|--------------|-------------|
+| database-tables-overview.md | Mar 28, 2025 | Provides an overview of database tables organized by functional group |
+| sql-history-implementation-plan.md | Mar 23, 2025 | Implementation plan for SQL query history tracking |
+| supabase-sql-query-guide.md | Mar 23, 2025 | Guide for creating and executing SQL queries in Supabase |
+
+### Application
+
+| Filename | Creation Date | Description |
+|----------|--------------|-------------|
+| dhg-presenter.md | Mar 18, 2025 | Technical specification for the DHG Presenter application |
+| guts-dashboard.md | Mar 16, 2025 | Specification for dashboard functionality for the guts component |
+| dashboard-function-inventory.md | Mar 16, 2025 | Inventory of functions used in dashboard components |
+
+### Documentation
+
+| Filename | Creation Date | Description |
+|----------|--------------|-------------|
+| claude-code-assistant.md | Mar 27, 2025 | Documents files created and updated by Claude Code in the code documentation directory |
+| doc-assessment-implementation.md | Mar 19, 2025 | Describes implementation of document assessment functionality |
+| document-type-request-template.md | Mar 18, 2025 | Template for requesting new document types |
+| document-type-analysis.md | Mar 17, 2025 | Analysis of document types and their relationships |
+
+### Infrastructure
+
+| Filename | Creation Date | Description |
+|----------|--------------|-------------|
+| monorepo-architecture_bullmq.md | Mar 23, 2025 | Architecture specification using BullMQ for task processing |
+| technical-spec_packages_bullmq.md | Mar 23, 2025 | Technical specification for packages using BullMQ |
+| rate-limiting-technical-spec.md | Mar 17, 2025 | Technical specification for rate limiting implementation |
+| architecture-comparison.md | Mar 15, 2025 | Comparison of different architecture approaches |
+| PNPM-USAGE.md | Mar 15, 2025 | Documentation for PNPM package manager usage in the project |
+| vite-configuration-guide.md | Mar 14, 2025 | Guide for configuring Vite for the project |
+| env-organization-spec.md | Mar 12, 2025 | Specification for environment organization |
+| file-reader-report.md | Mar 08, 2025 | Report on file reader component performance and features |
+| monorepo-organization-2024.md | Feb 10, 2025 | Describes the monorepo structure and organization for 2024 |
+
+### Development
+
+| Filename | Creation Date | Description |
+|----------|--------------|-------------|
+| script-document-types.md | Mar 14, 2025 | Details script document types and classifications |
+| shared-packages-guide.md | Mar 13, 2025 | Guide for using and developing shared packages |
+| script-manager-implementation-spec.md | Mar 12, 2025 | Implementation specification for script manager |
+| typescript-cli-technical-spec.md | Mar 05, 2025 | Specification for the TypeScript CLI tools and interfaces |
+
+### Development Process
+
+| Filename | Creation Date | Description |
+|----------|--------------|-------------|
+| implementation_plan.md | Mar 12, 2025 | General implementation plan for system components |
+| development-process-specification.md | Mar 11, 2025 | Outlines development process and workflow |
+
+### Integration
+
+| Filename | Creation Date | Description |
+|----------|--------------|-------------|
+| source_expert_google_design.md | Mar 09, 2025 | Design specification for source expert Google integration |
+| google-drive-integration.md | Mar 09, 2025 | Specification for Google Drive integration |
+
+### Processing
+
+| Filename | Creation Date | Description |
+|----------|--------------|-------------|
+| batch-processing.md | Mar 22, 2025 | Describes the batch processing system database schema and workflow |
+| batch-processing-technical-spec.md | Mar 20, 2025 | Technical specification for batch processing system |
+| script-analysis-pipeline-spec.md | Mar 10, 2025 | Detailed specification for the script analysis pipeline |
+
 ## Code Documentation Files
 
 These files were created to document various components of the system:
@@ -23,10 +117,9 @@ These files were created to document various components of the system:
 15. `docs/code-documentation/Viewer-documentation.md`
 16. `docs/code-documentation/Viewer2-documentation.md`
 17. `docs/code-documentation/Write-documentation.md`
-18. `docs/code-documentation/code-maintainability-score.md`
-19. `docs/code-documentation/improving-code-maintainability.md`
-20. `docs/code-documentation/maintainability-assessment-guide.md`
-21. `docs/code-implementation/code-refactoring-priority-guide.md`
+
+Code Refactoring
+1. `docs/code-implementation/code-refactoring-priority-guide.md`
 
 ## CLI Pipeline Service Documentation
 
@@ -209,3 +302,246 @@ These scripts are part of the dedicated audio processing package:
 11. `run_text_extraction.sh` - Runs text extraction (Mar 27)
 12. `test_modal_roundtrip.py` - Tests complete Modal processing (Mar 26)
 
+## Database Schema
+
+This section documents the key tables in the DHG database schema.
+
+### sources_google
+
+This table stores metadata about files from Google Drive.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| name | string | File name |
+| drive_id | string | Google Drive file ID |
+| mime_type | string | MIME type of the file |
+| path | string | File path in the drive |
+| parent_path | string | Parent folder path |
+| parent_id | string | Parent folder ID |
+| size_bytes | number | File size in bytes |
+| expert_id | string | Related expert ID |
+| document_type_id | string | Document type ID |
+| content_extracted | boolean | Whether content was extracted |
+| extracted_content | Json | Extracted content data |
+| audio_extracted | boolean | Whether audio was extracted |
+| audio_duration_seconds | number | Audio duration in seconds |
+| created_at | string | Creation timestamp |
+| updated_at | string | Last update timestamp |
+
+### expert_documents
+
+This table stores documents associated with experts.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| source_id | string | Related source ID |
+| expert_id | string | Related expert ID |
+| document_type_id | string | Type of document |
+| raw_content | string | Original content |
+| processed_content | Json | Processed content |
+| status | string | Processing status |
+| content_type | string | Content type |
+| summary_complete | boolean | Whether summary is complete |
+| transcription_complete | boolean | Whether transcription is complete |
+| diarization_complete | boolean | Whether diarization is done |
+| key_insights | string[] | Key insights from document |
+| created_at | string | Creation timestamp |
+| updated_at | string | Last update timestamp |
+
+### presentations
+
+This table stores presentation metadata.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| title | string | Presentation title |
+| filename | string | Filename |
+| folder_path | string | Folder path |
+| presenter_name | string | Presenter name |
+| transcript | string | Transcript content |
+| transcript_status | string | Transcript processing status |
+| duration_seconds | number | Duration in seconds |
+| recorded_date | string | Recording date |
+| main_video_id | string | Related video ID |
+| is_public | boolean | Public availability flag |
+| metadata | Json | Additional metadata |
+| created_at | string | Creation timestamp |
+| updated_at | string | Last update timestamp |
+
+### presentation_assets
+
+This table stores assets related to presentations.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| presentation_id | string | Related presentation ID |
+| expert_document_id | string | Related expert document ID |
+| source_id | string | Related source ID |
+| asset_type | string | Type of asset |
+| asset_role | string | Role of the asset |
+| timestamp_start | number | Start timestamp |
+| timestamp_end | number | End timestamp |
+| importance_level | number | Asset importance rating |
+| metadata | Json | Additional metadata |
+| created_at | string | Creation timestamp |
+| updated_at | string | Last update timestamp |
+
+### experts
+
+This table stores expert information.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| expert_name | string | Expert name |
+| full_name | string | Full name |
+| email_address | string | Email address |
+| bio | string | Biography |
+| expertise_area | string | Area of expertise |
+| experience_years | number | Years of experience |
+| is_in_core_group | boolean | Core group membership |
+| google_email | string | Google email |
+| google_user_id | string | Google user ID |
+| created_at | string | Creation timestamp |
+| updated_at | string | Last update timestamp |
+
+### document_types
+
+This table defines document types in the system.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| document_type | string | Type name |
+| category | string | Category |
+| description | string | Description |
+| file_extension | string | Associated file extension |
+| mime_type | string | MIME type |
+| is_ai_generated | boolean | Whether AI-generated |
+| required_fields | Json | Required metadata fields |
+| validation_rules | Json | Validation rules |
+| content_schema | Json | Content schema definition |
+| ai_processing_rules | Json | AI processing configuration |
+| created_at | string | Creation timestamp |
+| updated_at | string | Last update timestamp |
+
+### documentation_files
+
+This table stores documentation files.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| file_path | string | File path |
+| title | string | Document title |
+| summary | string | Document summary |
+| document_type_id | string | Document type ID |
+| file_hash | string | File content hash |
+| file_size | number | File size in bytes |
+| language | string | Document language |
+| manual_tags | string[] | Manual tags |
+| ai_generated_tags | string[] | AI-generated tags |
+| ai_assessment | Json | AI assessment data |
+| assessment_quality_score | number | Quality score |
+| metadata | Json | Additional metadata |
+| created_at | string | Creation timestamp |
+| updated_at | string | Last update timestamp |
+
+### scripts
+
+This table stores script files and metadata.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| file_path | string | File path |
+| title | string | Script title |
+| language | string | Programming language |
+| document_type_id | string | Document type ID |
+| ai_assessment | Json | AI assessment data |
+| summary | Json | Script summary |
+| file_hash | string | File content hash |
+| manual_tags | string[] | Manual tags |
+| ai_generated_tags | string[] | AI-generated tags |
+| package_json_references | Json | Package references |
+| metadata | Json | Additional metadata |
+| created_at | string | Creation timestamp |
+| updated_at | string | Last update timestamp |
+
+### processing_batches
+
+This table tracks processing batches.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| status | string | Batch status |
+| total_files | number | Total files in batch |
+| processed_files | number | Files processed |
+| processed_duration_seconds | number | Processing time |
+| total_duration_seconds | number | Total duration |
+| error_message | string | Error message if any |
+| error_details | string | Detailed error info |
+| processor_config | Json | Processor configuration |
+| item_ids | Json | IDs of items in batch |
+| resource_usage | Json | Resource usage stats |
+| created_at | string | Creation timestamp |
+| updated_at | string | Last update timestamp |
+
+### sync_history
+
+This table tracks synchronization history.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| folder_id | string | Folder ID |
+| folder_name | string | Folder name |
+| status | string | Sync status |
+| files_total | number | Total files |
+| files_processed | number | Files processed |
+| files_added | number | Files added |
+| files_updated | number | Files updated |
+| files_skipped | number | Files skipped |
+| files_error | number | Files with errors |
+| duration_ms | number | Duration in milliseconds |
+| error_message | string | Error message if any |
+| timestamp | string | Timestamp |
+| completed_at | string | Completion timestamp |
+
+### sync_statistics
+
+This table stores synchronization statistics.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | string | Primary key |
+| folder_id | string | Folder ID |
+| folder_name | string | Folder name |
+| google_drive_count | number | Google Drive item count |
+| google_drive_documents | number | Documents count |
+| google_drive_folders | number | Folders count |
+| total_google_drive_items | number | Total items |
+| local_files | number | Local file count |
+| matching_files | number | Files that match |
+| new_files | number | New files |
+| local_only_files | number | Files only in local |
+| mp4_files | number | MP4 file count |
+| mp4_total_size | string | Total MP4 file size |
+| created_at | string | Creation timestamp |
+
+## Next Steps
+
+More documentation will be added to this file as development continues. Future updates will include:
+
+1. Detailed descriptions of each script's functionality
+2. Dependencies between scripts
+3. Common usage patterns
+4. Integration points with other system components
+5. Performance metrics and optimization strategies
+6. Troubleshooting guides for common issues
+7. Database schema relationships
