@@ -598,7 +598,9 @@ export type Database = {
           document_type_id: string | null
           file_hash: string | null
           file_path: string | null
+          file_size: number | null
           id: string | null
+          language: string | null
           last_indexed_at: string | null
           last_modified_at: string | null
           manual_tags: string[] | null
@@ -621,7 +623,9 @@ export type Database = {
           document_type_id?: string | null
           file_hash?: string | null
           file_path?: string | null
+          file_size?: number | null
           id?: string | null
+          language?: string | null
           last_indexed_at?: string | null
           last_modified_at?: string | null
           manual_tags?: string[] | null
@@ -644,7 +648,9 @@ export type Database = {
           document_type_id?: string | null
           file_hash?: string | null
           file_path?: string | null
+          file_size?: number | null
           id?: string | null
+          language?: string | null
           last_indexed_at?: string | null
           last_modified_at?: string | null
           manual_tags?: string[] | null
@@ -938,6 +944,150 @@ export type Database = {
           last_modified_at?: string | null
           manual_tags?: string[] | null
           metadata?: Json | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      documentation_files_backup_20250321: {
+        Row: {
+          ai_assessment: Json | null
+          ai_generated_tags: string[] | null
+          assessment_created_at: string | null
+          assessment_date: string | null
+          assessment_model: string | null
+          assessment_quality_score: number | null
+          assessment_updated_at: string | null
+          assessment_version: number | null
+          created_at: string | null
+          document_type_id: string | null
+          file_hash: string | null
+          file_path: string | null
+          id: string | null
+          last_indexed_at: string | null
+          last_modified_at: string | null
+          manual_tags: string[] | null
+          metadata: Json | null
+          status_recommendation: string | null
+          summary: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          assessment_created_at?: string | null
+          assessment_date?: string | null
+          assessment_model?: string | null
+          assessment_quality_score?: number | null
+          assessment_updated_at?: string | null
+          assessment_version?: number | null
+          created_at?: string | null
+          document_type_id?: string | null
+          file_hash?: string | null
+          file_path?: string | null
+          id?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          status_recommendation?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          assessment_created_at?: string | null
+          assessment_date?: string | null
+          assessment_model?: string | null
+          assessment_quality_score?: number | null
+          assessment_updated_at?: string | null
+          assessment_version?: number | null
+          created_at?: string | null
+          document_type_id?: string | null
+          file_hash?: string | null
+          file_path?: string | null
+          id?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          status_recommendation?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      documentation_files_backup_20250324: {
+        Row: {
+          ai_assessment: Json | null
+          ai_generated_tags: string[] | null
+          assessment_created_at: string | null
+          assessment_date: string | null
+          assessment_model: string | null
+          assessment_quality_score: number | null
+          assessment_updated_at: string | null
+          assessment_version: number | null
+          created_at: string | null
+          document_type_id: string | null
+          file_hash: string | null
+          file_path: string | null
+          id: string | null
+          last_indexed_at: string | null
+          last_modified_at: string | null
+          manual_tags: string[] | null
+          metadata: Json | null
+          status_recommendation: string | null
+          summary: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          assessment_created_at?: string | null
+          assessment_date?: string | null
+          assessment_model?: string | null
+          assessment_quality_score?: number | null
+          assessment_updated_at?: string | null
+          assessment_version?: number | null
+          created_at?: string | null
+          document_type_id?: string | null
+          file_hash?: string | null
+          file_path?: string | null
+          id?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          status_recommendation?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          assessment_created_at?: string | null
+          assessment_date?: string | null
+          assessment_model?: string | null
+          assessment_quality_score?: number | null
+          assessment_updated_at?: string | null
+          assessment_version?: number | null
+          created_at?: string | null
+          document_type_id?: string | null
+          file_hash?: string | null
+          file_path?: string | null
+          id?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          status_recommendation?: string | null
           summary?: string | null
           title?: string | null
           updated_at?: string | null
@@ -4307,6 +4457,10 @@ export type Database = {
           priority?: number
         }
         Returns: string
+      }
+      refresh_schema_and_fix_metadata: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
       }
       register_document_relation: {
         Args: {
