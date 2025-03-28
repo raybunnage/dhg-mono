@@ -15,9 +15,6 @@ if [ ! -f "./docs-archive-server.js" ]; then
   exit 1
 fi
 
-# Make sure the file is executable
-chmod +x ./docs-archive-server.js
-
 # Run the server
 echo "Starting docs-archive-server on port 3003..."
 node ./docs-archive-server.js
