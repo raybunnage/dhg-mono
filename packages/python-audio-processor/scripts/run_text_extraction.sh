@@ -1,20 +1,34 @@
 #!/bin/bash
-# Script to extract text from an audio file using Modal with parallel A10G GPUs
-# This version specifically targets the 10-minute audio file with the medium Whisper model
+# Script to extract text from an audio file using Modal with configurable settings
+# All settings can be adjusted in audio_config.json or passed as command line arguments
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
-AUDIO_FILE="$REPO_ROOT/file_types/m4a/INGESTED_2024_04_17_Navaux_10m.m4a"
-RESULTS_DIR="$SCRIPT_DIR/../results"
+CONFIG_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+CONFIG_FILE="$CONFIG_DIR/audio_config.json"
+
+# Get the default audio path from the config file
+DEFAULT_AUDIO_PATH=$(grep -o '"default_audio_path": "[^"]*"' "$CONFIG_FILE" | cut -d'"' -f4)
+if [ -n "$DEFAULT_AUDIO_PATH" ]; then
+    AUDIO_FILE="$REPO_ROOT/$DEFAULT_AUDIO_PATH"
+else
+    AUDIO_FILE="$REPO_ROOT/file_types/m4a/INGESTED_2024_04_17_Navaux_10m.m4a"
+fi
 
 # Create the results directory if it doesn't exist
+RESULTS_DIR="$CONFIG_DIR/results"
 mkdir -p "$RESULTS_DIR"
 
 # Process command line arguments
 VERBOSE=""
 CHECK_ONLY=""
 OUTPUT_PATH=""
-SEGMENTS="6"  # Default to 6 smaller segments to prevent timeouts
+PRESET=""
+MODEL=""
+GPU_TYPE=""
+GPU_COUNT=""
+SEGMENTS=""
+TIMEOUT=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -37,6 +51,42 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    --preset=*)
+      PRESET="--preset=${key#*=}"
+      shift
+      ;;
+    --preset)
+      PRESET="--preset=$2"
+      shift
+      shift
+      ;;
+    --model=*)
+      MODEL="--model=${key#*=}"
+      shift
+      ;;
+    --model)
+      MODEL="--model=$2"
+      shift
+      shift
+      ;;
+    --gpu-type=*)
+      GPU_TYPE="--gpu-type=${key#*=}"
+      shift
+      ;;
+    --gpu-type)
+      GPU_TYPE="--gpu-type=$2"
+      shift
+      shift
+      ;;
+    --gpu-count=*)
+      GPU_COUNT="--gpu-count=${key#*=}"
+      shift
+      ;;
+    --gpu-count)
+      GPU_COUNT="--gpu-count=$2"
+      shift
+      shift
+      ;;
     --segments=*|-s=*)
       SEGMENTS="--segments=${key#*=}"
       shift
@@ -46,26 +96,91 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    --timeout=*)
+      TIMEOUT="--timeout=${key#*=}"
+      shift
+      ;;
+    --timeout)
+      TIMEOUT="--timeout=$2"
+      shift
+      shift
+      ;;
+    --file=*|-f=*)
+      AUDIO_FILE="${key#*=}"
+      shift
+      ;;
+    --file|-f)
+      AUDIO_FILE="$2"
+      shift
+      shift
+      ;;
+    --short-file)
+      # Get the short audio path from the config file
+      SHORT_AUDIO_PATH=$(grep -o '"short_audio_path": "[^"]*"' "$CONFIG_FILE" | cut -d'"' -f4)
+      if [ -n "$SHORT_AUDIO_PATH" ]; then
+        AUDIO_FILE="$REPO_ROOT/$SHORT_AUDIO_PATH"
+        # Also set the preset for short files
+        PRESET="--preset=short_file"
+      else
+        echo "❌ Error: short_audio_path not found in config file"
+        exit 1
+      fi
+      shift
+      ;;
+    --medium-file)
+      # Get the medium audio path from the config file
+      MEDIUM_AUDIO_PATH=$(grep -o '"medium_audio_path": "[^"]*"' "$CONFIG_FILE" | cut -d'"' -f4)
+      if [ -n "$MEDIUM_AUDIO_PATH" ]; then
+        AUDIO_FILE="$REPO_ROOT/$MEDIUM_AUDIO_PATH"
+        # Also set the preset for medium files
+        PRESET="--preset=medium_file"
+      else
+        echo "❌ Error: medium_audio_path not found in config file"
+        exit 1
+      fi
+      shift
+      ;;
     --help|-h)
       echo "Usage: $0 [OPTIONS]"
       echo ""
-      echo "This script processes the 10-minute audio file (INGESTED_2024_04_17_Navaux_10m.m4a)"
-      echo "using the Whisper medium model and 3 A10G GPUs in parallel."
+      echo "This script processes audio files using Modal and Whisper models."
+      echo "All settings can be configured in audio_config.json or passed as arguments."
       echo ""
       echo "Options:"
-      echo "  --verbose, -v            Enable verbose logging"
-      echo "  --check                  Only check Modal connection"
-      echo "  --output PATH, -o PATH   Specify output path for transcript"
-      echo "  --segments N, -s N       Number of segments to split audio into (default: 6)"
-      echo "  --help, -h               Show this help message"
+      echo "  --verbose, -v                 Enable verbose logging"
+      echo "  --check                       Only check Modal connection"
+      echo "  --output PATH, -o PATH        Specify output path for transcript"
+      echo "  --preset PRESET               Use a predefined config preset (fast, balanced, quality, short_file)"
+      echo "  --model MODEL                 Whisper model to use (tiny, base, small, medium, large)"
+      echo "  --gpu-type TYPE               GPU type to use (T4, A10G, A100)"
+      echo "  --gpu-count COUNT             Number of GPUs to use in parallel"
+      echo "  --segments N, -s N            Number of segments to split audio into"
+      echo "  --timeout SECONDS             Timeout in seconds for each segment"
+      echo "  --file PATH, -f PATH          Path to the audio file to process"
+      echo "  --short-file                  Use the short_audio_path from config with short_file preset"
+      echo "  --medium-file                 Use the medium_audio_path from config with medium_file preset"
+      echo "  --help, -h                    Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  $0                            # Use default settings from audio_config.json"
+      echo "  $0 --preset=fast              # Use faster, lighter processing"
+      echo "  $0 --preset=quality           # Use higher quality, slower processing"
+      echo "  $0 --short-file               # Process the short (1m) audio file"
+      echo "  $0 --medium-file              # Process the medium (5m) audio file"
+      echo "  $0 --model=medium --gpu-count=3  # Custom configuration"
       echo ""
       exit 0
       ;;
     *)
-      # Unknown option
-      echo "Unknown option: $key"
-      echo "Run '$0 --help' for usage information"
-      exit 1
+      # Unknown option or positional argument (assumed to be audio file)
+      if [ -f "$key" ]; then
+        AUDIO_FILE="$key"
+        shift
+      else
+        echo "Unknown option: $key"
+        echo "Run '$0 --help' for usage information"
+        exit 1
+      fi
       ;;
   esac
 done
@@ -121,30 +236,36 @@ if [ ! -f "$AUDIO_FILE" ]; then
     exit 1
 fi
 
-echo "🎛️ A10G GPU Audio Processing with Medium Model"
+# Determine preset info from config file if preset was specified
+if [[ "$PRESET" == *"--preset="* ]]; then
+    PRESET_NAME=${PRESET#*=}
+    PRESET_INFO=$(grep -A10 "\"$PRESET_NAME\"" "$CONFIG_FILE" | grep -v "}" | tr -d ',' | tr -d '"' | tr -d '{')
+    echo "🔧 Using preset: $PRESET_NAME"
+    echo "$PRESET_INFO" | grep -v ":" | while read -r line; do
+        if [[ -n "$line" ]]; then
+            echo "  - $line"
+        fi
+    done
+    echo ""
+fi
+
+echo "🎛️ Audio Processing Configuration"
 echo "🎵 Audio file: $AUDIO_FILE"
 echo "📂 Results will be saved to: $RESULTS_DIR"
 
 # Run the extraction script
 which_python=$(which python)
 echo "Using Python: $which_python"
-echo "⏱️ Starting parallel transcription with 6 A10G GPUs and medium model..."
+echo "⏱️ Starting audio transcription with Modal..."
 
-# Determine the output path if not specified
-if [ -z "$OUTPUT_PATH" ]; then
-    OUTPUT_PATH="--output=$RESULTS_DIR/INGESTED_2024_04_17_Navaux_10m_medium_parallel.txt"
-fi
-
-# Make sure the segments parameter is properly formatted
-if [[ "$SEGMENTS" != "--segments="* ]]; then
-    SEGMENTS="--segments=6"  # Default to 6 segments for better processing
-fi
+# Build command with all specified options
+CMD="$which_python \"$SCRIPT_DIR/extract_audio_text.py\" $VERBOSE $CHECK_ONLY $OUTPUT_PATH $PRESET $MODEL $GPU_TYPE $GPU_COUNT $SEGMENTS $TIMEOUT \"$AUDIO_FILE\" 2>&1"
 
 # Print the command for debugging
-echo "DEBUG: Running command: $which_python $SCRIPT_DIR/extract_audio_text.py $VERBOSE $OUTPUT_PATH $SEGMENTS \"$AUDIO_FILE\""
+echo "DEBUG: Running command: $CMD"
 
-# Run the command with properly formatted arguments
-$which_python "$SCRIPT_DIR/extract_audio_text.py" $VERBOSE $OUTPUT_PATH $SEGMENTS "$AUDIO_FILE"
+# Run the command
+eval $CMD
 
 # Check if the extraction was successful
 if [ $? -eq 0 ]; then
@@ -165,9 +286,12 @@ else
     echo "3. Check your Modal version:"
     echo "   pip show modal"
     echo ""
-    echo "4. Refresh your Modal token:"
+    echo "4. Try using a smaller model or more segments:"
+    echo "   $0 --model=base --segments=6"
+    echo ""
+    echo "5. Refresh your Modal token:"
     echo "   modal token new"
     echo ""
-    echo "5. Make sure Modal service is up:"
+    echo "6. Make sure Modal service is up:"
     echo "   Visit https://status.modal.com"
 fi

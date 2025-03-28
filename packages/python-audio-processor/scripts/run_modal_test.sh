@@ -3,7 +3,12 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
-AUDIO_FILE="$REPO_ROOT/file_types/m4a/INGESTED_2024_04_17_Navaux_1m.m4a"
+# Default to the 1-minute file unless another file is specified
+if [ "$1" != "" ] && [ -f "$1" ]; then
+    AUDIO_FILE="$1"
+else
+    AUDIO_FILE="$REPO_ROOT/file_types/m4a/INGESTED_2024_04_17_Navaux_1m.m4a"
+fi
 
 # Create the results directory if it doesn't exist
 mkdir -p "$SCRIPT_DIR/../results"
