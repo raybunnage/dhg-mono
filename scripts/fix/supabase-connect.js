@@ -252,7 +252,6 @@ async function findUntypedScripts() {
         .from('scripts')
         .select('*', { count: 'exact' })
         .is('script_type_id', null)
-        .is('is_deleted', false)
         .order('created_at', { ascending: false })
         .limit(100);
         
