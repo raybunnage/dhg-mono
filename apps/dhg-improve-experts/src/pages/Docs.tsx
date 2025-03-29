@@ -353,19 +353,14 @@ function Docs() {
         query = query.is('summary', null);
       }
       
-      // Build advanced search for multiple fields including metadata
+      // Build search for title and file_path fields when search button is clicked
       if (searchQuery.trim()) {
         query = query.or(
-          `file_path.ilike.%${searchQuery}%,` +
           `title.ilike.%${searchQuery}%,` +
-          `summary.ilike.%${searchQuery}%,` +
-          `ai_generated_tags::text ilike '%${searchQuery}%',` +
-          `manual_tags::text ilike '%${searchQuery}%',` +
-          `metadata->category.ilike.%${searchQuery}%,` +
-          `status_recommendation.ilike.%${searchQuery}%`
+          `file_path.ilike.%${searchQuery}%`
         );
         
-        console.log(`Added text search criteria for: "${searchQuery}"`);
+        console.log(`Added text search criteria for title/file_path: "${searchQuery}"`);
       }
       
       // Add tag filtering if tags are selected
