@@ -22,8 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { expertService } from '@/services/expert-service';
 
 const expertDocumentFormSchema = z.object({
   expert_id: z.string().min(1, { message: 'Expert is required' }),
@@ -64,23 +64,17 @@ export function ExpertDocumentForm({ document, expertId, onSuccess, onCancel }: 
   useEffect(() => {
     async function loadData() {
       try {
-        // Load experts
-        const { data: expertsData, error: expertsError } = await supabase
-          .from('experts')
-          .select('id, expert_name')
-          .order('expert_name');
-          
-        if (expertsError) throw expertsError;
-        setExperts(expertsData || []);
+        // Load experts using our service
+        const expertsData = await expertService.getAllExperts();
+        const expertItems = expertsData.map(expert => ({
+          id: expert.id,
+          expert_name: expert.expert_name
+        }));
+        setExperts(expertItems);
         
-        // Load source documents
-        const { data: sourcesData, error: sourcesError } = await supabase
-          .from('sources_google')
-          .select('id, title')
-          .order('title');
-          
-        if (sourcesError) throw sourcesError;
-        setSources(sourcesData || []);
+        // Load source documents using our service
+        const sourcesData = await expertService.getSources();
+        setSources(sourcesData);
       } catch (error) {
         console.error('Error loading form data:', error);
         toast.error('Failed to load form data');
@@ -94,39 +88,30 @@ export function ExpertDocumentForm({ document, expertId, onSuccess, onCancel }: 
     try {
       setIsSubmitting(true);
       
-      let response;
-      
       // Set processing status
       const documentData = {
         ...data,
         processing_status: 'pending'
       };
       
+      let result;
+      
       if (isEditing && document) {
-        // Update existing document
-        response = await supabase
-          .from('expert_documents')
-          .update(documentData)
-          .eq('id', document.id)
-          .select()
-          .single();
+        // Update existing document using our service
+        result = await expertService.updateExpertDocument(document.id, documentData);
       } else {
-        // Create new document
-        response = await supabase
-          .from('expert_documents')
-          .insert(documentData)
-          .select()
-          .single();
+        // Create new document using our service
+        result = await expertService.createExpertDocument(documentData);
       }
 
-      if (response.error) {
-        throw new Error(response.error.message);
+      if (!result) {
+        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} document`);
       }
 
       toast.success(`Document ${isEditing ? 'updated' : 'created'} successfully`);
       
       if (onSuccess) {
-        onSuccess(response.data);
+        onSuccess(result);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
