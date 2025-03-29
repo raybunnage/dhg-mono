@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ExpertDocument } from '@/types/expert';
 import { toast } from 'sonner';
-import { expertService } from '@/services/expert-service';
+import { expertServiceAdapter } from '@/services/expert-service-adapter';
 import { documentPipelineAdapter } from '@/services/document-pipeline-adapter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -40,10 +40,10 @@ export function ExpertDocumentDetail({
     try {
       setLoading(true);
       
-      // Use our expert service
+      // Use our expert service adapter
       const [expertData, sourceData] = await Promise.all([
-        expertService.getExpertBasicInfo(document.expert_id),
-        expertService.getSourceInfo(document.source_id)
+        expertServiceAdapter.getExpertBasicInfo(document.expert_id),
+        expertServiceAdapter.getSourceInfo(document.source_id)
       ]);
       
       if (expertData) {
@@ -112,7 +112,7 @@ export function ExpertDocumentDetail({
         toast.success('Document processed successfully');
         
         // Refresh the document to get the updated content
-        const updatedDoc = await expertService.getExpertDocumentById(currentDocument.id);
+        const updatedDoc = await expertServiceAdapter.getExpertDocumentById(currentDocument.id);
         if (updatedDoc) {
           setCurrentDocument(updatedDoc);
         }

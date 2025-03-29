@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { expertService } from '@/services/expert-service';
+import { expertServiceAdapter } from '@/services/expert-service-adapter';
 
 const expertFormSchema = z.object({
   expert_name: z.string().min(2, {
@@ -70,8 +70,8 @@ export function ExpertForm({ expert, onSuccess, onCancel }: ExpertFormProps) {
         expertData.id = expert.id;
       }
       
-      // Use our expert service
-      const savedExpert = await expertService.upsertExpert(expertData);
+      // Use our expert service adapter
+      const savedExpert = await expertServiceAdapter.upsertExpert(expertData);
       
       if (!savedExpert) {
         throw new Error(`Failed to ${isEditing ? 'update' : 'create'} expert`);

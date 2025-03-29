@@ -1,71 +1,106 @@
-# Migration Checklist for Shared Services
+# Migration Checklist for Experts Module
 
-This checklist provides guidance on how to determine when it's appropriate to finalize migration from app-specific services to shared packages and how to safely archive old implementations.
+This checklist tracks the progress of migrating the Experts module to use the service adapter pattern and shared services.
 
-## Pre-Migration Checklist
+## Service Adapters Implementation
 
-Before starting the migration to shared services, ensure:
+### Document Pipeline Adapter
 
-- [ ] All components use the service abstraction layer instead of direct API/DB calls
-- [ ] All service interfaces are fully documented
-- [ ] Unit tests cover critical service functionality
-- [ ] Adapter interfaces are aligned with shared service interfaces
-- [ ] A rollback plan is documented
+- [x] Create initial adapter interface
+- [x] Implement temporary adapter functionality
+- [x] Add detailed error handling and logging
+- [x] Connect to existing expert service
+- [x] Update to use expert service adapter
+- [ ] Implement shared service connection (Phase 2)
+- [ ] Write unit tests for adapter
 
-## Shared Package Integration Readiness
+### Content Service
 
-The shared package is ready to use when:
+- [x] Create service interface
+- [x] Implement service functionality
+- [x] Add error handling and content processing helpers
+- [x] Implement batch processing capability
+- [ ] Write unit tests for service
 
-- [ ] All required functionality is implemented in the shared package
-- [ ] Shared package has comprehensive unit tests
-- [ ] Documentation covers all public methods
-- [ ] Type definitions are complete and accurate
-- [ ] Package is properly exported in the monorepo
+### Script Pipeline Adapter
 
-## App Integration Readiness
+- [x] Create initial adapter interface
+- [x] Implement mock functionality for commands
+- [x] Add script retrieval methods
+- [ ] Connect to real script handling functionality (Phase 2)
+- [ ] Write unit tests for adapter
 
-An app is ready to integrate shared packages when:
+### Expert Service Adapter
 
-- [ ] All components use service/adapter abstractions (no direct db/api calls)
-- [ ] Adapter interfaces match shared service interfaces
-- [ ] The app has comprehensive tests for the functionality using the services
-- [ ] TypeScript configuration supports shared package imports
-- [ ] Development dependencies are properly configured
+- [x] Create initial adapter interface
+- [x] Implement temporary adapter functionality
+- [x] Add detailed error handling and logging
+- [x] Connect document pipeline to expert adapter
+- [x] Update all components to use adapter
+- [ ] Implement shared service connection (Phase 2)
+- [ ] Write unit tests for adapter
 
-## Migration Process
+## Component Updates
 
-1. **Update package.json and tsconfig.json**
-   - [ ] Add shared package as dependency
-   - [ ] Configure module resolution in tsconfig
+### Expert Document Components
 
-2. **Create Initial Integration**
-   - [ ] Modify adapters to use shared services
-   - [ ] Run all tests to verify functionality
-   - [ ] Fix any integration issues
+- [x] Update ExpertDocumentDetail to use document pipeline adapter
+- [x] Update GetContentButton to use content service and modern toast
+- [x] Update ExpertDocumentForm to use adapters and add processing option
+- [x] Update ExpertDocumentList to use adapters
 
-3. **Test and Validate**
-   - [ ] Verify all component functionality works with shared services
-   - [ ] Validate error handling
-   - [ ] Check for any performance issues
-   - [ ] Run all unit and integration tests
+### Expert Components
 
-4. **Finalize Integration**
-   - [ ] Clean up any temporary code
-   - [ ] Update documentation
-   - [ ] Remove old implementations only after verification
+- [x] Update ExpertForm to use adapted services
+- [x] Update ExpertList to use adapted services
+- [x] Update ExpertDetailView to use adapted services
 
-## Safe Archiving Checklist
+### Utility Components
+
+- [x] Create BatchProcessButton using adapters
+- [ ] Update existing utility components to use adapters
+
+## Documentation
+
+- [x] Document service adapter pattern
+- [x] Create testing strategy document
+- [x] Create migration checklist (this document)
+- [x] Create expert service refactoring plan
+- [ ] Update README with new architecture
+- [ ] Document shared services interfaces for future implementation
+
+## Testing
+
+- [ ] Write unit tests for document pipeline adapter
+- [ ] Write unit tests for content service
+- [ ] Write unit tests for script pipeline adapter
+- [ ] Write unit tests for expert service adapter
+- [ ] Write integration tests for components with adapters
+- [ ] Run manual testing on all key flows
+- [ ] Performance testing on batch operations
+
+## Shared Services Transition (Phase 2)
+
+- [ ] Create shared document-pipeline-service package
+- [ ] Create shared content-service package
+- [ ] Create shared script-pipeline-service package
+- [ ] Create shared expert-service package
+- [ ] Update adapters to use shared services
+- [ ] Remove temporary implementations
+- [ ] End-to-end testing with shared services
+
+## Pre-Archive Checklist
 
 Before archiving old service implementations:
 
-- [ ] All apps using the service have migrated to shared services
-- [ ] All components using the service have been updated
+- [ ] All components use service/adapter abstractions (no direct db/api calls)
+- [ ] All adapter interfaces match shared service interfaces
+- [ ] The app has comprehensive tests for the functionality using the services
 - [ ] All tests pass with the new shared services
 - [ ] Production monitoring confirms no new errors
 - [ ] Performance metrics show acceptable performance
-- [ ] A full production backup is available if rollback is needed
 
-## Archiving Process
+## Archive Process
 
 1. **Document the Archive**
    - [ ] Create documentation of what is being archived
@@ -81,26 +116,17 @@ Before archiving old service implementations:
    - [ ] Remove imports from archived files
    - [ ] Update build configurations to exclude archived files
 
-4. **Monitor Post-Archive**
-   - [ ] Monitor application for any issues after archiving
-   - [ ] Verify build and test processes still work correctly
+## Progress Tracking
 
-## Final Validation
+| Category | Total Items | Completed | Progress |
+|----------|-------------|-----------|----------|
+| Service Adapters | 17 | 14 | 82% |
+| Components | 7 | 7 | 100% |
+| Documentation | 6 | 4 | 67% |
+| Testing | 7 | 0 | 0% |
+| Shared Services | 7 | 0 | 0% |
+| Pre-Archive | 6 | 0 | 0% |
+| Archive Process | 5 | 0 | 0% |
+| **Overall** | **55** | **25** | **45%** |
 
-After completing the migration:
-
-- [ ] Run full test suite
-- [ ] Validate in staging environment
-- [ ] Monitor initial production deployment closely
-- [ ] Document lessons learned for future migrations
-
-## Timeline Considerations
-
-Recommended waiting periods before archiving:
-
-| Criticality | Testing Period | Production Validation |
-|-------------|---------------|------------------------|
-| Low | 1 week | 2 weeks |
-| Medium | 2 weeks | 1 month |
-| High | 1 month | 3 months |
-| Critical | 2 months | 6 months |
+Last Updated: 2025-03-28

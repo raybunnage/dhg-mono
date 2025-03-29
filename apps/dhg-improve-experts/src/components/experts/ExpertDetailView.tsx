@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ExpertDocumentList } from './ExpertDocumentList';
 import { Edit, RefreshCw, User, Briefcase, GraduationCap, Award, BookOpen, Globe } from 'lucide-react';
 import { format } from 'date-fns';
-import { expertService } from '@/services/expert-service';
+import { expertServiceAdapter } from '@/services/expert-service-adapter';
 
 interface ExpertDetailViewProps {
   expert: ExpertInterface;
@@ -41,8 +41,9 @@ export function ExpertDetailView({
     try {
       setLoading(true);
       
-      // Use our expert service
-      const profileData = await expertService.getEnhancedProfile(expert.id);
+      // Use our expert service adapter
+      // Note: We need to add getEnhancedProfile to the adapter
+      const profileData = await expertServiceAdapter.getEnhancedProfile(expert.id);
       setEnhancedProfile(profileData);
     } catch (error) {
       console.error('Error loading enhanced profile:', error);

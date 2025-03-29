@@ -22,8 +22,8 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MoreHorizontal, Plus, Search, RefreshCw, Trash2, Edit, Eye } from 'lucide-react';
 
-// Import our expert service
-import { expertService } from '@/services/expert-service';
+// Import our expert service adapter
+import { expertServiceAdapter } from '@/services/expert-service-adapter';
 
 interface ExpertListProps {
   onSelectExpert: (expert: ExpertInterface) => void;
@@ -51,8 +51,8 @@ export function ExpertList({
     try {
       setLoading(true);
       
-      // Use our expert service
-      const experts = await expertService.getAllExperts();
+      // Use our expert service adapter
+      const experts = await expertServiceAdapter.getAllExperts();
       setExperts(experts);
     } catch (error) {
       console.error('Error loading experts:', error);

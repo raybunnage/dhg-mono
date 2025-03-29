@@ -12,7 +12,7 @@
  */
 import { ExpertDocument } from '@/types/expert';
 import { Logger } from '@/utils/logger';
-import { expertService } from './expert-service';
+import { expertServiceAdapter } from './expert-service-adapter';
 import { documentProcessingService } from './document-processing-service';
 
 export class DocumentPipelineAdapter {
@@ -23,8 +23,8 @@ export class DocumentPipelineAdapter {
     try {
       Logger.debug(`Processing document ID: ${documentId}`);
       
-      // Get the document from the database
-      const document = await expertService.getExpertDocumentById(documentId);
+      // Get the document from the database using the expert service adapter
+      const document = await expertServiceAdapter.getExpertDocumentById(documentId);
       
       if (!document) {
         throw new Error(`Document not found: ${documentId}`);
@@ -44,7 +44,7 @@ export class DocumentPipelineAdapter {
   async getRecentDocuments(limit: number = 20): Promise<ExpertDocument[]> {
     try {
       Logger.debug(`Getting ${limit} recent documents`);
-      return await expertService.getExpertDocuments(undefined);
+      return await expertServiceAdapter.getExpertDocuments(undefined);
     } catch (error) {
       Logger.error('Error getting recent documents:', error);
       return [];
@@ -59,7 +59,7 @@ export class DocumentPipelineAdapter {
       Logger.debug(`Getting ${limit} untyped documents`);
       // In this mock implementation, we're just returning recent documents
       // In the real implementation, this would filter by document_type
-      return await expertService.getExpertDocuments(undefined);
+      return await expertServiceAdapter.getExpertDocuments(undefined);
     } catch (error) {
       Logger.error('Error getting untyped documents:', error);
       return [];
