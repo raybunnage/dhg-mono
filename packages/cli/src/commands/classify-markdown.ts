@@ -1,8 +1,10 @@
 import { Command } from 'commander';
 import path from 'path';
 import { Logger, LogLevel } from '../utils/logger';
+import { LoggerUtils } from '../utils/logger-utils';
 import { ErrorHandler, AppError } from '../utils/error-handler';
 import config from '../utils/config';
+import configHelpers from '../utils/config-helpers';
 import { 
   FileService, 
   SupabaseService, 
@@ -46,43 +48,45 @@ ${relatedAssetsContext}`;
  */
 export const classifyMarkdown = async (filePath: string, options: ClassifyMarkdownOptions) => {
   // Configure logger based on options
-  Logger.setLevel(options.verbose ? LogLevel.DEBUG : LogLevel.INFO);
+  if (options.verbose) {
+    Logger.setLevel(LogLevel.DEBUG);
+  }
   
   try {
-    Logger.info(`Starting classification of ${filePath}`);
+    LoggerUtils.info(`Starting classification of ${filePath}`);
     
     // 1. Initialize services
     const fileService = new FileService();
     const supabaseService = new SupabaseService(config.supabaseUrl, config.supabaseKey);
-    const claudeService = new ClaudeService(config.anthropicApiKey);
+    const claudeService = new ClaudeService(configHelpers.anthropicApiKey);
     const reportService = new ReportService();
     
     // 2. Read target file
-    Logger.info('Reading target file');
+    LoggerUtils.info('Reading target file');
     const fileResult = fileService.readFile(filePath);
     if (!fileResult.success) {
       throw new AppError(`Failed to read file: ${fileResult.error}`, 'FILE_ERROR');
     }
     
-    Logger.info('File read successfully', {
+    LoggerUtils.info('File read successfully', {
       path: fileResult.path,
       size: fileResult.stats?.size
     });
     
     // 3. Get classification prompt
-    Logger.info('Retrieving classification prompt');
+    LoggerUtils.info('Retrieving classification prompt');
     const prompt = await supabaseService.getPromptByName('markdown-document-classification-prompt');
     if (!prompt) {
       throw new AppError('Classification prompt not found', 'PROMPT_ERROR');
     }
     
-    Logger.info('Classification prompt found', {
+    LoggerUtils.info('Classification prompt found', {
       id: prompt.id,
       name: prompt.name
     });
     
     // 4. Get related assets
-    Logger.info(`Finding related assets for prompt: ${prompt.id}`);
+    LoggerUtils.info(`Finding related assets for prompt: ${prompt.id}`);
     const relationships = await supabaseService.getRelationshipsByPromptId(prompt.id);
     
     // 5. Process related assets
@@ -106,19 +110,19 @@ export const classifyMarkdown = async (filePath: string, options: ClassifyMarkdo
       })
     );
     
-    Logger.info(`Processed ${relatedAssets.length} related assets`);
+    LoggerUtils.info(`Processed ${relatedAssets.length} related assets`);
     
     // 6. Get document types
-    Logger.info('Retrieving document types');
+    LoggerUtils.info('Retrieving document types');
     const documentTypes = await supabaseService.getDocumentTypesByCategory('Documentation');
     
-    Logger.info(`Found ${documentTypes.length} document types`);
+    LoggerUtils.info(`Found ${documentTypes.length} document types`);
     
     // 7. Prepare context for AI
     const context = prepareContext(documentTypes, relatedAssets);
     
     // 8. Call Claude API
-    Logger.info('Calling Claude API for classification');
+    LoggerUtils.info('Calling Claude API for classification');
     const claudeResponse = await claudeService.classifyDocument(
       fileResult.content!,
       prompt.content,
@@ -132,11 +136,11 @@ export const classifyMarkdown = async (filePath: string, options: ClassifyMarkdo
       );
     }
     
-    Logger.info('Claude API call successful');
+    LoggerUtils.info('Claude API call successful');
     
     // 9. Generate report
-    Logger.info('Generating classification report');
-    const outputPath = options.output || path.join(config.defaultOutputDir, 'markdown-classification-report.md');
+    LoggerUtils.info('Generating classification report');
+    const outputPath = options.output || path.join(configHelpers.defaultOutputDir, 'markdown-classification-report.md');
     
     // 9.1 Add report sections
     reportService.addSection({
@@ -200,9 +204,9 @@ ${JSON.stringify(documentTypes, null, 2)}
     const reportResult = reportService.writeReportToFile(outputPath);
     
     if (reportResult.success) {
-      Logger.info(`Classification complete. Report saved to: ${outputPath}`);
+      LoggerUtils.info(`Classification complete. Report saved to: ${outputPath}`);
     } else {
-      Logger.error(`Failed to write report: ${reportResult.error}`);
+      LoggerUtils.error(`Failed to write report: ${reportResult.error}`);
     }
     
   } catch (error) {

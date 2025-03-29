@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { Logger } from '../utils/logger';
-import { documentPipelineService } from '../services/document-pipeline-service';
+import { documentPipelineService } from '@dhg/shared/services';
 
 /**
  * Command to show recent document files in the database
