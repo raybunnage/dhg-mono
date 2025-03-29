@@ -510,7 +510,7 @@ EOL
 function show_untyped_files() {
   echo "📋 Showing untyped document files..."
   
-  # Create a temporary script to query the database
+  # Create temporary location
   TEMP_DIR=$(mktemp -d)
   UNTYPED_SCRIPT="$TEMP_DIR/show_untyped.js"
   
@@ -530,46 +530,80 @@ EOL
   # Install dependencies
   (cd "$TEMP_DIR" && npm install --silent @supabase/supabase-js >/dev/null 2>&1)
   
-  # Create JS file for showing untyped files
+  # Create a standalone version that doesn't require shared services
   cat > "$UNTYPED_SCRIPT" << 'EOL'
+/**
+ * Show Untyped Documents
+ * 
+ * Displays documents that don't have a document type assigned
+ */
+
 const { createClient } = require('@supabase/supabase-js');
 
 // Get environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Create Supabase client
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Get optional limit
+const limit = parseInt(process.env.LIMIT || '20', 10);
 
-// Function to show untyped files
-async function showUntypedFiles() {
+/**
+ * Get untyped documents
+ */
+async function getUntypedDocuments(supabaseUrl, supabaseKey, limit = 20) {
   try {
-    // Query for files without a document type
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
     const { data, error } = await supabase
       .from('documentation_files')
-      .select('id, file_path, title, language, created_at, updated_at')
+      .select(`
+        id, 
+        file_path, 
+        title, 
+        language, 
+        document_type_id,
+        created_at, 
+        updated_at
+      `)
       .is('document_type_id', null)
       .order('updated_at', { ascending: false })
-      .limit(20);
+      .limit(limit);
     
     if (error) {
-      console.error('Error fetching untyped files:', error);
-      return { success: false, count: 0 };
+      console.error('Error fetching untyped documents:', error);
+      return [];
     }
     
-    if (!data || data.length === 0) {
+    return data;
+  } catch (error) {
+    console.error('Error in getUntypedDocuments:', error);
+    return [];
+  }
+}
+
+/**
+ * Show untyped documents
+ */
+async function showUntypedFiles() {
+  try {
+    console.log(`Fetching up to ${limit} untyped document files...`);
+    
+    // Get untyped documents
+    const documents = await getUntypedDocuments(supabaseUrl, supabaseKey, limit);
+    
+    if (!documents || documents.length === 0) {
       console.log('No untyped files found.');
       return { success: true, count: 0 };
     }
     
-    console.log(`Found ${data.length} untyped document files:`);
+    console.log(`Found ${documents.length} untyped document files:`);
     console.log('----------------------------------------------');
     
     // Format the data as a table
-    console.log('ID                                      | Title                    | Path                                    | Updated At');
-    console.log('----------------------------------------|--------------------------|----------------------------------------|------------------');
+    console.log('ID         | Title                    | Path                                    | Updated At');
+    console.log('-----------|--------------------------|----------------------------------------|------------------');
     
-    data.forEach((file, index) => {
+    documents.forEach((file, index) => {
       const id = file.id ? file.id.substring(0, 8) + '...' : 'No ID'; // Show only first 8 chars of UUID
       const title = (file.title || 'No title').padEnd(24).substring(0, 24);
       const path = (file.file_path || 'No path').padEnd(39).substring(0, 39);
@@ -579,9 +613,9 @@ async function showUntypedFiles() {
     });
     
     console.log('----------------------------------------------');
-    console.log(`Total: ${data.length} untyped documents`);
+    console.log(`Total: ${documents.length} untyped documents`);
     
-    return { success: true, count: data.length };
+    return { success: true, count: documents.length };
   } catch (error) {
     console.error('Error in show untyped files process:', error);
     return { success: false, count: 0 };
@@ -603,6 +637,7 @@ EOL
   echo "Querying database for untyped document files..."
   SUPABASE_URL="$SUPABASE_URL" \
   SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  LIMIT=20 \
   node "$UNTYPED_SCRIPT"
   
   UNTYPED_EXIT_CODE=$?
@@ -623,9 +658,12 @@ EOL
 function show_recent_files() {
   echo "📋 Showing recent document files..."
   
-  # Create a temporary script to query the database
+  # Create temporary location
   TEMP_DIR=$(mktemp -d)
   RECENT_SCRIPT="$TEMP_DIR/show_recent.js"
+  
+  # Create directories for shared modules
+  mkdir -p "$TEMP_DIR/shared"
   
   # Create package.json for the script
   cat > "$TEMP_DIR/package.json" << 'EOL'
@@ -643,21 +681,31 @@ EOL
   # Install dependencies
   (cd "$TEMP_DIR" && npm install --silent @supabase/supabase-js >/dev/null 2>&1)
   
-  # Create JS file for showing recent files
+  # Create a standalone version that doesn't require shared services
   cat > "$RECENT_SCRIPT" << 'EOL'
+/**
+ * Show Recent Documents
+ * 
+ * Displays the most recent documents updated in the system
+ */
+
 const { createClient } = require('@supabase/supabase-js');
 
 // Get environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Create Supabase client
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Get optional limit
+const limit = parseInt(process.env.LIMIT || '20', 10);
 
-// Function to show recent files
-async function showRecentFiles() {
+/**
+ * Get recent documents with document type info
+ */
+async function getRecentDocuments(supabaseUrl, supabaseKey, limit = 20) {
   try {
-    // Query for recent files
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Fetch documents without using foreign key relationship
     const { data, error } = await supabase
       .from('documentation_files')
       .select(`
@@ -665,31 +713,104 @@ async function showRecentFiles() {
         file_path, 
         title, 
         language, 
-        document_type:document_type_id(name),
+        document_type_id,
         created_at, 
         updated_at
       `)
       .order('updated_at', { ascending: false })
-      .limit(20);
+      .limit(limit);
     
     if (error) {
-      console.error('Error fetching recent files:', error);
-      return { success: false, count: 0 };
+      console.error('Error fetching recent documents:', error);
+      return [];
     }
     
-    if (!data || data.length === 0) {
+    // Enhance with document type information
+    const enhancedDocs = await enhanceDocumentsWithTypes(data, supabase);
+    
+    return enhancedDocs;
+  } catch (error) {
+    console.error('Error in getRecentDocuments:', error);
+    return [];
+  }
+}
+
+/**
+ * Helper function to enhance documents with their types
+ */
+async function enhanceDocumentsWithTypes(documents, supabase) {
+  if (!documents || documents.length === 0) {
+    return [];
+  }
+  
+  // Get all unique document type IDs
+  const typeIds = [...new Set(
+    documents
+      .filter(doc => doc.document_type_id)
+      .map(doc => doc.document_type_id)
+  )];
+  
+  // If there are no type IDs, return the original documents
+  if (typeIds.length === 0) {
+    return documents.map(doc => ({
+      ...doc,
+      document_type: { name: 'Untyped' }
+    }));
+  }
+  
+  // Fetch document types
+  const { data: typeData, error } = await supabase
+    .from('document_types')
+    .select('id, document_type')
+    .in('id', typeIds);
+  
+  if (error) {
+    console.error('Error fetching document types:', error);
+    return documents;
+  }
+  
+  // Create a map of typeId to type name
+  const typeMap = {};
+  typeData.forEach(type => {
+    typeMap[type.id] = type.document_type;
+  });
+  
+  // Enhance documents with type information
+  return documents.map(doc => {
+    const typeName = doc.document_type_id && typeMap[doc.document_type_id] 
+      ? typeMap[doc.document_type_id] 
+      : 'Untyped';
+    
+    return {
+      ...doc,
+      document_type: { name: typeName }
+    };
+  });
+}
+
+/**
+ * Show recent documents
+ */
+async function showRecentFiles() {
+  try {
+    console.log(`Fetching up to ${limit} recent document files...`);
+    
+    // Get recent documents
+    const documents = await getRecentDocuments(supabaseUrl, supabaseKey, limit);
+    
+    if (!documents || documents.length === 0) {
       console.log('No recent files found.');
       return { success: true, count: 0 };
     }
     
-    console.log(`Found ${data.length} recent document files:`);
+    console.log(`Found ${documents.length} recent document files:`);
     console.log('----------------------------------------------');
     
     // Format the data as a table
     console.log('ID         | Title                    | Type                     | Path                                    | Updated At');
     console.log('-----------|--------------------------|--------------------------|----------------------------------------|------------------');
     
-    data.forEach((file, index) => {
+    documents.forEach((file, index) => {
       const id = file.id ? file.id.substring(0, 8) + '...' : 'No ID'; // Show only first 8 chars of UUID
       const title = (file.title || 'No title').padEnd(24).substring(0, 24);
       const type = ((file.document_type && file.document_type.name) || 'Untyped').padEnd(24).substring(0, 24);
@@ -700,9 +821,9 @@ async function showRecentFiles() {
     });
     
     console.log('----------------------------------------------');
-    console.log(`Total: ${data.length} recent documents`);
+    console.log(`Total: ${documents.length} recent documents`);
     
-    return { success: true, count: data.length };
+    return { success: true, count: documents.length };
   } catch (error) {
     console.error('Error in show recent files process:', error);
     return { success: false, count: 0 };
@@ -724,6 +845,7 @@ EOL
   echo "Querying database for recent document files..."
   SUPABASE_URL="$SUPABASE_URL" \
   SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  LIMIT=20 \
   node "$RECENT_SCRIPT"
   
   RECENT_EXIT_CODE=$?
