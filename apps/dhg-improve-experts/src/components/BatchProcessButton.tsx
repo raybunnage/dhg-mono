@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RotateCw, Play } from 'lucide-react';
-import { contentService, DocumentInfo } from '@/services/content-service';
+import { DocumentInfo } from '@/services/content-service';
+import { contentServiceAdapter } from '@/services/content-service-adapter';
 import { documentPipelineAdapter } from '@/services/document-pipeline-adapter';
 
 interface BatchProcessButtonProps {
@@ -33,7 +34,8 @@ const BatchProcessButton: React.FC<BatchProcessButtonProps> = ({
     const toastId = toast.loading('Starting batch processing...');
 
     try {
-      const results = await contentService.batchProcessDocuments(handleProcessDocument, limit);
+      // Use the adapter instead of direct service
+      const results = await contentServiceAdapter.batchProcessDocuments(handleProcessDocument, limit);
       
       toast.success(
         `Batch processing complete: ${results.processed} processed, ${results.skipped} skipped, ${results.errors} errors`, 

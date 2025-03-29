@@ -14,12 +14,13 @@ This checklist tracks the progress of migrating the Experts module to use the se
 - [ ] Implement shared service connection (Phase 2)
 - [ ] Write unit tests for adapter
 
-### Content Service
+### Content Service Adapter
 
 - [x] Create service interface
 - [x] Implement service functionality
 - [x] Add error handling and content processing helpers
 - [x] Implement batch processing capability
+- [x] Create content service adapter
 - [ ] Write unit tests for service
 
 ### Script Pipeline Adapter
@@ -38,6 +39,34 @@ This checklist tracks the progress of migrating the Experts module to use the se
 - [x] Connect document pipeline to expert adapter
 - [x] Update all components to use adapter
 - [ ] Implement shared service connection (Phase 2)
+- [ ] Write unit tests for adapter
+
+### Command History Adapter
+
+- [x] Create initial adapter interface
+- [x] Implement temporary adapter functionality
+- [x] Add error handling and logging
+- [ ] Write unit tests for adapter
+
+### Documentation Adapter
+
+- [x] Create initial adapter interface
+- [x] Implement temporary adapter functionality
+- [x] Add error handling and logging
+- [ ] Write unit tests for adapter
+
+### Markdown File Adapter
+
+- [x] Create initial adapter interface
+- [x] Implement temporary adapter functionality
+- [x] Add error handling and logging
+- [ ] Write unit tests for adapter
+
+### Script File Adapter
+
+- [x] Create initial adapter interface
+- [x] Implement temporary adapter functionality
+- [x] Add error handling and logging
 - [ ] Write unit tests for adapter
 
 ## Component Updates
@@ -120,13 +149,13 @@ Before archiving old service implementations:
 
 | Category | Total Items | Completed | Progress |
 |----------|-------------|-----------|----------|
-| Service Adapters | 17 | 14 | 82% |
+| Service Adapters | 29 | 26 | 90% |
 | Components | 7 | 7 | 100% |
 | Documentation | 6 | 4 | 67% |
 | Testing | 7 | 0 | 0% |
 | Shared Services | 7 | 0 | 0% |
 | Pre-Archive | 6 | 0 | 0% |
 | Archive Process | 5 | 0 | 0% |
-| **Overall** | **55** | **25** | **45%** |
+| **Overall** | **67** | **37** | **55%** |
 
 Last Updated: 2025-03-28
