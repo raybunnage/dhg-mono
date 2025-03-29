@@ -1,68 +1,3 @@
-#!/bin/bash
-# classify-document-with-prompt.sh - Classify documents using Claude
-
-# Get script directory and root directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-
-# Debug info
-echo "Script directory: $SCRIPT_DIR"
-echo "Root directory: $ROOT_DIR"
-
-# Set default count if not provided
-COUNT=${1:-10}
-# Determine if we should classify untyped documents only
-UNTYPED_ONLY=${2:-"recent"}
-
-echo "🧠 Classifying documents using Claude..."
-echo "Number of documents to process: $COUNT"
-echo "Mode: ${UNTYPED_ONLY}"
-
-# Check for Claude API key
-if [ -z "$CLAUDE_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ]; then
-  echo "❌ Error: No Claude API key found in environment variables."
-  echo "Please set either CLAUDE_API_KEY or ANTHROPIC_API_KEY environment variable."
-  exit 1
-fi
-
-# Create temporary script for classification
-TEMP_DIR=$(mktemp -d)
-CLASS_SCRIPT="${TEMP_DIR}/classify_document.js"
-
-# Create package.json in temp directory to ensure local installation
-cat > "$TEMP_DIR/package.json" << 'EOL'
-{
-  "name": "temp-document-classifier",
-  "version": "1.0.0",
-  "description": "Temporary script for document classification",
-  "main": "classify_document.js",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.48.1",
-    "@anthropic-ai/sdk": "^0.16.1"
-  }
-}
-EOL
-
-# Install dependencies in the temp directory
-echo "Installing dependencies in temporary directory..."
-(cd "$TEMP_DIR" && npm install --silent &> /dev/null)
-
-# Create a package.json in the temp directory
-cat > "$TEMP_DIR/package.json" << 'EOL'
-{
-  "name": "temp-document-classifier",
-  "version": "1.0.0",
-  "description": "Temporary document classification script",
-  "main": "classify_document.js",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.48.1",
-    "@anthropic-ai/sdk": "^0.16.1"
-  }
-}
-EOL
-
-# Create a standalone classification script
-cat > "$CLASS_SCRIPT" << 'EOL'
 /**
  * Document Classification Script
  * 
@@ -72,7 +7,12 @@ cat > "$CLASS_SCRIPT" << 'EOL'
 const Anthropic = require('@anthropic-ai/sdk');
 const fs = require('fs');
 const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
+const { 
+  getDocumentTypes, 
+  getRecentDocuments, 
+  getUntypedDocuments,
+  updateDocumentClassification 
+} = require('../shared/document-service-adapter');
 
 // Get environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -101,9 +41,6 @@ if (!rootDir) {
 // Initialize Anthropic client
 const anthropic = new Anthropic({ apiKey: claudeApiKey });
 
-// Initialize Supabase client
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 // Sleep function for rate limiting
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -123,50 +60,18 @@ async function readFile(filePath) {
 }
 
 /**
- * Get document types
- */
-async function getDocumentTypes() {
-  try {
-    const { data, error } = await supabase
-      .from('document_types')
-      .select('id, document_type, description')
-      .order('document_type');
-      
-    if (error) {
-      console.error('Error fetching document types:', error);
-      return [];
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error in getDocumentTypes:', error);
-    return [];
-  }
-}
-
-/**
  * Get documents to classify
  */
 async function getDocumentsToClassify() {
   try {
     console.log(`Getting documents to classify (${mode} mode, limit ${count})...`);
     
-    let query = supabase
-      .from('documentation_files')
-      .select('id, file_path, title, language, document_type_id')
-      .order('updated_at', { ascending: false });
+    let documents = [];
     
     if (mode === 'untyped') {
-      query = query.is('document_type_id', null);
-    }
-    
-    query = query.limit(count);
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('Error fetching documents to classify:', error);
-      return [];
+      documents = await getUntypedDocuments(supabaseUrl, supabaseKey, count);
+    } else {
+      documents = await getRecentDocuments(supabaseUrl, supabaseKey, count);
     }
     
     // Filter out files from excluded directories
@@ -179,13 +84,13 @@ async function getDocumentsToClassify() {
       'reports'
     ];
     
-    const filteredData = data.filter(file => {
+    const filteredData = documents.filter(file => {
       // Check if the file path contains any of the excluded directory names
-      const isExcluded = excludedPaths.some(excludedPath => file.file_path.includes(excludedPath));
+      const isExcluded = excludedPaths.some(path => file.file_path.includes(path));
       return !isExcluded;
     });
     
-    console.log(`Filtered ${data.length - filteredData.length} files from excluded directories`);
+    console.log(`Filtered ${documents.length - filteredData.length} files from excluded directories`);
     
     return filteredData;
   } catch (error) {
@@ -272,63 +177,6 @@ Your classification should be based on the document content, structure, and purp
 }
 
 /**
- * Update document classification
- */
-async function updateDocumentClassification(documentId, classification, documentTypes) {
-  try {
-    // Find the document type
-    const documentType = documentTypes.find(type => 
-      type.document_type.toLowerCase() === classification.document_type.toLowerCase()
-    );
-    
-    if (!documentType) {
-      console.error(`Document type not found: ${classification.document_type}`);
-      return false;
-    }
-    
-    // Get current metadata
-    const { data: currentDoc, error: fetchError } = await supabase
-      .from('documentation_files')
-      .select('metadata')
-      .eq('id', documentId)
-      .single();
-    
-    if (fetchError) {
-      console.error(`Error fetching current metadata:`, fetchError);
-      return false;
-    }
-    
-    // Prepare updated metadata
-    const currentMetadata = currentDoc.metadata || {};
-    const updatedMetadata = {
-      ...currentMetadata,
-      ai_classification_confidence: classification.confidence,
-      ai_classification_reasoning: classification.reasoning
-    };
-    
-    // Update the document
-    const { error } = await supabase
-      .from('documentation_files')
-      .update({
-        document_type_id: documentType.id,
-        metadata: updatedMetadata,
-        updated_at: new Date()
-      })
-      .eq('id', documentId);
-    
-    if (error) {
-      console.error(`Error updating document classification:`, error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error(`Error in updateDocumentClassification:`, error);
-    return false;
-  }
-}
-
-/**
  * Run document classification
  */
 async function runDocumentClassification() {
@@ -336,7 +184,7 @@ async function runDocumentClassification() {
     console.log(`Starting document classification in ${mode} mode, processing up to ${count} documents`);
     
     // Get document types
-    const documentTypes = await getDocumentTypes();
+    const documentTypes = await getDocumentTypes(supabaseUrl, supabaseKey);
     
     if (documentTypes.length === 0) {
       console.error('No document types found in the database.');
@@ -373,9 +221,10 @@ async function runDocumentClassification() {
       
       // Update the document with the classification
       const updated = await updateDocumentClassification(
+        supabaseUrl, 
+        supabaseKey,
         document.id, 
-        classification, 
-        documentTypes
+        classification
       );
       
       if (updated) {
@@ -403,29 +252,3 @@ async function runDocumentClassification() {
 
 // Run the classification process
 runDocumentClassification();
-EOL
-
-# Execute the classification script
-echo "Running document classification..."
-cd "${ROOT_DIR}"
-SUPABASE_URL="${SUPABASE_URL}" \
-SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY}" \
-CLAUDE_API_KEY="${CLAUDE_API_KEY}" \
-ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
-ROOT_DIR="${ROOT_DIR}" \
-COUNT="${COUNT}" \
-MODE="${UNTYPED_ONLY}" \
-node "${CLASS_SCRIPT}"
-
-CLASSIFY_EXIT_CODE=$?
-
-# Clean up temporary directory
-rm -rf "${TEMP_DIR}"
-
-if [ $CLASSIFY_EXIT_CODE -eq 0 ]; then
-  echo "✅ Document classification completed successfully"
-  exit 0
-else
-  echo "❌ Document classification failed (exit code: ${CLASSIFY_EXIT_CODE})"
-  exit 1
-fi
