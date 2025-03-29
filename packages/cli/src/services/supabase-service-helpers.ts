@@ -3,7 +3,15 @@
  * These are temporary wrappers until the full migration to the shared package is complete
  */
 
-import { SupabaseClientService } from '@dhg/shared/services/supabase-client';
+import { 
+  SupabaseClientService, 
+  SupabaseService, 
+  supabaseService as sharedSupabaseService,
+  Prompt as SharedPrompt,
+  DocumentType as SharedDocumentType,
+  Script as SharedScript,
+  Relationship as SharedRelationship
+} from '@dhg/shared/services';
 import { LoggerUtils } from '../utils/logger-utils';
 
 export interface ScriptData {
@@ -45,9 +53,6 @@ export interface Prompt {
   content: string;
 }
 
-// Get a singleton instance of the Supabase client
-const supabaseClientService = SupabaseClientService.getInstance();
-
 /**
  * Gets a prompt by name from the database
  * @param name The name of the prompt
@@ -57,19 +62,9 @@ export async function getPromptByName(name: string): Promise<Prompt> {
   LoggerUtils.debug(`Getting prompt by name: ${name}`);
   
   try {
-    const supabase = supabaseClientService.getClient();
+    const sharedPrompt = await sharedSupabaseService.getPromptByName(name);
     
-    const { data, error } = await supabase
-      .from('prompts')
-      .select('*')
-      .eq('name', name)
-      .single();
-    
-    if (error) {
-      throw error;
-    }
-    
-    if (!data) {
+    if (!sharedPrompt) {
       // Return a fallback prompt if not found in the database
       LoggerUtils.warn(`Prompt not found in database: ${name}, using fallback`);
       return {
@@ -99,7 +94,11 @@ Format your response as JSON with the following structure:
       };
     }
     
-    return data as Prompt;
+    return {
+      id: sharedPrompt.id,
+      name: sharedPrompt.name,
+      content: sharedPrompt.content
+    };
   } catch (error) {
     LoggerUtils.error(`Error getting prompt by name: ${name}`, error);
     throw new Error(`Failed to get prompt by name: ${error instanceof Error ? error.message : String(error)}`);
@@ -115,27 +114,13 @@ export async function upsertScript(scriptData: ScriptData): Promise<any> {
   LoggerUtils.debug(`Upserting script: ${scriptData.file_path}`);
   
   try {
-    const supabase = supabaseClientService.getClient();
+    const result = await sharedSupabaseService.upsertScript(scriptData);
     
-    // Ensure tags are an array
-    const tagsArray = Array.isArray(scriptData.tags) ? scriptData.tags : 
-                     (scriptData.tags ? [scriptData.tags] : []);
-    
-    const { data, error } = await supabase
-      .from('scripts')
-      .upsert({
-        ...scriptData,
-        tags: tagsArray,
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      throw error;
+    if (!result) {
+      throw new Error(`Failed to upsert script: No result returned`);
     }
     
-    return data;
+    return result;
   } catch (error) {
     LoggerUtils.error(`Error upserting script: ${scriptData.file_path}`, error);
     throw new Error(`Failed to upsert script: ${error instanceof Error ? error.message : String(error)}`);
@@ -151,22 +136,22 @@ export async function addScriptRelationship(relationship: ScriptRelationship): P
   LoggerUtils.debug(`Adding script relationship: ${relationship.source_path} -> ${relationship.target_path}`);
   
   try {
-    const supabase = supabaseClientService.getClient();
+    // Convert to the shared format
+    const sharedRelationship = {
+      source_id: relationship.source_path,
+      target_id: relationship.target_path,
+      relationship_type: relationship.relationship_type,
+      relationship_context: relationship.notes,
+      // Add any additional fields needed
+    };
     
-    const { data, error } = await supabase
-      .from('script_relationships')
-      .upsert({
-        ...relationship,
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+    const result = await sharedSupabaseService.addRelationship(sharedRelationship);
     
-    if (error) {
-      throw error;
+    if (!result) {
+      throw new Error(`Failed to add script relationship: No result returned`);
     }
     
-    return data;
+    return result;
   } catch (error) {
     LoggerUtils.error(`Error adding script relationship: ${relationship.source_path} -> ${relationship.target_path}`, error);
     throw new Error(`Failed to add script relationship: ${error instanceof Error ? error.message : String(error)}`);

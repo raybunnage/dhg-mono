@@ -5,12 +5,12 @@ import { LoggerUtils } from '../utils/logger-utils';
 import { ErrorHandler, AppError } from '../utils/error-handler';
 import config from '../utils/config';
 import configHelpers from '../utils/config-helpers';
-import { 
-  SupabaseService, 
-  ClaudeService, 
-  ReportService 
+import {
+  ClaudeService,
+  ReportService
 } from '../services';
 import { fileService } from '../services/file-service-helpers';
+import { supabaseService } from '@dhg/shared/services';
 
 interface ClassifyMarkdownOptions {
   output?: string;
@@ -56,7 +56,7 @@ export const classifyMarkdown = async (filePath: string, options: ClassifyMarkdo
     LoggerUtils.info(`Starting classification of ${filePath}`);
     
     // 1. Initialize services
-    const supabaseService = new SupabaseService(config.supabaseUrl, config.supabaseKey);
+    // Using shared supabaseService instance
     const claudeService = new ClaudeService(configHelpers.anthropicApiKey);
     const reportService = new ReportService();
     
