@@ -1,292 +1,174 @@
 import { Command } from 'commander';
-import { ScriptManagementService } from '../services/script-management-service';
-import { promises as fs } from 'fs';
-import * as path from 'path';
 import { Logger } from '../utils/logger';
+import { scriptPipelineService } from '../services/script-pipeline-service';
 
-// Helper function to handle script classification
-async function processScriptClassification(
-  scriptService: ScriptManagementService, 
-  script: any, 
-  successCount: { value: number }, 
-  failureCount: { value: number }
-) {
-  try {
-    Logger.info(`Processing: ${script.file_path}`);
+/**
+ * Command to synchronize database with script files on disk
+ */
+const syncScriptsCommand = new Command('sync')
+  .description('Synchronize database with script files on disk')
+  .action(async () => {
+    Logger.info('Syncing script files with database...');
     
-    // The ScriptManagementService now handles path conversions internally
-    const result = await scriptService.classifyScript(script.file_path);
-    
-    if (!result) {
-      Logger.warn(`Classification failed for: ${script.file_path}`);
-      failureCount.value++;
-      return;
+    try {
+      await scriptPipelineService.syncScripts();
+    } catch (error) {
+      Logger.error('Failed to run sync command', error);
     }
+  });
+
+/**
+ * Command to find and insert new script files
+ */
+const findNewScriptsCommand = new Command('find-new')
+  .description('Find and insert new script files')
+  .action(async () => {
+    Logger.info('Finding and inserting new script files...');
     
-    const updated = await scriptService.updateScriptWithClassification(script.id, result);
+    try {
+      await scriptPipelineService.findNewScripts();
+    } catch (error) {
+      Logger.error('Failed to run find-new command', error);
+    }
+  });
+
+/**
+ * Command to show untyped script files
+ */
+const showUntypedScriptsCommand = new Command('show-untyped')
+  .description('Show all script files without a script type')
+  .action(async () => {
+    Logger.info('Showing untyped script files...');
     
-    if (updated) {
-      successCount.value++;
+    try {
+      await scriptPipelineService.showUntypedScripts();
+    } catch (error) {
+      Logger.error('Failed to run show-untyped command', error);
+    }
+  });
+
+/**
+ * Command to show recent script files
+ */
+const showRecentScriptsCommand = new Command('show-recent')
+  .description('Show recent script files')
+  .action(async () => {
+    Logger.info('Showing recent script files...');
+    
+    try {
+      await scriptPipelineService.showRecentScripts();
+    } catch (error) {
+      Logger.error('Failed to run show-recent command', error);
+    }
+  });
+
+/**
+ * Command to classify recent script files
+ */
+const classifyRecentScriptsCommand = new Command('classify-recent')
+  .description('Classify the most recent script files')
+  .action(async () => {
+    Logger.info('Classifying recent script files...');
+    
+    try {
+      await scriptPipelineService.classifyRecentScripts();
+    } catch (error) {
+      Logger.error('Failed to run classify-recent command', error);
+    }
+  });
+
+/**
+ * Command to classify untyped script files
+ */
+const classifyUntypedScriptsCommand = new Command('classify-untyped')
+  .description('Classify untyped script files')
+  .option('-c, --count <number>', 'Number of files to process', '10')
+  .action(async (options) => {
+    const count = parseInt(options.count, 10);
+    Logger.info(`Classifying ${count} untyped script files...`);
+    
+    try {
+      await scriptPipelineService.classifyUntypedScripts(count);
+    } catch (error) {
+      Logger.error('Failed to run classify-untyped command', error);
+    }
+  });
+
+/**
+ * Command to clean script analysis results
+ */
+const cleanScriptResultsCommand = new Command('clean-results')
+  .description('Clean script analysis results')
+  .action(async () => {
+    Logger.info('Cleaning script analysis results...');
+    
+    try {
+      await scriptPipelineService.cleanScriptResults();
+    } catch (error) {
+      Logger.error('Failed to run clean-results command', error);
+    }
+  });
+
+/**
+ * Command to generate a summary report of scripts
+ */
+const generateSummaryCommand = new Command('generate-summary')
+  .description('Generate a summary report of scripts')
+  .option('-c, --count <number>', 'Number of scripts to include', '50')
+  .option('-i, --include-deleted', 'Include deleted scripts', false)
+  .action(async (options) => {
+    let count: number;
+    if (options.count === 'all') {
+      count = -1;
     } else {
-      failureCount.value++;
+      count = parseInt(options.count, 10);
     }
-  } catch (scriptError) {
-    Logger.error(`Error processing script ${script.file_path}:`, scriptError);
-    failureCount.value++;
-  }
-}
+    
+    const includeDeleted = options.includeDeleted || false;
+    
+    Logger.info(`Generating summary for ${count === -1 ? 'all' : count} scripts (include deleted: ${includeDeleted})...`);
+    
+    try {
+      await scriptPipelineService.generateSummary(count, includeDeleted);
+    } catch (error) {
+      Logger.error('Failed to run generate-summary command', error);
+    }
+  });
 
-export function registerScriptCommands(program: Command): void {
-  const scriptService = new ScriptManagementService();
-  
-  // Command to test Supabase connection
-  program
-    .command('supabase-test')
-    .description('Test Supabase connectivity')
-    .action(async () => {
-      try {
-        const { SupabaseClientService } = require('../services/supabase-client');
-        const supabaseService = SupabaseClientService.getInstance();
-        
-        console.log('Initializing Supabase client...');
-        const client = supabaseService.getClient();
-        
-        console.log('Testing connection...');
-        const result = await supabaseService.testConnection();
-        
-        if (result.success) {
-          console.log('✅ Supabase connection successful!');
-        } else {
-          console.error('❌ Supabase connection failed:', result.error);
-          if (result.details) {
-            console.error('Details:', JSON.stringify(result.details, null, 2));
-          }
-          process.exit(1);
-        }
-      } catch (error) {
-        console.error('Error testing Supabase connection:', error);
-        process.exit(1);
-      }
-    });
-  
-  // Command to sync scripts
-  program
-    .command('script-sync')
-    .description('Synchronize database with script files on disk')
-    .action(async () => {
-      try {
-        Logger.info("Starting script sync process...");
-        const scripts = await scriptService.discoverScripts(process.cwd());
-        
-        if (scripts.length === 0) {
-          Logger.info("No script files found.");
-          return;
-        }
-        
-        const result = await scriptService.syncWithDatabase(scripts);
-        Logger.info("Script sync completed successfully.");
-        Logger.info(`Summary: Added=${result.added}, Updated=${result.updated}, Deleted=${result.deleted}, Errors=${result.errors}`);
-      } catch (error) {
-        Logger.error("Error during script sync:", error);
-        process.exit(1);
-      }
-    });
-  
-  // Command to find new scripts
-  program
-    .command('script-find-new')
-    .description('Find and insert new script files')
-    .action(async () => {
-      try {
-        Logger.info("Looking for new script files...");
-        const scripts = await scriptService.discoverScripts(process.cwd());
-        
-        if (scripts.length === 0) {
-          Logger.info("No script files found.");
-          return;
-        }
-        
-        const result = await scriptService.syncWithDatabase(scripts);
-        Logger.info(`New script discovery completed. Added ${result.added} new scripts.`);
-      } catch (error) {
-        Logger.error("Error finding new scripts:", error);
-        process.exit(1);
-      }
-    });
-  
-  // Command to show untyped scripts
-  program
-    .command('script-show-untyped')
-    .description('Show scripts without a script type')
-    .action(async () => {
-      try {
-        const scripts = await scriptService.getUntypedScripts(100);
-        
-        if (scripts.length === 0) {
-          Logger.info("No untyped scripts found.");
-          return;
-        }
-        
-        Logger.info("Untyped Scripts:");
-        scripts.forEach((script, index) => {
-          console.log(`${index + 1}. ${script.file_path} (ID: ${script.id})`);
-        });
-        Logger.info(`Total: ${scripts.length} untyped scripts found.`);
-      } catch (error) {
-        Logger.error("Error showing untyped scripts:", error);
-        process.exit(1);
-      }
-    });
-  
-  // Command to show recent scripts
-  program
-    .command('script-show-recent')
-    .description('Show recent scripts')
-    .action(async () => {
-      try {
-        const scripts = await scriptService.getRecentScripts(20);
-        
-        if (scripts.length === 0) {
-          Logger.info("No scripts found.");
-          return;
-        }
-        
-        Logger.info("Recent Scripts:");
-        scripts.forEach((script, index) => {
-          console.log(`${index + 1}. ${script.file_path} (Updated: ${script.updated_at})`);
-        });
-      } catch (error) {
-        Logger.error("Error showing recent scripts:", error);
-        process.exit(1);
-      }
-    });
-  
-  // Command to classify recent scripts
-  program
-    .command('script-classify-recent')
-    .description('Classify recent scripts')
-    .action(async () => {
-      try {
-        const scripts = await scriptService.getRecentScripts(20);
-        
-        if (scripts.length === 0) {
-          Logger.info("No scripts found for classification.");
-          return;
-        }
-        
-        Logger.info(`Processing ${scripts.length} recent scripts for classification...`);
-        
-        // Use reference objects so we can update them in the helper function
-        const success = { value: 0 };
-        const failure = { value: 0 };
-        
-        // Process each script
-        for (const script of scripts) {
-          await processScriptClassification(scriptService, script, success, failure);
-        }
-        
-        Logger.info(`Classification of recent scripts completed: ${success.value} successful, ${failure.value} failed.`);
-      } catch (error) {
-        Logger.error("Error classifying recent scripts:", error);
-        process.exit(1);
-      }
-    });
-  
-  // Command to classify untyped scripts
-  program
-    .command('script-classify-untyped')
-    .description('Classify untyped scripts')
-    .option('--count <number>', 'Number of scripts to process', '10')
-    .action(async (options) => {
-      try {
-        const count = parseInt(options.count, 10);
-        
-        if (isNaN(count) || count <= 0) {
-          Logger.error("Invalid count parameter. Please provide a positive integer.");
-          process.exit(1);
-        }
-        
-        const scripts = await scriptService.getUntypedScripts(count);
-        
-        if (scripts.length === 0) {
-          Logger.info("No untyped scripts found for classification.");
-          return;
-        }
-        
-        Logger.info(`Processing ${scripts.length} untyped scripts for classification...`);
-        
-        // Use reference objects so we can update them in the helper function
-        const success = { value: 0 };
-        const failure = { value: 0 };
-        
-        // Process each script
-        for (const script of scripts) {
-          await processScriptClassification(scriptService, script, success, failure);
-        }
-        
-        Logger.info(`Classification of untyped scripts completed: ${success.value} successful, ${failure.value} failed.`);
-      } catch (error) {
-        Logger.error("Error classifying untyped scripts:", error);
-        process.exit(1);
-      }
-    });
-  
-  // Command to clean script results
-  program
-    .command('script-clean-results')
-    .description('Clean script analysis results')
-    .action(async () => {
-      try {
-        Logger.info("Cleaning script analysis results...");
-        const success = await scriptService.cleanScriptResults();
-        
-        if (success) {
-          Logger.info("Script results cleaning completed successfully.");
-        } else {
-          Logger.error("Script results cleaning failed.");
-          process.exit(1);
-        }
-      } catch (error) {
-        Logger.error("Error cleaning script results:", error);
-        process.exit(1);
-      }
-    });
+/**
+ * Command to run the complete script pipeline
+ */
+const runCompleteCommand = new Command('all')
+  .description('Run the complete script pipeline')
+  .action(async () => {
+    Logger.info('Running complete script pipeline...');
+    
+    try {
+      await scriptPipelineService.runCompletePipeline();
+    } catch (error) {
+      Logger.error('Failed to run complete pipeline', error);
+    }
+  });
 
+/**
+ * Register script commands with the main program
+ */
+export const registerScriptCommands = (program: Command): void => {
+  // Create a script command group
+  const scriptCommand = new Command('script')
+    .description('Script management commands');
   
-  // Command to generate summary
-  program
-    .command('script-generate-summary')
-    .description('Generate a summary report of scripts')
-    .option('--count <number>', 'Number of scripts', '50')
-    .option('--include-deleted <boolean>', 'Include deleted scripts', 'false')
-    .action(async (options) => {
-      try {
-        let count: number;
-        if (options.count === 'all') {
-          count = -1;
-        } else {
-          count = parseInt(options.count, 10);
-          if (isNaN(count) || count < 1) {
-            Logger.error("Invalid count parameter. Please provide a positive integer or 'all'.");
-            process.exit(1);
-          }
-        }
-        
-        const includeDeleted = options.includeDeleted === 'true';
-        
-        const reportPath = await scriptService.generateSummary({
-          limit: count
-        });
-        
-        if (reportPath) {
-          Logger.info(`Summary report generated successfully: ${reportPath}`);
-        } else {
-          Logger.error("Failed to generate summary report.");
-          process.exit(1);
-        }
-      } catch (error) {
-        Logger.error("Error generating summary:", error);
-        process.exit(1);
-      }
-    });
-}
+  // Add subcommands
+  scriptCommand.addCommand(syncScriptsCommand);
+  scriptCommand.addCommand(findNewScriptsCommand);
+  scriptCommand.addCommand(showUntypedScriptsCommand);
+  scriptCommand.addCommand(showRecentScriptsCommand);
+  scriptCommand.addCommand(classifyRecentScriptsCommand);
+  scriptCommand.addCommand(classifyUntypedScriptsCommand);
+  scriptCommand.addCommand(cleanScriptResultsCommand);
+  scriptCommand.addCommand(generateSummaryCommand);
+  scriptCommand.addCommand(runCompleteCommand);
+  
+  // Add the script command group to the main program
+  program.addCommand(scriptCommand);
+};

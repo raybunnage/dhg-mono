@@ -19,65 +19,50 @@ Please classify the script into one of these types:
 
 ## Script to Analyze
 
-File Path: scripts/python/clip_audio.sh
+File Path: packages/python-audio-processor/scripts/estimate_modal_time.sh
 
 ```
 #!/bin/bash
+# Wrapper script for estimating Modal processing time
 
-# Script to clip an audio file to the first X minutes using ffmpeg
-# Usage: ./clip_audio.sh <path_to_audio_file> [output_path] [minutes]
+# Get the directory of this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-set -e
+# Check if ffprobe is available
+if ! command -v ffprobe &> /dev/null; then
+    echo "Error: ffprobe is required but not found. Please install ffmpeg."
+    echo "  macOS: brew install ffmpeg"
+    echo "  Linux: apt-get install ffmpeg"
+    exit 1
+fi
 
-# Default paths
-AUDIO_FILE="$1"
-OUTPUT_FILE="$2"
-MINUTES="${3:-10}"
-
-# Check if an audio file was provided
-if [ -z "$AUDIO_FILE" ]; then
-    echo "❌ Error: No audio file provided."
-    echo "Usage: ./clip_audio.sh input_file.m4a output_file.m4a minutes"
+# Show usage if no arguments provided
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 <audio-file> [OPTIONS]"
     echo ""
-    echo "Arguments:"
-    echo "  input_file.m4a    Path to audio file to clip"
-    echo "  output_file.m4a   (Optional) Path for clipped output file"
-    echo "  minutes           (Optional) Duration in minutes (default: 10)"
+    echo "Options:"
+    echo "  --model MODEL     Specify the Whisper model to use (tiny, base, small, medium, large)"
+    echo "                    Default: small"
+    echo ""
+    echo "  --gpus N          Specify number of GPUs for parallel processing (1, 2, 3)"
+    echo "                    Default: 1"
+    echo ""
+    echo "  --gpu-type TYPE   Specify GPU type for cost/performance analysis (T4, A10G, A100)"
+    echo "                    Default: T4"
+    echo ""
+    echo "Examples:"
+    echo "  $0 audio.m4a"
+    echo "  $0 audio.m4a --model medium"
+    echo "  $0 audio.m4a --model medium --gpus 3"
+    echo "  $0 audio.m4a --model medium --gpus 3 --gpu-type A10G"
+    echo ""
+    echo "Performance comparison:"
+    echo "  $0 audio.m4a --model medium --gpus 3 --gpu-type T4"
+    echo "  $0 audio.m4a --model medium --gpus 3 --gpu-type A10G"
+    echo "  $0 audio.m4a --model medium --gpus 3 --gpu-type A100"
     exit 1
 fi
 
-# Convert relative path to absolute path
-if [[ "$AUDIO_FILE" != /* ]]; then
-    AUDIO_FILE="$(pwd)/$AUDIO_FILE"
-fi
-
-# Verify input file exists
-if [ ! -f "$AUDIO_FILE" ]; then
-    echo "❌ Error: Input file not found: $AUDIO_FILE"
-    exit 1
-fi
-
-# Build command
-COMMAND="python $(dirname "$0")/clip_audio.py \"$AUDIO_FILE\""
-
-# Add output file if provided
-if [ -n "$OUTPUT_FILE" ]; then
-    # Convert relative path to absolute path
-    if [[ "$OUTPUT_FILE" != /* ]]; then
-        OUTPUT_FILE="$(pwd)/$OUTPUT_FILE"
-    fi
-    COMMAND="$COMMAND --output-file \"$OUTPUT_FILE\""
-fi
-
-# Add minutes if not default
-if [ "$MINUTES" != "10" ]; then
-    COMMAND="$COMMAND --minutes $MINUTES"
-fi
-
-# Make the Python script executable
-chmod +x "$(dirname "$0")/clip_audio.py"
-
-# Execute the command
-echo "🎬 Running audio clip command..."
-eval $COMMAND
+# Run the Python script with provided parameters
+python3 "$SCRIPT_DIR/estimate_processing_time.py" "$@"
 ```
