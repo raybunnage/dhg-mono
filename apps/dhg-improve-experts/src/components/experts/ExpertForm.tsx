@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { ExpertFormData, ExpertInterface } from '@/types/expert';
+import { ExpertFormData, ExpertInterface, expertUtils } from '@/types/expert';
 import {
   Form,
   FormControl,
@@ -16,8 +16,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { expertService } from '@/services/expert-service';
 
 const expertFormSchema = z.object({
   expert_name: z.string().min(2, {
@@ -60,33 +60,27 @@ export function ExpertForm({ expert, onSuccess, onCancel }: ExpertFormProps) {
     try {
       setIsSubmitting(true);
       
-      let response;
+      // Prepare the expert data to save
+      const expertData: Partial<ExpertInterface> = {
+        ...data
+      };
       
       if (isEditing && expert) {
-        // Update existing expert
-        response = await supabase
-          .from('experts')
-          .update(data)
-          .eq('id', expert.id)
-          .select()
-          .single();
-      } else {
-        // Create new expert
-        response = await supabase
-          .from('experts')
-          .insert(data)
-          .select()
-          .single();
+        // Add ID for update
+        expertData.id = expert.id;
       }
-
-      if (response.error) {
-        throw new Error(response.error.message);
+      
+      // Use our expert service
+      const savedExpert = await expertService.upsertExpert(expertData);
+      
+      if (!savedExpert) {
+        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} expert`);
       }
 
       toast.success(`Expert ${isEditing ? 'updated' : 'created'} successfully`);
       
       if (onSuccess) {
-        onSuccess(response.data);
+        onSuccess(savedExpert);
       }
     } catch (error) {
       console.error('Error submitting form:', error);

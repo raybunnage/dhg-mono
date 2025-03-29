@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExpertInterface } from '@/types/expert';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   Table,
@@ -22,6 +21,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MoreHorizontal, Plus, Search, RefreshCw, Trash2, Edit, Eye } from 'lucide-react';
+
+// Import our expert service
+import { expertService } from '@/services/expert-service';
 
 interface ExpertListProps {
   onSelectExpert: (expert: ExpertInterface) => void;
@@ -48,13 +50,10 @@ export function ExpertList({
   async function loadExperts() {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('experts')
-        .select('*')
-        .order('expert_name');
-
-      if (error) throw error;
-      setExperts(data || []);
+      
+      // Use our expert service
+      const experts = await expertService.getAllExperts();
+      setExperts(experts);
     } catch (error) {
       console.error('Error loading experts:', error);
       toast.error('Failed to load experts');
