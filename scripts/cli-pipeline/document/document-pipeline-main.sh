@@ -3,7 +3,7 @@
 
 # Get script directory and root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 MANAGER_SCRIPT="${SCRIPT_DIR}/document-pipeline-manager.sh"
 
 # Load environment variables from .env.development
@@ -48,7 +48,7 @@ source "${MANAGER_SCRIPT}"
 
 # Display usage information
 function show_help() {
-  echo "Usage: scripts/cli-pipeline/document-pipeline-main.sh [option] [count]"
+  echo "Usage: scripts/cli-pipeline/document/document-pipeline-main.sh [option] [count]"
   echo "Options:"
   echo "  sync                      - Synchronize database with files on disk (standardize metadata, hard delete missing files)"
   echo "  find-new                  - Find and insert new files on disk into the database"
