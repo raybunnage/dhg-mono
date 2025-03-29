@@ -5,7 +5,8 @@
 export NODE_ENV="${NODE_ENV:-development}"
 
 # Define paths and directories
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 CLI_DIR="${ROOT_DIR}/packages/cli"
 SCRIPT_REPORTS_DIR="${ROOT_DIR}/script-analysis-results"
 SUPABASE_CONNECT="${ROOT_DIR}/scripts/fix/supabase-connect.js"
@@ -203,7 +204,7 @@ function classify_recent_scripts() {
   fi
   
   # Path to our improved script analyzer
-  CLASSIFY_SCRIPT="${SCRIPT_DIR}/classify-script-with-prompt.sh"
+  CLASSIFY_SCRIPT="${SCRIPT_DIR}/../analysis/classify-script-with-prompt.sh"
   
   # Check if the script exists
   if [ ! -f "${CLASSIFY_SCRIPT}" ]; then
@@ -335,7 +336,7 @@ function classify_untyped_scripts() {
   fi
   
   # Path to our improved script analyzer
-  CLASSIFY_SCRIPT="${SCRIPT_DIR}/classify-script-with-prompt.sh"
+  CLASSIFY_SCRIPT="${SCRIPT_DIR}/../analysis/classify-script-with-prompt.sh"
   
   # Check if the script exists
   if [ ! -f "${CLASSIFY_SCRIPT}" ]; then

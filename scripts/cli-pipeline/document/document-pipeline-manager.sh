@@ -5,7 +5,8 @@
 export NODE_ENV="${NODE_ENV:-development}"
 
 # Define paths and directories
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 DOCUMENT_REPORTS_DIR="${ROOT_DIR}/reports"
 DOCUMENT_LOGS_DIR="${ROOT_DIR}/document-analysis-results"
 SUPABASE_CONNECT="${ROOT_DIR}/scripts/fix/supabase-connect.js"
