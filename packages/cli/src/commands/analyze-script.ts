@@ -1,11 +1,14 @@
 import { Command } from 'commander';
 import path from 'path';
 import * as fs from 'fs';
-import logger from '../utils/logger';
-import { errorHandler } from '../utils/error-handler';
-import * as claudeService from '../services/claude-service';
-import * as supabaseService from '../services/supabase-service';
+import { Logger, LogLevel } from '../utils/logger';
+import { LoggerUtils } from '../utils/logger-utils';
+import { ErrorHandler } from '../utils/error-handler';
+// Import helpers that provide compatibility with the shared package
+import { sendPrompt } from '../services/claude-service-helpers';
+import { getPromptByName, upsertScript, addScriptRelationship } from '../services/supabase-service-helpers';
 import config from '../utils/config';
+import configHelpers from '../utils/config-helpers';
 import { readPromptFromFile } from '../models/prompt';
 
 interface ScriptAnalysisOptions {
@@ -35,11 +38,12 @@ export const analyzeScriptCommand = new Command('analyze-script')
   .action(async (options: ScriptAnalysisOptions) => {
     try {
       if (options.verbose) {
-        logger.level = 'debug';
+        // Set log level to debug
+        Logger.setLevel(LogLevel.DEBUG);
       }
 
-      logger.info('Starting script analysis...');
-      logger.debug('Options:', options);
+      LoggerUtils.info('Starting script analysis...');
+      LoggerUtils.debug('Options', options);
 
       // Resolve file paths
       const filePath = path.resolve(options.file);
@@ -50,7 +54,7 @@ export const analyzeScriptCommand = new Command('analyze-script')
         throw new Error(`Script file not found: ${filePath}`);
       }
 
-      logger.info(`Analyzing script file: ${filePath}`);
+      LoggerUtils.info(`Analyzing script file: ${filePath}`);
 
       // Read script file content
       const scriptContent = fs.readFileSync(filePath, 'utf-8');
@@ -67,13 +71,13 @@ export const analyzeScriptCommand = new Command('analyze-script')
 
       // Check for references if requested
       if (options.checkReferences) {
-        logger.info('Checking for package.json references...');
+        LoggerUtils.info('Checking for package.json references...');
         analysisContext.references = await checkScriptReferences(filePath);
       }
 
       // Find potential duplicates if requested
       if (options.findDuplicates) {
-        logger.info('Searching for potential duplicate scripts...');
+        LoggerUtils.info('Searching for potential duplicate scripts...');
         analysisContext.potential_duplicates = await findPotentialDuplicates(filePath);
       }
 
@@ -86,12 +90,12 @@ export const analyzeScriptCommand = new Command('analyze-script')
         if (!fs.existsSync(promptPath)) {
           throw new Error(`Prompt file not found: ${promptPath}`);
         }
-        logger.info(`Reading prompt template from file: ${promptPath}`);
+        LoggerUtils.info(`Reading prompt template from file: ${promptPath}`);
         promptTemplate = await readPromptFromFile(promptPath);
       } else {
         // Get from database by name
-        logger.info(`Fetching prompt template from database: ${options.promptName}`);
-        const prompt = await supabaseService.getPromptByName(options.promptName || 'script-analysis-prompt');
+        LoggerUtils.info(`Fetching prompt template from database: ${options.promptName}`);
+        const prompt = await getPromptByName(options.promptName || 'script-analysis-prompt');
         if (!prompt) {
           throw new Error(`Prompt not found in database: ${options.promptName}`);
         }
@@ -102,10 +106,10 @@ export const analyzeScriptCommand = new Command('analyze-script')
       const completePrompt = generateAnalysisPrompt(promptTemplate, scriptContent, analysisContext);
 
       // Send to Claude for analysis
-      logger.info('Sending to Claude for analysis...');
-      const analysisResult = await claudeService.sendPrompt({
+      LoggerUtils.info('Sending to Claude for analysis...');
+      const analysisResult = await sendPrompt({
         prompt: completePrompt,
-        model: config.defaultModel,
+        model: configHelpers.defaultModel,
         temperature: 0,
         maxTokens: 4000,
       });
@@ -115,23 +119,23 @@ export const analyzeScriptCommand = new Command('analyze-script')
 
       // Generate output file if specified
       if (outputPath) {
-        logger.info(`Writing analysis results to: ${outputPath}`);
+        LoggerUtils.info(`Writing analysis results to: ${outputPath}`);
         fs.writeFileSync(outputPath, JSON.stringify(parsedAnalysis, null, 2));
       }
 
       // Update database if requested
       if (options.updateDatabase) {
-        logger.info('Updating Supabase database with analysis results...');
+        LoggerUtils.info('Updating Supabase database with analysis results...');
         await updateDatabase(parsedAnalysis);
       }
 
-      logger.info('Script analysis completed successfully.');
+      LoggerUtils.info('Script analysis completed successfully.');
       
       // Display summary of analysis
       displayAnalysisSummary(parsedAnalysis);
 
     } catch (error) {
-      errorHandler(error as Error);
+      ErrorHandler.handle(error as Error);
       process.exit(1);
     }
   });
@@ -183,18 +187,18 @@ async function checkScriptReferences(scriptPath: string): Promise<boolean> {
         const scripts = packageJson.scripts || {};
         for (const scriptValue of Object.values(scripts) as string[]) {
           if (scriptValue.includes(relativeScriptPath)) {
-            logger.debug(`Script referenced in ${packageJsonPath}`);
+            LoggerUtils.debug(`Script referenced in ${packageJsonPath}`);
             return true;
           }
         }
       } catch (error) {
-        logger.debug(`Error reading package.json at ${packageJsonPath}:`, error);
+        LoggerUtils.debug(`Error reading package.json at ${packageJsonPath}:`, error);
       }
     }
     
     return false;
   } catch (error) {
-    logger.error('Error checking script references:', error);
+    LoggerUtils.error('Error checking script references:', error);
     return false;
   }
 }
@@ -208,10 +212,10 @@ async function findPotentialDuplicates(scriptPath: string): Promise<string[]> {
     // In a real implementation, this would compare script content with other scripts
     // using similarity algorithms like cosine similarity or Levenshtein distance
     
-    logger.debug('Placeholder for duplicate finding functionality');
+    LoggerUtils.debug('Placeholder for duplicate finding functionality');
     return [];
   } catch (error) {
-    logger.error('Error finding potential duplicates:', error);
+    LoggerUtils.error('Error finding potential duplicates:', error);
     return [];
   }
 }
@@ -258,7 +262,7 @@ function parseAnalysisResult(analysisResult: string): any {
     const jsonString = jsonMatch[1] || jsonMatch[0];
     return JSON.parse(jsonString);
   } catch (error) {
-    logger.error('Error parsing analysis result:', error);
+    LoggerUtils.error('Error parsing analysis result:', error);
     throw new Error(`Failed to parse analysis result: ${(error as Error).message}`);
   }
 }
@@ -293,12 +297,12 @@ async function updateDatabase(analysis: any): Promise<void> {
     };
 
     // Update database through supabase service
-    await supabaseService.upsertScript(scriptData);
+    await upsertScript(scriptData);
     
     // If there are potential duplicates, add relationships
     if (assessment.potential_duplicates && assessment.potential_duplicates.length > 0) {
       for (const duplicatePath of assessment.potential_duplicates) {
-        await supabaseService.addScriptRelationship({
+        await addScriptRelationship({
           source_path: metadata.file_path,
           target_path: duplicatePath,
           relationship_type: 'duplicate',
@@ -308,9 +312,9 @@ async function updateDatabase(analysis: any): Promise<void> {
       }
     }
     
-    logger.info('Database updated successfully');
+    LoggerUtils.info('Database updated successfully');
   } catch (error) {
-    logger.error('Error updating database:', error);
+    LoggerUtils.error('Error updating database:', error);
     throw error;
   }
 }

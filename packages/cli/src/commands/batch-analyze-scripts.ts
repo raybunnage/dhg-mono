@@ -1,12 +1,15 @@
 import { Command } from 'commander';
 import path from 'path';
 import * as fs from 'fs';
-import { Logger as logger } from '../utils/logger';
+import { Logger, LogLevel } from '../utils/logger';
+import { LoggerUtils } from '../utils/logger-utils';
 import { ErrorHandler } from '../utils/error-handler';
-import * as claudeService from '../services/claude-service';
-import * as supabaseService from '../services/supabase-service';
+// Import helpers that provide compatibility with the shared package
+import { sendPrompt } from '../services/claude-service-helpers';
+import { getPromptByName, upsertScript, addScriptRelationship } from '../services/supabase-service-helpers';
 import * as reportService from '../services/report-service';
 import config from '../utils/config';
+import configHelpers from '../utils/config-helpers';
 import { readPromptFromFile } from '../models/prompt';
 import { RateLimiter } from '../utils/rate-limiter';
 
@@ -41,11 +44,12 @@ export const batchAnalyzeScriptsCommand = new Command('batch-analyze-scripts')
   .action(async (options: BatchAnalysisOptions) => {
     try {
       if (options.verbose) {
-        logger.level = 'debug';
+        // Set log level to debug via Logger class
+        Logger.setLevel(LogLevel.DEBUG);
       }
 
-      logger.info('Starting batch script analysis...');
-      logger.debug('Options:', options);
+      LoggerUtils.info('Starting batch script analysis...');
+      LoggerUtils.debug('Options', options);
 
       // Parse options
       const inputPath = path.resolve(options.input);
@@ -70,7 +74,7 @@ export const batchAnalyzeScriptsCommand = new Command('batch-analyze-scripts')
         throw new Error('Input file must contain an array of script files');
       }
 
-      logger.info(`Found ${scriptFiles.length} script files to analyze`);
+      LoggerUtils.info(`Found ${scriptFiles.length} script files to analyze`);
 
       // Get prompt template
       let promptTemplate: string;
@@ -81,12 +85,22 @@ export const batchAnalyzeScriptsCommand = new Command('batch-analyze-scripts')
         if (!fs.existsSync(promptPath)) {
           throw new Error(`Prompt file not found: ${promptPath}`);
         }
-        logger.info(`Reading prompt template from file: ${promptPath}`);
+        LoggerUtils.info(`Reading prompt template from file: ${promptPath}`);
         promptTemplate = await readPromptFromFile(promptPath);
       } else {
-        // Use default prompt template
-        logger.info(`Using default script analysis prompt template`);
-        promptTemplate = `Analyze the script file and provide the following information:
+        // Get from database by name
+        LoggerUtils.info(`Fetching prompt template from database: ${options.promptName}`);
+        try {
+          const prompt = await getPromptByName(options.promptName || 'script-analysis-prompt');
+          if (prompt && prompt.content) {
+            promptTemplate = prompt.content;
+          } else {
+            throw new Error('Invalid prompt data');
+          }
+        } catch (error) {
+          // Use default prompt template as fallback
+          LoggerUtils.warn(`Could not fetch prompt from database, using default: ${error}`);
+          promptTemplate = `Analyze the script file and provide the following information:
 
 1. Script Purpose: Identify the primary purpose and functionality of the script.
 2. Dependencies: List external tools, libraries, and commands used.
@@ -108,6 +122,7 @@ Format your response as JSON with the following structure:
   "improvement_suggestions": ["list", "of", "suggestions"]
 }
 `;
+        }
       }
 
       // Initialize results array
@@ -121,20 +136,20 @@ Format your response as JSON with the following structure:
 
       // Process scripts in batches
       const batches = chunk(scriptFiles, batchSize);
-      logger.info(`Processing ${batches.length} batches with batch size ${batchSize}`);
+      LoggerUtils.info(`Processing ${batches.length} batches with batch size ${batchSize}`);
 
       let currentBatch = 1;
       let successCount = 0;
       let failureCount = 0;
 
       for (const batch of batches) {
-        logger.info(`Processing batch ${currentBatch}/${batches.length}`);
+        LoggerUtils.info(`Processing batch ${currentBatch}/${batches.length}`);
         
         // Process each script in the batch with concurrency limit
         const batchPromises = batch.map((scriptFile: any) => {
           // Handle both string paths and objects with file_path property
           const filePath = typeof scriptFile === 'string' ? scriptFile : scriptFile.file_path;
-          logger.debug(`Processing script: ${filePath}`);
+          LoggerUtils.debug(`Processing script: ${filePath}`);
           return rateLimiter.schedule(() => 
             processScript(
               filePath, 
@@ -157,20 +172,20 @@ Format your response as JSON with the following structure:
               successCount++;
             }
           } else {
-            logger.error(`Failed to process script: ${result.reason}`);
+            LoggerUtils.error(`Failed to process script: ${result.reason}`);
             failureCount++;
           }
         });
 
-        logger.info(`Completed batch ${currentBatch}/${batches.length}`);
+        LoggerUtils.info(`Completed batch ${currentBatch}/${batches.length}`);
         currentBatch++;
       }
 
-      logger.info(`Batch processing completed. Success: ${successCount}, Failure: ${failureCount}`);
+      LoggerUtils.info(`Batch processing completed. Success: ${successCount}, Failure: ${failureCount}`);
 
       // Generate report if requested
       if (options.generateReport) {
-        logger.info('Generating summary report...');
+        LoggerUtils.info('Generating summary report...');
         const reportPath = path.join(outputDir, 'script-analysis-report.md');
         const jsonReportPath = path.join(outputDir, 'script-analysis-report.json');
         
@@ -181,14 +196,14 @@ Format your response as JSON with the following structure:
         const report = generateReport(analysisResults);
         fs.writeFileSync(reportPath, report);
         
-        logger.info(`Report generated at ${reportPath}`);
+        LoggerUtils.info(`Report generated at ${reportPath}`);
         
         // Generate category summary
         const categorySummary = generateCategorySummary(analysisResults);
         const categorySummaryPath = path.join(outputDir, 'category-summary.md');
         fs.writeFileSync(categorySummaryPath, categorySummary);
         
-        logger.info(`Category summary generated at ${categorySummaryPath}`);
+        LoggerUtils.info(`Category summary generated at ${categorySummaryPath}`);
       }
 
     } catch (error) {
@@ -208,11 +223,11 @@ async function processScript(
   updateDatabase: boolean
 ): Promise<any> {
   try {
-    logger.debug(`Processing script: ${scriptPath}`);
+    LoggerUtils.debug(`Processing script: ${scriptPath}`);
     
     // Check if file exists
     if (!fs.existsSync(scriptPath)) {
-      logger.error(`Script file not found: ${scriptPath}`);
+      LoggerUtils.error(`Script file not found: ${scriptPath}`);
       return null;
     }
 
@@ -238,9 +253,9 @@ async function processScript(
     const completePrompt = generateAnalysisPrompt(promptTemplate, scriptContent, analysisContext);
 
     // Send to Claude for analysis
-    const analysisResult = await claudeService.sendPrompt({
+    const analysisResult = await sendPrompt({
       prompt: completePrompt,
-      model: config.defaultModel,
+      model: configHelpers.defaultModel,
       temperature: 0,
       maxTokens: 4000,
     });
@@ -255,13 +270,13 @@ async function processScript(
 
     // Update database if requested
     if (updateDatabase) {
-      await updateDatabase(parsedAnalysis);
+      await updateDatabaseWithAnalysis(parsedAnalysis);
     }
 
-    logger.debug(`Successfully processed script: ${scriptPath}`);
+    LoggerUtils.debug(`Successfully processed script: ${scriptPath}`);
     return parsedAnalysis;
   } catch (error) {
-    logger.error(`Error processing script ${scriptPath}:`, error);
+    LoggerUtils.error(`Error processing script ${scriptPath}:`, error);
     return null;
   }
 }
@@ -313,18 +328,18 @@ async function checkScriptReferences(scriptPath: string): Promise<boolean> {
         const scripts = packageJson.scripts || {};
         for (const scriptValue of Object.values(scripts) as string[]) {
           if (scriptValue.includes(relativeScriptPath)) {
-            logger.debug(`Script referenced in ${packageJsonPath}`);
+            LoggerUtils.debug(`Script referenced in ${packageJsonPath}`);
             return true;
           }
         }
       } catch (error) {
-        logger.debug(`Error reading package.json at ${packageJsonPath}:`, error);
+        LoggerUtils.debug(`Error reading package.json at ${packageJsonPath}:`, error);
       }
     }
     
     return false;
   } catch (error) {
-    logger.error('Error checking script references:', error);
+    LoggerUtils.error('Error checking script references:', error);
     return false;
   }
 }
@@ -370,7 +385,7 @@ function parseAnalysisResult(analysisResult: string): any {
     const jsonString = jsonMatch[1] || jsonMatch[0];
     return JSON.parse(jsonString);
   } catch (error) {
-    logger.error('Error parsing analysis result:', error);
+    LoggerUtils.error('Error parsing analysis result:', error);
     throw new Error(`Failed to parse analysis result: ${(error as Error).message}`);
   }
 }
@@ -378,7 +393,7 @@ function parseAnalysisResult(analysisResult: string): any {
 /**
  * Update the database with analysis results
  */
-async function updateDatabase(analysis: any): Promise<void> {
+async function updateDatabaseWithAnalysis(analysis: any): Promise<void> {
   try {
     // Get metadata from analysis
     const { metadata, assessment } = analysis;
@@ -405,12 +420,12 @@ async function updateDatabase(analysis: any): Promise<void> {
     };
 
     // Update database through supabase service
-    await supabaseService.upsertScript(scriptData);
+    await upsertScript(scriptData);
     
     // If there are potential duplicates, add relationships
     if (assessment.potential_duplicates && assessment.potential_duplicates.length > 0) {
       for (const duplicatePath of assessment.potential_duplicates) {
-        await supabaseService.addScriptRelationship({
+        await addScriptRelationship({
           source_path: metadata.file_path,
           target_path: duplicatePath,
           relationship_type: 'duplicate',
@@ -420,9 +435,9 @@ async function updateDatabase(analysis: any): Promise<void> {
       }
     }
     
-    logger.debug(`Database updated for script: ${metadata.file_path}`);
+    LoggerUtils.debug(`Database updated for script: ${metadata.file_path}`);
   } catch (error) {
-    logger.error('Error updating database:', error);
+    LoggerUtils.error('Error updating database:', error);
     throw error;
   }
 }
