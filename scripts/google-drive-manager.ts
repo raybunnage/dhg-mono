@@ -9,18 +9,21 @@
  *   ts-node google-drive-manager.ts [command] [options]
  * 
  * Commands:
- *   list-roots             List all registered root folders
- *   add-root [folderId]    Add a new root folder
- *   remove-root [id]       Remove a root folder
- *   check-folder [folderId] Check if a folder exists in Google Drive
- *   sync [rootId]          Sync files from a root folder (or all if not specified)
- *   sync-folder [folderId] Sync a specific folder (doesn't need to be a root)
+ *   list-roots                List all registered root folders
+ *   list-potential-roots      List folders that are in Google Drive but not registered
+ *   add-root [folderId]       Add a new root folder
+ *   remove-root [id]          Remove a root folder
+ *   check-folder [folderId]   Check if a folder exists in Google Drive
+ *   sync [rootId]             Sync files from a root folder (or all if not specified)
+ *   sync-folder [folderId]    Sync a specific folder (doesn't need to be a root)
+ *   help                      Show this help message
  * 
  * Options:
- *   --dry-run              Show what would be synced without making changes
- *   --timeout [ms]         Set timeout for sync operations (default: 600000ms/10min)
- *   --name [name]          Specify a name when adding a root folder
- *   --description [desc]   Specify a description when adding a root folder
+ *   --dry-run                 Show what would be synced without making changes
+ *   --timeout [ms]            Set timeout for sync operations (default: 600000ms/10min)
+ *   --name [name]             Specify a name when adding a root folder
+ *   --description [desc]      Specify a description when adding a root folder
+ *   --verbose                 Show more detailed output
  * 
  * Examples:
  *   ts-node google-drive-manager.ts list-roots
@@ -544,6 +547,103 @@ program
     } catch (error) {
       console.error('❌ Error syncing root folders:', error);
     }
+  });
+
+// Add list-potential-roots command
+program
+  .command('list-potential-roots')
+  .description('List folders in Google Drive that are not registered as roots')
+  .option('--dry-run', 'Preview mode with no changes', false)
+  .option('--limit <number>', 'Limit the number of results', parseInt, 20)
+  .action(async (options) => {
+    try {
+      console.log('=== Potential Root Folders ===');
+      
+      // Get the access token
+      const accessToken = process.env.VITE_GOOGLE_ACCESS_TOKEN;
+      if (!accessToken) {
+        console.error('❌ No Google access token found in environment variables');
+        process.exit(1);
+      }
+      
+      // Get existing root folders from database
+      const { data: existingRoots, error } = await supabase
+        .from('sources_google')
+        .select('drive_id')
+        .eq('is_root', true)
+        .eq('deleted', false);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Create a set of existing root folder IDs
+      const existingRootIds = new Set(
+        (existingRoots || []).map(root => root.drive_id)
+      );
+      
+      console.log(`Found ${existingRootIds.size} registered root folders in database`);
+      
+      // Search for folders in the "My Drive" root
+      console.log('Searching for folders in Google Drive...');
+      
+      // Query for top-level folders
+      const query = encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`);
+      const fields = encodeURIComponent('files(id,name,mimeType,modifiedTime,owners),nextPageToken');
+      
+      const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}&pageSize=${options.limit}`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to search files: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const folders = data.files || [];
+      
+      console.log(`Found ${folders.length} potential root folders in Google Drive`);
+      
+      // Print the folders that aren't registered as roots
+      console.log('\nFolders that could be registered as roots:');
+      console.log('--------------------------------------------');
+      
+      const unregisteredFolders = folders.filter(
+        folder => !existingRootIds.has(folder.id)
+      );
+      
+      if (unregisteredFolders.length === 0) {
+        console.log('No unregistered folders found.');
+      } else {
+        // Print a table of folders
+        console.log(`ID\t\t\t\t\tName\t\t\tModified`);
+        console.log(`${'─'.repeat(100)}`);
+        
+        unregisteredFolders.forEach(folder => {
+          const modified = new Date(folder.modifiedTime).toLocaleDateString();
+          const owner = folder.owners?.[0]?.displayName || 'Unknown';
+          console.log(`${folder.id}\t${folder.name}\t\t${modified} (${owner})`);
+        });
+        
+        // Add usage instructions
+        console.log('\nTo add a root folder, use:');
+        console.log(`ts-node google-drive-manager.ts add-root <folderId> --name "Folder Name"`);
+      }
+    } catch (error) {
+      console.error('❌ Error listing potential root folders:', error);
+    }
+  });
+
+// Add help command
+program
+  .command('help')
+  .description('Display help information')
+  .action(() => {
+    program.help();
   });
 
 // Parse command line arguments
