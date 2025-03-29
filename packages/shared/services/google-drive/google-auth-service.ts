@@ -1,9 +1,14 @@
 /**
  * Shared service for Google Drive authentication
  * Used by both UI components and CLI tools
+ * 
+ * UPDATED: Now prioritizes service account authentication when available,
+ * and falls back to OAuth tokens only when necessary.
  */
 
-import { Credentials } from 'google-auth-library';
+import { Credentials, GoogleAuth, JWT } from 'google-auth-library';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Interface for token storage
 export interface GoogleAuthToken {
@@ -14,6 +19,13 @@ export interface GoogleAuthToken {
   expiry_date: number;
 }
 
+// Service account configuration
+export interface ServiceAccountConfig {
+  keyFilePath?: string;
+  keyFileContents?: string;
+  scopes: string[];
+}
+
 // Configuration options
 export interface GoogleAuthConfig {
   clientId: string;
@@ -21,6 +33,7 @@ export interface GoogleAuthConfig {
   redirectUri: string;
   scopes: string[];
   tokenStoragePath?: string; // Used by CLI for local token storage
+  serviceAccount?: ServiceAccountConfig; // Service account config (preferred when available)
 }
 
 // Storage adapter interface - allows different implementations for UI and CLI
@@ -42,8 +55,11 @@ class LocalStorageAdapter implements TokenStorageAdapter {
 
   async saveToken(token: GoogleAuthToken): Promise<boolean> {
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(token));
-      return true;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(this.storageKey, JSON.stringify(token));
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Failed to save token to localStorage:', error);
       return false;
@@ -52,9 +68,12 @@ class LocalStorageAdapter implements TokenStorageAdapter {
 
   async loadToken(): Promise<GoogleAuthToken | null> {
     try {
-      const tokenStr = localStorage.getItem(this.storageKey);
-      if (!tokenStr) return null;
-      return JSON.parse(tokenStr) as GoogleAuthToken;
+      if (typeof localStorage !== 'undefined') {
+        const tokenStr = localStorage.getItem(this.storageKey);
+        if (!tokenStr) return null;
+        return JSON.parse(tokenStr) as GoogleAuthToken;
+      }
+      return null;
     } catch (error) {
       console.error('Failed to load token from localStorage:', error);
       return null;
@@ -63,8 +82,11 @@ class LocalStorageAdapter implements TokenStorageAdapter {
 
   async clearToken(): Promise<boolean> {
     try {
-      localStorage.removeItem(this.storageKey);
-      return true;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(this.storageKey);
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Failed to clear token from localStorage:', error);
       return false;
@@ -74,7 +96,6 @@ class LocalStorageAdapter implements TokenStorageAdapter {
 
 /**
  * File system token adapter (for CLI)
- * Implemented as stub - CLI will provide actual implementation
  */
 class FileSystemAdapter implements TokenStorageAdapter {
   private readonly tokenPath: string;
@@ -84,21 +105,38 @@ class FileSystemAdapter implements TokenStorageAdapter {
   }
 
   async saveToken(token: GoogleAuthToken): Promise<boolean> {
-    // CLI will implement this using fs.writeFile
-    console.log(`[STUB] Saving token to ${this.tokenPath}`);
-    return false;
+    try {
+      fs.writeFileSync(this.tokenPath, JSON.stringify(token, null, 2), 'utf8');
+      return true;
+    } catch (error) {
+      console.error(`Failed to save token to ${this.tokenPath}:`, error);
+      return false;
+    }
   }
 
   async loadToken(): Promise<GoogleAuthToken | null> {
-    // CLI will implement this using fs.readFile
-    console.log(`[STUB] Loading token from ${this.tokenPath}`);
-    return null;
+    try {
+      if (!fs.existsSync(this.tokenPath)) {
+        return null;
+      }
+      const data = fs.readFileSync(this.tokenPath, 'utf8');
+      return JSON.parse(data) as GoogleAuthToken;
+    } catch (error) {
+      console.error(`Failed to load token from ${this.tokenPath}:`, error);
+      return null;
+    }
   }
 
   async clearToken(): Promise<boolean> {
-    // CLI will implement this using fs.unlink
-    console.log(`[STUB] Clearing token from ${this.tokenPath}`);
-    return false;
+    try {
+      if (fs.existsSync(this.tokenPath)) {
+        fs.unlinkSync(this.tokenPath);
+      }
+      return true;
+    } catch (error) {
+      console.error(`Failed to clear token from ${this.tokenPath}:`, error);
+      return false;
+    }
   }
 }
 
@@ -112,10 +150,115 @@ export class GoogleAuthService {
   private storage: TokenStorageAdapter;
   private token: GoogleAuthToken | null = null;
   private tokenExpiresAt: Date | null = null;
+  private serviceAuthClient: JWT | null = null;
+  private usingServiceAccount: boolean = false;
 
   private constructor(config: GoogleAuthConfig, storage: TokenStorageAdapter) {
     this.config = config;
     this.storage = storage;
+    
+    // Try to initialize service account auth if available
+    if (config.serviceAccount) {
+      this.initServiceAccountAuth(config.serviceAccount);
+    }
+  }
+
+  /**
+   * Initialize service account authentication
+   */
+  private async initServiceAccountAuth(serviceAccountConfig: ServiceAccountConfig): Promise<boolean> {
+    try {
+      let keyFileContents: any = null;
+      
+      // If key file contents are provided directly
+      if (serviceAccountConfig.keyFileContents) {
+        try {
+          keyFileContents = JSON.parse(serviceAccountConfig.keyFileContents);
+        } catch (error) {
+          console.error('Failed to parse service account key file contents:', error);
+          return false;
+        }
+      }
+      // If key file path is provided
+      else if (serviceAccountConfig.keyFilePath) {
+        try {
+          // Resolve path - support both absolute paths and relative paths
+          const filePath = serviceAccountConfig.keyFilePath.startsWith('/') 
+            ? serviceAccountConfig.keyFilePath
+            : path.resolve(process.cwd(), serviceAccountConfig.keyFilePath);
+            
+          // Check if file exists
+          if (!fs.existsSync(filePath)) {
+            console.log(`Service account key file not found at: ${filePath}`);
+            return false;
+          }
+          
+          // Read and parse the file
+          const fileData = fs.readFileSync(filePath, 'utf8');
+          keyFileContents = JSON.parse(fileData);
+        } catch (error) {
+          console.error(`Failed to read service account key file: ${error}`);
+          return false;
+        }
+      } 
+      // If environment variable is set
+      else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        try {
+          const filePath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+          if (!fs.existsSync(filePath)) {
+            console.log(`Service account key file not found at: ${filePath}`);
+            return false;
+          }
+          
+          // Read and parse the file
+          const fileData = fs.readFileSync(filePath, 'utf8');
+          keyFileContents = JSON.parse(fileData);
+        } catch (error) {
+          console.error(`Failed to read service account key file: ${error}`);
+          return false;
+        }
+      }
+      else {
+        console.log('No service account key file provided');
+        return false;
+      }
+      
+      // Check if we have valid key file contents
+      if (!keyFileContents || !keyFileContents.client_email || !keyFileContents.private_key) {
+        console.log('Invalid service account key file contents');
+        return false;
+      }
+      
+      // Create JWT auth client with the service account
+      this.serviceAuthClient = new JWT(
+        keyFileContents.client_email,
+        undefined,
+        keyFileContents.private_key,
+        serviceAccountConfig.scopes,
+      );
+      
+      // Test the auth client
+      try {
+        await this.serviceAuthClient.authorize();
+        console.log('✅ Service account authentication initialized successfully');
+        this.usingServiceAccount = true;
+        return true;
+      } catch (error) {
+        console.error('Service account authentication failed:', error);
+        this.serviceAuthClient = null;
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to initialize service account authentication:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if service account is being used
+   */
+  public isUsingServiceAccount(): boolean {
+    return this.usingServiceAccount;
   }
 
   /**
@@ -153,9 +296,13 @@ export class GoogleAuthService {
    * Generate OAuth URL for authentication
    */
   public generateAuthUrl(): string {
-    // This is a stub - implementations will use proper OAuth libraries
-    // UI will use the Google OAuth library
-    // CLI will use google-auth-library
+    // If service account is being used, OAuth flow isn't needed
+    if (this.usingServiceAccount) {
+      console.log('Using service account authentication - OAuth flow not needed');
+      return '';
+    }
+    
+    // OAuth URL for web application flow
     const scopeStr = this.config.scopes.join(' ');
     return `https://accounts.google.com/o/oauth2/auth?client_id=${this.config.clientId}&redirect_uri=${encodeURIComponent(this.config.redirectUri)}&scope=${encodeURIComponent(scopeStr)}&response_type=code&access_type=offline&prompt=consent`;
   }
@@ -165,6 +312,12 @@ export class GoogleAuthService {
    * @param code Authorization code
    */
   public async getTokenFromCode(code: string): Promise<GoogleAuthToken | null> {
+    // If service account is being used, OAuth flow isn't needed
+    if (this.usingServiceAccount) {
+      console.log('Using service account authentication - OAuth token exchange not needed');
+      return null;
+    }
+    
     try {
       // This is a stub - implementations will use proper OAuth libraries
       console.log('Getting token from code:', code);
@@ -190,6 +343,11 @@ export class GoogleAuthService {
    * @param token Token to save
    */
   public async saveToken(token: GoogleAuthToken): Promise<boolean> {
+    // If service account is being used, we don't need to save OAuth tokens
+    if (this.usingServiceAccount) {
+      return true;
+    }
+    
     this.token = token;
     this.tokenExpiresAt = new Date(token.expiry_date);
     return this.storage.saveToken(token);
@@ -199,6 +357,11 @@ export class GoogleAuthService {
    * Load token from storage
    */
   public async loadToken(): Promise<GoogleAuthToken | null> {
+    // If service account is being used, we don't need to load OAuth tokens
+    if (this.usingServiceAccount) {
+      return null;
+    }
+    
     const token = await this.storage.loadToken();
     if (token) {
       this.token = token;
@@ -211,6 +374,11 @@ export class GoogleAuthService {
    * Clear token from storage
    */
   public async clearToken(): Promise<boolean> {
+    // If service account is being used, we don't need to clear OAuth tokens
+    if (this.usingServiceAccount) {
+      return true;
+    }
+    
     this.token = null;
     this.tokenExpiresAt = null;
     return this.storage.clearToken();
@@ -220,6 +388,11 @@ export class GoogleAuthService {
    * Check if token is valid (not expired)
    */
   public async isTokenValid(): Promise<boolean> {
+    // If service account is being used, we don't need to check OAuth token validity
+    if (this.usingServiceAccount) {
+      return true;
+    }
+    
     if (!this.token) {
       const token = await this.loadToken();
       if (!token) return false;
@@ -245,6 +418,21 @@ export class GoogleAuthService {
    * Refresh the token
    */
   public async refreshToken(): Promise<boolean> {
+    // If service account is being used, we don't need to refresh OAuth tokens
+    if (this.usingServiceAccount) {
+      try {
+        // Refresh service account credentials
+        if (this.serviceAuthClient) {
+          await this.serviceAuthClient.authorize();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('Failed to refresh service account credentials:', error);
+        return false;
+      }
+    }
+    
     if (!this.token?.refresh_token) {
       console.log('No refresh token available');
       return false;
@@ -273,6 +461,15 @@ export class GoogleAuthService {
    * Get the time until token expiration
    */
   public getTokenExpirationTime(): { isValid: boolean; expiresIn: number; formattedTime: string } {
+    // If service account is being used, tokens don't expire in the same way
+    if (this.usingServiceAccount) {
+      return {
+        isValid: true,
+        expiresIn: 3600, // Service account tokens typically last 1 hour
+        formattedTime: 'Service account (auto-refresh)'
+      };
+    }
+    
     if (!this.token || !this.tokenExpiresAt) {
       return {
         isValid: false,
@@ -313,6 +510,24 @@ export class GoogleAuthService {
    * Get the current token
    */
   public getToken(): GoogleAuthToken | null {
+    // If service account is being used, return a token format from the service account
+    if (this.usingServiceAccount && this.serviceAuthClient) {
+      try {
+        const credentials = this.serviceAuthClient.credentials;
+        if (credentials && credentials.access_token) {
+          // Convert service account token to GoogleAuthToken format
+          return {
+            access_token: credentials.access_token,
+            token_type: 'Bearer',
+            expiry_date: credentials.expiry_date || (Date.now() + 3600 * 1000),
+            scope: this.config.scopes.join(' ')
+          };
+        }
+      } catch (error) {
+        console.error('Failed to get service account token:', error);
+      }
+    }
+    
     return this.token;
   }
 
@@ -320,6 +535,19 @@ export class GoogleAuthService {
    * Get the access token string for API requests
    */
   public async getAccessToken(): Promise<string | null> {
+    // If service account is being used, get access token from service account
+    if (this.usingServiceAccount && this.serviceAuthClient) {
+      try {
+        // This will refresh the token if needed
+        const credentials = await this.serviceAuthClient.authorize();
+        return credentials.access_token || null;
+      } catch (error) {
+        console.error('Failed to get service account access token:', error);
+        return null;
+      }
+    }
+    
+    // Otherwise fall back to OAuth token
     const isValid = await this.isTokenValid();
     if (!isValid) return null;
     return this.token?.access_token || null;

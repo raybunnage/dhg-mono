@@ -15,11 +15,31 @@
  */
 
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../supabase/types';
 
+// Load multiple environment files
+function loadEnvFiles() {
+  // Order matters - later files override earlier ones
+  const envFiles = [
+    '.env',
+    '.env.development',
+    '.env.local'
+  ];
+  
+  for (const file of envFiles) {
+    const filePath = path.resolve(process.cwd(), file);
+    if (fs.existsSync(filePath)) {
+      console.log(`Loading environment from ${file}`);
+      dotenv.config({ path: filePath });
+    }
+  }
+}
+
 // Load environment variables
-dotenv.config();
+loadEnvFiles();
 
 // Process command line arguments
 const args = process.argv.slice(2);
@@ -32,9 +52,15 @@ const timeout = timeoutIndex !== -1 && args[timeoutIndex + 1]
 // Folder ID for Dynamic Healing Discussion Group
 const DYNAMIC_HEALING_FOLDER_ID = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';
 
+// Debug loaded environment variables
+console.log('Loaded environment variables:');
+console.log('- SUPABASE_URL:', process.env.SUPABASE_URL);
+console.log('- SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Found' : 'Not found');
+console.log('- VITE_GOOGLE_ACCESS_TOKEN:', process.env.VITE_GOOGLE_ACCESS_TOKEN ? 'Found' : 'Not found');
+
 // Ensure Supabase credentials are available
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Supabase URL or key not found in environment variables');
@@ -481,8 +507,13 @@ async function syncDynamicHealingGroup(): Promise<void> {
   console.log('\n=== Sync Complete ===');
 }
 
-// Execute the main function
-syncDynamicHealingGroup().catch(error => {
-  console.error('Unexpected error:', error);
-  process.exit(1);
-});
+// Export for module usage
+export { syncDynamicHealingGroup };
+
+// Execute the main function if run directly
+if (require.main === module) {
+  syncDynamicHealingGroup().catch(error => {
+    console.error('Unexpected error:', error);
+    process.exit(1);
+  });
+}
