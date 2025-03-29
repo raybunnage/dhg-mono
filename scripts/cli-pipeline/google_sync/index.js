@@ -102,6 +102,7 @@ addCommonOptions(
     .option('-b, --batch-size <size>', 'Number of files to process in each batch', '50')
     .option('-d, --depth <levels>', 'Maximum folder depth to traverse', '10')
     .option('--dry-run', 'Show what would be synced without making changes')
+    .option('--all-pages', 'Fetch all pages of results from Google Drive')
     .action(async (options) => {
       console.log(chalk.blue(`Syncing folder with ID: ${options.id}`));
       
@@ -118,6 +119,8 @@ addCommonOptions(
           maxDepth: parseInt(options.depth, 10),
           batchSize: parseInt(options.batchSize, 10),
           dryRun: options.dryRun,
+          getAllPages: options.allPages,
+          verbose: options.verbose
         };
         
         // Sync
@@ -126,10 +129,19 @@ addCommonOptions(
         spinner.succeed('Folder sync completed');
         
         // Display results
+        console.log(chalk.green(`\nSync Summary:`));
         console.log(chalk.green(`Files found: ${result.filesFound}`));
-        console.log(chalk.green(`Files inserted: ${result.filesInserted}`));
-        console.log(chalk.green(`Files updated: ${result.filesUpdated}`));
+        console.log(chalk.green(`Folders found: ${result.foldersFound}`));
+        console.log(chalk.green(`New files to insert: ${result.filesInserted}`));
+        console.log(chalk.green(`Existing files to update: ${result.filesUpdated}`));
+        console.log(chalk.green(`Files skipped: ${result.filesSkipped}`));
         console.log(chalk.green(`Total size: ${formatBytes(result.totalSize)}`));
+        
+        // Show file type breakdown
+        console.log(chalk.blue('\nFile types:'));
+        Object.entries(result.fileTypes || {}).forEach(([type, count]) => {
+          console.log(chalk.white(`${type}: ${count}`));
+        });
         
         if (result.errors.length > 0) {
           console.log(chalk.yellow(`Errors: ${result.errors.length}`));
@@ -429,6 +441,59 @@ addCommonOptions(
 // File operations
 const filesCommand = program.command('files')
   .description('Operations on synced files');
+
+// Add a command to list top-level folders in Google Drive
+addCommonOptions(
+  filesCommand.command('list-drive-folders')
+    .description('List folders in Google Drive')
+    .option('-p, --parent <folder-id>', 'Parent folder ID (omit for top-level)')
+    .option('-l, --limit <number>', 'Maximum number of folders to list', '50')
+    .action(async (options) => {
+      console.log(chalk.blue('Listing folders in Google Drive...'));
+      
+      // Use the GoogleDriveAdapter which connects to shared services
+      const authService = new GoogleAuthAdapter(config);
+      const driveService = new GoogleDriveAdapter(config, authService);
+      
+      const spinner = ora('Fetching folders...').start();
+      
+      try {
+        // Build query
+        const q = options.parent 
+          ? `'${options.parent}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
+          : `mimeType = 'application/vnd.google-apps.folder' and 'root' in parents and trashed = false`;
+        
+        // List folders
+        const { files } = await driveService.listFiles('root', {
+          q,
+          limit: parseInt(options.limit, 10),
+          getAllPages: true
+        });
+        
+        spinner.succeed(`Found ${files.length} folders`);
+        
+        // Display folders
+        if (files.length === 0) {
+          console.log(chalk.yellow('No folders found'));
+          return;
+        }
+        
+        console.log(chalk.green('\nFolders:'));
+        files.forEach((folder, i) => {
+          console.log(chalk.white(`${i+1}. ${folder.name}`));
+          console.log(chalk.gray(`   ID: ${folder.id}`));
+          console.log(chalk.gray(`   Link: ${folder.webViewLink}`));
+          console.log();
+        });
+      } catch (error) {
+        spinner.fail('Failed to list folders');
+        console.error(chalk.red(`Error: ${error.message}`));
+        if (options.verbose) {
+          console.error(error);
+        }
+      }
+    })
+);
 
 addCommonOptions(
   filesCommand.command('list')
