@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import path from 'path';
 import { Logger } from '../../utils/logger';
-import { config } from '../../utils/config';
+import config from '../../utils/config';
 
 /**
  * Service for interacting with the document pipeline scripts
