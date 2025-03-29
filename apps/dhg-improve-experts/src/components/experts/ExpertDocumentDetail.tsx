@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ExpertDocument } from '@/types/expert';
-import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { expertService } from '@/services/expert-service';
+import { documentPipelineAdapter } from '@/services/document-pipeline-adapter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Edit, RefreshCw, PlayCircle, Download, ArrowLeft } from 'lucide-react';
@@ -24,37 +25,34 @@ export function ExpertDocumentDetail({
   onProcess
 }: ExpertDocumentDetailProps) {
   const [loading, setLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [expert, setExpert] = useState<{ expert_name: string; full_name: string | null } | null>(null);
   const [source, setSource] = useState<{ title: string } | null>(null);
   const [jsonView, setJsonView] = useState(false);
+  const [currentDocument, setCurrentDocument] = useState<ExpertDocument>(document);
 
   useEffect(() => {
     loadRelatedData();
+    setCurrentDocument(document);
   }, [document.id]);
 
   async function loadRelatedData() {
     try {
       setLoading(true);
       
-      // Get expert data
-      const { data: expertData, error: expertError } = await supabase
-        .from('experts')
-        .select('expert_name, full_name')
-        .eq('id', document.expert_id)
-        .single();
-
-      if (expertError) throw expertError;
-      setExpert(expertData);
+      // Use our expert service
+      const [expertData, sourceData] = await Promise.all([
+        expertService.getExpertBasicInfo(document.expert_id),
+        expertService.getSourceInfo(document.source_id)
+      ]);
       
-      // Get source data
-      const { data: sourceData, error: sourceError } = await supabase
-        .from('sources_google')
-        .select('title')
-        .eq('id', document.source_id)
-        .single();
-
-      if (sourceError) throw sourceError;
-      setSource(sourceData);
+      if (expertData) {
+        setExpert(expertData);
+      }
+      
+      if (sourceData) {
+        setSource(sourceData);
+      }
     } catch (error) {
       console.error('Error loading related data:', error);
       toast.error('Failed to load all document data');
@@ -101,6 +99,33 @@ export function ExpertDocumentDetail({
   };
 
   const processedContent = getProcessedContent();
+  
+  // Handle document processing using our service
+  const handleProcessDocument = async () => {
+    try {
+      setProcessing(true);
+      
+      // Process the document using our adapter
+      const success = await documentPipelineAdapter.processDocument(currentDocument.id);
+      
+      if (success) {
+        toast.success('Document processed successfully');
+        
+        // Refresh the document to get the updated content
+        const updatedDoc = await expertService.getExpertDocumentById(currentDocument.id);
+        if (updatedDoc) {
+          setCurrentDocument(updatedDoc);
+        }
+      } else {
+        toast.error('Failed to process document');
+      }
+    } catch (error) {
+      console.error('Error processing document:', error);
+      toast.error('An error occurred while processing the document');
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -117,9 +142,13 @@ export function ExpertDocumentDetail({
               {jsonView ? 'Formatted View' : 'JSON View'}
             </Button>
           )}
-          <Button variant="outline" onClick={() => onProcess(document)}>
-            <PlayCircle className="h-4 w-4 mr-2" />
-            Process
+          <Button 
+            variant="outline" 
+            onClick={handleProcessDocument} 
+            disabled={processing || currentDocument.processing_status === 'processing'}
+          >
+            <PlayCircle className={`h-4 w-4 mr-2 ${processing ? 'animate-spin' : ''}`} />
+            {processing ? 'Processing...' : 'Process'}
           </Button>
           <Button variant="outline" onClick={loadRelatedData}>
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -144,7 +173,7 @@ export function ExpertDocumentDetail({
           </div>
           <div>
             <div className="text-sm font-medium text-muted-foreground">Status</div>
-            <div>{getStatusBadge(document.processing_status)}</div>
+            <div>{getStatusBadge(currentDocument.processing_status)}</div>
           </div>
           <div>
             <div className="text-sm font-medium text-muted-foreground">Expert</div>
@@ -168,7 +197,7 @@ export function ExpertDocumentDetail({
       <Tabs defaultValue="raw">
         <TabsList>
           <TabsTrigger value="raw">Raw Content</TabsTrigger>
-          <TabsTrigger value="processed" disabled={!document.processed_content}>Processed Content</TabsTrigger>
+          <TabsTrigger value="processed" disabled={!currentDocument.processed_content}>Processed Content</TabsTrigger>
         </TabsList>
         
         <TabsContent value="raw">

@@ -1,27 +1,18 @@
 import React, { useState } from 'react';
-import { supabase } from '../integrations/supabase/client';
-import type { Database } from '../types/supabase';
 import { toast } from 'react-hot-toast';
+import { contentService, DocumentInfo } from '@/services/content-service';
+import { Button } from '@/components/ui/button';
+import { ChevronRight, RotateCw } from 'lucide-react';
 
 interface GetContentButtonProps {
-  onSuccess?: (content: string, docInfo: DocInfo) => void;
+  onSuccess?: (content: string, docInfo: DocumentInfo) => void;
   onError?: (error: Error, docId?: string) => void;
 }
 
-interface DocInfo {
-  id: string;
-  sourceName?: string;
-  mimeType?: string;
-  index: number;
-  total: number;
-}
-
-type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
-
-export function GetContentButton({ onSuccess, onError }: GetContentButtonProps) {
+const GetContentButton: React.FC<GetContentButtonProps> = ({ onSuccess, onError }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(-1);
-  const [documents, setDocuments] = useState<{ id: string }[]>([]);
+  const [documents, setDocuments] = useState<string[]>([]);
   const [initialized, setInitialized] = useState(false);
 
   // Initialize document list
@@ -30,24 +21,17 @@ export function GetContentButton({ onSuccess, onError }: GetContentButtonProps) 
     const toastId = toast.loading('Getting document list...');
 
     try {
-      const { data: docs, error: listError } = await supabase
-        .from('expert_documents')
-        .select('id')
-        .order('id');
-
-      if (listError) {
-        throw new Error(`Failed to fetch document list: ${listError.message}`);
-      }
-
-      if (!docs || docs.length === 0) {
+      const docIds = await contentService.getDocumentIds();
+      
+      if (docIds.length === 0) {
         throw new Error('No documents found');
       }
 
-      console.log(`Found ${docs.length} documents to process`);
-      setDocuments(docs);
+      console.log(`Found ${docIds.length} documents to process`);
+      setDocuments(docIds);
       setCurrentIndex(0);
       setInitialized(true);
-      toast.success(`Ready to process ${docs.length} documents`, { id: toastId });
+      toast.success(`Ready to process ${docIds.length} documents`, { id: toastId });
 
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error occurred');
@@ -64,79 +48,19 @@ export function GetContentButton({ onSuccess, onError }: GetContentButtonProps) 
     if (currentIndex < 0 || currentIndex >= documents.length) return;
 
     setIsLoading(true);
-    const docId = documents[currentIndex].id;
+    const docId = documents[currentIndex];
     const toastId = toast.loading(`Processing document ${currentIndex + 1} of ${documents.length}`);
 
     try {
-      // First get the document and its source with detailed logging
-      const { data: doc, error } = await supabase
-        .from('expert_documents')
-        .select(`
-          id,
-          raw_content,
-          content_type,
-          processing_status,
-          source_id,
-          error_message,
-          processing_error,
-          source:sources_google!expert_documents_source_id_fkey (
-            id,
-            name,
-            mime_type,
-            drive_id,
-            content_extracted,
-            extraction_error,
-            extracted_content,
-            metadata
-          )
-        `)
-        .eq('id', docId)
-        .single();
-
-      if (error) {
-        throw new Error(`Failed to fetch document ${docId}: ${error.message}`);
-      }
-
-      // Debug log the complete document structure
-      console.log('Complete document structure:', JSON.stringify({
-        document: {
-          id: doc.id,
-          allFields: doc,
-          source: doc.source
-        }
-      }, null, 2));
-
-      // Also log the source_id to make sure we're linking to the right source
-      console.log('Document source relationship:', {
-        documentId: doc.id,
-        sourceId: doc.source_id,
-        sourceRecord: doc.source ? {
-          id: doc.source.id,
-          name: doc.source.name,
-          hasContent: !!doc.source.extracted_content
-        } : 'No source record found'
-      });
-
-      // Handle content whether it's an object or string
-      let contentToUse = null;
-      if (doc?.raw_content) {
-        contentToUse = typeof doc.raw_content === 'object' 
-          ? JSON.stringify(doc.raw_content)
-          : doc.raw_content;
-      } else if (doc?.source?.extracted_content) {
-        contentToUse = typeof doc.source.extracted_content === 'object'
-          ? JSON.stringify(doc.source.extracted_content)
-          : doc.source.extracted_content;
-      }
-
-      if (!contentToUse && doc?.source?.drive_id && !doc.source.content_extracted) {
-        console.log('Document needs content extraction:', {
-          name: doc.source.name,
-          driveId: doc.source.drive_id,
-          mimeType: doc.source.mime_type
-        });
-        
-        toast.success(`Document ${doc.source.name} needs content extraction first`, { id: toastId });
+      const result = await contentService.getDocumentContent(docId);
+      
+      // Update the document info with index and total
+      result.documentInfo.index = currentIndex + 1;
+      result.documentInfo.total = documents.length;
+      
+      // If the document needs extraction, skip it
+      if (result.needsExtraction) {
+        toast.success(`Document ${result.documentInfo.sourceName || docId} needs content extraction first`, { id: toastId });
         
         // Skip to next document
         if (currentIndex < documents.length - 1) {
@@ -144,24 +68,10 @@ export function GetContentButton({ onSuccess, onError }: GetContentButtonProps) 
         }
         return;
       }
-
-      if (!contentToUse) {
-        // More informative warning about missing content
-        console.warn(`Document ${docId} has no usable content:`, {
-          rawContentType: typeof doc?.raw_content,
-          rawContent: doc?.raw_content,
-          sourceContentType: typeof doc?.source?.extracted_content,
-          sourceContent: doc?.source?.extracted_content,
-          status: doc?.processing_status,
-          source: {
-            id: doc?.source?.id,
-            contentExtracted: doc?.source?.content_extracted,
-            extractionError: doc?.source?.extraction_error
-          },
-          contentType: doc?.content_type
-        });
-        
-        toast.error(`Document ${docId} has no usable content. Check console for details.`, { id: toastId });
+      
+      // If there's an error or no content, skip to next document
+      if (result.error || !result.content) {
+        toast.error(`Document ${docId} has no usable content: ${result.error || 'Unknown reason'}`, { id: toastId });
         
         // Continue to next document automatically
         if (currentIndex < documents.length - 1) {
@@ -169,26 +79,18 @@ export function GetContentButton({ onSuccess, onError }: GetContentButtonProps) 
         }
         return;
       }
-
-      // If we got here, we have content to use
-      const docInfo: DocInfo = {
-        id: doc.id,
-        sourceName: doc.source?.name,
-        mimeType: doc.source?.mime_type,
-        index: currentIndex + 1,
-        total: documents.length
-      };
-
+      
+      // Log success
       console.log('Retrieved document:', {
-        id: doc.id,
-        contentLength: contentToUse.length,
-        sourceName: doc.source?.name,
-        mimeType: doc.source?.mime_type,
+        id: result.documentInfo.id,
+        contentLength: result.content.length,
+        sourceName: result.documentInfo.sourceName,
+        mimeType: result.documentInfo.mimeType,
         progress: `${currentIndex + 1}/${documents.length}`,
-        preview: contentToUse.slice(0, 200).replace(/\n/g, ' ') + '...'
+        preview: result.content.slice(0, 200).replace(/\n/g, ' ') + '...'
       });
 
-      onSuccess?.(contentToUse, docInfo);
+      onSuccess?.(result.content, result.documentInfo);
       toast.success('Document processed successfully', { id: toastId });
 
     } catch (err) {
@@ -219,15 +121,14 @@ export function GetContentButton({ onSuccess, onError }: GetContentButtonProps) 
 
   return (
     <div className="flex gap-2 items-center">
-      <button 
+      <Button 
         onClick={handleClick}
         disabled={isLoading}
-        className="bg-green-600 text-white rounded-md px-4 py-2 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        aria-busy={isLoading}
+        variant="default"
       >
         {isLoading ? (
           <>
-            <span className="animate-spin mr-2">⟳</span>
+            <RotateCw className="h-4 w-4 mr-2 animate-spin" />
             Processing...
           </>
         ) : !initialized ? (
@@ -235,23 +136,26 @@ export function GetContentButton({ onSuccess, onError }: GetContentButtonProps) 
         ) : (
           'Process Current'
         )}
-      </button>
+      </Button>
 
       {initialized && currentIndex < documents.length - 1 && (
-        <button
+        <Button
           onClick={handleNext}
           disabled={isLoading}
-          className="bg-blue-600 text-white rounded-md px-4 py-2 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          variant="outline"
         >
+          <ChevronRight className="h-4 w-4 mr-1" />
           Next Document
-        </button>
+        </Button>
       )}
 
       {initialized && (
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-muted-foreground">
           Document {currentIndex + 1} of {documents.length}
         </span>
       )}
     </div>
   );
-} 
+};
+
+export default GetContentButton;

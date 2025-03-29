@@ -10,15 +10,25 @@ The Experts module is in the process of adopting the service layer pattern. We'v
 
 ## Progress Update (2025-03-28)
 
-Components migrated to service layer:
+### Components migrated to service layer:
 - ✅ ExpertList
 - ✅ ExpertDetailView
 - ✅ ExpertDocumentList
 - ✅ ExpertForm
+- ✅ ExpertDocumentForm
+- ✅ ExpertDocumentDetail
 
-Services implemented:
+### Services implemented:
 - ✅ ExpertService (with CRUD operations)
 - ✅ Utils for data normalization
+- ✅ Document management operations
+- ✅ Source management operations
+- ✅ ContentService (document content retrieval)
+- ✅ DocumentProcessingService (processing logic)
+
+### Adapters implemented:
+- ✅ DocumentPipelineAdapter - Mimics the shared document-pipeline-service interface
+- ✅ ScriptPipelineAdapter - Mimics the shared script-pipeline-service interface
 
 ## Target State
 
@@ -37,7 +47,14 @@ We aim to use the shared services from the monorepo, specifically:
 3. ✅ Add utility functions for data normalization in the expert types
 4. ✅ Implement document operations in the service layer
 
-### Phase 2: Shared Service Integration
+### Phase 2: Adapter Layer (In Progress)
+
+1. ✅ Create adapter services that mimic the shared services interface
+2. ✅ Update components to use these adapters
+3. ✅ Implement temporary functionality in adapters
+4. ✅ Maintain backward compatibility with existing components
+
+### Phase 3: Shared Service Integration
 
 1. Add the shared package as a dependency in package.json:
    ```json

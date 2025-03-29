@@ -2,6 +2,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { ExpertInterface, ExpertDocument, expertUtils, EnhancedExpertProfile } from "@/types/expert";
 import { Logger } from "@/utils/logger";
 
+export interface ExpertBasicInfo {
+  expert_name: string;
+  full_name: string | null;
+}
+
+export interface SourceInfo {
+  title: string;
+}
+
 /**
  * MIGRATION PLAN:
  * This service is intended to be a temporary solution to abstract Supabase calls.
@@ -56,6 +65,50 @@ export class ExpertService {
       return expertUtils.normalizeExpert(data);
     } catch (error) {
       Logger.error(`Error getting expert by ID ${id}:`, error);
+      return null;
+    }
+  }
+  
+  /**
+   * Get expert basic info by ID
+   */
+  async getExpertBasicInfo(id: string): Promise<ExpertBasicInfo | null> {
+    try {
+      Logger.debug(`Getting expert basic info by ID: ${id}`);
+      
+      const { data, error } = await supabase
+        .from('experts')
+        .select('expert_name, full_name')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      return data;
+    } catch (error) {
+      Logger.error(`Error getting expert basic info for ID ${id}:`, error);
+      return null;
+    }
+  }
+  
+  /**
+   * Get source info by ID
+   */
+  async getSourceInfo(id: string): Promise<SourceInfo | null> {
+    try {
+      Logger.debug(`Getting source info by ID: ${id}`);
+      
+      const { data, error } = await supabase
+        .from('sources_google')
+        .select('title')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      return data;
+    } catch (error) {
+      Logger.error(`Error getting source info for ID ${id}:`, error);
       return null;
     }
   }
@@ -159,6 +212,27 @@ export class ExpertService {
     } catch (error) {
       Logger.error('Error loading sources map:', error);
       return {};
+    }
+  }
+  
+  /**
+   * Get all Google Drive sources as array
+   */
+  async getSources(): Promise<Array<{id: string, title: string}>> {
+    try {
+      Logger.debug('Getting Google Drive sources');
+      
+      const { data, error } = await supabase
+        .from('sources_google')
+        .select('id, title')
+        .order('title');
+        
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      Logger.error('Error loading sources:', error);
+      return [];
     }
   }
   
