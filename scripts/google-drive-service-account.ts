@@ -114,7 +114,7 @@ async function initDriveClient() {
 /**
  * List files in a folder
  */
-async function listFolder(drive, folderId: string, recursive: boolean = false) {
+async function listFolder(drive: any, folderId: string, recursive: boolean = false) {
   console.log(`📂 Listing files in folder: ${folderId} ${recursive ? '(recursive)' : ''}`);
   
   // First, verify the folder exists
@@ -130,8 +130,8 @@ async function listFolder(drive, folderId: string, recursive: boolean = false) {
     const allFiles = await listFilesRecursively(drive, folderId, recursive);
     
     // Calculate stats
-    const fileTypes = {};
-    allFiles.forEach(file => {
+    const fileTypes: Record<string, number> = {};
+    allFiles.forEach((file: any) => {
       const type = file.mimeType || 'unknown';
       fileTypes[type] = (fileTypes[type] || 0) + 1;
     });
@@ -145,7 +145,7 @@ async function listFolder(drive, folderId: string, recursive: boolean = false) {
     });
     
     console.log('\nSample of files:');
-    allFiles.slice(0, 10).forEach((file, i) => {
+    allFiles.slice(0, 10).forEach((file: any, i: number) => {
       console.log(`${i+1}. ${file.name} (${file.mimeType})`);
     });
     
@@ -154,7 +154,7 @@ async function listFolder(drive, folderId: string, recursive: boolean = false) {
     }
     
     return allFiles;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`❌ Error accessing folder: ${error.message}`);
     return [];
   }
@@ -163,7 +163,7 @@ async function listFolder(drive, folderId: string, recursive: boolean = false) {
 /**
  * List files recursively
  */
-async function listFilesRecursively(drive, folderId: string, recursive: boolean = false, parentPath: string = '') {
+async function listFilesRecursively(drive: any, folderId: string, recursive: boolean = false, parentPath: string = ''): Promise<any[]> {
   let allFiles = [];
   let pageToken = null;
   
@@ -182,7 +182,7 @@ async function listFilesRecursively(drive, folderId: string, recursive: boolean 
     const files = response.data.files || [];
     
     // Process files
-    const enhancedFiles = files.map(file => {
+    const enhancedFiles = files.map((file: any) => {
       const filePath = parentPath ? `${parentPath}/${file.name}` : `/${file.name}`;
       return {
         ...file,
@@ -200,7 +200,7 @@ async function listFilesRecursively(drive, folderId: string, recursive: boolean 
     
     // If recursive, process subfolders
     if (recursive) {
-      const folders = files.filter(file => file.mimeType === 'application/vnd.google-apps.folder');
+      const folders = files.filter((file: any) => file.mimeType === 'application/vnd.google-apps.folder');
       
       for (const folder of folders) {
         const folderPath = parentPath ? `${parentPath}/${folder.name}` : `/${folder.name}`;
@@ -218,7 +218,7 @@ async function listFilesRecursively(drive, folderId: string, recursive: boolean 
 /**
  * Verify authentication works
  */
-async function verifyAuth(drive) {
+async function verifyAuth(drive: any) {
   try {
     console.log('🔍 Verifying authentication...');
     
@@ -234,7 +234,7 @@ async function verifyAuth(drive) {
     console.log('Service account is working correctly.');
     
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Authentication failed:', error.message);
     console.log('\nPlease check:');
     console.log('1. Your service account key file is valid');

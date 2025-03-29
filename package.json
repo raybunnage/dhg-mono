@@ -72,6 +72,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.49.3",
     "axios": "^1.8.4",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "googleapis": "^148.0.0"
   }
 }
