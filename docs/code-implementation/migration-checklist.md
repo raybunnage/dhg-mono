@@ -87,7 +87,8 @@ This checklist tracks the progress of migrating the Experts module to use the se
 ### Utility Components
 
 - [x] Create BatchProcessButton using adapters
-- [ ] Update existing utility components to use adapters
+- [x] Update BatchProcessButton to use contentServiceAdapter 
+- [x] Update GetContentButton to use contentServiceAdapter
 
 ## Documentation
 
@@ -150,12 +151,12 @@ Before archiving old service implementations:
 | Category | Total Items | Completed | Progress |
 |----------|-------------|-----------|----------|
 | Service Adapters | 29 | 26 | 90% |
-| Components | 7 | 7 | 100% |
+| Components | 9 | 9 | 100% |
 | Documentation | 6 | 4 | 67% |
 | Testing | 7 | 0 | 0% |
 | Shared Services | 7 | 0 | 0% |
 | Pre-Archive | 6 | 0 | 0% |
 | Archive Process | 5 | 0 | 0% |
-| **Overall** | **67** | **37** | **55%** |
+| **Overall** | **69** | **39** | **57%** |
 
 Last Updated: 2025-03-28

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { contentService, DocumentInfo } from '@/services/content-service';
+import { DocumentInfo } from '@/services/content-service';
+import { contentServiceAdapter } from '@/services/content-service-adapter';
 import { documentPipelineAdapter } from '@/services/document-pipeline-adapter';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, RotateCw } from 'lucide-react';
@@ -27,7 +28,7 @@ const GetContentButton: React.FC<GetContentButtonProps> = ({
     const toastId = toast.loading('Getting document list...');
 
     try {
-      const docIds = await contentService.getDocumentIds();
+      const docIds = await contentServiceAdapter.getDocumentIds();
       
       if (docIds.length === 0) {
         throw new Error('No documents found');
@@ -58,7 +59,7 @@ const GetContentButton: React.FC<GetContentButtonProps> = ({
     const toastId = toast.loading(`Processing document ${currentIndex + 1} of ${documents.length}`);
 
     try {
-      const result = await contentService.getDocumentContent(docId);
+      const result = await contentServiceAdapter.getDocumentContent(docId);
       
       // Update the document info with index and total
       result.documentInfo.index = currentIndex + 1;
