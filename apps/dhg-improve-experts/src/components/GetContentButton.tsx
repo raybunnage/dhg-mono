@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { contentService, DocumentInfo } from '@/services/content-service';
+import { documentPipelineAdapter } from '@/services/document-pipeline-adapter';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, RotateCw } from 'lucide-react';
 
 interface GetContentButtonProps {
   onSuccess?: (content: string, docInfo: DocumentInfo) => void;
   onError?: (error: Error, docId?: string) => void;
+  processAfterRetrieve?: boolean;
 }
 
-const GetContentButton: React.FC<GetContentButtonProps> = ({ onSuccess, onError }) => {
+const GetContentButton: React.FC<GetContentButtonProps> = ({ 
+  onSuccess, 
+  onError,
+  processAfterRetrieve = false 
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [documents, setDocuments] = useState<string[]>([]);
@@ -60,7 +66,7 @@ const GetContentButton: React.FC<GetContentButtonProps> = ({ onSuccess, onError 
       
       // If the document needs extraction, skip it
       if (result.needsExtraction) {
-        toast.success(`Document ${result.documentInfo.sourceName || docId} needs content extraction first`, { id: toastId });
+        toast.warning(`Document ${result.documentInfo.sourceName || docId} needs content extraction first`, { id: toastId });
         
         // Skip to next document
         if (currentIndex < documents.length - 1) {
@@ -90,8 +96,21 @@ const GetContentButton: React.FC<GetContentButtonProps> = ({ onSuccess, onError 
         preview: result.content.slice(0, 200).replace(/\n/g, ' ') + '...'
       });
 
+      // Optional document processing after retrieval
+      if (processAfterRetrieve) {
+        toast.loading(`Processing content for document ${docId}...`, { id: toastId });
+        const success = await documentPipelineAdapter.processDocument(docId);
+        
+        if (success) {
+          toast.success(`Document processed successfully via pipeline`, { id: toastId });
+        } else {
+          toast.error(`Document pipeline processing failed`, { id: toastId });
+        }
+      } else {
+        toast.success('Document content retrieved successfully', { id: toastId });
+      }
+
       onSuccess?.(result.content, result.documentInfo);
-      toast.success('Document processed successfully', { id: toastId });
 
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error occurred');

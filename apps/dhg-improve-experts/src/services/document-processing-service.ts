@@ -5,7 +5,7 @@
 import { ExpertDocument } from '@/types/expert';
 import { Logger } from '@/utils/logger';
 import { supabase } from '@/integrations/supabase/client';
-import { expertService } from './expert-service';
+import { expertServiceAdapter } from './expert-service-adapter';
 
 export class DocumentProcessingService {
   /**
@@ -16,7 +16,7 @@ export class DocumentProcessingService {
       Logger.debug(`Processing document: ${document.id}`);
       
       // Set processing status to indicate work has started
-      const updatedDoc = await expertService.updateExpertDocument(document.id, {
+      const updatedDoc = await expertServiceAdapter.updateExpertDocument(document.id, {
         processing_status: 'processing'
       });
       
@@ -50,8 +50,8 @@ export class DocumentProcessingService {
         processed_at: new Date().toISOString()
       };
       
-      // Update document with processed content
-      const result = await expertService.updateExpertDocument(document.id, {
+      // Update document with processed content using the adapter
+      const result = await expertServiceAdapter.updateExpertDocument(document.id, {
         processed_content: processingResult,
         processing_status: 'completed'
       });
@@ -60,8 +60,8 @@ export class DocumentProcessingService {
     } catch (error) {
       Logger.error(`Error processing document ${document.id}:`, error);
       
-      // Update status to indicate failure
-      await expertService.updateExpertDocument(document.id, {
+      // Update status to indicate failure using the adapter
+      await expertServiceAdapter.updateExpertDocument(document.id, {
         processing_status: 'failed'
       });
       
@@ -74,7 +74,8 @@ export class DocumentProcessingService {
    */
   private async getExpertName(expertId: string): Promise<string> {
     try {
-      const expertInfo = await expertService.getExpertBasicInfo(expertId);
+      // Use the adapter to get expert information
+      const expertInfo = await expertServiceAdapter.getExpertBasicInfo(expertId);
       return expertInfo?.expert_name || 'Unknown Expert';
     } catch (error) {
       Logger.error(`Error getting expert name:`, error);

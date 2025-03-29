@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ExpertDocument } from '@/types/expert';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
   FormControl,
@@ -23,7 +24,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { expertService } from '@/services/expert-service';
+import { expertServiceAdapter } from '@/services/expert-service-adapter';
+import { documentPipelineAdapter } from '@/services/document-pipeline-adapter';
+import { PlayCircle } from 'lucide-react';
 
 const expertDocumentFormSchema = z.object({
   expert_id: z.string().min(1, { message: 'Expert is required' }),
@@ -31,6 +34,7 @@ const expertDocumentFormSchema = z.object({
   document_type: z.string().min(1, { message: 'Document type is required' }),
   title: z.string().min(1, { message: 'Title is required' }),
   raw_content: z.string().optional(),
+  process_after_save: z.boolean().default(false),
 });
 
 interface ExpertDocumentFormProps {
@@ -42,6 +46,7 @@ interface ExpertDocumentFormProps {
 
 export function ExpertDocumentForm({ document, expertId, onSuccess, onCancel }: ExpertDocumentFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [experts, setExperts] = useState<{id: string, expert_name: string}[]>([]);
   const [sources, setSources] = useState<{id: string, title: string}[]>([]);
   const [documentTypes, setDocumentTypes] = useState<string[]>([
@@ -58,22 +63,23 @@ export function ExpertDocumentForm({ document, expertId, onSuccess, onCancel }: 
       document_type: document?.document_type || '',
       title: document?.title || '',
       raw_content: document?.raw_content || '',
+      process_after_save: false,
     },
   });
 
   useEffect(() => {
     async function loadData() {
       try {
-        // Load experts using our service
-        const expertsData = await expertService.getAllExperts();
+        // Load experts using our service adapter
+        const expertsData = await expertServiceAdapter.getAllExperts();
         const expertItems = expertsData.map(expert => ({
           id: expert.id,
           expert_name: expert.expert_name
         }));
         setExperts(expertItems);
         
-        // Load source documents using our service
-        const sourcesData = await expertService.getSources();
+        // Load source documents using our service adapter
+        const sourcesData = await expertServiceAdapter.getSources();
         setSources(sourcesData);
       } catch (error) {
         console.error('Error loading form data:', error);
@@ -83,6 +89,29 @@ export function ExpertDocumentForm({ document, expertId, onSuccess, onCancel }: 
     
     loadData();
   }, []);
+
+  async function processDocument(documentId: string): Promise<boolean> {
+    try {
+      setIsProcessing(true);
+      
+      // Use the document pipeline adapter to process the document
+      const success = await documentPipelineAdapter.processDocument(documentId);
+      
+      if (success) {
+        toast.success('Document processed successfully');
+        return true;
+      } else {
+        toast.error('Failed to process document');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error processing document:', error);
+      toast.error('An error occurred while processing the document');
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  }
 
   async function onSubmit(data: z.infer<typeof expertDocumentFormSchema>) {
     try {
@@ -97,11 +126,11 @@ export function ExpertDocumentForm({ document, expertId, onSuccess, onCancel }: 
       let result;
       
       if (isEditing && document) {
-        // Update existing document using our service
-        result = await expertService.updateExpertDocument(document.id, documentData);
+        // Update existing document using our service adapter
+        result = await expertServiceAdapter.updateExpertDocument(document.id, documentData);
       } else {
-        // Create new document using our service
-        result = await expertService.createExpertDocument(documentData);
+        // Create new document using our service adapter
+        result = await expertServiceAdapter.createExpertDocument(documentData);
       }
 
       if (!result) {
@@ -109,6 +138,17 @@ export function ExpertDocumentForm({ document, expertId, onSuccess, onCancel }: 
       }
 
       toast.success(`Document ${isEditing ? 'updated' : 'created'} successfully`);
+      
+      // Process the document if option is selected
+      if (data.process_after_save) {
+        await processDocument(result.id);
+        
+        // Refresh the document to get updated processed content
+        const updatedDoc = await expertServiceAdapter.getExpertDocumentById(result.id);
+        if (updatedDoc) {
+          result = updatedDoc;
+        }
+      }
       
       if (onSuccess) {
         onSuccess(result);
@@ -238,14 +278,38 @@ export function ExpertDocumentForm({ document, expertId, onSuccess, onCancel }: 
           )}
         />
 
+        <FormField
+          control={form.control}
+          name="process_after_save"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel className="flex items-center">
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  Process document after saving
+                </FormLabel>
+                <FormDescription>
+                  Automatically run content processing pipeline after saving
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
+
         <div className="flex justify-end space-x-4">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
           )}
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : isEditing ? 'Update Document' : 'Add Document'}
+          <Button type="submit" disabled={isSubmitting || isProcessing}>
+            {isSubmitting ? 'Saving...' : isProcessing ? 'Processing...' : isEditing ? 'Update Document' : 'Add Document'}
           </Button>
         </div>
       </form>

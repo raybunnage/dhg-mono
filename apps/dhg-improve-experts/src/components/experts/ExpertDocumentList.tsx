@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExpertDocument } from '@/types/expert';
 import { toast } from 'sonner';
-import { expertService } from '@/services/expert-service';
+import { expertServiceAdapter } from '@/services/expert-service-adapter';
 import {
   Table,
   TableHeader,
@@ -54,8 +54,8 @@ export function ExpertDocumentList({
     try {
       setLoading(true);
       
-      // Use our expert service
-      const documents = await expertService.getExpertDocuments(expertId);
+      // Use our expert service adapter
+      const documents = await expertServiceAdapter.getExpertDocuments(expertId);
       setDocuments(documents);
     } catch (error) {
       console.error('Error loading documents:', error);
@@ -67,9 +67,16 @@ export function ExpertDocumentList({
 
   async function loadSourcesMap() {
     try {
-      // Use our expert service
-      const sources = await expertService.getSourcesMap();
-      setSourcesMap(sources);
+      // Use our expert service adapter to get sources
+      const sources = await expertServiceAdapter.getSources();
+      
+      // Convert sources array to a map
+      const sourcesMap: Record<string, string> = {};
+      sources.forEach(source => {
+        sourcesMap[source.id] = source.title;
+      });
+      
+      setSourcesMap(sourcesMap);
     } catch (error) {
       console.error('Error loading sources map:', error);
     }
