@@ -8,6 +8,7 @@ import { scanScriptsCommand } from './scan-scripts';
 import { analyzeScriptCommand } from './analyze-script';
 import { batchAnalyzeScriptsCommand } from './batch-analyze-scripts';
 import { registerScriptCommands } from './script-commands';
+import { registerDocumentCommands } from './document-commands';
 
 /**
  * Register all commands with the Commander program
@@ -19,6 +20,9 @@ export const registerCommands = (program: Command): void => {
   registerExamineMarkdownCommand(program);
   registerWorkflowCommand(program);
   registerDocumentProcessorCommand(program);
+  
+  // New document pipeline commands
+  registerDocumentCommands(program);
   
   // Script analysis commands
   program.addCommand(scanScriptsCommand);
