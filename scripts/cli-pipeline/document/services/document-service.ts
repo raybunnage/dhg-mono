@@ -39,7 +39,7 @@ export interface DocumentFile {
  */
 export interface DocumentType {
   id: string;
-  name: string;
+  document_type: string;
   description?: string;
 }
 
@@ -510,7 +510,7 @@ export class DocumentService {
       // Get document types for classification
       const { data: documentTypes, error: typesError } = await databaseService.getRecords<DocumentType>(
         'document_types',
-        'id, name, description'
+        'id, document_type, description'
       );
       
       if (typesError || !documentTypes || documentTypes.length === 0) {
@@ -566,7 +566,7 @@ export class DocumentService {
           // Send to Claude
           const response = await claudeService.getJsonResponse<{
             document_type_id: string;
-            document_type_name: string;
+            document_type: string; // Changed from document_type_name to match schema
             confidence: number;
             rationale: string;
           }>(classificationPrompt, { temperature: 0.2 });
@@ -585,7 +585,7 @@ export class DocumentService {
             if (updateError) {
               logger.error(`Error updating document type for ${document.file_path}:`, updateError);
             } else {
-              logger.info(`✅ Classified ${document.file_path} as ${response.document_type_name || response.document_type_id} (confidence: ${response.confidence})`);
+              logger.info(`✅ Classified ${document.file_path} as ${response.document_type || response.document_type_id} (confidence: ${response.confidence})`);
               classifiedCount++;
             }
           } else {
@@ -615,7 +615,7 @@ export class DocumentService {
   ): string {
     // Create the type options list
     const typeOptions = documentTypes.map(type => 
-      `${type.id}: ${type.name}${type.description ? ` - ${type.description}` : ''}`
+      `${type.id}: ${type.document_type}${type.description ? ` - ${type.description}` : ''}`
     ).join('\n');
     
     // Create a truncated version of the content to avoid token limits
@@ -645,7 +645,7 @@ by selecting the most appropriate document type from the list.
 
 Respond with a valid JSON object containing these fields:
 - document_type_id: The ID of the selected document type (required)
-- document_type_name: The name of the selected document type
+- document_type: The type of the selected document
 - confidence: A number between 0-1 indicating your confidence in this classification
 - rationale: A brief explanation of why you chose this classification
 
