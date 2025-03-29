@@ -341,7 +341,7 @@ function Docs() {
       // Get document types first
       const types = await fetchDocumentTypes();
       
-      // Create query with enhanced search criteria
+      // Fetch all documentation files since we'll need to filter client-side for tags
       let query = supabase
         .from('documentation_files')
         .select('*');
@@ -353,8 +353,8 @@ function Docs() {
         query = query.is('summary', null);
       }
       
-      // Build search for title and file_path fields when search button is clicked
-      if (searchQuery.trim()) {
+      // Use server-side filtering for search text if no tags are selected
+      if (searchQuery.trim() && selectedTags.length === 0) {
         query = query.or(
           `title.ilike.%${searchQuery}%,` +
           `file_path.ilike.%${searchQuery}%`
@@ -363,195 +363,75 @@ function Docs() {
         console.log(`Added text search criteria for title/file_path: "${searchQuery}"`);
       }
       
-      // Add tag filtering if tags are selected
-      if (selectedTags.length > 0) {
-        const singleTag = selectedTags[0].trim().toLowerCase();
-        console.log(`Adding tag filter criteria for: "${singleTag}"`);
-        
-        // Use more reliable string matching since we're dealing with arrays in JSON
-        query = query.or(
-          `ai_generated_tags::text ilike '%${singleTag}%',` + 
-          `manual_tags::text ilike '%${singleTag}%'`
-        );
-      }
-      
+      // Execute the query
       const { data, error } = await query
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(500);
 
       if (error) throw error;
 
       console.log(`Database query returned ${data?.length || 0} files`);
 
       // Filter out files with missing file_path or any other issues
-      // Also exclude files under the file_types folder, .txt files, and files in .archive_docs folders
       let validFiles = (data || []).filter(file => 
         file && file.file_path && 
-        // Exclude files under the file_types folder at the repo root
-        // The path could be like "/file_types/..." or start with "file_types/..."
         !file.file_path.includes('/file_types/') && 
         !file.file_path.startsWith('file_types/') &&
-        // Exclude files in .archive_docs folders
         !file.file_path.includes('/.archive_docs/') &&
         !file.file_path.startsWith('.archive_docs/') &&
-        // Exclude .txt files
         !file.file_path.endsWith('.txt')
       );
       
-      // Simple and direct client-side filtering by tag
+      // Apply text search if we're searching both text and tags
+      if (searchQuery.trim() && selectedTags.length > 0) {
+        console.log(`[DEBUG SEARCH] Applying client-side text search for "${searchQuery}"`);
+        validFiles = validFiles.filter(file => 
+          (file.title && file.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (file.file_path && file.file_path.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+      }
+      
+      // Apply tag filtering client-side
       if (selectedTags.length > 0) {
-        console.log(`[DEBUG SEARCH] Client-side filtering for tag: ${selectedTags[0]}`);
-        
-        const startingCount = validFiles.length;
+        console.log(`[DEBUG SEARCH] Applying tag filter for tag: ${selectedTags[0]}`);
         const selectedTag = selectedTags[0].toLowerCase().trim();
         
-        // Enhanced debugging - dump the first few file tags before filtering
-        console.log('=== DEBUG SEARCH: EXAMINING TAG DATA FORMAT ===');
-        validFiles.slice(0, 5).forEach((file, idx) => {
-          console.log(`File ${idx+1}: ${file.file_path}`);
-          console.log(`  ai_generated_tags:`, file.ai_generated_tags);
-          console.log(`  typeof ai_generated_tags:`, typeof file.ai_generated_tags);
-          console.log(`  isArray:`, Array.isArray(file.ai_generated_tags));
-          
-          // Try to parse if it's a JSON string
-          if (typeof file.ai_generated_tags === 'string') {
-            try {
-              console.log(`  Parsed from string:`, JSON.parse(file.ai_generated_tags));
-            } catch (e) {
-              console.log(`  Not parseable as JSON`);
-            }
-          }
-          
-          // Show manual tags too
-          console.log(`  manual_tags:`, file.manual_tags);
-          console.log(`  typeof manual_tags:`, typeof file.manual_tags);
-          console.log(`  isArray:`, Array.isArray(file.manual_tags));
-          console.log('---');
-        });
-        
-        // Filter files with the selected tag
         validFiles = validFiles.filter(file => {
-          // Initialize match as false
+          // Check if this file has the selected tag
           let hasTag = false;
-          let tagSourceInfo = ''; // For debugging
           
-          // Check AI generated tags with enhanced debugging
-          let aiTags = [];
-          
-          // Handle different formats of ai_generated_tags
+          // Process AI generated tags - handle different formats
           if (file.ai_generated_tags) {
-            if (Array.isArray(file.ai_generated_tags)) {
-              aiTags = file.ai_generated_tags;
-              tagSourceInfo = 'from array';
-            } else if (typeof file.ai_generated_tags === 'string') {
-              // Try to parse JSON string
-              try {
-                const parsed = JSON.parse(file.ai_generated_tags);
-                if (Array.isArray(parsed)) {
-                  aiTags = parsed;
-                  tagSourceInfo = 'from JSON string array';
-                } else if (parsed && typeof parsed === 'object') {
-                  // If it's an object, extract values
-                  aiTags = Object.values(parsed).filter(Boolean);
-                  tagSourceInfo = 'from JSON string object values';
-                }
-              } catch (e) {
-                // If it's not valid JSON, maybe it's a comma-separated string?
-                aiTags = file.ai_generated_tags.split(',').map(t => t.trim()).filter(t => t !== '');
-                tagSourceInfo = 'from comma-separated string';
-              }
-            }
+            const aiTags = extractTagsFromField(file.ai_generated_tags);
+            hasTag = aiTags.some(tag => {
+              const fileTag = tag.toLowerCase().trim();
+              return fileTag === selectedTag || fileTag.includes(selectedTag) || selectedTag.includes(fileTag);
+            });
           }
           
-          // Check each AI tag
-          for (const tag of aiTags) {
-            if (tag && typeof tag === 'string') {
-              const normalizedTag = tag.toLowerCase().trim();
-              if (normalizedTag === selectedTag || 
-                  normalizedTag.includes(selectedTag) || 
-                  selectedTag.includes(normalizedTag)) {
-                hasTag = true;
-                tagSourceInfo += ` - matched "${normalizedTag}"`;
-                break;
-              }
-            }
-          }
-          
-          // If not found in AI tags, check manual tags
+          // Also check manual_tags if exists and we haven't found a match yet
           if (!hasTag && file.manual_tags) {
-            let manualTags = [];
-            
-            if (Array.isArray(file.manual_tags)) {
-              manualTags = file.manual_tags;
-              tagSourceInfo = 'from manual array';
-            } else if (typeof file.manual_tags === 'string') {
-              // Try to parse JSON string
-              try {
-                const parsed = JSON.parse(file.manual_tags);
-                if (Array.isArray(parsed)) {
-                  manualTags = parsed;
-                  tagSourceInfo = 'from manual JSON string array';
-                } else if (parsed && typeof parsed === 'object') {
-                  // If it's an object, extract values
-                  manualTags = Object.values(parsed).filter(Boolean);
-                  tagSourceInfo = 'from manual JSON string object values';
-                }
-              } catch (e) {
-                // If it's not valid JSON, maybe it's a comma-separated string?
-                manualTags = file.manual_tags.split(',').map(t => t.trim()).filter(t => t !== '');
-                tagSourceInfo = 'from manual comma-separated string';
-              }
-            }
-            
-            // Check each manual tag
-            for (const tag of manualTags) {
-              if (tag && typeof tag === 'string') {
-                const normalizedTag = tag.toLowerCase().trim();
-                if (normalizedTag === selectedTag || 
-                    normalizedTag.includes(selectedTag) || 
-                    selectedTag.includes(normalizedTag)) {
-                  hasTag = true;
-                  tagSourceInfo += ` - matched "${normalizedTag}"`;
-                  break;
-                }
-              }
-            }
+            const manualTags = extractTagsFromField(file.manual_tags);
+            hasTag = manualTags.some(tag => {
+              const fileTag = tag.toLowerCase().trim();
+              return fileTag === selectedTag || fileTag.includes(selectedTag) || selectedTag.includes(fileTag);
+            });
           }
-          
-          // Enhanced logging for all files
-          const fileTags = aiTags.concat(Array.isArray(file.manual_tags) ? file.manual_tags : []);
-          console.log(`[DEBUG SEARCH] File: ${file.file_path.padEnd(50)} | Tags: ${JSON.stringify(fileTags).padEnd(30)} | Match: ${hasTag ? '✅' : '❌'} ${tagSourceInfo}`);
           
           return hasTag;
         });
         
-        console.log(`[DEBUG SEARCH] Tag filtering reduced results from ${startingCount} to ${validFiles.length} files`);
-        
-        // Debug output of results
-        console.log('=== SEARCH FILTERING RESULTS ===');
-        console.log(`Matched files (${validFiles.length}):`);
-        validFiles.slice(0, 10).forEach((file, i) => {
-          console.log(`${i+1}. ${file.file_path}`);
-        });
+        console.log(`[DEBUG SEARCH] Tag filtering found ${validFiles.length} matching files`);
       }
-
-      // Log detailed results if tag filtering was applied
-      if (selectedTags.length > 0) {
-        console.log(`Tag filtering results:
-          - Initial database query found: ${data?.length || 0} files
-          - After client-side filtering: ${validFiles.length} files
-          - Selected tags: ${JSON.stringify(selectedTags)}
-        `);
-        
-        // Log first 5 matching files for debugging
-        if (validFiles.length > 0) {
-          console.log('Sample matching files:');
-          validFiles.slice(0, 5).forEach((file, index) => {
-            console.log(`${index + 1}. ${file.file_path}`);
-          });
-        }
-      } else {
-        console.log(`Search found ${data?.length || 0} files, ${validFiles.length} valid files after filtering`);
+      
+      console.log(`Search found ${validFiles.length} valid files after all filtering`);
+      
+      // Log sample results
+      if (validFiles.length > 0) {
+        console.log('Sample matching files:');
+        validFiles.slice(0, 5).forEach((file, index) => {
+          console.log(`${index + 1}. ${file.file_path}`);
+        });
       }
       
       setDocumentationFiles(validFiles);
@@ -1112,137 +992,38 @@ function Docs() {
     
     console.log(`[DEBUG EXTRACT] Starting tag extraction from ${files.length} files`);
     
-    // Track stats for debugging
-    const stats = {
-      totalFiles: files.length,
-      filesWithAiTags: 0,
-      filesWithManualTags: 0,
-      totalTagsFound: 0,
-      aiTagsArray: 0,
-      aiTagsString: 0,
-      manualTagsArray: 0,
-      manualTagsString: 0,
-      parsingErrors: 0
-    };
-    
-    // Examine the first 3 files in detail to understand their structure
-    if (files.length > 0) {
-      const sampleFiles = files.slice(0, 3);
-      sampleFiles.forEach((file, index) => {
-        console.log(`[DEBUG EXTRACT] File ${index + 1} structure:`, {
-          path: file.file_path,
-          ai_tags_type: file.ai_generated_tags ? typeof file.ai_generated_tags : 'undefined',
-          ai_tags_isArray: file.ai_generated_tags ? Array.isArray(file.ai_generated_tags) : false,
-          ai_tags_sample: file.ai_generated_tags ? 
-            (Array.isArray(file.ai_generated_tags) ? 
-              file.ai_generated_tags.slice(0, 3) : 
-              file.ai_generated_tags) 
-            : null,
-          manual_tags_type: file.manual_tags ? typeof file.manual_tags : 'undefined',
-          manual_tags_isArray: file.manual_tags ? Array.isArray(file.manual_tags) : false,
-          manual_tags_sample: file.manual_tags ? 
-            (Array.isArray(file.manual_tags) ? 
-              file.manual_tags.slice(0, 3) : 
-              file.manual_tags) 
-            : null
-        });
-      });
-    }
-    
     // Process each file
     files.forEach(file => {
       if (!file) return;
       
       try {
-        // Extract AI generated tags (handle both string[] and JSON string)
-        let aiTags: string[] = [];
+        // Process AI generated tags
         if (file.ai_generated_tags) {
-          stats.filesWithAiTags++;
+          const aiTags = extractTagsFromField(file.ai_generated_tags);
           
-          if (Array.isArray(file.ai_generated_tags)) {
-            stats.aiTagsArray++;
-            aiTags = file.ai_generated_tags.filter(Boolean);
-            console.log(`[DEBUG EXTRACT] Array ai_generated_tags for ${file.file_path}:`, aiTags);
-          } else if (typeof file.ai_generated_tags === 'string') {
-            stats.aiTagsString++;
-            console.log(`[DEBUG EXTRACT] String ai_generated_tags for ${file.file_path}:`, file.ai_generated_tags);
-            
-            // Try to parse JSON string if that's how it's stored
-            try {
-              const parsed = JSON.parse(file.ai_generated_tags);
-              console.log(`[DEBUG EXTRACT] Parsed ai_generated_tags:`, parsed);
-              
-              if (Array.isArray(parsed)) {
-                aiTags = parsed.filter(Boolean);
-              } else if (parsed && typeof parsed === 'object') {
-                // If it's an object, extract values
-                aiTags = Object.values(parsed).filter(Boolean);
-              }
-            } catch (e) {
-              stats.parsingErrors++;
-              console.log(`[DEBUG EXTRACT] Failed to parse ai_generated_tags as JSON, treating as comma-separated: ${file.ai_generated_tags}`);
-              // If it's not valid JSON, maybe it's a comma-separated string?
-              aiTags = file.ai_generated_tags.split(',').map(t => t.trim()).filter(t => t !== '');
+          // Add each tag to the map
+          aiTags.forEach(tag => {
+            if (tag && tag.trim() !== '') {
+              const normalizedTag = tag.trim().toLowerCase();
+              const count = tagMap.get(normalizedTag) || 0;
+              tagMap.set(normalizedTag, count + 1);
             }
-          }
-        }
-        
-        // Extract manual tags (handle both string[] and JSON string)
-        let manualTags: string[] = [];
-        if (file.manual_tags) {
-          stats.filesWithManualTags++;
-          
-          if (Array.isArray(file.manual_tags)) {
-            stats.manualTagsArray++;
-            manualTags = file.manual_tags.filter(Boolean);
-            console.log(`[DEBUG EXTRACT] Array manual_tags for ${file.file_path}:`, manualTags);
-          } else if (typeof file.manual_tags === 'string') {
-            stats.manualTagsString++;
-            console.log(`[DEBUG EXTRACT] String manual_tags for ${file.file_path}:`, file.manual_tags);
-            
-            // Try to parse JSON string if that's how it's stored
-            try {
-              const parsed = JSON.parse(file.manual_tags);
-              console.log(`[DEBUG EXTRACT] Parsed manual_tags:`, parsed);
-              
-              if (Array.isArray(parsed)) {
-                manualTags = parsed.filter(Boolean);
-              } else if (parsed && typeof parsed === 'object') {
-                // If it's an object, extract values
-                manualTags = Object.values(parsed).filter(Boolean);
-              }
-            } catch (e) {
-              stats.parsingErrors++;
-              console.log(`[DEBUG EXTRACT] Failed to parse manual_tags as JSON, treating as comma-separated: ${file.manual_tags}`);
-              // If it's not valid JSON, maybe it's a comma-separated string?
-              manualTags = file.manual_tags.split(',').map(t => t.trim()).filter(t => t !== '');
-            }
-          }
-        }
-        
-        // Always log for debugging - remove random factor
-        console.log(`[DEBUG EXTRACT] Tags for ${file.file_path}: AI=${aiTags.length}, Manual=${manualTags.length}`);
-        
-        // Combine and count all tags
-        const fileTags = [...aiTags, ...manualTags];
-        stats.totalTagsFound += fileTags.length;
-        
-        // For files with tags, log the full details (limit to avoid console flooding)
-        if ((aiTags.length > 0 || manualTags.length > 0) && Math.random() < 0.2) {
-          console.log(`[DEBUG EXTRACT] TAGS FOUND in ${file.file_path}:`, { 
-            aiTags: aiTags.length > 0 ? aiTags : 'none', 
-            manualTags: manualTags.length > 0 ? manualTags : 'none' 
           });
         }
         
-        fileTags.forEach(tag => {
-          if (tag && typeof tag === 'string' && tag.trim() !== '') {
-            // Normalize the tag (lowercase, trim)
-            const normalizedTag = tag.trim().toLowerCase();
-            const count = tagMap.get(normalizedTag) || 0;
-            tagMap.set(normalizedTag, count + 1);
-          }
-        });
+        // Process manual tags
+        if (file.manual_tags) {
+          const manualTags = extractTagsFromField(file.manual_tags);
+          
+          // Add each tag to the map
+          manualTags.forEach(tag => {
+            if (tag && tag.trim() !== '') {
+              const normalizedTag = tag.trim().toLowerCase();
+              const count = tagMap.get(normalizedTag) || 0;
+              tagMap.set(normalizedTag, count + 1);
+            }
+          });
+        }
       } catch (error) {
         console.error('[DEBUG EXTRACT] Error processing tags for file:', file.file_path, error);
       }
@@ -1254,9 +1035,59 @@ function Docs() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 30); // Limit to top 30 tags
     
-    console.log('[DEBUG EXTRACT] Tag extraction stats:', stats);
-    console.log('[DEBUG EXTRACT] Final extracted tags:', tagArray);
+    console.log(`[DEBUG EXTRACT] Extracted ${tagArray.length} unique tags`);
     return tagArray;
+  };
+  
+  // Helper function to extract tags from a field that could be array, string, or JSON
+  const extractTagsFromField = (field: any): string[] => {
+    const tags: string[] = [];
+    
+    // If field is null or undefined, return empty array
+    if (!field) return tags;
+    
+    // Case 1: Field is already an array
+    if (Array.isArray(field)) {
+      field.forEach(item => {
+        if (typeof item === 'string' && item.trim() !== '') {
+          tags.push(item);
+        }
+      });
+      return tags;
+    }
+    
+    // Case 2: Field is a string
+    if (typeof field === 'string') {
+      // Try to parse as JSON
+      try {
+        const parsed = JSON.parse(field);
+        
+        // If parsed result is an array
+        if (Array.isArray(parsed)) {
+          parsed.forEach(item => {
+            if (typeof item === 'string' && item.trim() !== '') {
+              tags.push(item);
+            }
+          });
+        }
+        // If parsed result is an object
+        else if (parsed && typeof parsed === 'object') {
+          Object.values(parsed).forEach(item => {
+            if (typeof item === 'string' && item.trim() !== '') {
+              tags.push(item);
+            }
+          });
+        }
+      } catch (e) {
+        // If JSON parsing fails, treat as comma-separated string
+        field.split(',')
+          .map((t: string) => t.trim())
+          .filter((t: string) => t !== '')
+          .forEach((t: string) => tags.push(t));
+      }
+    }
+    
+    return tags;
   };
   
   // Toggle tag selection and perform immediate filtering
@@ -1280,14 +1111,13 @@ function Docs() {
       setLoading(true);
       try {
         console.log(`[DEBUG FILTER] Directly filtering for tag: "${normalizedTag}"`);
-        console.log(`[DEBUG FILTER] Using Supabase query with: ai_generated_tags::text ilike '%${normalizedTag}%' OR manual_tags::text ilike '%${normalizedTag}%'`);
         
+        // Fetch all documentation files first
         const { data, error } = await supabase
           .from('documentation_files')
           .select('*')
-          .or(`ai_generated_tags::text ilike '%${normalizedTag}%',manual_tags::text ilike '%${normalizedTag}%'`)
           .order('created_at', { ascending: false })
-          .limit(200);
+          .limit(500);
         
         if (error) {
           console.error('[DEBUG FILTER] Supabase query error:', error);
@@ -1295,19 +1125,6 @@ function Docs() {
         }
         
         console.log(`[DEBUG FILTER] Supabase query returned ${data?.length || 0} raw results`);
-        
-        // Log database results for detailed inspection
-        if (data && data.length > 0) {
-          const sampleResults = data.slice(0, 3);
-          console.log('[DEBUG FILTER] Sample database results:', sampleResults.map(file => ({
-            id: file.id,
-            file_path: file.file_path,
-            ai_tags_type: file.ai_generated_tags ? typeof file.ai_generated_tags : 'undefined',
-            ai_tags: file.ai_generated_tags,
-            manual_tags_type: file.manual_tags ? typeof file.manual_tags : 'undefined',
-            manual_tags: file.manual_tags
-          })));
-        }
         
         // Filter out files with missing file_path or any other issues
         const validFiles = (data || []).filter(file => 
@@ -1319,188 +1136,126 @@ function Docs() {
           !file.file_path.endsWith('.txt')
         );
         
-        console.log(`[DEBUG FILTER] After path filtering: ${validFiles.length} valid files (excluded ${(data?.length || 0) - validFiles.length} invalid paths)`);
+        console.log(`[DEBUG FILTER] After path filtering: ${validFiles.length} valid files`);
         
-        // Apply client-side filtering to ensure accuracy
-        const results = {
-          exactMatches: 0,
-          partialMatches: 0,
-          noMatches: 0,
-          matchDetails: [] as {path: string, matches: boolean, matchType: string, tags: string[]}[]
-        };
-        
-        const exactMatches = validFiles.filter(file => {
-          // Extract tags from the file
-          const fileTags: string[] = [];
-          let aiTagsFormatted: string[] = [];
-          let manualTagsFormatted: string[] = [];
+        // Perform client-side filtering for tags
+        const filteredFiles = validFiles.filter(file => {
+          // Check if this file has the selected tag
+          let hasTag = false;
           
-          // Track full details for logging
-          const fileDetails = {
-            path: file.file_path,
-            matches: false,
-            matchType: 'none',
-            tags: [] as string[]
-          };
-          
-          // Process AI generated tags
+          // Process AI generated tags - handle different formats
           if (file.ai_generated_tags) {
+            // Case 1: If ai_generated_tags is an array
             if (Array.isArray(file.ai_generated_tags)) {
-              file.ai_generated_tags.forEach(tag => {
-                if (tag && typeof tag === 'string') {
-                  const normalizedFileTag = tag.toLowerCase().trim();
-                  fileTags.push(normalizedFileTag);
-                  aiTagsFormatted.push(normalizedFileTag);
-                  fileDetails.tags.push(normalizedFileTag);
+              hasTag = file.ai_generated_tags.some(tag => {
+                if (typeof tag === 'string') {
+                  const fileTag = tag.toLowerCase().trim();
+                  return fileTag === normalizedTag || fileTag.includes(normalizedTag);
                 }
+                return false;
               });
-            } else if (typeof file.ai_generated_tags === 'string') {
-              // Try to parse JSON string
+            }
+            // Case 2: If ai_generated_tags is a string (possibly JSON)
+            else if (typeof file.ai_generated_tags === 'string') {
+              // Try to parse as JSON
               try {
-                const parsed = JSON.parse(file.ai_generated_tags);
-                if (Array.isArray(parsed)) {
-                  parsed.forEach(tag => {
-                    if (tag && typeof tag === 'string') {
-                      const normalizedFileTag = tag.toLowerCase().trim();
-                      fileTags.push(normalizedFileTag);
-                      aiTagsFormatted.push(normalizedFileTag);
-                      fileDetails.tags.push(normalizedFileTag);
+                const parsedTags = JSON.parse(file.ai_generated_tags);
+                
+                // If parsed result is an array
+                if (Array.isArray(parsedTags)) {
+                  hasTag = parsedTags.some(tag => {
+                    if (typeof tag === 'string') {
+                      const fileTag = tag.toLowerCase().trim();
+                      return fileTag === normalizedTag || fileTag.includes(normalizedTag);
                     }
+                    return false;
                   });
-                } else if (parsed && typeof parsed === 'object') {
-                  Object.values(parsed).forEach(tag => {
-                    if (tag && typeof tag === 'string') {
-                      const normalizedFileTag = tag.toString().toLowerCase().trim();
-                      fileTags.push(normalizedFileTag);
-                      aiTagsFormatted.push(normalizedFileTag);
-                      fileDetails.tags.push(normalizedFileTag);
+                }
+                // If parsed result is an object
+                else if (parsedTags && typeof parsedTags === 'object') {
+                  hasTag = Object.values(parsedTags).some(tag => {
+                    if (typeof tag === 'string') {
+                      const fileTag = tag.toLowerCase().trim();
+                      return fileTag === normalizedTag || fileTag.includes(normalizedTag);
                     }
+                    return false;
                   });
                 }
               } catch (e) {
-                // If not valid JSON, treat as comma-separated string
-                const tags = file.ai_generated_tags.split(',').map(t => t.trim()).filter(Boolean);
-                tags.forEach(tag => {
-                  const normalizedFileTag = tag.toLowerCase().trim();
-                  fileTags.push(normalizedFileTag);
-                  aiTagsFormatted.push(normalizedFileTag);
-                  fileDetails.tags.push(normalizedFileTag);
-                });
+                // If not valid JSON, check if the string itself contains the tag
+                if (file.ai_generated_tags.toLowerCase().includes(normalizedTag)) {
+                  hasTag = true;
+                }
               }
             }
           }
           
-          // Process manual tags
-          if (file.manual_tags) {
+          // Also check manual_tags if exists and we haven't found a match yet
+          if (!hasTag && file.manual_tags) {
+            // Same logic as for ai_generated_tags
             if (Array.isArray(file.manual_tags)) {
-              file.manual_tags.forEach(tag => {
-                if (tag && typeof tag === 'string') {
-                  const normalizedFileTag = tag.toLowerCase().trim();
-                  fileTags.push(normalizedFileTag);
-                  manualTagsFormatted.push(normalizedFileTag);
-                  fileDetails.tags.push(normalizedFileTag);
+              hasTag = file.manual_tags.some(tag => {
+                if (typeof tag === 'string') {
+                  const fileTag = tag.toLowerCase().trim();
+                  return fileTag === normalizedTag || fileTag.includes(normalizedTag);
                 }
+                return false;
               });
             } else if (typeof file.manual_tags === 'string') {
-              // Try to parse JSON string
               try {
-                const parsed = JSON.parse(file.manual_tags);
-                if (Array.isArray(parsed)) {
-                  parsed.forEach(tag => {
-                    if (tag && typeof tag === 'string') {
-                      const normalizedFileTag = tag.toLowerCase().trim();
-                      fileTags.push(normalizedFileTag);
-                      manualTagsFormatted.push(normalizedFileTag);
-                      fileDetails.tags.push(normalizedFileTag);
+                const parsedTags = JSON.parse(file.manual_tags);
+                if (Array.isArray(parsedTags)) {
+                  hasTag = parsedTags.some(tag => {
+                    if (typeof tag === 'string') {
+                      const fileTag = tag.toLowerCase().trim();
+                      return fileTag === normalizedTag || fileTag.includes(normalizedTag);
                     }
+                    return false;
                   });
-                } else if (parsed && typeof parsed === 'object') {
-                  Object.values(parsed).forEach(tag => {
-                    if (tag && typeof tag === 'string') {
-                      const normalizedFileTag = tag.toString().toLowerCase().trim();
-                      fileTags.push(normalizedFileTag);
-                      manualTagsFormatted.push(normalizedFileTag);
-                      fileDetails.tags.push(normalizedFileTag);
+                } else if (parsedTags && typeof parsedTags === 'object') {
+                  hasTag = Object.values(parsedTags).some(tag => {
+                    if (typeof tag === 'string') {
+                      const fileTag = tag.toLowerCase().trim();
+                      return fileTag === normalizedTag || fileTag.includes(normalizedTag);
                     }
+                    return false;
                   });
                 }
               } catch (e) {
-                // If not valid JSON, treat as comma-separated string
-                const tags = file.manual_tags.split(',').map(t => t.trim()).filter(Boolean);
-                tags.forEach(tag => {
-                  const normalizedFileTag = tag.toLowerCase().trim();
-                  fileTags.push(normalizedFileTag);
-                  manualTagsFormatted.push(normalizedFileTag);
-                  fileDetails.tags.push(normalizedFileTag);
-                });
+                if (file.manual_tags.toLowerCase().includes(normalizedTag)) {
+                  hasTag = true;
+                }
               }
             }
           }
           
-          // Debug: Log tag counts for this file
-          console.log(`[DEBUG FILTER] File ${file.file_path} has ${fileTags.length} tags: AI=${aiTagsFormatted.length}, Manual=${manualTagsFormatted.length}`);
-          
-          // Check if the file has the selected tag (exact or partial match)
-          let hasExactMatch = false;
-          let hasPartialMatch = false;
-          
-          for (const fileTag of fileTags) {
-            if (fileTag === normalizedTag) {
-              // Exact match
-              hasExactMatch = true;
-              console.log(`[DEBUG FILTER] EXACT MATCH: "${file.file_path}" has tag "${fileTag}" matching "${normalizedTag}"`);
-              fileDetails.matches = true;
-              fileDetails.matchType = 'exact';
-              break;
-            } else if (fileTag.includes(normalizedTag) || normalizedTag.includes(fileTag)) {
-              // Partial match
-              hasPartialMatch = true;
-              console.log(`[DEBUG FILTER] PARTIAL MATCH: "${file.file_path}" has tag "${fileTag}" partially matching "${normalizedTag}"`);
-              fileDetails.matches = true;
-              fileDetails.matchType = 'partial';
-              // Don't break - continue checking for exact matches
-            }
+          // Debug output for the first few files to understand the filtering
+          if (validFiles.indexOf(file) < 10) {
+            console.log(`[DEBUG FILTER] File ${file.file_path} - Has tag "${normalizedTag}": ${hasTag}`);
+            console.log(`  ai_generated_tags:`, file.ai_generated_tags);
+            console.log(`  manual_tags:`, file.manual_tags);
           }
           
-          // Log no matches
-          if (!hasExactMatch && !hasPartialMatch) {
-            results.noMatches++;
-            console.log(`[DEBUG FILTER] NO MATCH: "${file.file_path}" has tags [${fileTags.join(', ')}] but none match "${normalizedTag}"`);
-          } else {
-            // Record match type for stats
-            if (hasExactMatch) results.exactMatches++;
-            else if (hasPartialMatch) results.partialMatches++;
-          }
-          
-          // Add to match details
-          results.matchDetails.push(fileDetails);
-          
-          return hasExactMatch || hasPartialMatch;
+          return hasTag;
         });
         
-        console.log(`[DEBUG FILTER] Match statistics:
-          - Total files checked: ${validFiles.length}
-          - Exact matches: ${results.exactMatches}
-          - Partial matches: ${results.partialMatches}
-          - No matches: ${results.noMatches}
-        `);
+        console.log(`[DEBUG FILTER] Found ${filteredFiles.length} files with tag "${normalizedTag}"`);
         
-        console.log('[DEBUG FILTER] First 10 match details:', results.matchDetails.slice(0, 10));
-        
-        console.log(`[DEBUG FILTER] After exact matching: ${exactMatches.length} files with tag "${normalizedTag}"`);
-        
-        // Log final files to display
-        const filesToDisplay = exactMatches.length > 0 ? exactMatches : validFiles;
-        console.log(`[DEBUG FILTER] Final files to display: ${filesToDisplay.length}`);
-        console.log('[DEBUG FILTER] Sample files being displayed:', filesToDisplay.slice(0, 5).map(f => f.file_path));
-        
-        setDocumentationFiles(filesToDisplay);
+        // Update the state with the filtered files
+        setDocumentationFiles(filteredFiles);
         
         // Update document type groups with filtered files
         const types = await fetchDocumentTypes();
-        const groups = buildDocumentTypeGroups(filesToDisplay, types);
-        console.log(`[DEBUG FILTER] Document groups created: ${groups.length} groups`);
+        const groups = buildDocumentTypeGroups(filteredFiles, types);
         setDocumentTypeGroups(groups);
+        
+        // Log sample of displayed files for debugging
+        if (filteredFiles.length > 0) {
+          console.log('[DEBUG FILTER] Sample filtered files:', 
+            filteredFiles.slice(0, 5).map(f => f.file_path));
+        } else {
+          console.log('[DEBUG FILTER] No files matched the tag filter.');
+        }
       } catch (error) {
         console.error('[DEBUG FILTER] Error filtering by tag:', error);
         fetchDocumentationFiles(); // fallback to fetching all
