@@ -37,6 +37,7 @@ interface ClaudeRequestOptions {
   maxTokens?: number;
   system?: string;
   jsonMode?: boolean;
+  jsonSchema?: any; // Optional JSON schema for structured outputs
 }
 
 /**
@@ -150,10 +151,7 @@ export class ClaudeService {
         requestBody.system = system;
       }
       
-      // Add JSON mode if requested
-      if (options.jsonMode) {
-        requestBody.response_format = { type: 'json_object' };
-      }
+      // Skip response_format for now - the models being used may not support it properly
       
       // Make request with retries
       const response = await this.makeRequestWithRetries<ClaudeResponse>(
@@ -180,20 +178,38 @@ export class ClaudeService {
     prompt: string,
     options: ClaudeRequestOptions = {}
   ): Promise<T> {
-    // Always enable JSON mode
-    options.jsonMode = true;
+    // Set JSON specific options
     options.temperature = options.temperature ?? 0.2;
     
-    // Set system message if not already provided
+    // Set system message for JSON responses
     if (!options.system) {
-      options.system = "You are a helpful AI assistant that provides responses in valid JSON format. Your responses should be structured, well-formatted, and adhere strictly to JSON syntax.";
+      options.system = "You are a helpful AI assistant that ONLY provides responses in valid JSON format. Your responses must be structured as valid, parseable JSON with nothing else before or after the JSON object. Do not include markdown code formatting, explanations, or any text outside the JSON object.";
+    }
+    
+    // Add explicit JSON instructions to the prompt
+    let enhancedPrompt = prompt;
+    
+    // If not already formatted for JSON specifically
+    if (!prompt.includes("valid JSON") && !prompt.includes("JSON format")) {
+      // Add a clear instruction for JSON response
+      enhancedPrompt = `${prompt}\n\nIMPORTANT: Respond with ONLY a JSON object and nothing else. Do not include explanations, markdown formatting, or any text outside the JSON object. The response must be valid, parseable JSON that follows this structure for document classification:\n
+{
+  "document_type_id": "the ID of the selected document type",
+  "document_type": "the name of the document type",
+  "confidence": 0.95, // a number between 0-1
+  "rationale": "brief explanation of classification"
+}`;
     }
     
     // Get response
-    const responseText = await this.sendPrompt(prompt, options);
+    const responseText = await this.sendPrompt(enhancedPrompt, options);
     
     try {
-      return JSON.parse(responseText) as T;
+      // Find and extract JSON from the response if embedded in other text
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      const jsonText = jsonMatch ? jsonMatch[0] : responseText;
+      
+      return JSON.parse(jsonText) as T;
     } catch (parseError) {
       logger.error('Error parsing JSON from Claude API response:', parseError);
       logger.debug('Response text:', { text: responseText });
