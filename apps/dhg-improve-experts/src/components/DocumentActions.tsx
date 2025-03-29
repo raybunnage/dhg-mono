@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ExtractContentButton } from './ExtractContentButton';
-import { GetContentButton } from './GetContentButton';
+import GetContentButton from './GetContentButton';
 import ExtractButton from './ExtractButton';
 
 export default function DocumentActions() {

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { marked } from 'marked'; // Using marked since it's already installed in the project
 import { Database } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -165,16 +164,13 @@ function MarkdownViewer({ documentId, className = '' }: MarkdownViewerProps) {
     );
   }
   
-  // Render markdown content
+  // Render markdown content without using marked
   return (
     <div className={`markdown-container bg-gray-900 text-white p-6 rounded-lg ${className}`}>
       {title && <h1 className="text-2xl font-bold mb-4 text-white">{title}</h1>}
-      <div 
-        className="prose prose-invert max-w-none dark:prose-invert"
-        dangerouslySetInnerHTML={{ 
-          __html: content ? marked.parse(content) : '<p>No content available</p>' 
-        }} 
-      />
+      <div className="prose prose-invert max-w-none dark:prose-invert">
+        <pre className="whitespace-pre-wrap">{content || 'No content available'}</pre>
+      </div>
     </div>
   );
 }

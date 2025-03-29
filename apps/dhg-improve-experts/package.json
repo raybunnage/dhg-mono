@@ -68,7 +68,6 @@
     "date-fns": "^2.30.0",
     "ffmpeg.wasm": "^0.11.0",
     "googleapis": "^118.0.0",
-    "guts-dashboard": "workspace:*",
     "jsonschema": "^1.4.1",
     "lucide-react": "^0.279.0",
     "next-themes": "^0.2.1",
