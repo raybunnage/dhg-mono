@@ -14,7 +14,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@dhg/shared": "1.0.0",
+    "@dhg/shared": "file:../shared",
     "@supabase/supabase-js": "^2.26.0",
     "axios": "^1.6.7",
     "chalk": "^5.3.0",
