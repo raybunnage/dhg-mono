@@ -38,8 +38,21 @@ export class DatabaseService {
    * Private constructor to enforce singleton pattern
    */
   private constructor(config?: DatabaseConfig) {
+    // First try direct config, then try environment service
     this.url = config?.url || environmentService.get('supabaseUrl');
-    this.key = config?.key || environmentService.get('supabaseKey');
+    
+    // For the key, first try the provided config, then try service role key, then fall back to regular key
+    this.key = config?.key || 
+               process.env.SUPABASE_SERVICE_ROLE_KEY || 
+               environmentService.get('supabaseKey');
+    
+    // Log connection parameters (with sensitive data masked)
+    const maskedKey = this.key ? `${this.key.substring(0, 5)}...${this.key.substring(this.key.length - 4)}` : 'Not set';
+    logger.debug('Database configuration', { 
+      url: this.url,
+      keyPreview: maskedKey,
+      keyLength: this.key?.length || 0
+    });
     
     if (!this.url || !this.key) {
       logger.error('Missing Supabase URL or key. Please check your environment variables.');
@@ -104,17 +117,50 @@ export class DatabaseService {
       logger.info('Testing connection to Supabase...');
       const client = this.getClient();
       
-      // Try a simple query to verify connection
-      const { data, error } = await client
+      // First test the auth connection
+      try {
+        const { data: authData, error: authError } = await client.auth.getSession();
+        if (authError) {
+          logger.warn('Auth connection test failed, but continuing with other tests', { authError });
+        } else {
+          logger.debug('Auth connection test successful');
+        }
+      } catch (authErr) {
+        logger.warn('Auth connection threw an exception, but continuing with other tests', { authErr });
+      }
+      
+      // Try a simple query to verify connection to documentation_files table
+      const { data, error, count } = await client
         .from('documentation_files')
-        .select('count(*)', { count: 'exact', head: true });
+        .select('*', { count: 'exact' })
+        .limit(1);
       
       if (error) {
         logger.error('Failed to connect to documentation_files table', { error });
+        
+        // Try RLS bypass query to check if it's a permissions issue
+        try {
+          const { data: rlsData, error: rlsError } = await client
+            .rpc('get_documentation_files_count');
+          
+          if (rlsError) {
+            logger.error('RLS bypass query also failed', { rlsError });
+          } else {
+            logger.info('RLS bypass query successful - likely a permissions issue');
+            return { 
+              success: false, 
+              error: 'Permission issue with documentation_files table. Service role key may not have proper permissions.', 
+              details: { original: error, rlsBypass: 'successful' } 
+            };
+          }
+        } catch (rlsErr) {
+          logger.error('RLS bypass query threw an exception', { rlsErr });
+        }
+        
         return { success: false, error: 'Failed to connect to documentation_files table', details: error };
       }
       
-      logger.info('Successfully connected to Supabase');
+      logger.info(`Successfully connected to Supabase. Found ${count} records in documentation_files table.`);
       this.connected = true;
       return { success: true };
     } catch (error) {
