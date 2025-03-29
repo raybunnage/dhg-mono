@@ -612,8 +612,9 @@ async function getLocalSourceFiles() {
 /**
  * Insert selected Google Drive files into the database
  * With adjusted approach to avoid user references that cause permission errors
+ * Timeout has been increased to 10 minutes (600000ms) for long-running operations
  */
-export async function insertGoogleFiles(files: DriveFile[]): Promise<{success: number, errors: number, details: {newFiles: string[], updatedFiles: string[], errorFiles: string[]}}>  {
+export async function insertGoogleFiles(files: DriveFile[], timeout = 600000): Promise<{success: number, errors: number, details: {newFiles: string[], updatedFiles: string[], errorFiles: string[]}}>  {
   let successCount = 0;
   let errorCount = 0;
   const newFiles: string[] = [];
