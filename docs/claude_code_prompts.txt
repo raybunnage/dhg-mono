@@ -1,4 +1,9 @@
- Now I want you to add commands to the google sync drive that writes the data returned from the google sync operation on a folder and updates or inserts new records into the database.   But first I need you to out the main high level folders that are available on the google drive if they don't exist yet, including the "Polyvagal Steering Group" and the "Dynamic Healing Discussion Group".  I think i need more work on the roots option that will allow me to write down or insert new root folders as well as query and list them in the google sync cli.  In fact the first database function I need is this insert of root folders (in such a  way that I can add their files and folders later)
+ /Users/raybunnage/Documents/github/
+ 
+ 
+ 
+ Now I want you to add commands to the google sync drive that writes the data returned from the google sync operation on a folder and updates or inserts new records into the database.   But first I need you to out the main high level folders that are available on the google drive if they don't exist yet, including the "Polyvagal Steering Group" and the "Dynamic 
+ Healing Discussion Group".  I think i need more work on the roots option that will allow me to write down or insert new root folders as well as query and list them in the google sync cli.  In fact the first database function I need is this insert of root folders (in such a  way that I can add their files and folders later)
  
  
  Now I want a prompt to analyze the "Pages" in my apps/dhg-improve-experts app. 

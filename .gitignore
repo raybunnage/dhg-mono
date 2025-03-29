@@ -157,3 +157,7 @@ scripts/**/.backup_scripts/**/*
 **/*_secrets.*
 script-analysis-results/
 script-analysis-results/**
+
+# Google service account key
+.service-account.json
+**/.service-account.json
