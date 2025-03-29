@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { Logger } from '../utils/logger';
-import { scriptPipelineService } from '../services/script-pipeline-service';
+import { LoggerUtils } from '../utils/logger-utils';
+import { scriptPipelineService } from '../services/script-pipeline-service-helpers';
 
 /**
  * Command to synchronize database with script files on disk
@@ -8,12 +9,12 @@ import { scriptPipelineService } from '../services/script-pipeline-service';
 const syncScriptsCommand = new Command('sync')
   .description('Synchronize database with script files on disk')
   .action(async () => {
-    Logger.info('Syncing script files with database...');
+    LoggerUtils.info('Syncing script files with database...');
     
     try {
       await scriptPipelineService.syncScripts();
     } catch (error) {
-      Logger.error('Failed to run sync command', error);
+      LoggerUtils.error('Failed to run sync command', error);
     }
   });
 
@@ -23,12 +24,12 @@ const syncScriptsCommand = new Command('sync')
 const findNewScriptsCommand = new Command('find-new')
   .description('Find and insert new script files')
   .action(async () => {
-    Logger.info('Finding and inserting new script files...');
+    LoggerUtils.info('Finding and inserting new script files...');
     
     try {
       await scriptPipelineService.findNewScripts();
     } catch (error) {
-      Logger.error('Failed to run find-new command', error);
+      LoggerUtils.error('Failed to run find-new command', error);
     }
   });
 
@@ -38,12 +39,12 @@ const findNewScriptsCommand = new Command('find-new')
 const showUntypedScriptsCommand = new Command('show-untyped')
   .description('Show all script files without a script type')
   .action(async () => {
-    Logger.info('Showing untyped script files...');
+    LoggerUtils.info('Showing untyped script files...');
     
     try {
       await scriptPipelineService.showUntypedScripts();
     } catch (error) {
-      Logger.error('Failed to run show-untyped command', error);
+      LoggerUtils.error('Failed to run show-untyped command', error);
     }
   });
 
@@ -53,12 +54,12 @@ const showUntypedScriptsCommand = new Command('show-untyped')
 const showRecentScriptsCommand = new Command('show-recent')
   .description('Show recent script files')
   .action(async () => {
-    Logger.info('Showing recent script files...');
+    LoggerUtils.info('Showing recent script files...');
     
     try {
       await scriptPipelineService.showRecentScripts();
     } catch (error) {
-      Logger.error('Failed to run show-recent command', error);
+      LoggerUtils.error('Failed to run show-recent command', error);
     }
   });
 
@@ -68,12 +69,12 @@ const showRecentScriptsCommand = new Command('show-recent')
 const classifyRecentScriptsCommand = new Command('classify-recent')
   .description('Classify the most recent script files')
   .action(async () => {
-    Logger.info('Classifying recent script files...');
+    LoggerUtils.info('Classifying recent script files...');
     
     try {
       await scriptPipelineService.classifyRecentScripts();
     } catch (error) {
-      Logger.error('Failed to run classify-recent command', error);
+      LoggerUtils.error('Failed to run classify-recent command', error);
     }
   });
 
@@ -85,12 +86,12 @@ const classifyUntypedScriptsCommand = new Command('classify-untyped')
   .option('-c, --count <number>', 'Number of files to process', '10')
   .action(async (options) => {
     const count = parseInt(options.count, 10);
-    Logger.info(`Classifying ${count} untyped script files...`);
+    LoggerUtils.info(`Classifying ${count} untyped script files...`);
     
     try {
       await scriptPipelineService.classifyUntypedScripts(count);
     } catch (error) {
-      Logger.error('Failed to run classify-untyped command', error);
+      LoggerUtils.error('Failed to run classify-untyped command', error);
     }
   });
 
@@ -100,12 +101,12 @@ const classifyUntypedScriptsCommand = new Command('classify-untyped')
 const cleanScriptResultsCommand = new Command('clean-results')
   .description('Clean script analysis results')
   .action(async () => {
-    Logger.info('Cleaning script analysis results...');
+    LoggerUtils.info('Cleaning script analysis results...');
     
     try {
       await scriptPipelineService.cleanScriptResults();
     } catch (error) {
-      Logger.error('Failed to run clean-results command', error);
+      LoggerUtils.error('Failed to run clean-results command', error);
     }
   });
 
@@ -126,12 +127,12 @@ const generateSummaryCommand = new Command('generate-summary')
     
     const includeDeleted = options.includeDeleted || false;
     
-    Logger.info(`Generating summary for ${count === -1 ? 'all' : count} scripts (include deleted: ${includeDeleted})...`);
+    LoggerUtils.info(`Generating summary for ${count === -1 ? 'all' : count} scripts (include deleted: ${includeDeleted})...`);
     
     try {
       await scriptPipelineService.generateSummary(count, includeDeleted);
     } catch (error) {
-      Logger.error('Failed to run generate-summary command', error);
+      LoggerUtils.error('Failed to run generate-summary command', error);
     }
   });
 
@@ -141,12 +142,12 @@ const generateSummaryCommand = new Command('generate-summary')
 const runCompleteCommand = new Command('all')
   .description('Run the complete script pipeline')
   .action(async () => {
-    Logger.info('Running complete script pipeline...');
+    LoggerUtils.info('Running complete script pipeline...');
     
     try {
       await scriptPipelineService.runCompletePipeline();
     } catch (error) {
-      Logger.error('Failed to run complete pipeline', error);
+      LoggerUtils.error('Failed to run complete pipeline', error);
     }
   });
 
