@@ -6,10 +6,10 @@ import { ErrorHandler, AppError } from '../utils/error-handler';
 import config from '../utils/config';
 import configHelpers from '../utils/config-helpers';
 import {
-  ClaudeService,
-  ReportService
+  ClaudeService
 } from '../services';
 import { fileService } from '../services/file-service-helpers';
+import { ReportService } from '../services/report-service-helpers';
 import { supabaseService } from '@dhg/shared/services';
 
 interface ClassifyMarkdownOptions {
