@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import path from 'path';
 import * as fs from 'fs';
-import * as fileService from '../services/file-service';
+import { fileService } from '../services/file-service-helpers';
 import { Logger, LogLevel } from '../utils/logger';
 import { ErrorHandler } from '../utils/error-handler';
 
@@ -99,11 +99,8 @@ async function scanScriptFiles(
   recursive: boolean
 ): Promise<string[]> {
   try {
-    // Create file service instance
-    const fs = new fileService.FileService();
-    
-    // Use fileService to scan for files
-    const files = await fs.findFiles({
+    // Use shared fileService instance
+    const files = await fileService.findFiles({
       directory,
       includePatterns: extensions.map(ext => `**/*.${ext}`),
       excludePatterns,
