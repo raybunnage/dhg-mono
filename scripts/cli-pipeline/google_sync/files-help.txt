@@ -1,0 +1,33 @@
+Usage: index files [options] [command]
+
+Operations on synced files
+
+Options:
+  -h, --help                 display help for command
+
+Commands:
+  list [options]             List synced files
+  extract [options]          Extract content from synced files
+  batch-extract [options]    Extract content from multiple files in batch
+  help [command]             display help for command
+
+For list command:
+  -f, --folder-id <id>       List files in a specific folder
+  -t, --type <mime-type>     Filter by MIME type
+  -l, --limit <number>       Maximum number of files to list (default: "50")
+  --csv                      Output in CSV format
+  -v, --verbose              Enable verbose logging
+  --no-color                 Disable color output
+
+For extract command:
+  -i, --id <file-id>         File ID to extract content from
+  -o, --output <path>        Path to save extracted content
+  -v, --verbose              Enable verbose logging
+  --no-color                 Disable color output
+
+For batch-extract command:
+  -t, --type <mime-type>     Filter by MIME type for batch extraction
+  -l, --limit <number>       Maximum number of files to process (default: "20")
+  -b, --batch-size <number>  Batch size for processing (default: "5")
+  -v, --verbose              Enable verbose logging
+  --no-color                 Disable color output
