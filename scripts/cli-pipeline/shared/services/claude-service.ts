@@ -75,7 +75,7 @@ export class ClaudeService {
     });
     
     // Add request logging
-    this.client.interceptors.request.use(request => {
+    this.client.interceptors.request.use((request: any) => {
       logger.debug('Making Claude API request', { 
         url: request.url,
         method: request.method,
