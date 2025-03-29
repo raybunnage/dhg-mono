@@ -68,5 +68,10 @@
     "netlify-cli": "18.0.4",
     "supabase": "2.12.1",
     "turbo": "^1.12.4"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.3",
+    "axios": "^1.8.4",
+    "dotenv": "^16.4.7"
   }
 }

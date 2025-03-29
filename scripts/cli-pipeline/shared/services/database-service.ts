@@ -4,10 +4,24 @@
  * Provides database interaction through Supabase, with transaction support,
  * error handling, and query optimization.
  */
-import { createClient, SupabaseClient, PostgrestFilterBuilder } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseConfig } from '../interfaces/types';
 import { environmentService } from './environment-service';
 import { logger } from './logger-service';
+
+/**
+ * Query options for the query method
+ */
+interface QueryOptions {
+  select: string;
+  filter?: Record<string, any>;
+  order?: {
+    column: string;
+    ascending: boolean;
+  };
+  limit?: number;
+  offset?: number;
+}
 
 /**
  * Database Service implementation
@@ -17,6 +31,7 @@ export class DatabaseService {
   private client: SupabaseClient | null = null;
   private url: string;
   private key: string;
+  private connected: boolean = false;
   
   /**
    * Create a database service
@@ -54,6 +69,7 @@ export class DatabaseService {
     if (!this.client) {
       logger.debug('Connecting to Supabase', { url: this.url });
       this.client = createClient(this.url, this.key);
+      this.connected = true;
     }
     return this.client;
   }
@@ -66,6 +82,18 @@ export class DatabaseService {
       return this.connect();
     }
     return this.client;
+  }
+  
+  /**
+   * Ensure connection is established
+   */
+  public async ensureConnection(): Promise<boolean> {
+    if (this.connected) {
+      return true;
+    }
+    
+    const result = await this.testConnection();
+    return result.success;
   }
   
   /**
@@ -87,6 +115,7 @@ export class DatabaseService {
       }
       
       logger.info('Successfully connected to Supabase');
+      this.connected = true;
       return { success: true };
     } catch (error) {
       logger.error('Error connecting to Supabase', { error });
@@ -98,7 +127,7 @@ export class DatabaseService {
    * Execute a query with error handling
    */
   public async executeQuery<T>(
-    query: () => PostgrestFilterBuilder<any, any, any> | Promise<any>
+    query: () => Promise<any>
   ): Promise<{ data: T | null; error: any | null }> {
     try {
       const result = await query();
@@ -113,6 +142,78 @@ export class DatabaseService {
       logger.error('Unexpected query error', { error });
       return { data: null, error };
     }
+  }
+  
+  /**
+   * Execute a stored procedure/function with error handling
+   */
+  public async executeRpc<T>(
+    functionName: string,
+    params: Record<string, any> = {}
+  ): Promise<{ data: T | null; error: any | null }> {
+    try {
+      logger.debug(`Executing RPC: ${functionName}`, { params });
+      
+      const client = this.getClient();
+      const result = await client.rpc(functionName, params);
+      
+      if (result.error) {
+        logger.error(`Error executing RPC ${functionName}:`, { error: result.error });
+        return { data: null, error: result.error };
+      }
+      
+      return { data: result.data as T, error: null };
+    } catch (error) {
+      logger.error(`Unexpected error executing RPC ${functionName}:`, { error });
+      return { data: null, error };
+    }
+  }
+  
+  /**
+   * Query a table with options
+   */
+  public async query<T>(
+    table: string,
+    options: QueryOptions
+  ): Promise<{ data: T[] | null; error: any | null }> {
+    return this.executeQuery<T[]>(async () => {
+      let queryBuilder = this.getClient().from(table).select(options.select);
+      
+      // Apply filters
+      if (options.filter) {
+        Object.entries(options.filter).forEach(([key, value]) => {
+          if (value === 'is.null') {
+            queryBuilder = queryBuilder.is(key, null);
+          } else if (value === 'is.not.null') {
+            queryBuilder = queryBuilder.not(key, 'is', null);
+          } else {
+            queryBuilder = queryBuilder.eq(key, value);
+          }
+        });
+      }
+      
+      // Apply ordering
+      if (options.order) {
+        queryBuilder = queryBuilder.order(
+          options.order.column,
+          { ascending: options.order.ascending }
+        );
+      }
+      
+      // Apply limit and offset
+      if (options.limit !== undefined) {
+        queryBuilder = queryBuilder.limit(options.limit);
+      }
+      
+      if (options.offset !== undefined) {
+        queryBuilder = queryBuilder.range(
+          options.offset,
+          options.offset + (options.limit || 10) - 1
+        );
+      }
+      
+      return queryBuilder;
+    });
   }
   
   /**
@@ -201,6 +302,20 @@ export class DatabaseService {
     }
     
     return { count: result.data?.count || 0, error: null };
+  }
+  
+  /**
+   * Get Supabase URL
+   */
+  public getUrl(): string {
+    return this.url;
+  }
+  
+  /**
+   * Get Supabase key
+   */
+  public getKey(): string {
+    return this.key;
   }
 }
 

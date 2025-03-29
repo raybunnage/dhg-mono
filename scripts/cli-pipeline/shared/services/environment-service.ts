@@ -96,6 +96,34 @@ export class EnvironmentService {
   }
   
   /**
+   * Get Supabase URL
+   */
+  public getSupabaseUrl(): string {
+    return this.config.supabaseUrl;
+  }
+  
+  /**
+   * Get Supabase key
+   */
+  public getSupabaseKey(): string {
+    return this.config.supabaseKey;
+  }
+  
+  /**
+   * Get Claude API key
+   */
+  public getClaudeApiKey(): string {
+    return this.config.claudeApiKey;
+  }
+  
+  /**
+   * Get root directory
+   */
+  public getRootDir(): string {
+    return this.config.rootDir;
+  }
+  
+  /**
    * Check if required environment variables are set
    */
   public validateRequiredEnvVars(requiredVars: (keyof EnvironmentConfig)[]): string[] {
@@ -108,6 +136,13 @@ export class EnvironmentService {
     }
     
     return missingVars;
+  }
+  
+  /**
+   * Check if required environment variables are set
+   */
+  public hasRequiredEnvVars(requiredVars: (keyof EnvironmentConfig)[]): boolean {
+    return this.validateRequiredEnvVars(requiredVars).length === 0;
   }
   
   /**
