@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ExpertInterface, ExpertDocument, EnhancedExpertProfile } from '@/types/expert';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ExpertDocumentList } from './ExpertDocumentList';
 import { Edit, RefreshCw, User, Briefcase, GraduationCap, Award, BookOpen, Globe } from 'lucide-react';
 import { format } from 'date-fns';
+import { expertService } from '@/services/expert-service';
 
 interface ExpertDetailViewProps {
   expert: ExpertInterface;
@@ -41,30 +41,9 @@ export function ExpertDetailView({
     try {
       setLoading(true);
       
-      // Get the latest processed document with enhanced profile information
-      const { data, error } = await supabase
-        .from('expert_documents')
-        .select('*')
-        .eq('expert_id', expert.id)
-        .eq('processing_status', 'completed')
-        .order('updated_at', { ascending: false })
-        .limit(1);
-
-      if (error) throw error;
-      
-      if (data && data.length > 0 && data[0].processed_content) {
-        // Parse the enhanced profile from the processed content
-        try {
-          const processedContent = data[0].processed_content;
-          if (typeof processedContent === 'string') {
-            setEnhancedProfile(JSON.parse(processedContent));
-          } else {
-            setEnhancedProfile(processedContent);
-          }
-        } catch (parseError) {
-          console.error('Error parsing enhanced profile:', parseError);
-        }
-      }
+      // Use our expert service
+      const profileData = await expertService.getEnhancedProfile(expert.id);
+      setEnhancedProfile(profileData);
     } catch (error) {
       console.error('Error loading enhanced profile:', error);
       toast.error('Failed to load enhanced expert profile');

@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExpertDocument } from '@/types/expert';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { expertService } from '@/services/expert-service';
 import {
   Table,
   TableHeader,
@@ -53,19 +53,10 @@ export function ExpertDocumentList({
   async function loadDocuments() {
     try {
       setLoading(true);
-      let query = supabase
-        .from('expert_documents')
-        .select('*')
-        .order('created_at', { ascending: false });
-        
-      if (expertId) {
-        query = query.eq('expert_id', expertId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setDocuments(data || []);
+      
+      // Use our expert service
+      const documents = await expertService.getExpertDocuments(expertId);
+      setDocuments(documents);
     } catch (error) {
       console.error('Error loading documents:', error);
       toast.error('Failed to load expert documents');
@@ -76,18 +67,9 @@ export function ExpertDocumentList({
 
   async function loadSourcesMap() {
     try {
-      const { data, error } = await supabase
-        .from('sources_google')
-        .select('id, title');
-        
-      if (error) throw error;
-      
-      const sourceMap: Record<string, string> = {};
-      data?.forEach(source => {
-        sourceMap[source.id] = source.title;
-      });
-      
-      setSourcesMap(sourceMap);
+      // Use our expert service
+      const sources = await expertService.getSourcesMap();
+      setSourcesMap(sources);
     } catch (error) {
       console.error('Error loading sources map:', error);
     }

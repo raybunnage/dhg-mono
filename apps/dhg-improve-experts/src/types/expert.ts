@@ -13,6 +13,33 @@ export interface ExpertInterface {
   legacy_expert_id: number | null;
   user_id: string | null;
   starting_ref_id: number | null;
+  // Optional new fields for enhanced profile
+  enhanced_profile_id?: string;
+}
+
+// Helper functions for Expert data
+export const expertUtils = {
+  /**
+   * Normalizes expert data from various sources
+   */
+  normalizeExpert(expert: Partial<ExpertInterface>): ExpertInterface {
+    return {
+      id: expert.id || '',
+      expert_name: expert.expert_name || '',
+      full_name: expert.full_name || null,
+      bio: expert.bio || null,
+      email_address: expert.email_address || null,
+      expertise_area: expert.expertise_area || null,
+      experience_years: expert.experience_years || null,
+      is_in_core_group: expert.is_in_core_group ?? false,
+      created_at: expert.created_at || new Date().toISOString(),
+      updated_at: expert.updated_at || new Date().toISOString(),
+      legacy_expert_id: expert.legacy_expert_id || null,
+      user_id: expert.user_id || null,
+      starting_ref_id: expert.starting_ref_id || null,
+      enhanced_profile_id: expert.enhanced_profile_id || undefined
+    };
+  }
 }
 
 export interface ExpertDocument {
