@@ -138,6 +138,7 @@ class GoogleDriveAdapter {
     try {
       const drive = await this.getDriveClient();
       
+      console.log(chalk.gray(`Getting file details for: ${fileId}`));
       const response = await drive.files.get({
         fileId,
         fields: 'id, name, mimeType, webViewLink, parents, modifiedTime, size, thumbnailLink'
@@ -145,35 +146,79 @@ class GoogleDriveAdapter {
       
       return response.data;
     } catch (error) {
+      console.error(chalk.red(`Error getting file: ${error.message}`));
+      if (error.response && error.response.data) {
+        console.error(chalk.red(`Response data:`, error.response.data));
+      }
       throw new Error(`Failed to get file: ${error.message}`);
     }
   }
 
   /**
-   * List root folders from Supabase
+   * List root folders from local storage or predefined list
+   * In a full implementation, this would query Supabase
    */
   async listRootFolders() {
     try {
-      // This would query Supabase for root folders
-      // For demonstration, we'll use a mock list
-      this.rootFolders = [
-        {
-          id: '1',
-          folder_id: '1-c4YAGepJuCRfsfOExW30s3ICMslI5mv',
-          name: 'Dynamic Healing Discussion Group',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          last_synced: null
-        },
-        {
-          id: '2',
-          folder_id: '13vGJ0K5_QcMY-DMyxjj5ff1A3Gh3s_WD',
-          name: 'Clauw – Fibromyalgia',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          last_synced: null
+      // Check if we have root folders in memory
+      if (this.rootFolders && this.rootFolders.length > 0) {
+        return this.rootFolders;
+      }
+      
+      // Try to load from local storage file
+      const rootFoldersPath = path.join(__dirname, 'root_folders.json');
+      let rootFolders = [];
+      
+      try {
+        const data = await fs.readFile(rootFoldersPath, 'utf8');
+        rootFolders = JSON.parse(data);
+        console.log(chalk.blue(`Loaded ${rootFolders.length} root folders from local storage`));
+      } catch (err) {
+        console.log(chalk.yellow(`No root folders found in local storage, using defaults`));
+        // Use default root folders if file doesn't exist
+        rootFolders = [
+          {
+            id: '1',
+            folder_id: '1-c4YAGepJuCRfsfOExW30s3ICMslI5mv',
+            name: 'Dynamic Healing Discussion Group',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_synced: null
+          },
+          {
+            id: '2',
+            folder_id: '13vGJ0K5_QcMY-DMyxjj5ff1A3Gh3s_WD',
+            name: 'Clauw – Fibromyalgia',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_synced: null
+          }
+        ];
+      }
+      
+      // For each root folder, try to get the folder name from Google Drive if not set
+      for (let i = 0; i < rootFolders.length; i++) {
+        const folder = rootFolders[i];
+        if (!folder.name) {
+          try {
+            const folderDetails = await this.getFile(folder.folder_id);
+            folder.name = folderDetails.name;
+            console.log(chalk.gray(`Updated folder name for ${folder.folder_id}: ${folder.name}`));
+          } catch (error) {
+            console.warn(chalk.yellow(`Could not get folder name for ${folder.folder_id}: ${error.message}`));
+          }
         }
-      ];
+      }
+      
+      // Save the root folders in memory
+      this.rootFolders = rootFolders;
+      
+      // Also save to local storage
+      try {
+        await fs.writeFile(rootFoldersPath, JSON.stringify(rootFolders, null, 2), 'utf8');
+      } catch (err) {
+        console.warn(chalk.yellow(`Could not save root folders to local storage: ${err.message}`));
+      }
       
       return this.rootFolders;
     } catch (error) {
@@ -186,16 +231,28 @@ class GoogleDriveAdapter {
    */
   async addRootFolder(folderId, name) {
     try {
-      // Verify the folder exists
+      // First, verify the folder exists in Google Drive
+      console.log(chalk.blue(`Verifying folder exists in Google Drive: ${folderId}`));
       let folderName = name;
       
+      // Get folder details from Google Drive if name not provided
       if (!folderName) {
         const folder = await this.getFile(folderId);
         folderName = folder.name;
+        console.log(chalk.blue(`Found folder in Google Drive: ${folderName}`));
       }
       
-      // This would insert into Supabase
-      // For demonstration, we'll add to our mock list
+      // Get existing root folders
+      const rootFolders = await this.listRootFolders();
+      
+      // Check if this folder is already a root folder
+      const existingFolder = rootFolders.find(f => f.folder_id === folderId);
+      if (existingFolder) {
+        console.log(chalk.yellow(`Folder ${folderId} is already a root folder`));
+        return existingFolder;
+      }
+      
+      // Create a new root folder
       const newRoot = {
         id: Date.now().toString(),
         folder_id: folderId,
@@ -205,8 +262,15 @@ class GoogleDriveAdapter {
         last_synced: null
       };
       
-      this.rootFolders.push(newRoot);
+      // Add to the list
+      rootFolders.push(newRoot);
+      this.rootFolders = rootFolders;
       
+      // Save to local storage
+      const rootFoldersPath = path.join(__dirname, 'root_folders.json');
+      await fs.writeFile(rootFoldersPath, JSON.stringify(rootFolders, null, 2), 'utf8');
+      
+      console.log(chalk.green(`Added root folder: ${folderName}`));
       return newRoot;
     } catch (error) {
       throw new Error(`Failed to add root folder: ${error.message}`);
@@ -218,12 +282,34 @@ class GoogleDriveAdapter {
    */
   async removeRootFolder(folderId) {
     try {
-      // This would delete from Supabase
-      // For demonstration, we'll remove from our mock list
-      const initialLength = this.rootFolders.length;
-      this.rootFolders = this.rootFolders.filter(folder => folder.folder_id !== folderId);
+      // Get existing root folders
+      const rootFolders = await this.listRootFolders();
       
-      return this.rootFolders.length < initialLength;
+      // Check if the folder exists
+      const existingFolder = rootFolders.find(f => f.folder_id === folderId);
+      if (!existingFolder) {
+        console.log(chalk.yellow(`Folder ${folderId} is not a root folder`));
+        return false;
+      }
+      
+      // Remove the folder
+      const initialLength = rootFolders.length;
+      const updatedRootFolders = rootFolders.filter(folder => folder.folder_id !== folderId);
+      
+      // If nothing changed, return false
+      if (updatedRootFolders.length === initialLength) {
+        return false;
+      }
+      
+      // Update memory and storage
+      this.rootFolders = updatedRootFolders;
+      
+      // Save to local storage
+      const rootFoldersPath = path.join(__dirname, 'root_folders.json');
+      await fs.writeFile(rootFoldersPath, JSON.stringify(updatedRootFolders, null, 2), 'utf8');
+      
+      console.log(chalk.green(`Removed root folder: ${existingFolder.name}`));
+      return true;
     } catch (error) {
       throw new Error(`Failed to remove root folder: ${error.message}`);
     }
@@ -248,38 +334,22 @@ class GoogleDriveAdapter {
     
     try {
       // Get folder details to verify it exists
+      console.log(chalk.blue(`Getting details for folder: ${folderId}`));
       const folder = await this.getFile(folderId);
       
-      // Process folder contents
+      console.log(chalk.blue(`Starting sync for folder: ${folder.name} (${folderId})`));
+      
+      // Process folder contents - this actually traverses Google Drive 
       await this._processFolder(folder, stats, options, 0);
       
-      // If this is the specific folder we want to test with more realistic data
-      if (folderId === '1-c4YAGepJuCRfsfOExW30s3ICMslI5mv') {
-        console.log(chalk.blue('Using simulated data for Dynamic Healing Discussion Group folder'));
-        
-        // Simulate more realistic stats for this folder
-        stats.filesFound = 47;
-        stats.filesInserted = 32; // New files
-        stats.filesUpdated = 8;  // Changed files
-        stats.filesSkipped = 7;  // Files that wouldn't be updated
-        stats.foldersFound = 12;
-        stats.totalSize = 237580851; // About 237MB
-        
-        // Simulate file types
-        stats.fileTypes = {
-          'application/pdf': 18,
-          'application/vnd.google-apps.document': 9,
-          'video/mp4': 2,
-          'audio/x-m4a': 5,
-          'application/vnd.google-apps.folder': 11,
-          'image/jpeg': 12,
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 4
-        };
-      }
-      
+      // Calculate duration
       stats.endTime = new Date();
+      const duration = (stats.endTime.getTime() - stats.startTime.getTime()) / 1000;
+      console.log(chalk.blue(`Sync completed in ${duration.toFixed(2)} seconds`));
+      
       return stats;
     } catch (error) {
+      console.error(chalk.red(`Error syncing folder ${folderId}: ${error.message}`));
       stats.errors.push(error);
       stats.endTime = new Date();
       return stats;
@@ -293,12 +363,23 @@ class GoogleDriveAdapter {
     // Check depth limit
     const maxDepth = options.maxDepth || 10;
     if (depth > maxDepth) {
+      console.log(chalk.yellow(`Reached maximum depth (${maxDepth}), not processing deeper folders`));
       return;
     }
     
     try {
       // List files in the folder
-      const { files } = await this.listFiles(folder.id);
+      const { files } = await this.listFiles(folder.id, { 
+        getAllPages: true,
+        limit: options.batchSize || 100
+      });
+      
+      if (files.length === 0) {
+        console.log(chalk.gray(`No files found in folder ${folder.name || folder.id}`));
+        return;
+      }
+      
+      console.log(chalk.blue(`Processing ${files.length} files in folder "${folder.name || folder.id}" (depth: ${depth})`));
       stats.filesFound += files.length;
       
       // Process each file
@@ -315,32 +396,43 @@ class GoogleDriveAdapter {
             stats.totalSize += parseInt(file.size, 10);
           }
           
+          // Console log file details if in verbose mode
+          if (options.verbose) {
+            console.log(chalk.gray(`- ${file.name} (${file.mimeType})`));
+          }
+          
           // If it's a folder and recursive option is enabled, process it too
           if (file.mimeType === 'application/vnd.google-apps.folder' && options.recursive !== false) {
             stats.foldersFound++;
             await this._processFolder(file, stats, options, depth + 1);
           }
           
-          // In a real implementation, we would insert/update the record in Supabase
-          if (options.dryRun !== true) {
-            // Simulate inserting/updating in database
-            const existing = Math.random() > 0.7; // Simulate some files already existing
+          // In dry run mode, we would just simulate what would happen
+          // In a real implementation, we would check the database to see if the file
+          // already exists, and either update it or insert it
+          if (options.dryRun) {
+            // Just count as inserted for now since we're not checking the database
+            stats.filesInserted++;
+          } else {
+            // This would be real database interaction
+            // For now, simulate database check with a fake existing check
+            // In reality, this would query the database to check if the file exists
+            const existsInDb = false; // Would be a database check in real implementation
             
-            if (existing) {
+            if (existsInDb) {
               stats.filesUpdated++;
             } else {
               stats.filesInserted++;
             }
-          } else {
-            // Just count what would be processed
-            stats.filesInserted++;
           }
         } catch (fileError) {
+          console.error(chalk.red(`Error processing file ${file.name}: ${fileError.message}`));
           stats.errors.push(fileError);
           stats.filesSkipped++;
         }
       }
     } catch (error) {
+      console.error(chalk.red(`Error processing folder ${folder.name || folder.id}: ${error.message}`));
       stats.errors.push(error);
     }
   }
