@@ -7,7 +7,7 @@ import { ErrorHandler } from '../utils/error-handler';
 // Import helpers that provide compatibility with the shared package
 import { sendPrompt } from '../services/claude-service-helpers';
 import { getPromptByName, upsertScript, addScriptRelationship } from '../services/supabase-service-helpers';
-import * as reportService from '../services/report-service';
+import { ReportService } from '../services/report-service-helpers';
 import config from '../utils/config';
 import configHelpers from '../utils/config-helpers';
 import { readPromptFromFile } from '../models/prompt';
@@ -188,22 +188,41 @@ Format your response as JSON with the following structure:
         LoggerUtils.info('Generating summary report...');
         const reportPath = path.join(outputDir, 'script-analysis-report.md');
         const jsonReportPath = path.join(outputDir, 'script-analysis-report.json');
+        const categorySummaryPath = path.join(outputDir, 'category-summary.md');
         
         // Save JSON report
         fs.writeFileSync(jsonReportPath, JSON.stringify(analysisResults, null, 2));
         
-        // Generate and save markdown report
-        const report = generateReport(analysisResults);
-        fs.writeFileSync(reportPath, report);
+        // Create report sections
+        const reportSections = createReportSections(analysisResults);
         
-        LoggerUtils.info(`Report generated at ${reportPath}`);
+        // Generate and save the main report
+        const reportResult = ReportService.generateAndWriteReport(
+          reportSections, 
+          reportPath, 
+          'Script Analysis Report'
+        );
+        
+        if (reportResult.success) {
+          LoggerUtils.info(`Report generated at ${reportPath}`);
+        } else {
+          LoggerUtils.error(`Failed to generate report: ${reportResult.error}`);
+        }
         
         // Generate category summary
-        const categorySummary = generateCategorySummary(analysisResults);
-        const categorySummaryPath = path.join(outputDir, 'category-summary.md');
-        fs.writeFileSync(categorySummaryPath, categorySummary);
+        const categorySections = createCategorySummarySections(analysisResults);
         
-        LoggerUtils.info(`Category summary generated at ${categorySummaryPath}`);
+        const categorySummaryResult = ReportService.generateAndWriteReport(
+          categorySections,
+          categorySummaryPath,
+          'Document Type Category Summary'
+        );
+        
+        if (categorySummaryResult.success) {
+          LoggerUtils.info(`Category summary generated at ${categorySummaryPath}`);
+        } else {
+          LoggerUtils.error(`Failed to generate category summary: ${categorySummaryResult.error}`);
+        }
       }
 
     } catch (error) {
@@ -443,73 +462,98 @@ async function updateDatabaseWithAnalysis(analysis: any): Promise<void> {
 }
 
 /**
- * Generate a report from analysis results
+ * Create report sections from analysis results for the main report
  */
-function generateReport(results: any[]): string {
-  // Generate timestamp
-  const timestamp = new Date().toISOString();
+function createReportSections(results: any[]): Array<{title: string, content: string, level: number}> {
+  const sections: Array<{title: string, content: string, level: number}> = [];
   
-  // Start with report header
-  let report = `# Script Analysis Report\n\n`;
-  report += `Generated: ${timestamp}\n\n`;
-  report += `Total scripts analyzed: ${results.length}\n\n`;
-
-  // Add status summary
+  // Add basic info section
+  sections.push({
+    title: 'Overview',
+    content: `Total scripts analyzed: ${results.length}`,
+    level: 2
+  });
+  
+  // Add status summary section
   const statusCounts: Record<string, number> = {};
   results.forEach(result => {
     const status = result.assessment.status.recommendation;
     statusCounts[status] = (statusCounts[status] || 0) + 1;
   });
-
-  report += `## Status Summary\n\n`;
+  
+  let statusContent = '';
   for (const [status, count] of Object.entries(statusCounts)) {
-    report += `- ${status}: ${count} scripts (${Math.round(count / results.length * 100)}%)\n`;
+    statusContent += `- ${status}: ${count} scripts (${Math.round(count / results.length * 100)}%)\n`;
   }
-  report += `\n`;
-
-  // Add document type summary
+  
+  sections.push({
+    title: 'Status Summary',
+    content: statusContent,
+    level: 2
+  });
+  
+  // Add document type summary section
   const typeCounts: Record<string, number> = {};
   results.forEach(result => {
     const type = result.metadata.document_type;
     typeCounts[type] = (typeCounts[type] || 0) + 1;
   });
-
-  report += `## Document Type Summary\n\n`;
+  
+  let typeContent = '';
   for (const [type, count] of Object.entries(typeCounts)) {
-    report += `- ${type}: ${count} scripts (${Math.round(count / results.length * 100)}%)\n`;
+    typeContent += `- ${type}: ${count} scripts (${Math.round(count / results.length * 100)}%)\n`;
   }
-  report += `\n`;
-
-  // Add script details
-  report += `## Script Details\n\n`;
+  
+  sections.push({
+    title: 'Document Type Summary',
+    content: typeContent,
+    level: 2
+  });
+  
+  // Add script details section
+  sections.push({
+    title: 'Script Details',
+    content: '',
+    level: 2
+  });
+  
+  // Add each script as a subsection
   results.forEach(result => {
     const { metadata, assessment } = result;
-    report += `### ${metadata.title}\n\n`;
-    report += `- **Path**: ${metadata.file_path}\n`;
-    report += `- **Type**: ${metadata.document_type}\n`;
-    report += `- **Language**: ${metadata.language}\n`;
-    report += `- **Status**: ${assessment.status.recommendation} (Confidence: ${assessment.status.confidence}/10)\n`;
-    report += `- **Quality Score**: ${(
+    let scriptContent = '';
+    scriptContent += `- **Path**: ${metadata.file_path}\n`;
+    scriptContent += `- **Type**: ${metadata.document_type}\n`;
+    scriptContent += `- **Language**: ${metadata.language}\n`;
+    scriptContent += `- **Status**: ${assessment.status.recommendation} (Confidence: ${assessment.status.confidence}/10)\n`;
+    scriptContent += `- **Quality Score**: ${(
       assessment.quality.code_quality + 
       assessment.quality.maintainability + 
       assessment.quality.utility + 
       assessment.quality.documentation
     ) / 4}/10\n`;
-    report += `- **Relevance**: ${assessment.relevance.score}/10\n`;
-    report += `- **Referenced**: ${assessment.referenced ? 'Yes' : 'No'}\n`;
-    report += `- **Tags**: ${assessment.tags.join(', ')}\n\n`;
-    report += `**Summary**: ${assessment.summary}\n\n`;
-    report += `**Status Reasoning**: ${assessment.status.reasoning}\n\n`;
-    report += `---\n\n`;
+    scriptContent += `- **Relevance**: ${assessment.relevance.score}/10\n`;
+    scriptContent += `- **Referenced**: ${assessment.referenced ? 'Yes' : 'No'}\n`;
+    scriptContent += `- **Tags**: ${assessment.tags.join(', ')}\n\n`;
+    scriptContent += `**Summary**: ${assessment.summary}\n\n`;
+    scriptContent += `**Status Reasoning**: ${assessment.status.reasoning}\n\n`;
+    scriptContent += `---`;
+    
+    sections.push({
+      title: metadata.title,
+      content: scriptContent,
+      level: 3
+    });
   });
-
-  return report;
+  
+  return sections;
 }
 
 /**
- * Generate a category summary from analysis results
+ * Create report sections for the category summary
  */
-function generateCategorySummary(results: any[]): string {
+function createCategorySummarySections(results: any[]): Array<{title: string, content: string, level: number}> {
+  const sections: Array<{title: string, content: string, level: number}> = [];
+  
   // Group scripts by document type
   const scriptsByType: Record<string, any[]> = {};
   results.forEach(result => {
@@ -520,14 +564,14 @@ function generateCategorySummary(results: any[]): string {
     scriptsByType[type].push(result);
   });
   
-  // Generate summary
-  let summary = `# Document Type Category Summary\n\n`;
-  summary += `Generated: ${new Date().toISOString()}\n\n`;
-  
   // Process each category
   for (const [category, scripts] of Object.entries(scriptsByType)) {
-    summary += `## ${category}\n\n`;
-    summary += `Total scripts: ${scripts.length}\n\n`;
+    // Add category section
+    sections.push({
+      title: category,
+      content: `Total scripts: ${scripts.length}`,
+      level: 2
+    });
     
     // Status breakdown
     const statusCounts: Record<string, number> = {};
@@ -536,16 +580,22 @@ function generateCategorySummary(results: any[]): string {
       statusCounts[status] = (statusCounts[status] || 0) + 1;
     });
     
-    summary += `### Status Breakdown\n\n`;
+    let statusContent = '';
     for (const [status, count] of Object.entries(statusCounts)) {
-      summary += `- ${status}: ${count} scripts (${Math.round(count / scripts.length * 100)}%)\n`;
+      statusContent += `- ${status}: ${count} scripts (${Math.round(count / scripts.length * 100)}%)\n`;
     }
-    summary += `\n`;
+    
+    sections.push({
+      title: 'Status Breakdown',
+      content: statusContent,
+      level: 3
+    });
     
     // List scripts in this category
-    summary += `### Scripts\n\n`;
-    summary += `| Title | Path | Status | Quality |\n`;
-    summary += `| ----- | ---- | ------ | ------- |\n`;
+    let scriptsContent = '';
+    scriptsContent += `| Title | Path | Status | Quality |\n`;
+    scriptsContent += `| ----- | ---- | ------ | ------- |\n`;
+    
     scripts.forEach(script => {
       const { metadata, assessment } = script;
       const qualityScore = (
@@ -554,12 +604,17 @@ function generateCategorySummary(results: any[]): string {
         assessment.quality.utility + 
         assessment.quality.documentation
       ) / 4;
-      summary += `| ${metadata.title} | ${metadata.file_path} | ${assessment.status.recommendation} | ${qualityScore}/10 |\n`;
+      scriptsContent += `| ${metadata.title} | ${metadata.file_path} | ${assessment.status.recommendation} | ${qualityScore}/10 |\n`;
     });
-    summary += `\n`;
+    
+    sections.push({
+      title: 'Scripts',
+      content: scriptsContent,
+      level: 3
+    });
   }
   
-  return summary;
+  return sections;
 }
 
 /**
