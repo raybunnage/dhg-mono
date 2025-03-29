@@ -1,6 +1,9 @@
-import axios from 'axios';
+// This file re-exports the ClaudeService from @dhg/shared for backward compatibility
+// It will be deleted once all imports are updated to use @dhg/shared directly
+import { ClaudeService } from '@dhg/shared/services';
 import { Logger } from '../utils/logger';
 import { AppError, ErrorHandler } from '../utils/error-handler';
+import axios from 'axios';
 
 export interface TextContent {
   type: 'text';
