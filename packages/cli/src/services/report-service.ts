@@ -1,4 +1,4 @@
-import { FileService, FileResult } from './file-service';
+import { fileService, FileResult } from './file-service-helpers';
 import { Logger } from '../utils/logger';
 
 export interface ReportSection {
@@ -9,11 +9,9 @@ export interface ReportSection {
 
 export class ReportService {
   private sections: ReportSection[] = [];
-  private fileService: FileService;
   private templatePath?: string;
   
   constructor(templatePath?: string) {
-    this.fileService = new FileService();
     this.templatePath = templatePath;
   }
   
@@ -34,7 +32,7 @@ export class ReportService {
     // If template path is provided, use it as a base
     let report = '';
     if (this.templatePath) {
-      const templateResult = this.fileService.readFile(this.templatePath);
+      const templateResult = fileService.readFile(this.templatePath);
       if (templateResult.success && templateResult.content) {
         report = templateResult.content;
       } else {
@@ -56,6 +54,6 @@ export class ReportService {
    */
   writeReportToFile(path: string): FileResult {
     const content = this.generateReport();
-    return this.fileService.writeFile(path, content);
+    return fileService.writeFile(path, content);
   }
 }
