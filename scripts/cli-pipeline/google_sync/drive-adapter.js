@@ -99,7 +99,7 @@ class GoogleDriveAdapter {
           q,
           pageSize,
           pageToken: nextPageToken,
-          fields: 'nextPageToken, files(id, name, mimeType, webViewLink, parents, modifiedTime, size, thumbnailLink)',
+          fields: 'nextPageToken, files(id,name,mimeType,webViewLink,parents,modifiedTime,size,thumbnailLink)',
           orderBy: 'name'
         });
         
