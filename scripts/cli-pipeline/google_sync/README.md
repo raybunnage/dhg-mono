@@ -47,6 +47,9 @@ The CLI now includes TypeScript-based commands for improved reliability and type
 
 # Update presentation disk status in dry-run mode
 ./scripts/google-drive-cli.sh disk-status --dry-run
+
+# Create expert documents for presentations with MP4 files (dry run)
+./scripts/google-drive-cli.sh mp4-experts --dry-run
 ```
 
 ### Legacy Commands
@@ -92,6 +95,7 @@ google-sync audio batch-extract
 - `disk-status` - Update presentations table with disk status for MP4 files
 - `list-drive-direct` - List files in Drive directly (no DB interaction)
 - `list-drive-service` - List files using service account
+- `mp4-experts` - Create expert documents for presentations with MP4 files
 - `report-drive-roots` - Generate a detailed report about all root folders
 - `sync-and-update-metadata` - Sync folder and update metadata in one operation
 - `update-metadata` - Update metadata for files in the database
@@ -215,6 +219,30 @@ The command adds the following metadata to the presentations table:
 - `disk_status_updated` - Timestamp of when the status was last updated
 
 This information can be used by applications to determine whether to stream from Google Drive or serve from the local disk.
+
+### MP4 Experts Command
+
+The `mp4-experts` command creates expert documents and presentation assets for presentations that have MP4 files available on disk. This is a prerequisite for further processing like transcription and AI analysis.
+
+```bash
+# Check what would be created in dry-run mode
+./scripts/google-drive-cli.sh mp4-experts --dry-run
+
+# Create expert documents and presentation assets
+./scripts/google-drive-cli.sh mp4-experts
+
+# Limit the number of presentations to process
+./scripts/google-drive-cli.sh mp4-experts --limit 10
+```
+
+The command:
+1. Finds presentations with `available_on_disk: true` in their metadata
+2. For each presentation with a `main_video_id` that doesn't already have an expert document:
+   - Creates a new record in the `expert_documents` table
+   - Creates a new record in the `presentation_assets` table linking the presentation to the expert document
+   - Sets appropriate statuses to mark the document as ready for processing
+
+The created expert documents can then be processed by audio extraction, transcription, and AI analysis pipelines.
 
 ## License
 

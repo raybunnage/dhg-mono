@@ -47,8 +47,10 @@
 ## Continuous Improvement
 When I identify recurring patterns, issues, or inefficiencies in the development workflow, I'll document them here along with solutions:
 
-<!-- Example format:
-1. **Issue**: [Description of the recurring problem]
-   **Solution**: [How to address it systematically]
-   **Implementation**: [Specific steps to implement the solution]
--->
+1. **Issue**: Authentication and credential management for external services
+   **Solution**: Always use the existing singleton services for authentication
+   **Implementation**: 
+   - For Supabase access issues, use the singleton in `packages/shared/services/supabase-service/supabase-service.ts` instead of implementing custom authentication
+   - For Google Drive access issues, use the authentication singleton in `packages/shared/services/google-drive` which handles token management and authentication flows
+   - Never implement custom authentication logic or hardcode credentials
+   - If encountering authentication errors, look for the established patterns in the shared services first

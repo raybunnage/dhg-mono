@@ -30,6 +30,7 @@ function display_help() {
   echo "  check-roots                 Check the status of all registered root folders"
   echo "  disk-status                 Update presentations table with disk status for MP4 files"
   echo "  list-drive-direct           List files in Drive directly (no DB interaction)"
+  echo "  mp4-experts                 Create expert documents for presentations with MP4 files"
   echo "  report-drive-roots          Generate a detailed report about all root folders"
   echo "  sync-and-update-metadata    Sync folder and update metadata in one operation"
   echo "  update-metadata             Update metadata for files in the database"
@@ -49,6 +50,7 @@ function display_help() {
   echo "  google-drive-cli.sh sync-folder dynamic-healing --recursive"
   echo "  google-drive-cli.sh sync-and-update-metadata 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --limit 50"
   echo "  google-drive-cli.sh disk-status --dry-run"
+  echo "  google-drive-cli.sh mp4-experts --dry-run"
 }
 
 # No arguments provided
@@ -111,6 +113,9 @@ case "$COMMAND" in
     ;;
   disk-status)
     ts-node "$SCRIPT_DIR/update-presentation-disk-status.ts" "$@"
+    ;;
+  mp4-experts)
+    ts-node "$SCRIPT_DIR/create-mp4-expert-documents.ts" "$@"
     ;;
     
   # Help commands
