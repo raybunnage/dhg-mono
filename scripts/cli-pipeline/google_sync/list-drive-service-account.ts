@@ -9,64 +9,45 @@
  *   npx ts-node list-drive-service-account.ts
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import * as dotenv from 'dotenv';
+import { defaultGoogleAuth, getGoogleDriveService } from '../../../packages/shared/services/google-drive';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import { Logger } from '../../../packages/shared/utils';
 import { google } from 'googleapis';
 
-// Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '../.env.development') });
+// Initialize logger
+Logger.setLevel(Logger.LogLevel.INFO);
 
 async function main() {
   try {
-    // Initialize Drive client with service account
-    const drive = await initDriveClient();
+    // Check if auth service is ready
+    if (!await defaultGoogleAuth.isReady()) {
+      Logger.error('Google authentication is not ready');
+      process.exit(1);
+    }
+    
+    // Get access token
+    const accessToken = await defaultGoogleAuth.getAccessToken();
+    if (!accessToken) {
+      Logger.error('Failed to get access token');
+      process.exit(1);
+    }
+    
+    // Create auth from the access token
+    const auth = new google.auth.OAuth2();
+    auth.setCredentials({ access_token: accessToken });
+    
+    // Initialize the Drive client
+    const drive = google.drive({ version: 'v3', auth });
     
     if (!drive) {
-      console.error('❌ Failed to initialize Drive client');
+      Logger.error('❌ Failed to initialize Drive client');
       process.exit(1);
     }
     
     await listRootFolders(drive);
   } catch (error: any) {
-    console.error('❌ Error:', error.message);
+    Logger.error('Error:', error.message);
     process.exit(1);
-  }
-}
-
-/**
- * Initialize Google Drive client using service account
- */
-async function initDriveClient() {
-  try {
-    // Get service account key file path from environment or use default
-    const keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
-                      path.resolve(__dirname, '../.service-account.json');
-    
-    console.log(`🔑 Using service account key file: ${keyFilePath}`);
-    
-    // Check if file exists
-    if (!fs.existsSync(keyFilePath)) {
-      console.error(`❌ Service account key file not found: ${keyFilePath}`);
-      console.log('\nPlease make sure the GOOGLE_APPLICATION_CREDENTIALS environment variable is set correctly');
-      return null;
-    }
-    
-    // Read and parse the service account key file
-    const keyFile = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
-    
-    // Create JWT auth client with the service account
-    const auth = new google.auth.JWT({
-      email: keyFile.client_email,
-      key: keyFile.private_key,
-      scopes: ['https://www.googleapis.com/auth/drive.readonly']
-    });
-    
-    // Initialize the Drive client
-    return google.drive({ version: 'v3', auth });
-  } catch (error: any) {
-    console.error('❌ Error initializing Drive client:', error.message);
-    return null;
   }
 }
 
@@ -75,7 +56,7 @@ async function initDriveClient() {
  */
 async function listRootFolders(drive: any) {
   try {
-    console.log('=== Potential Root Folders ===');
+    Logger.info('=== Potential Root Folders ===');
     
     // Query for top-level folders (those that are direct children of My Drive)
     const response = await drive.files.list({
@@ -86,36 +67,36 @@ async function listRootFolders(drive: any) {
     
     const folders = response.data.files || [];
     
-    console.log(`\nFound ${folders.length} potential root folders in Google Drive:`);
-    console.log('\n--------------------------------------------');
-    console.log('ID\t\t\t\t\tName\t\t\tModified');
-    console.log('--------------------------------------------');
+    Logger.info(`\nFound ${folders.length} potential root folders in Google Drive:`);
+    Logger.info('\n--------------------------------------------');
+    Logger.info('ID\t\t\t\t\tName\t\t\tModified');
+    Logger.info('--------------------------------------------');
     
     if (folders.length === 0) {
-      console.log('No folders found.');
+      Logger.info('No folders found.');
     } else {
       folders.forEach((folder: any) => {
         const modified = new Date(folder.modifiedTime).toLocaleDateString();
         const owner = folder.owners?.[0]?.displayName || 'Unknown';
-        console.log(`${folder.id}\t${folder.name}\t\t${modified} (${owner})`);
+        Logger.info(`${folder.id}\t${folder.name}\t\t${modified} (${owner})`);
       });
       
       // Add usage instructions
-      console.log('\nTo add a root folder, you would use:');
-      console.log(`npx ts-node scripts/add-drive-root-service.ts <folderId> --name "Folder Name"`);
+      Logger.info('\nTo add a root folder, you would use:');
+      Logger.info(`npx ts-node add-drive-root.ts <folderId> --name "Folder Name"`);
       
-      console.log('\nKnown folder IDs:');
-      console.log('- Dynamic Healing: 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV');
-      console.log('- Polyvagal Steering: 1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc');
-      console.log('- DHG Repository: 1MAyMwhKn8GwKHnb39-GbSNJQBYDVmxe1');
+      Logger.info('\nKnown folder IDs:');
+      Logger.info('- Dynamic Healing: 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV');
+      Logger.info('- Polyvagal Steering: 1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc');
+      Logger.info('- DHG Repository: 1MAyMwhKn8GwKHnb39-GbSNJQBYDVmxe1');
     }
   } catch (error: any) {
-    console.error('❌ Error listing potential root folders:', error.message);
+    Logger.error('Error listing potential root folders:', error.message);
   }
 }
 
 // Execute the main function
 main().catch(error => {
-  console.error('Unhandled error:', error);
+  Logger.error('Unhandled error:', error);
   process.exit(1);
 });

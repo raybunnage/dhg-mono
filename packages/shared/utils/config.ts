@@ -1,13 +1,30 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 import { LogLevel } from './logger';
 
 // Try to load environment variables from various files
 const envFiles = ['.env', '.env.local', '.env.development'];
-for (const file of envFiles) {
-  const filePath = path.resolve(process.cwd(), file);
-  dotenv.config({ path: filePath });
+
+// Create a function to load environment variables
+function loadEnvFiles() {
+  for (const file of envFiles) {
+    const filePath = path.resolve(process.cwd(), file);
+    
+    if (fs.existsSync(filePath)) {
+      console.log(`Loading environment variables from ${filePath}`);
+      
+      const result = dotenv.config({ path: filePath });
+      
+      if (result.error) {
+        console.error(`Error loading ${filePath}:`, result.error);
+      }
+    }
+  }
 }
+
+// Load environment variables
+loadEnvFiles();
 
 /**
  * Configuration interface for the application
