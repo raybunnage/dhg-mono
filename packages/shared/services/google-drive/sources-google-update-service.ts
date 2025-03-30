@@ -260,6 +260,110 @@ export class SourcesGoogleUpdateService {
       };
     }
   }
+
+  /**
+   * Update root folder status
+   * @param folderId Folder database ID 
+   * @param setAsRoot Whether to set this folder as a root (true) or remove root status (false)
+   * @param options Update options
+   */
+  public async updateFolderRootStatus(
+    folderId: string,
+    setAsRoot: boolean,
+    options: { dryRun?: boolean; verbose?: boolean } = {}
+  ): Promise<{ success: boolean; error?: Error }> {
+    const { dryRun = false, verbose = false } = options;
+
+    try {
+      if (verbose) {
+        console.log(`${dryRun ? 'DRY RUN: ' : ''}${setAsRoot ? 'Setting' : 'Removing'} root status for folder ${folderId}`);
+      }
+
+      // Get folder details first
+      const { data: folder, error: fetchError } = await this.supabaseClient
+        .from('sources_google')
+        .select('id, name, drive_id, is_root')
+        .eq('id', folderId)
+        .single();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (!folder) {
+        throw new Error(`Folder with ID ${folderId} not found`);
+      }
+
+      if (folder.is_root === setAsRoot) {
+        if (verbose) {
+          console.log(`Folder "${folder.name}" is already ${setAsRoot ? 'a root folder' : 'not a root folder'}`);
+        }
+        return { success: true };
+      }
+
+      if (!dryRun) {
+        const now = new Date().toISOString();
+        let updateData: any = {
+          is_root: setAsRoot,
+          updated_at: now
+        };
+
+        // If making it a root folder, clear parent references
+        if (setAsRoot) {
+          updateData = {
+            ...updateData,
+            parent_folder_id: null,
+            parent_path: null,
+            parent_id: null,
+            path: `/${folder.name}`
+          };
+        }
+
+        const { error: updateError } = await this.supabaseClient
+          .from('sources_google')
+          .update(updateData)
+          .eq('id', folderId);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        if (verbose) {
+          console.log(`Successfully ${setAsRoot ? 'set' : 'removed'} root status for folder "${folder.name}"`);
+        }
+      } else if (verbose) {
+        console.log(`Would ${setAsRoot ? 'set' : 'remove'} root status for folder "${folder.name}"`);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error(`Error ${setAsRoot ? 'setting' : 'removing'} root folder status:`, error);
+      return { success: false, error: error as Error };
+    }
+  }
+
+  /**
+   * Get all folders currently marked as root
+   */
+  public async getRootFolders(): Promise<GoogleDriveFile[]> {
+    try {
+      const { data, error } = await this.supabaseClient
+        .from('sources_google')
+        .select('*')
+        .eq('is_root', true)
+        .eq('deleted', false)
+        .order('name');
+
+      if (error) {
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error getting root folders:', error);
+      throw error;
+    }
+  }
 }
 
 export default SourcesGoogleUpdateService;

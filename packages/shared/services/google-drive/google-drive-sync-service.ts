@@ -21,7 +21,7 @@ export interface PathResolutionOptions {
 export interface SyncResult {
   stats: SyncStats;
   files: GoogleDriveFile[];
-  errors: Error[];
+  errors: any[]; // Changed from Error[] to any[] to fix type errors
 }
 
 // Batch options
@@ -326,7 +326,23 @@ export class GoogleDriveSyncService {
               mimeType: file.mimeType
             },
             deleted: false,
-            content_extracted: false
+            content_extracted: false,
+            // Add missing required fields with null values
+            expert_id: null,
+            sync_status: null,
+            sync_error: null,
+            document_type_id: null,
+            extraction_error: null,
+            extracted_content: null,
+            audio_duration_seconds: null,
+            audio_extracted: false,
+            audio_extraction_path: null,
+            audio_channels: null,
+            audio_bitrate: null,
+            audio_quality_metrics: null,
+            sync_id: null,
+            parent_id: null,
+            size: null
           } as GoogleDriveFile;
         });
         
@@ -421,7 +437,7 @@ export class GoogleDriveSyncService {
         result.inserted += batch.length;
       } catch (error) {
         console.error('Batch insert error:', error);
-        result.errors.push(error as Error);
+        result.errors.push(error);
       }
     }
     
@@ -438,9 +454,9 @@ export class GoogleDriveSyncService {
     files: GoogleDriveFile[],
     options: BatchOptions = {},
     onProgress?: ProgressCallback
-  ): Promise<{ processed: number; failed: number; errors: Error[] }> {
+  ): Promise<{ processed: number; failed: number; errors: any[] }> {
     const { batchSize = 10, concurrentBatches = 2 } = options;
-    const result = { processed: 0, failed: 0, errors: [] };
+    const result = { processed: 0, failed: 0, errors: [] as any[] };
     
     console.log(`Extracting content from ${files.length} files in batches of ${batchSize}`);
     
@@ -466,7 +482,7 @@ export class GoogleDriveSyncService {
       } catch (error) {
         console.error('Batch extract error:', error);
         result.failed += batch.length;
-        result.errors.push(error as Error);
+        result.errors.push(error);
       }
     }
     
@@ -483,9 +499,9 @@ export class GoogleDriveSyncService {
     files: GoogleDriveFile[],
     options: BatchOptions = {},
     onProgress?: ProgressCallback
-  ): Promise<{ processed: number; failed: number; errors: Error[] }> {
+  ): Promise<{ processed: number; failed: number; errors: any[] }> {
     const { batchSize = 5, concurrentBatches = 1 } = options;
-    const result = { processed: 0, failed: 0, errors: [] };
+    const result = { processed: 0, failed: 0, errors: [] as any[] };
     
     console.log(`Extracting audio from ${files.length} files in batches of ${batchSize}`);
     
@@ -511,7 +527,7 @@ export class GoogleDriveSyncService {
       } catch (error) {
         console.error('Audio extract error:', error);
         result.failed += batch.length;
-        result.errors.push(error as Error);
+        result.errors.push(error);
       }
     }
     

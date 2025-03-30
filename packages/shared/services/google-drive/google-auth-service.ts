@@ -2,13 +2,19 @@
  * Shared service for Google Drive authentication
  * Used by both UI components and CLI tools
  * 
- * UPDATED: Now prioritizes service account authentication when available,
- * and falls back to OAuth tokens only when necessary.
+ * Features:
+ * - Centralized authentication for all Google Drive services
+ * - Prioritizes service account authentication when available
+ * - Falls back to OAuth tokens if service account not configured
+ * - Automatically refreshes tokens when needed
+ * - Can be used in both browser and Node.js environments
+ * - Supports multiple storage options (localStorage, file system)
  */
 
 import { Credentials, GoogleAuth, JWT } from 'google-auth-library';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
 
 // Interface for token storage
 export interface GoogleAuthToken {
@@ -152,14 +158,57 @@ export class GoogleAuthService {
   private tokenExpiresAt: Date | null = null;
   private serviceAuthClient: JWT | null = null;
   private usingServiceAccount: boolean = false;
+  private initializing: Promise<boolean> | null = null;
 
   private constructor(config: GoogleAuthConfig, storage: TokenStorageAdapter) {
     this.config = config;
     this.storage = storage;
     
-    // Try to initialize service account auth if available
-    if (config.serviceAccount) {
-      this.initServiceAccountAuth(config.serviceAccount);
+    // Load environment variables if we're in Node
+    if (typeof window === 'undefined') {
+      // Try to load from .env.development first, then fall back to .env
+      dotenv.config({ path: path.resolve(process.cwd(), '.env.development') });
+      dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+    }
+    
+    // Initialize authentication (async, but start immediately)
+    this.initializing = this.initialize();
+  }
+  
+  /**
+   * Initialize authentication, attempting service account first, then OAuth
+   */
+  private async initialize(): Promise<boolean> {
+    try {
+      // First try service account initialization
+      if (this.config.serviceAccount) {
+        const serviceAccountSuccess = await this.initServiceAccountAuth(this.config.serviceAccount);
+        if (serviceAccountSuccess) {
+          return true;
+        }
+      }
+      
+      // If no service account config provided or it failed, check environment variables
+      const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
+                               process.env.GOOGLE_SERVICE_ACCOUNT_PATH ||
+                               path.resolve(process.cwd(), '.service-account.json');
+      
+      if (typeof window === 'undefined' && serviceAccountPath && fs.existsSync(serviceAccountPath)) {
+        const serviceAccountSuccess = await this.initServiceAccountAuth({
+          keyFilePath: serviceAccountPath,
+          scopes: this.config.scopes
+        });
+        if (serviceAccountSuccess) {
+          return true;
+        }
+      }
+      
+      // If service account auth failed, try OAuth
+      const token = await this.loadToken();
+      return !!token;
+    } catch (error) {
+      console.error('Failed to initialize auth service:', error);
+      return false;
     }
   }
 
@@ -267,21 +316,40 @@ export class GoogleAuthService {
    * @param storage Storage adapter (default: localStorage)
    */
   public static getInstance(
-    config: GoogleAuthConfig,
+    config?: Partial<GoogleAuthConfig>,
     storage?: TokenStorageAdapter
   ): GoogleAuthService {
     if (!GoogleAuthService.instance) {
+      // Default config with minimum required values
+      const defaultConfig: GoogleAuthConfig = {
+        clientId: config?.clientId || process.env.GOOGLE_CLIENT_ID || '',
+        clientSecret: config?.clientSecret || process.env.GOOGLE_CLIENT_SECRET || '',
+        redirectUri: config?.redirectUri || process.env.GOOGLE_REDIRECT_URI || '',
+        scopes: config?.scopes || ['https://www.googleapis.com/auth/drive.readonly'],
+        tokenStoragePath: config?.tokenStoragePath || path.resolve(process.cwd(), '.google-tokens.json'),
+        serviceAccount: config?.serviceAccount
+      };
+      
       // Default to local storage if not specified
       const storageAdapter = storage || 
         (typeof window !== 'undefined' && window.localStorage 
           ? new LocalStorageAdapter()
-          : config.tokenStoragePath 
-            ? new FileSystemAdapter(config.tokenStoragePath)
+          : defaultConfig.tokenStoragePath 
+            ? new FileSystemAdapter(defaultConfig.tokenStoragePath)
             : new LocalStorageAdapter());
       
-      GoogleAuthService.instance = new GoogleAuthService(config, storageAdapter);
+      GoogleAuthService.instance = new GoogleAuthService(defaultConfig, storageAdapter);
     }
+    
     return GoogleAuthService.instance;
+  }
+  
+  /**
+   * Get singleton instance with automatic configuration
+   * This is a simplified method that will attempt to load configuration from environment variables
+   */
+  public static getDefaultInstance(): GoogleAuthService {
+    return GoogleAuthService.getInstance();
   }
 
   /**
@@ -535,7 +603,12 @@ export class GoogleAuthService {
    * Get the access token string for API requests
    */
   public async getAccessToken(): Promise<string | null> {
-    // If service account is being used, get access token from service account
+    // Wait for initialization to complete if it's still in progress
+    if (this.initializing) {
+      await this.initializing;
+    }
+    
+    // Try service account first
     if (this.usingServiceAccount && this.serviceAuthClient) {
       try {
         // This will refresh the token if needed
@@ -543,14 +616,38 @@ export class GoogleAuthService {
         return credentials.access_token || null;
       } catch (error) {
         console.error('Failed to get service account access token:', error);
-        return null;
       }
     }
     
-    // Otherwise fall back to OAuth token
-    const isValid = await this.isTokenValid();
-    if (!isValid) return null;
-    return this.token?.access_token || null;
+    // Try OAuth token
+    try {
+      const isValid = await this.isTokenValid();
+      if (isValid && this.token?.access_token) {
+        return this.token.access_token;
+      }
+    } catch (error) {
+      console.error('Failed to get OAuth token:', error);
+    }
+    
+    // Try environment variables as last resort
+    const envToken = process.env.GOOGLE_ACCESS_TOKEN || process.env.VITE_GOOGLE_ACCESS_TOKEN;
+    if (envToken) {
+      return envToken;
+    }
+    
+    // No valid token found
+    console.error('No valid Google access token available. Authentication failed.');
+    return null;
+  }
+  
+  /**
+   * Check if the auth service is ready to use
+   */
+  public async isReady(): Promise<boolean> {
+    if (this.initializing) {
+      return await this.initializing;
+    }
+    return this.usingServiceAccount || (await this.isTokenValid());
   }
 }
 

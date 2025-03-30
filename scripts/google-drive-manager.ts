@@ -37,16 +37,18 @@ import { writeFileSync } from 'fs';
 import { createClient } from '@supabase/supabase-js';
 import { Command } from 'commander';
 import type { Database } from '../supabase/types';
+import { defaultGoogleAuth } from '../packages/shared/services/google-drive';
 
 // Load environment variables
 dotenv.config();
 
 // Ensure Supabase credentials are available
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Supabase URL or key not found in environment variables');
+  console.error('Available environment variables:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
   process.exit(1);
 }
 
@@ -125,10 +127,10 @@ program
     
     try {
       // First check if the folder exists in Google Drive
-      const accessToken = process.env.VITE_GOOGLE_ACCESS_TOKEN;
+      const accessToken = await defaultGoogleAuth.getAccessToken();
       
       if (!accessToken) {
-        console.error('❌ No Google access token found in environment variables');
+        console.error('❌ Failed to get Google access token from auth service');
         process.exit(1);
       }
       
@@ -216,25 +218,27 @@ program
       
       // Insert new root folder
       const now = new Date().toISOString();
+      const insertData: Database['public']['Tables']['sources_google']['Insert'] = {
+        drive_id: folderId,
+        name: options.name || '',
+        is_root: true,
+        mime_type: 'application/vnd.google-apps.folder',
+        path: `/${options.name || ''}`,
+        parent_path: null,
+        parent_folder_id: null,
+        metadata: { 
+          description: options.description,
+          isRootFolder: true,
+          createdAt: now
+        },
+        created_at: now,
+        updated_at: now,
+        deleted: false
+      };
+      
       const { data, error } = await supabase
         .from('sources_google')
-        .insert({
-          drive_id: folderId,
-          name: options.name,
-          is_root: true,
-          mime_type: 'application/vnd.google-apps.folder',
-          path: `/${options.name}`,
-          parent_path: null,
-          parent_folder_id: null,
-          metadata: { 
-            description: options.description,
-            isRootFolder: true,
-            createdAt: now
-          },
-          created_at: now,
-          updated_at: now,
-          deleted: false
-        })
+        .insert(insertData)
         .select();
         
       if (error) {
@@ -331,10 +335,10 @@ program
         folderId = actualId;
       }
       
-      const accessToken = process.env.VITE_GOOGLE_ACCESS_TOKEN;
+      const accessToken = await defaultGoogleAuth.getAccessToken();
       
       if (!accessToken) {
-        console.error('❌ No Google access token found in environment variables');
+        console.error('❌ Failed to get Google access token from auth service');
         process.exit(1);
       }
       
@@ -418,10 +422,10 @@ program
     
     try {
       // First verify the folder exists
-      const accessToken = process.env.VITE_GOOGLE_ACCESS_TOKEN;
+      const accessToken = await defaultGoogleAuth.getAccessToken();
       
       if (!accessToken) {
-        console.error('❌ No Google access token found in environment variables');
+        console.error('❌ Failed to get Google access token from auth service');
         process.exit(1);
       }
       
@@ -475,7 +479,7 @@ program
   .description('Sync files from a root folder (or all if not specified)')
   .option('--dry-run', 'Show what would be synced without making changes')
   .option('--timeout <timeout>', 'Timeout in milliseconds', '600000')
-  .action(async (rootId?: string, options: { dryRun?: boolean; timeout?: string }) => {
+  .action(async (rootId: string | undefined, options: { dryRun?: boolean; timeout?: string }) => {
     try {
       if (rootId) {
         console.log(`Syncing root folder with ID: ${rootId}`);
@@ -505,13 +509,17 @@ program
         console.log(`Syncing root folder "${data.name}" (${data.drive_id})`);
         
         // Call the sync-folder command
-        const syncFolderCommand = program.commands.find((cmd: Command) => cmd.name() === 'sync-folder');
-        if (syncFolderCommand) {
-          await syncFolderCommand.parseAsync([data.drive_id, 
-            ...(options.dryRun ? ['--dry-run'] : []), 
-            ...(options.timeout ? ['--timeout', options.timeout] : [])
-          ]);
-        }
+        // Call sync-folder with the drive_id
+        console.log(`Calling sync-folder for ${data.name} (${data.drive_id})`);
+        
+        // Instead of trying to call another command internally,
+        // reuse the sync-folder action logic directly here
+        await program
+          .commands.find((cmd: any) => cmd.name() === 'sync-folder')
+          ?.action(data.drive_id, {
+            dryRun: options.dryRun,
+            timeout: options.timeout
+          });
       } else {
         console.log('Syncing all root folders');
         
@@ -562,9 +570,9 @@ program
       console.log('=== Potential Root Folders ===');
       
       // Get the access token
-      const accessToken = process.env.VITE_GOOGLE_ACCESS_TOKEN;
+      const accessToken = await defaultGoogleAuth.getAccessToken();
       if (!accessToken) {
-        console.error('❌ No Google access token found in environment variables');
+        console.error('❌ Failed to get Google access token from auth service');
         process.exit(1);
       }
       
