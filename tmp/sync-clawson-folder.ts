@@ -47,6 +47,7 @@ loadEnvFiles();
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const isVerbose = args.includes('--verbose');
+const updatePathsOnly = args.includes('--update-paths-only');
 
 // Parse limit
 const limitIndex = args.indexOf('--limit');
