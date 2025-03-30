@@ -21,7 +21,7 @@ export interface PathResolutionOptions {
 export interface SyncResult {
   stats: SyncStats;
   files: GoogleDriveFile[];
-  errors: any[]; // Changed from Error[] to any[] to fix type errors
+  errors: unknown[]; // Changed from Error[] to unknown[] to fix type errors
 }
 
 // Batch options
@@ -48,10 +48,13 @@ export interface CleanupResult {
   filesDeleted: number;
   filesMarkedAsDeleted: number;
   filesSkipped: number;
-  errors: Error[];
+  errors: unknown[]; // Changed from Error[] to unknown[] to fix type errors
   startTime: Date;
   endTime: Date;
 }
+
+// Fix for type errors in result objects
+type ErrorsArray = unknown[];
 
 /**
  * Shared Google Drive Sync Service
@@ -393,11 +396,11 @@ export class GoogleDriveSyncService {
    */
   private async insertBatch(
     files: GoogleDriveFile[]
-  ): Promise<{ inserted: number; errors: Error[] }> {
+  ): Promise<{ inserted: number; errors: ErrorsArray }> {
     // This would be implemented by the specific client to insert records
     // Mock implementation
     console.log(`Would insert ${files.length} files`);
-    return { inserted: files.length, errors: [] };
+    return { inserted: files.length, errors: [] as ErrorsArray };
   }
 
   /**
@@ -410,9 +413,9 @@ export class GoogleDriveSyncService {
     files: GoogleDriveFile[],
     options: BatchOptions = {},
     onProgress?: ProgressCallback
-  ): Promise<{ inserted: number; updated: number; errors: Error[] }> {
+  ): Promise<{ inserted: number; updated: number; errors: ErrorsArray }> {
     const { batchSize = 50 } = options;
-    const result = { inserted: 0, updated: 0, errors: [] };
+    const result = { inserted: 0, updated: 0, errors: [] as ErrorsArray };
     
     console.log(`Inserting ${files.length} files in batches of ${batchSize}`);
     
@@ -454,9 +457,9 @@ export class GoogleDriveSyncService {
     files: GoogleDriveFile[],
     options: BatchOptions = {},
     onProgress?: ProgressCallback
-  ): Promise<{ processed: number; failed: number; errors: any[] }> {
+  ): Promise<{ processed: number; failed: number; errors: unknown[] }> {
     const { batchSize = 10, concurrentBatches = 2 } = options;
-    const result = { processed: 0, failed: 0, errors: [] as any[] };
+    const result = { processed: 0, failed: 0, errors: [] as unknown[] };
     
     console.log(`Extracting content from ${files.length} files in batches of ${batchSize}`);
     
@@ -499,9 +502,9 @@ export class GoogleDriveSyncService {
     files: GoogleDriveFile[],
     options: BatchOptions = {},
     onProgress?: ProgressCallback
-  ): Promise<{ processed: number; failed: number; errors: any[] }> {
+  ): Promise<{ processed: number; failed: number; errors: unknown[] }> {
     const { batchSize = 5, concurrentBatches = 1 } = options;
-    const result = { processed: 0, failed: 0, errors: [] as any[] };
+    const result = { processed: 0, failed: 0, errors: [] as unknown[] };
     
     console.log(`Extracting audio from ${files.length} files in batches of ${batchSize}`);
     

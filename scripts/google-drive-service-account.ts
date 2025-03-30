@@ -20,6 +20,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { google } from 'googleapis';
+import { defaultGoogleAuth } from '../packages/shared/services/google-drive';
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../.env.development') });
@@ -76,12 +77,39 @@ async function main() {
 }
 
 /**
- * Initialize Google Drive client using service account
+ * Initialize Google Drive client using the shared auth service
  */
 async function initDriveClient() {
   try {
+    // First try to get a token from the centralized auth service
+    console.log('🔍 Using centralized Google Auth Service...');
+    
+    // Check if auth service is ready
+    const isReady = await defaultGoogleAuth.isReady();
+    if (isReady) {
+      // Get access token
+      const accessToken = await defaultGoogleAuth.getAccessToken();
+      
+      if (accessToken) {
+        console.log('✅ Successfully obtained token from centralized auth service');
+        
+        // Create auth using the OAuth2 client
+        const auth = new google.auth.OAuth2();
+        auth.setCredentials({
+          access_token: accessToken
+        });
+        
+        // Initialize the Drive client
+        return google.drive({ version: 'v3', auth });
+      }
+    }
+    
+    // Fallback to direct service account initialization if centralized auth failed
+    console.log('⚠️ Centralized auth service failed, falling back to direct service account...');
+    
     // Get service account key file path from environment or use default
     const keyFilePath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH || 
+                        process.env.GOOGLE_APPLICATION_CREDENTIALS ||
                         path.resolve(__dirname, '../.service-account.json');
     
     console.log(`🔑 Using service account key file: ${keyFilePath}`);
@@ -91,7 +119,8 @@ async function initDriveClient() {
       console.error(`❌ Service account key file not found: ${keyFilePath}`);
       console.log('\nPlease do one of the following:');
       console.log('1. Create the file at the path above');
-      console.log('2. Set GOOGLE_SERVICE_ACCOUNT_PATH environment variable to the correct path');
+      console.log('2. Set GOOGLE_APPLICATION_CREDENTIALS environment variable to the correct path');
+      console.log('3. Set GOOGLE_SERVICE_ACCOUNT_PATH environment variable to the correct path');
       console.log('\nTo get a key file, follow the instructions in:');
       console.log('docs/solution-guides/GOOGLE_SERVICE_ACCOUNT_GUIDE.md');
       return null;
