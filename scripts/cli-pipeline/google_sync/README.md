@@ -22,6 +22,34 @@ npm link
 
 ## Usage
 
+### TypeScript-based Commands
+
+The CLI now includes TypeScript-based commands for improved reliability and type safety. Use the `google-drive-cli.sh` script in the `scripts` directory to access these features:
+
+```bash
+# List all registered root folders
+./scripts/google-drive-cli.sh list-roots
+
+# List potential root folders that aren't registered yet
+./scripts/google-drive-cli.sh list-potential-roots
+
+# Add a new root folder
+./scripts/google-drive-cli.sh add-root 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --name "Dynamic Healing Discussion Group"
+
+# Remove a root folder
+./scripts/google-drive-cli.sh remove-root <id>
+
+# Sync a specific folder
+./scripts/google-drive-cli.sh sync-folder 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run
+
+# Sync a folder recursively
+./scripts/google-drive-cli.sh sync-folder dynamic-healing --recursive
+```
+
+### Legacy Commands
+
+The original JavaScript-based commands are still available:
+
 ```bash
 # Check authentication status
 google-sync auth status
@@ -44,45 +72,77 @@ google-sync audio batch-extract
 
 ## Commands
 
-### Authentication
+### TypeScript CLI Commands
+
+#### Core Commands
+- `list-roots` - List all registered root folders in the database
+- `list-potential-roots` - List folders in Google Drive that aren't registered as roots
+- `add-root` - Add a new root folder for syncing
+- `remove-root` - Remove a root folder
+- `check-folder` - Check if a folder exists in Google Drive
+- `sync` - Sync a specific root folder or all root folders
+- `sync-folder` - Sync a specific folder (doesn't need to be a root)
+
+#### Advanced Commands
+- `add-root-service` - Add a new root folder using service account
+- `check-roots` - Check the status of all registered root folders
+- `list-drive-direct` - List files in Drive directly (no DB interaction)
+- `list-drive-service` - List files using service account
+- `report-drive-roots` - Generate a detailed report about all root folders
+- `sync-and-update-metadata` - Sync folder and update metadata in one operation
+- `update-metadata` - Update metadata for files in the database
+- `update-dynamic-healing` - Update metadata for Dynamic Healing Discussion Group
+
+#### Options
+- `--dry-run` - Show what would be synced without making changes
+- `--timeout [ms]` - Set timeout for sync operations
+- `--name [name]` - Specify a name when adding a root folder
+- `--description [desc]` - Specify a description when adding a root folder
+- `--verbose` - Show more detailed output
+- `--recursive` - Recursively sync subfolders (for sync-folder command)
+- `--limit [number]` - Limit the number of files to process
+
+### Legacy Commands
+
+#### Authentication
 
 - `auth status` - Check if Google auth token is valid
 - `auth login` - Login to Google Drive and get a new token
 - `auth refresh` - Refresh the Google auth token
 
-### Sync
+#### Sync
 
 - `sync folder` - Sync a specific Google Drive folder
 - `sync roots` - Sync all registered root folders
 
-### Roots Management
+#### Roots Management
 
 - `roots list` - List all registered root folders
 - `roots add` - Add a new root folder for syncing
 - `roots remove` - Remove a root folder
 
-### File Operations
+#### File Operations
 
 - `files list` - List synced files
 - `files extract` - Extract content from synced files
 - `files batch-extract` - Extract content from multiple files in batch
 
-### Audio Operations
+#### Audio Operations
 
 - `audio extract` - Extract audio from video or audio files
 - `audio batch-extract` - Extract audio from multiple files in batch
 
-### Maintenance
+#### Maintenance
 
 - `cleanup fix-paths` - Fix missing parent paths in the database
 - `cleanup purge` - Purge old records from the database
 
-### Statistics
+#### Statistics
 
 - `stats sync` - Get sync statistics
 - `stats types` - Get statistics by file types
 
-### Utilities
+#### Utilities
 
 - `test-connection` - Test connections to Google Drive and Supabase
 - `token-timer` - Display time until token expiration
@@ -99,49 +159,33 @@ Required environment variables:
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET` - Google OAuth client secret
 
-## Examples
-
-```bash
-# Sync a specific folder with detailed output
-google-sync sync folder --id 1EHBAhSv1hmcuctiAgaLI9stLvefFFl3m --verbose
-
-# List all audio files
-google-sync files list --type "audio/" --limit 100
-
-# Batch extract content from PDF files
-google-sync files batch-extract --type "application/pdf" --limit 20
-
-# Fix missing parent paths
-google-sync cleanup fix-paths
-```
-
 ## Development
 
-This CLI tool is built using Commander.js and integrates with shared services for Google Drive and Supabase interactions. To extend the functionality:
+This CLI tool integrates both JavaScript and TypeScript implementations:
 
-1. Add new commands to `index.js`
-2. Implement the command functionality in appropriate service files
-3. Use shared services where possible to maintain consistency with the web UI
+1. The legacy JavaScript CLI uses Commander.js and standalone implementations
+2. The TypeScript implementation leverages the shared services from the central packages
 
-### Migrating to TypeScript
+## Directory Structure
 
-This CLI is being migrated to TypeScript and refactored to use the centralized services from the shared packages. The migration path is:
+- `scripts/cli-pipeline/google_sync/` - Main directory for the Google Drive CLI pipeline
+  - `scripts/` - Scripts directory
+    - `google-drive-cli.sh` - Main entry point wrapper script for TypeScript commands
+    - `ts/` - TypeScript implementation of core commands
+      - `list-drive-roots.ts` - List roots implementation
+      - `google-drive-manager.ts` - Core CLI implementation
+      - `sync-drive-service.ts` - Sync implementation
+      - `utility/` - Additional utility scripts
+        - Various helpers and specialized commands
 
-1. A new adapter layer is being built in `packages/cli-pipeline/google_sync/` with TypeScript versions of:
-   - `auth-adapter.ts` - Uses the centralized `defaultGoogleAuth` service
-   - `drive-service.ts` - Uses the shared Google Drive services
-   - `adapter-bridge.ts` - Provides transition functions between JS and TS
+## Adding New Functionality
 
-2. New features should:
-   - Use the TypeScript versions of the services
-   - Delegate authentication to the centralized `defaultGoogleAuth` service
-   - Handle all Google Drive operations through the shared services
-   - Avoid direct token management in CLI code
-
-3. See the migration instructions for more details:
-   ```bash
-   google-sync migration-instructions
-   ```
+To extend the functionality:
+- New features should use the TypeScript versions in the `scripts/ts` directory
+- Use the shared services and authentication methods whenever possible
+- When adding new TypeScript files, use the correct relative path to imports:
+  - Import from supabase: `import type { Database } from '../../../../../../supabase/types';`
+  - Import from packages: `import { defaultGoogleAuth } from '../../../../../../packages/shared/services/google-drive';`
 
 ## License
 
