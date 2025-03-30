@@ -2,19 +2,20 @@
   "name": "google-sync-cli",
   "version": "1.0.0",
   "description": "CLI tool for syncing Google Drive files with Supabase",
-  "main": "index.js",
+  "main": "scripts/google-drive-cli.sh",
   "bin": {
-    "google-sync": "index.js"
+    "google-sync": "scripts/google-drive-cli.sh"
   },
   "scripts": {
-    "start": "node index.js",
-    "dev": "node index.js",
-    "build": "echo \"No build step required\"",
+    "start": "bash scripts/google-drive-cli.sh",
+    "dev": "bash scripts/google-drive-cli.sh",
+    "build": "tsc --skipLibCheck",
     "link": "npm link",
     "unlink": "npm unlink",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
     "chalk": "^4.1.2",
     "commander": "^11.0.0",
     "dayjs": "^1.11.13",
@@ -25,6 +26,11 @@
     "open": "^8.4.2",
     "ora": "^5.4.1",
     "table": "^6.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
   },
   "engines": {
     "node": ">=14.0.0"
