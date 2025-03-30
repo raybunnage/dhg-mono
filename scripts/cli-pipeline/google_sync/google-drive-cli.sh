@@ -28,6 +28,7 @@ function display_help() {
   echo "Advanced Commands:"
   echo "  add-root-service [folderId] Add a new root folder using service account"
   echo "  check-roots                 Check the status of all registered root folders"
+  echo "  disk-status                 Update presentations table with disk status for MP4 files"
   echo "  list-drive-direct           List files in Drive directly (no DB interaction)"
   echo "  report-drive-roots          Generate a detailed report about all root folders"
   echo "  sync-and-update-metadata    Sync folder and update metadata in one operation"
@@ -47,6 +48,7 @@ function display_help() {
   echo "  google-drive-cli.sh sync-folder 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
   echo "  google-drive-cli.sh sync-folder dynamic-healing --recursive"
   echo "  google-drive-cli.sh sync-and-update-metadata 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --limit 50"
+  echo "  google-drive-cli.sh disk-status --dry-run"
 }
 
 # No arguments provided
@@ -106,6 +108,9 @@ case "$COMMAND" in
     ;;
   update-dynamic-healing)
     ts-node "$SCRIPT_DIR/update-dynamic-healing-metadata.ts" "$@"
+    ;;
+  disk-status)
+    ts-node "$SCRIPT_DIR/update-presentation-disk-status.ts" "$@"
     ;;
     
   # Help commands

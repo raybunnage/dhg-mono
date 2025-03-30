@@ -44,6 +44,9 @@ The CLI now includes TypeScript-based commands for improved reliability and type
 
 # Sync a folder recursively
 ./scripts/google-drive-cli.sh sync-folder dynamic-healing --recursive
+
+# Update presentation disk status in dry-run mode
+./scripts/google-drive-cli.sh disk-status --dry-run
 ```
 
 ### Legacy Commands
@@ -86,6 +89,7 @@ google-sync audio batch-extract
 #### Advanced Commands
 - `add-root-service` - Add a new root folder using service account
 - `check-roots` - Check the status of all registered root folders
+- `disk-status` - Update presentations table with disk status for MP4 files
 - `list-drive-direct` - List files in Drive directly (no DB interaction)
 - `list-drive-service` - List files using service account
 - `report-drive-roots` - Generate a detailed report about all root folders
@@ -101,6 +105,7 @@ google-sync audio batch-extract
 - `--verbose` - Show more detailed output
 - `--recursive` - Recursively sync subfolders (for sync-folder command)
 - `--limit [number]` - Limit the number of files to process
+- `--force` - Process all items even if they already have been processed (used with disk-status)
 
 ### Legacy Commands
 
@@ -186,6 +191,30 @@ To extend the functionality:
 - When adding new TypeScript files, use the correct relative path to imports:
   - Import from supabase: `import type { Database } from '../../../../../../supabase/types';`
   - Import from packages: `import { defaultGoogleAuth } from '../../../../../../packages/shared/services/google-drive';`
+
+## Specialized Commands
+
+### Disk Status Command
+
+The `disk-status` command checks for MP4 files in the `file_types/mp4` directory and updates the `presentations` table with disk availability status. This helps maintain synchronization between files in Google Drive and local storage.
+
+```bash
+# Check disk status in dry-run mode
+./scripts/google-drive-cli.sh disk-status --dry-run
+
+# Update disk status for all presentations (even already processed ones)
+./scripts/google-drive-cli.sh disk-status --force
+```
+
+The command adds the following metadata to the presentations table:
+
+- `available_on_disk` - Boolean flag indicating if the file is available locally
+- `disk_filename` - The actual filename on disk (might include INGESTED_ prefix)
+- `disk_file_size` - The file size in bytes
+- `disk_file_size_mb` - The file size in megabytes (rounded)
+- `disk_status_updated` - Timestamp of when the status was last updated
+
+This information can be used by applications to determine whether to stream from Google Drive or serve from the local disk.
 
 ## License
 

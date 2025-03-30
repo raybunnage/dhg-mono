@@ -1,0 +1,54 @@
+# Claude Code Instructions
+
+## Code Organization Principles
+
+1. **Shared Services First**: Always prioritize using and enhancing the shared services in `packages/shared`. Before implementing any functionality, check if an existing service can be used or extended.
+
+2. **UI Pages as Service Sources**: When examining UI pages in `apps/dhg-improve-experts`, treat them as potential sources for shared services. These comprehensive pages often contain functionality that can be abstracted into reusable services. Future refactoring will create "New" + page name versions that leverage these shared services while preserving the React UI components.
+
+3. **CLI Pipeline Architecture**: Organize all command-line interfaces using commander.js in the appropriate CLI pipeline folder:
+   - `scripts/cli-pipeline/google_sync/`
+   - `scripts/cli-pipeline/document/`
+   - `scripts/cli-pipeline/scripts/`
+   
+   Keep a flat file structure within these folders - no nested subfolders. Don't create new script components in the root `scripts/` directory.
+
+4. **Singleton Pattern for External Services**: Always use the established singleton patterns for external service connections:
+   - Supabase: `packages/shared/services/supabase-service`
+   - Google Drive: `packages/shared/services/google-drive`
+
+5. **Archiving Strategy**: Archive temporary or unused code in `.archived_scripts` folders with the date appended to the filename (e.g., `scripts/cli-pipeline/google_sync/.archived_scripts/some-script.20250330.ts`).
+
+## Development Workflow
+
+1. **Progressive Enhancement**: 
+   - Fix and refactor code incrementally
+   - Avoid breaking existing functionality
+   - Prefer enhancing CLI pipeline commands over creating standalone scripts
+
+2. **Quality Assurance**:
+   - Always test for TypeScript errors after making changes
+   - Verify command functionality after fixing errors
+   - Document the full paths and arguments needed to run the CLI commands
+
+3. **Version Control**:
+   - Make logical commits at appropriate intervals
+   - Include descriptive commit messages
+
+## Common Commands 
+<!-- Add frequently used commands for build, test, lint, etc. -->
+
+## Project Structure Notes
+<!-- Key directories and their purposes -->
+- `packages/shared/` - Reusable services and utilities
+- `scripts/cli-pipeline/` - Command-line interfaces for major processes
+- `apps/dhg-improve-experts/` - Main application UI components
+
+## Continuous Improvement
+When I identify recurring patterns, issues, or inefficiencies in the development workflow, I'll document them here along with solutions:
+
+<!-- Example format:
+1. **Issue**: [Description of the recurring problem]
+   **Solution**: [How to address it systematically]
+   **Implementation**: [Specific steps to implement the solution]
+-->

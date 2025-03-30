@@ -1,6 +1,24 @@
  /Users/raybunnage/Documents/github/
  
- 
+ I want you to write this up and put itno the claude.md.  Put it in your own words since it is for you
+ 1) I am always trying to create and improve commonly shared servies at packages/shared - and at this point you have created a number of them and they support multiple script and even ui
+
+1a)  Sometimes I will point you to a ui page in apps/dhg-improve-experts project that has a page that has both ui and lots of code to support certain functionality. These pages and their associated componenents are rich material for existing services or for creating new services since they are comprehensive codebases to support sets of functionallity.  In the future I'll be refactoringn existing pages to a "New" + page name that tries to use the shared sservices for doing the heavy processing, while keeping the react ui components more or less as is.
+
+ 2) I always want you to first check for existing services in packages/shared to see if they have functionality yhou can use for whatever I ask you to do - if there is some code that has new functionality and it is likely to be shareable in the future then please add to an existing service or create a new service here that either the ui or a script pipeline cli file uses
+ 3) I have settled on cli pipelines - commonlhy used commander.js based command line interfactes used for all my main processes.  So far I have one for documents, scripts anbd google drive sync, but I'll be creating many more of these going forward. My goal is to always put the code into scripts/cli-pipeline underneat folders such as scripts/cli-pipeline/google_sync and scripts/cli-pipeline/document and scripts/cli-pipeline/scripts.  Within each of those folders I want a flat listing of all the files involved in that cli pipeline. I do not wan tyou to create new script components in subfolders underneat these folders nor do I want you to create them in the scripts folder off the root - just under the designated folder for the cli-pipelikne I am having you build 
+ 4) You often create dediated scripts to troubelsheet specific issues.  That is okay, but my main goal is always to use the cli-pipeline commands if possible so I can help makle them better
+ 5) In my services I have a couple of singleton patterns that I always want you to use to connect to either supabase or google drive.  Do not go rogue on me.  Always uses these - you will find them in packages/shared/services/google-drive and packages/shared/services/supabase-service.  
+ 6) re archiving.  In the end these cli pipelines that perform sets of commands for major functions is my key architecture.  If you end up creating termporary files or code that is no longer used, please copy it to the .archived_scripts with the date of the archive at the end of the file and move it out of the folder, so that only the truly used files remain and the project gets lets cluttered.  These .archived_scripts folders should always be available and are available underneath -  for example in scripts/cli-pipeline/google_sync the folder is scripts/cli-pipeline/google_sync/.archived_scripts.  
+ 7) general rules for processing and fixing
+ a) after you have fixed coede always do a final test for typescript errors and fix any issues. 
+ b) after fixing the errors, test again for the commands to really work
+ c) provide me with the full paths of the scripts and argumenrts I need to run after you have testing functionality with these cli-pipelines
+ d) ALWAYS fix code incrementally and refator incrementally and try not to break esxisting functionality
+ e) if possible - go ahead and do logical commits to git hub with descpriptions - do this at a smart interval
+ Thanks!
+
+
  
  Now I want you to add commands to the google sync drive that writes the data returned from the google sync operation on a folder and updates or inserts new records into the database.   But first I need you to out the main high level folders that are available on the google drive if they don't exist yet, including the "Polyvagal Steering Group" and the "Dynamic 
  Healing Discussion Group".  I think i need more work on the roots option that will allow me to write down or insert new root folders as well as query and list them in the google sync cli.  In fact the first database function I need is this insert of root folders (in such a  way that I can add their files and folders later)
