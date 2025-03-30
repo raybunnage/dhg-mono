@@ -37,10 +37,11 @@ const KNOWN_FOLDERS: Record<string, string> = {
 
 // Process command line arguments
 const args = process.argv.slice(2);
-const folderId = args[0];
 const options = {
   dryRun: args.includes('--dry-run'),
   recursive: args.includes('--recursive'),
+  stats: args.includes('--stats'),
+  statsTypes: args.includes('--stats-types'),
   limit: 50
 };
 
@@ -53,9 +54,15 @@ if (limitIndex !== -1 && args[limitIndex + 1]) {
   }
 }
 
-if (!folderId) {
+// Filter out option flags to get the folder ID
+const folderId = args.find(arg => !arg.startsWith('--'));
+
+// If we're just showing stats, we don't need a folder ID
+if (!options.stats && !options.statsTypes && !folderId) {
   console.error('❌ Folder ID is required');
   console.log('Usage: npx ts-node sync-drive-service.ts <folderId> [options]');
+  console.log('   or: npx ts-node sync-drive-service.ts --stats');
+  console.log('   or: npx ts-node sync-drive-service.ts --stats-types');
   process.exit(1);
 }
 
@@ -81,9 +88,21 @@ async function main() {
       process.exit(1);
     }
 
+    // If we're just showing stats, display them and exit
+    if (options.stats) {
+      await showStats(supabase);
+      return;
+    }
+
+    // If we're showing file type stats, display them and exit
+    if (options.statsTypes) {
+      await showStats(supabase, true);
+      return;
+    }
+
     // Get the resolved folder ID if it's an alias
-    let resolvedFolderId = folderId;
-    if (KNOWN_FOLDERS[folderId]) {
+    let resolvedFolderId = folderId || '';
+    if (folderId && KNOWN_FOLDERS[folderId]) {
       resolvedFolderId = KNOWN_FOLDERS[folderId];
       console.log(`Using known folder ID for "${folderId}": ${resolvedFolderId}`);
     }
@@ -184,10 +203,194 @@ async function main() {
       console.error(`❌ Error accessing folder: ${error.message}`);
       process.exit(1);
     }
+  
   } catch (error: any) {
     console.error('❌ Error:', error.message);
     process.exit(1);
   }
+}
+
+/**
+ * Show statistics about synced files in the database
+ * @param supabase Supabase client
+ * @param detailedFileTypes If true, shows more detailed file type statistics
+ */
+async function showStats(supabase: any, detailedFileTypes: boolean = false) {
+  console.log('📊 Retrieving Google Drive sync statistics...');
+  
+  try {
+    // Get total count and size
+    const { count: totalCount, error: countError } = await supabase
+      .from('sources_google')
+      .select('*', { count: 'exact', head: true })
+      .eq('deleted', false);
+      
+    if (countError) {
+      throw countError;
+    }
+    
+    // Get folder count
+    const { count: folderCount, error: folderError } = await supabase
+      .from('sources_google')
+      .select('*', { count: 'exact', head: true })
+      .eq('deleted', false)
+      .eq('mime_type', 'application/vnd.google-apps.folder');
+      
+    if (folderError) {
+      throw folderError;
+    }
+    
+    // Get total size
+    const { data: sizeData, error: sizeError } = await supabase
+      .from('sources_google')
+      .select('size')
+      .eq('deleted', false);
+      
+    if (sizeError) {
+      throw sizeError;
+    }
+    
+    // Calculate total size
+    const totalSize = sizeData.reduce((sum: number, file: any) => {
+      return sum + (parseInt(file.size, 10) || 0);
+    }, 0);
+    
+    // Get counts by mime type - we'll just fetch all items and count types in memory
+    const { data: typeData, error: typeError } = await supabase
+      .from('sources_google')
+      .select('mime_type')
+      .eq('deleted', false)
+      .not('mime_type', 'is', null);
+      
+    if (typeError) {
+      throw typeError;
+    }
+    
+    // Count mime types manually
+    const typeMap: Record<string, number> = {};
+    typeData.forEach((item: any) => {
+      const type = item.mime_type;
+      typeMap[type] = (typeMap[type] || 0) + 1;
+    });
+    
+    // Get root folders
+    const { data: rootFolders, error: rootFoldersError } = await supabase
+      .from('sources_google')
+      .select('name, drive_id, last_indexed')
+      .eq('deleted', false)
+      .eq('is_root', true);
+      
+    if (rootFoldersError) {
+      throw rootFoldersError;
+    }
+    
+    // Display statistics
+    console.log('\n=== Google Drive Sync Statistics ===');
+    console.log(`Total files: ${totalCount - folderCount}`);
+    console.log(`Total folders: ${folderCount}`);
+    console.log(`Total items: ${totalCount}`);
+    console.log(`Total size: ${formatBytes(totalSize)}`);
+    
+    // Display file types
+    console.log('\nFile types:');
+    
+    if (detailedFileTypes) {
+      // For detailed file types, show more categories and group similar types
+      console.log('\n=== DETAILED FILE TYPE STATISTICS ===');
+      
+      // Group file types by category
+      const categories: Record<string, number> = {
+        'Documents': 0,
+        'Spreadsheets': 0,
+        'Presentations': 0,
+        'Images': 0,
+        'Audio': 0,
+        'Video': 0,
+        'PDFs': 0,
+        'Code': 0,
+        'Folders': 0,
+        'Other': 0
+      };
+      
+      // Count by high-level category
+      Object.entries(typeMap).forEach(([type, count]) => {
+        const typeLower = type.toLowerCase();
+        
+        if (type === 'application/vnd.google-apps.folder') {
+          categories['Folders'] += count;
+        } else if (typeLower.includes('document') || typeLower.includes('msword') || 
+                   typeLower.includes('text/') || typeLower.includes('rtf')) {
+          categories['Documents'] += count;
+        } else if (typeLower.includes('sheet') || typeLower.includes('excel') || 
+                   typeLower.includes('csv')) {
+          categories['Spreadsheets'] += count;
+        } else if (typeLower.includes('presentation') || typeLower.includes('powerpoint') || 
+                   typeLower.includes('slide')) {
+          categories['Presentations'] += count;
+        } else if (typeLower.includes('image/') || typeLower.includes('photo')) {
+          categories['Images'] += count;
+        } else if (typeLower.includes('audio/') || typeLower.includes('sound')) {
+          categories['Audio'] += count;
+        } else if (typeLower.includes('video/') || typeLower.includes('movie')) {
+          categories['Video'] += count;
+        } else if (typeLower.includes('pdf')) {
+          categories['PDFs'] += count;
+        } else if (typeLower.includes('code') || typeLower.includes('javascript') ||
+                   typeLower.includes('python') || typeLower.includes('java') ||
+                   typeLower.includes('typescript')) {
+          categories['Code'] += count;
+        } else {
+          categories['Other'] += count;
+        }
+      });
+      
+      // Display high-level categories
+      console.log('File categories:');
+      Object.entries(categories)
+        .filter(([_category, count]) => count > 0)
+        .sort(([_c1, a], [_c2, b]) => b - a)
+        .forEach(([category, count]) => {
+          console.log(`- ${category}: ${count}`);
+        });
+          
+      // Show detailed breakdown
+      console.log('\nDetailed file types:');
+    }
+    
+    // Always show file types sorted by count
+    Object.entries(typeMap)
+      .sort(([, a], [, b]) => b - a) // Sort by count, descending
+      .forEach(([type, count]) => {
+        console.log(`- ${type}: ${count}`);
+      });
+    
+    // Display root folders
+    console.log('\nRoot folders:');
+    rootFolders.forEach((folder: any) => {
+      console.log(`- ${folder.name} (${folder.drive_id})`);
+      if (folder.last_indexed) {
+        console.log(`  Last synced: ${new Date(folder.last_indexed).toLocaleString()}`);
+      } else {
+        console.log('  Never synced');
+      }
+    });
+    
+    console.log('\n=== End of Statistics ===');
+  } catch (error: any) {
+    console.error(`❌ Error fetching statistics: ${error.message}`);
+  }
+}
+
+/**
+ * Format bytes to human-readable format
+ */
+function formatBytes(bytes: number, decimals = 2) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
 /**

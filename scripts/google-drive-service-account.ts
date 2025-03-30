@@ -26,11 +26,16 @@ dotenv.config({ path: path.resolve(__dirname, '../.env.development') });
 
 // Get command line arguments
 const args = process.argv.slice(2);
-const command = args[0];
+const command = args[0] || '';
 const param = args[1];
 const options = {
   recursive: args.includes('--recursive')
 };
+
+// Map commands
+if (command === 'auth-status' || command === 'token-status') {
+  args[0] = 'verify';
+}
 
 // Process commands
 async function main() {
@@ -96,12 +101,11 @@ async function initDriveClient() {
     const keyFile = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
     
     // Create JWT auth client with the service account
-    const auth = new google.auth.JWT(
-      keyFile.client_email,
-      null,
-      keyFile.private_key,
-      ['https://www.googleapis.com/auth/drive.readonly']
-    );
+    const auth = new google.auth.JWT({
+      email: keyFile.client_email,
+      key: keyFile.private_key,
+      scopes: ['https://www.googleapis.com/auth/drive.readonly']
+    });
     
     // Initialize the Drive client
     return google.drive({ version: 'v3', auth });
@@ -164,15 +168,15 @@ async function listFolder(drive: any, folderId: string, recursive: boolean = fal
  * List files recursively
  */
 async function listFilesRecursively(drive: any, folderId: string, recursive: boolean = false, parentPath: string = ''): Promise<any[]> {
-  let allFiles = [];
-  let pageToken = null;
+  let allFiles: any[] = [];
+  let pageToken: string | null = null;
   
   // Query to get files in the current folder
   const query = `'${folderId}' in parents and trashed=false`;
   
   do {
     // Get a page of files
-    const response = await drive.files.list({
+    const response: any = await drive.files.list({
       q: query,
       pageSize: 1000,
       fields: 'nextPageToken, files(id, name, mimeType, parents, modifiedTime)',

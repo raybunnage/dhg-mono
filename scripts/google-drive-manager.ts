@@ -35,7 +35,7 @@
 import * as dotenv from 'dotenv';
 import { writeFileSync } from 'fs';
 import { createClient } from '@supabase/supabase-js';
-import { program } from 'commander';
+import { Command } from 'commander';
 import type { Database } from '../supabase/types';
 
 // Load environment variables
@@ -67,7 +67,7 @@ const KNOWN_FOLDERS = {
 // Implementation will go here as we add each function
 // For now, let's set up the CLI structure
 
-program
+const program = new Command()
   .name('google-drive-manager')
   .description('CLI to manage Google Drive folders and sync their contents')
   .version('1.0.0');
@@ -120,7 +120,7 @@ program
   .description('Add a new root folder')
   .option('--name <name>', 'Custom name for the folder')
   .option('--description <description>', 'Description for the folder')
-  .action(async (folderId, options) => {
+  .action(async (folderId: string, options: { name?: string; description?: string }) => {
     console.log(`Adding root folder with ID: ${folderId}`);
     
     try {
@@ -133,8 +133,8 @@ program
       }
       
       // Check if this is a known folder alias
-      if (KNOWN_FOLDERS[folderId]) {
-        const actualId = KNOWN_FOLDERS[folderId];
+      if (KNOWN_FOLDERS[folderId as keyof typeof KNOWN_FOLDERS]) {
+        const actualId = KNOWN_FOLDERS[folderId as keyof typeof KNOWN_FOLDERS];
         console.log(`Using known folder ID for "${folderId}": ${actualId}`);
         folderId = actualId;
       }
@@ -252,7 +252,7 @@ program
   .command('remove-root <id>')
   .description('Remove a root folder')
   .option('--hard', 'Hard delete the folder from database')
-  .action(async (id, options) => {
+  .action(async (id: string, options: { hard?: boolean }) => {
     console.log(`Removing root folder with ID: ${id}`);
     
     try {
@@ -320,13 +320,13 @@ program
 program
   .command('check-folder <folderId>')
   .description('Check if a folder exists in Google Drive')
-  .action(async (folderId) => {
+  .action(async (folderId: string) => {
     console.log(`Checking folder with ID: ${folderId}`);
     
     try {
       // Check if this is a known folder alias
-      if (KNOWN_FOLDERS[folderId]) {
-        const actualId = KNOWN_FOLDERS[folderId];
+      if (KNOWN_FOLDERS[folderId as keyof typeof KNOWN_FOLDERS]) {
+        const actualId = KNOWN_FOLDERS[folderId as keyof typeof KNOWN_FOLDERS];
         console.log(`Using known folder ID for "${folderId}": ${actualId}`);
         folderId = actualId;
       }
@@ -404,14 +404,14 @@ program
   .description('Sync a specific folder from Google Drive')
   .option('--dry-run', 'Show what would be synced without making changes')
   .option('--timeout <timeout>', 'Timeout in milliseconds', '600000')
-  .action(async (folderId, options) => {
+  .action(async (folderId: string, options: { dryRun?: boolean; timeout?: string }) => {
     console.log(`Syncing folder: ${folderId}`);
     console.log(`Dry run: ${options.dryRun ? 'Yes' : 'No'}`);
     console.log(`Timeout: ${options.timeout}ms`);
     
     // Check if this is a known folder alias
-    if (KNOWN_FOLDERS[folderId]) {
-      const actualId = KNOWN_FOLDERS[folderId];
+    if (KNOWN_FOLDERS[folderId as keyof typeof KNOWN_FOLDERS]) {
+      const actualId = KNOWN_FOLDERS[folderId as keyof typeof KNOWN_FOLDERS];
       console.log(`Using known folder ID for "${folderId}": ${actualId}`);
       folderId = actualId;
     }
@@ -475,7 +475,7 @@ program
   .description('Sync files from a root folder (or all if not specified)')
   .option('--dry-run', 'Show what would be synced without making changes')
   .option('--timeout <timeout>', 'Timeout in milliseconds', '600000')
-  .action(async (rootId, options) => {
+  .action(async (rootId?: string, options: { dryRun?: boolean; timeout?: string }) => {
     try {
       if (rootId) {
         console.log(`Syncing root folder with ID: ${rootId}`);
@@ -505,11 +505,13 @@ program
         console.log(`Syncing root folder "${data.name}" (${data.drive_id})`);
         
         // Call the sync-folder command
-        await program.commands.find(cmd => cmd.name() === 'sync-folder')
-          .action(data.drive_id, {
-            dryRun: options.dryRun,
-            timeout: options.timeout
-          });
+        const syncFolderCommand = program.commands.find((cmd: Command) => cmd.name() === 'sync-folder');
+        if (syncFolderCommand) {
+          await syncFolderCommand.parseAsync([data.drive_id, 
+            ...(options.dryRun ? ['--dry-run'] : []), 
+            ...(options.timeout ? ['--timeout', options.timeout] : [])
+          ]);
+        }
       } else {
         console.log('Syncing all root folders');
         
@@ -555,7 +557,7 @@ program
   .description('List folders in Google Drive that are not registered as roots')
   .option('--dry-run', 'Preview mode with no changes', false)
   .option('--limit <number>', 'Limit the number of results', parseInt, 20)
-  .action(async (options) => {
+  .action(async (options: { dryRun?: boolean; limit?: number }) => {
     try {
       console.log('=== Potential Root Folders ===');
       
@@ -613,7 +615,7 @@ program
       console.log('--------------------------------------------');
       
       const unregisteredFolders = folders.filter(
-        folder => !existingRootIds.has(folder.id)
+        (folder: { id: string }) => !existingRootIds.has(folder.id)
       );
       
       if (unregisteredFolders.length === 0) {
@@ -623,7 +625,12 @@ program
         console.log(`ID\t\t\t\t\tName\t\t\tModified`);
         console.log(`${'─'.repeat(100)}`);
         
-        unregisteredFolders.forEach(folder => {
+        unregisteredFolders.forEach((folder: { 
+          id: string; 
+          name: string; 
+          modifiedTime: string; 
+          owners?: Array<{ displayName: string }> 
+        }) => {
           const modified = new Date(folder.modifiedTime).toLocaleDateString();
           const owner = folder.owners?.[0]?.displayName || 'Unknown';
           console.log(`${folder.id}\t${folder.name}\t\t${modified} (${owner})`);
