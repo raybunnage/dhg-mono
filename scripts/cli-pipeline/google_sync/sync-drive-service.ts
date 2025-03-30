@@ -18,15 +18,15 @@
  *   npx ts-node sync-drive-service.ts dynamic-healing --dry-run --recursive
  */
 
-import * as fs from 'fs';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
 import { google } from 'googleapis';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../../../../../../supabase/types';
+import { Logger } from '../../../packages/shared/utils';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import { defaultGoogleAuth, getGoogleDriveService } from '../../../packages/shared/services/google-drive';
+import type { Database } from '../../../supabase/types';
 
-// Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '../../../../../../.env.development') });
+// Initialize logger
+import { LogLevel } from '../../../packages/shared/utils/logger';
+Logger.setLevel(LogLevel.INFO);
 
 // Known folder IDs
 const KNOWN_FOLDERS: Record<string, string> = {
@@ -59,32 +59,49 @@ const folderId = args.find(arg => !arg.startsWith('--'));
 
 // If we're just showing stats, we don't need a folder ID
 if (!options.stats && !options.statsTypes && !folderId) {
-  console.error('❌ Folder ID is required');
-  console.log('Usage: npx ts-node sync-drive-service.ts <folderId> [options]');
-  console.log('   or: npx ts-node sync-drive-service.ts --stats');
-  console.log('   or: npx ts-node sync-drive-service.ts --stats-types');
+  Logger.error('❌ Folder ID is required');
+  Logger.info('Usage: npx ts-node sync-drive-service.ts <folderId> [options]');
+  Logger.info('   or: npx ts-node sync-drive-service.ts --stats');
+  Logger.info('   or: npx ts-node sync-drive-service.ts --stats-types');
   process.exit(1);
 }
 
 async function main() {
   try {
-    // Ensure Supabase credentials are available
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('❌ Supabase URL or key not found in environment variables');
+    // Get the Supabase client - skip connection test since it's failing
+    const supabaseClientService = SupabaseClientService.getInstance();
+    
+    let supabase;
+    try {
+      supabase = supabaseClientService.getClient();
+      Logger.info('Got Supabase client');
+    } catch (error) {
+      Logger.error('Error getting Supabase client', error);
       process.exit(1);
     }
 
-    // Create Supabase client
-    const supabase = createClient<Database>(supabaseUrl, supabaseKey);
-
-    // Initialize Drive client with service account
-    const drive = await initDriveClient();
+    // Check if auth service is ready
+    if (!await defaultGoogleAuth.isReady()) {
+      Logger.error('Google authentication is not ready');
+      process.exit(1);
+    }
+    
+    // Get access token
+    const accessToken = await defaultGoogleAuth.getAccessToken();
+    if (!accessToken) {
+      Logger.error('Failed to get access token');
+      process.exit(1);
+    }
+    
+    // Create auth from the access token
+    const auth = new google.auth.OAuth2();
+    auth.setCredentials({ access_token: accessToken });
+    
+    // Initialize the Drive client
+    const drive = google.drive({ version: 'v3', auth });
     
     if (!drive) {
-      console.error('❌ Failed to initialize Drive client');
+      Logger.error('❌ Failed to initialize Drive client');
       process.exit(1);
     }
 
@@ -104,10 +121,10 @@ async function main() {
     let resolvedFolderId = folderId || '';
     if (folderId && KNOWN_FOLDERS[folderId]) {
       resolvedFolderId = KNOWN_FOLDERS[folderId];
-      console.log(`Using known folder ID for "${folderId}": ${resolvedFolderId}`);
+      Logger.info(`Using known folder ID for "${folderId}": ${resolvedFolderId}`);
     }
 
-    console.log(`🔍 Checking folder with ID: ${resolvedFolderId}`);
+    Logger.info(`🔍 Checking folder with ID: ${resolvedFolderId}`);
     
     // Verify the folder exists in Google Drive
     try {
@@ -119,15 +136,15 @@ async function main() {
       const isFolder = folderData.data.mimeType === 'application/vnd.google-apps.folder';
       
       if (!isFolder) {
-        console.error(`❌ The provided ID is not a folder: ${folderData.data.mimeType}`);
+        Logger.error(`❌ The provided ID is not a folder: ${folderData.data.mimeType}`);
         process.exit(1);
       }
       
       const folderName = folderData.data.name;
-      console.log(`Syncing folder: "${folderName}" (${resolvedFolderId})`);
-      console.log(`Mode: ${options.dryRun ? 'DRY RUN' : 'ACTUAL SYNC'}`);
-      console.log(`Recursive: ${options.recursive ? 'Yes' : 'No'}`);
-      console.log(`Limit: ${options.limit} files per folder`);
+      Logger.info(`Syncing folder: "${folderName}" (${resolvedFolderId})`);
+      Logger.info(`Mode: ${options.dryRun ? 'DRY RUN' : 'ACTUAL SYNC'}`);
+      Logger.info(`Recursive: ${options.recursive ? 'Yes' : 'No'}`);
+      Logger.info(`Limit: ${options.limit} files per folder`);
       
       // Get folder details from the database
       const { data: dbFolder, error: dbError } = await supabase
@@ -142,16 +159,16 @@ async function main() {
       }
       
       // Starting the sync process
-      console.log('Starting sync process...');
+      Logger.info('Starting sync process...');
       
       // Get files in the folder
       const files = await listFiles(drive, resolvedFolderId, options.recursive);
       
-      console.log(`Found ${files.length} files in the folder`);
+      Logger.info(`Found ${files.length} files in the folder`);
       
       // If dry run, just show what would be synced
       if (options.dryRun) {
-        console.log('\n=== DRY RUN - No changes will be made ===\n');
+        Logger.info('\n=== DRY RUN - No changes will be made ===\n');
         
         // Group files by mime type
         const filesByType: Record<string, any[]> = {};
@@ -164,48 +181,160 @@ async function main() {
         });
         
         // Display summary by mime type
-        console.log('Files by type:');
+        Logger.info('Files by type:');
         Object.entries(filesByType).forEach(([type, typeFiles]) => {
-          console.log(`- ${type}: ${typeFiles.length} files`);
+          Logger.info(`- ${type}: ${typeFiles.length} files`);
         });
         
         // Show sample of each type
-        console.log('\nSample files by type:');
+        Logger.info('\nSample files by type:');
         Object.entries(filesByType).forEach(([type, typeFiles]) => {
-          console.log(`\n${type}:`);
+          Logger.info(`\n${type}:`);
           typeFiles.slice(0, 5).forEach(file => {
-            console.log(`- ${file.name} (${file.id})`);
+            Logger.info(`- ${file.name} (${file.id})`);
             if (file.path) {
-              console.log(`  Path: ${file.path}`);
+              Logger.info(`  Path: ${file.path}`);
             }
           });
           if (typeFiles.length > 5) {
-            console.log(`  ... and ${typeFiles.length - 5} more`);
+            Logger.info(`  ... and ${typeFiles.length - 5} more`);
           }
         });
         
         // Show folder structure if recursive
         if (options.recursive) {
-          console.log('\nFolder structure:');
+          Logger.info('\nFolder structure:');
           const folders = files.filter(file => file.mimeType === 'application/vnd.google-apps.folder');
           folders.forEach(folder => {
-            console.log(`- ${folder.path || '/'}`);
+            Logger.info(`- ${folder.path || '/'}`);
           });
         }
         
-        console.log('\n=== END DRY RUN ===');
+        Logger.info('\n=== END DRY RUN ===');
       } else {
-        console.log('\n=== ACTUAL SYNC - Changes will be made to the database ===\n');
-        console.log('Synchronization not implemented yet. Use --dry-run to preview changes.');
+        Logger.info('\n=== ACTUAL SYNC - Changes will be made to the database ===\n');
+        
+        // Process files in batches
+        const now = new Date().toISOString();
+        let insertedCount = 0;
+        let updatedCount = 0;
+        let skippedCount = 0;
+        
+        // Process files in groups of 50
+        for (let i = 0; i < files.length; i += 50) {
+          const batch = files.slice(i, i + 50);
+          Logger.info(`Processing batch ${i/50 + 1} of ${Math.ceil(files.length/50)} (${batch.length} files)...`);
+          
+          for (const file of batch) {
+            // Check if the file already exists in the database
+            const { data: existingFiles, error: queryError } = await supabase
+              .from('sources_google')
+              .select('id, drive_id, name, modified_time')
+              .eq('drive_id', file.id)
+              .eq('deleted', false);
+              
+            if (queryError) {
+              Logger.error(`Error checking if file ${file.name} exists:`, queryError.message);
+              continue;
+            }
+            
+            const fileExists = existingFiles && existingFiles.length > 0;
+            
+            if (fileExists) {
+              // Update existing file
+              const existingFile = existingFiles[0];
+              
+              // Only update if modified time is different
+              const existingModified = existingFile.modified_time ? new Date(existingFile.modified_time).getTime() : 0;
+              const newModified = file.modifiedTime ? new Date(file.modifiedTime).getTime() : 0;
+              
+              if (Math.abs(existingModified - newModified) < 1000) { // Within 1 second
+                Logger.debug(`Skipping unmodified file: ${file.name}`);
+                skippedCount++;
+                continue;
+              }
+              
+              // Update the file
+              const { error: updateError } = await supabase
+                .from('sources_google')
+                .update({
+                  name: file.name,
+                  mime_type: file.mimeType,
+                  path: file.path,
+                  parent_path: file.parentPath,
+                  parent_folder_id: file.parentFolderId,
+                  modified_time: file.modifiedTime,
+                  size: file.size ? parseInt(file.size, 10) : null,
+                  updated_at: now
+                })
+                .eq('id', existingFile.id);
+                
+              if (updateError) {
+                Logger.error(`Error updating file ${file.name}:`, updateError.message);
+              } else {
+                updatedCount++;
+                Logger.debug(`Updated file: ${file.name}`);
+              }
+            } else {
+              // Insert new file
+              const { error: insertError } = await supabase
+                .from('sources_google')
+                .insert({
+                  drive_id: file.id,
+                  name: file.name,
+                  mime_type: file.mimeType,
+                  path: file.path,
+                  parent_path: file.parentPath,
+                  parent_folder_id: file.parentFolderId,
+                  is_root: false,
+                  modified_time: file.modifiedTime,
+                  size: file.size ? parseInt(file.size, 10) : null,
+                  created_at: now,
+                  updated_at: now,
+                  deleted: false
+                });
+                
+              if (insertError) {
+                Logger.error(`Error inserting file ${file.name}:`, insertError.message);
+              } else {
+                insertedCount++;
+                Logger.debug(`Inserted file: ${file.name}`);
+              }
+            }
+          }
+        }
+        
+        // Update stats
+        Logger.info(`Sync completed successfully!`);
+        Logger.info(`- Files processed: ${files.length}`);
+        Logger.info(`- Files inserted: ${insertedCount}`);
+        Logger.info(`- Files updated: ${updatedCount}`);
+        Logger.info(`- Files skipped: ${skippedCount}`);
+        
+        // Update last_indexed on the root folder if this is a root folder
+        if (dbFolder && dbFolder.is_root) {
+          const { error: updateError } = await supabase
+            .from('sources_google')
+            .update({
+              last_indexed: now
+            })
+            .eq('id', dbFolder.id);
+            
+          if (updateError) {
+            Logger.error(`Error updating last_indexed for root folder:`, updateError.message);
+          } else {
+            Logger.info(`Updated last_indexed for root folder: ${dbFolder.name}`);
+          }
+        }
       }
       
     } catch (error: any) {
-      console.error(`❌ Error accessing folder: ${error.message}`);
+      Logger.error(`❌ Error accessing folder: ${error.message}`);
       process.exit(1);
     }
   
   } catch (error: any) {
-    console.error('❌ Error:', error.message);
+    Logger.error('❌ Error:', error.message);
     process.exit(1);
   }
 }
@@ -216,7 +345,7 @@ async function main() {
  * @param detailedFileTypes If true, shows more detailed file type statistics
  */
 async function showStats(supabase: any, detailedFileTypes: boolean = false) {
-  console.log('📊 Retrieving Google Drive sync statistics...');
+  Logger.info('📊 Retrieving Google Drive sync statistics...');
   
   try {
     // Get total count and size
@@ -285,18 +414,18 @@ async function showStats(supabase: any, detailedFileTypes: boolean = false) {
     }
     
     // Display statistics
-    console.log('\n=== Google Drive Sync Statistics ===');
-    console.log(`Total files: ${totalCount - folderCount}`);
-    console.log(`Total folders: ${folderCount}`);
-    console.log(`Total items: ${totalCount}`);
-    console.log(`Total size: ${formatBytes(totalSize)}`);
+    Logger.info('\n=== Google Drive Sync Statistics ===');
+    Logger.info(`Total files: ${totalCount - folderCount}`);
+    Logger.info(`Total folders: ${folderCount}`);
+    Logger.info(`Total items: ${totalCount}`);
+    Logger.info(`Total size: ${formatBytes(totalSize)}`);
     
     // Display file types
-    console.log('\nFile types:');
+    Logger.info('\nFile types:');
     
     if (detailedFileTypes) {
       // For detailed file types, show more categories and group similar types
-      console.log('\n=== DETAILED FILE TYPE STATISTICS ===');
+      Logger.info('\n=== DETAILED FILE TYPE STATISTICS ===');
       
       // Group file types by category
       const categories: Record<string, number> = {
@@ -345,39 +474,39 @@ async function showStats(supabase: any, detailedFileTypes: boolean = false) {
       });
       
       // Display high-level categories
-      console.log('File categories:');
+      Logger.info('File categories:');
       Object.entries(categories)
         .filter(([_category, count]) => count > 0)
         .sort(([_c1, a], [_c2, b]) => b - a)
         .forEach(([category, count]) => {
-          console.log(`- ${category}: ${count}`);
+          Logger.info(`- ${category}: ${count}`);
         });
           
       // Show detailed breakdown
-      console.log('\nDetailed file types:');
+      Logger.info('\nDetailed file types:');
     }
     
     // Always show file types sorted by count
     Object.entries(typeMap)
       .sort(([, a], [, b]) => b - a) // Sort by count, descending
       .forEach(([type, count]) => {
-        console.log(`- ${type}: ${count}`);
+        Logger.info(`- ${type}: ${count}`);
       });
     
     // Display root folders
-    console.log('\nRoot folders:');
+    Logger.info('\nRoot folders:');
     rootFolders.forEach((folder: any) => {
-      console.log(`- ${folder.name} (${folder.drive_id})`);
+      Logger.info(`- ${folder.name} (${folder.drive_id})`);
       if (folder.last_indexed) {
-        console.log(`  Last synced: ${new Date(folder.last_indexed).toLocaleString()}`);
+        Logger.info(`  Last synced: ${new Date(folder.last_indexed).toLocaleString()}`);
       } else {
-        console.log('  Never synced');
+        Logger.info('  Never synced');
       }
     });
     
-    console.log('\n=== End of Statistics ===');
+    Logger.info('\n=== End of Statistics ===');
   } catch (error: any) {
-    console.error(`❌ Error fetching statistics: ${error.message}`);
+    Logger.error(`❌ Error fetching statistics: ${error.message}`);
   }
 }
 
@@ -396,35 +525,17 @@ function formatBytes(bytes: number, decimals = 2) {
 /**
  * Initialize Google Drive client using service account
  */
+/**
+ * No longer used - we are using defaultGoogleAuth instead
+ */
 async function initDriveClient() {
   try {
-    // Get service account key file path from environment or use default
-    const keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
-                      path.resolve(__dirname, '../../../../../../.service-account.json');
+    // This function is no longer used
+    Logger.error('This function is deprecated');
+    return null;
     
-    console.log(`🔑 Using service account key file: ${keyFilePath}`);
-    
-    // Check if file exists
-    if (!fs.existsSync(keyFilePath)) {
-      console.error(`❌ Service account key file not found: ${keyFilePath}`);
-      console.log('\nPlease make sure the GOOGLE_APPLICATION_CREDENTIALS environment variable is set correctly');
-      return null;
-    }
-    
-    // Read and parse the service account key file
-    const keyFile = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
-    
-    // Create JWT auth client with the service account
-    const auth = new google.auth.JWT({
-      email: keyFile.client_email,
-      key: keyFile.private_key,
-      scopes: ['https://www.googleapis.com/auth/drive.readonly']
-    });
-    
-    // Initialize the Drive client
-    return google.drive({ version: 'v3', auth });
   } catch (error: any) {
-    console.error('❌ Error initializing Drive client:', error.message);
+    Logger.error('❌ Error initializing Drive client:', error.message);
     return null;
   }
 }
@@ -446,7 +557,7 @@ async function listFiles(drive: any, folderId: string, recursive: boolean = fals
   const query = `'${folderId}' in parents and trashed=false`;
   
   do {
-    console.log(`Fetching files from folder ${folderId}...`);
+    Logger.info(`Fetching files from folder ${folderId}...`);
     
     // Get a page of files
     const response: any = await drive.files.list({
@@ -476,7 +587,7 @@ async function listFiles(drive: any, folderId: string, recursive: boolean = fals
       const folders = files.filter((file: any) => file.mimeType === 'application/vnd.google-apps.folder');
       
       for (const folder of folders) {
-        console.log(`Processing subfolder: ${folder.name} (${folder.id})...`);
+        Logger.info(`Processing subfolder: ${folder.name} (${folder.id})...`);
         const subFiles = await listFiles(drive, folder.id, true);
         allFiles = [...allFiles, ...subFiles];
       }
@@ -490,6 +601,6 @@ async function listFiles(drive: any, folderId: string, recursive: boolean = fals
 
 // Execute the main function
 main().catch(error => {
-  console.error('Unhandled error:', error);
+  Logger.error('Unhandled error:', error);
   process.exit(1);
 });

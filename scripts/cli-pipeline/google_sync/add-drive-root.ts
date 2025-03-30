@@ -11,13 +11,13 @@
  *   npx ts-node add-drive-root.ts 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --name "Dynamic Healing Discussion Group"
  */
 
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../../../../../../supabase/types';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import { getGoogleDriveService } from '../../../packages/shared/services/google-drive';
+import { Logger } from '../../../packages/shared/utils';
+import type { Database } from '../../../supabase/types';
 
-// Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '../../../../../../.env.development') });
+// Initialize logger
+Logger.setLevel(Logger.LogLevel.INFO);
 
 // Known folder IDs
 const KNOWN_FOLDERS: Record<string, string> = {
@@ -34,69 +34,59 @@ const descIndex = args.indexOf('--description');
 const description = descIndex !== -1 && args[descIndex + 1] ? args[descIndex + 1] : undefined;
 
 if (!folderId) {
-  console.error('❌ Folder ID is required');
-  console.log('Usage: npx ts-node add-drive-root.ts <folderId> --name "Folder Name" [--description "Description"]');
+  Logger.error('❌ Folder ID is required');
+  Logger.info('Usage: npx ts-node add-drive-root.ts <folderId> --name "Folder Name" [--description "Description"]');
   process.exit(1);
 }
 
 async function main() {
   try {
-    // Ensure Supabase credentials are available
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('❌ Supabase URL or key not found in environment variables');
+    // Get the Supabase client
+    const supabaseClientService = SupabaseClientService.getInstance();
+    
+    try {
+      const connectionTest = await supabaseClientService.testConnection();
+      if (!connectionTest.success) {
+        Logger.error('Failed to connect to Supabase', connectionTest.error);
+        process.exit(1);
+      }
+    } catch (error) {
+      Logger.error('Error testing Supabase connection', error);
       process.exit(1);
     }
-
-    // Create Supabase client
-    const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+    
+    const supabase = supabaseClientService.getClient();
 
     // Get the resolved folder ID if it's an alias
     let resolvedFolderId = folderId;
     if (KNOWN_FOLDERS[folderId]) {
       resolvedFolderId = KNOWN_FOLDERS[folderId];
-      console.log(`Using known folder ID for "${folderId}": ${resolvedFolderId}`);
+      Logger.info(`Using known folder ID for "${folderId}": ${resolvedFolderId}`);
     }
 
-    // Get the access token from environment variables
-    const accessToken = process.env.VITE_GOOGLE_ACCESS_TOKEN;
+    // Get Google Drive service
+    const googleDriveService = getGoogleDriveService(supabase);
     
-    if (!accessToken) {
-      console.error('❌ No Google access token found in environment variables');
-      console.log('Please make sure VITE_GOOGLE_ACCESS_TOKEN is set in .env.development');
-      process.exit(1);
-    }
-
-    console.log(`🔍 Checking folder with ID: ${resolvedFolderId}`);
+    Logger.info(`🔍 Checking folder with ID: ${resolvedFolderId}`);
     
     // Verify the folder exists in Google Drive
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${resolvedFolderId}?fields=id,name,mimeType`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      }
-    );
+    const folderData = await googleDriveService.getFileMetadata(resolvedFolderId);
     
-    if (!response.ok) {
-      console.error(`❌ Failed to get folder from Google Drive: ${response.status} ${response.statusText}`);
+    if (!folderData) {
+      Logger.error(`Folder not found with ID: ${resolvedFolderId}`);
       process.exit(1);
     }
     
-    const folderData = await response.json();
     const isFolder = folderData.mimeType === 'application/vnd.google-apps.folder';
     
     if (!isFolder) {
-      console.error(`❌ The provided ID is not a folder: ${folderData.mimeType}`);
+      Logger.error(`The provided ID is not a folder: ${folderData.mimeType}`);
       process.exit(1);
     }
     
     // Use the folder name if no custom name is provided
     const folderName = name || folderData.name;
-    console.log(`Using folder name: "${folderName}"`);
+    Logger.info(`Using folder name: "${folderName}"`);
     
     // Check if folder already exists in the database
     const { data: existingFolders, error: queryError } = await supabase
@@ -111,7 +101,7 @@ async function main() {
     
     // If folder exists, update it
     if (existingFolders && existingFolders.length > 0) {
-      console.log(`Folder already exists with name "${existingFolders[0].name}", updating...`);
+      Logger.info(`Folder already exists with name "${existingFolders[0].name}", updating...`);
       
       const { data, error } = await supabase
         .from('sources_google')
@@ -135,7 +125,7 @@ async function main() {
         throw error;
       }
       
-      console.log(`✅ Updated root folder: ${folderName}`);
+      Logger.info(`✅ Updated root folder: ${folderName}`);
       return;
     }
     
@@ -166,15 +156,15 @@ async function main() {
       throw error;
     }
     
-    console.log(`✅ Added new root folder: ${folderName} with database ID: ${data[0].id}`);
+    Logger.info(`✅ Added new root folder: ${folderName} with database ID: ${data[0].id}`);
   } catch (error: any) {
-    console.error('❌ Error:', error.message);
+    Logger.error('Error:', error.message);
     process.exit(1);
   }
 }
 
 // Execute the main function
 main().catch(error => {
-  console.error('Unhandled error:', error);
+  Logger.error('Unhandled error:', error);
   process.exit(1);
 });

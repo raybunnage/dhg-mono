@@ -3,8 +3,6 @@
 # This script provides commands to manage Google Drive folders and sync files
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TS_DIR="$SCRIPT_DIR/ts"
-UTILITY_DIR="$TS_DIR/utility"
 
 # Check that ts-node is installed
 if ! command -v ts-node &> /dev/null; then
@@ -63,51 +61,51 @@ shift
 case "$COMMAND" in
   # Core commands
   list-roots)
-    ts-node --skip-project "$TS_DIR/list-drive-roots.ts" "$@"
+    ts-node "$SCRIPT_DIR/list-drive-roots.ts" "$@"
     ;;
   list-potential-roots)
-    ts-node --skip-project "$TS_DIR/google-drive-manager.ts" list-potential-roots "$@"
+    ts-node "$SCRIPT_DIR/google-drive-manager.ts" list-potential-roots "$@"
     ;;
   add-root)
-    ts-node --skip-project "$TS_DIR/google-drive-manager.ts" add-root "$@"
+    ts-node "$SCRIPT_DIR/add-drive-root.ts" "$@"
     ;;
   remove-root)
-    ts-node --skip-project "$TS_DIR/google-drive-manager.ts" remove-root "$@"
+    ts-node "$SCRIPT_DIR/google-drive-manager.ts" remove-root "$@"
     ;;
   check-folder)
-    ts-node --skip-project "$TS_DIR/google-drive-manager.ts" check-folder "$@"
+    ts-node "$SCRIPT_DIR/google-drive-manager.ts" check-folder "$@"
     ;;
   sync)
-    ts-node --skip-project "$TS_DIR/google-drive-manager.ts" sync "$@"
+    ts-node "$SCRIPT_DIR/google-drive-manager.ts" sync "$@"
     ;;
   sync-folder)
-    ts-node --skip-project "$TS_DIR/sync-drive-service.ts" "$@"
+    ts-node "$SCRIPT_DIR/sync-drive-service.ts" "$@"
     ;;
     
   # Advanced commands
   add-root-service)
-    ts-node --skip-project "$UTILITY_DIR/add-drive-root-service.ts" "$@"
+    ts-node "$SCRIPT_DIR/add-drive-root-service.ts" "$@"
     ;;
   check-roots)
-    ts-node --skip-project "$UTILITY_DIR/check-roots.ts" "$@"
+    ts-node "$SCRIPT_DIR/check-roots.ts" "$@"
     ;;
   list-drive-direct)
-    ts-node --skip-project "$UTILITY_DIR/list-drive-direct.ts" "$@"
+    ts-node "$SCRIPT_DIR/list-drive-direct.ts" "$@"
     ;;
   list-drive-service)
-    ts-node --skip-project "$UTILITY_DIR/list-drive-service-account.ts" "$@"
+    ts-node "$SCRIPT_DIR/list-drive-service-account.ts" "$@"
     ;;
   report-drive-roots)
-    ts-node --skip-project "$UTILITY_DIR/report-drive-roots.ts" "$@"
+    ts-node "$SCRIPT_DIR/report-drive-roots.ts" "$@"
     ;;
   sync-and-update-metadata)
-    ts-node --skip-project "$UTILITY_DIR/sync-and-update-metadata.ts" "$@"
+    ts-node "$SCRIPT_DIR/sync-and-update-metadata.ts" "$@"
     ;;
   update-metadata)
-    ts-node --skip-project "$UTILITY_DIR/update-metadata-service-account.ts" "$@"
+    ts-node "$SCRIPT_DIR/update-metadata-service-account.ts" "$@"
     ;;
   update-dynamic-healing)
-    ts-node --skip-project "$UTILITY_DIR/update-dynamic-healing-metadata.ts" "$@"
+    ts-node "$SCRIPT_DIR/update-dynamic-healing-metadata.ts" "$@"
     ;;
     
   # Help commands
