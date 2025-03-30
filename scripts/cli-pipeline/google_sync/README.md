@@ -123,6 +123,26 @@ This CLI tool is built using Commander.js and integrates with shared services fo
 2. Implement the command functionality in appropriate service files
 3. Use shared services where possible to maintain consistency with the web UI
 
+### Migrating to TypeScript
+
+This CLI is being migrated to TypeScript and refactored to use the centralized services from the shared packages. The migration path is:
+
+1. A new adapter layer is being built in `packages/cli-pipeline/google_sync/` with TypeScript versions of:
+   - `auth-adapter.ts` - Uses the centralized `defaultGoogleAuth` service
+   - `drive-service.ts` - Uses the shared Google Drive services
+   - `adapter-bridge.ts` - Provides transition functions between JS and TS
+
+2. New features should:
+   - Use the TypeScript versions of the services
+   - Delegate authentication to the centralized `defaultGoogleAuth` service
+   - Handle all Google Drive operations through the shared services
+   - Avoid direct token management in CLI code
+
+3. See the migration instructions for more details:
+   ```bash
+   google-sync migration-instructions
+   ```
+
 ## License
 
 MIT
