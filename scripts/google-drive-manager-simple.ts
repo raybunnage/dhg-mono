@@ -23,6 +23,7 @@ import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
+import { defaultGoogleAuth } from '../packages/shared/services/google-drive';
 
 // Load environment variables
 dotenv.config();
@@ -119,10 +120,36 @@ async function main() {
 }
 
 /**
- * Initialize Google Drive client using service account
+ * Initialize Google Drive client using the shared auth service
  */
 async function initDriveClient() {
   try {
+    // First try to get a token from the centralized auth service
+    console.log('🔍 Using centralized Google Auth Service...');
+    
+    // Check if auth service is ready
+    const isReady = await defaultGoogleAuth.isReady();
+    if (isReady) {
+      // Get access token
+      const accessToken = await defaultGoogleAuth.getAccessToken();
+      
+      if (accessToken) {
+        console.log('✅ Successfully obtained token from centralized auth service');
+        
+        // Create auth using the OAuth2 client
+        const auth = new google.auth.OAuth2();
+        auth.setCredentials({
+          access_token: accessToken
+        });
+        
+        // Initialize the Drive client
+        return google.drive({ version: 'v3', auth });
+      }
+    }
+    
+    // Fallback to direct service account initialization if centralized auth failed
+    console.log('⚠️ Centralized auth service failed, falling back to direct service account...');
+    
     // Try to use GOOGLE_APPLICATION_CREDENTIALS env var first (standard Google approach)
     let keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     

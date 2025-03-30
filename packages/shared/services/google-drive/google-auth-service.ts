@@ -1,6 +1,9 @@
 /**
- * Shared service for Google Drive authentication
- * Used by both UI components and CLI tools
+ * Centralized authentication service for Google Drive
+ * 
+ * This service provides a unified authentication method for all Google Drive operations,
+ * prioritizing service account authentication when available, and falling back to OAuth
+ * tokens or environment variables if needed.
  * 
  * Features:
  * - Centralized authentication for all Google Drive services
@@ -9,6 +12,21 @@
  * - Automatically refreshes tokens when needed
  * - Can be used in both browser and Node.js environments
  * - Supports multiple storage options (localStorage, file system)
+ * - Automatically loads environment variables (.env.development, .env)
+ * - Exports a default singleton instance for easy integration
+ * 
+ * Usage:
+ * ```typescript
+ * // Get the default instance (recommended)
+ * import { defaultGoogleAuth } from '../packages/shared/services/google-drive';
+ * const accessToken = await defaultGoogleAuth.getAccessToken();
+ * 
+ * // Or create a custom instance
+ * import { GoogleAuthService } from '../packages/shared/services/google-drive';
+ * const auth = GoogleAuthService.getInstance({
+ *   scopes: ['https://www.googleapis.com/auth/drive']
+ * });
+ * ```
  */
 
 import { Credentials, GoogleAuth, JWT } from 'google-auth-library';

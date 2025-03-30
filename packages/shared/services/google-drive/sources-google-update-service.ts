@@ -19,7 +19,7 @@ export interface UpdateResult {
   records: number;
   updated: number;
   skipped: number;
-  errors: Error[];
+  errors: unknown[]; // Changed from Error[] to unknown[] to fix type errors
   startTime: Date;
   endTime: Date;
 }
@@ -160,13 +160,13 @@ export class SourcesGoogleUpdateService {
           // Prepare update data
           const updateData: Partial<GoogleDriveFile> = {
             metadata: {
-              ...record.metadata,
+              ...(record.metadata || {}),
             }
           };
 
           // Update metadata fields
           updateFields.forEach(field => {
-            if (fileData[field] !== undefined) {
+            if (fileData[field] !== undefined && updateData.metadata) {
               updateData.metadata[field] = fileData[field];
             }
           });

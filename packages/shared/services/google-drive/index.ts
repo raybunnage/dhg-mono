@@ -28,3 +28,19 @@ export const defaultGoogleAuth = GoogleAuthService.getDefaultInstance();
 export function getGoogleDriveService(supabaseClient: any): GoogleDriveService {
   return GoogleDriveService.getInstance(defaultGoogleAuth, supabaseClient);
 }
+
+/**
+ * Helper function to get a Google Drive Sync service instance with default auth
+ */
+export function getGoogleDriveSyncService(supabaseClient: any): GoogleDriveSyncService {
+  const driveService = getGoogleDriveService(supabaseClient);
+  return GoogleDriveSyncService.getInstance(driveService, supabaseClient);
+}
+
+/**
+ * Helper function to get a Sources Google Update service instance with default auth
+ */
+export function getSourcesGoogleUpdateService(supabaseClient: any): SourcesGoogleUpdateService {
+  const driveService = getGoogleDriveService(supabaseClient);
+  return SourcesGoogleUpdateService.getInstance(driveService, supabaseClient);
+}
