@@ -4,7 +4,7 @@
   "description": "CLI tool for syncing Google Drive files with Supabase",
   "main": "index.js",
   "bin": {
-    "google-sync": "./index.js"
+    "google-sync": "index.js"
   },
   "scripts": {
     "start": "node index.js",
@@ -17,9 +17,9 @@
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^11.0.0",
-    "dayjs": "^1.11.9",
+    "dayjs": "^1.11.13",
     "dotenv": "^16.3.1",
-    "google-auth-library": "^9.0.0",
+    "google-auth-library": "^9.15.1",
     "googleapis": "^127.0.0",
     "inquirer": "^8.2.5",
     "open": "^8.4.2",
@@ -37,5 +37,6 @@
     "cli"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "type": "commonjs"
 }

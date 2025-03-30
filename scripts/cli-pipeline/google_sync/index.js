@@ -267,7 +267,7 @@ addCommonOptions(
   rootsCommand.command('add')
     .description('Add a new root folder for syncing')
     .requiredOption('-i, --id <folder-id>', 'Google Drive folder ID to add as root')
-    .option('-n, --name <name>', 'Custom name for this root folder')
+    .option('-n, --name <n>', 'Custom name for this root folder')
     .action(async (options) => {
       console.log(chalk.blue(`Adding root folder with ID: ${options.id}`));
       
