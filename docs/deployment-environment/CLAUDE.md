@@ -12,6 +12,9 @@
   - Migrations: `pnpm db:migrate` (up), `pnpm db:rollback` (down)
   - Check state: `pnpm db:check`
   - Create migration: `pnpm migration:new`
+- **Google Drive:**
+  - List roots: `npx ts-node scripts/google-drive-manager-simple.ts list-roots`
+  - Verify auth: `npx ts-node scripts/google-drive-manager-simple.ts verify`
 
 ## Code Style Guidelines
 - **Components:** Functional components with hooks (React)

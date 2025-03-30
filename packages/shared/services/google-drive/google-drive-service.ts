@@ -68,7 +68,7 @@ export interface SyncStats {
   filesSkipped: number;
   filesDeleted: number;
   foldersFound: number;
-  errors: Error[];
+  errors: any[]; // Changed from Error[] to any[] to fix type errors
   startTime: Date;
   endTime?: Date;
   totalSize: number;
