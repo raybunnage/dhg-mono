@@ -29,7 +29,7 @@
 2. **Quality Assurance**:
    - Always test for TypeScript errors after making changes
    - Verify command functionality after fixing errors
-   - Document the full paths and arguments needed to run the CLI commands
+   - Document the full paths (from the project root) and arguments needed to run the CLI commands
 
 3. **Version Control**:
    - Make logical commits at appropriate intervals
