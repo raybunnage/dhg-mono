@@ -1,3 +1,24 @@
+ 
+ Created a new batch-transcribe command that can process multiple documents for transcription either sequentially or in parallel. The command:
+
+  1. Finds documents that need transcription (pending status, no raw_content)
+  2. Processes up to a specified limit (default 5)
+  3. Can run in parallel (with configurable max parallel processes)
+  4. Tracks and reports on success/failure rates and processing time
+
+  Usage:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-transcribe --limit 10 --parallel --model base
+
+  Options:
+  - --limit [number] - Number of files to process (default: 5)
+  - --model [tiny|base|small] - Whisper model to use (default: base)
+  - --parallel - Process files in parallel instead of sequentially
+  - --max-parallel [number] - Maximum parallel processes (default: 3)
+  - --dry-run - Show what would be processed without making changes
+ 
+ 
+ 
+ 
  The fix adds proper TypeScript type safety by casting the object to Record<string, any> to avoid the "obj is of type 'unknown'" errors. Now try running
   the command again:
 
