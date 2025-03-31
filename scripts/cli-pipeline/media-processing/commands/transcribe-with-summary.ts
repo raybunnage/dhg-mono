@@ -1,12 +1,12 @@
 #!/usr/bin/env ts-node
 /**
- * Transcribe Audio Command
+ * Transcribe Audio with Summary Command
  * 
- * This command transcribes audio files from expert_documents or provided file paths
- * using the Modal-based Whisper transcription service.
+ * This command transcribes audio files and generates summaries using the advanced
+ * transcription script with both Whisper and a summarization model.
  * 
  * Usage:
- *   transcribe-audio.ts [fileId] [options]
+ *   transcribe-with-summary.ts [fileId] [options]
  * 
  * Options:
  *   --model [tiny|base|small]  Specify Whisper model (default: base)
@@ -66,7 +66,7 @@ if (batchIndex !== -1 && args[batchIndex + 1]) {
 }
 
 /**
- * Transcribe an expert document from the database
+ * Transcribe and summarize an expert document from the database
  */
 async function transcribeExpertDocument(documentId: string, supabase: any): Promise<boolean> {
   try {
@@ -87,9 +87,9 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
       return false;
     }
     
-    // Check if the document is already transcribed (has raw_content)
-    if (document.raw_content && document.raw_content.length > 0) {
-      Logger.warn(`⚠️ Document ${documentId} already has transcription content`);
+    // Check if the document is already transcribed and summarized
+    if (document.raw_content && document.processed_content?.summary?.text) {
+      Logger.warn(`⚠️ Document ${documentId} already has transcription and summary content`);
       return true;
     }
     
@@ -149,11 +149,11 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     Logger.info(`📋 Found audio file: ${audioPath}`);
     
     if (options.dryRun) {
-      Logger.info(`🔄 Would transcribe ${audioPath} using ${options.model} model`);
+      Logger.info(`🔄 Would transcribe and summarize ${audioPath} using ${options.model} model`);
       return true;
     }
     
-    // Create output directory for transcripts
+    // Create output directory for transcripts and summaries
     const transcriptDir = path.join(options.outputDir);
     if (!fs.existsSync(transcriptDir)) {
       fs.mkdirSync(transcriptDir, { recursive: true });
@@ -162,8 +162,8 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     // Get transcription service
     const transcriptionService = AudioTranscriptionService.getInstance();
     
-    // Transcribe the file
-    const result = await transcriptionService.transcribeFile(audioPath, {
+    // Transcribe and summarize the file
+    const result = await transcriptionService.transcribeAndSummarize(audioPath, {
       model: options.model,
       outputDir: transcriptDir,
       dryRun: options.dryRun
@@ -192,11 +192,12 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     const processedContent = document.processed_content || {};
 
     // Calculate word count
-    const wordCount = result.text.split(/\s+/).length;
+    const wordCount = result.processingMetadata?.wordCount || result.text.split(/\s+/).length;
     
     // Generate processing stats
     const processingStats = {
       transcription_time_seconds: result.processingMetadata?.processingTime || 0,
+      summary_time_seconds: result.processingMetadata?.summaryTime || 0,
       audio_duration_seconds: 0, // Would need ffprobe to get this accurately
       words_per_minute: 0,
       model_type: options.model,
@@ -208,8 +209,8 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
       processingStats.words_per_minute = Math.round((wordCount / processingStats.transcription_time_seconds) * 60);
     }
     
-    // Update the document with the transcription and all required fields
-    // Store status fields in processed_content since those columns don't exist in the schema
+    // Update the document with the transcription and summary
+    // Store summary in processed_content only since summary column doesn't exist
     const { error: saveError } = await supabase
       .from('expert_documents')
       .update({
@@ -225,11 +226,16 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
             model: options.model,
             audio_file: audioPath,
             transcription_timestamp: new Date().toISOString(),
-            processing_time_seconds: result.processingMetadata?.processingTime || 0,
+            processing_time_seconds: processingStats.transcription_time_seconds,
             word_count: wordCount
           },
+          summary: {
+            text: result.summary,
+            processing_time_seconds: processingStats.summary_time_seconds,
+            timestamp: new Date().toISOString()
+          },
           transcription_complete: true,
-          summary_complete: false,
+          summary_complete: true,
           processing_stats: processingStats,
           audio_metadata: {
             source_file: path.basename(audioPath),
@@ -242,13 +248,16 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
       .eq('id', documentId);
     
     if (saveError) {
-      Logger.error(`❌ Error saving transcription: ${saveError.message}`);
+      Logger.error(`❌ Error saving transcription and summary: ${saveError.message}`);
       return false;
     }
     
     Logger.info(`📊 Transcription stats: ${wordCount} words, ${processingStats.words_per_minute} WPM, ${processingStats.transcription_time_seconds.toFixed(2)}s processing time`);
+    if (result.summary) {
+      Logger.info(`📝 Generated summary (${result.summary.length} characters) in ${processingStats.summary_time_seconds.toFixed(2)}s`);
+    }
     
-    Logger.info(`✅ Successfully transcribed document ${documentId}`);
+    Logger.info(`✅ Successfully transcribed and summarized document ${documentId}`);
     return true;
   } catch (error: any) {
     Logger.error(`❌ Exception in transcribeExpertDocument: ${error.message}`);
@@ -262,13 +271,13 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
 async function processBatch(supabase: any, limit: number): Promise<{ success: number; failed: number }> {
   try {
     // Get documents pending transcription
-    // Find docs that have been processed but don't have raw_content yet
+    // Find docs that need transcription and don't have summaries
     const { data: pendingDocs, error: queryError } = await supabase
       .from('expert_documents')
-      .select('id, source_id, content_type, raw_content, processing_status')
+      .select('id, source_id, content_type, raw_content, processed_content, summary_complete')
       .eq('content_type', 'presentation')
-      .eq('processing_status', 'processing')
-      .is('raw_content', null)
+      .eq('summary_complete', false)
+      .is('summary', null)
       .order('created_at', { ascending: true })
       .limit(limit);
     
@@ -281,10 +290,10 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
       // Try to find documents with pending status
       const { data: pendingDocs2, error: queryError2 } = await supabase
         .from('expert_documents')
-        .select('id, source_id, content_type, raw_content, processing_status')
+        .select('id, source_id, content_type, raw_content, processed_content, summary_complete')
         .eq('content_type', 'presentation')
         .eq('processing_status', 'pending')
-        .is('raw_content', null)
+        .is('summary', null)
         .order('created_at', { ascending: true })
         .limit(limit);
         
@@ -294,12 +303,12 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
       }
       
       if (!pendingDocs2 || pendingDocs2.length === 0) {
-        Logger.info('ℹ️ No pending documents found for transcription');
+        Logger.info('ℹ️ No pending documents found for transcription and summarization');
         return { success: 0, failed: 0 };
       }
       
       // Use this set of documents
-      Logger.info(`📋 Found ${pendingDocs2.length} documents pending transcription`);
+      Logger.info(`📋 Found ${pendingDocs2.length} documents pending transcription and summarization`);
       
       let success = 0;
       let failed = 0;
@@ -317,7 +326,7 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
       return { success, failed };
     }
     
-    Logger.info(`📋 Found ${pendingDocs.length} documents pending transcription`);
+    Logger.info(`📋 Found ${pendingDocs.length} documents pending transcription and summarization`);
     
     let success = 0;
     let failed = 0;
@@ -355,7 +364,7 @@ async function main() {
     }
     
     // Display configuration
-    Logger.info('🎙️ Audio Transcription');
+    Logger.info('🎙️ Audio Transcription with Summary');
     Logger.info(`Mode: ${options.dryRun ? 'DRY RUN' : 'ACTUAL UPDATE'}`);
     Logger.info(`Model: ${options.model}`);
     Logger.info(`Output directory: ${options.outputDir}`);
@@ -381,9 +390,9 @@ async function main() {
         Logger.info(`📋 Processing expert document: ${options.fileId}`);
         const result = await transcribeExpertDocument(options.fileId, supabase);
         if (result) {
-          Logger.info(`✅ Successfully transcribed document ${options.fileId}`);
+          Logger.info(`✅ Successfully transcribed and summarized document ${options.fileId}`);
         } else {
-          Logger.error(`❌ Failed to transcribe document ${options.fileId}`);
+          Logger.error(`❌ Failed to transcribe and summarize document ${options.fileId}`);
           process.exit(1);
         }
       } else {
@@ -397,7 +406,7 @@ async function main() {
         
         // Use the transcription service
         const transcriptionService = AudioTranscriptionService.getInstance();
-        const result = await transcriptionService.transcribeFile(options.fileId, {
+        const result = await transcriptionService.transcribeAndSummarize(options.fileId, {
           model: options.model,
           outputDir: options.outputDir,
           dryRun: options.dryRun
@@ -406,6 +415,9 @@ async function main() {
         if (result.success) {
           if (result.text) {
             Logger.info(`✅ Transcription complete! First 100 characters: ${result.text.substring(0, 100)}...`);
+            if (result.summary) {
+              Logger.info(`📝 Summary generated! First 100 characters: ${result.summary.substring(0, 100)}...`);
+            }
           } else {
             Logger.warn(`⚠️ Transcription successful but no text found`);
           }
@@ -416,8 +428,8 @@ async function main() {
       }
     } else {
       Logger.error('❌ No file ID or batch size specified');
-      Logger.info('Usage: transcribe-audio.ts [fileId] [options]');
-      Logger.info('   or: transcribe-audio.ts --batch [number]');
+      Logger.info('Usage: transcribe-with-summary.ts [fileId] [options]');
+      Logger.info('   or: transcribe-with-summary.ts --batch [number]');
       process.exit(1);
     }
   } catch (error: any) {
