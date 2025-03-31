@@ -32,7 +32,8 @@ const options = {
   model: 'base' as 'tiny' | 'base' | 'small' | 'medium' | 'large',
   outputDir: path.join(process.cwd(), 'file_types', 'transcripts'),
   batchSize: 0,
-  fileId: ''
+  fileId: '',
+  accelerator: 'T4' as 'T4' | 'A10G' | 'A100' | 'CPU'
 };
 
 // Get file ID (first non-option argument)
@@ -62,6 +63,15 @@ if (batchIndex !== -1 && args[batchIndex + 1]) {
   const batchArg = parseInt(args[batchIndex + 1]);
   if (!isNaN(batchArg)) {
     options.batchSize = batchArg;
+  }
+}
+
+// Get accelerator if specified
+const acceleratorIndex = args.indexOf('--accelerator');
+if (acceleratorIndex !== -1 && args[acceleratorIndex + 1]) {
+  const acceleratorArg = args[acceleratorIndex + 1];
+  if (['T4', 'A10G', 'A100', 'CPU'].includes(acceleratorArg)) {
+    options.accelerator = acceleratorArg as 'T4' | 'A10G' | 'A100' | 'CPU';
   }
 }
 
@@ -166,7 +176,8 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     const result = await transcriptionService.transcribeFile(audioPath, {
       model: options.model,
       outputDir: transcriptDir,
-      dryRun: options.dryRun
+      dryRun: options.dryRun,
+      accelerator: options.accelerator
     });
     
     if (!result.success || !result.text) {
@@ -400,7 +411,8 @@ async function main() {
         const result = await transcriptionService.transcribeFile(options.fileId, {
           model: options.model,
           outputDir: options.outputDir,
-          dryRun: options.dryRun
+          dryRun: options.dryRun,
+          accelerator: options.accelerator
         });
         
         if (result.success) {

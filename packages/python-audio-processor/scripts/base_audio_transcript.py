@@ -29,8 +29,20 @@ image = (
     .pip_install("numpy", "torch", "torchaudio", "openai-whisper")
 )
 
-@app.function(gpu="T4", timeout=300, image=image)
-def transcribe_base(audio_data: bytes) -> str:
+def get_transcribe_function(accelerator: str = "T4"):
+    """Create and return the appropriate transcribe function based on accelerator"""
+    if accelerator == "CPU":
+        @app.function(timeout=600, image=image)
+        def transcribe_func(audio_data: bytes) -> str:
+            return transcribe_implementation(audio_data)
+    else:
+        @app.function(gpu=accelerator, timeout=300, image=image)
+        def transcribe_func(audio_data: bytes) -> str:
+            return transcribe_implementation(audio_data)
+    
+    return transcribe_func
+
+def transcribe_implementation(audio_data: bytes) -> str:
     """A transcription function that uses the base model for better quality"""
     import tempfile
     import whisper
@@ -66,20 +78,24 @@ def transcribe_base(audio_data: bytes) -> str:
             os.unlink(temp_path)
 
 def main():
-    # Get audio file path from command line argument
-    if len(sys.argv) < 2:
-        print("Usage: python base_audio_transcript.py <audio_file_path> [output_path]")
-        sys.exit(1)
+    import argparse
     
-    audio_path = sys.argv[1]
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Transcribe audio using Whisper")
+    parser.add_argument("audio_path", help="Path to the audio file")
+    parser.add_argument("output_path", nargs="?", help="Path to save the transcript")
+    parser.add_argument("--accelerator", default="T4", choices=["T4", "A10G", "A100", "CPU"],
+                       help="GPU accelerator to use (default: T4)")
+    
+    args = parser.parse_args()
+    
+    audio_path = args.audio_path
     if not os.path.exists(audio_path):
         print(f"Error: File not found: {audio_path}")
         sys.exit(1)
     
     # Get optional output path
-    output_path = None
-    if len(sys.argv) >= 3:
-        output_path = sys.argv[2]
+    output_path = args.output_path
         
     print(f"Processing: {audio_path}")
     start_time = time.time()
@@ -90,10 +106,15 @@ def main():
     
     print(f"Audio file size: {len(audio_data) / 1024:.2f} KB")
     
+    # Get selected accelerator
+    accelerator = args.accelerator
+    print(f"Using accelerator: {accelerator}")
+    
     # Run on Modal
     with app.run():
-        print("Connected to Modal, starting transcription...")
-        transcript = transcribe_base.remote(audio_data=audio_data)
+        print(f"Connected to Modal, starting transcription with {accelerator} accelerator...")
+        transcribe_func = get_transcribe_function(accelerator)
+        transcript = transcribe_func.remote(audio_data=audio_data)
     
     total_time = time.time() - start_time
     

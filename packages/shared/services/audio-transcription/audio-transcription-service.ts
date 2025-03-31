@@ -15,6 +15,7 @@ export interface TranscriptionOptions {
   outputDir?: string;
   dryRun?: boolean;
   generateSummary?: boolean;
+  accelerator?: 'T4' | 'A10G' | 'A100' | 'CPU';
 }
 
 export interface TranscriptionResult {
@@ -55,7 +56,7 @@ export class AudioTranscriptionService {
     filePath: string,
     options: TranscriptionOptions
   ): Promise<TranscriptionResult> {
-    const { model = 'base', outputDir, dryRun = false, generateSummary = false } = options;
+    const { model = 'base', outputDir, dryRun = false, generateSummary = false, accelerator = 'T4' } = options;
     const startTime = Date.now();
     
     // Validate the file exists
@@ -94,7 +95,7 @@ export class AudioTranscriptionService {
       ? path.join(process.cwd(), 'packages/python-audio-processor/scripts/advanced_audio_transcript.py')
       : path.join(process.cwd(), 'packages/python-audio-processor/scripts/base_audio_transcript.py');
     
-    Logger.info(`🎙️ Transcribing ${filePath} with ${model} model${generateSummary ? ' and generating summary' : ''}...`);
+    Logger.info(`🎙️ Transcribing ${filePath} with ${model} model on ${accelerator} accelerator${generateSummary ? ' and generating summary' : ''}...`);
     
     // Execute the Python script
     return new Promise((resolve) => {
@@ -109,10 +110,14 @@ export class AudioTranscriptionService {
         scriptArgs.push(outputPath);
       }
       
-      // Add model if using advanced script
+      // Add model if using advanced script or accelerator for all cases
       if (generateSummary) {
         scriptArgs.push(model);
       }
+      
+      // Add accelerator type for all scripts
+      scriptArgs.push('--accelerator');
+      scriptArgs.push(accelerator);
       
       const pythonProcess = spawn('python', scriptArgs);
       
