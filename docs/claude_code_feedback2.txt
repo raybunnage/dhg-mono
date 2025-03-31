@@ -1,3 +1,59 @@
+ ./scripts/cli-pipeline/media-processing/media-processing-cli.sh --help
+ ./scripts/cli-pipeline/media-processing/media-processing-cli.sh find-processable-videos
+ 
+ media-processing-cli.sh [command] [options]
+
+Commands:
+  convert [fileId|path]        Convert MP4 file to M4A for processing (audio extraction only)
+  find-processable-videos      Find MP4 files ready for processing
+  transcribe [fileId|path]     Transcribe audio file using Whisper
+  transcribe-with-summary      Transcribe and generate summary of audio file
+  process-video [fileId]       Full pipeline: convert + transcribe (recommended for most cases)
+  list-transcribable           List documents ready for transcription with copy-paste commands
+  show-transcription-status    Show detailed status of transcriptions and processing times
+  list-pending                 List pending files waiting for processing
+  list-ready                   List files ready for content generation
+  update-status [fileId]       Update processing status of a file
+  extract-summary [fileId]     Extract transcript from a processed file
+  batch-transcribe              Process multiple files for transcription
+
+Options:
+  --dry-run                    Show what would happen without making changes
+  --limit [n]                  Process max n files
+  --model [tiny|base|small]    Specify Whisper model (default: base)
+  --accelerator [T4|A10G|A100] Specify GPU accelerator (default: T4)
+  --force                      Process even if already processed
+  --output [path]              Specify output directory
+  --auto-process               Automatically process files (for find-processable-videos)
+
+Examples:
+  media-processing-cli.sh convert path/to/file.mp4
+  media-processing-cli.sh find-processable-videos --limit 1 --auto-process
+  media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
+  media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
+  media-processing-cli.sh list-pending --limit 10
+raybunnage@Rays-Laptop dhg-mono % 
+ 
+ 
+ 
+ Based on my analysis of the code, I can provide you with the command to run batch transcription using the A10G GPU for up to 5 files in
+  parallel:
+
+  ts-node scripts/cli-pipeline/media-processing/commands/batch-transcribe.ts --limit 5 --parallel --accelerator A10G
+
+  This command will:
+  1. Process up to 5 files (--limit 5)
+  2. Process them in parallel (--parallel)
+  3. Use the A10G GPU accelerator for faster processing (--accelerator A10G)
+
+  By default, the command will:
+  - Use the base Whisper model for transcription
+  - Save the transcripts to the default output directory (file_types/transcripts)
+  - Process files with a maximum concurrency of 3 (you can adjust this with --max-parallel if needed)
+  - Use the standard non-dry-run mode that actually performs the transcription
+
+  This should give you higher throughput than the default T4 GPU option.
+ 
  
  Created a new batch-transcribe command that can process multiple documents for transcription either sequentially or in parallel. The command:
 
@@ -68,9 +124,12 @@
   4. Improved error reporting when no summary is found
 
   Try running the command again with the --debug flag to get more information about the document structure:
+./scripts/cli-pipeline/media-processing/media-processing-cli.sh extract-summary 3fd79c2c-03a1-4b9a-b2f4-429c5ac66784 --debug
 
-  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh extract-summary 3fd79c2c-03a1-4b9a-b2f4-429c5ac66784 --debug
 
+
+
+  
 
  
  've created a new command to extract and display summaries from documents:

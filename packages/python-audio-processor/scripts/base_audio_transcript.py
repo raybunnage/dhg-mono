@@ -29,18 +29,33 @@ image = (
     .pip_install("numpy", "torch", "torchaudio", "openai-whisper")
 )
 
+# Define global transcribe functions for different accelerators
+@app.function(timeout=600, image=image)
+def transcribe_cpu(audio_data: bytes) -> str:
+    return transcribe_implementation(audio_data)
+
+@app.function(gpu="T4", timeout=300, image=image)
+def transcribe_t4(audio_data: bytes) -> str:
+    return transcribe_implementation(audio_data)
+
+@app.function(gpu="A10G", timeout=300, image=image)
+def transcribe_a10g(audio_data: bytes) -> str:
+    return transcribe_implementation(audio_data)
+
+@app.function(gpu="A100", timeout=300, image=image)
+def transcribe_a100(audio_data: bytes) -> str:
+    return transcribe_implementation(audio_data)
+
 def get_transcribe_function(accelerator: str = "T4"):
-    """Create and return the appropriate transcribe function based on accelerator"""
+    """Return the appropriate transcribe function based on accelerator"""
     if accelerator == "CPU":
-        @app.function(timeout=600, image=image)
-        def transcribe_func(audio_data: bytes) -> str:
-            return transcribe_implementation(audio_data)
-    else:
-        @app.function(gpu=accelerator, timeout=300, image=image)
-        def transcribe_func(audio_data: bytes) -> str:
-            return transcribe_implementation(audio_data)
-    
-    return transcribe_func
+        return transcribe_cpu
+    elif accelerator == "A10G":
+        return transcribe_a10g
+    elif accelerator == "A100":
+        return transcribe_a100
+    else:  # Default to T4
+        return transcribe_t4
 
 def transcribe_implementation(audio_data: bytes) -> str:
     """A transcription function that uses the base model for better quality"""
