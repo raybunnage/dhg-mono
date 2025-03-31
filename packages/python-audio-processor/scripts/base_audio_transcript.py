@@ -66,11 +66,20 @@ def transcribe_base(audio_data: bytes) -> str:
             os.unlink(temp_path)
 
 def main():
-    # Hardcoded path to the specific file
-    audio_path = "/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/INGESTED_2024_04_17_Navaux_10m.m4a"
+    # Get audio file path from command line argument
+    if len(sys.argv) < 2:
+        print("Usage: python base_audio_transcript.py <audio_file_path> [output_path]")
+        sys.exit(1)
+    
+    audio_path = sys.argv[1]
     if not os.path.exists(audio_path):
         print(f"Error: File not found: {audio_path}")
         sys.exit(1)
+    
+    # Get optional output path
+    output_path = None
+    if len(sys.argv) >= 3:
+        output_path = sys.argv[2]
         
     print(f"Processing: {audio_path}")
     start_time = time.time()
@@ -97,14 +106,28 @@ def main():
     print(f"Total processing time: {total_time:.2f} seconds")
     
     # Save to file
-    output_dir = "results"
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, "INGESTED_2024_04_17_Navaux_10m_base_transcript.txt")
+    if output_path:
+        # Use provided output path
+        output_file = output_path
+    else:
+        # Create default output path
+        output_dir = "results"
+        os.makedirs(output_dir, exist_ok=True)
+        base_name = os.path.basename(audio_path).rsplit(".", 1)[0]
+        output_file = os.path.join(output_dir, f"{base_name}_base_transcript.txt")
     
-    with open(output_path, "w") as f:
+    # Create output directory if it doesn't exist
+    os.makedirs(os.path.dirname(os.path.abspath(output_file)), exist_ok=True)
+    
+    with open(output_file, "w") as f:
         f.write(transcript)
     
-    print(f"Transcript saved to: {output_path}")
+    print(f"Transcript saved to: {output_file}")
+    
+    # Also print the transcript to stdout for capturing by caller
+    print("\nTRANSCRIPT_BEGIN")
+    print(transcript)
+    print("TRANSCRIPT_END")
 
 if __name__ == "__main__":
     main()

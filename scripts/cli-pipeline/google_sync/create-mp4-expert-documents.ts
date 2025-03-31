@@ -39,8 +39,8 @@ if (limitIndex !== -1 && args[limitIndex + 1]) {
   }
 }
 
-// Document type ID for video presentations
-const VIDEO_DOCUMENT_TYPE_ID = '23e4567e-e89b-12d3-a456-426614174001'; // This is a placeholder - replace with actual ID
+// Document type ID for presentations - needs to be a valid ID from document_types table
+const PRESENTATION_DOCUMENT_TYPE_ID = null; // Will be populated during runtime
 
 async function main() {
   try {
@@ -60,29 +60,85 @@ async function main() {
       process.exit(1);
     }
 
-    // Try to fetch document type ID for Video Presentation
-    let documentTypeId = VIDEO_DOCUMENT_TYPE_ID;
+    // First, try to find a valid document type for presentations
+    let documentTypeId = null;
+    let documentTypeFound = false;
+    
     try {
-      const { data: documentTypes, error: documentTypeError } = await supabase
-        .from('document_types')
-        .select('id, name')
-        .eq('name', 'Video Presentation')
-        .limit(1);
-
-      if (documentTypeError) {
-        // This might happen if the table doesn't exist - not a critical error
-        Logger.warn(`⚠️ Couldn't fetch document types: ${documentTypeError.message}`);
-        Logger.warn('⚠️ Using placeholder document type ID');
-      } else if (documentTypes && documentTypes.length > 0) {
-        // Use the actual document type ID from the database
-        documentTypeId = documentTypes[0].id;
-        Logger.info(`📋 Found document type ID for "Video Presentation": ${documentTypeId}`);
-      } else {
-        Logger.warn('⚠️ Document type "Video Presentation" not found, using placeholder ID');
+      // Try to find a suitable document type for video presentations
+      const searchTerms = ['Video Presentation', 'Presentation', 'Video'];
+      
+      for (const term of searchTerms) {
+        const { data: documentTypes, error: documentTypeError } = await supabase
+          .from('document_types')
+          .select('id, document_type')
+          .ilike('document_type', `%${term}%`)
+          .limit(5);
+        
+        if (!documentTypeError && documentTypes && documentTypes.length > 0) {
+          documentTypeId = documentTypes[0].id;
+          Logger.info(`📋 Found document type ID for "${documentTypes[0].document_type}": ${documentTypeId}`);
+          documentTypeFound = true;
+          break;
+        }
+      }
+      
+      if (!documentTypeFound) {
+        // No specific document type found, try to get any document type
+        const { data: anyDocumentTypes, error: anyError } = await supabase
+          .from('document_types')
+          .select('id, document_type')
+          .limit(1);
+        
+        if (!anyError && anyDocumentTypes && anyDocumentTypes.length > 0) {
+          documentTypeId = anyDocumentTypes[0].id;
+          Logger.info(`📋 Using generic document type "${anyDocumentTypes[0].document_type}": ${documentTypeId}`);
+          documentTypeFound = true;
+        }
+      }
+      
+      if (!documentTypeFound) {
+        Logger.error('❌ Could not find any valid document type in the database');
+        Logger.error('❌ This is required to satisfy the foreign key constraint');
+        
+        // Create a simple document type for presentations
+        if (!options.dryRun) {
+          try {
+            const { data: newDocType, error: createError } = await supabase
+              .from('document_types')
+              .insert({
+                document_type: 'Video Presentation',
+                description: 'Video recordings of presentations',
+                category: 'video',
+                created_by: '00000000-0000-0000-0000-000000000000', // System user
+                updated_by: '00000000-0000-0000-0000-000000000000'  // System user
+              })
+              .select()
+              .single();
+            
+            if (createError) {
+              Logger.error(`❌ Error creating document type: ${createError.message}`);
+              Logger.error('❌ Exiting - please create a document type first');
+              process.exit(1);
+            } else if (newDocType) {
+              documentTypeId = newDocType.id;
+              Logger.info(`✅ Created new document type "Video Presentation" with ID: ${documentTypeId}`);
+              documentTypeFound = true;
+            }
+          } catch (error: any) {
+            Logger.error(`❌ Exception creating document type: ${error.message}`);
+            Logger.error('❌ Exiting - please create a document type first');
+            process.exit(1);
+          }
+        } else {
+          Logger.warn('⚠️ Continuing in dry-run mode, but this would fail in actual execution');
+        }
       }
     } catch (error: any) {
-      Logger.warn(`⚠️ Exception fetching document types: ${error.message}`);
-      Logger.warn('⚠️ Using placeholder document type ID');
+      Logger.error(`❌ Exception fetching document types: ${error.message}`);
+      if (!options.dryRun) {
+        process.exit(1);
+      }
     }
 
     // Fetch presentations that have MP4 files available on disk
