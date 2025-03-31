@@ -1,5 +1,10 @@
 # Claude Code Instructions
 
+⚠️ **CRITICAL: ALWAYS TEST TYPESCRIPT COMPILATION BEFORE SUBMITTING NEW CODE**
+- Run `tsc --noEmit` to check for TypeScript errors in new files
+- Explicitly type all parameters and variables to avoid implicit 'any' types
+- Never submit code with TypeScript errors
+
 ## Code Organization Principles
 
 1. **Shared Services First**: Always prioritize using and enhancing the shared services in `packages/shared`. Before implementing any functionality, check if an existing service can be used or extended.
@@ -54,3 +59,25 @@ When I identify recurring patterns, issues, or inefficiencies in the development
    - For Google Drive access issues, use the authentication singleton in `packages/shared/services/google-drive` which handles token management and authentication flows
    - Never implement custom authentication logic or hardcode credentials
    - If encountering authentication errors, look for the established patterns in the shared services first
+
+## TypeScript Best Practices
+⚠️ **ALWAYS CHECK FOR TYPESCRIPT ERRORS BEFORE SUBMITTING CODE**
+
+1. **Type Safety First**:
+   - Always use explicit typing for function parameters, variables, and return types
+   - Avoid `any` type unless absolutely necessary; prefer unknown with type guards
+   - Follow existing type patterns in the codebase
+   - Pay special attention to callback parameters in array methods (map, filter, reduce)
+
+2. **TypeScript Validation Command**:
+   ```bash
+   tsc --noEmit
+   ```
+   **Always run this command after creating or modifying TypeScript files**
+
+3. **Common TypeScript Issues to Avoid**:
+   - Implicit `any` types in parameters and variables
+   - Missing return types on functions
+   - Incorrect typing of Promise results
+   - Forgetting to type array method callbacks
+   - Not handling possible undefined/null values

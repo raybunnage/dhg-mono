@@ -34,7 +34,8 @@ const options = {
   model: 'base' as 'tiny' | 'base' | 'small' | 'medium' | 'large',
   parallel: args.includes('--parallel'),
   maxParallel: 3,
-  outputDir: path.join(process.cwd(), 'file_types', 'transcripts')
+  outputDir: path.join(process.cwd(), 'file_types', 'transcripts'),
+  accelerator: 'T4' as 'T4' | 'A10G' | 'A100' | 'CPU'
 };
 
 // Get limit if specified
@@ -70,6 +71,15 @@ if (outputIndex !== -1 && args[outputIndex + 1]) {
   options.outputDir = args[outputIndex + 1];
 }
 
+// Get accelerator if specified
+const acceleratorIndex = args.indexOf('--accelerator');
+if (acceleratorIndex !== -1 && args[acceleratorIndex + 1]) {
+  const acceleratorArg = args[acceleratorIndex + 1];
+  if (['T4', 'A10G', 'A100', 'CPU'].includes(acceleratorArg)) {
+    options.accelerator = acceleratorArg as 'T4' | 'A10G' | 'A100' | 'CPU';
+  }
+}
+
 /**
  * Run a transcription command for a document
  */
@@ -79,7 +89,8 @@ async function transcribeDocument(documentId: string): Promise<{ success: boolea
     const args = [
       path.join(__dirname, 'transcribe-audio.ts'),
       documentId,
-      `--model`, options.model
+      `--model`, options.model,
+      `--accelerator`, options.accelerator
     ];
     
     if (options.dryRun) {
@@ -138,7 +149,7 @@ async function findDocumentsToTranscribe(supabase: any, limit: number): Promise<
       return [];
     }
     
-    return pendingDocs.map(doc => doc.id);
+    return pendingDocs.map((doc: any) => doc.id);
   } catch (error: any) {
     Logger.error(`❌ Exception in findDocumentsToTranscribe: ${error.message}`);
     return [];
@@ -219,6 +230,7 @@ async function main() {
     Logger.info('🔄 Batch Transcription');
     Logger.info(`Mode: ${options.dryRun ? 'DRY RUN' : 'ACTUAL UPDATE'}`);
     Logger.info(`Model: ${options.model}`);
+    Logger.info(`Accelerator: ${options.accelerator}`);
     Logger.info(`Limit: ${options.limit}`);
     Logger.info(`Processing: ${options.parallel ? 'Parallel' : 'Sequential'}`);
     if (options.parallel) {

@@ -34,6 +34,7 @@ function display_help() {
   echo "  --dry-run                    Show what would happen without making changes"
   echo "  --limit [n]                  Process max n files"
   echo "  --model [tiny|base|small]    Specify Whisper model (default: base)"
+  echo "  --accelerator [T4|A10G|A100] Specify GPU accelerator (default: T4)"
   echo "  --force                      Process even if already processed"
   echo "  --output [path]              Specify output directory"
   echo "  --auto-process               Automatically process files (for find-processable-videos)"
