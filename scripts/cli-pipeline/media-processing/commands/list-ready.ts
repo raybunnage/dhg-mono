@@ -126,16 +126,15 @@ async function main() {
       .select(`
         id, 
         content_type, 
-        content_extraction_status, 
-        transcription_status,
+        processing_status,
         word_count,
         updated_at,
         source_id, 
         sources_google!inner(name)
       `)
       .eq('content_type', 'presentation')
-      .eq('transcription_status', 'transcribed')
-      .eq('content_extraction_status', 'extracted')
+      .eq('processing_status', 'completed')
+      .not('raw_content', 'is', null)
       .order('updated_at', { ascending: false })
       .limit(options.limit);
     
@@ -150,7 +149,7 @@ async function main() {
     }
     
     // Process and format the results
-    const formattedDocs = documents.map(doc => ({
+    const formattedDocs = documents.map((doc: any) => ({
       id: doc.id,
       content_type: doc.content_type,
       word_count: doc.word_count || 0,

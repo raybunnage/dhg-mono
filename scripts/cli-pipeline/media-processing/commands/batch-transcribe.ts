@@ -129,7 +129,7 @@ async function transcribeDocument(documentId: string): Promise<{ success: boolea
  */
 async function findDocumentsToTranscribe(supabase: any, limit: number): Promise<string[]> {
   try {
-    // Find docs that are ready for transcription (have been processed but don't have raw_content yet)
+    // First, check for documents marked as pending or processing
     const { data: pendingDocs, error: queryError } = await supabase
       .from('expert_documents')
       .select('id, source_id, content_type, raw_content, processing_status')
@@ -144,12 +144,34 @@ async function findDocumentsToTranscribe(supabase: any, limit: number): Promise<
       return [];
     }
     
-    if (!pendingDocs || pendingDocs.length === 0) {
-      Logger.info('ℹ️ No pending documents found for transcription');
+    if (pendingDocs && pendingDocs.length > 0) {
+      Logger.info(`Found ${pendingDocs.length} documents with pending/processing status`);
+      return pendingDocs.map((doc: any) => doc.id);
+    }
+    
+    // If no pending docs found, check for any presentation documents with null raw_content
+    // regardless of processing_status (may have been incorrectly set)
+    Logger.info('No pending documents found, checking for any unprocessed documents...');
+    const { data: unprocessedDocs, error: unprocessedError } = await supabase
+      .from('expert_documents')
+      .select('id, source_id, content_type, raw_content, processing_status')
+      .eq('content_type', 'presentation')
+      .is('raw_content', null)
+      .order('created_at', { ascending: true })
+      .limit(limit);
+    
+    if (unprocessedError) {
+      Logger.error(`❌ Error fetching unprocessed documents: ${unprocessedError.message}`);
       return [];
     }
     
-    return pendingDocs.map((doc: any) => doc.id);
+    if (!unprocessedDocs || unprocessedDocs.length === 0) {
+      Logger.info('ℹ️ No documents found for transcription');
+      return [];
+    }
+    
+    Logger.info(`Found ${unprocessedDocs.length} documents with null raw_content`);
+    return unprocessedDocs.map((doc: any) => doc.id);
   } catch (error: any) {
     Logger.error(`❌ Exception in findDocumentsToTranscribe: ${error.message}`);
     return [];
