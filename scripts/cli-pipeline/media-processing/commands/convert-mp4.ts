@@ -121,7 +121,7 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
     // Get the document from the database
     const { data: document, error: docError } = await supabase
       .from('expert_documents')
-      .select('id, source_id, content_type, processing_status')
+      .select('id, source_id, content_type, processing_status, processed_content, raw_content')
       .eq('id', documentId)
       .single();
     
@@ -135,8 +135,8 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
       return false;
     }
     
-    // Check if already completed
-    if (document.processing_status === 'completed') {
+    // Check if already completed or has raw content (which implies audio extraction is done)
+    if (document.processing_status === 'completed' || document.raw_content) {
       Logger.warn(`⚠️ Document ${documentId} is already fully processed`);
       return true;
     }
@@ -185,7 +185,7 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
     
     Logger.info(`📋 Found MP4 file: ${videoPath}`);
     
-    // Update status to extracting
+    // Update status to processing
     if (!options.dryRun) {
       const { error: updateError } = await supabase
         .from('expert_documents')
@@ -234,13 +234,16 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
     const stats = fs.statSync(outputPath);
     const fileSizeMB = stats.size / (1024 * 1024);
     
+    // Create or update processed_content field
+    const processedContent = document.processed_content || {};
+    
     // Update the document with the extraction info
     const { error: saveError } = await supabase
       .from('expert_documents')
       .update({
         processing_status: 'processing',
         processed_content: {
-          ...document.processed_content,
+          ...processedContent,
           audio_extraction: {
             output_path: outputPath,
             file_size_mb: fileSizeMB,
@@ -302,12 +305,13 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
  */
 async function processBatch(supabase: any, limit: number): Promise<{ success: number; failed: number }> {
   try {
-    // Get documents pending audio extraction
+    // Get documents pending audio extraction - using processing_status instead of content_extraction_status
     const { data: pendingDocs, error: queryError } = await supabase
       .from('expert_documents')
-      .select('id, source_id, content_type, content_extraction_status')
+      .select('id, source_id, content_type, processing_status')
       .eq('content_type', 'presentation')
-      .is('content_extraction_status', null)
+      .eq('processing_status', 'pending')
+      .is('raw_content', null)
       .order('created_at', { ascending: true })
       .limit(limit);
     
@@ -317,12 +321,12 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
     }
     
     if (!pendingDocs || pendingDocs.length === 0) {
-      // Try with explicit 'pending' status
+      // Try with documents that don't have raw_content yet (unprocessed)
       const { data: pendingDocs2, error: queryError2 } = await supabase
         .from('expert_documents')
-        .select('id, source_id, content_type, content_extraction_status')
+        .select('id, source_id, content_type, processing_status')
         .eq('content_type', 'presentation')
-        .eq('content_extraction_status', 'pending')
+        .is('raw_content', null)
         .order('created_at', { ascending: true })
         .limit(limit);
       

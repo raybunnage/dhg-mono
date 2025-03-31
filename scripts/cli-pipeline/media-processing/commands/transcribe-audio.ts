@@ -17,9 +17,9 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { spawn } from 'child_process';
 import { Logger } from '../../../../packages/shared/utils';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { AudioTranscriptionService } from '../../../../packages/shared/services/audio-transcription/audio-transcription-service';
 import { LogLevel } from '../../../../packages/shared/utils/logger';
 
 // Initialize logger
@@ -29,7 +29,7 @@ Logger.setLevel(LogLevel.INFO);
 const args = process.argv.slice(2);
 const options = {
   dryRun: args.includes('--dry-run'),
-  model: 'base',
+  model: 'base' as 'tiny' | 'base' | 'small' | 'medium' | 'large',
   outputDir: path.join(process.cwd(), 'file_types', 'transcripts'),
   batchSize: 0,
   fileId: ''
@@ -46,7 +46,7 @@ const modelIndex = args.indexOf('--model');
 if (modelIndex !== -1 && args[modelIndex + 1]) {
   const modelArg = args[modelIndex + 1];
   if (['tiny', 'base', 'small', 'medium', 'large'].includes(modelArg)) {
-    options.model = modelArg;
+    options.model = modelArg as 'tiny' | 'base' | 'small' | 'medium' | 'large';
   }
 }
 
@@ -66,97 +66,6 @@ if (batchIndex !== -1 && args[batchIndex + 1]) {
 }
 
 /**
- * Transcribe an audio file using the Python Modal service
- */
-async function transcribeFile(filePath: string): Promise<{ success: boolean; result?: any; error?: string }> {
-  return new Promise((resolve) => {
-    Logger.info(`🎙️ Transcribing ${filePath} with ${options.model} model...`);
-    
-    // Execute the Python script
-    const pythonProcess = spawn('python', [
-      path.join(process.cwd(), 'packages/python-audio-processor/scripts/base_audio_transcript.py'),
-      filePath,
-      path.join(options.outputDir, `${path.basename(filePath).replace(/\.[^/.]+$/, "")}_transcript.txt`)
-    ]);
-    
-    let stdout = '';
-    let stderr = '';
-    
-    pythonProcess.stdout.on('data', (data) => {
-      stdout += data.toString();
-      Logger.info(`${data.toString().trim()}`);
-    });
-    
-    pythonProcess.stderr.on('data', (data) => {
-      stderr += data.toString();
-      Logger.error(`${data.toString().trim()}`);
-    });
-    
-    pythonProcess.on('close', (code) => {
-      if (code === 0) {
-        // Extract transcript from stdout
-        const transcriptMatch = stdout.match(/TRANSCRIPT_BEGIN\n([\s\S]*?)\nTRANSCRIPT_END/);
-        const transcriptText = transcriptMatch ? transcriptMatch[1] : '';
-        
-        // Get output path
-        const baseName = path.basename(filePath).replace(/\.[^/.]+$/, "");
-        const outputPath = path.join(options.outputDir, `${baseName}_transcript.txt`);
-        
-        try {
-          if (transcriptText) {
-            resolve({ 
-              success: true, 
-              result: { 
-                text: transcriptText,
-                processing_metadata: {
-                  model: 'base',
-                  audio_file: filePath
-                }
-              }
-            });
-          } else if (fs.existsSync(outputPath)) {
-            // Try reading from the output file if TRANSCRIPT markers not found
-            const transcriptText = fs.readFileSync(outputPath, 'utf8');
-            resolve({ 
-              success: true, 
-              result: { 
-                text: transcriptText,
-                processing_metadata: {
-                  model: 'base',
-                  audio_file: filePath
-                }
-              }
-            });
-          } else {
-            resolve({ 
-              success: true, 
-              result: { 
-                text: 'Transcription process completed but transcript not found',
-                processing_metadata: {
-                  model: 'base'
-                }
-              }
-            });
-          }
-        } catch (error: any) {
-          resolve({ 
-            success: true, 
-            result: { 
-              text: `Transcription successful but error reading transcript: ${error.message}`,
-              processing_metadata: {
-                model: 'base'
-              }
-            }
-          });
-        }
-      } else {
-        resolve({ success: false, error: `Process exited with code ${code}: ${stderr}` });
-      }
-    });
-  });
-}
-
-/**
  * Transcribe an expert document from the database
  */
 async function transcribeExpertDocument(documentId: string, supabase: any): Promise<boolean> {
@@ -164,7 +73,7 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     // Get the document from the database
     const { data: document, error: docError } = await supabase
       .from('expert_documents')
-      .select('id, source_id, processing_status, raw_content')
+      .select('id, source_id, processing_status, raw_content, processed_content')
       .eq('id', documentId)
       .single();
     
@@ -198,7 +107,7 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
       }
     }
     
-    // Get the audio file path
+    // Get the source file information
     const { data: sourceFile, error: sourceError } = await supabase
       .from('sources_google')
       .select('id, name, mime_type, metadata')
@@ -214,7 +123,7 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     let audioPath = '';
     const sourceFilename = sourceFile.name.replace(/\.[^/.]+$/, "");
     
-    // Check for MP3 file in audio directory
+    // Check for audio file in the m4a directory
     const audioDir = path.join(process.cwd(), 'file_types', 'm4a');
     
     try {
@@ -244,18 +153,31 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
       return true;
     }
     
-    // Transcribe the file
-    const { success, result, error } = await transcribeFile(audioPath);
+    // Create output directory for transcripts
+    const transcriptDir = path.join(options.outputDir);
+    if (!fs.existsSync(transcriptDir)) {
+      fs.mkdirSync(transcriptDir, { recursive: true });
+    }
     
-    if (!success || !result) {
-      Logger.error(`❌ Transcription failed: ${error}`);
+    // Get transcription service
+    const transcriptionService = AudioTranscriptionService.getInstance();
+    
+    // Transcribe the file
+    const result = await transcriptionService.transcribeFile(audioPath, {
+      model: options.model,
+      outputDir: transcriptDir,
+      dryRun: options.dryRun
+    });
+    
+    if (!result.success || !result.text) {
+      Logger.error(`❌ Transcription failed: ${result.error}`);
       
       // Update status to error
       const { error: updateError } = await supabase
         .from('expert_documents')
         .update({ 
           processing_status: 'error', 
-          processing_error: error 
+          processing_error: result.error 
         })
         .eq('id', documentId);
       
@@ -266,14 +188,25 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
       return false;
     }
     
+    // Initialize processed_content if it doesn't exist
+    const processedContent = document.processed_content || {};
+
     // Update the document with the transcription
     const { error: saveError } = await supabase
       .from('expert_documents')
       .update({
         raw_content: result.text,
         processing_status: 'completed',
-        word_count: result.text.split(' ').length,
-        processed_content: result,
+        word_count: result.text.split(/\s+/).length,
+        processed_content: {
+          ...processedContent,
+          transcription: {
+            model: options.model,
+            audio_file: audioPath,
+            transcription_timestamp: new Date().toISOString(),
+            processing_time_seconds: result.processingMetadata?.processingTime || 0
+          }
+        },
         last_processed_at: new Date().toISOString()
       })
       .eq('id', documentId);
@@ -300,7 +233,7 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
     // Find docs that have been processed but don't have raw_content yet
     const { data: pendingDocs, error: queryError } = await supabase
       .from('expert_documents')
-      .select('id, source_id, content_type, raw_content')
+      .select('id, source_id, content_type, raw_content, processing_status')
       .eq('content_type', 'presentation')
       .eq('processing_status', 'processing')
       .is('raw_content', null)
@@ -313,8 +246,43 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
     }
     
     if (!pendingDocs || pendingDocs.length === 0) {
-      Logger.info('ℹ️ No pending documents found for transcription');
-      return { success: 0, failed: 0 };
+      // Try to find documents with pending status
+      const { data: pendingDocs2, error: queryError2 } = await supabase
+        .from('expert_documents')
+        .select('id, source_id, content_type, raw_content, processing_status')
+        .eq('content_type', 'presentation')
+        .eq('processing_status', 'pending')
+        .is('raw_content', null)
+        .order('created_at', { ascending: true })
+        .limit(limit);
+        
+      if (queryError2) {
+        Logger.error(`❌ Error fetching pending documents: ${queryError2.message}`);
+        return { success: 0, failed: 0 };
+      }
+      
+      if (!pendingDocs2 || pendingDocs2.length === 0) {
+        Logger.info('ℹ️ No pending documents found for transcription');
+        return { success: 0, failed: 0 };
+      }
+      
+      // Use this set of documents
+      Logger.info(`📋 Found ${pendingDocs2.length} documents pending transcription`);
+      
+      let success = 0;
+      let failed = 0;
+      
+      for (const doc of pendingDocs2) {
+        Logger.info(`📋 Processing document: ${doc.id}`);
+        const result = await transcribeExpertDocument(doc.id, supabase);
+        if (result) {
+          success++;
+        } else {
+          failed++;
+        }
+      }
+      
+      return { success, failed };
     }
     
     Logger.info(`📋 Found ${pendingDocs.length} documents pending transcription`);
@@ -358,6 +326,13 @@ async function main() {
     Logger.info('🎙️ Audio Transcription');
     Logger.info(`Mode: ${options.dryRun ? 'DRY RUN' : 'ACTUAL UPDATE'}`);
     Logger.info(`Model: ${options.model}`);
+    Logger.info(`Output directory: ${options.outputDir}`);
+    
+    // Ensure output directory exists
+    if (!fs.existsSync(options.outputDir)) {
+      fs.mkdirSync(options.outputDir, { recursive: true });
+      Logger.info(`✅ Created output directory: ${options.outputDir}`);
+    }
     
     // Handle batch processing
     if (options.batchSize > 0) {
@@ -365,14 +340,20 @@ async function main() {
       const { success, failed } = await processBatch(supabase, options.batchSize);
       Logger.info(`✅ Batch processing complete: ${success} succeeded, ${failed} failed`);
     }
-    // Handle single document
+    // Handle single document or file
     else if (options.fileId) {
       // Check if the fileId is a UUID (expert document) or a file path
       const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       
       if (uuidPattern.test(options.fileId)) {
         Logger.info(`📋 Processing expert document: ${options.fileId}`);
-        await transcribeExpertDocument(options.fileId, supabase);
+        const result = await transcribeExpertDocument(options.fileId, supabase);
+        if (result) {
+          Logger.info(`✅ Successfully transcribed document ${options.fileId}`);
+        } else {
+          Logger.error(`❌ Failed to transcribe document ${options.fileId}`);
+          process.exit(1);
+        }
       } else {
         // Treat as file path
         if (!fs.existsSync(options.fileId)) {
@@ -381,12 +362,23 @@ async function main() {
         }
         
         Logger.info(`📋 Processing file: ${options.fileId}`);
-        const { success, result, error } = await transcribeFile(options.fileId);
         
-        if (success) {
-          Logger.info(`✅ Transcription complete: ${result.text.substring(0, 100)}...`);
+        // Use the transcription service
+        const transcriptionService = AudioTranscriptionService.getInstance();
+        const result = await transcriptionService.transcribeFile(options.fileId, {
+          model: options.model,
+          outputDir: options.outputDir,
+          dryRun: options.dryRun
+        });
+        
+        if (result.success) {
+          if (result.text) {
+            Logger.info(`✅ Transcription complete! First 100 characters: ${result.text.substring(0, 100)}...`);
+          } else {
+            Logger.warn(`⚠️ Transcription successful but no text found`);
+          }
         } else {
-          Logger.error(`❌ Transcription failed: ${error}`);
+          Logger.error(`❌ Transcription failed: ${result.error}`);
           process.exit(1);
         }
       }
