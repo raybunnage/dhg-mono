@@ -35,6 +35,38 @@ Examples:
 raybunnage@Rays-Laptop dhg-mono % 
  
  
+I've integrated all the JavaScript and shell scripts related to mp4 file checking into the CLI pipeline. Here's what I've done:
+
+  1. Created a structured CLI command system:
+    - Moved all shell scripts to scripts/cli-pipeline/media-processing/shell-scripts/
+    - Moved the JavaScript file to scripts/cli-pipeline/media-processing/js-scripts/
+    - Added TypeScript wrapper commands to integrate these legacy scripts
+  2. Added two new TypeScript commands:
+    - find-missing-js-files: Runs the JavaScript-based MP4 file checker
+    - run-shell-check: Runs any shell script from the shell-scripts directory
+  3. Updated the main CLI program in index.ts to include these new commands
+  4. Updated the documentation in README.md with:
+    - Instructions for using the new commands
+    - Examples of how to run different shell scripts
+    - Updated directory structure to reflect all changes
+
+  Now you can run all your file checking scripts through the unified CLI interface:
+
+  # Run TypeScript implementation
+  ts-node scripts/cli-pipeline/media-processing/index.ts check-media-files
+
+  # Run JavaScript implementation
+  ts-node scripts/cli-pipeline/media-processing/index.ts find-missing-js-files
+
+  # Run any shell script (default is mp4-files-check.sh)
+  ts-node scripts/cli-pipeline/media-processing/index.ts run-shell-check
+
+  # Run a specific shell script
+  ts-node scripts/cli-pipeline/media-processing/index.ts run-shell-check --script check-missing-mp4-files
+
+  All the original scripts are still available in their respective directories if you need to run them directly.
+
+
  
  Based on my analysis of the code, I can provide you with the command to run batch transcription using the A10G GPU for up to 5 files in
   parallel:
