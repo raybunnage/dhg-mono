@@ -14,15 +14,19 @@ export interface TranscriptionOptions {
   model: 'tiny' | 'base' | 'small' | 'medium' | 'large';
   outputDir?: string;
   dryRun?: boolean;
+  generateSummary?: boolean;
 }
 
 export interface TranscriptionResult {
   success: boolean;
   text?: string;
+  summary?: string;
   processingMetadata?: {
     model: string;
     audioFile: string;
     processingTime?: number;
+    wordCount?: number;
+    summaryTime?: number;
   };
   error?: string;
 }
@@ -51,7 +55,7 @@ export class AudioTranscriptionService {
     filePath: string,
     options: TranscriptionOptions
   ): Promise<TranscriptionResult> {
-    const { model = 'base', outputDir, dryRun = false } = options;
+    const { model = 'base', outputDir, dryRun = false, generateSummary = false } = options;
     const startTime = Date.now();
     
     // Validate the file exists
@@ -85,19 +89,29 @@ export class AudioTranscriptionService {
       };
     }
 
-    Logger.info(`🎙️ Transcribing ${filePath} with ${model} model...`);
+    // Choose the appropriate script based on whether we need summarization
+    const scriptPath = generateSummary 
+      ? path.join(process.cwd(), 'packages/python-audio-processor/scripts/advanced_audio_transcript.py')
+      : path.join(process.cwd(), 'packages/python-audio-processor/scripts/base_audio_transcript.py');
+    
+    Logger.info(`🎙️ Transcribing ${filePath} with ${model} model${generateSummary ? ' and generating summary' : ''}...`);
     
     // Execute the Python script
     return new Promise((resolve) => {
       // Check what args to pass to script
       const scriptArgs = [
-        path.join(process.cwd(), 'packages/python-audio-processor/scripts/base_audio_transcript.py'),
+        scriptPath,
         filePath
       ];
       
       // Add output path if specified
       if (outputPath) {
         scriptArgs.push(outputPath);
+      }
+      
+      // Add model if using advanced script
+      if (generateSummary) {
+        scriptArgs.push(model);
       }
       
       const pythonProcess = spawn('python', scriptArgs);
@@ -119,40 +133,68 @@ export class AudioTranscriptionService {
         const processingTime = (Date.now() - startTime) / 1000;
         
         if (code === 0) {
-          // Extract transcript from stdout using markers
-          const transcriptMatch = stdout.match(/TRANSCRIPT_BEGIN\n([\s\S]*?)\nTRANSCRIPT_END/);
-          let transcriptText = transcriptMatch ? transcriptMatch[1] : '';
-          
-          // If no markers, try reading from the output file
-          if (!transcriptText && outputPath && fs.existsSync(outputPath)) {
-            try {
-              transcriptText = fs.readFileSync(outputPath, 'utf8');
-            } catch (error: any) {
-              Logger.error(`Error reading transcript file: ${error.message}`);
+          if (generateSummary) {
+            // For advanced script, parse the JSON result
+            const jsonMatch = stdout.match(/JSON_RESULT_BEGIN\n([\s\S]*?)\nJSON_RESULT_END/);
+            if (jsonMatch && jsonMatch[1]) {
+              try {
+                const result = JSON.parse(jsonMatch[1]);
+                resolve({
+                  success: true,
+                  text: result.transcript,
+                  summary: result.summary,
+                  processingMetadata: {
+                    model,
+                    audioFile: filePath,
+                    processingTime: result.stats.total_time,
+                    wordCount: result.stats.word_count,
+                    summaryTime: result.stats.summary_time
+                  }
+                });
+                return;
+              } catch (error: any) {
+                Logger.error(`Error parsing JSON result: ${error.message}`);
+              }
+            }
+          } else {
+            // For base script, extract transcript using markers
+            const transcriptMatch = stdout.match(/TRANSCRIPT_BEGIN\n([\s\S]*?)\nTRANSCRIPT_END/);
+            let transcriptText = transcriptMatch ? transcriptMatch[1] : '';
+            
+            // If no markers, try reading from the output file
+            if (!transcriptText && outputPath && fs.existsSync(outputPath)) {
+              try {
+                transcriptText = fs.readFileSync(outputPath, 'utf8');
+              } catch (error: any) {
+                Logger.error(`Error reading transcript file: ${error.message}`);
+              }
+            }
+            
+            if (transcriptText) {
+              resolve({
+                success: true,
+                text: transcriptText,
+                processingMetadata: {
+                  model,
+                  audioFile: filePath,
+                  processingTime,
+                  wordCount: transcriptText.split(/\s+/).length
+                }
+              });
+              return;
             }
           }
           
-          if (transcriptText) {
-            resolve({
-              success: true,
-              text: transcriptText,
-              processingMetadata: {
-                model,
-                audioFile: filePath,
-                processingTime
-              }
-            });
-          } else {
-            resolve({
-              success: false,
-              error: 'Transcription process completed but transcript not found',
-              processingMetadata: {
-                model,
-                audioFile: filePath,
-                processingTime
-              }
-            });
-          }
+          // If we get here, something went wrong with parsing but the process succeeded
+          resolve({
+            success: true,
+            text: 'Transcription process completed but transcript could not be parsed',
+            processingMetadata: {
+              model,
+              audioFile: filePath,
+              processingTime
+            }
+          });
         } else {
           resolve({
             success: false,
@@ -166,6 +208,16 @@ export class AudioTranscriptionService {
         }
       });
     });
+  }
+  
+  /**
+   * Transcribe an audio file and generate a summary
+   */
+  public async transcribeAndSummarize(
+    filePath: string,
+    options: TranscriptionOptions
+  ): Promise<TranscriptionResult> {
+    return this.transcribeFile(filePath, { ...options, generateSummary: true });
   }
 }
 

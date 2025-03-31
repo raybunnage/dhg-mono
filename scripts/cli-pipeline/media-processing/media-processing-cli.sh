@@ -20,7 +20,10 @@ function display_help() {
   echo "  convert [fileId|path]        Convert MP4 file to M4A for processing (audio extraction only)"
   echo "  find-processable-videos      Find MP4 files ready for processing"
   echo "  transcribe [fileId|path]     Transcribe audio file using Whisper"
+  echo "  transcribe-with-summary      Transcribe and generate summary of audio file"
   echo "  process-video [fileId]       Full pipeline: convert + transcribe (recommended for most cases)"
+  echo "  list-transcribable           List documents ready for transcription with copy-paste commands"
+  echo "  show-transcription-status    Show detailed status of transcriptions and processing times"
   echo "  list-pending                 List pending files waiting for processing"
   echo "  list-ready                   List files ready for content generation"
   echo "  update-status [fileId]       Update processing status of a file"
@@ -60,6 +63,15 @@ case "$COMMAND" in
     ;;
   transcribe)
     ts-node "$SCRIPT_DIR/commands/transcribe-audio.ts" "$@"
+    ;;
+  transcribe-with-summary)
+    ts-node "$SCRIPT_DIR/commands/transcribe-with-summary.ts" "$@"
+    ;;
+  list-transcribable)
+    ts-node "$SCRIPT_DIR/commands/list-transcribable.ts" "$@"
+    ;;
+  show-transcription-status)
+    ts-node "$SCRIPT_DIR/commands/show-transcription-status.ts" "$@"
     ;;
   process-video)
     ts-node "$SCRIPT_DIR/commands/process-video.ts" "$@"
