@@ -27,6 +27,8 @@ function display_help() {
   echo "  list-pending                 List pending files waiting for processing"
   echo "  list-ready                   List files ready for content generation"
   echo "  update-status [fileId]       Update processing status of a file"
+  echo "  extract-summary [fileId]     Extract transcript from a processed file"
+  echo "  batch-transcribe              Process multiple files for transcription"
   echo ""
   echo "Options:"
   echo "  --dry-run                    Show what would happen without making changes"
@@ -84,6 +86,12 @@ case "$COMMAND" in
     ;;
   update-status)
     ts-node "$SCRIPT_DIR/commands/update-status.ts" "$@"
+    ;;
+  extract-summary)
+    ts-node "$SCRIPT_DIR/commands/extract-summary.ts" "$@"
+    ;;
+  batch-transcribe)
+    ts-node "$SCRIPT_DIR/commands/batch-transcribe.ts" "$@"
     ;;
     
   # Help commands

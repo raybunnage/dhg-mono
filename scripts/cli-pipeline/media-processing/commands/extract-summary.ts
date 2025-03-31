@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 /**
- * Extract Summary Command
+ * Extract Transcript Command
  * 
- * This command extracts and displays the summary from a document's processed_content.
+ * This command extracts and displays the transcript from a document's raw_content.
  * 
  * Usage:
  *   extract-summary.ts <documentId> [options]
@@ -70,20 +70,20 @@ async function extractSummary(documentId: string, supabase: any): Promise<any> {
       return { success: false, error: `Document with ID ${documentId} not found` };
     }
     
-    // Extract summary from processed_content
-    const summary = data.processed_content?.summary?.text;
+    // Extract transcript from raw_content
+    const transcript = data.raw_content;
     
-    if (!summary) {
+    if (!transcript) {
       return { 
         success: false, 
-        error: 'No summary found in document',
+        error: 'No transcript found in document',
         document: data 
       };
     }
     
     return {
       success: true,
-      summary,
+      transcript,
       title: data.processed_content?.title || 'Untitled Document',
       word_count: data.word_count || 0,
       document: data
@@ -102,11 +102,11 @@ function formatAsText(result: any): string {
   }
   
   return `
-========== DOCUMENT SUMMARY ==========
+========== DOCUMENT TRANSCRIPT ==========
 Title: ${result.title}
 Word Count: ${result.word_count}
 ----------------------------------
-${result.summary}
+${result.transcript}
 ==================================
 `;
 }
@@ -117,7 +117,7 @@ ${result.summary}
 function formatAsJSON(result: any): string {
   return JSON.stringify({
     title: result.title,
-    summary: result.summary,
+    transcript: result.transcript,
     word_count: result.word_count,
     document_id: result.document.id
   }, null, 2);
@@ -133,8 +133,8 @@ function formatAsMarkdown(result: any): string {
   
   return `# ${result.title}
 
-## Summary
-${result.summary}
+## Transcript
+${result.transcript}
 
 ---
 *Word Count: ${result.word_count}*
