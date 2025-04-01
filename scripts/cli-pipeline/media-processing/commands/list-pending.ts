@@ -78,8 +78,8 @@ function formatDocuments(documents: any[], format: string): string {
   const headers = [
     'ID', 
     'Content Type', 
-    'Extraction', 
-    'Transcription',
+    'Processing', 
+    'Transcribed',
     'Source Name'
   ];
   
@@ -87,8 +87,8 @@ function formatDocuments(documents: any[], format: string): string {
   const columnWidths = [
     Math.max(36, ...documents.map(doc => doc.id.length)),
     Math.max(headers[1].length, ...documents.map(doc => (doc.content_type || '').length)),
-    Math.max(headers[2].length, ...documents.map(doc => (doc.content_extraction_status || '').length)),
-    Math.max(headers[3].length, ...documents.map(doc => (doc.transcription_status || '').length)),
+    Math.max(headers[2].length, ...documents.map(doc => (doc.processing_status || '').length)),
+    Math.max(headers[3].length, ...documents.map(doc => (doc.transcription_complete ? 'Yes' : 'No').length)),
     Math.max(headers[4].length, ...documents.map(doc => (doc.source_name || '').length))
   ];
   
@@ -103,8 +103,8 @@ function formatDocuments(documents: any[], format: string): string {
     output += [
       (doc.id || '').padEnd(columnWidths[0]),
       (doc.content_type || '').padEnd(columnWidths[1]),
-      (doc.content_extraction_status || '').padEnd(columnWidths[2]),
-      (doc.transcription_status || '').padEnd(columnWidths[3]),
+      (doc.processing_status || '').padEnd(columnWidths[2]),
+      (doc.transcription_complete ? 'Yes' : 'No').padEnd(columnWidths[3]),
       (doc.source_name || '').padEnd(columnWidths[4])
     ].join(' | ') + '\n';
   });
@@ -138,8 +138,8 @@ async function main() {
       .select(`
         id, 
         content_type, 
-        content_extraction_status, 
-        transcription_status,
+        processing_status, 
+        transcription_complete,
         source_id, 
         sources_google!inner(name)
       `)
@@ -149,9 +149,9 @@ async function main() {
     
     // Add stage filter
     if (options.stage === 'conversion') {
-      query = query.or('content_extraction_status.is.null,content_extraction_status.eq.pending');
+      query = query.or('processing_status.is.null,processing_status.eq.pending');
     } else if (options.stage === 'transcription') {
-      query = query.or('transcription_status.is.null,transcription_status.eq.pending');
+      query = query.or('transcription_complete.is.null,transcription_complete.eq.false');
     }
     
     // Execute query
@@ -171,8 +171,8 @@ async function main() {
     const formattedDocs = documents.map((doc: any) => ({
       id: doc.id,
       content_type: doc.content_type,
-      content_extraction_status: doc.content_extraction_status || 'pending',
-      transcription_status: doc.transcription_status || 'pending',
+      processing_status: doc.processing_status || 'pending',
+      transcription_complete: doc.transcription_complete ? 'Yes' : 'No',
       source_name: doc.sources_google.name
     }));
     

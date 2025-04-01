@@ -9,7 +9,7 @@
  *   show-transcription-status.ts [options]
  * 
  * Options:
- *   --limit [n]                 Maximum number of records to show (default: 20)
+ *   --limit [n]                 Maximum number of records to show (default: 200)
  *   --format [format]           Output format: table, json, csv (default: table)
  *   --sort [column]             Sort by: date, title, status (default: date)
  *   --filter [status]           Filter by status: all, pending, completed, error (default: all)
@@ -27,7 +27,7 @@ Logger.setLevel(LogLevel.INFO);
 // Process command line arguments
 const args = process.argv.slice(2);
 const options = {
-  limit: 20,
+  limit: 200, // Increased default limit to show more records
   format: 'table',
   sort: 'date',
   filter: 'all'

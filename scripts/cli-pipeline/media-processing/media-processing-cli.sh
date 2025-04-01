@@ -35,6 +35,8 @@ function display_help() {
   echo "  check-media-files            Check for missing/orphaned MP4 and M4A files"
   echo "  find-missing-js-files        Run JavaScript-based MP4 file checker (legacy)"
   echo "  run-shell-check [--script]   Run shell script (default: mp4-files-check.sh)"
+  echo "  purge-processed-media        Find and remove MP4/M4A files that have been successfully processed"
+  echo "                               Options: --dry-run, --force, --days [number]"
   echo ""
   echo "File Management Commands:"
   echo "  rename-mp4-files             Rename MP4 files to match database records"
@@ -68,6 +70,7 @@ function display_help() {
   echo "  media-processing-cli.sh sync-m4a-names --dry-run --after-rename"
   echo "  media-processing-cli.sh update-disk-status --dry-run"
   echo "  media-processing-cli.sh register-expert-docs --limit 20"
+  echo "  media-processing-cli.sh purge-processed-media --dry-run"
 }
 
 # No arguments provided
@@ -127,6 +130,9 @@ case "$COMMAND" in
     ;;
   run-shell-check)
     ts-node "$SCRIPT_DIR/commands/run-shell-check.ts" "$@"
+    ;;
+  purge-processed-media)
+    ts-node "$SCRIPT_DIR/commands/purge-processed-media.ts" "$@"
     ;;
     
   # File management commands
