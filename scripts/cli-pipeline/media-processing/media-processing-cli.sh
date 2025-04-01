@@ -35,6 +35,10 @@ function display_help() {
   echo "  find-missing-js-files        Run JavaScript-based MP4 file checker (legacy)"
   echo "  run-shell-check [--script]   Run shell script (default: mp4-files-check.sh)"
   echo ""
+  echo "Database Integration Commands:"
+  echo "  update-disk-status           Update presentations with MP4 file status on disk"
+  echo "  register-expert-docs         Register MP4 files as expert documents in the database"
+  echo ""
   echo "Options:"
   echo "  --dry-run                    Show what would happen without making changes"
   echo "  --limit [n]                  Process max n files"
@@ -50,6 +54,8 @@ function display_help() {
   echo "  media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a"
   echo "  media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a"
   echo "  media-processing-cli.sh list-pending --limit 10"
+  echo "  media-processing-cli.sh update-disk-status --dry-run"
+  echo "  media-processing-cli.sh register-expert-docs --limit 20"
 }
 
 # No arguments provided
@@ -109,6 +115,14 @@ case "$COMMAND" in
     ;;
   run-shell-check)
     ts-node "$SCRIPT_DIR/commands/run-shell-check.ts" "$@"
+    ;;
+  
+  # Database integration commands
+  update-disk-status)
+    ts-node "$SCRIPT_DIR/index.ts" update-disk-status "$@"
+    ;;
+  register-expert-docs)
+    ts-node "$SCRIPT_DIR/index.ts" register-expert-docs "$@"
     ;;
     
   # Help commands

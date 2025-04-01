@@ -1,7 +1,9 @@
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh --help
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh find-processable-videos
- 
- media-processing-cli.sh [command] [options]
+
+
+Usage:
+  media-processing-cli.sh [command] [options]
 
 Commands:
   convert [fileId|path]        Convert MP4 file to M4A for processing (audio extraction only)
@@ -15,7 +17,16 @@ Commands:
   list-ready                   List files ready for content generation
   update-status [fileId]       Update processing status of a file
   extract-summary [fileId]     Extract transcript from a processed file
-  batch-transcribe              Process multiple files for transcription
+  batch-transcribe             Process multiple files for transcription
+
+File Checking Commands:
+  check-media-files            Check for missing/orphaned MP4 and M4A files
+  find-missing-js-files        Run JavaScript-based MP4 file checker (legacy)
+  run-shell-check [--script]   Run shell script (default: mp4-files-check.sh)
+
+Database Integration Commands:
+  update-disk-status           Update presentations with MP4 file status on disk
+  register-expert-docs         Register MP4 files as expert documents in the database
 
 Options:
   --dry-run                    Show what would happen without making changes
@@ -32,9 +43,37 @@ Examples:
   media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
   media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
   media-processing-cli.sh list-pending --limit 10
+  media-processing-cli.sh update-disk-status --dry-run
+  media-processing-cli.sh register-expert-docs --limit 20
 raybunnage@Rays-Laptop dhg-mono % 
  
  
+Perfect! I've fixed the TypeScript errors and integrated the two database-related commands into the media-processing CLI
+  pipeline. The commands are now working correctly and are properly displayed in the help screen.
+
+  Here's a summary of what I did:
+
+  1. Fixed TypeScript compilation errors:
+    - Added proper type annotations for function parameters
+    - Used generic Promise type to correctly indicate the Promise return type
+    - Made the code pass TypeScript compilation with skipLibCheck
+  2. Updated the command implementation to properly spawn the external scripts:
+    - Used Node's spawn function to execute the TypeScript scripts
+    - Properly passed command-line arguments to maintain options like --dry-run and --limit
+    - Added proper error handling for the spawned processes
+  3. Verified that both commands now work correctly:
+    - update-disk-status - Updates presentations with MP4 file status
+    - register-expert-docs - Registers MP4 files as expert documents
+  4. Both commands are now visible in the help screen and can be run with options:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh update-disk-status --dry-run
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh register-expert-docs --limit 20
+
+  Now you can use these commands to process your MP4 files through a unified interface. The output shows that your database
+  already has records for the presentations, so they're ready for further processing.
+
+
+
+
 
 I've created a comprehensive CLI for managing media files with help documentation for all the new commands. Let me summarize what I've done:
 
