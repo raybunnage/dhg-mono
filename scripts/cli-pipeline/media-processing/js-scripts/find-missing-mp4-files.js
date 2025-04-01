@@ -57,7 +57,7 @@ if (dbFiles.length === 0) {
 }
 
 // Find files that are in the db list but missing locally
-const missingFiles = dbFiles.filter(file => \!localFiles.includes(file));
+const missingFiles = dbFiles.filter(file => !localFiles.includes(file));
 
 // Output results
 console.log("\nMP4 files referenced but missing in file_types/mp4:");
@@ -65,15 +65,15 @@ if (missingFiles.length > 0) {
   missingFiles.forEach(file => console.log(file));
   console.log(`\nTotal missing files: ${missingFiles.length}`);
 } else {
-  console.log("No missing files found\!");
+  console.log("No missing files found!");
 }
 
 // Find files that are local but not in the database (might be unused)
-const extraFiles = localFiles.filter(file => \!dbFiles.includes(file));
+const extraFiles = localFiles.filter(file => !dbFiles.includes(file));
 console.log("\nMP4 files in file_types/mp4 but not referenced elsewhere:");
 if (extraFiles.length > 0) {
   extraFiles.forEach(file => console.log(file));
   console.log(`\nTotal extra files: ${extraFiles.length}`);
 } else {
-  console.log("No extra files found\!");
+  console.log("No extra files found!");
 }

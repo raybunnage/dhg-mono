@@ -6,6 +6,10 @@
  * It wraps the Node.js script to check for MP4 files in sources_google that might be 
  * missing in file_types/mp4 directory.
  * 
+ * This is a legacy implementation converted from a standalone script to fit into
+ * the CLI pipeline architecture. It uses a different approach than the TypeScript
+ * implementation in check-media-files.ts but provides similar functionality.
+ * 
  * Usage:
  *   find-missing-js-files [options]
  * 

@@ -1,4 +1,3 @@
-#!/usr/bin/env ts-node
 /**
  * Media Processing CLI Pipeline
  * 
@@ -10,8 +9,8 @@
  */
 
 import { Command } from 'commander';
-import path from 'path';
-import fs from 'fs';
+import * as path from 'path';
+import * as fs from 'fs';
 
 // Create the program
 const program = new Command();
@@ -22,109 +21,170 @@ program
   .description('CLI utilities for processing media files')
   .version('1.0.0');
 
-// Helper function to register commands
-function registerCommand(commandName: string, description: string, options?: any[]) {
-  const command = new Command(commandName)
-    .description(description);
-  
-  // Add options if provided
-  if (options && options.length) {
-    for (const opt of options) {
-      command.option(opt.flags, opt.description, opt.defaultValue);
-    }
-  }
-  
-  // Add action to execute the command file
-  command.action(async (options) => {
-    // Get all arguments to pass to the command
-    const args = process.argv.slice(3);
+// Add help text (compatibility with older commander versions)
+program.on('--help', () => {
+  console.log(`
+Media Processing CLI Pipeline
+----------------------------
+A unified command-line interface for media processing tasks including:
+- Converting MP4 files to M4A for audio extraction
+- Transcribing audio files
+- Checking media file status
+- Managing processed media files
 
-    // Build the path to the command file
-    const commandFile = path.join(
-      __dirname,
-      'commands',
-      `${commandName}.ts`
-    );
+File Checking Commands:
+  check-media-files       Check for missing/orphaned MP4 and M4A files in database and local directories
+  find-missing-js-files   Run JavaScript-based MP4 file checker (legacy implementation)
+  run-shell-check         Run any shell script from the shell-scripts directory
 
-    // Check if command file exists
-    if (!fs.existsSync(commandFile)) {
-      console.error(`Command file not found: ${commandFile}`);
-      process.exit(1);
-    }
+File Processing Commands:
+  convert-mp4             Extract audio from MP4 files and create M4A files
+  transcribe-audio        Transcribe audio files to text using Whisper
+  transcribe-with-summary Generate transcriptions with summaries
+  purge-processed-media   Remove processed MP4 and M4A files that have been extracted and saved in database
 
-    // Execute the command file using ts-node
-    try {
-      // Dynamic import for the command
-      const result = await import(commandFile);
-      
-      // If the command has a main function, execute it
-      if (typeof result.default === 'function') {
-        await result.default(options);
-      }
-    } catch (error: any) {
-      console.error(`Error executing command ${commandName}:`, error.message);
-      process.exit(1);
-    }
+Listing & Utility Commands:
+  list-ready              List files ready for processing
+  list-pending            List files pending processing
+  list-transcribable      List files ready for transcription
+  find-processable-videos Find videos that can be processed
+
+For more information on a specific command, try:
+  ts-node scripts/cli-pipeline/media-processing/index.ts <command> --help
+`);
+});
+
+// Media checking commands - use direct command() calls for compatibility
+program
+  .command('check-media-files')
+  .description('Check for missing or orphaned MP4/M4A files in database and file system')
+  .option('--summary', 'Display only summary information')
+  .option('--json', 'Output results in JSON format')
+  .action(async (options) => {
+    await executeCommand('check-media-files.ts', options);
   });
 
-  // Register the command with the program
-  program.addCommand(command);
-}
-
-// Register commands
-
-// Media checking commands
-registerCommand('check-media-files', 'Check for missing or orphaned MP4/M4A files', [
-  { flags: '--summary', description: 'Display only summary information' },
-  { flags: '--json', description: 'Output results in JSON format' }
-]);
-
 // Legacy script wrappers
-registerCommand('find-missing-js-files', 'Find missing MP4 files using JavaScript script', [
-  { flags: '--verbose', description: 'Show detailed output' }
-]);
+program
+  .command('find-missing-js-files')
+  .description('Run JavaScript-based MP4 file checker (legacy implementation)')
+  .option('--verbose', 'Show detailed output')
+  .action(async (options) => {
+    await executeCommand('find-missing-js-files.ts', options);
+  });
 
-registerCommand('run-shell-check', 'Run shell script-based media file checker', [
-  { flags: '--verbose', description: 'Show detailed output' },
-  { flags: '--script <name>', description: 'Specify which shell script to run (without .sh extension)' }
-]);
+program
+  .command('run-shell-check')
+  .description('Run any shell script from the shell-scripts directory')
+  .option('--verbose', 'Show detailed output')
+  .option('--script <name>', 'Specify which shell script to run (available: mp4-files-check, check-missing-mp4-files, etc.)')
+  .action(async (options) => {
+    await executeCommand('run-shell-check.ts', options);
+  });
 
 // Media conversion commands
-registerCommand('convert-mp4', 'Convert MP4 files to M4A for audio extraction', [
-  { flags: '--all', description: 'Process all MP4 files' },
-  { flags: '--file <file>', description: 'Process specific file' },
-  { flags: '--batch-size <number>', description: 'Number of files to process at once' }
-]);
+program
+  .command('convert-mp4')
+  .description('Convert MP4 files to M4A for audio extraction')
+  .option('--all', 'Process all MP4 files')
+  .option('--file <file>', 'Process specific file')
+  .option('--batch-size <number>', 'Number of files to process at once')
+  .action(async (options) => {
+    await executeCommand('convert-mp4.ts', options);
+  });
 
 // Transcription commands
-registerCommand('transcribe-audio', 'Transcribe audio files to text', [
-  { flags: '--model <model>', description: 'Whisper model to use' },
-  { flags: '--file <file>', description: 'Process specific file' },
-  { flags: '--batch-size <number>', description: 'Number of files to process at once' }
-]);
+program
+  .command('transcribe-audio')
+  .description('Transcribe audio files to text')
+  .option('--model <model>', 'Whisper model to use')
+  .option('--file <file>', 'Process specific file')
+  .option('--batch-size <number>', 'Number of files to process at once')
+  .action(async (options) => {
+    await executeCommand('transcribe-audio.ts', options);
+  });
 
-registerCommand('transcribe-with-summary', 'Transcribe audio files and generate summary', [
-  { flags: '--model <model>', description: 'Whisper model to use' },
-  { flags: '--file <file>', description: 'Process specific file' }
-]);
+program
+  .command('transcribe-with-summary')
+  .description('Transcribe audio files and generate summary')
+  .option('--model <model>', 'Whisper model to use')
+  .option('--file <file>', 'Process specific file')
+  .action(async (options) => {
+    await executeCommand('transcribe-with-summary.ts', options);
+  });
 
 // File management commands
-registerCommand('purge-processed-media', 'Delete processed media files that have been extracted', [
-  { flags: '--dry-run', description: 'Show what would be deleted without actually removing files' },
-  { flags: '--force', description: 'Delete without confirmation' },
-  { flags: '--days <number>', description: 'Only purge files processed more than <number> days ago' }
-]);
+program
+  .command('purge-processed-media')
+  .description('Delete processed media files that have been extracted')
+  .option('--dry-run', 'Show what would be deleted without actually removing files')
+  .option('--force', 'Delete without confirmation')
+  .option('--days <number>', 'Only purge files processed more than <number> days ago')
+  .action(async (options) => {
+    await executeCommand('purge-processed-media.ts', options);
+  });
 
 // Listing and reporting commands
-registerCommand('list-ready', 'List files ready for processing');
-registerCommand('list-pending', 'List files pending processing');
-registerCommand('list-transcribable', 'List files ready for transcription');
-registerCommand('find-processable-videos', 'Find videos that can be processed');
+program
+  .command('list-ready')
+  .description('List files ready for processing')
+  .action(async (options) => {
+    await executeCommand('list-ready.ts', options);
+  });
+
+program
+  .command('list-pending')
+  .description('List files pending processing')
+  .action(async (options) => {
+    await executeCommand('list-pending.ts', options);
+  });
+
+program
+  .command('list-transcribable')
+  .description('List files ready for transcription')
+  .action(async (options) => {
+    await executeCommand('list-transcribable.ts', options);
+  });
+
+program
+  .command('find-processable-videos')
+  .description('Find videos that can be processed')
+  .action(async (options) => {
+    await executeCommand('find-processable-videos.ts', options);
+  });
+
+/**
+ * Execute a command from the commands directory
+ */
+async function executeCommand(commandFile: string, options: any): Promise<void> {
+  const commandPath = path.join(__dirname, 'commands', commandFile);
+
+  if (!fs.existsSync(commandPath)) {
+    console.error(`Command file not found: ${commandPath}`);
+    process.exit(1);
+  }
+
+  try {
+    // Import the command module
+    const commandModule = await import(commandPath);
+    
+    // Execute the default export function if it exists
+    if (typeof commandModule.default === 'function') {
+      await commandModule.default(options);
+    } else {
+      console.error(`Command ${commandFile} does not export a default function`);
+      process.exit(1);
+    }
+  } catch (error: any) {
+    console.error(`Error executing command ${commandFile}:`, error.message);
+    process.exit(1);
+  }
+}
 
 // Parse arguments and run
 program.parse(process.argv);
 
 // If no command was specified, show help
 if (!process.argv.slice(2).length) {
-  program.outputHelp();
+  program.help();
 }

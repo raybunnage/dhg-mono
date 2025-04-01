@@ -10,8 +10,16 @@
  *   run-shell-check [options]
  * 
  * Options:
- *   --verbose       Show detailed output
- *   --script <name> Specify which shell script to run (without .sh extension)
+ *   --verbose         Show detailed output
+ *   --script <name>   Specify which shell script to run (without .sh extension)
+ * 
+ * Available Scripts:
+ *   mp4-files-check         - Comprehensive check for all mp4 files and their status
+ *   check-missing-mp4-files - Simple check of missing mp4 files in file_types/mp4
+ *   compare-mp4-files       - Compare mp4 files in database vs. filesystem
+ *   find-missing-mp4-files  - Find mp4 files missing from the file system
+ *   find-mp4-missing-files  - Another variant of the missing file finder
+ *   mp4-files-summary       - Generate summary of mp4 files in the system
  */
 
 import * as path from 'path';
