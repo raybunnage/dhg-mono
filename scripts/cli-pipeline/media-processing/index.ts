@@ -220,6 +220,30 @@ program
   });
 
 program
+  .command('update-status [fileId]')
+  .description('Update processing status of expert documents')
+  .option('--stage <stage>', 'Stage to update (extraction, transcription)')
+  .option('--status <status>', 'New status (pending, processing, completed, failed, skip_processing)')
+  .option('--error <message>', 'Error message (for failed status)')
+  .option('--batch <file>', 'Process a batch of files from a file (one ID per line)')
+  .action(async (fileId: string, options: any) => {
+    // Ensure options includes the fileId
+    if (fileId) options.fileId = fileId;
+    await executeCommand('update-status.ts', options);
+  });
+
+program
+  .command('mark-skip-processing [fileIdentifier]')
+  .description('Mark large files to skip batch processing')
+  .option('--dry-run', 'Show what would be updated without making changes')
+  .option('--resume', 'Remove the skip_processing status (make available for processing again)')
+  .action(async (fileIdentifier: string, options: any) => {
+    // Ensure options includes the fileIdentifier
+    if (fileIdentifier) options.fileIdentifier = fileIdentifier;
+    await executeCommand('mark-skip-processing.ts', options);
+  });
+
+program
   .command('register-expert-docs')
   .description('Register MP4 files as expert documents in the database')
   .option('--dry-run', 'Show what would be created without making changes')

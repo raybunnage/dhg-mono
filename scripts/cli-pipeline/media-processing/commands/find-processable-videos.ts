@@ -263,12 +263,13 @@ async function main() {
           content_type, 
           raw_content,
           processing_status,
+          processing_error,
           source_id, 
           sources_google!inner(id, name, mime_type)
         `)
         .eq('content_type', 'presentation')
         .eq('sources_google.mime_type', 'video/mp4')
-        .not('processing_status', 'eq', 'skip_processing')  // Skip files marked to be skipped
+        .not('processing_status', 'eq', 'error')  // Skip files that have error status
         .ilike('sources_google.name', `%${file.filename.replace(/\.[^/.]+$/, "")}%`);
       
       if (queryError) {
@@ -281,17 +282,27 @@ async function main() {
       let action: string;
       
       if (!matchingDocs || matchingDocs.length === 0) {
-        // Also query to check if the file is marked as skip_processing
+        // Also query to check if the file is marked with error status for skipping
         const { data: skippedDocs } = await supabase
           .from('expert_documents')
-          .select(`id, processing_status, sources_google!inner(id, name)`)
-          .eq('processing_status', 'skip_processing')
+          .select(`id, processing_status, processing_error, sources_google!inner(id, name)`)
+          .eq('processing_status', 'error')
           .ilike('sources_google.name', `%${file.filename.replace(/\.[^/.]+$/, "")}%`);
         
         if (skippedDocs && skippedDocs.length > 0) {
-          status = 'Marked to skip';
-          documentId = skippedDocs[0].id;
-          action = 'Skip';
+          // Check if this is actually a skipped file by checking the error message
+          const isSkipped = skippedDocs.some(doc => 
+            doc.processing_error && doc.processing_error.includes('Skipped processing'));
+          
+          if (isSkipped) {
+            status = 'Marked to skip';
+            documentId = skippedDocs[0].id;
+            action = 'Skip';
+          } else {
+            status = 'Failed processing';
+            documentId = skippedDocs[0].id;
+            action = 'Skip';
+          }
         } else {
           status = 'No document record';
           action = 'Create document';
@@ -305,7 +316,9 @@ async function main() {
         if (hasRawContent) {
           status = 'Already processed';
           action = 'Skip';
-        } else if (matchingDocs[0].processing_status === 'skip_processing') {
+        } else if (matchingDocs[0].processing_status === 'error' && 
+                  matchingDocs[0].processing_error && 
+                  matchingDocs[0].processing_error.includes('Skipped processing')) {
           status = 'Marked to skip';
           action = 'Skip';
         } else if (m4aExists) {

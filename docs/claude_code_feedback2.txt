@@ -1,11 +1,13 @@
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh --help
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh find-processable-videos
    ./scripts/cli-pipeline/media-processing/media-processing-cli.sh transcribe 8c7f604a-7595-490a-b8d7-b839c3815b43 --model base --force
+
 Usage:
   media-processing-cli.sh [command] [options]
 
 Commands:
   convert [fileId|path]        Convert MP4 file to M4A for processing (audio extraction only)
+                               Options: --dry-run, --force, --batch <number>
   find-processable-videos      Find MP4 files ready for processing
   transcribe [fileId|path]     Transcribe audio file using Whisper
   transcribe-with-summary      Transcribe and generate summary of audio file
@@ -15,13 +17,16 @@ Commands:
   list-pending                 List pending files waiting for processing
   list-ready                   List files ready for content generation
   update-status [fileId]       Update processing status of a file
+  mark-skip-processing [file]  Mark large files to skip batch processing
   extract-summary [fileId]     Extract transcript from a processed file
   batch-transcribe             Process multiple files for transcription
 
 File Checking Commands:
-   check-media-files           Check for missing/orphaned MP4 and M4A files
+  check-media-files            Check for missing/orphaned MP4 and M4A files
   find-missing-js-files        Run JavaScript-based MP4 file checker (legacy)
   run-shell-check [--script]   Run shell script (default: mp4-files-check.sh)
+  purge-processed-media        Find and remove MP4/M4A files that have been successfully processed
+                               Options: --dry-run, --force, --days [number]
 
 File Management Commands:
   rename-mp4-files             Rename MP4 files to match database records
@@ -41,6 +46,7 @@ Options:
   --model [tiny|base|small]    Specify Whisper model (default: base)
   --accelerator [T4|A10G|A100] Specify GPU accelerator (default: T4)
   --force                      Process even if already processed
+  --resume                     Resume processing for previously skipped file (for mark-skip-processing)
   --output [path]              Specify output directory
   --auto-process               Automatically process files (for find-processable-videos)
   --generate-map               Generate a CSV mapping file (for rename-mp4-files)
@@ -51,12 +57,38 @@ Examples:
   media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
   media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
   media-processing-cli.sh list-pending --limit 10
+  media-processing-cli.sh mark-skip-processing "Large Lecture.mp4" --dry-run
+  media-processing-cli.sh mark-skip-processing f9f1e470-3b07-4aee-b134-5a740bd89446 --resume
   media-processing-cli.sh rename-mp4-files --dry-run
   media-processing-cli.sh sync-m4a-names --dry-run --after-rename
   media-processing-cli.sh update-disk-status --dry-run
   media-processing-cli.sh register-expert-docs --limit 20
+  media-processing-cli.sh purge-processed-media --dry-run
 raybunnage@Rays-Laptop dhg-mono % 
  
+
+The mark-skip-processing command has been fully integrated into the media processing CLI pipeline! You can now use it through the shell wrapper
+  script:
+
+  # To mark a large file to skip processing (dry run first)
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh mark-skip-processing "Allan Abbass presentation Apr 6 2022.mp4" --dry-run
+
+  # To actually mark the file
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh mark-skip-processing "Allan Abbass presentation Apr 6 2022.mp4"
+
+  # To resume processing later
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh mark-skip-processing "Allan Abbass presentation Apr 6 2022.mp4" --resume
+
+  The command is now:
+  1. Added to the help menu with proper documentation
+  2. Has working examples in the help text
+  3. Listed with supported options (--dry-run, --resume)
+  4. Properly integrated into the shell script wrapper
+  5. Successfully identifies files by name or ID
+  6. Functioning correctly when tested with --dry-run
+
+  Files marked with this command will be excluded from batch processing with find-processable-videos.
+
 
 ifferences between show-transcription-status and list-ready:
 

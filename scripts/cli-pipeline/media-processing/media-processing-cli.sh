@@ -28,6 +28,7 @@ function display_help() {
   echo "  list-pending                 List pending files waiting for processing"
   echo "  list-ready                   List files ready for content generation"
   echo "  update-status [fileId]       Update processing status of a file"
+  echo "  mark-skip-processing [file]  Mark large files to skip batch processing"
   echo "  extract-summary [fileId]     Extract transcript from a processed file"
   echo "  batch-transcribe             Process multiple files for transcription"
   echo ""
@@ -56,6 +57,7 @@ function display_help() {
   echo "  --model [tiny|base|small]    Specify Whisper model (default: base)"
   echo "  --accelerator [T4|A10G|A100] Specify GPU accelerator (default: T4)"
   echo "  --force                      Process even if already processed"
+  echo "  --resume                     Resume processing for previously skipped file (for mark-skip-processing)"
   echo "  --output [path]              Specify output directory"
   echo "  --auto-process               Automatically process files (for find-processable-videos)"
   echo "  --generate-map               Generate a CSV mapping file (for rename-mp4-files)"
@@ -66,6 +68,8 @@ function display_help() {
   echo "  media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a"
   echo "  media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a"
   echo "  media-processing-cli.sh list-pending --limit 10"
+  echo "  media-processing-cli.sh mark-skip-processing \"Large Lecture.mp4\" --dry-run"
+  echo "  media-processing-cli.sh mark-skip-processing f9f1e470-3b07-4aee-b134-5a740bd89446 --resume"
   echo "  media-processing-cli.sh rename-mp4-files --dry-run"
   echo "  media-processing-cli.sh sync-m4a-names --dry-run --after-rename"
   echo "  media-processing-cli.sh update-disk-status --dry-run"
@@ -113,6 +117,9 @@ case "$COMMAND" in
     ;;
   update-status)
     ts-node "$SCRIPT_DIR/commands/update-status.ts" "$@"
+    ;;
+  mark-skip-processing)
+    ts-node "$SCRIPT_DIR/commands/mark-skip-processing.ts" "$@"
     ;;
   extract-summary)
     ts-node "$SCRIPT_DIR/commands/extract-summary.ts" "$@"
