@@ -18,6 +18,7 @@ function display_help() {
   echo ""
   echo "Commands:"
   echo "  convert [fileId|path]        Convert MP4 file to M4A for processing (audio extraction only)"
+  echo "                               Options: --dry-run, --force, --batch <number>"
   echo "  find-processable-videos      Find MP4 files ready for processing"
   echo "  transcribe [fileId|path]     Transcribe audio file using Whisper"
   echo "  transcribe-with-summary      Transcribe and generate summary of audio file"
@@ -37,7 +38,9 @@ function display_help() {
   echo ""
   echo "File Management Commands:"
   echo "  rename-mp4-files             Rename MP4 files to match database records"
-  echo "                               Options: --dry-run, --force, --generate-map"
+  echo "                               Options: --dry-run, --force, --generate-map, --skip-sync"
+  echo "  sync-m4a-names               Sync M4A filenames with their MP4 counterparts"
+  echo "                               Options: --dry-run, --force, --after-rename"
   echo ""  
   echo "Database Integration Commands:"
   echo "  update-disk-status           Update presentations with MP4 file status on disk"
@@ -62,6 +65,7 @@ function display_help() {
   echo "  media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a"
   echo "  media-processing-cli.sh list-pending --limit 10"
   echo "  media-processing-cli.sh rename-mp4-files --dry-run"
+  echo "  media-processing-cli.sh sync-m4a-names --dry-run --after-rename"
   echo "  media-processing-cli.sh update-disk-status --dry-run"
   echo "  media-processing-cli.sh register-expert-docs --limit 20"
 }
@@ -128,6 +132,9 @@ case "$COMMAND" in
   # File management commands
   rename-mp4-files)
     ts-node "$SCRIPT_DIR/commands/rename-mp4-files.ts" "$@"
+    ;;
+  sync-m4a-names)
+    ts-node "$SCRIPT_DIR/commands/sync-m4a-names.ts" "$@"
     ;;
   
   # Database integration commands

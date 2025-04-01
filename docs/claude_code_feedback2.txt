@@ -1,6 +1,6 @@
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh --help
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh find-processable-videos
-sage:
+Usage:
   media-processing-cli.sh [command] [options]
 
 Commands:
@@ -24,7 +24,9 @@ File Checking Commands:
 
 File Management Commands:
   rename-mp4-files             Rename MP4 files to match database records
-                               Options: --dry-run, --force, --generate-map
+                               Options: --dry-run, --force, --generate-map, --skip-sync
+  sync-m4a-names               Sync M4A filenames with their MP4 counterparts
+                               Options: --dry-run, --force, --after-rename
 
 Database Integration Commands:
   update-disk-status           Update presentations with MP4 file status on disk
@@ -49,10 +51,90 @@ Examples:
   media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
   media-processing-cli.sh list-pending --limit 10
   media-processing-cli.sh rename-mp4-files --dry-run
+  media-processing-cli.sh sync-m4a-names --dry-run --after-rename
   media-processing-cli.sh update-disk-status --dry-run
   media-processing-cli.sh register-expert-docs --limit 20
 raybunnage@Rays-Laptop dhg-mono % 
  
+
+The command did work - it successfully created 4 M4A files from MP4 files that had corresponding database
+  records. Here's what happened:
+
+  1. The system found 4 expert documents with a pending processing status
+  2. It successfully converted each of these files:
+    - Emotional vs physical pain.mp4 → INGESTED_Emotional vs physical pain.m4a
+    - DHDG.2.21.24.open Discussion.mp4 → INGESTED_DHDG.2.21.24.open Discussion.m4a
+    - Horn.Fasting.9.6.23.mp4 → INGESTED_Horn.Fasting.9.6.23.m4a
+    - Naviaux.DR.1.24.24.mp4 → INGESTED_Naviaux.DR.1.24.24.m4a
+
+  However, you mentioned there were about 20 MP4 files without M4A files. The reason not all of them were
+  converted is that the convert command only processes files that:
+  1. Have a corresponding record in the database
+  2. Have an "expert document" created for them
+  3. Have a "pending" processing status
+
+  The other MP4 files that weren't converted likely don't have proper database records yet. Here's what you
+  need to do:
+
+  1. First, let's check how many MP4 files need conversion:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh sync-m4a-names --dry-run
+
+  2. For the files that don't have M4A counterparts, they probably need to be registered in the database
+  first:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh register-local-mp4-files
+
+  3. Then update their disk status:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh update-disk-status --force
+
+  4. Register them as expert documents:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh register-expert-docs
+
+  5. Finally, try converting them again:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh convert --batch 20
+
+  If you still have files that aren't converting, you can try converting them directly by specifying the
+  file path:
+
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh convert
+  /Users/raybunnage/Documents/github/dhg-mono/file_types/mp4/your-file.mp4
+
+  This bypasses the database checks and directly extracts the audio from the specified MP4 file.
+
+
+
+
+⏺ Great! Now you have a complete solution for the MP4/M4A file synchronization issue. Here's a summary of what I've done:
+
+  1. Created a new sync-m4a-names command that:
+    - Finds M4A files that correspond to MP4 files
+    - Renames M4A files to match their MP4 counterparts based on naming conventions
+    - Handles exact, prefix, and fuzzy matching
+    - Includes dry-run mode and other options
+  2. Enhanced the rename-mp4-files command to:
+    - Automatically run the M4A sync after renaming MP4 files
+    - Include a --skip-sync option if you don't want automatic syncing
+    - Provide helpful guidance for syncing files manually
+  3. Updated all the CLI interfaces and help documentation
+
+  Now when you run the command to rename MP4 files, it will automatically ensure the M4A files are renamed accordingly, maintaining consistency
+   across your file types.
+
+  To use the new functionality:
+
+  1. When renaming MP4 files:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh rename-mp4-files
+  This will automatically sync M4A files afterward.
+
+  2. To manually sync M4A files with MP4 files:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh sync-m4a-names
+
+  3. To skip automatic syncing:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh rename-mp4-files --skip-sync
+
+  This solution ensures that your audio and video files stay properly matched, even after renaming.
+
+
+
 
 Great! Let me summarize what I've done:
 
