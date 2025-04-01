@@ -168,7 +168,7 @@ async function main() {
     }
     
     // Process and format the results
-    const formattedDocs = documents.map(doc => ({
+    const formattedDocs = documents.map((doc: any) => ({
       id: doc.id,
       content_type: doc.content_type,
       content_extraction_status: doc.content_extraction_status || 'pending',

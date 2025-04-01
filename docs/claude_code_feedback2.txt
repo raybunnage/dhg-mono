@@ -18,7 +18,7 @@ Commands:
   batch-transcribe             Process multiple files for transcription
 
 File Checking Commands:
-  check-media-files            Check for missing/orphaned MP4 and M4A files
+   check-media-files           Check for missing/orphaned MP4 and M4A files
   find-missing-js-files        Run JavaScript-based MP4 file checker (legacy)
   run-shell-check [--script]   Run shell script (default: mp4-files-check.sh)
 
