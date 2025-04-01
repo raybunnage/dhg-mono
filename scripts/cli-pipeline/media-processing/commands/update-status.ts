@@ -78,7 +78,7 @@ async function updateDocumentStatus(documentId: string, supabase: any): Promise<
     // Get the document from the database
     const { data: document, error: docError } = await supabase
       .from('expert_documents')
-      .select('id, content_type, content_extraction_status, transcription_status')
+      .select('id, content_type, processing_status, transcription_complete')
       .eq('id', documentId)
       .single();
     
@@ -93,14 +93,9 @@ async function updateDocumentStatus(documentId: string, supabase: any): Promise<
     }
     
     // Validate the stage and status combinations
-    if (options.stage === 'extraction') {
-      if (!['pending', 'processing', 'extracted', 'failed'].includes(options.status)) {
-        Logger.error(`❌ Invalid status '${options.status}' for extraction stage`);
-        return false;
-      }
-    } else if (options.stage === 'transcription') {
-      if (!['pending', 'processing', 'transcribed', 'failed'].includes(options.status)) {
-        Logger.error(`❌ Invalid status '${options.status}' for transcription stage`);
+    if (options.stage === 'extraction' || options.stage === 'transcription') {
+      if (!['pending', 'processing', 'completed', 'failed'].includes(options.status)) {
+        Logger.error(`❌ Invalid status '${options.status}' for ${options.stage} stage`);
         return false;
       }
     } else {
@@ -111,16 +106,19 @@ async function updateDocumentStatus(documentId: string, supabase: any): Promise<
     // Build the update data
     const updateData: any = {};
     
-    if (options.stage === 'extraction') {
-      updateData.content_extraction_status = options.status;
-      if (options.status === 'failed' && options.error) {
-        updateData.processing_error = options.error;
-      }
-    } else if (options.stage === 'transcription') {
-      updateData.transcription_status = options.status;
-      if (options.status === 'failed' && options.error) {
-        updateData.processing_error = options.error;
-      }
+    // Both stages update the processing_status field
+    updateData.processing_status = options.status;
+    
+    // For transcription stage, also update transcription_complete if completed
+    if (options.stage === 'transcription' && options.status === 'completed') {
+      updateData.transcription_complete = true;
+    } else if (options.stage === 'transcription' && options.status === 'pending') {
+      updateData.transcription_complete = false;
+    }
+    
+    // Add error message if applicable
+    if (options.status === 'failed' && options.error) {
+      updateData.processing_error = options.error;
     }
     
     // Update the document

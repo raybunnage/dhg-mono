@@ -29,6 +29,7 @@ Logger.setLevel(LogLevel.INFO);
 const args = process.argv.slice(2);
 const options = {
   dryRun: args.includes('--dry-run'),
+  force: args.includes('--force'),
   model: 'base' as 'tiny' | 'base' | 'small' | 'medium' | 'large',
   outputDir: path.join(process.cwd(), 'file_types', 'transcripts'),
   batchSize: 0,
@@ -98,9 +99,15 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     }
     
     // Check if the document is already transcribed (has raw_content)
-    if (document.raw_content && document.raw_content.length > 0) {
+    if (document.raw_content && document.raw_content.length > 0 && !options.force) {
       Logger.warn(`⚠️ Document ${documentId} already has transcription content`);
+      Logger.info(`   Use --force to re-transcribe anyway`);
       return true;
+    }
+    
+    if (document.raw_content && document.raw_content.length > 0 && options.force) {
+      Logger.warn(`⚠️ Document ${documentId} already has transcription content, but force mode is enabled`);
+      Logger.info(`   Re-transcribing...`);
     }
     
     // Update status to processing
@@ -370,6 +377,9 @@ async function main() {
     Logger.info(`Mode: ${options.dryRun ? 'DRY RUN' : 'ACTUAL UPDATE'}`);
     Logger.info(`Model: ${options.model}`);
     Logger.info(`Output directory: ${options.outputDir}`);
+    if (options.force) {
+      Logger.info(`Force mode: ENABLED (will overwrite existing transcriptions)`);
+    }
     
     // Ensure output directory exists
     if (!fs.existsSync(options.outputDir)) {
