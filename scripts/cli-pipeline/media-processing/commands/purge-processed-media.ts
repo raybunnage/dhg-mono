@@ -20,7 +20,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import { Logger } from '../../../../packages/shared/utils';
-import { SupabaseClientService } from '../../../../packages/shared/services/supabase-service';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { LogLevel } from '../../../../packages/shared/utils/logger';
 
 // Initialize logger
@@ -101,7 +101,7 @@ async function getProcessedFiles(supabase: any): Promise<{ mp4Files: string[]; m
   Logger.info(`Found ${documents.length} successfully processed documents`);
   
   // Get source file information for each document
-  const sourceIds = documents.map(doc => doc.source_id);
+  const sourceIds = documents.map((doc: any) => doc.source_id);
   
   const { data: sources, error: sourcesError } = await supabase
     .from('sources_google')
@@ -115,7 +115,7 @@ async function getProcessedFiles(supabase: any): Promise<{ mp4Files: string[]; m
   
   // Create a map of source IDs to filenames
   const sourceMap = new Map();
-  for (const source of sources) {
+  for (const source of sources || []) {
     sourceMap.set(source.id, source.name);
   }
   

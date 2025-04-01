@@ -57,6 +57,35 @@ Examples:
 raybunnage@Rays-Laptop dhg-mono % 
  
 
+ifferences between show-transcription-status and list-ready:
+
+  1. show-transcription-status:
+    - Shows detailed information about transcription processing
+    - Displays processing status, word count, model used, processing time
+    - Shows when transcription was completed with timestamps
+    - Provides more technical details about the transcription process
+  2. list-ready:
+    - Shows only documents that have completed processing
+    - Focuses on what's ready for content generation
+    - Simpler output with fewer technical details
+    - Lists documents that are ready for the next step in the pipeline
+
+  For safely identifying MP4 and M4A files to delete:
+
+  The safest command is:
+  ts-node scripts/cli-pipeline/media-processing/index.ts purge-processed-media --dry-run
+
+  This command:
+  - Only identifies files that have been fully processed
+  - Checks that transcriptions are saved in raw_content field
+  - Verifies processing_status is "completed"
+  - Shows what would be deleted without actually removing files
+  - Calculates disk space that would be freed
+
+  Once you verify the output looks correct, you can run without --dry-run to actually delete the files.
+
+
+
 The command did work - it successfully created 4 M4A files from MP4 files that had corresponding database
   records. Here's what happened:
 
