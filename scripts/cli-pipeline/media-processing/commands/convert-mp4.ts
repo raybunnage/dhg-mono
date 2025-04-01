@@ -28,6 +28,7 @@ Logger.setLevel(LogLevel.INFO);
 const args = process.argv.slice(2);
 const options = {
   dryRun: args.includes('--dry-run'),
+  force: args.includes('--force'),
   outputDir: path.join(process.cwd(), 'file_types', 'm4a'),
   batchSize: 0,
   fileId: ''
@@ -64,6 +65,14 @@ async function convertFile(filePath: string, outputPath?: string): Promise<{ suc
     if (!finalOutputPath) {
       const baseName = path.basename(filePath).replace(/\.[^/.]+$/, "");
       finalOutputPath = path.join(options.outputDir, `${baseName}.m4a`);
+    }
+    
+    // Check if output file already exists
+    if (fs.existsSync(finalOutputPath) && !options.force) {
+      Logger.info(`⚠️ Output file already exists: ${finalOutputPath}`);
+      Logger.info(`⚠️ Skipping conversion - use --force to override`);
+      resolve({ success: true, outputPath: finalOutputPath });
+      return;
     }
     
     // Ensure output directory exists
@@ -185,6 +194,51 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
     
     Logger.info(`📋 Found MP4 file: ${videoPath}`);
     
+    // Define output path
+    const outputFilename = `INGESTED_${path.basename(videoPath).replace(/\.mp4$/, ".m4a")}`;
+    const outputPath = path.join(options.outputDir, outputFilename);
+    
+    // Check if M4A file already exists
+    if (fs.existsSync(outputPath)) {
+      Logger.info(`⚠️ M4A file already exists: ${outputPath}`);
+      Logger.info(`⚠️ Skipping conversion for document ${documentId}`);
+      
+      // Update the document with the extraction info if needed
+      if (!document.processed_content?.audio_extraction) {
+        // Get file size
+        const stats = fs.statSync(outputPath);
+        const fileSizeMB = stats.size / (1024 * 1024);
+        
+        // Update processed_content
+        const processedContent = document.processed_content || {};
+        
+        if (!options.dryRun) {
+          const { error: saveError } = await supabase
+            .from('expert_documents')
+            .update({
+              processing_status: 'processing',
+              processed_content: {
+                ...processedContent,
+                audio_extraction: {
+                  output_path: outputPath,
+                  file_size_mb: fileSizeMB,
+                  extraction_timestamp: new Date().toISOString()
+                }
+              }
+            })
+            .eq('id', documentId);
+          
+          if (saveError) {
+            Logger.warn(`⚠️ Error updating document with existing M4A info: ${saveError.message}`);
+          } else {
+            Logger.info(`✅ Updated document with existing M4A file information`);
+          }
+        }
+      }
+      
+      return true;
+    }
+    
     // Update status to processing
     if (!options.dryRun) {
       const { error: updateError } = await supabase
@@ -198,10 +252,6 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
         Logger.error(`❌ Error updating document status: ${updateError.message}`);
       }
     }
-    
-    // Define output path
-    const outputFilename = `INGESTED_${path.basename(videoPath).replace(/\.mp4$/, ".m4a")}`;
-    const outputPath = path.join(options.outputDir, outputFilename);
     
     if (options.dryRun) {
       Logger.info(`🔄 Would convert ${videoPath} to ${outputPath}`);

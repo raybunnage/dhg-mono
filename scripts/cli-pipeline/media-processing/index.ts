@@ -165,8 +165,20 @@ program
   .option('--dry-run', 'Show what would be renamed without making changes')
   .option('--force', 'Rename even if a destination file already exists (will overwrite)')
   .option('--generate-map', 'Generate a CSV mapping file of original to new names')
+  .option('--skip-sync', 'Skip automatic M4A filename synchronization')
   .action(async (options) => {
     await executeCommand('rename-mp4-files.ts', options);
+  });
+
+// Add M4A sync command
+program
+  .command('sync-m4a-names')
+  .description('Sync M4A filenames with their MP4 counterparts after renaming')
+  .option('--dry-run', 'Show what would be renamed without making changes')
+  .option('--force', 'Rename even if destination files already exist (will overwrite)')
+  .option('--after-rename', 'Run this after renaming MP4 files')
+  .action(async (options) => {
+    await executeCommand('sync-m4a-names.ts', options);
   });
 
 // Database integration commands

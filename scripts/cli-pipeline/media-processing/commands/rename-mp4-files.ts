@@ -16,6 +16,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawn } from 'child_process';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { Logger } from '../../../../packages/shared/utils';
 import { LogLevel } from '../../../../packages/shared/utils/logger';
@@ -28,7 +29,8 @@ const args = process.argv.slice(2);
 const options = {
   dryRun: args.includes('--dry-run'),
   force: args.includes('--force'),
-  generateMap: args.includes('--generate-map')
+  generateMap: args.includes('--generate-map'),
+  skipSync: args.includes('--skip-sync')
 };
 
 // Define file paths
@@ -278,6 +280,45 @@ function displaySummary(mappings: RenameMapping[]): void {
     Logger.info('\n=== DRY RUN - No changes were made ===');
     Logger.info('Run without --dry-run to perform the renames');
   }
+  
+  if (!options.dryRun && renamed > 0 && !options.skipSync) {
+    Logger.info('\n⚠️ Note: You might need to sync M4A files to match the new MP4 filenames');
+    Logger.info('To do this, run:');
+    Logger.info('./scripts/cli-pipeline/media-processing/media-processing-cli.sh sync-m4a-names --after-rename');
+  }
+}
+
+/**
+ * Run the sync-m4a-names command to update M4A filenames
+ */
+function syncM4aNames(): Promise<void> {
+  return new Promise((resolve) => {
+    Logger.info('\n🔄 Running M4A name synchronization...');
+    
+    const syncProcess = spawn(
+      'ts-node', 
+      [
+        path.join(__dirname, 'sync-m4a-names.ts'),
+        '--after-rename',
+        ...(options.force ? ['--force'] : [])
+      ]
+    );
+    
+    syncProcess.stdout.on('data', (data) => {
+      process.stdout.write(data);
+    });
+    
+    syncProcess.stderr.on('data', (data) => {
+      process.stderr.write(data);
+    });
+    
+    syncProcess.on('close', (code) => {
+      if (code !== 0) {
+        Logger.warn(`M4A sync process exited with code ${code}`);
+      }
+      resolve();
+    });
+  });
 }
 
 /**
@@ -289,6 +330,7 @@ async function main() {
     Logger.info(`Mode: ${options.dryRun ? 'DRY RUN' : 'ACTUAL RENAME'}`);
     Logger.info(`Force overwrite: ${options.force ? 'ON' : 'OFF'}`);
     Logger.info(`Generate mapping: ${options.generateMap ? 'ON' : 'OFF'}`);
+    Logger.info(`Skip M4A sync: ${options.skipSync ? 'ON' : 'OFF'}`);
     
     const mappings = await renameMp4Files();
     
@@ -297,6 +339,12 @@ async function main() {
     }
     
     displaySummary(mappings);
+    
+    // Automatically sync M4A files if any MP4 files were renamed and not in dry-run mode
+    const renamed = mappings.filter(m => m.status === 'renamed').length;
+    if (!options.dryRun && renamed > 0 && !options.skipSync) {
+      await syncM4aNames();
+    }
   } catch (error: any) {
     Logger.error(`Error in rename-mp4-files: ${error.message}`);
     process.exit(1);
