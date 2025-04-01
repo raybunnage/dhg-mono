@@ -45,10 +45,9 @@ export class DocumentPipelineService {
     // Define paths and directories
     this.rootDir = process.cwd();
     this.reportsDir = path.resolve(this.rootDir, 'reports');
-    this.logsDir = path.resolve(this.rootDir, 'document-analysis-results');
 
-    // Ensure directories exist
-    this.createDirectoriesIfNeeded();
+    // Ensure reports directory exists
+    this.createReportsDirectoryIfNeeded();
 
     // Initialize services
     this.supabase = SupabaseClientService.getInstance();
@@ -58,19 +57,16 @@ export class DocumentPipelineService {
   }
 
   /**
-   * Create necessary directories
+   * Create reports directory if needed
    */
-  private createDirectoriesIfNeeded(): void {
+  private createReportsDirectoryIfNeeded(): void {
     try {
       if (!fs.existsSync(this.reportsDir)) {
         fs.mkdirSync(this.reportsDir, { recursive: true });
       }
-      if (!fs.existsSync(this.logsDir)) {
-        fs.mkdirSync(this.logsDir, { recursive: true });
-      }
     } catch (error) {
-      Logger.error('Error creating directories:', error);
-      throw new Error('Failed to create required directories');
+      Logger.error('Error creating reports directory:', error);
+      throw new Error('Failed to create reports directory');
     }
   }
 
@@ -663,8 +659,10 @@ Think step by step about the following:
 
   /**
    * Generate a summary report of documents
+   * @param count Number of documents to include
+   * @param writeToFile Whether to write the report to a file or just console output
    */
-  public async generateSummary(count: number = 50): Promise<boolean> {
+  public async generateSummary(count: number = 50, writeToFile: boolean = false): Promise<boolean> {
     Logger.info(`📊 Generating summary report for ${count} documents...`);
     
     try {
@@ -721,7 +719,6 @@ Think step by step about the following:
       });
       
       // Generate the report
-      const reportPath = path.join(this.reportsDir, `document-summary-${new Date().toISOString().split('T')[0]}.md`);
       let report = `# Document Analysis Summary Report\n\n`;
       report += `Generated: ${new Date().toISOString()}\n`;
       report += `Total Documents: ${documents.length}\n\n`;
@@ -757,9 +754,16 @@ Think step by step about the following:
       
       report += `\n\n`;
       
-      // Write the report to a file
-      fs.writeFileSync(reportPath, report);
-      Logger.info(`Report successfully written to: ${reportPath}`);
+      if (writeToFile) {
+        // Write the report to a file
+        const reportPath = path.join(this.reportsDir, `document-summary-${new Date().toISOString().split('T')[0]}.md`);
+        fs.writeFileSync(reportPath, report);
+        Logger.info(`Report successfully written to: ${reportPath}`);
+      } else {
+        // Output to console instead
+        console.log(report);
+        Logger.info('Report displayed to console');
+      }
       
       return true;
     } catch (error) {

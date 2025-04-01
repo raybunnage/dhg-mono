@@ -149,18 +149,30 @@ function registerCommands(): void {
         description: 'Include deleted files',
         type: 'boolean',
         default: false
+      },
+      {
+        name: 'file',
+        shortName: 'f',
+        description: 'Write to file instead of console output',
+        type: 'boolean',
+        default: false
       }
     ],
     action: async (args) => {
       // If "all" flag is set, use -1 for count
       const count = args.all ? -1 : (args.count as number);
       const includeDeleted = args['include-deleted'] as boolean;
+      const writeToFile = args.file as boolean;
       
-      cliService.info(`Generating summary for ${count === -1 ? 'all' : count} scripts (include deleted: ${includeDeleted})...`);
+      cliService.info(`Generating summary for ${count === -1 ? 'all' : count} scripts (include deleted: ${includeDeleted}, write to file: ${writeToFile})...`);
       
-      const result = await scriptPipelineService.generateSummary(count, includeDeleted);
+      const result = await scriptPipelineService.generateSummary(count, includeDeleted, writeToFile);
       if (result === 0) {
-        cliService.success('Summary report generated successfully');
+        if (writeToFile) {
+          cliService.success('Summary report file generated successfully');
+        } else {
+          cliService.success('Summary report displayed successfully');
+        }
       } else {
         cliService.error('Failed to generate summary report');
       }
