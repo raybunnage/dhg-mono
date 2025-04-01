@@ -11,7 +11,7 @@
  * 
  * Options:
  *   --verbose         Show detailed output
- *   --script <name>   Specify which shell script to run (without .sh extension)
+ *   --script <n>   Specify which shell script to run (without .sh extension)
  * 
  * Available Scripts:
  *   mp4-files-check         - Comprehensive check for all mp4 files and their status
@@ -24,12 +24,53 @@
 
 import * as path from 'path';
 import { spawn } from 'child_process';
-import { Logger } from '../../../../packages/shared/utils';
-import { LogLevel } from '../../../../packages/shared/utils/logger';
 import * as fs from 'fs';
 
+// Simple logger implementation to avoid TypeScript issues with external imports
+enum LogLevel {
+  ERROR = 'error',
+  WARN = 'warn',
+  INFO = 'info',
+  DEBUG = 'debug',
+}
+
+class SimpleLogger {
+  private static level: LogLevel = LogLevel.INFO;
+
+  static setLevel(newLevel: LogLevel): void {
+    this.level = newLevel;
+  }
+
+  static error(message: string): void {
+    console.error(`${new Date().toISOString()} [error]: ${message}`);
+  }
+
+  static warn(message: string): void {
+    if (this.shouldLog(LogLevel.WARN)) {
+      console.warn(`${new Date().toISOString()} [warn]: ${message}`);
+    }
+  }
+
+  static info(message: string): void {
+    if (this.shouldLog(LogLevel.INFO)) {
+      console.info(`${new Date().toISOString()} [info]: ${message}`);
+    }
+  }
+
+  static debug(message: string): void {
+    if (this.shouldLog(LogLevel.DEBUG)) {
+      console.debug(`${new Date().toISOString()} [debug]: ${message}`);
+    }
+  }
+
+  private static shouldLog(messageLevel: LogLevel): boolean {
+    const levels = Object.values(LogLevel);
+    return levels.indexOf(messageLevel) <= levels.indexOf(this.level);
+  }
+}
+
 // Initialize logger
-Logger.setLevel(LogLevel.INFO);
+SimpleLogger.setLevel(LogLevel.INFO);
 
 // Process command-line arguments
 const args = process.argv.slice(2);
@@ -65,7 +106,7 @@ async function runShellChecker(): Promise<void> {
     throw new Error(`Shell script not found: ${shellScriptPath}`);
   }
 
-  Logger.info(`Executing shell script: ${shellScriptPath}`);
+  SimpleLogger.info(`Executing shell script: ${shellScriptPath}`);
 
   return new Promise((resolve, reject) => {
     const childProcess = spawn('bash', [shellScriptPath], {
@@ -91,24 +132,24 @@ async function runShellChecker(): Promise<void> {
  */
 async function main(): Promise<void> {
   try {
-    Logger.info(`Running shell-based MP4 file checker (${options.script})...`);
+    SimpleLogger.info(`Running shell-based MP4 file checker (${options.script})...`);
     await runShellChecker();
-    Logger.info('Shell script completed successfully.');
+    SimpleLogger.info('Shell script completed successfully.');
   } catch (error: any) {
-    Logger.error(`Error running shell script: ${error.message}`);
+    SimpleLogger.error(`Error running shell script: ${error.message}`);
     process.exit(1);
   }
 }
 
 // Export default function for CLI integration
-export default async function(cmdOptions: any): Promise<void> {
+export default async function(cmdOptions: Record<string, unknown>): Promise<void> {
   // Apply command options if provided
   if (cmdOptions.verbose) {
     options.verbose = true;
-    Logger.setLevel(LogLevel.DEBUG);
+    SimpleLogger.setLevel(LogLevel.DEBUG);
   }
   
-  if (cmdOptions.script) {
+  if (cmdOptions.script && typeof cmdOptions.script === 'string') {
     options.script = cmdOptions.script;
   }
   
@@ -118,7 +159,7 @@ export default async function(cmdOptions: any): Promise<void> {
 // If script is run directly (not imported)
 if (require.main === module) {
   main().catch((error) => {
-    Logger.error(`Unhandled error: ${error}`);
+    SimpleLogger.error(`Unhandled error: ${error.toString()}`);
     process.exit(1);
   });
 }

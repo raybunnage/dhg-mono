@@ -19,11 +19,52 @@
 
 import * as path from 'path';
 import { fork } from 'child_process';
-import { Logger } from '../../../../packages/shared/utils';
-import { LogLevel } from '../../../../packages/shared/utils/logger';
+
+// Simple logger implementation to avoid TypeScript issues with external imports
+enum LogLevel {
+  ERROR = 'error',
+  WARN = 'warn',
+  INFO = 'info',
+  DEBUG = 'debug',
+}
+
+class SimpleLogger {
+  private static level: LogLevel = LogLevel.INFO;
+
+  static setLevel(newLevel: LogLevel): void {
+    this.level = newLevel;
+  }
+
+  static error(message: string): void {
+    console.error(`${new Date().toISOString()} [error]: ${message}`);
+  }
+
+  static warn(message: string): void {
+    if (this.shouldLog(LogLevel.WARN)) {
+      console.warn(`${new Date().toISOString()} [warn]: ${message}`);
+    }
+  }
+
+  static info(message: string): void {
+    if (this.shouldLog(LogLevel.INFO)) {
+      console.info(`${new Date().toISOString()} [info]: ${message}`);
+    }
+  }
+
+  static debug(message: string): void {
+    if (this.shouldLog(LogLevel.DEBUG)) {
+      console.debug(`${new Date().toISOString()} [debug]: ${message}`);
+    }
+  }
+
+  private static shouldLog(messageLevel: LogLevel): boolean {
+    const levels = Object.values(LogLevel);
+    return levels.indexOf(messageLevel) <= levels.indexOf(this.level);
+  }
+}
 
 // Initialize logger
-Logger.setLevel(LogLevel.INFO);
+SimpleLogger.setLevel(LogLevel.INFO);
 
 // Process command-line arguments
 const args = process.argv.slice(2);
@@ -40,9 +81,9 @@ async function runJSFileFinder(): Promise<void> {
     '../js-scripts/find-missing-mp4-files.js'
   );
 
-  Logger.info(`Executing JavaScript file finder: ${jsScriptPath}`);
+  SimpleLogger.info(`Executing JavaScript file finder: ${jsScriptPath}`);
 
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     const childProcess = fork(jsScriptPath, [], {
       stdio: 'inherit' // Output directly to parent process
     });
@@ -66,19 +107,19 @@ async function runJSFileFinder(): Promise<void> {
  */
 async function main(): Promise<void> {
   try {
-    Logger.info('Running JavaScript-based MP4 file finder...');
+    SimpleLogger.info('Running JavaScript-based MP4 file finder...');
     await runJSFileFinder();
-    Logger.info('JavaScript file finder completed successfully.');
+    SimpleLogger.info('JavaScript file finder completed successfully.');
   } catch (error: any) {
-    Logger.error(`Error running JavaScript file finder: ${error.message}`);
+    SimpleLogger.error(`Error running JavaScript file finder: ${error.message}`);
     process.exit(1);
   }
 }
 
 // Export default function for CLI integration
-export default async function(cmdOptions: any): Promise<void> {
+export default async function(cmdOptions: Record<string, unknown>): Promise<void> {
   if (cmdOptions.verbose) {
-    Logger.setLevel(LogLevel.DEBUG);
+    SimpleLogger.setLevel(LogLevel.DEBUG);
   }
   await main();
 }
@@ -86,7 +127,7 @@ export default async function(cmdOptions: any): Promise<void> {
 // If script is run directly (not imported)
 if (require.main === module) {
   main().catch((error) => {
-    Logger.error(`Unhandled error: ${error}`);
+    SimpleLogger.error(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   });
 }
