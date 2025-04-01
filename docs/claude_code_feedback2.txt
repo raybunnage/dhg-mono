@@ -1,6 +1,6 @@
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh --help
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh find-processable-videos
-Usage:
+sage:
   media-processing-cli.sh [command] [options]
 
 Commands:
@@ -29,6 +29,8 @@ File Management Commands:
 Database Integration Commands:
   update-disk-status           Update presentations with MP4 file status on disk
   register-expert-docs         Register MP4 files as expert documents in the database
+  register-local-mp4-files     Add local MP4 files to database that are not already registered
+                               Options: --dry-run, --force, --specific-files
 
 Options:
   --dry-run                    Show what would happen without making changes
@@ -51,6 +53,37 @@ Examples:
   media-processing-cli.sh register-expert-docs --limit 20
 raybunnage@Rays-Laptop dhg-mono % 
  
+
+Great! Let me summarize what I've done:
+
+  1. Created a new TypeScript command register-local-mp4-files.ts to add MP4 files to the Supabase database
+  2. Added the command to the CLI pipeline in index.ts
+  3. Updated the bash wrapper script media-processing-cli.sh to include the new command
+  4. Added help text and fixed TypeScript errors
+
+  The command successfully:
+  - Registers local MP4 files that don't exist in the Supabase database
+  - Supports dry-run mode to preview changes
+  - Handles specific file filtering
+  - Gives clear next steps for the workflow
+
+  To solve your issue with the unmatched MP4 files, you should:
+
+  1. Use the new command to register the files:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh register-local-mp4-files
+
+  2. Update the disk status:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh update-disk-status --force
+
+  3. Register the expert documents:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh register-expert-docs
+
+  4. Now you can process the videos:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh find-processable-videos
+
+  This sequence will ensure all your local MP4 files are properly registered and processed.
+
+
 Great! I've made the following improvements to the rename-mp4-files command:
 
   1. Fixed TypeScript errors:

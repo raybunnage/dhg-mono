@@ -10,6 +10,6 @@
     "outDir": "./dist",
     "rootDir": "../../.."
   },
-  "include": ["commands/rename-mp4-files.ts"],
+  "include": ["../commands/register-local-mp4-files.ts"],
   "exclude": ["node_modules", "dist"]
 }

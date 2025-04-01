@@ -240,6 +240,16 @@ program
     });
   });
 
+program
+  .command('register-local-mp4-files')
+  .description('Add local MP4 files to database that are not already registered')
+  .option('--dry-run', 'Show what would be added without making changes')
+  .option('--force', 'Add files even if similar filenames exist')
+  .option('--specific-files <list>', 'Only register specific files (comma-separated list)')
+  .action(async (options) => {
+    await executeCommand('register-local-mp4-files.ts', options);
+  });
+
 /**
  * Execute a command from the commands directory
  */

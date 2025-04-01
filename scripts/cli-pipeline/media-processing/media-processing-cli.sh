@@ -42,6 +42,8 @@ function display_help() {
   echo "Database Integration Commands:"
   echo "  update-disk-status           Update presentations with MP4 file status on disk"
   echo "  register-expert-docs         Register MP4 files as expert documents in the database"
+  echo "  register-local-mp4-files     Add local MP4 files to database that are not already registered"
+  echo "                               Options: --dry-run, --force, --specific-files"
   echo ""
   echo "Options:"
   echo "  --dry-run                    Show what would happen without making changes"
@@ -134,6 +136,9 @@ case "$COMMAND" in
     ;;
   register-expert-docs)
     ts-node "$SCRIPT_DIR/index.ts" register-expert-docs "$@"
+    ;;
+  register-local-mp4-files)
+    ts-node "$SCRIPT_DIR/commands/register-local-mp4-files.ts" "$@"
     ;;
     
   # Help commands
