@@ -14,6 +14,11 @@
  *   --limit [number]           Limit the number of files to process (default: 10)
  *   --auto-process             Automatically extract audio and queue for transcription
  *   --format [format]          Output format (table, json, simple)
+ * 
+ * Note:
+ *   Files with 'skip_processing' status are automatically excluded from processing.
+ *   Use update-status.ts to mark large files with this status:
+ *     update-status.ts [fileId] --stage extraction --status skip_processing
  */
 
 import * as fs from 'fs';
@@ -30,7 +35,7 @@ Logger.setLevel(LogLevel.INFO);
 const args = process.argv.slice(2);
 const options = {
   dryRun: args.includes('--dry-run'),
-  limit: 10,
+  limit: 200,
   autoProcess: args.includes('--auto-process'),
   format: 'table',
   outputDir: path.join(process.cwd(), 'file_types', 'm4a')
@@ -263,6 +268,7 @@ async function main() {
         `)
         .eq('content_type', 'presentation')
         .eq('sources_google.mime_type', 'video/mp4')
+        .not('processing_status', 'eq', 'skip_processing')  // Skip files marked to be skipped
         .ilike('sources_google.name', `%${file.filename.replace(/\.[^/.]+$/, "")}%`);
       
       if (queryError) {
@@ -275,8 +281,21 @@ async function main() {
       let action: string;
       
       if (!matchingDocs || matchingDocs.length === 0) {
-        status = 'No document record';
-        action = 'Create document';
+        // Also query to check if the file is marked as skip_processing
+        const { data: skippedDocs } = await supabase
+          .from('expert_documents')
+          .select(`id, processing_status, sources_google!inner(id, name)`)
+          .eq('processing_status', 'skip_processing')
+          .ilike('sources_google.name', `%${file.filename.replace(/\.[^/.]+$/, "")}%`);
+        
+        if (skippedDocs && skippedDocs.length > 0) {
+          status = 'Marked to skip';
+          documentId = skippedDocs[0].id;
+          action = 'Skip';
+        } else {
+          status = 'No document record';
+          action = 'Create document';
+        }
       } else {
         documentId = matchingDocs[0].id;
         
@@ -285,6 +304,9 @@ async function main() {
         
         if (hasRawContent) {
           status = 'Already processed';
+          action = 'Skip';
+        } else if (matchingDocs[0].processing_status === 'skip_processing') {
+          status = 'Marked to skip';
           action = 'Skip';
         } else if (m4aExists) {
           status = 'M4A exists but not processed';

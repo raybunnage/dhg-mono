@@ -47,6 +47,8 @@ File Management Commands:
 Database Integration Commands:
   update-disk-status      Update presentations with MP4 file status on disk
   register-expert-docs    Register MP4 files as expert documents in the database
+  update-status           Update processing status of expert documents
+  mark-skip-processing    Mark large files to skip batch processing
   
 Listing & Utility Commands:
   list-ready              List files ready for processing

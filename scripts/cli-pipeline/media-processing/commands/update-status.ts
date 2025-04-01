@@ -10,9 +10,13 @@
  * 
  * Options:
  *   --stage [stage]            Stage to update (extraction, transcription)
- *   --status [status]          New status (pending, processing, completed, failed)
+ *   --status [status]          New status (pending, processing, completed, failed, skip_processing)
  *   --error [message]          Error message (for failed status)
  *   --batch [file]             Process a batch of files from a file (one ID per line)
+ * 
+ * Note:
+ *   The 'skip_processing' status marks large files to be excluded from batch processing.
+ *   Files with this status will be skipped by processing commands.
  */
 
 import * as fs from 'fs';
@@ -53,7 +57,7 @@ if (stageIndex !== -1 && args[stageIndex + 1]) {
 const statusIndex = args.indexOf('--status');
 if (statusIndex !== -1 && args[statusIndex + 1]) {
   const statusArg = args[statusIndex + 1].toLowerCase();
-  if (['pending', 'processing', 'completed', 'failed', 'extracted', 'transcribed'].includes(statusArg)) {
+  if (['pending', 'processing', 'completed', 'failed', 'extracted', 'transcribed', 'skip_processing'].includes(statusArg)) {
     options.status = statusArg;
   }
 }
