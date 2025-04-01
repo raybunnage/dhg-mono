@@ -35,6 +35,10 @@ function display_help() {
   echo "  find-missing-js-files        Run JavaScript-based MP4 file checker (legacy)"
   echo "  run-shell-check [--script]   Run shell script (default: mp4-files-check.sh)"
   echo ""
+  echo "File Management Commands:"
+  echo "  rename-mp4-files             Rename MP4 files to match database records"
+  echo "                               Options: --dry-run, --force, --generate-map"
+  echo ""  
   echo "Database Integration Commands:"
   echo "  update-disk-status           Update presentations with MP4 file status on disk"
   echo "  register-expert-docs         Register MP4 files as expert documents in the database"
@@ -47,6 +51,7 @@ function display_help() {
   echo "  --force                      Process even if already processed"
   echo "  --output [path]              Specify output directory"
   echo "  --auto-process               Automatically process files (for find-processable-videos)"
+  echo "  --generate-map               Generate a CSV mapping file (for rename-mp4-files)"
   echo ""
   echo "Examples:"
   echo "  media-processing-cli.sh convert path/to/file.mp4"
@@ -54,6 +59,7 @@ function display_help() {
   echo "  media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a"
   echo "  media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a"
   echo "  media-processing-cli.sh list-pending --limit 10"
+  echo "  media-processing-cli.sh rename-mp4-files --dry-run"
   echo "  media-processing-cli.sh update-disk-status --dry-run"
   echo "  media-processing-cli.sh register-expert-docs --limit 20"
 }
@@ -115,6 +121,11 @@ case "$COMMAND" in
     ;;
   run-shell-check)
     ts-node "$SCRIPT_DIR/commands/run-shell-check.ts" "$@"
+    ;;
+    
+  # File management commands
+  rename-mp4-files)
+    ts-node "$SCRIPT_DIR/commands/rename-mp4-files.ts" "$@"
     ;;
   
   # Database integration commands

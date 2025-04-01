@@ -1,7 +1,5 @@
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh --help
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh find-processable-videos
-
-
 Usage:
   media-processing-cli.sh [command] [options]
 
@@ -24,6 +22,10 @@ File Checking Commands:
   find-missing-js-files        Run JavaScript-based MP4 file checker (legacy)
   run-shell-check [--script]   Run shell script (default: mp4-files-check.sh)
 
+File Management Commands:
+  rename-mp4-files             Rename MP4 files to match database records
+                               Options: --dry-run, --force, --generate-map
+
 Database Integration Commands:
   update-disk-status           Update presentations with MP4 file status on disk
   register-expert-docs         Register MP4 files as expert documents in the database
@@ -36,6 +38,7 @@ Options:
   --force                      Process even if already processed
   --output [path]              Specify output directory
   --auto-process               Automatically process files (for find-processable-videos)
+  --generate-map               Generate a CSV mapping file (for rename-mp4-files)
 
 Examples:
   media-processing-cli.sh convert path/to/file.mp4
@@ -43,10 +46,67 @@ Examples:
   media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
   media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
   media-processing-cli.sh list-pending --limit 10
+  media-processing-cli.sh rename-mp4-files --dry-run
   media-processing-cli.sh update-disk-status --dry-run
   media-processing-cli.sh register-expert-docs --limit 20
 raybunnage@Rays-Laptop dhg-mono % 
  
+Great! I've made the following improvements to the rename-mp4-files command:
+
+  1. Fixed TypeScript errors:
+    - Fixed type issues with the database query
+    - Added proper type annotations for objects
+    - Removed unnecessary any types
+    - Added null checks
+  2. Enhanced the help text:
+    - Added detailed information about the rename-mp4-files command in the help output
+    - Added the --generate-map option to the global options section
+    - Included the command's options directly under its description
+  3. Verified the command works correctly:
+    - Ran the command and successfully renamed 5 files
+    - Confirmed it properly identifies files that match database records
+    - Verified it shows errors for files without matches
+
+  The command is now fully operational and well-documented. The following workflow is ready to use:
+
+  1. First check for files that need renaming:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh rename-mp4-files --dry-run
+  2. Perform the renaming with an optional map file:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh rename-mp4-files --generate-map
+  3. Convert the renamed files to M4A:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh convert --batch 20
+
+  The help system now clearly shows all options and provides good examples for how to use the command.
+
+  I've successfully added a new rename-mp4-files command to the media-processing CLI pipeline:
+
+  1. Created a new TypeScript script (rename-mp4-files.ts) that:
+    - Compares local MP4 files with database records
+    - Uses smart matching to find the best match for each file
+    - Renames files to match their database counterparts
+    - Generates a detailed report and optionally a CSV mapping file
+  2. Added the command to the CLI interface:
+    - Added it to the TypeScript program object
+    - Added it to the bash wrapper script
+    - Updated all help texts and documentation
+  3. The command has several useful options:
+    - --dry-run to preview changes without making them
+    - --force to overwrite existing files if needed
+    - --generate-map to create a CSV mapping file for reference
+
+  The command works successfully, as shown in the dry run output. It identified 5 files that can be renamed to match database
+  records, 19 that already have correct names, and 18 that don't have clear matches in the database.
+
+  Now you can use this workflow to process your MP4 files:
+
+  1. First rename the files to match database records:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh rename-mp4-files
+  2. Then convert them to M4A for audio extraction:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh convert --batch 20
+  3. You can also chain the full processing together:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh process-video [fileId]
+
+  All of this functionality is now unified in a single CLI interface for one-stop shopping!
  
 Perfect! I've fixed the TypeScript errors and integrated the two database-related commands into the media-processing CLI
   pipeline. The commands are now working correctly and are properly displayed in the help screen.

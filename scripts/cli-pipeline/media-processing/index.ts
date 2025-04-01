@@ -37,7 +37,8 @@ File Checking Commands:
   find-missing-js-files   Run JavaScript-based MP4 file checker (legacy implementation)
   run-shell-check         Run any shell script from the shell-scripts directory
 
-File Processing Commands:
+File Management Commands:
+  rename-mp4-files        Rename local MP4 files to match database records
   convert-mp4             Extract audio from MP4 files and create M4A files
   transcribe-audio        Transcribe audio files to text using Whisper
   transcribe-with-summary Generate transcriptions with summaries
@@ -155,6 +156,17 @@ program
   .description('Find videos that can be processed')
   .action(async (options) => {
     await executeCommand('find-processable-videos.ts', options);
+  });
+
+// Add file renaming command
+program
+  .command('rename-mp4-files')
+  .description('Rename local MP4 files to match database records')
+  .option('--dry-run', 'Show what would be renamed without making changes')
+  .option('--force', 'Rename even if a destination file already exists (will overwrite)')
+  .option('--generate-map', 'Generate a CSV mapping file of original to new names')
+  .action(async (options) => {
+    await executeCommand('rename-mp4-files.ts', options);
   });
 
 // Database integration commands
