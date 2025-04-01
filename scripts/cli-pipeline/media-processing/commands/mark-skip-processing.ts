@@ -88,8 +88,32 @@ async function findDocumentIdFromFilename(filename: string, supabase: any): Prom
     }
     
     if (!matchingDocs || matchingDocs.length === 0) {
-      Logger.error(`❌ No matching document found for file: ${filename}`);
-      return null;
+      // Try to find files with the extension
+      const { data: matchingDocsWithExt } = await supabase
+        .from('expert_documents')
+        .select(`
+          id, 
+          sources_google!inner(id, name, mime_type)
+        `)
+        .eq('content_type', 'presentation')
+        .eq('sources_google.mime_type', 'video/mp4')
+        .ilike('sources_google.name', `%${filename}%`);
+      
+      if (!matchingDocsWithExt || matchingDocsWithExt.length === 0) {
+        Logger.error(`❌ No matching document found for file: ${filename}`);
+        return null;
+      } else {
+        if (matchingDocsWithExt.length > 1) {
+          Logger.warn(`⚠️ Multiple matches found for ${filename}. Using first match.`);
+          
+          // Display all matches
+          matchingDocsWithExt.forEach((doc: any, index: number) => {
+            Logger.info(`   ${index + 1}. ID: ${doc.id}, Name: ${doc.sources_google.name}`);
+          });
+        }
+        
+        return matchingDocsWithExt[0].id;
+      }
     }
     
     if (matchingDocs.length > 1) {
@@ -132,14 +156,22 @@ async function updateDocumentStatus(documentId: string, supabase: any, resume: b
     
     // Build the update data
     const updateData: any = {};
-    const status = resume ? 'pending' : 'skip_processing';
+    const status = resume ? 'pending' : 'error';
     updateData.processing_status = status;
+    
+    // Add message for error status to indicate it's a skip
+    if (status === 'error') {
+      updateData.processing_error = 'Skipped processing - file marked to skip due to size or complexity';
+    }
     
     // Display what we're about to do
     Logger.info(`📋 Document: ${document.id}`);
     Logger.info(`📋 Filename: ${document.sources_google.name}`);
     Logger.info(`📋 Current status: ${document.processing_status}`);
     Logger.info(`📋 New status: ${status}`);
+    if (status === 'error') {
+      Logger.info(`📋 Reason: Skipped processing - file marked to skip due to size or complexity`);
+    }
     
     if (options.dryRun) {
       Logger.info(`🔄 DRY RUN: Would ${resume ? 'resume' : 'skip'} processing for document ${documentId}`);
