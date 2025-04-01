@@ -29,7 +29,7 @@ export class ScriptPipelineService {
    */
   private constructor() {
     this.rootDir = path.resolve(__dirname, '../../../../../');
-    this.reportsDir = path.join(this.rootDir, 'script-analysis-results');
+    this.reportsDir = path.join(this.rootDir, 'reports');
     
     // Create reports directory if it doesn't exist
     if (!fs.existsSync(this.reportsDir)) {
@@ -56,14 +56,8 @@ export class ScriptPipelineService {
    * Execute a shell script with the current environment
    */
   private async executeScript(scriptPath: string, args: string[] = []): Promise<number> {
-    return new Promise((resolve, reject) => {
-      // Create log file for output
-      const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
-      const logFile = path.join(this.reportsDir, `script-pipeline-${timestamp.replace('T', '_')}.log`);
-      const logStream = fs.createWriteStream(logFile);
-      
+    return new Promise((resolve, reject) => {      
       logger.info(`Executing script: ${scriptPath} with args: ${args.join(' ')}`);
-      logger.info(`Logging to: ${logFile}`);
       
       // Prepare environment variables
       const env = {
@@ -82,10 +76,7 @@ export class ScriptPipelineService {
         cwd: this.rootDir,
       });
       
-      // Capture output for logging
-      child.stdout.pipe(logStream);
-      child.stderr.pipe(logStream);
-      
+      // Capture output for console
       child.stdout.on('data', (data) => {
         process.stdout.write(data);
       });
@@ -95,7 +86,6 @@ export class ScriptPipelineService {
       });
       
       child.on('close', (code) => {
-        logStream.end();
         if (code === 0) {
           logger.info(`Script execution completed successfully`);
           resolve(0);
@@ -106,7 +96,6 @@ export class ScriptPipelineService {
       });
       
       child.on('error', (err) => {
-        logStream.end();
         logger.error(`Failed to execute script: ${err.message}`);
         reject(err);
       });
@@ -348,13 +337,14 @@ export class ScriptPipelineService {
   
   /**
    * Generate a summary report of scripts
+   * @param count Number of scripts to include in the report
+   * @param includeDeleted Whether to include deleted scripts
+   * @param writeToFile Whether to write the report to a file or just console output
    */
-  public async generateSummary(count: number = 50, includeDeleted: boolean = false): Promise<number> {
+  public async generateSummary(count: number = 50, includeDeleted: boolean = false, writeToFile: boolean = false): Promise<number> {
     logger.info(`Generating summary report for ${count} scripts (include deleted: ${includeDeleted})`);
     
     try {
-      const reportFile = path.join(this.reportsDir, `script-summary-${new Date().toISOString().split('T')[0]}.md`);
-      
       // Connect to Supabase if not already connected
       await this.dbService.ensureConnection();
       
@@ -423,9 +413,16 @@ export class ScriptPipelineService {
       // Generate the report content
       let report = this.generateReportContent(scripts, scriptTypeMap);
       
-      // Write the report to file
-      fs.writeFileSync(reportFile, report);
-      logger.info(`Report generated successfully at: ${reportFile}`);
+      // Either write to file or console based on preference
+      if (writeToFile) {
+        const reportFile = path.join(this.reportsDir, `script-summary-${new Date().toISOString().split('T')[0]}.md`);
+        fs.writeFileSync(reportFile, report);
+        logger.info(`Report generated successfully at: ${reportFile}`);
+      } else {
+        // Output to console
+        console.log(report);
+        logger.info(`Report generated successfully to console`);
+      }
       
       return 0;
     } catch (error: any) {

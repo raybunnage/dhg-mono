@@ -85,11 +85,9 @@ export class DocumentService {
     
     // Define directories
     this.reportsDir = path.resolve(this.rootDir, 'reports');
-    this.logsDir = path.resolve(this.rootDir, 'document-analysis-results');
     
-    // Ensure directories exist
+    // Ensure reports directory exists
     fileService.createDirectoryIfNeeded(this.reportsDir);
-    fileService.createDirectoryIfNeeded(this.logsDir);
     
     logger.info('Document Service initialized', { rootDir: this.rootDir });
   }
