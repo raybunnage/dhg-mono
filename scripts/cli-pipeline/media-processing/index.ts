@@ -42,7 +42,11 @@ File Processing Commands:
   transcribe-audio        Transcribe audio files to text using Whisper
   transcribe-with-summary Generate transcriptions with summaries
   purge-processed-media   Remove processed MP4 and M4A files that have been extracted and saved in database
-
+  
+Database Integration Commands:
+  update-disk-status      Update presentations with MP4 file status on disk
+  register-expert-docs    Register MP4 files as expert documents in the database
+  
 Listing & Utility Commands:
   list-ready              List files ready for processing
   list-pending            List files pending processing
@@ -153,6 +157,77 @@ program
     await executeCommand('find-processable-videos.ts', options);
   });
 
+// Database integration commands
+program
+  .command('update-disk-status')
+  .description('Update presentations with MP4 file status on disk')
+  .option('--dry-run', 'Show what would be updated without making changes')
+  .option('--force', 'Process all presentations even if they already have disk status')
+  .action(async (options) => {
+    // Call the update-presentation-disk-status.ts script using ts-node
+    const { spawn } = require('child_process');
+    const tsNodePath = path.join(process.cwd(), 'node_modules', '.bin', 'ts-node');
+    const scriptPath = path.resolve(__dirname, '../../../scripts/cli-pipeline/google_sync/update-presentation-disk-status.ts');
+    
+    // Convert options to command-line arguments
+    const args = [scriptPath];
+    if (options.dryRun) args.push('--dry-run');
+    if (options.force) args.push('--force');
+    
+    // Run the command
+    const child = spawn(tsNodePath, args, { stdio: 'inherit' });
+    
+    // Handle completion
+    await new Promise<void>((resolve, reject) => {
+      child.on('close', (code: number) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Command failed with exit code ${code}`));
+        }
+      });
+      
+      child.on('error', (err: Error) => {
+        reject(err);
+      });
+    });
+  });
+
+program
+  .command('register-expert-docs')
+  .description('Register MP4 files as expert documents in the database')
+  .option('--dry-run', 'Show what would be created without making changes')
+  .option('--limit <number>', 'Limit the number of presentations to process')
+  .action(async (options) => {
+    // Call the create-mp4-expert-documents.ts script using ts-node
+    const { spawn } = require('child_process');
+    const tsNodePath = path.join(process.cwd(), 'node_modules', '.bin', 'ts-node');
+    const scriptPath = path.resolve(__dirname, '../../../scripts/cli-pipeline/google_sync/create-mp4-expert-documents.ts');
+    
+    // Convert options to command-line arguments
+    const args = [scriptPath];
+    if (options.dryRun) args.push('--dry-run');
+    if (options.limit) args.push('--limit', options.limit);
+    
+    // Run the command
+    const child = spawn(tsNodePath, args, { stdio: 'inherit' });
+    
+    // Handle completion
+    await new Promise<void>((resolve, reject) => {
+      child.on('close', (code: number) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Command failed with exit code ${code}`));
+        }
+      });
+      
+      child.on('error', (err: Error) => {
+        reject(err);
+      });
+    });
+  });
+
 /**
  * Execute a command from the commands directory
  */
@@ -177,6 +252,36 @@ async function executeCommand(commandFile: string, options: any): Promise<void> 
     }
   } catch (error: any) {
     console.error(`Error executing command ${commandFile}:`, error.message);
+    process.exit(1);
+  }
+}
+
+/**
+ * Execute a command from an external path
+ */
+async function executeExternalCommand(commandPath: string, options: any): Promise<void> {
+  const absolutePath = path.resolve(__dirname, commandPath);
+
+  if (!fs.existsSync(absolutePath)) {
+    console.error(`External command file not found: ${absolutePath}`);
+    process.exit(1);
+  }
+
+  try {
+    // Import the command module
+    const commandModule = await import(absolutePath);
+    
+    // For external modules, assume they have a main function to execute
+    if (typeof commandModule.default === 'function') {
+      await commandModule.default(options);
+    } else if (typeof commandModule.main === 'function') {
+      await commandModule.main(options);
+    } else {
+      // If no default or main function, try to call the module itself
+      await commandModule(options);
+    }
+  } catch (error: any) {
+    console.error(`Error executing external command ${absolutePath}:`, error.message);
     process.exit(1);
   }
 }

@@ -15,7 +15,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { SupabaseClientService } from '../../../../packages/shared/services/supabase-service';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { Logger } from '../../../../packages/shared/utils';
 import { LogLevel } from '../../../../packages/shared/utils/logger';
 
