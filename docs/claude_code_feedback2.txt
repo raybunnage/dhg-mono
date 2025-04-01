@@ -45,6 +45,8 @@ Options:
   --limit [n]                  Process max n files
   --model [tiny|base|small]    Specify Whisper model (default: base)
   --accelerator [T4|A10G|A100] Specify GPU accelerator (default: T4)
+  --parallel                   Process files in parallel (for batch-transcribe)
+  --max-parallel [n]           Maximum number of parallel processes (default: 3)
   --force                      Process even if already processed
   --resume                     Resume processing for previously skipped file (for mark-skip-processing)
   --output [path]              Specify output directory
@@ -55,7 +57,9 @@ Examples:
   media-processing-cli.sh convert path/to/file.mp4
   media-processing-cli.sh find-processable-videos --limit 1 --auto-process
   media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
+  media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a --accelerator A10G
   media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
+  media-processing-cli.sh batch-transcribe --parallel --max-parallel 3 --accelerator A10G
   media-processing-cli.sh list-pending --limit 10
   media-processing-cli.sh mark-skip-processing "Large Lecture.mp4" --dry-run
   media-processing-cli.sh mark-skip-processing f9f1e470-3b07-4aee-b134-5a740bd89446 --resume
@@ -66,6 +70,45 @@ Examples:
   media-processing-cli.sh purge-processed-media --dry-run
 raybunnage@Rays-Laptop dhg-mono % 
  
+
+ ou can now use the batch-transcribe command with parallel processing and the A10G accelerator option:
+
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-transcribe --parallel --max-parallel 3 --accelerator A10G
+
+  This command:
+  1. Finds documents that need transcription
+  2. Processes multiple documents in parallel (up to 3 at a time)
+  3. Uses the more powerful A10G GPU accelerator for faster processing
+
+  The available options are:
+  - --parallel: Enable parallel processing
+  - --max-parallel [n]: Set the maximum number of parallel processes (default is 3)
+  - --accelerator [T4|A10G|A100]: Choose the GPU accelerator (A10G is more powerful than T4)
+  - --model [tiny|base|small]: Pick the Whisper model size (smaller is faster, larger is more accurate)
+  - --limit [n]: Process only n files
+  - --dry-run: Show what would be processed without making changes
+
+  I've added these options to the help menu and included clear examples in the documentation.
+
+The skip processing command has been fixed! I found that the database has a check constraint limiting the valid values for processing_status to:
+  'pending', 'processing', 'completed', or 'error'.
+
+  To work around this limitation, I made the following changes:
+
+  1. Instead of using a non-existent 'skip_processing' status, we now use the 'error' status with a special error message
+  2. The error message has a specific prefix "Skipped processing - file marked to skip due to size or complexity"
+  3. The find-processable-videos command now checks for the 'error' status plus this specific error message pattern
+  4. The UI has been updated to show "Marked to skip" in the status display for better user clarity
+
+  Now you can:
+
+  1. Mark a file to skip:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh mark-skip-processing "Allan Abbass presentation Apr 6 2022.mp4"
+
+  2. Resume a file to process later:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh mark-skip-processing "Allan Abbass presentation Apr 6 2022.mp4" --resume
+
+  The command now works correctly with the database constraints, and the files will be excluded from batch processing.
 
 The mark-skip-processing command has been fully integrated into the media processing CLI pipeline! You can now use it through the shell wrapper
   script:

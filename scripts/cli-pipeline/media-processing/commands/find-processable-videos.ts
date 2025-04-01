@@ -291,8 +291,12 @@ async function main() {
         
         if (skippedDocs && skippedDocs.length > 0) {
           // Check if this is actually a skipped file by checking the error message
-          const isSkipped = skippedDocs.some(doc => 
-            doc.processing_error && doc.processing_error.includes('Skipped processing'));
+          const isSkipped = skippedDocs.some((doc: {
+            id: string; 
+            processing_status: string;
+            processing_error?: string;
+            sources_google: { id: string; name: string; }
+          }) => doc.processing_error && doc.processing_error.includes('Skipped processing'));
           
           if (isSkipped) {
             status = 'Marked to skip';
