@@ -28,7 +28,12 @@ function display_help() {
   echo "  list-ready                   List files ready for content generation"
   echo "  update-status [fileId]       Update processing status of a file"
   echo "  extract-summary [fileId]     Extract transcript from a processed file"
-  echo "  batch-transcribe              Process multiple files for transcription"
+  echo "  batch-transcribe             Process multiple files for transcription"
+  echo ""
+  echo "File Checking Commands:"
+  echo "  check-media-files            Check for missing/orphaned MP4 and M4A files"
+  echo "  find-missing-js-files        Run JavaScript-based MP4 file checker (legacy)"
+  echo "  run-shell-check [--script]   Run shell script (default: mp4-files-check.sh)"
   echo ""
   echo "Options:"
   echo "  --dry-run                    Show what would happen without making changes"
@@ -93,6 +98,17 @@ case "$COMMAND" in
     ;;
   batch-transcribe)
     ts-node "$SCRIPT_DIR/commands/batch-transcribe.ts" "$@"
+    ;;
+    
+  # File checking commands
+  check-media-files)
+    ts-node "$SCRIPT_DIR/commands/check-media-files.ts" "$@"
+    ;;
+  find-missing-js-files)
+    ts-node "$SCRIPT_DIR/commands/find-missing-js-files.ts" "$@"
+    ;;
+  run-shell-check)
+    ts-node "$SCRIPT_DIR/commands/run-shell-check.ts" "$@"
     ;;
     
   # Help commands
