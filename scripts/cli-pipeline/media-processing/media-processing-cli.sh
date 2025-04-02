@@ -26,6 +26,8 @@ function display_help() {
   echo "  batch-process-media          Complete workflow: find, copy, rename, register, update, convert, and transcribe files
                                Options: --skip-copy, --skip-rename, --skip-register, --skip-disk-status,
                                --skip-expert-docs, --skip-conversion, --skip-m4a-sync, --skip-transcription"
+  echo "  process-local-mp4-files      Process MP4 files from file_types/mp4/ directory, register and transcribe them
+                               Options: --dry-run, --force, --max-parallel <number>, --limit <number>, --specific-files <list>"
   echo "  list-transcribable           List documents ready for transcription with copy-paste commands"
   echo "  show-transcription-status    Show detailed status of transcriptions and processing times"
   echo "  list-pending                 List pending files waiting for processing"
@@ -131,6 +133,9 @@ case "$COMMAND" in
     ;;
   batch-process-media)
     ts-node "$SCRIPT_DIR/commands/batch-process-media.ts" "$@"
+    ;;
+  process-local-mp4-files)
+    ts-node --transpile-only "$SCRIPT_DIR/commands/process-local-mp4-files.ts" "$@"
     ;;
   list-pending)
     ts-node "$SCRIPT_DIR/commands/list-pending.ts" "$@"

@@ -42,6 +42,7 @@ File Checking Commands:
 
 File Management Commands:
   batch-process-media     Run complete workflow: find, copy, convert, and transcribe media files
+  process-local-mp4-files Process MP4 files from file_types/mp4/ directory, register and transcribe them
   rename-mp4-files        Rename local MP4 files to match database records
   convert-mp4             Extract audio from MP4 files and create M4A files
   transcribe-audio        Transcribe audio files to text using Whisper
@@ -422,6 +423,21 @@ async function executeExternalCommand(commandPath: string, options: any): Promis
     process.exit(1);
   }
 }
+
+// Add process local MP4 files command
+program
+  .command('process-local-mp4-files')
+  .description('Process MP4 files from file_types/mp4/ directory, register and transcribe them')
+  .option('--dry-run', 'Show what would be processed without making changes')
+  .option('--force', 'Process files even if they already have transcripts')
+  .option('--max-parallel <number>', 'Maximum number of parallel processes (default: 2)')
+  .option('--limit <number>', 'Maximum number of files to process (default: 10)')
+  .option('--specific-files <list>', 'Only process specific files (comma-separated list)')
+  .option('--skip-registering', 'Skip the registering step and only process already registered files')
+  .option('--skip-transcription', 'Skip the transcription step and only register files')
+  .action(async (options) => {
+    await executeCommand('process-local-mp4-files.ts', options);
+  });
 
 // Parse arguments and run
 program.parse(process.argv);
