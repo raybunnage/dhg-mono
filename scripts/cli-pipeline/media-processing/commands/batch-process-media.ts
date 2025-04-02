@@ -106,51 +106,96 @@ if (maxParallelIndex !== -1 && args[maxParallelIndex + 1]) {
 }
 
 /**
- * Run the find-untranscribed-media command to generate copy commands
- * only for files that haven't been transcribed yet
+ * Run the find-missing-media command to generate copy commands
+ * and filter out files that have already been transcribed
  */
 async function findAndCopyMedia(): Promise<boolean> {
   try {
     const scriptPath = path.join(process.cwd(), 'copy-files.sh');
     
-    // Step 1: Generate copy script using find-untranscribed-media
+    // Step 1: Generate copy script using find-missing-media
     Logger.info('🔍 Generating copy commands for untranscribed media files...');
     
     const tsNodePath = './node_modules/.bin/ts-node';
-    const findCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/commands/find-untranscribed-media.ts --limit ${options.limit} --source "${options.source}"`;
+    
+    // First, get missing MP4 files using find-missing-media
+    const findCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts find-missing-media --deep --limit ${options.limit} --source "${options.source}" --format commands`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${findCommand}`);
-    } else {
-      // Execute the find command and extract only the copy commands between the UNTRANSCRIBED FILES markers
-      const findOutput = execSync(findCommand).toString();
-      const untranscribedFilesSection = findOutput.split('=== UNTRANSCRIBED FILES ===')[1];
-      
-      if (!untranscribedFilesSection) {
-        Logger.warn('No UNTRANSCRIBED FILES section found in output');
-        return false;
-      }
-      
-      // Extract just the copy commands (skip the instructions at the end)
-      const copyCommands = untranscribedFilesSection.split('\nCopy and paste these commands')[0].trim();
-      
-      // Write to the script file
-      fs.writeFileSync(scriptPath, '#!/bin/bash\n# Auto-generated copy commands\n\n' + copyCommands);
-      
-      // Make the script executable
-      execSync(`chmod +x ${scriptPath}`);
-      
-      // Check if the script has copy commands
-      const scriptContent = fs.readFileSync(scriptPath, 'utf8');
-      if (!scriptContent.includes('cp "')) {
-        Logger.info('ℹ️ No untranscribed files found to copy');
-        return false;
-      }
-      
-      // Execute the copy script
-      Logger.info('📂 Copying untranscribed MP4 files from Google Drive...');
-      execSync(`${scriptPath}`, { stdio: 'inherit' });
+      return true;
     }
+    
+    // Execute the find command and extract the copy commands
+    const findOutput = execSync(findCommand).toString();
+    const missingFilesSection = findOutput.split('=== MISSING FILES ===')[1];
+    
+    if (!missingFilesSection) {
+      Logger.warn('No MISSING FILES section found in output');
+      return false;
+    }
+    
+    // Extract just the copy commands (skip the instructions at the end)
+    const copyCommandsRaw = missingFilesSection.split('\nCopy and paste these commands')[0].trim();
+    const copyCommands = copyCommandsRaw.split('\n').filter(line => line.startsWith('cp '));
+    
+    if (copyCommands.length === 0) {
+      Logger.info('ℹ️ No files found to copy');
+      return false;
+    }
+    
+    // Get a list of files that have already been transcribed
+    Logger.info('Checking for already transcribed files...');
+    
+    // Create a Supabase client using the singleton service
+    // We need to use require since we don't have a direct import
+    const { SupabaseClientService } = require('../../../../packages/shared/services/supabase-client');
+    const supabaseClientService = SupabaseClientService.getInstance();
+    const supabase = supabaseClientService.getClient();
+    
+    // Get list of transcribed source files
+    const { data: expertDocs } = await supabase
+      .from('expert_documents')
+      .select('source_id, sources_google!inner(name)')
+      .not('raw_content', 'is', null);
+    
+    // Create set of already transcribed filenames
+    const transcribedFiles = new Set(expertDocs.map((doc: any) => doc.sources_google.name));
+    
+    // Extract filenames from copy commands
+    const fileInfo = copyCommands.map(cmd => {
+      const match = cmd.match(/cp ".*" ".*\/([^\/]+)"/);
+      return {
+        command: cmd,
+        filename: match ? match[1] : null
+      };
+    }).filter(info => info.filename);
+    
+    // Filter out already transcribed files
+    const untranscribedCommands = fileInfo
+      .filter(info => !transcribedFiles.has(info.filename))
+      .map(info => info.command);
+    
+    if (untranscribedCommands.length === 0) {
+      Logger.info('ℹ️ No untranscribed files found to copy');
+      return false;
+    }
+    
+    Logger.info(`Found ${untranscribedCommands.length} untranscribed files to copy`);
+    
+    // Write the script file
+    fs.writeFileSync(
+      scriptPath, 
+      '#!/bin/bash\n# Auto-generated copy commands\n\n' + 
+      untranscribedCommands.join('\n')
+    );
+    
+    // Make the script executable
+    execSync(`chmod +x ${scriptPath}`);
+    
+    // Execute the copy script
+    Logger.info('📂 Copying untranscribed MP4 files from Google Drive...');
+    execSync(`${scriptPath}`, { stdio: 'inherit' });
     
     return true;
   } catch (error: any) {
