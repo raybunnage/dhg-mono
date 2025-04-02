@@ -1,4 +1,31 @@
 #!/usr/bin/env ts-node
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
+import { Logger } from '../../../../packages/shared/utils';
+import { LogLevel } from '../../../../packages/shared/utils/logger';
+
+// Initialize logger
+Logger.setLevel(LogLevel.INFO);
+
+// Default options
+const options = {
+  limit: 10,
+  source: '/Volumes/GoogleDrive/Shared drives/DHG Hanscom/Raw Video Files',
+  model: 'whisper-large-v3',
+  accelerator: 'A10G',
+  maxParallel: 2,
+  skipCopy: false,
+  skipRename: false,
+  skipRegister: false,
+  skipDiskStatus: false,
+  skipExpertDocs: false,
+  skipConversion: false,
+  skipM4aSync: false,
+  skipTranscription: false,
+  dryRun: false
+};
+
 /**
  * Run the find-missing-media command to generate copy commands
  * only for files that haven't been transcribed yet
@@ -11,6 +38,10 @@ async function findAndCopyMedia(): Promise<boolean> {
     Logger.info('🔍 Generating copy commands for untranscribed media files...');
     
     const tsNodePath = './node_modules/.bin/ts-node';
+    
+    // Make sure we pass the actual limit value - for debugging:
+    Logger.info(`Using limit: ${options.limit} for find-missing-media command`);
+    
     const findCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts find-missing-media --deep --limit ${options.limit} --source "${options.source}" --format commands | node scripts/cli-pipeline/media-processing/commands/filter-transcribed.js`;
     
     if (options.dryRun) {
@@ -356,7 +387,12 @@ async function main(): Promise<void> {
 export default async function(cliOptions?: any): Promise<void> {
   // Override default options with CLI options if provided
   if (cliOptions) {
-    if (cliOptions.limit) options.limit = parseInt(cliOptions.limit);
+    // Properly parse the limit as an integer
+    if (cliOptions.limit) {
+      options.limit = parseInt(cliOptions.limit);
+      console.log(`Setting limit to ${options.limit} from CLI option ${cliOptions.limit}`);
+    }
+    
     if (cliOptions.source) options.source = cliOptions.source;
     if (cliOptions.model) options.model = cliOptions.model;
     if (cliOptions.accelerator) options.accelerator = cliOptions.accelerator;

@@ -17,6 +17,8 @@ Commands:
   batch-process-media          Complete workflow: find, copy, rename, register, update, convert, and transcribe files
                                Options: --skip-copy, --skip-rename, --skip-register, --skip-disk-status,
                                --skip-expert-docs, --skip-conversion, --skip-m4a-sync, --skip-transcription
+  process-local-mp4-files      Process MP4 files from file_types/mp4/ directory, register and transcribe them
+                               Options: --dry-run, --force, --max-parallel <number>, --limit <number>, --specific-files <list>
   list-transcribable           List documents ready for transcription with copy-paste commands
   show-transcription-status    Show detailed status of transcriptions and processing times
   list-pending                 List pending files waiting for processing
@@ -86,6 +88,7 @@ Examples:
   media-processing-cli.sh update-disk-status --dry-run
   media-processing-cli.sh register-expert-docs --limit 20
   media-processing-cli.sh purge-processed-media --dry-run
+raybunnage@Rays-Laptop dhg-mono % 
  
 
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh process-local-mp4-files --max-parallel 3
