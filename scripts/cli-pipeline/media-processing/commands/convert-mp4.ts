@@ -11,7 +11,8 @@
  * Options:
  *   --dry-run                  Show what would be converted without actual processing
  *   --output [path]            Specify output directory
- *   --batch [number]           Process a batch of pending files
+ *   --limit [number]           Process a batch of pending files (same as --batch)
+ *   --batch [number]           Process a batch of pending files (deprecated, use --limit)
  */
 
 import * as fs from 'fs';
@@ -46,12 +47,22 @@ if (outputIndex !== -1 && args[outputIndex + 1]) {
   options.outputDir = args[outputIndex + 1];
 }
 
-// Get batch size if specified
+// Get batch size if specified (from --batch or --limit)
 const batchIndex = args.indexOf('--batch');
+const limitIndex = args.indexOf('--limit');
+
 if (batchIndex !== -1 && args[batchIndex + 1]) {
   const batchArg = parseInt(args[batchIndex + 1]);
   if (!isNaN(batchArg)) {
     options.batchSize = batchArg;
+  }
+}
+
+// --limit takes precedence over --batch if both are specified
+if (limitIndex !== -1 && args[limitIndex + 1]) {
+  const limitArg = parseInt(args[limitIndex + 1]);
+  if (!isNaN(limitArg)) {
+    options.batchSize = limitArg;
   }
 }
 
@@ -504,8 +515,33 @@ async function main() {
   }
 }
 
-// Execute the main function
-main().catch((error: any) => {
-  Logger.error('Unhandled error:', error);
-  process.exit(1);
-});
+/**
+ * Default export function for CLI integration
+ */
+export default async function(cliOptions?: any): Promise<void> {
+  // Override default options with CLI options if provided
+  if (cliOptions) {
+    if (cliOptions.dryRun) options.dryRun = true;
+    if (cliOptions.force) options.force = true;
+    if (cliOptions.fileId || cliOptions.file) options.fileId = cliOptions.fileId || cliOptions.file;
+    if (cliOptions.output) options.outputDir = cliOptions.output;
+    if (cliOptions.batchSize) options.batchSize = parseInt(cliOptions.batchSize);
+    if (cliOptions.batch) options.batchSize = parseInt(cliOptions.batch);
+    if (cliOptions.limit) options.batchSize = parseInt(cliOptions.limit);
+  }
+  
+  try {
+    await main();
+  } catch (error: any) {
+    Logger.error(`Unhandled error: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+// If running directly (not imported), execute the main function
+if (require.main === module) {
+  main().catch((error: any) => {
+    Logger.error('Unhandled error:', error);
+    process.exit(1);
+  });
+}

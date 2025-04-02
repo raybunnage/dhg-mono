@@ -5,8 +5,13 @@
  * This command runs a complete media processing workflow:
  * 1. Finds missing MP4 files in Google Drive
  * 2. Copies them to the local file_types/mp4 directory
- * 3. Converts MP4 files to M4A for audio extraction
- * 4. Transcribes the audio files using Whisper
+ * 3. Renames MP4 files to match database conventions
+ * 4. Registers MP4 files in the database if not already registered
+ * 5. Updates disk status in the database
+ * 6. Registers expert documents in the database
+ * 7. Converts MP4 files to M4A for audio extraction
+ * 8. Synchronizes M4A filenames with MP4 files
+ * 9. Transcribes the audio files using Whisper
  * 
  * Usage:
  *   batch-process-media.ts [options]
@@ -17,7 +22,12 @@
  *   --model [model]           Whisper model to use (default: base)
  *   --accelerator [type]      Hardware accelerator to use (default: T4)
  *   --skip-copy               Skip the copy step (use if files are already copied)
+ *   --skip-rename             Skip the renaming step
+ *   --skip-register           Skip registering files in the database
+ *   --skip-disk-status        Skip updating disk status in the database
+ *   --skip-expert-docs        Skip registering expert documents
  *   --skip-conversion         Skip the MP4 to M4A conversion step
+ *   --skip-m4a-sync           Skip synchronizing M4A filenames
  *   --skip-transcription      Skip the transcription step
  *   --dry-run                 Show what would be done without actually doing it
  */
@@ -42,7 +52,12 @@ const options = {
   model: 'base',
   accelerator: 'T4',
   skipCopy: args.includes('--skip-copy'),
+  skipRename: args.includes('--skip-rename'),
+  skipRegister: args.includes('--skip-register'),
+  skipDiskStatus: args.includes('--skip-disk-status'),
+  skipExpertDocs: args.includes('--skip-expert-docs'),
   skipConversion: args.includes('--skip-conversion'),
+  skipM4aSync: args.includes('--skip-m4a-sync'),
   skipTranscription: args.includes('--skip-transcription'),
   dryRun: args.includes('--dry-run')
 };
@@ -141,7 +156,7 @@ async function convertMp4ToM4a(): Promise<boolean> {
     Logger.info('🔄 Converting MP4 files to M4A...');
     
     const tsNodePath = './node_modules/.bin/ts-node';
-    const convertCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts convert-mp4 --batch ${options.limit}`;
+    const convertCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts convert-mp4 --limit ${options.limit}`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${convertCommand}`);
@@ -164,7 +179,7 @@ async function transcribeAudio(): Promise<boolean> {
     Logger.info('🎙️ Transcribing audio files...');
     
     const tsNodePath = './node_modules/.bin/ts-node';
-    const transcribeCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts transcribe-audio --batch ${options.limit} --model ${options.model} --accelerator ${options.accelerator}`;
+    const transcribeCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts transcribe-audio --limit ${options.limit} --model ${options.model} --accelerator ${options.accelerator}`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${transcribeCommand}`);
@@ -175,6 +190,121 @@ async function transcribeAudio(): Promise<boolean> {
     return true;
   } catch (error: any) {
     Logger.error(`❌ Error in transcription step: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Rename MP4 files to match database conventions
+ */
+async function renameMP4Files(): Promise<boolean> {
+  try {
+    Logger.info('🏷️ Renaming MP4 files to match database conventions...');
+    
+    const tsNodePath = './node_modules/.bin/ts-node';
+    const renameCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts rename-mp4-files ${options.dryRun ? '--dry-run' : ''}`;
+    
+    if (options.dryRun) {
+      Logger.info(`Would execute: ${renameCommand}`);
+    } else {
+      execSync(renameCommand, { stdio: 'inherit' });
+    }
+    
+    return true;
+  } catch (error: any) {
+    Logger.error(`❌ Error in rename step: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Register local MP4 files in the database
+ */
+async function registerLocalMP4Files(): Promise<boolean> {
+  try {
+    Logger.info('📋 Registering MP4 files in the database...');
+    
+    const tsNodePath = './node_modules/.bin/ts-node';
+    const registerCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts register-local-mp4-files ${options.dryRun ? '--dry-run' : ''}`;
+    
+    if (options.dryRun) {
+      Logger.info(`Would execute: ${registerCommand}`);
+    } else {
+      execSync(registerCommand, { stdio: 'inherit' });
+    }
+    
+    return true;
+  } catch (error: any) {
+    Logger.error(`❌ Error in register files step: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Update disk status in the database
+ */
+async function updateDiskStatus(): Promise<boolean> {
+  try {
+    Logger.info('💾 Updating disk status in the database...');
+    
+    const tsNodePath = './node_modules/.bin/ts-node';
+    const updateCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts update-disk-status ${options.dryRun ? '--dry-run' : ''}`;
+    
+    if (options.dryRun) {
+      Logger.info(`Would execute: ${updateCommand}`);
+    } else {
+      execSync(updateCommand, { stdio: 'inherit' });
+    }
+    
+    return true;
+  } catch (error: any) {
+    Logger.error(`❌ Error in update disk status step: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Register expert documents in the database
+ */
+async function registerExpertDocs(): Promise<boolean> {
+  try {
+    Logger.info('📝 Registering expert documents in the database...');
+    
+    const tsNodePath = './node_modules/.bin/ts-node';
+    const registerDocsCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts register-expert-docs ${options.dryRun ? '--dry-run' : ''} --limit ${options.limit}`;
+    
+    if (options.dryRun) {
+      Logger.info(`Would execute: ${registerDocsCommand}`);
+    } else {
+      execSync(registerDocsCommand, { stdio: 'inherit' });
+    }
+    
+    return true;
+  } catch (error: any) {
+    Logger.error(`❌ Error in register expert docs step: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Synchronize M4A filenames with MP4 files
+ */
+async function syncM4aNames(): Promise<boolean> {
+  try {
+    Logger.info('🔄 Synchronizing M4A filenames with MP4 files...');
+    
+    const tsNodePath = './node_modules/.bin/ts-node';
+    const syncCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts sync-m4a-names --after-rename ${options.dryRun ? '--dry-run' : ''}`;
+    
+    if (options.dryRun) {
+      Logger.info(`Would execute: ${syncCommand}`);
+    } else {
+      execSync(syncCommand, { stdio: 'inherit' });
+    }
+    
+    return true;
+  } catch (error: any) {
+    Logger.error(`❌ Error in sync M4A names step: ${error.message}`);
     return false;
   }
 }
@@ -204,7 +334,51 @@ async function main(): Promise<void> {
     }
   }
   
-  // Step 2: Convert MP4 to M4A
+  // Step 2: Rename MP4 files
+  if (options.skipRename) {
+    Logger.info('⏩ Skipping rename step as requested');
+    skippedSteps++;
+  } else {
+    const renameSuccess = await renameMP4Files();
+    if (renameSuccess) {
+      completedSteps++;
+    }
+  }
+  
+  // Step 3: Register local MP4 files
+  if (options.skipRegister) {
+    Logger.info('⏩ Skipping register files step as requested');
+    skippedSteps++;
+  } else {
+    const registerSuccess = await registerLocalMP4Files();
+    if (registerSuccess) {
+      completedSteps++;
+    }
+  }
+  
+  // Step 4: Update disk status
+  if (options.skipDiskStatus) {
+    Logger.info('⏩ Skipping update disk status step as requested');
+    skippedSteps++;
+  } else {
+    const updateDiskStatusSuccess = await updateDiskStatus();
+    if (updateDiskStatusSuccess) {
+      completedSteps++;
+    }
+  }
+  
+  // Step 5: Register expert documents
+  if (options.skipExpertDocs) {
+    Logger.info('⏩ Skipping register expert docs step as requested');
+    skippedSteps++;
+  } else {
+    const registerExpertDocsSuccess = await registerExpertDocs();
+    if (registerExpertDocsSuccess) {
+      completedSteps++;
+    }
+  }
+  
+  // Step 6: Convert MP4 to M4A
   if (options.skipConversion) {
     Logger.info('⏩ Skipping conversion step as requested');
     skippedSteps++;
@@ -215,7 +389,18 @@ async function main(): Promise<void> {
     }
   }
   
-  // Step 3: Transcribe audio
+  // Step 7: Sync M4A Names
+  if (options.skipM4aSync) {
+    Logger.info('⏩ Skipping M4A sync step as requested');
+    skippedSteps++;
+  } else {
+    const syncM4aSuccess = await syncM4aNames();
+    if (syncM4aSuccess) {
+      completedSteps++;
+    }
+  }
+  
+  // Step 8: Transcribe audio
   if (options.skipTranscription) {
     Logger.info('⏩ Skipping transcription step as requested');
     skippedSteps++;
@@ -241,7 +426,12 @@ export default async function(cliOptions?: any): Promise<void> {
     if (cliOptions.model) options.model = cliOptions.model;
     if (cliOptions.accelerator) options.accelerator = cliOptions.accelerator;
     if (cliOptions.skipCopy) options.skipCopy = true;
+    if (cliOptions.skipRename) options.skipRename = true;
+    if (cliOptions.skipRegister) options.skipRegister = true;
+    if (cliOptions.skipDiskStatus) options.skipDiskStatus = true;
+    if (cliOptions.skipExpertDocs) options.skipExpertDocs = true;
     if (cliOptions.skipConversion) options.skipConversion = true;
+    if (cliOptions.skipM4aSync) options.skipM4aSync = true;
     if (cliOptions.skipTranscription) options.skipTranscription = true;
     if (cliOptions.dryRun) options.dryRun = true;
   }
