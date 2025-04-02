@@ -47,10 +47,11 @@ Logger.setLevel(LogLevel.INFO);
 // Process command line arguments
 const args = process.argv.slice(2);
 const options = {
-  limit: 25,
+  limit: 10,
   source: path.join(os.homedir(), 'Google Drive'),
   model: 'base',
-  accelerator: 'T4',
+  accelerator: 'A10G',
+  maxParallel: 5,
   skipCopy: args.includes('--skip-copy'),
   skipRename: args.includes('--skip-rename'),
   skipRegister: args.includes('--skip-register'),
@@ -92,6 +93,15 @@ if (acceleratorIndex !== -1 && args[acceleratorIndex + 1]) {
   const acceleratorArg = args[acceleratorIndex + 1];
   if (['T4', 'A10G', 'A100', 'CPU'].includes(acceleratorArg)) {
     options.accelerator = acceleratorArg;
+  }
+}
+
+// Get max parallel if specified
+const maxParallelIndex = args.indexOf('--max-parallel');
+if (maxParallelIndex !== -1 && args[maxParallelIndex + 1]) {
+  const maxParallelArg = parseInt(args[maxParallelIndex + 1]);
+  if (!isNaN(maxParallelArg)) {
+    options.maxParallel = maxParallelArg;
   }
 }
 
@@ -156,7 +166,7 @@ async function convertMp4ToM4a(): Promise<boolean> {
     Logger.info('🔄 Converting MP4 files to M4A...');
     
     const tsNodePath = './node_modules/.bin/ts-node';
-    const convertCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts convert-mp4 --limit ${options.limit}`;
+    const convertCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts convert-mp4 --limit ${options.limit} --max-parallel ${options.maxParallel}`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${convertCommand}`);
@@ -179,7 +189,7 @@ async function transcribeAudio(): Promise<boolean> {
     Logger.info('🎙️ Transcribing audio files...');
     
     const tsNodePath = './node_modules/.bin/ts-node';
-    const transcribeCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts transcribe-audio --limit ${options.limit} --model ${options.model} --accelerator ${options.accelerator}`;
+    const transcribeCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts transcribe-audio --limit ${options.limit} --model ${options.model} --accelerator ${options.accelerator} --max-parallel ${options.maxParallel}`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${transcribeCommand}`);
@@ -319,6 +329,7 @@ async function main(): Promise<void> {
   Logger.info(`Source directory: ${options.source}`);
   Logger.info(`Transcription model: ${options.model}`);
   Logger.info(`Hardware accelerator: ${options.accelerator}`);
+  Logger.info(`Max parallel processes: ${options.maxParallel}`);
   
   let completedSteps = 0;
   let skippedSteps = 0;
@@ -425,6 +436,7 @@ export default async function(cliOptions?: any): Promise<void> {
     if (cliOptions.source) options.source = cliOptions.source;
     if (cliOptions.model) options.model = cliOptions.model;
     if (cliOptions.accelerator) options.accelerator = cliOptions.accelerator;
+    if (cliOptions.maxParallel) options.maxParallel = parseInt(cliOptions.maxParallel);
     if (cliOptions.skipCopy) options.skipCopy = true;
     if (cliOptions.skipRename) options.skipRename = true;
     if (cliOptions.skipRegister) options.skipRegister = true;

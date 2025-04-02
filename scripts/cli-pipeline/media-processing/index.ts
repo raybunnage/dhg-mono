@@ -111,6 +111,7 @@ program
   .option('--file <file>', 'Process specific file')
   .option('--batch <number>', 'Number of files to process at once (deprecated, use --limit)')
   .option('--limit <number>', 'Number of files to process at once')
+  .option('--max-parallel <number>', 'Maximum number of parallel processes (default: 5)')
   .action(async (options) => {
     await executeCommand('convert-mp4.ts', options);
   });
@@ -119,10 +120,11 @@ program
 program
   .command('batch-process-media')
   .description('Run complete workflow: find, copy, rename, register, convert, and transcribe media files')
-  .option('--limit <number>', 'Limit the number of files to process (default: 25)')
+  .option('--limit <number>', 'Limit the number of files to process (default: 10)')
   .option('--source <path>', 'Source directory to look for files (default: ~/Google Drive)')
   .option('--model <model>', 'Whisper model to use (default: base)')
-  .option('--accelerator <type>', 'Hardware accelerator to use (default: T4)')
+  .option('--accelerator <type>', 'Hardware accelerator to use (default: A10G)')
+  .option('--max-parallel <number>', 'Maximum number of parallel processes (default: 5)')
   .option('--skip-copy', 'Skip the copy step (use if files are already copied)')
   .option('--skip-rename', 'Skip the renaming step')
   .option('--skip-register', 'Skip registering files in the database')
@@ -142,8 +144,10 @@ program
   .description('Transcribe audio files to text')
   .option('--model <model>', 'Whisper model to use')
   .option('--file <file>', 'Process specific file')
+  .option('--accelerator <type>', 'Hardware accelerator to use (T4, A10G, A100, CPU)')
   .option('--batch <number>', 'Number of files to process at once (deprecated, use --limit)')
   .option('--limit <number>', 'Number of files to process at once')
+  .option('--max-parallel <number>', 'Maximum number of parallel processes (default: 5)')
   .action(async (options) => {
     await executeCommand('transcribe-audio.ts', options);
   });

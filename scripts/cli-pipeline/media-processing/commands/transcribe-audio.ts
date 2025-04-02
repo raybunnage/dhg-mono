@@ -459,8 +459,35 @@ async function main() {
   }
 }
 
-// Execute the main function
-main().catch((error: any) => {
-  Logger.error('Unhandled error:', error);
-  process.exit(1);
-});
+/**
+ * Default export function for CLI integration
+ */
+export default async function(cliOptions?: any): Promise<void> {
+  // Override default options with CLI options if provided
+  if (cliOptions) {
+    if (cliOptions.dryRun) options.dryRun = true;
+    if (cliOptions.force) options.force = true;
+    if (cliOptions.fileId || cliOptions.file) options.fileId = cliOptions.fileId || cliOptions.file;
+    if (cliOptions.output) options.outputDir = cliOptions.output;
+    if (cliOptions.model) options.model = cliOptions.model;
+    if (cliOptions.accelerator) options.accelerator = cliOptions.accelerator as 'T4' | 'A10G' | 'A100' | 'CPU';
+    if (cliOptions.batchSize) options.batchSize = parseInt(cliOptions.batchSize);
+    if (cliOptions.batch) options.batchSize = parseInt(cliOptions.batch);
+    if (cliOptions.limit) options.batchSize = parseInt(cliOptions.limit);
+  }
+  
+  try {
+    await main();
+  } catch (error: any) {
+    Logger.error(`Unhandled error: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+// If running directly (not imported), execute the main function
+if (require.main === module) {
+  main().catch((error: any) => {
+    Logger.error('Unhandled error:', error);
+    process.exit(1);
+  });
+}

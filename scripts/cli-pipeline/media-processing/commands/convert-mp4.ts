@@ -398,7 +398,44 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
       
       if (!pendingDocs2 || pendingDocs2.length === 0) {
         Logger.info('ℹ️ No pending documents found for audio extraction');
-        return { success: 0, failed: 0 };
+        
+        // If no pending documents found, look for local MP4 files and convert them directly
+        Logger.info('📋 Looking for local MP4 files to convert directly...');
+        
+        const mp4Dir = path.join(process.cwd(), 'file_types', 'mp4');
+        if (!fs.existsSync(mp4Dir)) {
+          Logger.error(`❌ MP4 directory not found: ${mp4Dir}`);
+          return { success: 0, failed: 0 };
+        }
+        
+        // Get all MP4 files in the directory
+        const mp4Files = fs.readdirSync(mp4Dir)
+          .filter(file => file.toLowerCase().endsWith('.mp4'))
+          .map(file => path.join(mp4Dir, file))
+          .slice(0, limit); // Limit to the specified number of files
+        
+        if (mp4Files.length === 0) {
+          Logger.info('ℹ️ No MP4 files found for direct conversion');
+          return { success: 0, failed: 0 };
+        }
+        
+        Logger.info(`📋 Found ${mp4Files.length} MP4 files for direct conversion`);
+        
+        // Process each MP4 file
+        let success = 0;
+        let failed = 0;
+        
+        for (const filePath of mp4Files) {
+          Logger.info(`📋 Processing file: ${path.basename(filePath)}`);
+          const result = await convertFile(filePath);
+          if (result.success) {
+            success++;
+          } else {
+            failed++;
+          }
+        }
+        
+        return { success, failed };
       }
       
       // Use this set of documents
