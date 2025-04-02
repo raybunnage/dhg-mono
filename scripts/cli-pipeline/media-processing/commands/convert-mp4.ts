@@ -17,7 +17,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { Logger } from '../../../../packages/shared/utils';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { LogLevel } from '../../../../packages/shared/utils/logger';
