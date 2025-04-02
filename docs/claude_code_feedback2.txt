@@ -53,7 +53,7 @@ Options:
   --skip-transcription         Skip the transcription step (for batch-process-media)
   --parallel                   Process files in parallel (for batch-transcribe)
   --max-parallel [n]           Maximum number of parallel processes (default: 3)
-  --force                      Process even if already processed
+  --force                     Process even if already processed
   --resume                     Resume processing for previously skipped file (for mark-skip-processing)
   --output [path]              Specify output directory
   --auto-process               Automatically process files (for find-processable-videos)
