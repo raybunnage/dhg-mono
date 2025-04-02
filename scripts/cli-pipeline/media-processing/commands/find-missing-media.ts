@@ -119,9 +119,10 @@ function findFileInDirectory(filename: string, directory: string, deep: boolean 
       return null;
     }
 
+    // First, search in the main directory
     const entries = fs.readdirSync(directory, { withFileTypes: true });
     
-    // First, look for exact matches in the current directory
+    // Look for exact matches in the current directory
     const exactMatch = entries.find(entry => 
       !entry.isDirectory() && 
       (entry.name.toLowerCase() === filename.toLowerCase())
@@ -131,7 +132,7 @@ function findFileInDirectory(filename: string, directory: string, deep: boolean 
       return path.join(directory, exactMatch.name);
     }
     
-    // Then, look for files where the name is contained within
+    // Look for files where the name is contained within
     const partialMatch = entries.find(entry => 
       !entry.isDirectory() && 
       entry.name.toLowerCase().endsWith('.mp4') &&
@@ -147,6 +148,46 @@ function findFileInDirectory(filename: string, directory: string, deep: boolean 
     
     // If deep search is enabled, look in subdirectories
     if (deep) {
+      // If not found, specifically check "Dynamic Healing Discussion Group" directory 
+      // as a fallback before doing a full recursive search
+      const dhgDir = path.join(directory, "..", "Dynamic Healing Discussion Group");
+      if (fs.existsSync(dhgDir)) {
+        // First do a quick search for the file directly within this directory
+        try {
+          const dhgEntries = fs.readdirSync(dhgDir, { withFileTypes: true });
+          const dhgMatch = dhgEntries.find(entry => 
+            !entry.isDirectory() && 
+            entry.name.toLowerCase() === filename.toLowerCase()
+          );
+          
+          if (dhgMatch) {
+            return path.join(dhgDir, dhgMatch.name);
+          }
+          
+          // Search one level deeper with a more thorough approach
+          for (const entry of dhgEntries) {
+            if (entry.isDirectory()) {
+              try {
+                const subEntries = fs.readdirSync(path.join(dhgDir, entry.name), { withFileTypes: true });
+                const match = subEntries.find(subEntry => 
+                  !subEntry.isDirectory() && 
+                  subEntry.name.toLowerCase() === filename.toLowerCase()
+                );
+                
+                if (match) {
+                  return path.join(dhgDir, entry.name, match.name);
+                }
+              } catch (e) {
+                // Continue if we can't read a subdirectory
+              }
+            }
+          }
+        } catch (err) {
+          // Ignore errors and continue searching
+        }
+      }
+      
+      // Then do the regular recursive search
       for (const entry of entries) {
         if (entry.isDirectory()) {
           const subResult = findFileInDirectory(filename, path.join(directory, entry.name), true);
@@ -273,6 +314,10 @@ async function main() {
     
     const output = formatOutput(missingFiles);
     console.log('\n=== MISSING FILES ===\n');
+    console.log(output);
+    
+    // Also output with the UNTRANSCRIBED FILES marker for backward compatibility
+    console.log('\n=== UNTRANSCRIBED FILES ===\n');
     console.log(output);
     
     if (options.format === 'commands') {
