@@ -71,6 +71,75 @@ Examples:
 raybunnage@Rays-Laptop dhg-mono % 
  
 
+Perfect! Everything is working as expected. Let's summarize what we've done:
+
+  1. Created a new script batch-process-media.ts that:
+    - Implements a complete workflow for media processing
+    - Finds and copies MP4 files from Google Drive
+    - Converts MP4 files to M4A
+    - Transcribes audio files using the specified model and accelerator
+  2. Added it to the media-processing CLI pipeline with the following options:
+    - --limit <number>: Limit the number of files to process (default: 25)
+    - --source <path>: Source directory to look for files (default: ~/Google Drive)
+    - --model <model>: Whisper model to use (default: base)
+    - --accelerator <type>: Hardware accelerator to use (default: T4)
+    - --skip-copy: Skip the copy step (use if files are already copied)
+    - --skip-conversion: Skip the MP4 to M4A conversion step
+    - --skip-transcription: Skip the transcription step
+    - --dry-run: Show what would be done without actually doing it
+  3. Verified that:
+    - The script compiles without TypeScript errors
+    - The command is properly integrated into the CLI pipeline
+    - The command works as expected in dry-run mode
+
+  To use the command, you can run:
+
+  ts-node scripts/cli-pipeline/media-processing/index.ts batch-process-media --limit 25 --source "~/Google Drive" --model base --accelerator T4
+
+  Or to test it first without making any changes:
+
+  ts-node scripts/cli-pipeline/media-processing/index.ts batch-process-media --dry-run
+
+  You can also skip certain steps if needed:
+
+  ts-node scripts/cli-pipeline/media-processing/index.ts batch-process-media --skip-copy --limit 25
+
+  This new command simplifies the entire process of finding, copying, converting, and transcribing media files into a single command with flexible options.
+
+
+
+
+Perfect! Now you can use this script to generate copy commands for the files you need.
+
+  Here's a summary of what we've done:
+
+  1. Created a new command find-missing-media that:
+    - Identifies MP4 files referenced in the database but missing from your local file_types/mp4 directory
+    - Searches your Google Drive (or any source directory) for these missing files
+    - Generates copy commands to transfer the files to your local directory
+  2. Added the command to the media-processing CLI pipeline with these options:
+    - --limit <number>: Limit the number of files to list (default: 25)
+    - --source <path>: Source directory to look for files (default: ~/Google Drive)
+    - --format <format>: Output format (commands, list, json)
+    - --deep: Perform a deep search through subdirectories
+  3. Made the script executable and integrated it with the CLI pipeline.
+
+  To copy the files and prepare them for transcription:
+
+  1. Generate a script with the copy commands:
+  ts-node scripts/cli-pipeline/media-processing/index.ts find-missing-media --deep --limit 25 > copy-files.sh
+  chmod +x copy-files.sh
+  ./copy-files.sh
+
+  2. After copying the MP4 files, convert them to M4A:
+  ts-node scripts/cli-pipeline/media-processing/index.ts convert-mp4 --batch 25
+
+  3. Then transcribe the audio files:
+  ts-node scripts/cli-pipeline/media-processing/index.ts transcribe-audio --batch 25 --model base --accelerator T4
+
+  This workflow should help you streamline the process of finding and preparing media files for transcription.
+
+
  ou can now use the batch-transcribe command with parallel processing and the A10G accelerator option:
 
   ./scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-transcribe --parallel --max-parallel 3 --accelerator A10G
