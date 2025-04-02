@@ -109,7 +109,8 @@ program
   .description('Convert MP4 files to M4A for audio extraction')
   .option('--all', 'Process all MP4 files')
   .option('--file <file>', 'Process specific file')
-  .option('--batch-size <number>', 'Number of files to process at once')
+  .option('--batch <number>', 'Number of files to process at once (deprecated, use --limit)')
+  .option('--limit <number>', 'Number of files to process at once')
   .action(async (options) => {
     await executeCommand('convert-mp4.ts', options);
   });
@@ -117,13 +118,18 @@ program
 // Add batch processing command for complete workflow
 program
   .command('batch-process-media')
-  .description('Run complete workflow: find, copy, convert, and transcribe media files')
+  .description('Run complete workflow: find, copy, rename, register, convert, and transcribe media files')
   .option('--limit <number>', 'Limit the number of files to process (default: 25)')
   .option('--source <path>', 'Source directory to look for files (default: ~/Google Drive)')
   .option('--model <model>', 'Whisper model to use (default: base)')
   .option('--accelerator <type>', 'Hardware accelerator to use (default: T4)')
   .option('--skip-copy', 'Skip the copy step (use if files are already copied)')
+  .option('--skip-rename', 'Skip the renaming step')
+  .option('--skip-register', 'Skip registering files in the database')
+  .option('--skip-disk-status', 'Skip updating disk status in the database')
+  .option('--skip-expert-docs', 'Skip registering expert documents')
   .option('--skip-conversion', 'Skip the MP4 to M4A conversion step')
+  .option('--skip-m4a-sync', 'Skip synchronizing M4A filenames')
   .option('--skip-transcription', 'Skip the transcription step')
   .option('--dry-run', 'Show what would be done without actually doing it')
   .action(async (options) => {
