@@ -81,6 +81,41 @@ raybunnage@Rays-Laptop dhg-mono %
  
 
 
+erfect! Everything is working as expected.
+
+  To summarize the improvements we've made:
+
+  1. Fixed the path issue in the batch-process-media.ts file:
+    - Changed ./${scriptPath} to ${scriptPath} to correctly use absolute paths
+  2. Improved the script generation to properly filter copy commands:
+    - Changed how copy-files.sh is generated to contain only valid shell commands
+  3. Added support for the --limit parameter in both commands:
+    - Added a parameter alias for the --batch parameter in convert-mp4.ts and transcribe-audio.ts
+    - Made --limit take precedence over --batch if both are specified
+  4. Added comprehensive workflow steps to batch-process-media:
+    - Added file renaming
+    - Added database registration
+    - Added disk status updating
+    - Added expert document registration
+    - Added M4A filename synchronization
+  5. Updated the command documentation:
+    - Updated the help text in the CLI script to document all the new options
+    - Updated the command descriptions in the TypeScript files
+    - Added additional examples
+
+  Now you have a complete workflow command that can:
+  - Copy MP4 files from Google Drive
+  - Rename files to match database conventions
+  - Register files in the database
+  - Update disk status
+  - Register files as expert documents
+  - Convert MP4 to M4A files
+  - Synchronize M4A filenames
+  - Prepare files for transcription
+
+  Each step can be individually skipped with the appropriate flag, giving you fine-grained control over the process.
+
+
 Here are all the options for the batch-process-media command:
 
   batch-process-media [options]

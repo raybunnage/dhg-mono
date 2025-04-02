@@ -142,7 +142,8 @@ program
   .description('Transcribe audio files to text')
   .option('--model <model>', 'Whisper model to use')
   .option('--file <file>', 'Process specific file')
-  .option('--batch-size <number>', 'Number of files to process at once')
+  .option('--batch <number>', 'Number of files to process at once (deprecated, use --limit)')
+  .option('--limit <number>', 'Number of files to process at once')
   .action(async (options) => {
     await executeCommand('transcribe-audio.ts', options);
   });

@@ -12,7 +12,8 @@
  *   --model [tiny|base|small]  Specify Whisper model (default: base)
  *   --dry-run                  Show what would be transcribed without actual processing
  *   --output [path]            Specify output directory
- *   --batch [number]           Process a batch of pending transcriptions
+ *   --limit [number]           Process a batch of pending transcriptions (same as --batch)
+ *   --batch [number]           Process a batch of pending transcriptions (deprecated, use --limit)
  */
 
 import * as fs from 'fs';
@@ -58,12 +59,22 @@ if (outputIndex !== -1 && args[outputIndex + 1]) {
   options.outputDir = args[outputIndex + 1];
 }
 
-// Get batch size if specified
+// Get batch size if specified (from --batch or --limit)
 const batchIndex = args.indexOf('--batch');
+const limitIndex = args.indexOf('--limit');
+
 if (batchIndex !== -1 && args[batchIndex + 1]) {
   const batchArg = parseInt(args[batchIndex + 1]);
   if (!isNaN(batchArg)) {
     options.batchSize = batchArg;
+  }
+}
+
+// --limit takes precedence over --batch if both are specified
+if (limitIndex !== -1 && args[limitIndex + 1]) {
+  const limitArg = parseInt(args[limitIndex + 1]);
+  if (!isNaN(limitArg)) {
+    options.batchSize = limitArg;
   }
 }
 
