@@ -11,7 +11,7 @@ Logger.setLevel(LogLevel.INFO);
 // Default options
 const options = {
   limit: 10,
-  source: '/Volumes/GoogleDrive/Shared drives/DHG Hanscom/Raw Video Files',
+  source: '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/200_Research Experts',
   model: 'whisper-large-v3',
   accelerator: 'A10G',
   maxParallel: 2,
