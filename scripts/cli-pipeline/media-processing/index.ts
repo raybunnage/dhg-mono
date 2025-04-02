@@ -111,6 +111,7 @@ program
   .option('--file <file>', 'Process specific file')
   .option('--batch <number>', 'Number of files to process at once (deprecated, use --limit)')
   .option('--limit <number>', 'Number of files to process at once')
+  .option('--parallel', 'Process files in parallel')
   .option('--max-parallel <number>', 'Maximum number of parallel processes (default: 5)')
   .action(async (options) => {
     await executeCommand('convert-mp4.ts', options);
@@ -147,6 +148,7 @@ program
   .option('--accelerator <type>', 'Hardware accelerator to use (T4, A10G, A100, CPU)')
   .option('--batch <number>', 'Number of files to process at once (deprecated, use --limit)')
   .option('--limit <number>', 'Number of files to process at once')
+  .option('--parallel', 'Process files in parallel')
   .option('--max-parallel <number>', 'Maximum number of parallel processes (default: 5)')
   .action(async (options) => {
     await executeCommand('transcribe-audio.ts', options);
