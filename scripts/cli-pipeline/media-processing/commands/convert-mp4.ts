@@ -230,24 +230,33 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
       return false;
     }
     
-    // Find the MP4 file in the local directory
+    // Find the MP4 file in the local directory - only look in the main directory, not subfolders
     const sourceFilename = sourceFile.name.replace(/\.[^/.]+$/, "");
     const videoDir = path.join(process.cwd(), 'file_types', 'mp4');
     
+    // Look for exact match only
+    const exactVideoPath = path.join(videoDir, sourceFile.name);
     let videoPath = '';
-    try {
-      const files = fs.readdirSync(videoDir);
-      const matchingFile = files.find(file => 
-        file.toLowerCase().includes(sourceFilename.toLowerCase()) && 
-        file.endsWith('.mp4')
-      );
-      
-      if (matchingFile) {
-        videoPath = path.join(videoDir, matchingFile);
+    
+    if (fs.existsSync(exactVideoPath)) {
+      videoPath = exactVideoPath;
+    } else {
+      try {
+        // Only process files in the direct mp4 directory, not subfolders
+        const files = fs.readdirSync(videoDir);
+        const matchingFile = files.find(file => 
+          file.toLowerCase() === sourceFile.name.toLowerCase() || 
+          file === sourceFilename + '.mp4' ||
+          file === 'INGESTED_' + sourceFile.name
+        );
+        
+        if (matchingFile) {
+          videoPath = path.join(videoDir, matchingFile);
+        }
+      } catch (error: any) {
+        Logger.error(`❌ Error reading video directory: ${error.message}`);
+        return false;
       }
-    } catch (error: any) {
-      Logger.error(`❌ Error reading video directory: ${error.message}`);
-      return false;
     }
     
     if (!videoPath) {

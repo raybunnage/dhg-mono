@@ -190,30 +190,7 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
         Logger.info(`📋 Found matching audio file: ${matchingFile} for source: ${sourceFile.name}`);
       } else {
         Logger.warn(`⚠️ No matching M4A file found in main directory for: ${sourceFile.name}`);
-        
-        // 4. Check subdirectories as a last resort
-        const subdirs = ['orphaned3', 'orphaned_m4as', 'test_clipped_mins'];
-        for (const subdir of subdirs) {
-          const subdirPath = path.join(audioDir, subdir);
-          if (fs.existsSync(subdirPath)) {
-            try {
-              const subdirFiles = fs.readdirSync(subdirPath);
-              const subDirMatch = subdirFiles.find(file => {
-                const normalizedFile = file.toLowerCase().replace(/[\s.]+/g, '').replace('.m4a', '');
-                return normalizedFile.includes(normalizedSourceFilename) && 
-                      (file.endsWith('.m4a') || file.endsWith('.mp3'));
-              });
-              
-              if (subDirMatch) {
-                audioPath = path.join(subdirPath, subDirMatch);
-                Logger.info(`📋 Found matching audio file in ${subdir}: ${subDirMatch}`);
-                break;
-              }
-            } catch (subdirError: any) {
-              Logger.warn(`⚠️ Error reading subdirectory ${subdir}: ${subdirError.message}`);
-            }
-          }
-        }
+        // Don't check subdirectories as requested by user
       }
     } catch (error: any) {
       Logger.error(`❌ Error reading audio directory: ${error.message}`);
