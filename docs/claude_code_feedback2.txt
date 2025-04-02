@@ -2,6 +2,7 @@
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh find-processable-videos
    ./scripts/cli-pipeline/media-processing/media-processing-cli.sh transcribe 8c7f604a-7595-490a-b8d7-b839c3815b43 --model base --force
 
+
 Usage:
   media-processing-cli.sh [command] [options]
 
@@ -11,7 +12,8 @@ Commands:
   find-processable-videos      Find MP4 files ready for processing
   transcribe [fileId|path]     Transcribe audio file using Whisper
   transcribe-with-summary      Transcribe and generate summary of audio file
-  process-video [fileId]       Full pipeline: convert + transcribe (recommended for most cases)
+  process-video [fileId]       Full pipeline: convert + transcribe (recommended for single files)
+  batch-process-media          Complete workflow: find, copy, convert, and transcribe (recommended for bulk processing)
   list-transcribable           List documents ready for transcription with copy-paste commands
   show-transcription-status    Show detailed status of transcriptions and processing times
   list-pending                 List pending files waiting for processing
@@ -43,8 +45,12 @@ Database Integration Commands:
 Options:
   --dry-run                    Show what would happen without making changes
   --limit [n]                  Process max n files
+  --source [path]              Source directory for finding files (default: ~/Google Drive)
   --model [tiny|base|small]    Specify Whisper model (default: base)
   --accelerator [T4|A10G|A100] Specify GPU accelerator (default: T4)
+  --skip-copy                  Skip the copy step (for batch-process-media)
+  --skip-conversion            Skip the conversion step (for batch-process-media)
+  --skip-transcription         Skip the transcription step (for batch-process-media)
   --parallel                   Process files in parallel (for batch-transcribe)
   --max-parallel [n]           Maximum number of parallel processes (default: 3)
   --force                      Process even if already processed
@@ -59,6 +65,9 @@ Examples:
   media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
   media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a --accelerator A10G
   media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a
+  media-processing-cli.sh batch-process-media --limit 25 --model base --accelerator T4
+  media-processing-cli.sh batch-process-media --dry-run
+  media-processing-cli.sh batch-process-media --skip-copy --limit 10
   media-processing-cli.sh batch-transcribe --parallel --max-parallel 3 --accelerator A10G
   media-processing-cli.sh list-pending --limit 10
   media-processing-cli.sh mark-skip-processing "Large Lecture.mp4" --dry-run
@@ -70,6 +79,113 @@ Examples:
   media-processing-cli.sh purge-processed-media --dry-run
 raybunnage@Rays-Laptop dhg-mono % 
  
+
+
+Perfect! We've successfully fixed the batch-process-media command. Here's a summary of the changes made:
+
+  1. First fixed the path issue in batch-process-media.ts:
+    - Changed ./${scriptPath} to ${scriptPath} to correctly use the absolute path of the script
+  2. Then fixed the script generation to properly filter the output:
+    - Changed how the script is generated to only include the copy commands without the log output
+    - The script now captures the command output directly with execSync(), parses it, and writes only the copy commands to the script
+    - Added proper shebang and comments to the script file
+  3. Tested the fix with both dry-run and actual execution
+
+  The command now successfully generates and executes a clean shell script to copy files from Google Drive to the local file_types/mp4 directory.
+
+
+
+
+
+Here are all the options for the batch-process-media command:
+
+  batch-process-media [options]
+
+  Options:
+    --limit <number>        Limit the number of files to process (default: 25)
+    --source <path>         Source directory to look for files (default: ~/Google Drive)
+    --model <model>         Whisper model to use: tiny, base, small, medium, large (default: base)
+    --accelerator <type>    Hardware accelerator to use: T4, A10G, A100, CPU (default: T4)
+    --skip-copy             Skip the copy step (use if files are already copied)
+    --skip-conversion       Skip the MP4 to M4A conversion step
+    --skip-transcription    Skip the transcription step
+    --dry-run               Show what would be done without actually doing it
+
+  For different use cases:
+
+  1. Using it just for copying files
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --skip-conversion --skip-transcription --limit 25
+  This will only find and copy the MP4 files from Google Drive to your local directory.
+
+  2. Using it just for conversion (MP4 to M4A)
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --skip-copy --skip-transcription --limit 25
+  This skips the copying and transcription, and only converts existing MP4 files to M4A.
+
+  3. Using it just for transcription
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --skip-copy --skip-conversion --model base --accelerator T4 --limit 25
+  This skips the copying and conversion, and only transcribes existing M4A files.
+
+  4. Controlling the accelerator for transcription
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --accelerator A10G --limit 25
+  This uses the A10G accelerator (faster than T4) for transcription.
+
+  5. Choosing a different model for transcription
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --model small --limit 25
+  Using a larger model (tiny < base < small < medium < large) will give more accurate transcriptions but take more time.
+
+  6. Specifying a different source directory
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --source "/path/to/your/videos" --limit 25
+  This will search for MP4 files in the specified directory instead of Google Drive.
+
+  7. Running a dry run to see what would happen
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --dry-run
+  This will show what the command would do without actually doing anything.
+
+  8. Processing a larger batch of files
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --limit 50
+  This increases the number of files processed in a single batch.
+
+  Note: For parallelization, the current implementation doesn't support parallel processing directly in this command. The transcription step will be performed
+  sequentially. If you need parallel processing, you'll need to use the batch-transcribe command separately with the --parallel and --max-parallel options
+  after copying and converting.
+
+  Yes, the command will perform the conversion from MP4 to M4A automatically as part of its workflow, unless you skip that step with --skip-conversion.
+
+
+
+Perfect! Now our new batch-process-media command is properly integrated into both:
+
+  1. The TypeScript CLI (ts-node scripts/cli-pipeline/media-processing/index.ts batch-process-media)
+  2. The shell script wrapper (scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media)
+
+  The command is now listed in the help output, and we can see it in both interfaces.
+
+  To use the command with the shell script wrapper:
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --limit 25 --model base --accelerator T4
+
+  Or to test it first without making any changes:
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --dry-run
+
+  You can also skip certain steps if needed:
+
+  scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --skip-copy --limit 10
+
+  The shell script is the wrapper you were seeing when you ran your help command, and it's now updated to include our new batch processing command.
+
+╭─
+
+
+
 
 Perfect! Everything is working as expected. Let's summarize what we've done:
 
