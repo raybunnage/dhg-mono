@@ -22,7 +22,8 @@ function display_help() {
   echo "  find-processable-videos      Find MP4 files ready for processing"
   echo "  transcribe [fileId|path]     Transcribe audio file using Whisper"
   echo "  transcribe-with-summary      Transcribe and generate summary of audio file"
-  echo "  process-video [fileId]       Full pipeline: convert + transcribe (recommended for most cases)"
+  echo "  process-video [fileId]       Full pipeline: convert + transcribe (recommended for single files)"
+  echo "  batch-process-media          Complete workflow: find, copy, convert, and transcribe (recommended for bulk processing)"
   echo "  list-transcribable           List documents ready for transcription with copy-paste commands"
   echo "  show-transcription-status    Show detailed status of transcriptions and processing times"
   echo "  list-pending                 List pending files waiting for processing"
@@ -54,8 +55,12 @@ function display_help() {
   echo "Options:"
   echo "  --dry-run                    Show what would happen without making changes"
   echo "  --limit [n]                  Process max n files"
+  echo "  --source [path]              Source directory for finding files (default: ~/Google Drive)"
   echo "  --model [tiny|base|small]    Specify Whisper model (default: base)"
   echo "  --accelerator [T4|A10G|A100] Specify GPU accelerator (default: T4)"
+  echo "  --skip-copy                  Skip the copy step (for batch-process-media)"
+  echo "  --skip-conversion            Skip the conversion step (for batch-process-media)"
+  echo "  --skip-transcription         Skip the transcription step (for batch-process-media)"
   echo "  --parallel                   Process files in parallel (for batch-transcribe)"
   echo "  --max-parallel [n]           Maximum number of parallel processes (default: 3)"
   echo "  --force                      Process even if already processed"
@@ -70,6 +75,9 @@ function display_help() {
   echo "  media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a"
   echo "  media-processing-cli.sh transcribe 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a --accelerator A10G"
   echo "  media-processing-cli.sh process-video 8f7e6d5c-4b3a-2a1e-9d8c-7f6e5d4c3b2a"
+  echo "  media-processing-cli.sh batch-process-media --limit 25 --model base --accelerator T4"
+  echo "  media-processing-cli.sh batch-process-media --dry-run"
+  echo "  media-processing-cli.sh batch-process-media --skip-copy --limit 10"
   echo "  media-processing-cli.sh batch-transcribe --parallel --max-parallel 3 --accelerator A10G"
   echo "  media-processing-cli.sh list-pending --limit 10"
   echo "  media-processing-cli.sh mark-skip-processing \"Large Lecture.mp4\" --dry-run"
@@ -112,6 +120,9 @@ case "$COMMAND" in
     ;;
   process-video)
     ts-node "$SCRIPT_DIR/commands/process-video.ts" "$@"
+    ;;
+  batch-process-media)
+    ts-node "$SCRIPT_DIR/commands/batch-process-media.ts" "$@"
     ;;
   list-pending)
     ts-node "$SCRIPT_DIR/commands/list-pending.ts" "$@"

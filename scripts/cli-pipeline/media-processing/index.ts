@@ -35,9 +35,11 @@ A unified command-line interface for media processing tasks including:
 File Checking Commands:
   check-media-files       Check for missing/orphaned MP4 and M4A files in database and local directories
   find-missing-js-files   Run JavaScript-based MP4 file checker (legacy implementation)
+  find-missing-media      Find missing MP4 files and generate copy commands from a source directory
   run-shell-check         Run any shell script from the shell-scripts directory
 
 File Management Commands:
+  batch-process-media     Run complete workflow: find, copy, convert, and transcribe media files
   rename-mp4-files        Rename local MP4 files to match database records
   convert-mp4             Extract audio from MP4 files and create M4A files
   transcribe-audio        Transcribe audio files to text using Whisper
@@ -80,6 +82,18 @@ program
     await executeCommand('find-missing-js-files.ts', options);
   });
 
+// Add the find-missing-media command
+program
+  .command('find-missing-media')
+  .description('Find missing MP4 files and generate copy commands from a source directory')
+  .option('--limit <number>', 'Limit the number of files to list (default: 25)')
+  .option('--source <path>', 'Source directory to look for files (default: ~/Google Drive)')
+  .option('--format <format>', 'Output format: commands, list, or json (default: commands)')
+  .option('--deep', 'Perform a deep search through subdirectories')
+  .action(async (options) => {
+    await executeCommand('find-missing-media.ts', options);
+  });
+
 program
   .command('run-shell-check')
   .description('Run any shell script from the shell-scripts directory')
@@ -98,6 +112,22 @@ program
   .option('--batch-size <number>', 'Number of files to process at once')
   .action(async (options) => {
     await executeCommand('convert-mp4.ts', options);
+  });
+
+// Add batch processing command for complete workflow
+program
+  .command('batch-process-media')
+  .description('Run complete workflow: find, copy, convert, and transcribe media files')
+  .option('--limit <number>', 'Limit the number of files to process (default: 25)')
+  .option('--source <path>', 'Source directory to look for files (default: ~/Google Drive)')
+  .option('--model <model>', 'Whisper model to use (default: base)')
+  .option('--accelerator <type>', 'Hardware accelerator to use (default: T4)')
+  .option('--skip-copy', 'Skip the copy step (use if files are already copied)')
+  .option('--skip-conversion', 'Skip the MP4 to M4A conversion step')
+  .option('--skip-transcription', 'Skip the transcription step')
+  .option('--dry-run', 'Show what would be done without actually doing it')
+  .action(async (options) => {
+    await executeCommand('batch-process-media.ts', options);
   });
 
 // Transcription commands
@@ -300,8 +330,15 @@ async function executeCommand(commandFile: string, options: any): Promise<void> 
   }
 
   try {
-    // Import the command module
-    const commandModule = await import(commandPath);
+    // For .ts files, we need to use require to avoid "Unknown file extension" error
+    let commandModule;
+    if (commandFile.endsWith('.ts')) {
+      // Use require for TypeScript files
+      commandModule = require(commandPath);
+    } else {
+      // Use import for JavaScript files
+      commandModule = await import(commandPath);
+    }
     
     // Execute the default export function if it exists
     if (typeof commandModule.default === 'function') {
