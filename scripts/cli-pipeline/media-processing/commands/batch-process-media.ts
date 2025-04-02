@@ -165,17 +165,52 @@ async function convertMp4ToM4a(): Promise<boolean> {
   try {
     Logger.info('🔄 Converting MP4 files to M4A...');
     
-    const convertCommand = `${process.cwd()}/scripts/cli-pipeline/media-processing/media-processing-cli.sh convert --limit ${options.limit} --force`;
+    // Build the command with appropriate parameters
+    let convertCommand = `${process.cwd()}/scripts/cli-pipeline/media-processing/media-processing-cli.sh convert --limit ${options.limit} --force`;
+    
+    // Add parallel processing if requested
+    if (args.includes('--parallel')) {
+      convertCommand += ' --parallel';
+      
+      // Add max-parallel if specified
+      if (options.maxParallel > 0) {
+        convertCommand += ` --max-parallel ${options.maxParallel}`;
+      }
+    }
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${convertCommand}`);
     } else {
-      execSync(convertCommand, { stdio: 'inherit' });
+      try {
+        execSync(convertCommand, { 
+          stdio: 'inherit',
+          // Set a timeout to prevent hanging indefinitely
+          timeout: 30 * 60 * 1000 // 30 minutes
+        });
+      } catch (execError: any) {
+        // If the conversion failed but we want to continue with the pipeline
+        if (execError.status !== 0) {
+          Logger.error(`⚠️ Conversion process exited with code ${execError.status}`);
+          Logger.error(`⚠️ Some files may have failed to convert but we will continue with the pipeline.`);
+          // We return true to continue with the next steps, as some files may have converted successfully
+          return true;
+        }
+        throw execError;
+      }
     }
     
     return true;
   } catch (error: any) {
     Logger.error(`❌ Error in conversion step: ${error.message}`);
+    if (error.message.includes('timeout')) {
+      Logger.error('⚠️ The conversion process timed out after 30 minutes.');
+    }
+    
+    // Ask the user if they want to continue despite the error
+    Logger.warn('⚠️ The MP4 to M4A conversion step had errors.');
+    Logger.warn('⚠️ You may want to skip the conversion step next time with --skip-conversion');
+    Logger.warn('⚠️ To mark specific files to skip, use: mark-skip-processing "filename.mp4"');
+    
     return false;
   }
 }

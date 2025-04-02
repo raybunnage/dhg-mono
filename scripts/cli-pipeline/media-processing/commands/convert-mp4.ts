@@ -71,6 +71,10 @@ if (limitIndex !== -1 && args[limitIndex + 1]) {
  */
 async function convertFile(filePath: string, outputPath?: string): Promise<{ success: boolean; outputPath?: string; error?: string }> {
   return new Promise((resolve) => {
+    // Set a 5 minute timeout for the conversion
+    const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+    let timeoutId: NodeJS.Timeout;
+    
     // Determine output path if not specified
     let finalOutputPath = outputPath;
     if (!finalOutputPath) {
@@ -97,34 +101,82 @@ async function convertFile(filePath: string, outputPath?: string): Promise<{ suc
       return;
     }
     
-    // Execute FFmpeg
-    const ffmpegProcess = spawn('ffmpeg', [
-      '-i', filePath,
-      '-vn',          // No video
-      '-acodec', 'copy', // Copy audio codec without re-encoding
-      finalOutputPath
-    ]);
+    // Execute FFmpeg with timeout and error handling
+    let ffmpegProcess: ReturnType<typeof spawn> | null = null;
+    try {
+      // Add explicit timeout to FFmpeg command
+      ffmpegProcess = spawn('ffmpeg', [
+        '-i', filePath,
+        '-vn',          // No video
+        '-acodec', 'copy', // Copy audio codec without re-encoding
+        '-y',           // Overwrite output file
+        '-t', '7200',   // Set a 2-hour max duration (avoid infinite processing)
+        finalOutputPath
+      ]);
+      
+      // Set timeout to prevent hanging
+      timeoutId = setTimeout(() => {
+        Logger.warn(`⚠️ Conversion timed out after ${TIMEOUT_MS/1000} seconds, killing process...`);
+        if (ffmpegProcess && !ffmpegProcess.killed) {
+          ffmpegProcess.kill('SIGTERM');
+        }
+        resolve({ success: false, error: 'Conversion timed out' });
+      }, TIMEOUT_MS);
+    } catch (err: any) {
+      Logger.error(`❌ Failed to spawn FFmpeg: ${err.message}`);
+      resolve({ success: false, error: err.message });
+      return;
+    }
     
     let stderr = '';
+    let lastProgressTime = Date.now();
     
-    ffmpegProcess.stderr.on('data', (data) => {
-      stderr += data.toString();
-      // FFmpeg outputs progress to stderr
-      if (data.toString().includes('size=')) {
-        process.stdout.write('.');
-      }
-    });
+    if (ffmpegProcess && ffmpegProcess.stderr) {
+      ffmpegProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+        // FFmpeg outputs progress to stderr
+        if (data.toString().includes('size=')) {
+          process.stdout.write('.');
+          lastProgressTime = Date.now(); // Update last progress time
+        }
+      });
+    }
+    
+    if (ffmpegProcess) {
+      ffmpegProcess.on('error', (err) => {
+        clearTimeout(timeoutId);
+        Logger.error(`❌ FFmpeg error: ${err.message}`);
+        resolve({ success: false, error: err.message });
+      });
+    }
     
     ffmpegProcess.on('close', (code) => {
+      clearTimeout(timeoutId);
+      
       if (code === 0) {
-        Logger.info(`✅ Successfully converted to: ${finalOutputPath}`);
-        
-        // Get file size
-        const stats = fs.statSync(finalOutputPath);
-        const fileSizeMB = stats.size / (1024 * 1024);
-        Logger.info(`📊 File size: ${fileSizeMB.toFixed(2)} MB`);
-        
-        resolve({ success: true, outputPath: finalOutputPath });
+        // Verify the output file exists and has a reasonable size
+        if (fs.existsSync(finalOutputPath)) {
+          try {
+            const stats = fs.statSync(finalOutputPath);
+            const fileSizeMB = stats.size / (1024 * 1024);
+            
+            if (fileSizeMB < 0.1) { // Less than 100KB
+              Logger.warn(`⚠️ Warning: Output file is very small (${fileSizeMB.toFixed(2)} MB)`);
+              resolve({ success: false, error: 'Output file is too small', outputPath: finalOutputPath });
+              return;
+            }
+            
+            Logger.info(`✅ Successfully converted to: ${finalOutputPath}`);
+            Logger.info(`📊 File size: ${fileSizeMB.toFixed(2)} MB`);
+            resolve({ success: true, outputPath: finalOutputPath });
+          } catch (err: any) {
+            Logger.error(`❌ Error checking output file: ${err.message}`);
+            resolve({ success: false, error: err.message });
+          }
+        } else {
+          Logger.error(`❌ Output file not found: ${finalOutputPath}`);
+          resolve({ success: false, error: 'Output file not found' });
+        }
       } else {
         Logger.error(`❌ Conversion failed with code ${code}`);
         resolve({ success: false, error: stderr });
@@ -421,17 +473,61 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
         
         Logger.info(`📋 Found ${mp4Files.length} MP4 files for direct conversion`);
         
-        // Process each MP4 file
+        // Check if parallel processing is enabled
+        const parallelArg = args.includes('--parallel');
+        const maxParallelIndex = args.indexOf('--max-parallel');
+        const maxParallel = maxParallelIndex !== -1 && args[maxParallelIndex + 1] 
+          ? parseInt(args[maxParallelIndex + 1]) 
+          : parallelArg ? 3 : 1; // Default to 3 if parallel is enabled, 1 otherwise
+        
         let success = 0;
         let failed = 0;
         
-        for (const filePath of mp4Files) {
-          Logger.info(`📋 Processing file: ${path.basename(filePath)}`);
-          const result = await convertFile(filePath);
-          if (result.success) {
-            success++;
-          } else {
-            failed++;
+        if (parallelArg && maxParallel > 1) {
+          // Process files in parallel with concurrency limit
+          Logger.info(`🔄 Processing ${mp4Files.length} files with max ${maxParallel} parallel conversions`);
+          
+          // Create chunks to process in parallel
+          const chunks: string[][] = [];
+          for (let i = 0; i < mp4Files.length; i += maxParallel) {
+            chunks.push(mp4Files.slice(i, i + maxParallel));
+          }
+          
+          // Process each chunk in parallel
+          for (const chunk of chunks) {
+            Logger.info(`🔄 Processing batch of ${chunk.length} files in parallel`);
+            
+            // Create an array of conversion promises
+            const conversionPromises = chunk.map(filePath => {
+              Logger.info(`📋 Starting conversion: ${path.basename(filePath)}`);
+              return convertFile(filePath).then(result => {
+                if (result.success) {
+                  success++;
+                  Logger.info(`✅ Successfully converted ${path.basename(filePath)}`);
+                } else {
+                  failed++;
+                  Logger.warn(`⚠️ Failed to convert ${path.basename(filePath)}: ${result.error}`);
+                }
+                return result;
+              });
+            });
+            
+            // Wait for all conversions in this chunk to complete
+            await Promise.all(conversionPromises);
+            Logger.info(`✅ Completed batch of ${chunk.length} conversions`);
+          }
+        } else {
+          // Process files sequentially
+          Logger.info(`🔄 Processing ${mp4Files.length} files sequentially`);
+          
+          for (const filePath of mp4Files) {
+            Logger.info(`📋 Processing file: ${path.basename(filePath)}`);
+            const result = await convertFile(filePath);
+            if (result.success) {
+              success++;
+            } else {
+              failed++;
+            }
           }
         }
         
