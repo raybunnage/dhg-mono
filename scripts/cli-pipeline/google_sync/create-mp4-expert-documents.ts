@@ -350,6 +350,7 @@ async function main() {
               content_type: 'presentation',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
+              // Note: title field has been removed as it doesn't exist in the database schema
             })
             .select()
             .single();
