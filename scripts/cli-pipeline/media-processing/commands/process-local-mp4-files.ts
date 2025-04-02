@@ -77,17 +77,44 @@ function getLocalMp4Files(): string[] {
       return [];
     }
 
-    let files = fs.readdirSync(MP4_DIR)
-      .filter(file => file.toLowerCase().endsWith('.mp4'));
+    // Read all files in the mp4 directory and its subdirectories
+    let files: string[] = [];
+    
+    // First, check for MP4 files in the root directory
+    const rootFiles = fs.readdirSync(MP4_DIR)
+      .filter(file => file.toLowerCase().endsWith('.mp4'))
+      .map(file => file);
+    
+    files.push(...rootFiles);
+    
+    // Then check for subdirectories and look for MP4 files in them
+    const subdirs = fs.readdirSync(MP4_DIR, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory() && !dirent.name.startsWith('.'))
+      .map(dirent => dirent.name);
+    
+    // Look through each subdirectory for MP4 files
+    for (const subdir of subdirs) {
+      const subdirPath = path.join(MP4_DIR, subdir);
+      try {
+        const subdirFiles = fs.readdirSync(subdirPath)
+          .filter(file => file.toLowerCase().endsWith('.mp4'))
+          .map(file => path.join(subdir, file)); // Add relative path from MP4_DIR
+        
+        files.push(...subdirFiles);
+      } catch (error: any) {
+        Logger.warn(`Could not read subdirectory ${subdirPath}: ${error.message}`);
+      }
+    }
     
     // Filter to specific files if requested
     if (options.specificFiles) {
       const specificFilesArray = options.specificFiles.split(',').map(f => f.trim().toLowerCase());
-      files = files.filter(file => 
-        specificFilesArray.some(specific => 
-          file.toLowerCase().includes(specific.toLowerCase())
-        )
-      );
+      files = files.filter(file => {
+        const filename = path.basename(file);
+        return specificFilesArray.some(specific => 
+          filename.toLowerCase().includes(specific.toLowerCase())
+        );
+      });
       Logger.info(`Filtered to ${files.length} files matching specified patterns`);
     }
 
@@ -537,26 +564,31 @@ async function processMP4Files(): Promise<MP4FileInfo[]> {
     
     // Create file info objects
     for (const filename of localFiles) {
+      // Handle both direct files and files in subdirectories
+      const isInSubdir = filename.includes(path.sep);
+      const baseName = isInSubdir ? path.basename(filename) : filename;
       const filePath = path.join(MP4_DIR, filename);
-      const stats = fs.statSync(filePath);
       
-      const fileInfo: MP4FileInfo = {
-        name: filename,
-        path: filePath,
-        size: stats.size,
-        sizeFormatted: formatFileSize(stats.size),
-        m4aPath: null,
-        m4aExists: false,
-        documentId: null,
-        status: 'pending'
-      };
+      try {
+        const stats = fs.statSync(filePath);
+        
+        const fileInfo: MP4FileInfo = {
+          name: baseName, // Just the filename without the subdirectory
+          path: filePath,
+          size: stats.size,
+          sizeFormatted: formatFileSize(stats.size),
+          m4aPath: null,
+          m4aExists: false,
+          documentId: null,
+          status: 'pending'
+        };
       
-      // Find corresponding M4A file
-      const m4aPath = findM4aFile(filename);
+      // Find corresponding M4A file - use the baseName for matching
+      const m4aPath = findM4aFile(baseName);
       fileInfo.m4aPath = m4aPath;
       fileInfo.m4aExists = m4aPath !== null;
       
-      Logger.info(`Processing ${filename} (${fileInfo.sizeFormatted}) - M4A ${fileInfo.m4aExists ? 'found' : 'not found'}`);
+      Logger.info(`Processing ${baseName} (${fileInfo.sizeFormatted}) - M4A ${fileInfo.m4aExists ? 'found' : 'not found'}`);
       
       // Step 1: Register file in database if not already registered
       if (!options.skipRegistering) {
@@ -572,7 +604,7 @@ async function processMP4Files(): Promise<MP4FileInfo[]> {
         fileInfo.status = 'registered';
       } else {
         // Get existing document ID if we're skipping registration
-        const documentId = await findDocumentIdFromFilename(filename, supabase);
+        const documentId = await findDocumentIdFromFilename(baseName, supabase);
         if (!documentId) {
           fileInfo.status = 'error';
           fileInfo.error = 'File not registered in database';
@@ -586,14 +618,14 @@ async function processMP4Files(): Promise<MP4FileInfo[]> {
       
       // Step 2: Make sure we have the M4A file if it doesn't exist
       if (!fileInfo.m4aExists) {
-        Logger.info(`No M4A file found for ${filename}, attempting to create one`);
+        Logger.info(`No M4A file found for ${baseName}, attempting to create one`);
         const m4aPath = await convertMp4ToM4a(fileInfo.path);
         if (m4aPath) {
           fileInfo.m4aPath = m4aPath;
           fileInfo.m4aExists = true;
           Logger.info(`Successfully created M4A file: ${m4aPath}`);
         } else {
-          Logger.warn(`Failed to create M4A file for ${filename}, but will continue anyway`);
+          Logger.warn(`Failed to create M4A file for ${baseName}, but will continue anyway`);
         }
       }
       
@@ -630,6 +662,10 @@ async function processMP4Files(): Promise<MP4FileInfo[]> {
       }
       
       fileInfoList.push(fileInfo);
+      } catch (error: any) {
+        Logger.error(`Error processing file ${filename}: ${error.message}`);
+        continue;
+      }
     }
     
     // Skip transcription if requested
