@@ -165,8 +165,7 @@ async function convertMp4ToM4a(): Promise<boolean> {
   try {
     Logger.info('🔄 Converting MP4 files to M4A...');
     
-    const tsNodePath = './node_modules/.bin/ts-node';
-    const convertCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts convert-mp4 --limit ${options.limit} --max-parallel ${options.maxParallel}`;
+    const convertCommand = `${process.cwd()}/scripts/cli-pipeline/media-processing/media-processing-cli.sh convert --limit ${options.limit} --force`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${convertCommand}`);
@@ -188,8 +187,7 @@ async function transcribeAudio(): Promise<boolean> {
   try {
     Logger.info('🎙️ Transcribing audio files...');
     
-    const tsNodePath = './node_modules/.bin/ts-node';
-    const transcribeCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts transcribe-audio --limit ${options.limit} --model ${options.model} --accelerator ${options.accelerator} --max-parallel ${options.maxParallel}`;
+    const transcribeCommand = `${process.cwd()}/scripts/cli-pipeline/media-processing/media-processing-cli.sh transcribe --limit ${options.limit} --model ${options.model} --accelerator ${options.accelerator} --force`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${transcribeCommand}`);
