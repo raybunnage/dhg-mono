@@ -166,17 +166,12 @@ async function convertMp4ToM4a(): Promise<boolean> {
     Logger.info('🔄 Converting MP4 files to M4A...');
     
     // Build the command with appropriate parameters
-    let convertCommand = `${process.cwd()}/scripts/cli-pipeline/media-processing/media-processing-cli.sh convert --limit ${options.limit} --force`;
+    const scriptPath = path.join(__dirname, '..', 'media-processing-cli.sh');
+    let convertCommand = `${scriptPath} convert --limit ${options.limit} --force`;
     
-    // Add parallel processing if requested
-    if (args.includes('--parallel')) {
-      convertCommand += ' --parallel';
-      
-      // Add max-parallel if specified
-      if (options.maxParallel > 0) {
-        convertCommand += ` --max-parallel ${options.maxParallel}`;
-      }
-    }
+    // Always use parallel processing with the max parallel option
+    convertCommand += ' --parallel';
+    convertCommand += ` --max-parallel ${options.maxParallel}`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${convertCommand}`);
@@ -222,7 +217,8 @@ async function transcribeAudio(): Promise<boolean> {
   try {
     Logger.info('🎙️ Transcribing audio files...');
     
-    const transcribeCommand = `${process.cwd()}/scripts/cli-pipeline/media-processing/media-processing-cli.sh transcribe --limit ${options.limit} --model ${options.model} --accelerator ${options.accelerator} --force`;
+    const scriptPath = path.join(__dirname, '..', 'media-processing-cli.sh');
+    const transcribeCommand = `${scriptPath} transcribe --limit ${options.limit} --model ${options.model} --accelerator ${options.accelerator} --force`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${transcribeCommand}`);
