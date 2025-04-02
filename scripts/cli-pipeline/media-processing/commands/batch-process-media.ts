@@ -106,32 +106,33 @@ if (maxParallelIndex !== -1 && args[maxParallelIndex + 1]) {
 }
 
 /**
- * Run the find-missing-media command to generate copy commands
+ * Run the find-untranscribed-media command to generate copy commands
+ * only for files that haven't been transcribed yet
  */
 async function findAndCopyMedia(): Promise<boolean> {
   try {
     const scriptPath = path.join(process.cwd(), 'copy-files.sh');
     
-    // Step 1: Generate copy script using find-missing-media
-    Logger.info('🔍 Generating copy commands for missing media files...');
+    // Step 1: Generate copy script using find-untranscribed-media
+    Logger.info('🔍 Generating copy commands for untranscribed media files...');
     
     const tsNodePath = './node_modules/.bin/ts-node';
-    const findCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts find-missing-media --deep --limit ${options.limit} --source "${options.source}" --format commands`;
+    const findCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/commands/find-untranscribed-media.ts --limit ${options.limit} --source "${options.source}"`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${findCommand}`);
     } else {
-      // Execute the find command and extract only the copy commands between the MISSING FILES markers
+      // Execute the find command and extract only the copy commands between the UNTRANSCRIBED FILES markers
       const findOutput = execSync(findCommand).toString();
-      const missingFilesSection = findOutput.split('=== MISSING FILES ===')[1];
+      const untranscribedFilesSection = findOutput.split('=== UNTRANSCRIBED FILES ===')[1];
       
-      if (!missingFilesSection) {
-        Logger.warn('No MISSING FILES section found in output');
+      if (!untranscribedFilesSection) {
+        Logger.warn('No UNTRANSCRIBED FILES section found in output');
         return false;
       }
       
       // Extract just the copy commands (skip the instructions at the end)
-      const copyCommands = missingFilesSection.split('\nCopy and paste these commands')[0].trim();
+      const copyCommands = untranscribedFilesSection.split('\nCopy and paste these commands')[0].trim();
       
       // Write to the script file
       fs.writeFileSync(scriptPath, '#!/bin/bash\n# Auto-generated copy commands\n\n' + copyCommands);
@@ -142,12 +143,12 @@ async function findAndCopyMedia(): Promise<boolean> {
       // Check if the script has copy commands
       const scriptContent = fs.readFileSync(scriptPath, 'utf8');
       if (!scriptContent.includes('cp "')) {
-        Logger.info('ℹ️ No files found to copy');
+        Logger.info('ℹ️ No untranscribed files found to copy');
         return false;
       }
       
       // Execute the copy script
-      Logger.info('📂 Copying MP4 files from Google Drive...');
+      Logger.info('📂 Copying untranscribed MP4 files from Google Drive...');
       execSync(`${scriptPath}`, { stdio: 'inherit' });
     }
     
