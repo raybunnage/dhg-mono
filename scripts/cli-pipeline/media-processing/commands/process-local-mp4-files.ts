@@ -312,7 +312,7 @@ async function registerMp4File(supabase: any, fileInfo: MP4FileInfo): Promise<st
     // Step 2: Now check if an expert_document exists for this source
     const { data: docData, error: docError } = await supabase
       .from('expert_documents')
-      .select('id, title, content_type')
+      .select('id, content_type')
       .eq('source_id', sourceId);
     
     if (docError) {
@@ -332,14 +332,12 @@ async function registerMp4File(supabase: any, fileInfo: MP4FileInfo): Promise<st
       const { data: newDoc, error: insertError } = await supabase
         .from('expert_documents')
         .insert({
-          title: baseFilename,
           source_id: sourceId,
           content_type: 'presentation',
           document_type_id: 'c6c3969b-c5cd-4c9a-a0f8-6e508ab68a4c', // Standard presentation type
           processing_status: 'pending',
           created_at: now,
-          updated_at: now,
-          is_public: true
+          updated_at: now
         })
         .select();
       
