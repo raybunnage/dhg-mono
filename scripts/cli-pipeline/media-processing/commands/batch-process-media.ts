@@ -1,222 +1,50 @@
 #!/usr/bin/env ts-node
 /**
- * Batch Process Media Command
- * 
- * This command runs a complete media processing workflow:
- * 1. Finds missing MP4 files in Google Drive
- * 2. Copies them to the local file_types/mp4 directory
- * 3. Renames MP4 files to match database conventions
- * 4. Registers MP4 files in the database if not already registered
- * 5. Updates disk status in the database
- * 6. Registers expert documents in the database
- * 7. Converts MP4 files to M4A for audio extraction
- * 8. Synchronizes M4A filenames with MP4 files
- * 9. Transcribes the audio files using Whisper
- * 
- * Usage:
- *   batch-process-media.ts [options]
- * 
- * Options:
- *   --limit [number]          Limit the number of files to process (default: 25)
- *   --source [path]           Source directory to look for files (default: ~/Google Drive)
- *   --model [model]           Whisper model to use (default: base)
- *   --accelerator [type]      Hardware accelerator to use (default: T4)
- *   --skip-copy               Skip the copy step (use if files are already copied)
- *   --skip-rename             Skip the renaming step
- *   --skip-register           Skip registering files in the database
- *   --skip-disk-status        Skip updating disk status in the database
- *   --skip-expert-docs        Skip registering expert documents
- *   --skip-conversion         Skip the MP4 to M4A conversion step
- *   --skip-m4a-sync           Skip synchronizing M4A filenames
- *   --skip-transcription      Skip the transcription step
- *   --dry-run                 Show what would be done without actually doing it
- */
-
-import * as fs from 'fs';
-import * as path from 'path';
-import { execSync } from 'child_process';
-import * as os from 'os';
-
-// Import using require to avoid TypeScript issues with winston
-const { Logger } = require('../../../../packages/shared/utils');
-const { LogLevel } = require('../../../../packages/shared/utils/logger');
-
-// Initialize logger
-Logger.setLevel(LogLevel.INFO);
-
-// Process command line arguments
-const args = process.argv.slice(2);
-const options = {
-  limit: 10,
-  source: path.join(os.homedir(), 'Google Drive'),
-  model: 'base',
-  accelerator: 'A10G',
-  maxParallel: 5,
-  skipCopy: args.includes('--skip-copy'),
-  skipRename: args.includes('--skip-rename'),
-  skipRegister: args.includes('--skip-register'),
-  skipDiskStatus: args.includes('--skip-disk-status'),
-  skipExpertDocs: args.includes('--skip-expert-docs'),
-  skipConversion: args.includes('--skip-conversion'),
-  skipM4aSync: args.includes('--skip-m4a-sync'),
-  skipTranscription: args.includes('--skip-transcription'),
-  dryRun: args.includes('--dry-run')
-};
-
-// Get limit if specified
-const limitIndex = args.indexOf('--limit');
-if (limitIndex !== -1 && args[limitIndex + 1]) {
-  const limitArg = parseInt(args[limitIndex + 1]);
-  if (!isNaN(limitArg)) {
-    options.limit = limitArg;
-  }
-}
-
-// Get source directory if specified
-const sourceIndex = args.indexOf('--source');
-if (sourceIndex !== -1 && args[sourceIndex + 1]) {
-  options.source = args[sourceIndex + 1];
-}
-
-// Get model if specified
-const modelIndex = args.indexOf('--model');
-if (modelIndex !== -1 && args[modelIndex + 1]) {
-  const modelArg = args[modelIndex + 1];
-  if (['tiny', 'base', 'small', 'medium', 'large'].includes(modelArg)) {
-    options.model = modelArg;
-  }
-}
-
-// Get accelerator if specified
-const acceleratorIndex = args.indexOf('--accelerator');
-if (acceleratorIndex !== -1 && args[acceleratorIndex + 1]) {
-  const acceleratorArg = args[acceleratorIndex + 1];
-  if (['T4', 'A10G', 'A100', 'CPU'].includes(acceleratorArg)) {
-    options.accelerator = acceleratorArg;
-  }
-}
-
-// Get max parallel if specified
-const maxParallelIndex = args.indexOf('--max-parallel');
-if (maxParallelIndex !== -1 && args[maxParallelIndex + 1]) {
-  const maxParallelArg = parseInt(args[maxParallelIndex + 1]);
-  if (!isNaN(maxParallelArg)) {
-    options.maxParallel = maxParallelArg;
-  }
-}
-
-/**
  * Run the find-missing-media command to generate copy commands
- * and filter out files that have already been transcribed
+ * only for files that haven't been transcribed yet
  */
 async function findAndCopyMedia(): Promise<boolean> {
   try {
     const scriptPath = path.join(process.cwd(), 'copy-files.sh');
     
-    // Step 1: Generate copy script using find-missing-media
+    // Step 1: Generate copy script using find-missing-media and filter-transcribed
     Logger.info('🔍 Generating copy commands for untranscribed media files...');
     
     const tsNodePath = './node_modules/.bin/ts-node';
-    
-    // First, get missing MP4 files using find-missing-media
-    const findCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts find-missing-media --deep --limit ${options.limit} --source "${options.source}" --format commands`;
+    const findCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts find-missing-media --deep --limit ${options.limit} --source "${options.source}" --format commands | node scripts/cli-pipeline/media-processing/commands/filter-transcribed.js`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${findCommand}`);
-      return true;
+    } else {
+      // Execute the find command and extract only the copy commands between the UNTRANSCRIBED FILES markers
+      const findOutput = execSync(findCommand).toString();
+      const untranscribedFilesSection = findOutput.split('=== UNTRANSCRIBED FILES ===')[1];
+      
+      if (!untranscribedFilesSection) {
+        Logger.warn('No UNTRANSCRIBED FILES section found in output');
+        return false;
+      }
+      
+      // Extract just the copy commands (skip the instructions at the end)
+      const copyCommands = untranscribedFilesSection.split('\nCopy and paste these commands')[0].trim();
+      
+      // Write to the script file
+      fs.writeFileSync(scriptPath, '#!/bin/bash\n# Auto-generated copy commands\n\n' + copyCommands);
+      
+      // Make the script executable
+      execSync(`chmod +x ${scriptPath}`);
+      
+      // Check if the script has copy commands
+      const scriptContent = fs.readFileSync(scriptPath, 'utf8');
+      if (!scriptContent.includes('cp "')) {
+        Logger.info('ℹ️ No untranscribed files found to copy');
+        return false;
+      }
+      
+      // Execute the copy script
+      Logger.info('📂 Copying untranscribed MP4 files from Google Drive...');
+      execSync(`${scriptPath}`, { stdio: 'inherit' });
     }
-    
-    // Execute the find command and extract the copy commands
-    const findOutput = execSync(findCommand).toString();
-    const missingFilesSection = findOutput.split('=== MISSING FILES ===')[1];
-    
-    if (!missingFilesSection) {
-      Logger.warn('No MISSING FILES section found in output');
-      return false;
-    }
-    
-    // Extract just the copy commands (skip the instructions at the end)
-    const copyCommandsRaw = missingFilesSection.split('\nCopy and paste these commands')[0].trim();
-    const copyCommands = copyCommandsRaw.split('\n').filter(line => line.startsWith('cp '));
-    
-    if (copyCommands.length === 0) {
-      Logger.info('ℹ️ No files found to copy');
-      return false;
-    }
-    
-    // Get a list of files that have already been transcribed
-    Logger.info('Checking for already transcribed files...');
-    
-    // Create a Supabase client using the singleton service
-    // We need to use require since we don't have a direct import
-    const { SupabaseClientService } = require('../../../../packages/shared/services/supabase-client');
-    const supabaseClientService = SupabaseClientService.getInstance();
-    const supabase = supabaseClientService.getClient();
-    
-    // Get list of transcribed source files
-    const { data: expertDocs } = await supabase
-      .from('expert_documents')
-      .select('source_id, sources_google!inner(name)')
-      .not('raw_content', 'is', null);
-    
-    // Create set of already transcribed filenames (both exact and normalized)
-    const transcribedFiles = new Set();
-    const normalizedTranscribedFiles = new Set();
-    
-    expertDocs.forEach((doc: any) => {
-      const name = doc.sources_google.name;
-      transcribedFiles.add(name);
-      // Add normalized version (no spaces, no dots, lowercase)
-      normalizedTranscribedFiles.add(name.toLowerCase().replace(/[\s.]+/g, ''));
-    });
-    
-    // Extract filenames from copy commands
-    const fileInfo = copyCommands.map(cmd => {
-      const match = cmd.match(/cp ".*" ".*\/([^\/]+)"/);
-      const filename = match ? match[1] : null;
-      return {
-        command: cmd,
-        filename: filename,
-        normalizedName: filename ? filename.toLowerCase().replace(/[\s.]+/g, '') : null
-      };
-    }).filter(info => info.filename);
-    
-    Logger.info(`Extracted ${fileInfo.length} filenames from copy commands`);
-    
-    // Filter out already transcribed files using both exact and normalized matching
-    const untranscribedCommands = fileInfo
-      .filter(info => {
-        const exactMatch = transcribedFiles.has(info.filename);
-        const normalizedMatch = normalizedTranscribedFiles.has(info.normalizedName);
-        
-        if (exactMatch || normalizedMatch) {
-          Logger.info(`Skipping already transcribed file: ${info.filename}`);
-          return false;
-        }
-        return true;
-      })
-      .map(info => info.command);
-    
-    if (untranscribedCommands.length === 0) {
-      Logger.info('ℹ️ No untranscribed files found to copy');
-      return false;
-    }
-    
-    Logger.info(`Found ${untranscribedCommands.length} untranscribed files to copy`);
-    
-    // Write the script file
-    fs.writeFileSync(
-      scriptPath, 
-      '#!/bin/bash\n# Auto-generated copy commands\n\n' + 
-      untranscribedCommands.join('\n')
-    );
-    
-    // Make the script executable
-    execSync(`chmod +x ${scriptPath}`);
-    
-    // Execute the copy script
-    Logger.info('📂 Copying untranscribed MP4 files from Google Drive...');
-    execSync(`${scriptPath}`, { stdio: 'inherit' });
     
     return true;
   } catch (error: any) {

@@ -88,6 +88,23 @@ Examples:
   media-processing-cli.sh purge-processed-media --dry-run
  
 
+ ./scripts/cli-pipeline/media-processing/media-processing-cli.sh process-local-mp4-files --max-parallel 3
+
+Success! We've now processed the specific file you wanted. To summarize the steps for processing a specific file:
+
+  1. We created a document in the database for the "2023-10-04-Hanscom DR-RUTs neuroscience.mp4" file, which gave us document ID
+  09cbe55b-35b5-4856-bb84-d0b145e3d42a
+  2. We used the transcribe command to send the file to Modal for transcription:
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh transcribe 09cbe55b-35b5-4856-bb84-d0b145e3d42a --accelerator A10G
+  3. The system successfully:
+    - Found the corresponding M4A file using our improved file matching algorithm
+    - Transcribed it using the Modal service with the A10G accelerator
+    - Stored the transcription in the database
+
+  This is the most direct way to process a specific file. You can use this approach for any file that you want to process individually.
+
+
+
 
 erfect! Everything is working as expected.
 
