@@ -1,4 +1,5 @@
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh --help
+./scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --limit 2 --parallel --max-parallel 2 --accelerator A10G
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh find-processable-videos
    ./scripts/cli-pipeline/media-processing/media-processing-cli.sh transcribe 8c7f604a-7595-490a-b8d7-b839c3815b43 --model base --force
 
