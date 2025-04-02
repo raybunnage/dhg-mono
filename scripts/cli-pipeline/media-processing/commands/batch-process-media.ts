@@ -91,12 +91,25 @@ async function findAndCopyMedia(): Promise<boolean> {
     Logger.info('🔍 Generating copy commands for missing media files...');
     
     const tsNodePath = './node_modules/.bin/ts-node';
-    const findCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts find-missing-media --deep --limit ${options.limit} --source "${options.source}" > ${scriptPath}`;
+    const findCommand = `${tsNodePath} scripts/cli-pipeline/media-processing/index.ts find-missing-media --deep --limit ${options.limit} --source "${options.source}" --format commands`;
     
     if (options.dryRun) {
       Logger.info(`Would execute: ${findCommand}`);
     } else {
-      execSync(findCommand, { stdio: 'inherit' });
+      // Execute the find command and extract only the copy commands between the MISSING FILES markers
+      const findOutput = execSync(findCommand).toString();
+      const missingFilesSection = findOutput.split('=== MISSING FILES ===')[1];
+      
+      if (!missingFilesSection) {
+        Logger.warn('No MISSING FILES section found in output');
+        return false;
+      }
+      
+      // Extract just the copy commands (skip the instructions at the end)
+      const copyCommands = missingFilesSection.split('\nCopy and paste these commands')[0].trim();
+      
+      // Write to the script file
+      fs.writeFileSync(scriptPath, '#!/bin/bash\n# Auto-generated copy commands\n\n' + copyCommands);
       
       // Make the script executable
       execSync(`chmod +x ${scriptPath}`);
@@ -110,7 +123,7 @@ async function findAndCopyMedia(): Promise<boolean> {
       
       // Execute the copy script
       Logger.info('📂 Copying MP4 files from Google Drive...');
-      execSync(`./${scriptPath}`, { stdio: 'inherit' });
+      execSync(`${scriptPath}`, { stdio: 'inherit' });
     }
     
     return true;
