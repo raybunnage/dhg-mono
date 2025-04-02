@@ -265,6 +265,12 @@ async function main() {
     
     Logger.info(`Found ${missingFiles.length} missing files, located ${foundCount} in source directory`);
     
+    // Debug: Log all found files
+    console.log('\n=== DEBUG: FOUND FILES ===');
+    missingFiles.filter(file => file.found).forEach(file => {
+      console.log(`Found: ${file.filename} at ${file.sourcePath}`);
+    });
+    
     const output = formatOutput(missingFiles);
     console.log('\n=== MISSING FILES ===\n');
     console.log(output);
