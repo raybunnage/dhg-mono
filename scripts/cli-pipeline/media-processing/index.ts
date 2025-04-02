@@ -36,6 +36,8 @@ File Checking Commands:
   check-media-files       Check for missing/orphaned MP4 and M4A files in database and local directories
   find-missing-js-files   Run JavaScript-based MP4 file checker (legacy implementation)
   find-missing-media      Find missing MP4 files and generate copy commands from a source directory
+  find-untranscribed-media Find MP4 files that are in the database but haven't been transcribed yet
+  filter-transcribed      Filter out MP4 files that have already been transcribed from a list of copy commands
   run-shell-check         Run any shell script from the shell-scripts directory
 
 File Management Commands:
@@ -51,12 +53,14 @@ Database Integration Commands:
   register-expert-docs    Register MP4 files as expert documents in the database
   update-status           Update processing status of expert documents
   mark-skip-processing    Mark large files to skip batch processing
+  register-local-mp4-files Add local MP4 files to database that are not already registered
   
 Listing & Utility Commands:
   list-ready              List files ready for processing
   list-pending            List files pending processing
   list-transcribable      List files ready for transcription
   find-processable-videos Find videos that can be processed
+  sync-m4a-names          Sync M4A filenames with their MP4 counterparts after renaming
 
 For more information on a specific command, try:
   ts-node scripts/cli-pipeline/media-processing/index.ts <command> --help
@@ -92,6 +96,29 @@ program
   .option('--deep', 'Perform a deep search through subdirectories')
   .action(async (options) => {
     await executeCommand('find-missing-media.ts', options);
+  });
+
+// Add find-untranscribed-media command
+program
+  .command('find-untranscribed-media')
+  .description('Find MP4 files that are in the database but haven\'t been transcribed yet')
+  .option('--limit <number>', 'Limit the number of files to list (default: 5)')
+  .option('--source <path>', 'Source directory to look for files (default: ~/Google Drive)')
+  .option('--deep', 'Perform a deep search through subdirectories')
+  .action(async (options) => {
+    // Use the JavaScript version since it's working correctly
+    await executeCommand('find-untranscribed-media.js', options);
+  });
+
+// Add filter-transcribed command
+program
+  .command('filter-transcribed')
+  .description('Filter out MP4 files that have already been transcribed from a list of copy commands')
+  .option('--input <file>', 'Input file with copy commands (defaults to reading from stdin)')
+  .action(async (options) => {
+    // This command is designed to work with piped input
+    // Example: find-missing-media | filter-transcribed
+    await executeCommand('filter-transcribed.js', options);
   });
 
 program

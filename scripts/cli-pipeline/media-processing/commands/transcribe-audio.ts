@@ -150,19 +150,70 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     // Find the corresponding audio file
     let audioPath = '';
     const sourceFilename = sourceFile.name.replace(/\.[^/.]+$/, "");
+    // Create a normalized filename to match against - replace both dots and spaces
+    const normalizedSourceFilename = sourceFilename.toLowerCase().replace(/[\s.]+/g, '');
     
     // Check for audio file in the m4a directory
     const audioDir = path.join(process.cwd(), 'file_types', 'm4a');
     
     try {
       const files = fs.readdirSync(audioDir);
-      const matchingFile = files.find(file => 
-        file.toLowerCase().includes(sourceFilename.toLowerCase()) && 
-        (file.endsWith('.m4a') || file.endsWith('.mp3'))
+      // Try different matching strategies, from most specific to least
+      
+      // 1. Try exact match with or without extension
+      let matchingFile = files.find(file => 
+        file === sourceFile.name || 
+        file === sourceFilename + '.m4a' || 
+        file === 'INGESTED_' + sourceFile.name || 
+        file === 'INGESTED_' + sourceFilename + '.m4a'
       );
+      
+      // 2. Try a normalized match that ignores dots, spaces, and case
+      if (!matchingFile) {
+        matchingFile = files.find(file => {
+          const normalizedFile = file.toLowerCase().replace(/[\s.]+/g, '').replace('.m4a', '');
+          return normalizedFile.includes(normalizedSourceFilename) && 
+                (file.endsWith('.m4a') || file.endsWith('.mp3'));
+        });
+      }
+      
+      // 3. Try a partial match as a last resort
+      if (!matchingFile) {
+        matchingFile = files.find(file => 
+          file.toLowerCase().includes(sourceFilename.toLowerCase().substring(0, 10)) && 
+          (file.endsWith('.m4a') || file.endsWith('.mp3'))
+        );
+      }
       
       if (matchingFile) {
         audioPath = path.join(audioDir, matchingFile);
+        Logger.info(`📋 Found matching audio file: ${matchingFile} for source: ${sourceFile.name}`);
+      } else {
+        Logger.warn(`⚠️ No matching M4A file found in main directory for: ${sourceFile.name}`);
+        
+        // 4. Check subdirectories as a last resort
+        const subdirs = ['orphaned3', 'orphaned_m4as', 'test_clipped_mins'];
+        for (const subdir of subdirs) {
+          const subdirPath = path.join(audioDir, subdir);
+          if (fs.existsSync(subdirPath)) {
+            try {
+              const subdirFiles = fs.readdirSync(subdirPath);
+              const subDirMatch = subdirFiles.find(file => {
+                const normalizedFile = file.toLowerCase().replace(/[\s.]+/g, '').replace('.m4a', '');
+                return normalizedFile.includes(normalizedSourceFilename) && 
+                      (file.endsWith('.m4a') || file.endsWith('.mp3'));
+              });
+              
+              if (subDirMatch) {
+                audioPath = path.join(subdirPath, subDirMatch);
+                Logger.info(`📋 Found matching audio file in ${subdir}: ${subDirMatch}`);
+                break;
+              }
+            } catch (subdirError: any) {
+              Logger.warn(`⚠️ Error reading subdirectory ${subdir}: ${subdirError.message}`);
+            }
+          }
+        }
       }
     } catch (error: any) {
       Logger.error(`❌ Error reading audio directory: ${error.message}`);

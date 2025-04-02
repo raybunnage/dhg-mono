@@ -159,21 +159,42 @@ async function findAndCopyMedia(): Promise<boolean> {
       .select('source_id, sources_google!inner(name)')
       .not('raw_content', 'is', null);
     
-    // Create set of already transcribed filenames
-    const transcribedFiles = new Set(expertDocs.map((doc: any) => doc.sources_google.name));
+    // Create set of already transcribed filenames (both exact and normalized)
+    const transcribedFiles = new Set();
+    const normalizedTranscribedFiles = new Set();
+    
+    expertDocs.forEach((doc: any) => {
+      const name = doc.sources_google.name;
+      transcribedFiles.add(name);
+      // Add normalized version (no spaces, no dots, lowercase)
+      normalizedTranscribedFiles.add(name.toLowerCase().replace(/[\s.]+/g, ''));
+    });
     
     // Extract filenames from copy commands
     const fileInfo = copyCommands.map(cmd => {
       const match = cmd.match(/cp ".*" ".*\/([^\/]+)"/);
+      const filename = match ? match[1] : null;
       return {
         command: cmd,
-        filename: match ? match[1] : null
+        filename: filename,
+        normalizedName: filename ? filename.toLowerCase().replace(/[\s.]+/g, '') : null
       };
     }).filter(info => info.filename);
     
-    // Filter out already transcribed files
+    Logger.info(`Extracted ${fileInfo.length} filenames from copy commands`);
+    
+    // Filter out already transcribed files using both exact and normalized matching
     const untranscribedCommands = fileInfo
-      .filter(info => !transcribedFiles.has(info.filename))
+      .filter(info => {
+        const exactMatch = transcribedFiles.has(info.filename);
+        const normalizedMatch = normalizedTranscribedFiles.has(info.normalizedName);
+        
+        if (exactMatch || normalizedMatch) {
+          Logger.info(`Skipping already transcribed file: ${info.filename}`);
+          return false;
+        }
+        return true;
+      })
       .map(info => info.command);
     
     if (untranscribedCommands.length === 0) {
