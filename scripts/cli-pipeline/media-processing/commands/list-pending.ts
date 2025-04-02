@@ -9,7 +9,7 @@
  *   list-pending.ts [options]
  * 
  * Options:
- *   --limit [number]           Limit the number of files to list (default: 20)
+ *   --limit [number]           Limit the number of files to list (default: 200)
  *   --stage [stage]            Filter by processing stage (conversion, transcription, all)
  *   --format [format]          Output format (table, json, simple)
  */
@@ -25,7 +25,7 @@ Logger.setLevel(LogLevel.INFO);
 // Process command line arguments
 const args = process.argv.slice(2);
 const options = {
-  limit: 20,
+  limit: 200,
   stage: 'all',
   format: 'table'
 };
