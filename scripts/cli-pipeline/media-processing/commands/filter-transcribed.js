@@ -13,20 +13,19 @@ const { LogLevel } = require('../../../../packages/shared/utils/logger');
 // Initialize logger
 Logger.setLevel(LogLevel.INFO);
 
-// Read list of copy commands from stdin
-let input = '';
-process.stdin.on('data', chunk => {
-  input += chunk;
-});
+// Process command line arguments
+const args = process.argv.slice(2);
+const inputFileIndex = args.indexOf('--input');
+const inputFile = inputFileIndex !== -1 && args[inputFileIndex + 1] ? args[inputFileIndex + 1] : null;
 
-process.stdin.on('end', async () => {
+async function processInput(inputText) {
   try {
     // Get Supabase client
     const supabaseClientService = SupabaseClientService.getInstance();
     const supabase = supabaseClientService.getClient();
     
     // Parse the input for cp commands
-    const copyCommands = input.split('\n').filter(line => line.trim().startsWith('cp '));
+    const copyCommands = inputText.split('\n').filter(line => line.trim().startsWith('cp '));
     if (copyCommands.length === 0) {
       console.log('\n=== UNTRANSCRIBED FILES ===\n');
       console.log('# No files to copy');
@@ -45,7 +44,7 @@ process.stdin.on('end', async () => {
     // Get list of transcribed source files
     const { data: expertDocs } = await supabase
       .from('expert_documents')
-      .select('source_id, sources_google\!inner(name)')
+      .select('source_id, sources_google!inner(name)')
       .not('raw_content', 'is', null);
     
     // Create set of already transcribed filenames
@@ -53,7 +52,7 @@ process.stdin.on('end', async () => {
     
     // Filter out already transcribed files
     const untranscribedCommands = fileInfo
-      .filter(info => \!transcribedFiles.has(info.filename))
+      .filter(info => !transcribedFiles.has(info.filename))
       .map(info => info.command);
     
     // Output result
@@ -67,4 +66,25 @@ process.stdin.on('end', async () => {
     console.error(`Error: ${error.message}`);
     process.exit(1);
   }
-});
+}
+
+// If input file is specified, read from file
+if (inputFile) {
+  try {
+    const inputText = fs.readFileSync(inputFile, 'utf8');
+    processInput(inputText);
+  } catch (error) {
+    Logger.error(`Error reading input file: ${error.message}`);
+    process.exit(1);
+  }
+} else {
+  // Read list of copy commands from stdin
+  let input = '';
+  process.stdin.on('data', chunk => {
+    input += chunk;
+  });
+
+  process.stdin.on('end', async () => {
+    await processInput(input);
+  });
+}

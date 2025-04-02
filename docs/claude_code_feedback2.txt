@@ -14,7 +14,9 @@ Commands:
   transcribe [fileId|path]     Transcribe audio file using Whisper
   transcribe-with-summary      Transcribe and generate summary of audio file
   process-video [fileId]       Full pipeline: convert + transcribe (recommended for single files)
-  batch-process-media          Complete workflow: find, copy, convert, and transcribe (recommended for bulk processing)
+  batch-process-media          Complete workflow: find, copy, rename, register, update, convert, and transcribe files
+                               Options: --skip-copy, --skip-rename, --skip-register, --skip-disk-status,
+                               --skip-expert-docs, --skip-conversion, --skip-m4a-sync, --skip-transcription
   list-transcribable           List documents ready for transcription with copy-paste commands
   show-transcription-status    Show detailed status of transcriptions and processing times
   list-pending                 List pending files waiting for processing
@@ -50,11 +52,16 @@ Options:
   --model [tiny|base|small]    Specify Whisper model (default: base)
   --accelerator [T4|A10G|A100] Specify GPU accelerator (default: T4)
   --skip-copy                  Skip the copy step (for batch-process-media)
-  --skip-conversion            Skip the conversion step (for batch-process-media)
+  --skip-rename                Skip the rename step (for batch-process-media)
+  --skip-register              Skip the register step (for batch-process-media)
+  --skip-disk-status           Skip the disk status update step (for batch-process-media)
+  --skip-expert-docs           Skip the register expert docs step (for batch-process-media)
+  --skip-conversion            Skip the MP4 to M4A conversion step (for batch-process-media)
+  --skip-m4a-sync              Skip the M4A sync step (for batch-process-media)
   --skip-transcription         Skip the transcription step (for batch-process-media)
   --parallel                   Process files in parallel (for batch-transcribe)
   --max-parallel [n]           Maximum number of parallel processes (default: 3)
-  --force                     Process even if already processed
+  --force                      Process even if already processed
   --resume                     Resume processing for previously skipped file (for mark-skip-processing)
   --output [path]              Specify output directory
   --auto-process               Automatically process files (for find-processable-videos)
@@ -69,6 +76,7 @@ Examples:
   media-processing-cli.sh batch-process-media --limit 25 --model base --accelerator T4
   media-processing-cli.sh batch-process-media --dry-run
   media-processing-cli.sh batch-process-media --skip-copy --limit 10
+  media-processing-cli.sh batch-process-media --skip-copy --skip-rename --skip-register
   media-processing-cli.sh batch-transcribe --parallel --max-parallel 3 --accelerator A10G
   media-processing-cli.sh list-pending --limit 10
   media-processing-cli.sh mark-skip-processing "Large Lecture.mp4" --dry-run
@@ -78,7 +86,6 @@ Examples:
   media-processing-cli.sh update-disk-status --dry-run
   media-processing-cli.sh register-expert-docs --limit 20
   media-processing-cli.sh purge-processed-media --dry-run
-raybunnage@Rays-Laptop dhg-mono % 
  
 
 
