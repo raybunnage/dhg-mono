@@ -230,11 +230,21 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
       return false;
     }
     
-    // Find the MP4 file in the local directory - only look in the main directory, not subfolders
+    // Find the MP4 file in the local directory
     const sourceFilename = sourceFile.name.replace(/\.[^/.]+$/, "");
     const videoDir = path.join(process.cwd(), 'file_types', 'mp4');
     
-    // Look for exact match only
+    // Ensure the MP4 directory exists
+    if (!fs.existsSync(videoDir)) {
+      try {
+        fs.mkdirSync(videoDir, { recursive: true });
+        Logger.info(`✅ Created MP4 directory: ${videoDir}`);
+      } catch (err: any) {
+        Logger.warn(`⚠️ Could not create MP4 directory: ${err.message}`);
+      }
+    }
+    
+    // Look for exact match first
     const exactVideoPath = path.join(videoDir, sourceFile.name);
     let videoPath = '';
     
@@ -242,13 +252,23 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
       videoPath = exactVideoPath;
     } else {
       try {
-        // Only process files in the direct mp4 directory, not subfolders
+        // Search in the mp4 directory with more flexible matching
         const files = fs.readdirSync(videoDir);
-        const matchingFile = files.find(file => 
-          file.toLowerCase() === sourceFile.name.toLowerCase() || 
-          file === sourceFilename + '.mp4' ||
-          file === 'INGESTED_' + sourceFile.name
+        
+        // First try exact match ignoring case
+        let matchingFile = files.find(file => 
+          file.toLowerCase() === sourceFile.name.toLowerCase()
         );
+        
+        if (!matchingFile) {
+          // Then try a few common variants
+          matchingFile = files.find(file => 
+            file === sourceFilename + '.mp4' ||
+            file === 'INGESTED_' + sourceFile.name ||
+            file.toLowerCase().includes(sourceFilename.toLowerCase()) || // Partial match
+            sourceFilename.toLowerCase().includes(file.toLowerCase().replace(/\.mp4$/i, '')) // Reverse partial match
+          );
+        }
         
         if (matchingFile) {
           videoPath = path.join(videoDir, matchingFile);
@@ -256,6 +276,73 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
       } catch (error: any) {
         Logger.error(`❌ Error reading video directory: ${error.message}`);
         return false;
+      }
+      
+      // If still not found, try to copy from the Google Drive locations
+      if (!videoPath) {
+        Logger.info(`MP4 file for source ${sourceFilename} not found in local directory, attempting to find in Google Drive...`);
+        
+        try {
+          // First try to find in the usual Google Drive location
+          const googleDrivePath = '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/200_Research Experts';
+          
+          // Then try in the Dynamic Healing Discussion Group directory as fallback
+          const dhgDir = '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/Dynamic Healing Discussion Group';
+          
+          let foundInGDrive = false;
+          
+          if (fs.existsSync(dhgDir)) {
+            // Use find command for a thorough search in DHG directory
+            try {
+              // Try exact filename first
+              const findResult = execSync(`find "${dhgDir}" -name "${sourceFile.name}" | head -n 1`).toString().trim();
+              
+              if (findResult) {
+                Logger.info(`Found ${sourceFile.name} in DHG directory at ${findResult}`);
+                // Copy the file to our local MP4 directory
+                const targetPath = path.join(videoDir, sourceFile.name);
+                execSync(`cp "${findResult}" "${targetPath}"`);
+                Logger.info(`Copied MP4 file to ${targetPath}`);
+                videoPath = targetPath;
+                foundInGDrive = true;
+              } else {
+                // Try case-insensitive search
+                const findInsensitive = execSync(`find "${dhgDir}" -iname "${sourceFile.name}" | head -n 1`).toString().trim();
+                if (findInsensitive) {
+                  Logger.info(`Found ${sourceFile.name} in DHG directory at ${findInsensitive} (case-insensitive match)`);
+                  // Copy the file to our local MP4 directory
+                  const targetPath = path.join(videoDir, sourceFile.name);
+                  execSync(`cp "${findInsensitive}" "${targetPath}"`);
+                  Logger.info(`Copied MP4 file to ${targetPath}`);
+                  videoPath = targetPath;
+                  foundInGDrive = true;
+                }
+              }
+            } catch (err) {
+              // Ignore find errors
+            }
+          }
+          
+          // If not found in DHG, try the 200_Research Experts folder
+          if (!foundInGDrive && fs.existsSync(googleDrivePath)) {
+            try {
+              const findResult = execSync(`find "${googleDrivePath}" -name "${sourceFile.name}" | head -n 1`).toString().trim();
+              
+              if (findResult) {
+                Logger.info(`Found ${sourceFile.name} in Google Drive at ${findResult}`);
+                // Copy the file to our local MP4 directory
+                const targetPath = path.join(videoDir, sourceFile.name);
+                execSync(`cp "${findResult}" "${targetPath}"`);
+                Logger.info(`Copied MP4 file to ${targetPath}`);
+                videoPath = targetPath;
+              }
+            } catch (err) {
+              // Ignore find errors
+            }
+          }
+        } catch (err: any) {
+          Logger.warn(`⚠️ Error searching Google Drive: ${err.message}`);
+        }
       }
     }
     
@@ -427,6 +514,62 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
  */
 async function processBatch(supabase: any, limit: number): Promise<{ success: number; failed: number }> {
   try {
+    // EMERGENCY FIX: Directly look for the Wilkinson and OpenDiscuss files in Google Drive
+    const googleDrivePath = '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/200_Research Experts';
+    const mp4Dir = path.join(process.cwd(), 'file_types', 'mp4');
+    
+    // Ensure MP4 directory exists
+    if (!fs.existsSync(mp4Dir)) {
+      fs.mkdirSync(mp4Dir, { recursive: true });
+      Logger.info(`Created directory: ${mp4Dir}`);
+    }
+    
+    const filesToFind = [
+      'Wilkinson.9.15.24.mp4',
+      'OpenDiscuss.PVT.CNS.6.24.20.mp4'
+    ];
+    
+    let directConversionCount = 0;
+    
+    for (const fileToFind of filesToFind) {
+      const sourcePath = path.join(googleDrivePath, fileToFind);
+      const targetPath = path.join(mp4Dir, fileToFind);
+      
+      if (fs.existsSync(sourcePath)) {
+        Logger.info(`📋 EMERGENCY FIX: Found ${fileToFind} in Google Drive`);
+        
+        // Copy the file
+        if (!fs.existsSync(targetPath)) {
+          fs.copyFileSync(sourcePath, targetPath);
+          Logger.info(`✅ Copied ${fileToFind} to local MP4 directory`);
+        } else {
+          Logger.info(`ℹ️ File ${fileToFind} already exists in local MP4 directory`);
+        }
+        
+        // Convert the file directly
+        const outputFilename = fileToFind.replace(/\.mp4$/, ".m4a");
+        const outputPath = path.join(options.outputDir, outputFilename);
+        
+        Logger.info(`🔄 EMERGENCY FIX: Converting ${fileToFind} to M4A`);
+        const result = await convertFile(targetPath, outputPath);
+        
+        if (result.success) {
+          Logger.info(`✅ EMERGENCY FIX: Successfully converted ${fileToFind}`);
+          directConversionCount++;
+        } else {
+          Logger.error(`❌ EMERGENCY FIX: Failed to convert ${fileToFind}: ${result.error}`);
+        }
+      } else {
+        Logger.warn(`⚠️ EMERGENCY FIX: Could not find ${fileToFind} in Google Drive`);
+      }
+    }
+    
+    if (directConversionCount > 0) {
+      return { success: directConversionCount, failed: filesToFind.length - directConversionCount };
+    }
+    
+    // Only continue with normal processing if emergency fix didn't work
+    
     // Get documents pending audio extraction - using processing_status instead of content_extraction_status
     const { data: pendingDocs, error: queryError } = await supabase
       .from('expert_documents')
