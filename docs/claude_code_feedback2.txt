@@ -1,10 +1,10 @@
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh --help
-./scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --limit 2 --parallel --max-parallel 2 --accelerator A10G
+./scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --limit 5 --parallel --max-parallel 2 --accelerator A10G
 ./scripts/cli-pipeline/media-processing/media-processing-cli.sh process-local-mp4-files 
 ./scripts/cli-pipeline/media-processing/media-processing-cli.sh purge-processed-media --dry-run
+./scripts/cli-pipeline/media-processing/media-processing-cli.sh show-transcription-status 
 
-
-
+./scripts/cli-pipeline/media-processing/media-processing-cli.sh batch-process-media --limit 20 
 
  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh find-processable-videos
    ./scripts/cli-pipeline/media-processing/media-processing-cli.sh transcribe 8c7f604a-7595-490a-b8d7-b839c3815b43 --model base --force

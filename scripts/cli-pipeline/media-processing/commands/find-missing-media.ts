@@ -23,6 +23,7 @@ import * as os from 'os';
 const { Logger } = require('../../../../packages/shared/utils');
 const { SupabaseClientService } = require('../../../../packages/shared/services/supabase-client');
 const { LogLevel } = require('../../../../packages/shared/utils/logger');
+const { execSync } = require('child_process');
 
 // Initialize logger
 Logger.setLevel(LogLevel.INFO);
@@ -148,43 +149,119 @@ function findFileInDirectory(filename: string, directory: string, deep: boolean 
     
     // If deep search is enabled, look in subdirectories
     if (deep) {
-      // If not found, specifically check "Dynamic Healing Discussion Group" directory 
-      // as a fallback before doing a full recursive search
-      const dhgDir = path.join(directory, "..", "Dynamic Healing Discussion Group");
-      if (fs.existsSync(dhgDir)) {
-        // First do a quick search for the file directly within this directory
-        try {
-          const dhgEntries = fs.readdirSync(dhgDir, { withFileTypes: true });
-          const dhgMatch = dhgEntries.find(entry => 
-            !entry.isDirectory() && 
-            entry.name.toLowerCase() === filename.toLowerCase()
-          );
-          
-          if (dhgMatch) {
-            return path.join(dhgDir, dhgMatch.name);
-          }
-          
-          // Search one level deeper with a more thorough approach
-          for (const entry of dhgEntries) {
-            if (entry.isDirectory()) {
-              try {
-                const subEntries = fs.readdirSync(path.join(dhgDir, entry.name), { withFileTypes: true });
-                const match = subEntries.find(subEntry => 
-                  !subEntry.isDirectory() && 
-                  subEntry.name.toLowerCase() === filename.toLowerCase()
-                );
-                
-                if (match) {
-                  return path.join(dhgDir, entry.name, match.name);
+      // Try additional known directories as fallbacks before doing a full recursive search
+      const additionalDirs = [
+        path.join(directory, "..", "Dynamic Healing Discussion Group"),
+        path.join(directory, "..", "Polyvagal Steering Group"),
+        path.join(directory, "..", "900_Legacy All Domains/599_AI-Process Legacy/596_AI-Inputs/556_Training Transcripts")
+      ];
+      // Check each of the additional directories
+      for (const additionalDir of additionalDirs) {
+        if (fs.existsSync(additionalDir)) {
+          // First do a quick search for the file directly within this directory
+          try {
+            const entries = fs.readdirSync(additionalDir, { withFileTypes: true });
+            const exactMatch = entries.find(entry => 
+              !entry.isDirectory() && 
+              entry.name.toLowerCase() === filename.toLowerCase()
+            );
+            
+            if (exactMatch) {
+              return path.join(additionalDir, exactMatch.name);
+            }
+            
+            // Search one level deeper with a more thorough approach
+            for (const entry of entries) {
+              if (entry.isDirectory()) {
+                try {
+                  const subEntries = fs.readdirSync(path.join(additionalDir, entry.name), { withFileTypes: true });
+                  const match = subEntries.find(subEntry => 
+                    !subEntry.isDirectory() && 
+                    subEntry.name.toLowerCase() === filename.toLowerCase()
+                  );
+                  
+                  if (match) {
+                    return path.join(additionalDir, entry.name, match.name);
+                  }
+                } catch (e: any) {
+                  // Continue if we can't read a subdirectory
+                  Logger.debug(`Error reading subdirectory: ${e?.message || String(e)}`);
                 }
-              } catch (e) {
-                // Continue if we can't read a subdirectory
               }
             }
+          } catch (err: any) {
+            // Ignore errors and continue searching
+            Logger.debug(`Error searching in additional directory: ${err?.message || String(err)}`);
           }
-        } catch (err) {
-          // Ignore errors and continue searching
         }
+      }
+      
+      // If still not found, try a more aggressive search with the 'find' command
+      // but only for explicitly requested files we know we need
+      try {
+        const importantFilePatterns = [
+          "PVG Discussion", 
+          "Wilkinson", 
+          "OpenDiscuss"
+        ];
+        
+        // For INGESTED_ prefixed files, we shouldn't search for them in Google Drive
+        // as they're locally generated after processing
+        if (filename.startsWith("INGESTED_")) {
+          return null;
+        }
+        
+        // Check if this is one of our important files
+        const isImportantFile = importantFilePatterns.some(pattern => 
+          filename.toLowerCase().includes(pattern.toLowerCase())
+        );
+        
+        if (isImportantFile) {
+          Logger.info(`Important file not found in regular locations: ${filename}, trying full drive search...`);
+          const rootDir = '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive';
+          
+          try {
+            // Specific paths we know might contain the files we need
+            const knownPaths = [
+              '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/Dynamic Healing Discussion Group',
+              '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/900_Legacy All Domains/599_AI-Process Legacy/596_AI-Inputs/556_Training Transcripts',
+              '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/Polyvagal Steering Group',
+              '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/500_AI_Process/501_Input_File_Types/503_Input_MP4s'
+            ];
+            
+            // Try each known path first (much faster than searching all of My Drive)
+            for (const knownPath of knownPaths) {
+              if (!fs.existsSync(knownPath)) continue;
+              
+              try {
+                const findCommand = `find "${knownPath}" -name "${filename}" -type f -print -quit`;
+                const result = execSync(findCommand, { timeout: 5000 }).toString().trim();
+                
+                if (result) {
+                  Logger.info(`Found important file in known location: ${result}`);
+                  return result;
+                }
+              } catch (err) {
+                // Continue to next path if this one fails
+              }
+            }
+            
+            // Last resort - try full drive but be very careful about timeout
+            const findCommand = `find "${rootDir}" -name "${filename}" -type f -print -quit`;
+            const result = execSync(findCommand, { timeout: 10000 }).toString().trim();
+            
+            if (result) {
+              Logger.info(`Found important file via find command: ${result}`);
+              return result;
+            }
+          } catch (e: any) {
+            // This could timeout which is expected
+            Logger.warn(`Find command failed or timed out: ${e?.message || String(e)}`);
+          }
+        }
+      } catch (err: any) {
+        // Ignore global search errors
+        Logger.warn(`Global search error: ${err?.message || String(err)}`);
       }
       
       // Then do the regular recursive search
