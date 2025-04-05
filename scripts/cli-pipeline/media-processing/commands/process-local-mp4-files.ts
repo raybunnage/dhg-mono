@@ -542,6 +542,12 @@ async function processMP4Files(): Promise<MP4FileInfo[]> {
       const filePath = path.join(MP4_DIR, filename);
       
       try {
+        // Verify the file actually exists before attempting to process it
+        if (!fs.existsSync(filePath)) {
+          Logger.warn(`File ${filePath} does not exist. Skipping.`);
+          continue;
+        }
+        
         const stats = fs.statSync(filePath);
         
         const fileInfo: MP4FileInfo = {
@@ -664,34 +670,19 @@ async function processMP4Files(): Promise<MP4FileInfo[]> {
       return fileInfoList;
     }
     
-    // Use a batch transcribe command with parallel processing
-    const documentIds = registeredFiles.map(f => f.documentId).join(',');
-    const scriptPath = path.join(__dirname, '..', 'media-processing-cli.sh');
-    const batchTranscribeCommand = `${scriptPath} batch-transcribe --model base --accelerator A10G --parallel --max-parallel ${options.maxParallel}`;
-    
-    Logger.info(`Running batch transcription command: ${batchTranscribeCommand}`);
-    
-    try {
-      execSync(batchTranscribeCommand, { stdio: 'inherit' });
-      
-      // Mark all files as transcribed
-      for (const fileInfo of registeredFiles) {
-        fileInfo.status = 'transcribed';
-      }
-    } catch (error: any) {
-      Logger.error(`Error running batch transcription: ${error.message}`);
-      Logger.warn('Some files may have failed to transcribe. Will attempt individually.');
-      
-      // Try to transcribe files individually
-      for (const fileInfo of registeredFiles) {
-        if (fileInfo.documentId) {
-          const success = await transcribeFile(fileInfo.documentId);
-          if (success) {
-            fileInfo.status = 'transcribed';
-          } else {
-            fileInfo.status = 'error';
-            fileInfo.error = 'Individual transcription failed';
-          }
+    // Transcribe files individually to ensure strict control over which files are processed
+    Logger.info(`Transcribing ${registeredFiles.length} files individually`);
+    for (const fileInfo of registeredFiles) {
+      if (fileInfo.documentId) {
+        Logger.info(`Transcribing ${fileInfo.name} with ID ${fileInfo.documentId}`);
+        const success = await transcribeFile(fileInfo.documentId);
+        if (success) {
+          fileInfo.status = 'transcribed';
+          Logger.info(`✅ Successfully transcribed ${fileInfo.name}`);
+        } else {
+          fileInfo.status = 'error';
+          fileInfo.error = 'Individual transcription failed';
+          Logger.error(`❌ Failed to transcribe ${fileInfo.name}`);
         }
       }
     }

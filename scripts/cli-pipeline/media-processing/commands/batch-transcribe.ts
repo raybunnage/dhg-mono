@@ -273,7 +273,79 @@ async function main() {
       process.exit(0);
     }
     
-    Logger.info(`📋 Found ${documentIds.length} documents ready for transcription`);
+    // Verify that each document has a corresponding audio file before processing
+    Logger.info(`📋 Found ${documentIds.length} documents ready for transcription - verifying audio files`);
+    const verifiedDocumentIds: string[] = [];
+    
+    for (const docId of documentIds) {
+      // Get the document source info
+      const { data: document, error: docError } = await supabase
+        .from('expert_documents')
+        .select('id, source_id')
+        .eq('id', docId)
+        .single();
+        
+      if (docError || !document) {
+        Logger.warn(`⚠️ Could not verify document ${docId}: ${docError?.message || 'Not found'}`);
+        continue;
+      }
+      
+      // Get the source file information
+      const { data: sourceFile, error: sourceError } = await supabase
+        .from('sources_google')
+        .select('id, name')
+        .eq('id', document.source_id)
+        .single();
+        
+      if (sourceError || !sourceFile) {
+        Logger.warn(`⚠️ Could not verify source for document ${docId}: ${sourceError?.message || 'Source not found'}`);
+        continue;
+      }
+      
+      // Check if we have the corresponding audio file
+      const sourceFilename = sourceFile.name.replace(/\.[^/.]+$/, "");
+      const audioDir = path.join(process.cwd(), 'file_types', 'm4a');
+      let audioFileExists = false;
+      
+      try {
+        const files = fs.readdirSync(audioDir);
+        const matchingFile = files.find(file => 
+          (file === sourceFilename + '.m4a' || 
+          file === 'INGESTED_' + sourceFilename + '.m4a' ||
+          file.toLowerCase().includes(sourceFilename.toLowerCase()))
+        );
+        
+        if (matchingFile) {
+          audioFileExists = true;
+          verifiedDocumentIds.push(docId);
+          Logger.info(`✅ Verified audio file exists for document ${docId} (${sourceFile.name})`);
+        } else {
+          Logger.warn(`⚠️ No audio file found for document ${docId} (${sourceFile.name}) - skipping`);
+          
+          // Update document status to error
+          const { error: updateError } = await supabase
+            .from('expert_documents')
+            .update({ 
+              processing_status: 'error',
+              processing_error: `Audio file not found for ${sourceFilename}`
+            })
+            .eq('id', docId);
+            
+          if (updateError) {
+            Logger.error(`❌ Error updating document status: ${updateError.message}`);
+          }
+        }
+      } catch (error: any) {
+        Logger.warn(`⚠️ Error checking audio for document ${docId}: ${error.message}`);
+      }
+    }
+    
+    if (verifiedDocumentIds.length === 0) {
+      Logger.info('ℹ️ No documents with verified audio files found for transcription');
+      process.exit(0);
+    }
+    
+    Logger.info(`📋 Processing ${verifiedDocumentIds.length} verified documents`);
     
     // Start timestamp for timing
     const startTime = Date.now();
@@ -281,11 +353,11 @@ async function main() {
     // Process documents
     let results;
     if (options.parallel) {
-      Logger.info(`🔄 Processing ${documentIds.length} documents in parallel (max ${options.maxParallel} at a time)`);
-      results = await processInParallel(documentIds, options.maxParallel);
+      Logger.info(`🔄 Processing ${verifiedDocumentIds.length} documents in parallel (max ${options.maxParallel} at a time)`);
+      results = await processInParallel(verifiedDocumentIds, options.maxParallel);
     } else {
-      Logger.info(`🔄 Processing ${documentIds.length} documents sequentially`);
-      results = await processSequentially(documentIds);
+      Logger.info(`🔄 Processing ${verifiedDocumentIds.length} documents sequentially`);
+      results = await processSequentially(verifiedDocumentIds);
     }
     
     // Calculate processing time

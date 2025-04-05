@@ -199,6 +199,20 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     
     if (!audioPath) {
       Logger.error(`❌ Audio file for source ${sourceFilename} not found`);
+      
+      // Update status to error so we don't keep trying to process this document
+      const { error: updateError } = await supabase
+        .from('expert_documents')
+        .update({ 
+          processing_status: 'error',
+          processing_error: `Audio file not found for ${sourceFilename}`
+        })
+        .eq('id', documentId);
+      
+      if (updateError) {
+        Logger.error(`❌ Error updating document status: ${updateError.message}`);
+      }
+      
       return false;
     }
     

@@ -283,61 +283,78 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
         Logger.info(`MP4 file for source ${sourceFilename} not found in local directory, attempting to find in Google Drive...`);
         
         try {
-          // First try to find in the usual Google Drive location
-          const googleDrivePath = '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/200_Research Experts';
-          
-          // Then try in the Dynamic Healing Discussion Group directory as fallback
-          const dhgDir = '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/Dynamic Healing Discussion Group';
+          // Try multiple known Google Drive locations
+          const drivePaths = [
+            '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/200_Research Experts',
+            '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/Dynamic Healing Discussion Group',
+            '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/900_Legacy All Domains/599_AI-Process Legacy/596_AI-Inputs/556_Training Transcripts',
+            '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive/Polyvagal Steering Group'
+          ];
           
           let foundInGDrive = false;
           
-          if (fs.existsSync(dhgDir)) {
-            // Use find command for a thorough search in DHG directory
-            try {
-              // Try exact filename first
-              const findResult = execSync(`find "${dhgDir}" -name "${sourceFile.name}" | head -n 1`).toString().trim();
-              
-              if (findResult) {
-                Logger.info(`Found ${sourceFile.name} in DHG directory at ${findResult}`);
-                // Copy the file to our local MP4 directory
-                const targetPath = path.join(videoDir, sourceFile.name);
-                execSync(`cp "${findResult}" "${targetPath}"`);
-                Logger.info(`Copied MP4 file to ${targetPath}`);
-                videoPath = targetPath;
-                foundInGDrive = true;
-              } else {
-                // Try case-insensitive search
-                const findInsensitive = execSync(`find "${dhgDir}" -iname "${sourceFile.name}" | head -n 1`).toString().trim();
-                if (findInsensitive) {
-                  Logger.info(`Found ${sourceFile.name} in DHG directory at ${findInsensitive} (case-insensitive match)`);
+          // Try to find the file in all known locations
+          for (const drivePath of drivePaths) {
+            if (foundInGDrive) break; // Skip if already found
+            
+            if (fs.existsSync(drivePath)) {
+              Logger.info(`Searching in ${drivePath}...`);
+              try {
+                // Try exact filename first
+                const findResult = execSync(`find "${drivePath}" -name "${sourceFile.name}" | head -n 1`).toString().trim();
+                
+                if (findResult) {
+                  Logger.info(`Found ${sourceFile.name} at ${findResult}`);
                   // Copy the file to our local MP4 directory
                   const targetPath = path.join(videoDir, sourceFile.name);
-                  execSync(`cp "${findInsensitive}" "${targetPath}"`);
+                  execSync(`cp "${findResult}" "${targetPath}"`);
                   Logger.info(`Copied MP4 file to ${targetPath}`);
                   videoPath = targetPath;
                   foundInGDrive = true;
+                  break;
+                } else {
+                  // Try case-insensitive search
+                  const findInsensitive = execSync(`find "${drivePath}" -iname "${sourceFile.name}" | head -n 1`).toString().trim();
+                  if (findInsensitive) {
+                    Logger.info(`Found ${sourceFile.name} at ${findInsensitive} (case-insensitive match)`);
+                    // Copy the file to our local MP4 directory
+                    const targetPath = path.join(videoDir, sourceFile.name);
+                    execSync(`cp "${findInsensitive}" "${targetPath}"`);
+                    Logger.info(`Copied MP4 file to ${targetPath}`);
+                    videoPath = targetPath;
+                    foundInGDrive = true;
+                    break;
+                  }
                 }
+              } catch (err: any) {
+                Logger.warn(`Error searching in ${drivePath}: ${err?.message || String(err)}`);
+                // Continue to next path
               }
-            } catch (err) {
-              // Ignore find errors
             }
           }
           
-          // If not found in DHG, try the 200_Research Experts folder
-          if (!foundInGDrive && fs.existsSync(googleDrivePath)) {
+          // If still not found, try a last-resort recursive search in the entire My Drive
+          if (!foundInGDrive) {
+            Logger.info('File not found in known directories, trying top-level search...');
             try {
-              const findResult = execSync(`find "${googleDrivePath}" -name "${sourceFile.name}" | head -n 1`).toString().trim();
-              
-              if (findResult) {
-                Logger.info(`Found ${sourceFile.name} in Google Drive at ${findResult}`);
-                // Copy the file to our local MP4 directory
-                const targetPath = path.join(videoDir, sourceFile.name);
-                execSync(`cp "${findResult}" "${targetPath}"`);
-                Logger.info(`Copied MP4 file to ${targetPath}`);
-                videoPath = targetPath;
+              // Limit the search to avoid taking too long
+              const rootDrivePath = '/Users/raybunnage/Library/CloudStorage/GoogleDrive-bunnage.ray@gmail.com/My Drive';
+              if (fs.existsSync(rootDrivePath)) {
+                const findCommand = `find "${rootDrivePath}" -name "${sourceFile.name}" -type f -print -quit`;
+                const findResult = execSync(findCommand, { timeout: 30000 }).toString().trim(); // 30-second timeout
+                
+                if (findResult) {
+                  Logger.info(`Found ${sourceFile.name} at ${findResult}`);
+                  // Copy the file to our local MP4 directory
+                  const targetPath = path.join(videoDir, sourceFile.name);
+                  execSync(`cp "${findResult}" "${targetPath}"`);
+                  Logger.info(`Copied MP4 file to ${targetPath}`);
+                  videoPath = targetPath;
+                }
               }
-            } catch (err) {
-              // Ignore find errors
+            } catch (err: any) {
+              // This could time out, which is expected for large directory trees
+              Logger.warn(`Top-level search timed out or failed: ${err?.message || String(err)}`);
             }
           }
         } catch (err: any) {
