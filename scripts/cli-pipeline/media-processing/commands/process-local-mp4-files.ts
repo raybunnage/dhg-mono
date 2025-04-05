@@ -33,11 +33,12 @@ Logger.setLevel(LogLevel.INFO);
 const options = {
   dryRun: false,
   force: false,
-  maxParallel: 2,
+  maxParallel: 5,
   limit: 10,
   specificFiles: '',
   skipRegistering: false,
-  skipTranscription: false
+  skipTranscription: false,
+  parallel: true
 };
 
 // Define file paths
@@ -777,6 +778,7 @@ export default async function(cliOptions?: any): Promise<void> {
     if (cliOptions.specificFiles) options.specificFiles = cliOptions.specificFiles;
     if (cliOptions.skipRegistering) options.skipRegistering = true;
     if (cliOptions.skipTranscription) options.skipTranscription = true;
+    if (cliOptions.parallel !== undefined) options.parallel = cliOptions.parallel;
   }
   
   try {
