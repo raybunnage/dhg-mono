@@ -11,7 +11,7 @@
 7. Clawson_Anger.mp4
 8. Clawson_Anger_2024_09_04.mp4
     9. Clawson_Anger_2024_09_04_transcript.mp4
-10. Clawson_sapiocortex_anger.mp4
+FAILED: 10. Clawson_sapiocortex_anger.mp4
     11. Clawson_sapiocortex_anger_2024_10_02.mp4
     12. Dan Clauw.1.22.25.mp4
 13. Fradkin.Obsessive Thoughts.1.8.23.mp4
