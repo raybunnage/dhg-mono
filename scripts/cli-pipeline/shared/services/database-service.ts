@@ -313,6 +313,24 @@ export class DatabaseService {
   }
   
   /**
+   * Update a record by ID
+   */
+  public async update<T>(
+    table: string,
+    id: string,
+    updates: Partial<T>
+  ): Promise<{ data: T | null; error: any | null }> {
+    return this.executeQuery<T>(async () => {
+      return this.getClient()
+        .from(table)
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+    });
+  }
+  
+  /**
    * Delete records from a table
    */
   public async deleteRecords<T>(
