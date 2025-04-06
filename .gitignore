@@ -161,3 +161,15 @@ script-analysis-results/**
 # Google service account key
 .service-account.json
 **/.service-account.json
+
+# Archive documentation directories
+docs/**/.archive_docs/
+docs/**/.archive_docs/**/*
+docs/**/.archive-docs/
+docs/**/.archive-docs/**/*
+
+# Specific archive paths
+docs/technical-specs/.archive_docs/
+docs/technical-specs/.archive_docs/**/*
+docs/technical-specs/.archive-docs/
+docs/technical-specs/.archive-docs/**/*
