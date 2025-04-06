@@ -28,7 +28,35 @@ export class ScriptPipelineService {
    * Private constructor to enforce singleton pattern
    */
   private constructor() {
-    this.rootDir = path.resolve(__dirname, '../../../../../');
+    // Get the absolute path to the project root - we seem to be going up too many directories
+    // Try multiple path calculation methods to find the correct root
+    
+    const path1 = path.resolve(__dirname, '../../../../../');
+    const path2 = path.resolve(__dirname, '../../../../');
+    const path3 = path.resolve(__dirname, '../../../');
+    
+    // Log all possible paths for debugging
+    console.log('Possible root paths:');
+    console.log(` - Path 1 (5 levels up): ${path1}`);
+    console.log(` - Path 2 (4 levels up): ${path2}`);
+    console.log(` - Path 3 (3 levels up): ${path3}`);
+    
+    // Check which path contains the prompts directory
+    if (fs.existsSync(path.join(path1, 'prompts'))) {
+      this.rootDir = path1;
+      console.log(`Using path1 as root: ${this.rootDir}`);
+    } else if (fs.existsSync(path.join(path2, 'prompts'))) {
+      this.rootDir = path2;
+      console.log(`Using path2 as root: ${this.rootDir}`);
+    } else if (fs.existsSync(path.join(path3, 'prompts'))) {
+      this.rootDir = path3;
+      console.log(`Using path3 as root: ${this.rootDir}`);
+    } else {
+      // Fall back to the original calculation
+      this.rootDir = process.env.ROOT_DIR || path.resolve(__dirname, '../../../../../');
+      console.log(`Falling back to default path: ${this.rootDir}`);
+    }
+    
     this.reportsDir = path.join(this.rootDir, 'reports');
     
     // Create reports directory if it doesn't exist
@@ -442,20 +470,251 @@ export class ScriptPipelineService {
     }
     
     try {
-      // Since we're transitioning away from the script-based implementation, 
-      // use a direct approach here as well
-      logger.info('Using direct implementation instead of shell script');
+      // Connect to Supabase if not already connected
+      await this.dbService.ensureConnection();
       
-      // In a real implementation, we would:
-      // 1. Query for the most recent scripts
-      // 2. For each script, extract the content
-      // 3. Send the content to Claude for classification
-      // 4. Update the database with the classification results
+      // Get the script analysis prompt
+      const fs = require('fs');
+      const path = require('path');
       
-      // For now, just return a success message
-      logger.info('Classification complete (dummy implementation)');
+      // Try to locate the script analysis prompt by searching in potential locations
+      const potentialPromptPaths = [
+        path.join(this.rootDir, 'prompts', 'script-analysis-prompt.md'),
+        path.join(this.rootDir, 'dhg-mono', 'prompts', 'script-analysis-prompt.md'),
+        path.resolve(__dirname, '../../../../..', 'prompts', 'script-analysis-prompt.md'),
+        path.resolve(__dirname, '../../../../', 'prompts', 'script-analysis-prompt.md'),
+        path.resolve(__dirname, '../../../', 'prompts', 'script-analysis-prompt.md'),
+        // Use the environment's root dir if available
+        process.env.ROOT_DIR ? path.join(process.env.ROOT_DIR, 'prompts', 'script-analysis-prompt.md') : null
+      ].filter(Boolean); // Remove nulls
       
-      return 0;
+      let promptPath = null;
+      
+      // Try each potential path
+      for (const potentialPath of potentialPromptPaths) {
+        logger.info(`Looking for script analysis prompt at: ${potentialPath}`);
+        if (fs.existsSync(potentialPath)) {
+          logger.info(`Found prompt at: ${potentialPath}`);
+          promptPath = potentialPath;
+          break;
+        }
+      }
+      
+      // Run a direct search command as a last resort
+      if (!promptPath) {
+        try {
+          logger.info('Running direct search for script-analysis-prompt.md');
+          const { execSync } = require('child_process');
+          const command = 'find "/Users/raybunnage/Documents/github" -type f -name "script-analysis-prompt.md" -not -path "*/node_modules/*" | head -n 1';
+          const result = execSync(command, { encoding: 'utf8' }).trim();
+          
+          if (result) {
+            logger.info(`Found prompt using search command: ${result}`);
+            promptPath = result;
+          }
+        } catch (error: any) {
+          logger.error(`Error searching for prompt file: ${error.message}`);
+        }
+      }
+      
+      if (!promptPath) {
+        logger.error('Script analysis prompt not found in any of the tried locations');
+        return 1;
+      }
+      
+      const analysisPrompt = fs.readFileSync(promptPath, 'utf8');
+      
+      // Query for recent scripts
+      const { data: recentScripts, error } = await this.dbService.query<{
+        id: string;
+        file_path: string;
+        title: string;
+        language: string;
+        created_at: string;
+        updated_at: string;
+        script_type_id: string | null;
+      }>(
+        'scripts',
+        {
+          select: 'id, file_path, title, language, created_at, updated_at, script_type_id',
+          order: {
+            column: 'updated_at',
+            ascending: false
+          },
+          limit: count
+        }
+      );
+      
+      if (error) {
+        logger.error(`Error retrieving recent scripts: ${error.message}`);
+        return 1;
+      }
+      
+      if (!recentScripts || recentScripts.length === 0) {
+        logger.info('No recent scripts found');
+        return 0;
+      }
+      
+      logger.info(`Found ${recentScripts.length} recent scripts to classify`);
+      
+      // Get document types from database for classification
+      const { data: documentTypes, error: docTypeError } = await this.dbService.query<{
+        id: string;
+        name: string;
+        description: string;
+        parent_type_id: string | null;
+        integration_status: string;
+      }>(
+        'document_types',
+        {
+          select: 'id, name, description, parent_type_id, integration_status'
+        }
+      );
+      
+      if (docTypeError) {
+        logger.error(`Error retrieving document types: ${docTypeError.message}`);
+        return 1;
+      }
+      
+      if (!documentTypes || documentTypes.length === 0) {
+        logger.error('No document types found in database for classification');
+        return 1;
+      }
+      
+      // Filter to get only script-related document types
+      const scriptDocumentTypes = documentTypes.filter((docType) => 
+        docType.name.toLowerCase().includes('script') || 
+        (docType.description && docType.description.toLowerCase().includes('script'))
+      );
+      
+      if (scriptDocumentTypes.length === 0) {
+        logger.warn('No script-related document types found, using all document types');
+      }
+      
+      // Process each script
+      let processedCount = 0;
+      let successCount = 0;
+      
+      for (const script of recentScripts) {
+        try {
+          logger.info(`Processing script: ${script.file_path}`);
+          
+          // Get the full path to the script file
+          const scriptFullPath = path.join(this.rootDir, script.file_path);
+          
+          // Check if file exists
+          if (!fs.existsSync(scriptFullPath)) {
+            logger.warn(`Script file not found at: ${scriptFullPath}`);
+            continue;
+          }
+          
+          // Get file content
+          const scriptContent = fs.readFileSync(scriptFullPath, 'utf8');
+          
+          // Get file metadata
+          const stats = fs.statSync(scriptFullPath);
+          const fileSize = stats.size;
+          const createdAt = stats.birthtime;
+          const modifiedAt = stats.mtime;
+          
+          // Check for package.json references
+          const packageJsonReferences = await this.findPackageJsonReferences(script.file_path);
+          
+          // Prepare the prompt with context
+          const analysisContext = `
+# Script Analysis Request
+
+## Script File Path
+${script.file_path}
+
+## Script Content
+\`\`\`
+${scriptContent}
+\`\`\`
+
+## File Metadata
+- File Size: ${fileSize} bytes
+- Created: ${createdAt.toISOString()}
+- Last Modified: ${modifiedAt.toISOString()}
+
+## Package.json References
+${JSON.stringify(packageJsonReferences, null, 2)}
+
+## Available Document Types for Classification
+${JSON.stringify(scriptDocumentTypes.length > 0 ? scriptDocumentTypes : documentTypes, null, 2)}
+
+Please analyze this script and provide a full assessment according to the instructions.
+`;
+
+          // Combined prompt
+          const fullPrompt = `${analysisPrompt}\n\n${analysisContext}`;
+          
+          // Call Claude API with optimized settings
+          const options = {
+            model: 'claude-3-7-sonnet-20250219',
+            temperature: 0.2,
+            maxTokens: 4000
+          };
+          
+          logger.info(`Submitting script for classification: ${script.file_path}`);
+          
+          const classificationResult = await this.claudeService.getJsonResponse<{
+            script_type_id: string;
+            ai_generated_tags: string[];
+            title: string;
+            summary: any;
+            ai_assessment: any;
+            assessment_quality_score: number;
+            id?: string;
+            created_at?: string;
+            file_path?: string;
+          }>(fullPrompt, options);
+          
+          if (!classificationResult || !classificationResult.script_type_id) {
+            logger.warn(`Invalid classification result for script: ${script.file_path}`);
+            continue;
+          }
+          
+          // Remove any fields that shouldn't be updated
+          delete classificationResult.id;
+          delete classificationResult.created_at;
+          delete classificationResult.file_path;
+          
+          // Update script record in database
+          const { error: updateError } = await this.dbService.update(
+            'scripts',
+            script.id,
+            {
+              script_type_id: classificationResult.script_type_id,
+              ai_generated_tags: classificationResult.ai_generated_tags,
+              title: classificationResult.title,
+              summary: classificationResult.summary,
+              ai_assessment: classificationResult.ai_assessment,
+              assessment_quality_score: classificationResult.assessment_quality_score,
+              assessment_created_at: new Date().toISOString(),
+              assessment_updated_at: new Date().toISOString(),
+              assessment_model: "Claude 3.7 Sonnet"
+            }
+          );
+          
+          if (updateError) {
+            logger.error(`Error updating script record: ${updateError.message}`);
+            continue;
+          }
+          
+          logger.info(`Successfully classified script: ${script.file_path} as type: ${classificationResult.script_type_id}`);
+          successCount++;
+          
+        } catch (scriptError: any) {
+          logger.error(`Error processing script ${script.file_path}: ${scriptError.message}`);
+        }
+        
+        processedCount++;
+      }
+      
+      logger.info(`Classification complete. Processed ${processedCount} scripts, ${successCount} successfully classified.`);
+      
+      return processedCount > 0 && successCount > 0 ? 0 : 1;
     } catch (error: any) {
       logger.error('Error during script classification', error);
       return 1;
@@ -475,23 +734,312 @@ export class ScriptPipelineService {
     }
     
     try {
-      // Since we're transitioning away from the script-based implementation, 
-      // use a direct approach here as well
-      logger.info('Using direct implementation instead of shell script');
+      // Connect to Supabase if not already connected
+      await this.dbService.ensureConnection();
       
-      // In a real implementation, we would:
-      // 1. Query for untyped scripts
-      // 2. For each script, extract the content
-      // 3. Send the content to Claude for classification
-      // 4. Update the database with the classification results
+      // Get the script analysis prompt
+      const fs = require('fs');
+      const path = require('path');
       
-      // For now, just return a success message
-      logger.info('Classification of untyped scripts complete (dummy implementation)');
+      // Try to locate the script analysis prompt by searching in potential locations
+      const potentialPromptPaths = [
+        path.join(this.rootDir, 'prompts', 'script-analysis-prompt.md'),
+        path.join(this.rootDir, 'dhg-mono', 'prompts', 'script-analysis-prompt.md'),
+        path.resolve(__dirname, '../../../../..', 'prompts', 'script-analysis-prompt.md'),
+        path.resolve(__dirname, '../../../../', 'prompts', 'script-analysis-prompt.md'),
+        path.resolve(__dirname, '../../../', 'prompts', 'script-analysis-prompt.md'),
+        // Use the environment's root dir if available
+        process.env.ROOT_DIR ? path.join(process.env.ROOT_DIR, 'prompts', 'script-analysis-prompt.md') : null
+      ].filter(Boolean); // Remove nulls
       
-      return 0;
+      let promptPath = null;
+      
+      // Try each potential path
+      for (const potentialPath of potentialPromptPaths) {
+        logger.info(`Looking for script analysis prompt at: ${potentialPath}`);
+        if (fs.existsSync(potentialPath)) {
+          logger.info(`Found prompt at: ${potentialPath}`);
+          promptPath = potentialPath;
+          break;
+        }
+      }
+      
+      // Run a direct search command as a last resort
+      if (!promptPath) {
+        try {
+          logger.info('Running direct search for script-analysis-prompt.md');
+          const { execSync } = require('child_process');
+          const command = 'find "/Users/raybunnage/Documents/github" -type f -name "script-analysis-prompt.md" -not -path "*/node_modules/*" | head -n 1';
+          const result = execSync(command, { encoding: 'utf8' }).trim();
+          
+          if (result) {
+            logger.info(`Found prompt using search command: ${result}`);
+            promptPath = result;
+          }
+        } catch (error: any) {
+          logger.error(`Error searching for prompt file: ${error.message}`);
+        }
+      }
+      
+      if (!promptPath) {
+        logger.error('Script analysis prompt not found in any of the tried locations');
+        return 1;
+      }
+      
+      const analysisPrompt = fs.readFileSync(promptPath, 'utf8');
+      
+      // Query for untyped scripts
+      const { data: untypedScripts, error } = await this.dbService.query<{
+        id: string;
+        file_path: string;
+        title: string;
+        language: string;
+        created_at: string;
+        updated_at: string;
+      }>(
+        'scripts',
+        {
+          select: 'id, file_path, title, language, created_at, updated_at',
+          filter: {
+            script_type_id: 'is.null'
+          },
+          order: {
+            column: 'updated_at',
+            ascending: false
+          },
+          limit: count
+        }
+      );
+      
+      if (error) {
+        logger.error(`Error retrieving untyped scripts: ${error.message}`);
+        return 1;
+      }
+      
+      if (!untypedScripts || untypedScripts.length === 0) {
+        logger.info('No untyped scripts found');
+        return 0;
+      }
+      
+      logger.info(`Found ${untypedScripts.length} untyped scripts to classify`);
+      
+      // Get document types from database for classification
+      const { data: documentTypes, error: docTypeError } = await this.dbService.query<{
+        id: string;
+        name: string;
+        description: string;
+        parent_type_id: string | null;
+        integration_status: string;
+      }>(
+        'document_types',
+        {
+          select: 'id, name, description, parent_type_id, integration_status'
+        }
+      );
+      
+      if (docTypeError) {
+        logger.error(`Error retrieving document types: ${docTypeError.message}`);
+        return 1;
+      }
+      
+      if (!documentTypes || documentTypes.length === 0) {
+        logger.error('No document types found in database for classification');
+        return 1;
+      }
+      
+      // Filter to get only script-related document types
+      const scriptDocumentTypes = documentTypes.filter((docType) => 
+        docType.name.toLowerCase().includes('script') || 
+        (docType.description && docType.description.toLowerCase().includes('script'))
+      );
+      
+      if (scriptDocumentTypes.length === 0) {
+        logger.warn('No script-related document types found, using all document types');
+      }
+      
+      // Process each untyped script
+      let processedCount = 0;
+      let successCount = 0;
+      
+      for (const script of untypedScripts) {
+        try {
+          logger.info(`Processing script: ${script.file_path}`);
+          
+          // Get the full path to the script file
+          const scriptFullPath = path.join(this.rootDir, script.file_path);
+          
+          // Check if file exists
+          if (!fs.existsSync(scriptFullPath)) {
+            logger.warn(`Script file not found at: ${scriptFullPath}`);
+            continue;
+          }
+          
+          // Get file content
+          const scriptContent = fs.readFileSync(scriptFullPath, 'utf8');
+          
+          // Get file metadata
+          const stats = fs.statSync(scriptFullPath);
+          const fileSize = stats.size;
+          const createdAt = stats.birthtime;
+          const modifiedAt = stats.mtime;
+          
+          // Check for package.json references
+          const packageJsonReferences = await this.findPackageJsonReferences(script.file_path);
+          
+          // Prepare the prompt with context
+          const analysisContext = `
+# Script Analysis Request
+
+## Script File Path
+${script.file_path}
+
+## Script Content
+\`\`\`
+${scriptContent}
+\`\`\`
+
+## File Metadata
+- File Size: ${fileSize} bytes
+- Created: ${createdAt.toISOString()}
+- Last Modified: ${modifiedAt.toISOString()}
+
+## Package.json References
+${JSON.stringify(packageJsonReferences, null, 2)}
+
+## Available Document Types for Classification
+${JSON.stringify(scriptDocumentTypes.length > 0 ? scriptDocumentTypes : documentTypes, null, 2)}
+
+Please analyze this script and provide a full assessment according to the instructions.
+`;
+
+          // Combined prompt
+          const fullPrompt = `${analysisPrompt}\n\n${analysisContext}`;
+          
+          // Call Claude API with optimized settings
+          const options = {
+            model: 'claude-3-7-sonnet-20250219',
+            temperature: 0.2,
+            maxTokens: 4000
+          };
+          
+          logger.info(`Submitting script for classification: ${script.file_path}`);
+          
+          const classificationResult = await this.claudeService.getJsonResponse<{
+            script_type_id: string;
+            ai_generated_tags: string[];
+            title: string;
+            summary: any;
+            ai_assessment: any;
+            assessment_quality_score: number;
+            id?: string;
+            created_at?: string;
+            file_path?: string;
+          }>(fullPrompt, options);
+          
+          if (!classificationResult || !classificationResult.script_type_id) {
+            logger.warn(`Invalid classification result for script: ${script.file_path}`);
+            continue;
+          }
+          
+          // Remove any fields that shouldn't be updated
+          delete classificationResult.id;
+          delete classificationResult.created_at;
+          delete classificationResult.file_path;
+          
+          // Update script record in database
+          const { error: updateError } = await this.dbService.update(
+            'scripts',
+            script.id,
+            {
+              script_type_id: classificationResult.script_type_id,
+              ai_generated_tags: classificationResult.ai_generated_tags,
+              title: classificationResult.title,
+              summary: classificationResult.summary,
+              ai_assessment: classificationResult.ai_assessment,
+              assessment_quality_score: classificationResult.assessment_quality_score,
+              assessment_created_at: new Date().toISOString(),
+              assessment_updated_at: new Date().toISOString(),
+              assessment_model: "Claude 3.7 Sonnet"
+            }
+          );
+          
+          if (updateError) {
+            logger.error(`Error updating script record: ${updateError.message}`);
+            continue;
+          }
+          
+          logger.info(`Successfully classified script: ${script.file_path} as type: ${classificationResult.script_type_id}`);
+          successCount++;
+          
+        } catch (scriptError: any) {
+          logger.error(`Error processing script ${script.file_path}: ${scriptError.message}`);
+        }
+        
+        processedCount++;
+      }
+      
+      logger.info(`Classification complete. Processed ${processedCount} scripts, ${successCount} successfully classified.`);
+      
+      return processedCount > 0 && successCount > 0 ? 0 : 1;
     } catch (error: any) {
       logger.error('Error during script classification', error);
       return 1;
+    }
+  }
+  
+  /**
+   * Find package.json references for a script
+   */
+  private async findPackageJsonReferences(scriptPath: string): Promise<Array<{
+    file: string;
+    script_key: string;
+    command: string;
+  }>> {
+    try {
+      const path = require('path');
+      const fs = require('fs');
+      const execSync = require('child_process').execSync;
+      
+      // Extract filename for matching
+      const scriptName = path.basename(scriptPath);
+      const references: Array<{
+        file: string;
+        script_key: string;
+        command: string;
+      }> = [];
+      
+      // Find all package.json files
+      const cmd = `find "${this.rootDir}" -name "package.json" | grep -v "node_modules"`;
+      const result = execSync(cmd, { encoding: 'utf8' });
+      const packageJsonPaths = result.split('\n').filter(Boolean);
+      
+      for (const packageJsonPath of packageJsonPaths) {
+        try {
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+          
+          if (packageJson.scripts) {
+            for (const [scriptKey, command] of Object.entries(packageJson.scripts)) {
+              // Check if command references this script
+              const scriptCommand = command as string;
+              if (scriptCommand.includes(scriptName)) {
+                references.push({
+                  file: packageJsonPath.substring(this.rootDir.length + 1),
+                  script_key: scriptKey,
+                  command: scriptCommand
+                });
+              }
+            }
+          }
+        } catch (err) {
+          // Continue with next package.json
+          logger.debug(`Error parsing ${packageJsonPath}: ${err}`);
+        }
+      }
+      
+      return references;
+    } catch (error) {
+      logger.debug('Error finding package.json references', error);
+      return [];
     }
   }
   
