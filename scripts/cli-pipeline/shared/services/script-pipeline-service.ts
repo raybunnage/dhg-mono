@@ -148,20 +148,125 @@ export class ScriptPipelineService {
       // Call find_and_sync_scripts function with the list of files
       logger.info('Syncing database with files on disk...');
       
-      // Pass the scriptFiles array directly to the RPC function
-      // The database service will handle the conversion to JSON
-      const { data, error } = await this.dbService.executeRpc<any>(
-        'find_and_sync_scripts', 
-        { existing_files_json: scriptFiles }
-      );
+      // Make sure we verify that the database function exists with the correct parameter type
+      logger.info('Checking database function...');
       
-      if (error) {
-        logger.error(`Error syncing scripts: ${error.message}`);
-        return 1;
-      }
-      
-      if (data && data.deleted_scripts > 0) {
-        logger.info(`Removed ${data.deleted_scripts} script records for files that no longer exist`);
+      try {
+        // First try the function call directly with the file array
+        const { data, error } = await this.dbService.executeRpc<any>(
+          'find_and_sync_scripts', 
+          scriptFiles
+        );
+        
+        if (error) {
+          // If it fails, try with the named parameter
+          logger.warn(`Direct function call failed: ${error.message}. Trying with named parameter.`);
+          const { data: namedData, error: namedError } = await this.dbService.executeRpc<any>(
+            'find_and_sync_scripts', 
+            { existing_files_json: scriptFiles }
+          );
+          
+          if (namedError) {
+            logger.error(`Error syncing scripts with named parameter: ${namedError.message}`);
+            return 1;
+          }
+          
+          if (namedData) {
+            logger.info(`Sync results (named parameter): ${JSON.stringify(namedData)}`);
+            if (namedData.new_scripts > 0) {
+              logger.info(`Added ${namedData.new_scripts} new script records`);
+            }
+            if (namedData.deleted_scripts > 0) {
+              logger.info(`Removed ${namedData.deleted_scripts} script records for files that no longer exist`);
+            }
+          }
+        } else if (data) {
+          logger.info(`Sync results (direct parameter): ${JSON.stringify(data)}`);
+          if (data.new_scripts > 0) {
+            logger.info(`Added ${data.new_scripts} new script records`);
+          }
+          if (data.deleted_scripts > 0) {
+            logger.info(`Removed ${data.deleted_scripts} script records for files that no longer exist`);
+          }
+        }
+      } catch (funcError: any) {
+        logger.error(`Error calling database function: ${funcError.message}`);
+        
+        // Fallback to direct database operations if the function call fails
+        logger.info('Falling back to direct database operations...');
+        
+        // Delete scripts that no longer exist on disk
+        const { data: deleteData, error: deleteError } = await this.dbService.executeQuery<any>(async () => {
+          return this.dbService.getClient()
+            .from('scripts')
+            .delete()
+            .not('file_path', 'in', scriptFiles)
+            .select();
+        });
+        
+        if (deleteError) {
+          logger.error(`Error deleting scripts: ${deleteError.message}`);
+        } else if (deleteData) {
+          logger.info(`Removed ${deleteData.length} script records for files that no longer exist`);
+        }
+        
+        // Insert new scripts
+        let newScriptCount = 0;
+        
+        // Process in batches of 50 to avoid potential issues with large arrays
+        const batchSize = 50;
+        for (let i = 0; i < scriptFiles.length; i += batchSize) {
+          const batch = scriptFiles.slice(i, i + batchSize);
+          
+          // For each file, check if it exists in the database
+          for (const filePath of batch) {
+            const { data: exists } = await this.dbService.executeQuery<any>(async () => {
+              return this.dbService.getClient()
+                .from('scripts')
+                .select('id')
+                .eq('file_path', filePath)
+                .limit(1);
+            });
+            
+            if (!exists || exists.length === 0) {
+              // File doesn't exist in database, insert it
+              const fileExt = filePath.split('.').pop()?.toLowerCase() || 'unknown';
+              const language = 
+                fileExt === 'sh' ? 'bash' :
+                fileExt === 'js' ? 'javascript' :
+                fileExt === 'ts' ? 'typescript' :
+                fileExt === 'py' ? 'python' :
+                fileExt === 'rb' ? 'ruby' :
+                fileExt === 'sql' ? 'sql' :
+                'unknown';
+              
+              const fileName = filePath.split('/').pop() || filePath;
+              const title = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+              
+              const { error: insertError } = await this.dbService.executeQuery<any>(async () => {
+                return this.dbService.getClient()
+                  .from('scripts')
+                  .insert({
+                    file_path: filePath,
+                    title,
+                    language,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    last_modified_at: new Date().toISOString(),
+                    metadata: { source: 'cli_sync', sync_date: new Date().toISOString() }
+                  });
+              });
+              
+              if (insertError) {
+                logger.error(`Error inserting script ${filePath}: ${insertError.message}`);
+              } else {
+                newScriptCount++;
+              }
+            }
+          }
+        }
+        
+        logger.info(`Added ${newScriptCount} new script records`);
       }
       
       logger.info(`Script synchronization completed successfully.`);
@@ -185,6 +290,10 @@ export class ScriptPipelineService {
           logger.info(`${index + 1}. ${script.file_path}`);
         });
       }
+      
+      // Get the total count of scripts in the database
+      const { count: scriptCount } = await this.dbService.countRecords('scripts');
+      logger.info(`Total script records in database: ${scriptCount || 'unknown'}`);
       
       return 0;
     } catch (error: any) {
