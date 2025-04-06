@@ -109,18 +109,18 @@ export class ScriptPipelineService {
     logger.info('Starting script sync operation');
     
     try {
-      // Note to user: This function has been temporarily modified
-      // to work around a database schema issue with the is_deleted column
-      // A proper fix will require database schema updates by the database team
+      // Connect to Supabase if not already connected
+      await this.dbService.ensureConnection();
       
-      logger.info(`SUCCESS: Script sync operation completed.`);
-      logger.warn(
-`IMPORTANT: This is a temporary workaround.
-The is_deleted column doesn't exist in the database but is referenced in:
-1. find_and_sync_scripts() function
-2. active_scripts_view view
-A database administrator needs to fix this in Supabase.`
-      );
+      // Call find_and_sync_scripts function to sync scripts
+      const { data, error } = await this.dbService.executeRpc<any>('find_and_sync_scripts', {});
+      
+      if (error) {
+        logger.error(`Error syncing scripts: ${error.message}`);
+        return 1;
+      }
+      
+      logger.info(`Script synchronization completed successfully.`);
       
       // Show the recent scripts to demonstrate that the database connection works
       const { data: recentScripts } = await this.dbService.query(
