@@ -1,4 +1,22 @@
 
+ Great! I've improved the three server startup scripts with the following enhancements:
+
+  1. Added port availability checking to detect and handle situations where the server port is already in use
+  2. Provided helpful error messages and instructions for killing existing processes
+  3. Simplified and standardized the Node.js command flags for ES module support
+  4. Improved error handling and user feedback
+
+  The scripts now:
+  1. Properly find and execute their respective server scripts
+  2. Check if a server is already running on the expected port before attempting to start
+  3. Provide clear error messages if there are issues
+  4. Use consistent approach across all three server scripts
+
+  All three scripts should now be working correctly. The warnings about modules will persist until you add "type": "module" to your package.json, but
+  that's a minor issue that doesn't affect functionality.
+
+
+
 ✗ Unknown command: --help
 document-pipeline - Document pipeline management CLI
 
