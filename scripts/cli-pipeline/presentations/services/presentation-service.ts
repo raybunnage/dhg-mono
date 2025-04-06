@@ -8,6 +8,7 @@ interface PresentationReviewOptions {
   status?: string;
   limit?: number;
   createAssets?: boolean;
+  folderId?: string;
 }
 
 interface ProfessionalDocumentsCheckOptions {
@@ -49,6 +50,7 @@ interface ExpertDocument {
   id: string;
   document_type: string;
   document_type_id: string;
+  document_types?: {name: string};
   has_raw_content: boolean;
   has_processed_content: boolean;
   raw_content_preview?: string;
@@ -103,10 +105,10 @@ interface ExpertSourceContent {
 
 export class PresentationService {
   private static instance: PresentationService;
-  private supabaseClient: any;
+  private _supabaseClient: any;
   
   private constructor() {
-    this.supabaseClient = SupabaseClientService.getInstance().getClient();
+    this._supabaseClient = SupabaseClientService.getInstance().getClient();
   }
   
   public static getInstance(): PresentationService {
@@ -117,12 +119,19 @@ export class PresentationService {
   }
   
   /**
+   * Get the Supabase client instance
+   */
+  get supabaseClient(): any {
+    return this._supabaseClient;
+  }
+  
+  /**
    * Get presentation details including its transcript
    */
   public async getPresentationWithTranscript(presentationId: string): Promise<PresentationWithTranscript | null> {
     try {
       // Get the presentation
-      const { data: presentation, error } = await this.supabaseClient
+      const { data: presentation, error } = await this._supabaseClient
         .from('presentations')
         .select('id, title, expert_id')
         .eq('id', presentationId)
@@ -178,19 +187,25 @@ export class PresentationService {
   public async getExistingSummary(expertId: string) {
     try {
       // Get document type ID for summary
-      const { data: docType, error: docTypeError } = await this.supabaseClient
+      const { data: docType, error: docTypeError } = await this._supabaseClient
         .from('document_types')
         .select('id')
-        .eq('name', 'summary')
+        .eq('document_type', 'summary')
         .single();
       
       if (docTypeError || !docType) {
+        // If not found, it's not necessarily an error - there may not be a summary type yet
+        if (docTypeError && docTypeError.code === 'PGRST116') {
+          Logger.debug('No summary document type found, returning null');
+          return null;
+        }
+        
         Logger.error('Error fetching summary document type:', docTypeError);
         return null;
       }
       
       // Get existing summary document
-      const { data: summary, error: summaryError } = await this.supabaseClient
+      const { data: summary, error: summaryError } = await this._supabaseClient
         .from('expert_documents')
         .select('id, raw_content, processed_content')
         .eq('expert_id', expertId)
@@ -214,21 +229,49 @@ export class PresentationService {
    */
   public async saveSummary(options: SaveSummaryOptions): Promise<boolean> {
     try {
-      // Get document type ID for summary
-      const { data: docType, error: docTypeError } = await this.supabaseClient
+      // Get document type ID for summary or create it if doesn't exist
+      let documentTypeId = null;
+      
+      const { data: docType, error: docTypeError } = await this._supabaseClient
         .from('document_types')
         .select('id')
-        .eq('name', 'summary')
+        .eq('document_type', 'summary')
         .single();
       
-      if (docTypeError || !docType) {
-        Logger.error('Error fetching summary document type:', docTypeError);
-        return false;
+      if (docTypeError) {
+        if (docTypeError.code === 'PGRST116') {
+          // Create the summary document type if it doesn't exist
+          Logger.info('Creating summary document type as it does not exist');
+          const { data: newDocType, error: createError } = await this._supabaseClient
+            .from('document_types')
+            .insert({
+              document_type: 'summary',
+              category: 'Presentation',
+              is_ai_generated: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select('id')
+            .single();
+            
+          if (createError || !newDocType) {
+            Logger.error('Error creating summary document type:', createError);
+            return false;
+          }
+          
+          documentTypeId = newDocType.id;
+          Logger.info(`Created summary document type with ID: ${documentTypeId}`);
+        } else {
+          Logger.error('Error fetching summary document type:', docTypeError);
+          return false;
+        }
+      } else {
+        documentTypeId = docType.id;
       }
       
       if (options.existingSummaryId) {
         // Update existing summary
-        const { error: updateError } = await this.supabaseClient
+        const { error: updateError } = await this._supabaseClient
           .from('expert_documents')
           .update({
             processed_content: options.summary,
@@ -242,11 +285,11 @@ export class PresentationService {
         }
       } else {
         // Create new summary document
-        const { error: insertError } = await this.supabaseClient
+        const { error: insertError } = await this._supabaseClient
           .from('expert_documents')
           .insert({
             expert_id: options.expertId,
-            document_type_id: docType.id,
+            document_type_id: documentTypeId,
             processed_content: options.summary,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -258,7 +301,7 @@ export class PresentationService {
         }
         
         // Associate summary with presentation in presentation_assets
-        const { error: assetError } = await this.supabaseClient
+        const { error: assetError } = await this._supabaseClient
           .from('presentation_assets')
           .insert({
             presentation_id: options.presentationId,
@@ -520,6 +563,36 @@ export class PresentationService {
         }
       }
       
+      // Filter by folder_id if requested
+      if (options.folderId) {
+        // Get all sources related to Dynamic Healing Discussion Group, including those not directly in the folder
+        // but whose path indicates they're part of the group
+        const { data: dhgSources, error: dhgError } = await this.supabaseClient
+          .from('sources_google')
+          .select('id, name, parent_path, drive_id')
+          .or(`parent_path.like.%Dynamic Healing Discussion Group%,drive_id.eq.${options.folderId}`);
+        
+        if (dhgError) {
+          Logger.error('Error fetching Dynamic Healing Discussion Group sources:', dhgError);
+        } else if (dhgSources && dhgSources.length > 0) {
+          const dhgSourceIds = dhgSources.map((s: any) => s.id);
+          filteredPresentations = filteredPresentations.filter((p: any) => 
+            p.main_video_id && dhgSourceIds.includes(p.main_video_id)
+          );
+          
+          Logger.info(`Filtered to ${filteredPresentations.length} presentations from Dynamic Healing Discussion Group`);
+          
+          // Make sure we enforce the limit after filtering
+          if (options.limit && filteredPresentations.length > options.limit) {
+            filteredPresentations = filteredPresentations.slice(0, options.limit);
+            Logger.info(`Limited to ${filteredPresentations.length} presentations`);
+          }
+        } else {
+          Logger.info('No files found in Dynamic Healing Discussion Group');
+          return [];
+        }
+      }
+      
       // No need to fetch document types - we can work with the existing data
       let videoSummaryTranscriptTypeId: string | null = null;
       
@@ -599,7 +672,8 @@ export class PresentationService {
                 .from('expert_documents')
                 .select(`
                   document_type_id,
-                  document_types(name)
+                  document_types(name),
+                  raw_content
                 `)
                 .eq('id', asset.expert_document_id)
                 .single();
@@ -707,18 +781,29 @@ export class PresentationService {
           );
           
           // Transform expert documents for review
-          const transformedDocs = expertDocuments.map((doc: any) => ({
-            id: doc.id,
-            document_type: doc.document_types?.name || 'Unknown',
-            document_type_id: doc.document_type_id || 'Unknown',
-            has_raw_content: !!doc.raw_content,
-            has_processed_content: !!doc.processed_content,
-            raw_content_preview: doc.raw_content ? doc.raw_content.substring(0, 150) + '...' : '',
-            linked_through_asset: doc.linked_through_asset || null,
-            asset_type: doc.asset_type || null,
-            created_at: doc.created_at,
-            updated_at: doc.updated_at
-          }));
+          const transformedDocs = expertDocuments.map((doc: any) => {
+            // Try to get document type name from different possible locations
+            let documentTypeName = 'Unknown';
+            if (typeof doc.document_types === 'object') {
+              if (doc.document_types?.name) {
+                documentTypeName = doc.document_types.name;
+              }
+            }
+            
+            return {
+              id: doc.id,
+              document_type: documentTypeName,
+              document_types: doc.document_types, // Keep the original for reference
+              document_type_id: doc.document_type_id || 'Unknown',
+              has_raw_content: !!doc.raw_content,
+              has_processed_content: !!doc.processed_content,
+              raw_content_preview: doc.raw_content ? doc.raw_content.substring(0, 50).replace(/\n/g, ' ') + '...' : '',
+              linked_through_asset: doc.linked_through_asset || null,
+              asset_type: doc.asset_type || null,
+              created_at: doc.created_at,
+              updated_at: doc.updated_at
+            };
+          });
           
           // Transform assets for review
           const transformedAssets = (assets || []).map((asset: any) => ({
