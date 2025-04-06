@@ -1,3 +1,177 @@
+
+✗ Unknown command: --help
+document-pipeline - Document pipeline management CLI
+
+Usage: document-pipeline [command] [options]
+
+Commands:
+  sync              Synchronize database with files on disk (mark files as deleted/not deleted)
+  find-new          Find and insert new script files on disk into the database
+  show-untyped      Show all script files without a script type
+  show-recent       Show the 20 most recent script files based on update date
+  classify-recent   Classify the 20 most recent script files
+  classify-untyped  Classify untyped script files, optionally specify number to process
+  generate-summary  Generate a summary report of scripts
+  all               Run the complete pipeline (sync, find-new, classify-recent)
+
+Run 'document-pipeline help [command]' for more information on a specific command.
+
+
+
+raybunnage@Rays-Laptop dhg-mono % ./scripts/cli-pipeline/google_sync/google-drive-cli.sh --help
+Google Drive CLI - Manages Google Drive folders and sync operations
+
+Usage:
+  google-drive-cli.sh [command] [options]
+
+Core Commands:
+  list-roots                  List all registered root folders
+  list-potential-roots        List folders that are in Google Drive but not registered
+  add-root [folderId]         Add a new root folder
+  remove-root [id]            Remove a root folder
+  check-folder [folderId]     Check if a folder exists in Google Drive
+  sync [rootId]               Sync files from a root folder (or all if not specified)
+  sync-folder [folderId]      Sync a specific folder (doesn't need to be a root)
+
+Advanced Commands:
+  add-root-service [folderId] Add a new root folder using service account
+  check-roots                 Check the status of all registered root folders
+  disk-status                 Update presentations table with disk status for MP4 files
+  list-drive-direct           List files in Drive directly (no DB interaction)
+  mp4-experts                 Create expert documents for presentations with MP4 files
+  report-drive-roots          Generate a detailed report about all root folders
+  sync-and-update-metadata    Sync folder and update metadata in one operation
+  update-metadata             Update metadata for files in the database
+
+Options:
+  --dry-run                   Show what would be synced without making changes
+  --timeout [ms]              Set timeout for sync operations (default: 600000ms/10min)
+  --name [name]               Specify a name when adding a root folder
+  --description [desc]        Specify a description when adding a root folder
+  --verbose                   Show more detailed output
+  --recursive                 Recursively sync subfolders (for sync-folder command)
+
+Examples:
+  google-drive-cli.sh list-roots
+  google-drive-cli.sh add-root 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --name "Dynamic Healing Discussion Group"
+  google-drive-cli.sh sync-folder 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run
+  google-drive-cli.sh sync-folder dynamic-healing --recursive
+  google-drive-cli.sh sync-and-update-metadata 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --limit 50
+  google-drive-cli.sh disk-status --dry-run
+  google-drive-cli.sh mp4-experts --dry-run
+raybunnage@Rays-Laptop dhg-mono % 
+
+
+
+
+
+document-pipeline - Document pipeline management CLI
+
+Usage: document-pipeline [command] [options]
+
+Commands:
+  test-connection   Test connection to Supabase
+  sync              Synchronize database with files on disk
+  find-new          Find and insert new files on disk into the database
+  show-untyped      Show all documentation files without a document type
+  show-recent       Show the most recent files based on update date
+  classify-recent   Classify the most recent files
+  classify-untyped  Classify untyped files
+  all               Run the complete pipeline (sync, find-new, classify-recent)
+
+Run 'document-pipeline help [command]' for more information on a specific command.
+(node:32896) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+raybunnage@Rays-Laptop dhg-mono % 
+
+
+Based on all the information I've gathered, here are the command help details for both CLI pipelines:
+
+  Document Manager CLI Pipeline Help
+
+  $ ts-node scripts/cli-pipeline/document/cli.ts help
+
+  document-pipeline - Document pipeline management CLI
+
+  Usage: document-pipeline [command] [options]
+
+  Commands:
+    test-connection   Test connection to Supabase
+    sync              Synchronize database with files on disk
+    find-new          Find and insert new files on disk into the database
+    show-untyped      Show all documentation files without a document type
+    show-recent       Show the most recent files based on update date
+    classify-recent   Classify the most recent files
+    classify-untyped  Classify untyped files
+    all               Run the complete pipeline (sync, find-new, classify-recent)
+
+  Run 'document-pipeline help [command]' for more information on a specific command.
+
+  Command Details:
+
+  1. test-connection: Tests the connection to Supabase database.
+  2. sync: Synchronizes the database with files on disk, marking files as deleted/not deleted.
+  3. find-new: Finds and inserts new files on disk into the database.
+  Options:
+    --limit, -l  Maximum number of files to show (default: 20)
+  4. show-untyped: Shows all documentation files without a document type.
+  Options:
+    --limit, -l  Maximum number of files to show (default: 20)
+  5. show-recent: Shows the most recent files based on update date.
+  Options:
+    --limit, -l  Maximum number of files to show (default: 20)
+  6. classify-recent: Classifies the most recent files using Claude API.
+  Options:
+    --count, -c  Number of files to classify (default: 10)
+  7. classify-untyped: Classifies untyped files using Claude API.
+  Options:
+    --count, -c  Number of files to classify (default: 10)
+  8. all: Runs the complete pipeline (sync, find-new, classify-recent).
+
+  Scripts Command Line Pipeline Help
+
+  $ ts-node scripts/cli-pipeline/scripts/script-pipeline-main.ts help
+
+  document-pipeline - Document pipeline management CLI
+
+  Usage: document-pipeline [command] [options]
+
+  Commands:
+    sync              Synchronize database with files on disk (mark files as deleted/not deleted)
+    find-new          Find and insert new script files on disk into the database
+    show-untyped      Show all script files without a script type
+    show-recent       Show the 20 most recent script files based on update date
+    classify-recent   Classify the 20 most recent script files
+    classify-untyped  Classify untyped script files, optionally specify number to process
+    generate-summary  Generate a summary report of scripts
+    all               Run the complete pipeline (sync, find-new, classify-recent)
+
+  Run 'document-pipeline help [command]' for more information on a specific command.
+
+  Command Details:
+
+  1. sync: Synchronizes database with files on disk (mark files as deleted/not deleted).
+  2. find-new: Finds and inserts new script files on disk into the database.
+  3. show-untyped: Shows all script files without a script type.
+  4. show-recent: Shows the 20 most recent script files based on update date.
+  5. classify-recent: Classifies the 20 most recent script files using Claude API.
+  Options:
+    --count, -c  Number of scripts to process (default: 20)
+  6. classify-untyped: Classifies untyped script files using Claude API.
+  Options:
+    --count, -c  Number of scripts to process (default: 10)
+  7. generate-summary: Generates a summary report of scripts.
+  Options:
+    --count, -c           Number of scripts to include (default: 50)
+    --all, -a             Include all scripts (default: false)
+    --include-deleted, -d Include deleted files (default: false)
+    --file, -f            Write to file instead of console output (default: false)
+  8. all: Runs the complete pipeline (sync, find-new, classify-recent).
+
+  Both CLI pipelines follow a similar command structure and provide robust functionality for managing documents and scripts in the database, including
+  synchronization, discovery of new files, and AI-powered classification using Claude API.
+
+
 Great! Here's a summary of what we've accomplished:
 
   1. Fully implemented the media processing CLI pipeline with the following command modules:

@@ -15,8 +15,16 @@ if [ ! -f "./docs-archive-server.js" ]; then
   exit 1
 fi
 
+# Check if port 3003 is already in use
+if lsof -Pi :3003 -sTCP:LISTEN -t >/dev/null ; then
+  echo "Warning: Port 3003 is already in use."
+  echo "Another instance may be running or use a different port."
+  echo "Kill the existing process with: kill $(lsof -Pi :3003 -sTCP:LISTEN -t)"
+  exit 1
+fi
+
 # Run the server
 echo "Starting docs-archive-server on port 3003..."
-node ./docs-archive-server.js
+node --experimental-modules ./docs-archive-server.js
 
 # This will keep running until terminated by the user
