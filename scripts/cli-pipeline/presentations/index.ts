@@ -73,9 +73,13 @@ program
         // Format expert documents
         let expertDocs = 'None';
         if (presentation.expert_documents && presentation.expert_documents.length > 0) {
-          expertDocs = presentation.expert_documents.map(doc => 
-            `${doc.document_type} (${doc.document_type_id})`
-          ).join('<br>');
+          expertDocs = presentation.expert_documents.map(doc => {
+            let linkedInfo = '';
+            if (doc.linked_through_asset) {
+              linkedInfo = `<br>Linked via: ${doc.asset_type} asset (${doc.linked_through_asset})`;
+            }
+            return `${doc.document_type} (${doc.id})${linkedInfo}<br>Content: ${doc.raw_content_preview || 'None'}`;
+          }).join('<br><br>');
         }
         
         // Format next steps
@@ -200,7 +204,15 @@ program
         createAssets: true,
       });
       
-      Logger.info(`Processed ${presentations.length} presentations.`);
+      // Count how many assets were created
+      let assetsCreated = 0;
+      for (const presentation of presentations) {
+        if (presentation.assets && presentation.assets.some((asset: any) => asset.type === 'transcript' && asset.justCreated)) {
+          assetsCreated++;
+        }
+      }
+      
+      Logger.info(`Processed ${presentations.length} presentations, created ${assetsCreated} new transcript assets.`);
       
     } catch (error) {
       Logger.error('Error creating missing assets:', error);

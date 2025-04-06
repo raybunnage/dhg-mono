@@ -42,6 +42,7 @@ interface PresentationAsset {
   type: string;
   status: string;
   file_path?: string;
+  justCreated?: boolean;
 }
 
 interface ExpertDocument {
@@ -50,6 +51,9 @@ interface ExpertDocument {
   document_type_id: string;
   has_raw_content: boolean;
   has_processed_content: boolean;
+  raw_content_preview?: string;
+  linked_through_asset?: string | null;
+  asset_type?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -525,10 +529,24 @@ export class PresentationService {
       // Get presentation reviews with detailed information
       const presentationReviews = await Promise.all(
         filteredPresentations.map(async (presentation: any) => {
-          // Get presentation assets
+          // Get presentation assets with linked expert_documents
           let { data: assets, error: assetsError } = await this.supabaseClient
             .from('presentation_assets')
-            .select('id, asset_type, created_at')
+            .select(`
+              id, 
+              asset_type, 
+              created_at,
+              expert_document_id,
+              expert_documents(
+                id, 
+                document_type_id, 
+                raw_content, 
+                processed_content, 
+                status, 
+                created_at, 
+                updated_at
+              )
+            `)
             .eq('presentation_id', presentation.id);
           
           if (assetsError) {
@@ -562,9 +580,49 @@ export class PresentationService {
             }
           }
           
-          // Get expert documents related to this presentation's expert
+          // Create an array to store newly created assets
+          const newlyCreatedAssets: string[] = [];
+          
+          // Collect expert documents from assets
           let expertDocuments: any[] = [];
           
+          // First, collect expert documents linked through presentation_assets
+          if (assets && assets.length > 0) {
+            // Prepare array of assets with expert_documents
+            const assetsWithDocuments = assets
+              .filter((asset: any) => asset.expert_documents && asset.expert_document_id);
+            
+            // Process each asset with expert_document
+            for (const asset of assetsWithDocuments) {
+              // Get document type name separately
+              const { data: docTypeData, error: docTypeError } = await this.supabaseClient
+                .from('expert_documents')
+                .select(`
+                  document_type_id,
+                  document_types(name)
+                `)
+                .eq('id', asset.expert_document_id)
+                .single();
+                
+              if (!docTypeError && docTypeData && docTypeData.document_types) {
+                expertDocuments.push({
+                  ...asset.expert_documents,
+                  document_types: docTypeData.document_types,
+                  linked_through_asset: asset.id,
+                  asset_type: asset.asset_type
+                });
+              } else {
+                expertDocuments.push({
+                  ...asset.expert_documents,
+                  document_types: { name: 'Unknown' },
+                  linked_through_asset: asset.id,
+                  asset_type: asset.asset_type
+                });
+              }
+            }
+          }
+          
+          // Also get expert documents related to this presentation's expert if available
           if (expertId) {
             const { data: docs, error: docsError } = await this.supabaseClient
               .from('expert_documents')
@@ -584,7 +642,12 @@ export class PresentationService {
             if (docsError) {
               Logger.error('Error fetching expert documents:', docsError);
             } else if (docs) {
-              expertDocuments = docs;
+              // Add docs that aren't already in expertDocuments
+              docs.forEach((doc: any) => {
+                if (!expertDocuments.some(existingDoc => existingDoc.id === doc.id)) {
+                  expertDocuments.push(doc);
+                }
+              });
             }
           }
           
@@ -603,19 +666,25 @@ export class PresentationService {
             
             if (!hasTranscriptAsset) {
               // Create a new presentation_asset record
-              const { error: assetError } = await this.supabaseClient
+              const { data: newAsset, error: assetError } = await this.supabaseClient
                 .from('presentation_assets')
                 .insert({
                   presentation_id: presentation.id,
                   asset_type: 'transcript',
                   expert_document_id: videoSummaryTranscript.id,
                   created_at: new Date().toISOString()
-                });
+                })
+                .select();
                 
               if (assetError) {
                 Logger.error('Error creating presentation_asset record:', assetError);
               } else {
                 Logger.info(`Created presentation_asset (transcript) for presentation ${presentation.id}`);
+                
+                // Track the newly created asset ID
+                if (newAsset && newAsset.length > 0) {
+                  newlyCreatedAssets.push(newAsset[0].id);
+                }
                 
                 // Refresh assets
                 const { data: refreshedAssets } = await this.supabaseClient
@@ -644,6 +713,9 @@ export class PresentationService {
             document_type_id: doc.document_type_id || 'Unknown',
             has_raw_content: !!doc.raw_content,
             has_processed_content: !!doc.processed_content,
+            raw_content_preview: doc.raw_content ? doc.raw_content.substring(0, 150) + '...' : '',
+            linked_through_asset: doc.linked_through_asset || null,
+            asset_type: doc.asset_type || null,
             created_at: doc.created_at,
             updated_at: doc.updated_at
           }));
@@ -652,7 +724,8 @@ export class PresentationService {
           const transformedAssets = (assets || []).map((asset: any) => ({
             id: asset.id,
             type: asset.asset_type,
-            status: 'Available' // Since we don't have file_path to check
+            status: 'Available', // Since we don't have file_path to check
+            justCreated: newlyCreatedAssets.includes(asset.id)
           }));
           
           // Determine presentation status
