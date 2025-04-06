@@ -7,6 +7,7 @@ interface PresentationReviewOptions {
   expertId?: string;
   status?: string;
   limit?: number;
+  createAssets?: boolean;
 }
 
 interface ProfessionalDocumentsCheckOptions {
@@ -515,11 +516,17 @@ export class PresentationService {
         }
       }
       
+      // No need to fetch document types - we can work with the existing data
+      let videoSummaryTranscriptTypeId: string | null = null;
+      
+      // We'll identify video summary transcripts by checking the document type name
+      // in the expert_documents query results instead
+      
       // Get presentation reviews with detailed information
       const presentationReviews = await Promise.all(
         filteredPresentations.map(async (presentation: any) => {
           // Get presentation assets
-          const { data: assets, error: assetsError } = await this.supabaseClient
+          let { data: assets, error: assetsError } = await this.supabaseClient
             .from('presentation_assets')
             .select('id, asset_type, created_at')
             .eq('presentation_id', presentation.id);
@@ -569,7 +576,8 @@ export class PresentationService {
                 updated_at,
                 raw_content,
                 processed_content,
-                source_id
+                source_id,
+                status
               `)
               .eq('expert_id', expertId);
             
@@ -577,6 +585,48 @@ export class PresentationService {
               Logger.error('Error fetching expert documents:', docsError);
             } else if (docs) {
               expertDocuments = docs;
+            }
+          }
+          
+          // Check if we have a 'Video Summary Transcript' document with raw_content
+          const videoSummaryTranscript = expertDocuments.find(doc => 
+            doc.document_types?.name === 'Video Summary Transcript' && 
+            doc.source_id === presentation.main_video_id &&
+            doc.raw_content && 
+            doc.status === 'Completed'
+          );
+          
+          // Check if we need to create a presentation_asset record
+          if (options.createAssets && expertId && videoSummaryTranscript) {
+            // Check if there's already a transcript asset for this presentation
+            const hasTranscriptAsset = assets?.some((asset: {asset_type: string}) => asset.asset_type === 'transcript');
+            
+            if (!hasTranscriptAsset) {
+              // Create a new presentation_asset record
+              const { error: assetError } = await this.supabaseClient
+                .from('presentation_assets')
+                .insert({
+                  presentation_id: presentation.id,
+                  asset_type: 'transcript',
+                  expert_document_id: videoSummaryTranscript.id,
+                  created_at: new Date().toISOString()
+                });
+                
+              if (assetError) {
+                Logger.error('Error creating presentation_asset record:', assetError);
+              } else {
+                Logger.info(`Created presentation_asset (transcript) for presentation ${presentation.id}`);
+                
+                // Refresh assets
+                const { data: refreshedAssets } = await this.supabaseClient
+                  .from('presentation_assets')
+                  .select('id, asset_type, created_at')
+                  .eq('presentation_id', presentation.id);
+                  
+                if (refreshedAssets) {
+                  assets = refreshedAssets;
+                }
+              }
             }
           }
           
@@ -606,9 +656,14 @@ export class PresentationService {
           }));
           
           // Determine presentation status
-          const status = hasTranscriptDocument ? 
-            'has-transcript' : 
-            this.determinePresentationStatus(transformedAssets, transformedDocs);
+          let status = this.determinePresentationStatus(transformedAssets, transformedDocs);
+          
+          // Check for Video Summary Transcript with raw_content and Completed status
+          if (videoSummaryTranscript && videoSummaryTranscript.status === 'Completed') {
+            status = 'make-ai-summary';
+          } else if (hasTranscriptDocument && status === 'missing-transcript') {
+            status = 'has-transcript';
+          }
           
           // Determine next steps
           const nextSteps = this.determineNextSteps(status, transformedAssets, transformedDocs);
@@ -624,7 +679,7 @@ export class PresentationService {
             assets: transformedAssets,
             expert_documents: transformedDocs,
             next_steps: nextSteps,
-            has_raw_content: hasTranscriptDocument
+            has_raw_content: hasTranscriptDocument || (videoSummaryTranscript !== undefined)
           };
         })
       );
@@ -643,9 +698,20 @@ export class PresentationService {
     assets: any[],
     expertDocuments: ExpertDocument[]
   ): string {
+    // Check if there is a 'Video Summary Transcript' document with raw_content
+    const hasVideoSummaryTranscript = expertDocuments.some(doc => 
+      doc.document_type === 'Video Summary Transcript' && 
+      doc.has_raw_content &&
+      !doc.has_processed_content
+    );
+    
+    if (hasVideoSummaryTranscript) {
+      return 'make-ai-summary';
+    }
+    
     // Check if transcript exists
     const hasTranscript = assets.some(asset => 
-      asset.asset_type === 'transcript' && asset.file_path
+      asset.type === 'transcript' && asset.status === 'Available'
     );
     
     if (!hasTranscript) {
@@ -688,6 +754,11 @@ export class PresentationService {
       case 'missing-transcript':
         nextSteps.push('Create transcript from audio or video file');
         nextSteps.push('Run transcription process using media-processing pipeline');
+        break;
+      
+      case 'make-ai-summary':
+        nextSteps.push('Generate AI summary from existing transcript');
+        nextSteps.push('Run "generate-summary" command to process transcript');
         break;
       
       case 'has-transcript':
