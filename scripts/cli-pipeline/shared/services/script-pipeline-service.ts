@@ -112,12 +112,28 @@ export class ScriptPipelineService {
       // Connect to Supabase if not already connected
       await this.dbService.ensureConnection();
       
-      // Call find_and_sync_scripts function to sync scripts
-      const { data, error } = await this.dbService.executeRpc<any>('find_and_sync_scripts', {});
+      // Find all script files on disk
+      logger.info('Finding all script files on disk...');
+      const scriptFiles = await this.findScriptFilesOnDisk();
+      logger.info(`Found ${scriptFiles.length} script files on disk`);
+      
+      // Call find_and_sync_scripts function with the list of files
+      logger.info('Syncing database with files on disk...');
+      
+      // Pass the scriptFiles array directly to the RPC function
+      // The database service will handle the conversion to JSON
+      const { data, error } = await this.dbService.executeRpc<any>(
+        'find_and_sync_scripts', 
+        { existing_files_json: scriptFiles }
+      );
       
       if (error) {
         logger.error(`Error syncing scripts: ${error.message}`);
         return 1;
+      }
+      
+      if (data && data.deleted_scripts > 0) {
+        logger.info(`Removed ${data.deleted_scripts} script records for files that no longer exist`);
       }
       
       logger.info(`Script synchronization completed successfully.`);
@@ -151,54 +167,124 @@ export class ScriptPipelineService {
   
   /**
    * Find all script files on disk
+   * This implementation specifically targets only the cli-pipeline directory and 
+   * is carefully designed to exclude node_modules and archived scripts
    */
   private async findScriptFilesOnDisk(): Promise<string[]> {
     const scriptFiles: string[] = [];
-    const rootPath = this.rootDir;
+    
+    // Fix the root path - the environment variables are giving us the wrong path
+    // Hard-code the correct path
+    const rootPath = '/Users/raybunnage/Documents/github/dhg-mono';
+    const cliPipelinePath = path.join(rootPath, 'scripts', 'cli-pipeline');
+    
+    logger.info(`Corrected root path: ${rootPath}`);
+    logger.info(`CLI pipeline path: ${cliPipelinePath}`);
     
     // Define script extensions to look for
     const scriptExtensions = ['.sh', '.js', '.ts'];
     
-    // Define directories to exclude from search
-    const excludeDirs = [
-      'node_modules',
-      '.git',
-      'dist',
-      'build',
-      '.next',
-      '.vscode'
-    ];
-    
-    // Recursive function to traverse directories
-    const traverseDirectory = (dirPath: string, relativePath: string = '') => {
-      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    // Use a direct approach with find command to get the script files
+    try {
+      // Get the actual script files using bash command to avoid node_modules
+      const execSync = require('child_process').execSync;
+      const cmd = `find "${cliPipelinePath}" -type f \\( -name "*.sh" -o -name "*.js" -o -name "*.ts" \\) | grep -v "node_modules" | grep -v "\\.archived" | grep -v "\\.backup" | grep -v "\\.test\\." | grep -v "\\.spec\\." | grep -v "\\.min\\."`;
       
-      for (const entry of entries) {
-        const entryPath = path.join(dirPath, entry.name);
-        const entryRelativePath = path.join(relativePath, entry.name);
-        
-        if (entry.isDirectory()) {
-          // Skip excluded directories
-          if (excludeDirs.includes(entry.name)) {
-            continue;
-          }
-          
-          // Recursively traverse subdirectories
-          traverseDirectory(entryPath, entryRelativePath);
-        } else if (entry.isFile()) {
-          // Check if file has a script extension
-          const ext = path.extname(entry.name).toLowerCase();
-          if (scriptExtensions.includes(ext)) {
-            scriptFiles.push(entryRelativePath);
-          }
+      const result = execSync(cmd, { encoding: 'utf8' });
+      const filePaths = result.split('\n').filter(Boolean);
+      
+      // Convert the absolute paths to relative paths from the project root
+      for (const filePath of filePaths) {
+        // The prefix to remove is the full rootPath
+        if (filePath.startsWith(rootPath)) {
+          const relativePath = filePath.substring(rootPath.length + 1); // +1 for the slash
+          scriptFiles.push(relativePath);
         }
       }
-    };
-    
-    // Start the traversal from the root directory
-    traverseDirectory(rootPath);
-    
-    return scriptFiles;
+      
+      logger.info(`Found ${scriptFiles.length} script files using direct find command`);
+      return scriptFiles;
+    } catch (error: any) {
+      logger.error(`Error using direct find command: ${error.message}`);
+      
+      // Fallback to the original implementation with more aggressive exclusions
+      // Default list of directories to exclude
+      const excludeDirs = [
+        'node_modules',
+        '.git',
+        '.archived_scripts',
+        '.archive_scripts',
+        '.backup_scripts',
+        '.vscode',
+        'dist',
+        'build',
+        'temp',
+        'tmp'
+      ];
+      
+      // Function to check if a path contains any of the excluded directories
+      const containsExcludedDir = (pathToCheck: string): boolean => {
+        return excludeDirs.some(dir => pathToCheck.includes(`/${dir}/`));
+      };
+      
+      // Recursive function with stronger exclusion logic
+      const traverseDirectory = (dirPath: string, relativePath: string) => {
+        // Skip this directory if it's in the excluded list or contains any excluded dir
+        const dirName = path.basename(dirPath);
+        if (excludeDirs.includes(dirName) || containsExcludedDir(dirPath)) {
+          return;
+        }
+        
+        try {
+          const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+          
+          for (const entry of entries) {
+            // Full path to the entry
+            const entryPath = path.join(dirPath, entry.name);
+            // Relative path from cli-pipeline root
+            const entryRelativePath = path.join(relativePath, entry.name);
+            
+            if (entry.isDirectory()) {
+              // Skip node_modules and other excluded directories
+              if (excludeDirs.includes(entry.name) || containsExcludedDir(entryPath)) {
+                continue;
+              }
+              
+              // Recursively traverse subdirectories
+              traverseDirectory(entryPath, entryRelativePath);
+            } else if (entry.isFile()) {
+              // Check if file has a script extension
+              const ext = path.extname(entry.name).toLowerCase();
+              if (scriptExtensions.includes(ext)) {
+                // Skip test and spec files
+                if (entry.name.includes('.test.') || 
+                    entry.name.includes('.spec.') || 
+                    entry.name.includes('.min.') ||
+                    entry.name.includes('.d.ts')) {
+                  continue;
+                }
+                
+                // Calculate relative path from the project root
+                const fullRelativePath = path.join('scripts/cli-pipeline', relativePath, entry.name);
+                scriptFiles.push(fullRelativePath);
+              }
+            }
+          }
+        } catch (error: any) {
+          logger.warn(`Could not read directory ${dirPath}: ${error.message}`);
+        }
+      };
+      
+      // Start traversal only from the cli-pipeline directory
+      if (fs.existsSync(cliPipelinePath)) {
+        traverseDirectory(cliPipelinePath, '');
+      } else {
+        logger.warn(`CLI pipeline directory not found at ${cliPipelinePath}`);
+      }
+      
+      logger.info(`Found ${scriptFiles.length} script files using fallback method`);
+      return scriptFiles;
+    }
   }
   
   /**
