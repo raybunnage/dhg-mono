@@ -60,6 +60,14 @@ When I identify recurring patterns, issues, or inefficiencies in the development
    - Never implement custom authentication logic or hardcode credentials
    - If encountering authentication errors, look for the established patterns in the shared services first
 
+2. **Issue**: Temporary dummy implementations in services
+   **Solution**: Fix the underlying database issues rather than using dummy implementations
+   **Implementation**:
+   - Messages like "Using direct implementation instead of database function" and "Synchronization complete (dummy implementation)" indicate workarounds
+   - Instead of these temporary solutions, properly fix the database schema, migrations, and functions
+   - When encountering issues with database columns or functions, create proper migrations that can be applied to all environments
+   - Prioritize fixing SQL functions and views in the database over workarounds in TypeScript code
+
 ## TypeScript Best Practices
 ⚠️ **ALWAYS CHECK FOR TYPESCRIPT ERRORS BEFORE SUBMITTING CODE**
 
