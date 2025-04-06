@@ -28,15 +28,20 @@ function display_help() {
   echo "Advanced Commands:"
   echo "  add-root-service [folderId] Add a new root folder using service account"
   echo "  check-roots                 Check the status of all registered root folders"
+  echo "  count-mp4 [drive_id]        Count MP4 files in a Google Drive folder"
   echo "  disk-status                 Update presentations table with disk status for MP4 files"
   echo "  list-drive-direct           List files in Drive directly (no DB interaction)"
   echo "  mp4-experts                 Create expert documents for presentations with MP4 files"
   echo "  report-drive-roots          Generate a detailed report about all root folders"
   echo "  sync-and-update-metadata    Sync folder and update metadata in one operation"
+  echo "  sync-mp4-presentations      Sync MP4 files with presentations table (ensure 1:1 mapping)"
   echo "  update-metadata             Update metadata for files in the database"
   echo ""
   echo "Options:"
   echo "  --dry-run                   Show what would be synced without making changes"
+  echo "  --list                      List all files found (for count-mp4 command)"
+  echo "  --summary                   Show only summary information (for count-mp4 command)"
+  echo "  --local                     Use local filesystem instead of Google Drive (for count-mp4 command)"
   echo "  --timeout [ms]              Set timeout for sync operations (default: 600000ms/10min)"
   echo "  --name [name]               Specify a name when adding a root folder"
   echo "  --description [desc]        Specify a description when adding a root folder"
@@ -49,6 +54,9 @@ function display_help() {
   echo "  google-drive-cli.sh sync-folder 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
   echo "  google-drive-cli.sh sync-folder dynamic-healing --recursive"
   echo "  google-drive-cli.sh sync-and-update-metadata 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --limit 50"
+  echo "  google-drive-cli.sh count-mp4 dynamic-healing --list"
+  echo "  google-drive-cli.sh sync-mp4-presentations --dry-run"
+  echo "  google-drive-cli.sh sync-mp4-presentations --folder-id dynamic-healing"
   echo "  google-drive-cli.sh disk-status --dry-run"
   echo "  google-drive-cli.sh mp4-experts --dry-run"
 }
@@ -105,11 +113,17 @@ case "$COMMAND" in
   sync-and-update-metadata)
     ts-node "$SCRIPT_DIR/sync-and-update-metadata.ts" "$@"
     ;;
+  sync-mp4-presentations)
+    ts-node "$SCRIPT_DIR/sync-mp4-presentations.ts" "$@"
+    ;;
   update-metadata)
     ts-node "$SCRIPT_DIR/update-metadata-service-account.ts" "$@"
     ;;
   update-dynamic-healing)
     ts-node "$SCRIPT_DIR/update-dynamic-healing-metadata.ts" "$@"
+    ;;
+  count-mp4)
+    ts-node "$SCRIPT_DIR/count-mp4-files.ts" "$@"
     ;;
   disk-status)
     ts-node "$SCRIPT_DIR/update-presentation-disk-status.ts" "$@"
