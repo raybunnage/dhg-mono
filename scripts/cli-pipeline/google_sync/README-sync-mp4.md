@@ -1,76 +1,64 @@
-# MP4 to Presentations Sync
+# Sync MP4 Presentations
 
-This utility ensures there is a 1:1 relationship between MP4 files in Google Drive and the presentations table in the database. It scans for MP4 files in a specified folder and creates corresponding presentation records for any MP4 files that don't have one yet.
+This document explains how to use the sync-mp4-presentations.ts script to synchronize MP4 files from Google Drive with presentation records.
 
-## Purpose
+## Problem Diagnosis
 
-The presentations table serves as a source of truth for video content. This tool helps maintain consistency by ensuring that every MP4 file in Google Drive has a corresponding presentation record, with proper metadata like title, filename, folder path, and associations.
+We discovered the following:
+
+1. There are 177 total MP4 files in the sources_google table
+2. 112 of those MP4 files are in the Dynamic Healing Discussion Group folder
+3. There are 112 total presentations in the database
+4. 53 presentations have main_video_id set to MP4 files in the folder
+5. 59 presentations have NULL main_video_id and no associated assets
+6. This explains why the script needs to create around 60 new presentations
+
+The issue was that the sync-mp4-presentations.ts script was not correctly filtering MP4 files by folder, so it was trying to create presentations for ALL MP4 files, not just those in the Dynamic Healing Discussion Group.
+
+## Solution
+
+We fixed the sync-mp4-presentations.ts script to properly filter files by the specified folder. Now it correctly:
+1. Finds MP4 files in the Dynamic Healing Discussion Group
+2. Checks which ones already have presentations
+3. Creates presentations for the remaining MP4 files
 
 ## Usage
 
 ```bash
-# Using the google-drive-cli.sh wrapper (preferred)
-./google-drive-cli.sh sync-mp4-presentations [options]
+# Dry run to see what would be synced without making changes
+ts-node scripts/cli-pipeline/google_sync/sync-mp4-presentations.ts --dry-run
 
-# Direct execution
-./sync-mp4-presentations.ts [options]
+# Actually create the presentations
+ts-node scripts/cli-pipeline/google_sync/sync-mp4-presentations.ts
+
+# Specify a different folder
+ts-node scripts/cli-pipeline/google_sync/sync-mp4-presentations.ts --folder-id <folder-id>
 ```
 
-## Options
+## Implementation
 
-- `--dry-run`: Show what would be synced without making changes
-- `--folder-id <id>`: Specify a Google Drive folder ID (default: Dynamic Healing Discussion Group)
-- `--verbose`: Show detailed logs
-- `--limit <n>`: Limit processing to n records (useful for testing)
+The script uses the following logic:
+1. Gets MP4 files by MIME type and file extension from sources_google
+2. Filters to only include files in the specified folder
+3. Checks which MP4 files already have presentations
+4. Creates new presentations for MP4 files without presentations
 
-## Examples
+The filtering logic has been improved to handle different path formats in the database:
+- Files with parent_folder_id matching the folder ID
+- Files with parent_path containing the folder name
+- Files with parent_path starting with the folder name
+- Files with parent_path containing the folder path (with or without leading slash)
+
+## Diagnostic Script
+
+Use the diagnose-presentations.ts script to analyze the current state of presentations and MP4 files:
 
 ```bash
-# Basic usage - check what would be created without making changes
-./google-drive-cli.sh sync-mp4-presentations --dry-run
-
-# Sync all MP4 files in Dynamic Healing Discussion Group to presentations
-./google-drive-cli.sh sync-mp4-presentations
-
-# Specify a different folder by ID
-./google-drive-cli.sh sync-mp4-presentations --folder-id 1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc
-
-# Limit the number of files processed (for testing)
-./google-drive-cli.sh sync-mp4-presentations --limit 10
-
-# Show detailed logs while running
-./google-drive-cli.sh sync-mp4-presentations --verbose
+ts-node scripts/cli-pipeline/google_sync/diagnose-presentations.ts
 ```
 
-## How It Works
-
-The script performs the following steps:
-
-1. Retrieves information about the specified Google Drive folder
-2. Finds all MP4 files within that folder and its subfolders
-3. Checks which MP4 files already have associated presentation records
-4. Creates new presentation records for any MP4 files that don't have one
-5. Automatically extracts and sets useful metadata such as:
-   - Title (derived from filename)
-   - Folder path
-   - Recording date (extracted from filename or using modified time)
-   - Presenter name (extracted from filename when possible)
-
-## Output
-
-The script provides:
-
-1. Count of total MP4 files found in the folder
-2. Count of existing presentations
-3. Count of new presentations created
-4. Detailed logs for each file processed (in verbose mode)
-
-## Integration with Other Commands
-
-This command complements the other presentation-related commands:
-
-- `count-mp4`: First use this to find how many MP4 files exist
-- `sync-mp4-presentations`: Then use this to ensure all MP4 files have presentation records
-- `mp4-experts`: Finally use this to create expert documents from presentations
-
-This workflow ensures complete coverage of your video content in the database.
+This provides detailed information about:
+- Total presentations
+- Presentations with/without main_video_id
+- MP4 files in the Dynamic Healing Discussion Group
+- Presentation assets

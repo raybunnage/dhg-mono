@@ -2,6 +2,8 @@
 import { Command } from 'commander';
 import { Logger } from '../../../packages/shared/utils/logger';
 import { PresentationService } from './services/presentation-service';
+import { PresentationRepairService } from './services/presentation-repair-service';
+import { ExpertDocumentService } from './services/expert-document-service';
 import { ClaudeService } from '../../../packages/shared/services/claude-service';
 
 // Create the main program
@@ -279,6 +281,121 @@ program
       
     } catch (error) {
       Logger.error('Error exporting presentation status:', error);
+      process.exit(1);
+    }
+  });
+
+// Define repair-presentations command
+program
+  .command('repair-presentations')
+  .description('Repair presentations with missing main_video_id')
+  .option('--dry-run', 'Show what would be repaired without making changes', true)
+  .option('--setup', 'Create database functions for repairing presentations', false)
+  .option('--db-function', 'Use database function for repairs (more efficient)', false)
+  .action(async (options: any) => {
+    try {
+      Logger.info('Analyzing presentations with missing video IDs...');
+
+      const repairService = new PresentationRepairService();
+
+      // Create database functions if requested
+      if (options.setup) {
+        Logger.info('Setting up database functions for presentation repair...');
+        const success = await repairService.createDatabaseFunctions();
+        if (success) {
+          Logger.info('Database functions created successfully!');
+        } else {
+          Logger.error('Failed to create database functions');
+          process.exit(1);
+        }
+        return;
+      }
+
+      // Use database function if requested
+      if (options.dbFunction && !options.dryRun) {
+        Logger.info('Using database function to repair presentations...');
+        const { repaired, details } = await repairService.repairPresentationsWithDatabaseFunction();
+        Logger.info(`Repaired ${repaired} presentations using database function`);
+        return;
+      }
+
+      // Otherwise use the TypeScript implementation
+      const { total, repaired, details } = await repairService.analyzeAndRepairPresentations(options.dryRun);
+      
+      if (options.dryRun) {
+        Logger.info(`Found ${total} presentations that need repair`);
+        Logger.info('Run with --no-dry-run to actually repair the presentations');
+      } else {
+        Logger.info(`Repaired ${repaired}/${total} presentations`);
+      }
+    } catch (error) {
+      Logger.error('Error repairing presentations:', error);
+      process.exit(1);
+    }
+  });
+
+// Define create-from-expert-docs command
+program
+  .command('create-from-expert-docs')
+  .description('Create presentations from expert documents for MP4 files without presentations')
+  .option('--no-dry-run', 'Actually create the presentations instead of just showing what would be created')
+  .option('--folder-id <id>', 'Specify a folder ID', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('--limit <number>', 'Limit the number of expert documents to process')
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options: any) => {
+    try {
+      Logger.info('Analyzing expert documents for MP4 files without presentations...');
+
+      const expertDocService = new ExpertDocumentService();
+
+      // Get expert documents for MP4 files without presentations
+      const { 
+        totalDocuments,
+        docsInFolder,
+        docsWithoutPresentations,
+        documents 
+      } = await expertDocService.getExpertDocsForMp4Files({
+        folderId: options.folderId,
+        limit: options.limit ? parseInt(options.limit, 10) : undefined
+      });
+
+      Logger.info(`Found ${totalDocuments} total expert documents`);
+      Logger.info(`${docsInFolder} are for MP4 files in the specified folder`);
+      Logger.info(`${docsWithoutPresentations} are for MP4 files without presentations`);
+
+      if (docsWithoutPresentations === 0) {
+        Logger.info('No expert documents to process. All MP4 files with expert documents already have presentations.');
+        return;
+      }
+
+      // Show sample of expert documents to process
+      if (documents.length > 0) {
+        Logger.info('\nSample expert documents to process:');
+        const sampleSize = Math.min(5, documents.length);
+        for (let i = 0; i < sampleSize; i++) {
+          const doc = documents[i];
+          const source = doc.sources_google;
+          Logger.info(`${i + 1}. ${source.name} (${source.id})`);
+          Logger.info(`   Expert Document: ${doc.id} (Created: ${new Date(doc.created_at).toLocaleDateString()})`);
+        }
+      }
+
+      if (options.dryRun !== false) {
+        Logger.info(`\nDRY RUN: Would create ${docsWithoutPresentations} presentations`);
+        Logger.info('Run with --no-dry-run to actually create the presentations');
+      } else {
+        Logger.info(`\nCreating ${docsWithoutPresentations} presentations...`);
+
+        const result = await expertDocService.createPresentationsFromExpertDocs({
+          expertDocs: documents,
+          isDryRun: false
+        });
+
+        Logger.info(`Successfully created ${result.created} presentations with links to expert documents`);
+      }
+
+    } catch (error) {
+      Logger.error('Error creating presentations from expert documents:', error);
       process.exit(1);
     }
   });

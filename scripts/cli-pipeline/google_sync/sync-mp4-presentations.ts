@@ -270,8 +270,12 @@ async function createPresentations(supabase: any, files: any[]): Promise<number>
       Logger.debug(`Processing file ${i + 1}/${files.length}: ${file.name}`);
       
       // Extract useful metadata for the presentation
-      const filePathParts = file.path?.split('/') || [];
-      const folderPath = filePathParts.slice(0, -1).join('/') || file.parent_path || '/';
+      let folderPath = file.parent_path || '/';
+      
+      // Make sure folder path starts with a slash
+      if (!folderPath.startsWith('/')) {
+        folderPath = '/' + folderPath;
+      }
       
       // Try to parse a date from the filename or path
       let recordedDate = null;
