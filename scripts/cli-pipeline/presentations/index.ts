@@ -19,6 +19,8 @@ program
   .option('-s, --status <status>', 'Filter by status (complete, incomplete, missing-transcript, etc.)')
   .option('-l, --limit <number>', 'Limit the number of presentations to review', '300')
   .option('-f, --format <format>', 'Output format (table, json)', 'table')
+  .option('-o, --output-file <path>', 'Path to write markdown output to', '/Users/raybunnage/Documents/github/dhg-mono/docs/cli-pipeline/transcribe_status.md')
+  .option('-c, --create-assets', 'Create missing presentation_asset records', false)
   .action(async (options: any) => {
     try {
       Logger.info('Reviewing presentations...');
@@ -29,6 +31,7 @@ program
         expertId: options.expertId,
         status: options.status,
         limit: parseInt(options.limit),
+        createAssets: options.createAssets,
       });
       
       if (presentations.length === 0) {
@@ -46,6 +49,12 @@ program
       console.log('==========================\n');
       
       // Create markdown table for presentations
+      const tableHeader = '| Title | ID | Status | Assets | Next Steps |';
+      const tableDivider = '|-------|----|---------|---------|--------------------|';
+      
+      let markdownOutput = '# Presentation Transcription Status\n\n';
+      markdownOutput += tableHeader + '\n' + tableDivider + '\n';
+      
       console.log('| Title | ID | Expert | Status | Has Transcript | Assets | Expert Documents | Next Steps |');
       console.log('|-------|----|---------|---------|---------|---------|--------------------|----------------|');
       
@@ -76,9 +85,27 @@ program
         }
         
         console.log(`| ${title} | ${id} | ${expert} | ${status} | ${presentation.has_raw_content ? 'Yes' : 'No'} | ${assets} | ${expertDocs} | ${nextSteps} |`);
+        
+        // Create simplified markdown table entry for output file
+        const simpleNextSteps = presentation.next_steps && presentation.next_steps.length > 0 
+          ? presentation.next_steps.map((step, index) => `${index + 1}. ${step}`).join('<br>') 
+          : 'None';
+        
+        markdownOutput += `| ${title} | ${id} | ${status} | ${assets} | ${simpleNextSteps} |\n`;
       }
       
       console.log('\n');
+      
+      // Write to output file if requested
+      if (options.outputFile) {
+        try {
+          const fs = require('fs');
+          fs.writeFileSync(options.outputFile, markdownOutput);
+          Logger.info(`Markdown output written to ${options.outputFile}`);
+        } catch (writeError) {
+          Logger.error('Error writing to output file:', writeError);
+        }
+      }
       
       Logger.info(`Reviewed ${presentations.length} presentations.`);
       
@@ -151,6 +178,95 @@ program
       // Implementation goes here
     } catch (error) {
       Logger.error('Error checking professional documents:', error);
+      process.exit(1);
+    }
+  });
+
+// Define create-missing-assets command
+program
+  .command('create-missing-assets')
+  .description('Create missing presentation_asset records for presentations with transcripts')
+  .option('-p, --presentation-id <id>', 'Specific presentation ID to create assets for')
+  .option('-l, --limit <number>', 'Limit the number of presentations to process', '100')
+  .action(async (options: any) => {
+    try {
+      Logger.info('Creating missing presentation_asset records...');
+      
+      // Use the review-presentations with create-assets option
+      const presentationService = PresentationService.getInstance();
+      const presentations = await presentationService.reviewPresentations({
+        presentationId: options.presentationId,
+        limit: parseInt(options.limit),
+        createAssets: true,
+      });
+      
+      Logger.info(`Processed ${presentations.length} presentations.`);
+      
+    } catch (error) {
+      Logger.error('Error creating missing assets:', error);
+      process.exit(1);
+    }
+  });
+
+// Define export-status command
+program
+  .command('export-status')
+  .description('Export presentation transcription status to markdown file')
+  .option('-o, --output-file <path>', 'Path to write markdown output to', '/Users/raybunnage/Documents/github/dhg-mono/docs/cli-pipeline/transcribe_status.md')
+  .option('-l, --limit <number>', 'Limit the number of presentations to include', '300')
+  .action(async (options: any) => {
+    try {
+      Logger.info('Exporting presentation status to markdown...');
+      
+      const presentationService = PresentationService.getInstance();
+      const presentations = await presentationService.reviewPresentations({
+        limit: parseInt(options.limit),
+      });
+      
+      if (presentations.length === 0) {
+        Logger.info('No presentations found.');
+        return;
+      }
+      
+      // Create markdown table 
+      const tableHeader = '| Title | ID | Status | Assets | Next Steps |';
+      const tableDivider = '|-------|----|---------|---------|--------------------|';
+      
+      let markdownOutput = '# Presentation Transcription Status\n\n';
+      markdownOutput += tableHeader + '\n' + tableDivider + '\n';
+      
+      for (const presentation of presentations) {
+        const title = presentation.title || 'Untitled';
+        const id = presentation.id;
+        const status = presentation.status;
+        
+        // Format assets
+        let assets = 'None';
+        if (presentation.assets && presentation.assets.length > 0) {
+          assets = presentation.assets.map(asset => `${asset.type}`).join(', ');
+        }
+        
+        // Format next steps
+        const simpleNextSteps = presentation.next_steps && presentation.next_steps.length > 0 
+          ? presentation.next_steps.map((step: string, index: number) => `${index + 1}. ${step}`).join('<br>') 
+          : 'None';
+        
+        markdownOutput += `| ${title} | ${id} | ${status} | ${assets} | ${simpleNextSteps} |\n`;
+      }
+      
+      // Write to output file
+      try {
+        const fs = require('fs');
+        fs.writeFileSync(options.outputFile, markdownOutput);
+        Logger.info(`Markdown output written to ${options.outputFile}`);
+      } catch (writeError) {
+        Logger.error('Error writing to output file:', writeError);
+      }
+      
+      Logger.info(`Exported status for ${presentations.length} presentations.`);
+      
+    } catch (error) {
+      Logger.error('Error exporting presentation status:', error);
       process.exit(1);
     }
   });
