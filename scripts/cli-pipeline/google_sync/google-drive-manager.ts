@@ -36,8 +36,8 @@ import * as dotenv from 'dotenv';
 import { writeFileSync } from 'fs';
 import { createClient } from '@supabase/supabase-js';
 import { Command } from 'commander';
-import type { Database } from '../../../../../../supabase/types';
-import { defaultGoogleAuth } from '../../../../../../packages/shared/services/google-drive';
+import type { Database } from '../../../supabase/types';
+import { defaultGoogleAuth } from '../../../packages/shared/services/google-drive';
 
 // Load environment variables
 dotenv.config();
