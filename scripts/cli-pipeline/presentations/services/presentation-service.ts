@@ -46,6 +46,7 @@ interface PresentationAsset {
 interface ExpertDocument {
   id: string;
   document_type: string;
+  document_type_id: string;
   has_raw_content: boolean;
   has_processed_content: boolean;
   created_at: string;
@@ -63,6 +64,7 @@ interface PresentationReview {
   assets: PresentationAsset[];
   expert_documents: ExpertDocument[];
   next_steps: string[];
+  has_raw_content: boolean;
 }
 
 interface PresentationWithTranscript {
@@ -464,20 +466,15 @@ export class PresentationService {
         .select(`
           id,
           title,
-          expert_id,
+          main_video_id,
           created_at,
-          updated_at,
-          experts(name)
+          updated_at
         `)
         .order('created_at', { ascending: false });
       
       // Apply filters
       if (options.presentationId) {
         query = query.eq('id', options.presentationId);
-      }
-      
-      if (options.expertId) {
-        query = query.eq('expert_id', options.expertId);
       }
       
       // Apply limit
@@ -496,72 +493,138 @@ export class PresentationService {
         return [];
       }
       
+      // Filter by expert_id if requested
+      let filteredPresentations = presentations;
+      if (options.expertId) {
+        // Get presentations that are associated with the specified expert through sources_google
+        const { data: sourcesWithExpert, error: sourcesError } = await this.supabaseClient
+          .from('sources_google')
+          .select('id')
+          .eq('expert_id', options.expertId);
+        
+        if (sourcesError) {
+          Logger.error('Error fetching sources for expert:', sourcesError);
+        } else if (sourcesWithExpert && sourcesWithExpert.length > 0) {
+          const sourceIds = sourcesWithExpert.map((s: any) => s.id);
+          filteredPresentations = presentations.filter((p: any) => 
+            p.main_video_id && sourceIds.includes(p.main_video_id)
+          );
+        } else {
+          // No sources found for this expert
+          return [];
+        }
+      }
+      
       // Get presentation reviews with detailed information
       const presentationReviews = await Promise.all(
-        presentations.map(async (presentation: any) => {
+        filteredPresentations.map(async (presentation: any) => {
           // Get presentation assets
           const { data: assets, error: assetsError } = await this.supabaseClient
             .from('presentation_assets')
-            .select('id, asset_type, file_path, created_at')
+            .select('id, asset_type, created_at')
             .eq('presentation_id', presentation.id);
           
           if (assetsError) {
             Logger.error('Error fetching assets for presentation:', assetsError);
           }
           
-          // Get expert documents related to this presentation
-          const { data: expertDocuments, error: docsError } = await this.supabaseClient
-            .from('expert_documents')
-            .select(`
-              id, 
-              document_type_id,
-              document_types(name),
-              created_at,
-              updated_at,
-              raw_content,
-              processed_content
-            `)
-            .eq('expert_id', presentation.expert_id);
+          // Get linked source_google info to find the expert
+          let expertId = null;
+          let expertName = null;
           
-          if (docsError) {
-            Logger.error('Error fetching expert documents:', docsError);
+          if (presentation.main_video_id) {
+            const { data: source, error: sourceError } = await this.supabaseClient
+              .from('sources_google')
+              .select('expert_id')
+              .eq('id', presentation.main_video_id)
+              .single();
+              
+            if (!sourceError && source && source.expert_id) {
+              expertId = source.expert_id;
+              
+              // Now get the expert name
+              const { data: expert, error: expertError } = await this.supabaseClient
+                .from('experts')
+                .select('expert_name')
+                .eq('id', expertId)
+                .single();
+                
+              if (!expertError && expert) {
+                expertName = expert.expert_name;
+              }
+            }
           }
           
+          // Get expert documents related to this presentation's expert
+          let expertDocuments: any[] = [];
+          
+          if (expertId) {
+            const { data: docs, error: docsError } = await this.supabaseClient
+              .from('expert_documents')
+              .select(`
+                id, 
+                document_type_id,
+                document_types(name),
+                created_at,
+                updated_at,
+                raw_content,
+                processed_content,
+                source_id
+              `)
+              .eq('expert_id', expertId);
+            
+            if (docsError) {
+              Logger.error('Error fetching expert documents:', docsError);
+            } else if (docs) {
+              expertDocuments = docs;
+            }
+          }
+          
+          // Check if we have the specific expert document for this presentation's source_id
+          const hasTranscriptDocument = expertDocuments.some(doc => 
+            doc.source_id === presentation.main_video_id && 
+            doc.raw_content !== null && 
+            doc.raw_content !== undefined
+          );
+          
           // Transform expert documents for review
-          const transformedDocs = (expertDocuments || []).map((doc: any) => ({
+          const transformedDocs = expertDocuments.map((doc: any) => ({
             id: doc.id,
             document_type: doc.document_types?.name || 'Unknown',
+            document_type_id: doc.document_type_id || 'Unknown',
             has_raw_content: !!doc.raw_content,
             has_processed_content: !!doc.processed_content,
             created_at: doc.created_at,
             updated_at: doc.updated_at
           }));
           
-          // Determine presentation status
-          const status = this.determinePresentationStatus(assets || [], transformedDocs);
-          
-          // Determine next steps
-          const nextSteps = this.determineNextSteps(status, assets || [], transformedDocs);
-          
           // Transform assets for review
           const transformedAssets = (assets || []).map((asset: any) => ({
             id: asset.id,
             type: asset.asset_type,
-            status: asset.file_path ? 'Available' : 'Missing',
-            file_path: asset.file_path
+            status: 'Available' // Since we don't have file_path to check
           }));
+          
+          // Determine presentation status
+          const status = hasTranscriptDocument ? 
+            'has-transcript' : 
+            this.determinePresentationStatus(transformedAssets, transformedDocs);
+          
+          // Determine next steps
+          const nextSteps = this.determineNextSteps(status, transformedAssets, transformedDocs);
           
           return {
             id: presentation.id,
             title: presentation.title,
-            expert_id: presentation.expert_id,
-            expert_name: presentation.experts?.name,
+            expert_id: expertId,
+            expert_name: expertName,
             created_at: presentation.created_at,
             updated_at: presentation.updated_at,
             status,
             assets: transformedAssets,
             expert_documents: transformedDocs,
-            next_steps: nextSteps
+            next_steps: nextSteps,
+            has_raw_content: hasTranscriptDocument
           };
         })
       );
@@ -627,6 +690,11 @@ export class PresentationService {
         nextSteps.push('Run transcription process using media-processing pipeline');
         break;
       
+      case 'has-transcript':
+        nextSteps.push('Generate AI summary from transcript');
+        nextSteps.push('Run "generate-summary" command to process transcript');
+        break;
+      
       case 'missing-summary':
         nextSteps.push('Generate AI summary from transcript');
         nextSteps.push('Run "generate-summary" command to process transcript');
@@ -661,18 +729,13 @@ export class PresentationService {
         .select(`
           id,
           title,
-          expert_id,
-          experts(name)
+          main_video_id
         `)
         .order('created_at', { ascending: false });
       
       // Apply filters
       if (options.presentationId) {
         query = query.eq('id', options.presentationId);
-      }
-      
-      if (options.expertId) {
-        query = query.eq('expert_id', options.expertId);
       }
       
       // Apply limit
@@ -689,6 +752,28 @@ export class PresentationService {
       
       if (!presentations || presentations.length === 0) {
         return [];
+      }
+      
+      // Filter by expert_id if requested
+      let filteredPresentations = presentations;
+      if (options.expertId) {
+        // Get presentations that are associated with the specified expert through sources_google
+        const { data: sourcesWithExpert, error: sourcesError } = await this.supabaseClient
+          .from('sources_google')
+          .select('id')
+          .eq('expert_id', options.expertId);
+        
+        if (sourcesError) {
+          Logger.error('Error fetching sources for expert:', sourcesError);
+        } else if (sourcesWithExpert && sourcesWithExpert.length > 0) {
+          const sourceIds = sourcesWithExpert.map((s: any) => s.id);
+          filteredPresentations = presentations.filter((p: any) => 
+            p.main_video_id && sourceIds.includes(p.main_video_id)
+          );
+        } else {
+          // No sources found for this expert
+          return [];
+        }
       }
       
       // Get document type IDs for professional documents
@@ -710,36 +795,68 @@ export class PresentationService {
       
       // Check professional documents for each presentation
       const presentationsWithDocs = await Promise.all(
-        presentations.map(async (presentation: any) => {
-          // Get expert documents for this expert
-          const { data: expertDocuments, error: docsError } = await this.supabaseClient
-            .from('expert_documents')
-            .select(`
-              id, 
-              document_type_id,
-              document_types(name),
-              created_at,
-              updated_at
-            `)
-            .eq('expert_id', presentation.expert_id)
-            .in('document_type_id', Object.values(docTypeMap));
+        filteredPresentations.map(async (presentation: any) => {
+          // Get linked source_google info to find the expert
+          let expertId = null;
+          let expertName = null;
           
-          if (docsError) {
-            Logger.error('Error fetching expert documents:', docsError);
+          if (presentation.main_video_id) {
+            const { data: source, error: sourceError } = await this.supabaseClient
+              .from('sources_google')
+              .select('expert_id')
+              .eq('id', presentation.main_video_id)
+              .single();
+              
+            if (!sourceError && source && source.expert_id) {
+              expertId = source.expert_id;
+              
+              // Now get the expert name
+              const { data: expert, error: expertError } = await this.supabaseClient
+                .from('experts')
+                .select('expert_name')
+                .eq('id', expertId)
+                .single();
+                
+              if (!expertError && expert) {
+                expertName = expert.expert_name;
+              }
+            }
+          }
+          
+          // Get expert documents for this expert if found
+          let expertDocuments: any[] = [];
+          if (expertId) {
+            const { data: docs, error: docsError } = await this.supabaseClient
+              .from('expert_documents')
+              .select(`
+                id, 
+                document_type_id,
+                document_types(name),
+                created_at,
+                updated_at
+              `)
+              .eq('expert_id', expertId)
+              .in('document_type_id', Object.values(docTypeMap));
+            
+            if (docsError) {
+              Logger.error('Error fetching expert documents:', docsError);
+            } else if (docs) {
+              expertDocuments = docs;
+            }
           }
           
           // Find CV document
-          const cvDoc = (expertDocuments || []).find((doc: any) => 
+          const cvDoc = expertDocuments.find((doc: any) => 
             doc.document_types?.name?.toLowerCase() === 'curriculum vitae'
           );
           
           // Find bio document
-          const bioDoc = (expertDocuments || []).find((doc: any) => 
+          const bioDoc = expertDocuments.find((doc: any) => 
             doc.document_types?.name?.toLowerCase() === 'professional biography'
           );
           
           // Find announcement document
-          const announcementDoc = (expertDocuments || []).find((doc: any) => 
+          const announcementDoc = expertDocuments.find((doc: any) => 
             doc.document_types?.name?.toLowerCase() === 'presentation announcement'
           );
           
@@ -747,8 +864,8 @@ export class PresentationService {
           const result: PresentationWithProfessionalDocs = {
             id: presentation.id,
             title: presentation.title,
-            expert_id: presentation.expert_id,
-            expert_name: presentation.experts?.name,
+            expert_id: expertId,
+            expert_name: expertName,
             hasAnyProfessionalDocument: !!(cvDoc || bioDoc || announcementDoc)
           };
           

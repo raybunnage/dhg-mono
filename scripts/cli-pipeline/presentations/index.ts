@@ -17,7 +17,7 @@ program
   .option('-p, --presentation-id <id>', 'Specific presentation ID to review')
   .option('-e, --expert-id <id>', 'Filter presentations by expert ID')
   .option('-s, --status <status>', 'Filter by status (complete, incomplete, missing-transcript, etc.)')
-  .option('-l, --limit <number>', 'Limit the number of presentations to review', '10')
+  .option('-l, --limit <number>', 'Limit the number of presentations to review', '300')
   .option('-f, --format <format>', 'Output format (table, json)', 'table')
   .action(async (options: any) => {
     try {
@@ -41,13 +41,44 @@ program
         return;
       }
       
-      // Display table format using require to avoid ESM issues
-      const chalk = require('chalk');
-      console.log(chalk.bold('\nPRESENTATION REVIEW SUMMARY'));
-      console.log(chalk.bold('==========================\n'));
+      // Display table format
+      console.log('\nPRESENTATION REVIEW SUMMARY');
+      console.log('==========================\n');
       
-      // Process and display presentations information...
-      // (rest of implementation)
+      // Create markdown table for presentations
+      console.log('| Title | ID | Expert | Status | Has Transcript | Assets | Expert Documents | Next Steps |');
+      console.log('|-------|----|---------|---------|---------|---------|--------------------|----------------|');
+      
+      for (const presentation of presentations) {
+        const title = presentation.title || 'Untitled';
+        const id = presentation.id;
+        const expert = presentation.expert_name || 'N/A';
+        const status = presentation.status;
+        
+        // Format assets
+        let assets = 'None';
+        if (presentation.assets && presentation.assets.length > 0) {
+          assets = presentation.assets.map(asset => `${asset.type}`).join(', ');
+        }
+        
+        // Format expert documents
+        let expertDocs = 'None';
+        if (presentation.expert_documents && presentation.expert_documents.length > 0) {
+          expertDocs = presentation.expert_documents.map(doc => 
+            `${doc.document_type} (${doc.document_type_id})`
+          ).join('<br>');
+        }
+        
+        // Format next steps
+        let nextSteps = 'None';
+        if (presentation.next_steps && presentation.next_steps.length > 0) {
+          nextSteps = presentation.next_steps.join('<br>');
+        }
+        
+        console.log(`| ${title} | ${id} | ${expert} | ${status} | ${presentation.has_raw_content ? 'Yes' : 'No'} | ${assets} | ${expertDocs} | ${nextSteps} |`);
+      }
+      
+      console.log('\n');
       
       Logger.info(`Reviewed ${presentations.length} presentations.`);
       

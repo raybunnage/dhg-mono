@@ -15,8 +15,31 @@ function registerCommands(): void {
   // Sync command
   cliService.registerCommand({
     name: 'sync',
-    description: 'Synchronize database with files on disk (mark files as deleted/not deleted)',
+    description: 'Synchronize database with files on disk',
     action: async () => {
+      try {
+        // First try the direct sync approach, which is more reliable
+        const path = require('path');
+        const { execSync } = require('child_process');
+        
+        const scriptPath = path.join(__dirname, 'sync-scripts.sh');
+        cliService.info(`Running direct sync script: ${scriptPath}`);
+        
+        try {
+          execSync(`bash "${scriptPath}"`, { 
+            encoding: 'utf8',
+            stdio: 'inherit'
+          });
+          cliService.success('Direct script sync completed successfully');
+          return;
+        } catch (directError) {
+          cliService.warn(`Direct sync failed, falling back to service method: ${directError}`);
+        }
+      } catch (setupError) {
+        cliService.warn(`Error setting up direct sync: ${setupError}`);
+      }
+      
+      // Fall back to the service method if direct approach fails
       const result = await scriptPipelineService.syncScripts();
       if (result === 0) {
         cliService.success('Script sync completed successfully');
