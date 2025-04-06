@@ -5,6 +5,7 @@ import { PresentationService } from './services/presentation-service';
 import { PresentationRepairService } from './services/presentation-repair-service';
 import { ExpertDocumentService } from './services/expert-document-service';
 import { ClaudeService } from '../../../packages/shared/services/claude-service';
+import { generateSummaryCommand } from './commands/generate-summary';
 
 // Create the main program
 const program = new Command()
@@ -15,11 +16,12 @@ const program = new Command()
 // Define review-presentations command
 program
   .command('review-presentations')
-  .description('Review the state of presentations and their related expert documents')
+  .description('Review presentations status, document types, and raw content previews in a markdown table')
   .option('-p, --presentation-id <id>', 'Specific presentation ID to review')
   .option('-e, --expert-id <id>', 'Filter presentations by expert ID')
   .option('-s, --status <status>', 'Filter by status (complete, incomplete, missing-transcript, etc.)')
-  .option('-l, --limit <number>', 'Limit the number of presentations to review', '300')
+  .option('-l, --limit <number>', 'Limit the number of presentations to review', '1000')
+  .option('--folder-id <id>', 'Filter presentations by folder ID', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
   .option('-f, --format <format>', 'Output format (table, json)', 'table')
   .option('-o, --output-file <path>', 'Path to write markdown output to', '/Users/raybunnage/Documents/github/dhg-mono/docs/cli-pipeline/transcribe_status.md')
   .option('-c, --create-assets', 'Create missing presentation_asset records', false)
@@ -34,6 +36,7 @@ program
         status: options.status,
         limit: parseInt(options.limit),
         createAssets: options.createAssets,
+        folderId: options.folderId,
       });
       
       if (presentations.length === 0) {
@@ -46,24 +49,79 @@ program
         return;
       }
       
-      // Display table format
+      // Display table format as markdown
       console.log('\nPRESENTATION REVIEW SUMMARY');
       console.log('==========================\n');
       
-      // Create markdown table for presentations
+      // Display as markdown table in console with fixed column widths
+      console.log('| Presentation           | Expert      | Whisper Status  | Doc Type     | Raw Content Preview      |');
+      console.log('|------------------------|-------------|-----------------|--------------|--------------------------|');
+      
+      for (const presentation of presentations) {
+        const title = presentation.title || 'Untitled';
+        const expert = presentation.expert_name || 'N/A';
+        const status = presentation.status;
+        
+        // Pad strings to fixed width for alignment
+        const titlePadded = title.substring(0, 22).padEnd(22, ' ');
+        const expertPadded = (expert || 'N/A').substring(0, 11).padEnd(11, ' ');
+        
+        // Determine status based on availability of raw content
+        let displayStatus = "No Content";
+        
+        // Change status to reflect if we have content based on raw_content availability
+        const hasRawContent = presentation.expert_documents?.some(doc => doc.has_raw_content);
+        if (hasRawContent) {
+          displayStatus = "Has Content";
+        }
+        
+        const statusPadded = displayStatus.substring(0, 14).padEnd(14, ' ');
+        
+        if (presentation.expert_documents && presentation.expert_documents.length > 0) {
+          // Filter for documents that have raw_content or presentations with complete status
+          const relevantDocs = presentation.expert_documents.filter(doc => 
+            doc.has_raw_content || status === 'complete'
+          );
+          
+          if (relevantDocs.length > 0) {
+            // Output each document as a separate row
+            for (const doc of relevantDocs) {
+              // Get document type from the document_types object
+              let docType = "Unknown";
+              if (doc.document_type) {
+                docType = doc.document_type;
+              } else if (doc.document_types && doc.document_types.name) {
+                docType = doc.document_types.name;
+              }
+              
+              const docTypePadded = docType.substring(0, 10).padEnd(12, ' ');
+              
+              const contentPreview = doc.raw_content_preview 
+                ? doc.raw_content_preview.substring(0, 24).replace(/\n/g, ' ').trim() + '...'
+                : 'No content';
+              
+              console.log(`| ${titlePadded} | ${expertPadded} | ${statusPadded} | ${docTypePadded} | ${contentPreview.padEnd(24, ' ')} |`);
+            }
+          } else {
+            // If no relevant documents, still show the presentation
+            console.log(`| ${titlePadded} | ${expertPadded} | ${statusPadded} | No docs     | N/A                      |`);
+          }
+        } else {
+          // If no documents at all
+          console.log(`| ${titlePadded} | ${expertPadded} | ${statusPadded} | No docs     | N/A                      |`);
+        }
+      }
+      
+      // Create the output file data as before (if needed)
       const tableHeader = '| Title | ID | Status | Assets | Next Steps |';
       const tableDivider = '|-------|----|---------|---------|--------------------|';
       
       let markdownOutput = '# Presentation Transcription Status\n\n';
       markdownOutput += tableHeader + '\n' + tableDivider + '\n';
       
-      console.log('| Title | ID | Expert | Status | Has Transcript | Assets | Expert Documents | Next Steps |');
-      console.log('|-------|----|---------|---------|---------|---------|--------------------|----------------|');
-      
       for (const presentation of presentations) {
         const title = presentation.title || 'Untitled';
         const id = presentation.id;
-        const expert = presentation.expert_name || 'N/A';
         const status = presentation.status;
         
         // Format assets
@@ -72,27 +130,7 @@ program
           assets = presentation.assets.map(asset => `${asset.type}`).join(', ');
         }
         
-        // Format expert documents
-        let expertDocs = 'None';
-        if (presentation.expert_documents && presentation.expert_documents.length > 0) {
-          expertDocs = presentation.expert_documents.map(doc => {
-            let linkedInfo = '';
-            if (doc.linked_through_asset) {
-              linkedInfo = `<br>Linked via: ${doc.asset_type} asset (${doc.linked_through_asset})`;
-            }
-            return `${doc.document_type} (${doc.id})${linkedInfo}<br>Content: ${doc.raw_content_preview || 'None'}`;
-          }).join('<br><br>');
-        }
-        
-        // Format next steps
-        let nextSteps = 'None';
-        if (presentation.next_steps && presentation.next_steps.length > 0) {
-          nextSteps = presentation.next_steps.join('<br>');
-        }
-        
-        console.log(`| ${title} | ${id} | ${expert} | ${status} | ${presentation.has_raw_content ? 'Yes' : 'No'} | ${assets} | ${expertDocs} | ${nextSteps} |`);
-        
-        // Create simplified markdown table entry for output file
+        // Format next steps for the output file
         const simpleNextSteps = presentation.next_steps && presentation.next_steps.length > 0 
           ? presentation.next_steps.map((step, index) => `${index + 1}. ${step}`).join('<br>') 
           : 'None';
@@ -121,28 +159,8 @@ program
     }
   });
 
-// Define generate-summary command
-program
-  .command('generate-summary')
-  .description('Generate AI summary from presentation transcript')
-  .option('-p, --presentation-id <id>', 'Presentation ID to generate summary for (required)')
-  .option('-f, --force', 'Force regeneration of summary even if it already exists', false)
-  .option('--dry-run', 'Show what would be generated without saving', false)
-  .option('--format <format>', 'Summary format (concise, detailed, bullet-points)', 'concise')
-  .action(async (options: any) => {
-    try {
-      if (!options.presentationId) {
-        Logger.error('Error: --presentation-id is required');
-        process.exit(1);
-      }
-      
-      Logger.info(`Generating summary for presentation ID: ${options.presentationId}`);
-      // Implementation goes here
-    } catch (error) {
-      Logger.error('Error generating summary:', error);
-      process.exit(1);
-    }
-  });
+// Add the generate-summary command
+program.commands.push(generateSummaryCommand);
 
 // Define generate-expert-bio command
 program
@@ -400,6 +418,104 @@ program
     }
   });
 
+// Define show-missing-content command
+program
+  .command('show-missing-content')
+  .description('Show presentations without raw content that need to be reprocessed')
+  .option('-l, --limit <number>', 'Limit the number of presentations to check', '1000')
+  .option('--folder-id <id>', 'Filter presentations by folder ID', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('-o, --output-file <path>', 'Path to write results to', '/Users/raybunnage/Documents/github/dhg-mono/docs/cli-pipeline/missing_content.md')
+  .action(async (options: any) => {
+    try {
+      Logger.info('Checking for presentations without content...');
+      
+      const presentationService = PresentationService.getInstance();
+      const presentations = await presentationService.reviewPresentations({
+        limit: parseInt(options.limit),
+        folderId: options.folderId,
+      });
+      
+      if (presentations.length === 0) {
+        Logger.info('No presentations found matching the criteria.');
+        return;
+      }
+      
+      // Filter for presentations without raw content
+      const presentationsWithoutContent = presentations.filter(presentation => {
+        // Check if presentation has any expert documents with raw content
+        const hasRawContent = presentation.expert_documents?.some(doc => doc.has_raw_content);
+        return !hasRawContent;
+      });
+      
+      if (presentationsWithoutContent.length === 0) {
+        Logger.info('All presentations have content.');
+        return;
+      }
+      
+      // Display table format as markdown
+      console.log('\nPRESENTATIONS MISSING CONTENT');
+      console.log('===========================\n');
+      
+      // Display as markdown table in console
+      console.log('| Presentation | Expert | Status | ID |');
+      console.log('|--------------|--------|--------|-------|');
+      
+      for (const presentation of presentationsWithoutContent) {
+        const title = presentation.title || 'Untitled';
+        const expert = presentation.expert_name || 'N/A';
+        const status = presentation.status;
+        
+        console.log(`| ${title} | ${expert} | ${status} | ${presentation.id} |`);
+      }
+      
+      // Create output file data
+      const tableHeader = '| Title | Expert | Status | ID |';
+      const tableDivider = '|-------|--------|---------|-------|';
+      
+      let markdownOutput = '# Presentations Missing Content\n\n';
+      markdownOutput += `Found ${presentationsWithoutContent.length} presentations without raw content.\n\n`;
+      markdownOutput += tableHeader + '\n' + tableDivider + '\n';
+      
+      for (const presentation of presentationsWithoutContent) {
+        const title = presentation.title || 'Untitled';
+        const expert = presentation.expert_name || 'N/A';
+        const status = presentation.status;
+        
+        markdownOutput += `| ${title} | ${expert} | ${status} | ${presentation.id} |\n`;
+      }
+      
+      // Add instructions for reprocessing
+      markdownOutput += '\n## How to Reprocess\n\n';
+      markdownOutput += 'To reprocess these presentations, use the following command for each ID:\n\n';
+      markdownOutput += '```bash\n';
+      markdownOutput += '# Replace PRESENTATION_ID with the ID from the table above\n';
+      markdownOutput += 'pnpm cli presentations-cli review-presentations --presentation-id PRESENTATION_ID --create-assets\n';
+      markdownOutput += '```\n';
+      
+      console.log('\n');
+      
+      // Write to output file if requested
+      if (options.outputFile) {
+        try {
+          const fs = require('fs');
+          fs.writeFileSync(options.outputFile, markdownOutput);
+          Logger.info(`Missing content report written to ${options.outputFile}`);
+        } catch (writeError) {
+          Logger.error('Error writing to output file:', writeError);
+        }
+      }
+      
+      Logger.info(`Found ${presentationsWithoutContent.length} presentations without content.`);
+      
+    } catch (error) {
+      Logger.error('Error checking for missing content:', error);
+      process.exit(1);
+    }
+  });
+
+// Add debug information
+console.log("Debug: Command line arguments:", process.argv);
+
 // Parse command line arguments
 program.parse(process.argv);
 
@@ -407,6 +523,9 @@ program.parse(process.argv);
 if (!process.argv.slice(2).length) {
   program.outputHelp();
 }
+
+// More debug information
+console.log("Debug: After parsing, commands:", program.commands.map((cmd: any) => cmd.name()));
 
 // Handle any unhandled exceptions
 process.on('unhandledRejection', (error) => {

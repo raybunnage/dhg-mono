@@ -41,6 +41,7 @@ Presentation Management Commands:
 
 Utility Commands:
   check-status          Check processing status of summaries and presentations
+  show-recent-expert-docs Show expert documents updated recently with their content
   help                  Display this help information
 
 For more information on a specific command, try:
@@ -135,6 +136,24 @@ program
     console.log('Options:', options);
     // This would call the actual implementation
     await executeCommand('check-status.ts', options);
+  });
+
+// Show recent expert documents command
+program
+  .command('show-recent-expert-docs')
+  .description('Show expert documents updated recently with their raw content and source information')
+  .option('--days <number>', 'Number of days to look back (default: 1)', '1')
+  .option('--limit <number>', 'Maximum number of documents to show (default: 10)', '10')
+  .option('--status <status>', 'Filter by document status')
+  .option('--document-type <type>', 'Filter by document type')
+  .option('--format <format>', 'Output format: json, table (default: table)')
+  .option('--show-content', 'Show full raw content of each document')
+  .action(async (options) => {
+    console.log('Showing recent expert documents');
+    // Parse numeric options
+    if (options.days) options.days = parseInt(options.days);
+    if (options.limit) options.limit = parseInt(options.limit);
+    await executeCommand('show-recent-expert-docs.ts', options);
   });
 
 /**

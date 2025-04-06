@@ -274,6 +274,7 @@ export class PromptQueryService {
         return {
           prompt: null,
           databaseQueryResults: null,
+          databaseQuery2Results: null,
           error: `Prompt '${promptName}' not found`
         };
       }
