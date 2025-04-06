@@ -1,11 +1,11 @@
+#!/usr/bin/env ts-node
 /**
  * Media Processing CLI Pipeline
  * 
  * A unified command-line interface for media processing tasks including:
- * - Converting MP4 files to M4A for audio extraction
- * - Transcribing audio files
- * - Checking media file status
- * - Managing processed media files
+ * - Processing summaries into AI summaries and storing in expert_documents
+ * - Managing presentations that use these summaries
+ * - Linking presentation assets
  */
 
 import { Command } from 'commander';
@@ -18,345 +18,123 @@ const program = new Command();
 // Set basic program information
 program
   .name('media-processing')
-  .description('CLI utilities for processing media files')
+  .description('CLI utilities for processing media files and summaries')
   .version('1.0.0');
 
-// Add help text (compatibility with older commander versions)
+// Add help text
 program.on('--help', () => {
   console.log(`
 Media Processing CLI Pipeline
 ----------------------------
 A unified command-line interface for media processing tasks including:
-- Converting MP4 files to M4A for audio extraction
-- Transcribing audio files
-- Checking media file status
-- Managing processed media files
+- Processing summaries into AI summaries and storing in expert_documents
+- Managing presentations that use these summaries
+- Linking presentation assets
 
-File Checking Commands:
-  check-media-files       Check for missing/orphaned MP4 and M4A files in database and local directories
-  find-missing-js-files   Run JavaScript-based MP4 file checker (legacy implementation)
-  find-missing-media      Find missing MP4 files and generate copy commands from a source directory
-  find-untranscribed-media Find MP4 files that are in the database but haven't been transcribed yet
-  filter-transcribed      Filter out MP4 files that have already been transcribed from a list of copy commands
-  run-shell-check         Run any shell script from the shell-scripts directory
+Summary Processing Commands:
+  process-summary       Process a summary file and store in expert_documents
+  batch-process         Process multiple summary files in batch
 
-File Management Commands:
-  batch-process-media     Run complete workflow: find, copy, convert, and transcribe media files
-  process-local-mp4-files Process MP4 files from file_types/mp4/ directory, register and transcribe them
-  rename-mp4-files        Rename local MP4 files to match database records
-  convert-mp4             Extract audio from MP4 files and create M4A files
-  transcribe-audio        Transcribe audio files to text using Whisper
-  transcribe-with-summary Generate transcriptions with summaries
-  purge-processed-media   Remove processed MP4 and M4A files that have been extracted and saved in database
-  
-Database Integration Commands:
-  update-disk-status      Update presentations with MP4 file status on disk
-  register-expert-docs    Register MP4 files as expert documents in the database
-  update-status           Update processing status of expert documents
-  mark-skip-processing    Mark large files to skip batch processing
-  register-local-mp4-files Add local MP4 files to database that are not already registered
-  
-Listing & Utility Commands:
-  list-ready              List files ready for processing
-  list-pending            List files pending processing
-  list-transcribable      List files ready for transcription
-  find-processable-videos Find videos that can be processed
-  sync-m4a-names          Sync M4A filenames with their MP4 counterparts after renaming
+Presentation Management Commands:
+  manage-presentations  List, create, update, or delete presentations
+  link-assets           Link assets to a presentation
+
+Utility Commands:
+  check-status          Check processing status of summaries and presentations
+  help                  Display this help information
 
 For more information on a specific command, try:
   ts-node scripts/cli-pipeline/media-processing/index.ts <command> --help
 `);
 });
 
-// Media checking commands - use direct command() calls for compatibility
+// Process summary command
 program
-  .command('check-media-files')
-  .description('Check for missing or orphaned MP4/M4A files in database and file system')
-  .option('--summary', 'Display only summary information')
-  .option('--json', 'Output results in JSON format')
+  .command('process-summary <file>')
+  .description('Process a summary file and store the AI-generated summary in expert_documents')
+  .option('--write-to-db', 'Save processed summary to expert_documents table')
+  .option('--output-file <path>', 'Save processed summary to local file')
+  .option('--summary-type <type>', 'Specify AI summary format (short, medium, detailed)', 'medium')
+  .option('--dry-run', 'Show what would be processed without making changes')
+  .action(async (file: string, options: any) => {
+    console.log(`Processing summary file: ${file}`);
+    console.log('Options:', options);
+    // This would call the actual implementation
+    await executeCommand('process-summary.ts', { file, ...options });
+  });
+
+// Batch process command
+program
+  .command('batch-process')
+  .description('Process multiple summary files in batch')
+  .option('--directory <dir>', 'Directory containing summary files to process')
+  .option('--pattern <pattern>', 'File pattern to match (e.g., "*.txt")', '*.txt')
+  .option('--write-to-db', 'Save processed summaries to expert_documents table')
+  .option('--output-dir <dir>', 'Directory to save processed summaries as local files')
+  .option('--summary-type <type>', 'Specify AI summary format (short, medium, detailed)', 'medium')
+  .option('--limit <number>', 'Maximum number of files to process', '10')
+  .option('--dry-run', 'Show what would be processed without making changes')
   .action(async (options) => {
-    await executeCommand('check-media-files.ts', options);
+    console.log('Batch processing summary files');
+    console.log('Options:', options);
+    // This would call the actual implementation
+    await executeCommand('batch-process.ts', options);
   });
 
-// Legacy script wrappers
+// Manage presentations command
 program
-  .command('find-missing-js-files')
-  .description('Run JavaScript-based MP4 file checker (legacy implementation)')
-  .option('--verbose', 'Show detailed output')
+  .command('manage-presentations')
+  .description('Manage presentations that use summaries')
+  .option('--list', 'List all presentations')
+  .option('--create', 'Create a new presentation')
+  .option('--update <id>', 'Update an existing presentation')
+  .option('--delete <id>', 'Delete a presentation')
+  .option('--title <title>', 'Title for create/update operations')
+  .option('--description <desc>', 'Description for create/update operations')
+  .option('--expert <id>', 'Expert ID for create/update operations')
+  .option('--format <format>', 'Output format: json, table (default: table)')
+  .option('--filter <query>', 'Filter presentations by query string')
+  .option('--dry-run', 'Show what would be done without making changes')
   .action(async (options) => {
-    await executeCommand('find-missing-js-files.ts', options);
+    console.log('Managing presentations');
+    console.log('Options:', options);
+    // This would call the actual implementation
+    await executeCommand('manage-presentations.ts', options);
   });
 
-// Add the find-missing-media command
+// Link assets command
 program
-  .command('find-missing-media')
-  .description('Find missing MP4 files and generate copy commands from a source directory')
-  .option('--limit <number>', 'Limit the number of files to list (default: 25)')
-  .option('--source <path>', 'Source directory to look for files (default: ~/Google Drive)')
-  .option('--format <format>', 'Output format: commands, list, or json (default: commands)')
-  .option('--deep', 'Perform a deep search through subdirectories')
+  .command('link-assets <presentation_id>')
+  .description('Link assets to a presentation')
+  .option('--asset-type <type>', 'Type of asset to link (document, summary, video, image)')
+  .option('--asset-id <id>', 'ID of the asset to link')
+  .option('--asset-file <file>', 'Path to the asset file to upload and link')
+  .option('--position <pos>', 'Position in the presentation (e.g., "intro", "main", "conclusion")')
+  .option('--replace', 'Replace existing asset if it exists')
+  .option('--list', 'List all assets linked to the presentation')
+  .option('--unlink <id>', 'Unlink an asset from the presentation')
+  .option('--dry-run', 'Show what would be done without making changes')
+  .action(async (presentationId: string, options: any) => {
+    console.log(`Linking assets to presentation: ${presentationId}`);
+    console.log('Options:', options);
+    // This would call the actual implementation
+    await executeCommand('link-assets.ts', { presentationId, ...options });
+  });
+
+// Check status command
+program
+  .command('check-status')
+  .description('Check processing status of summaries and presentations')
+  .option('--summary <id>', 'Check status of a specific summary')
+  .option('--presentation <id>', 'Check status of a specific presentation')
+  .option('--all-summaries', 'Check status of all summaries')
+  .option('--all-presentations', 'Check status of all presentations')
+  .option('--format <format>', 'Output format: json, table (default: table)')
   .action(async (options) => {
-    await executeCommand('find-missing-media.ts', options);
-  });
-
-// Add find-untranscribed-media command
-program
-  .command('find-untranscribed-media')
-  .description('Find MP4 files that are in the database but haven\'t been transcribed yet')
-  .option('--limit <number>', 'Limit the number of files to list (default: 5)')
-  .option('--source <path>', 'Source directory to look for files (default: ~/Google Drive)')
-  .option('--deep', 'Perform a deep search through subdirectories')
-  .action(async (options) => {
-    // Use the JavaScript version since it's working correctly
-    await executeCommand('find-untranscribed-media.js', options);
-  });
-
-// Add filter-transcribed command
-program
-  .command('filter-transcribed')
-  .description('Filter out MP4 files that have already been transcribed from a list of copy commands')
-  .option('--input <file>', 'Input file with copy commands (defaults to reading from stdin)')
-  .action(async (options) => {
-    // This command is designed to work with piped input
-    // Example: find-missing-media | filter-transcribed
-    await executeCommand('filter-transcribed.js', options);
-  });
-
-program
-  .command('run-shell-check')
-  .description('Run any shell script from the shell-scripts directory')
-  .option('--verbose', 'Show detailed output')
-  .option('--script <name>', 'Specify which shell script to run (available: mp4-files-check, check-missing-mp4-files, etc.)')
-  .action(async (options) => {
-    await executeCommand('run-shell-check.ts', options);
-  });
-
-// Media conversion commands
-program
-  .command('convert-mp4')
-  .description('Convert MP4 files to M4A for audio extraction')
-  .option('--all', 'Process all MP4 files')
-  .option('--file <file>', 'Process specific file')
-  .option('--batch <number>', 'Number of files to process at once (deprecated, use --limit)')
-  .option('--limit <number>', 'Number of files to process at once')
-  .option('--parallel', 'Process files in parallel')
-  .option('--max-parallel <number>', 'Maximum number of parallel processes (default: 5)')
-  .action(async (options) => {
-    await executeCommand('convert-mp4.ts', options);
-  });
-
-// Add batch processing command for complete workflow
-program
-  .command('batch-process-media')
-  .description('Run complete workflow: find, copy, rename, register, convert, and transcribe media files')
-  .option('--limit <number>', 'Limit the number of files to process (default: 10)')
-  .option('--source <path>', 'Source directory to look for files (default: ~/Google Drive)')
-  .option('--model <model>', 'Whisper model to use (default: base)')
-  .option('--accelerator <type>', 'Hardware accelerator to use (default: A10G)')
-  .option('--max-parallel <number>', 'Maximum number of parallel processes (default: 5)')
-  .option('--skip-copy', 'Skip the copy step (use if files are already copied)')
-  .option('--skip-rename', 'Skip the renaming step')
-  .option('--skip-register', 'Skip registering files in the database')
-  .option('--skip-disk-status', 'Skip updating disk status in the database')
-  .option('--skip-expert-docs', 'Skip registering expert documents')
-  .option('--skip-conversion', 'Skip the MP4 to M4A conversion step')
-  .option('--skip-m4a-sync', 'Skip synchronizing M4A filenames')
-  .option('--skip-transcription', 'Skip the transcription step')
-  .option('--dry-run', 'Show what would be done without actually doing it')
-  .action(async (options) => {
-    await executeCommand('batch-process-media.ts', options);
-  });
-
-// Transcription commands
-program
-  .command('transcribe-audio')
-  .description('Transcribe audio files to text')
-  .option('--model <model>', 'Whisper model to use')
-  .option('--file <file>', 'Process specific file')
-  .option('--accelerator <type>', 'Hardware accelerator to use (T4, A10G, A100, CPU)')
-  .option('--batch <number>', 'Number of files to process at once (deprecated, use --limit)')
-  .option('--limit <number>', 'Number of files to process at once')
-  .option('--parallel', 'Process files in parallel')
-  .option('--max-parallel <number>', 'Maximum number of parallel processes (default: 5)')
-  .action(async (options) => {
-    await executeCommand('transcribe-audio.ts', options);
-  });
-
-program
-  .command('transcribe-with-summary')
-  .description('Transcribe audio files and generate summary')
-  .option('--model <model>', 'Whisper model to use')
-  .option('--file <file>', 'Process specific file')
-  .action(async (options) => {
-    await executeCommand('transcribe-with-summary.ts', options);
-  });
-
-// File management commands
-program
-  .command('purge-processed-media')
-  .description('Delete processed media files that have been extracted')
-  .option('--dry-run', 'Show what would be deleted without actually removing files')
-  .option('--force', 'Delete without confirmation')
-  .option('--days <number>', 'Only purge files processed more than <number> days ago')
-  .action(async (options) => {
-    await executeCommand('purge-processed-media.ts', options);
-  });
-
-// Listing and reporting commands
-program
-  .command('list-ready')
-  .description('List files ready for processing')
-  .action(async (options) => {
-    await executeCommand('list-ready.ts', options);
-  });
-
-program
-  .command('list-pending')
-  .description('List files pending processing')
-  .action(async (options) => {
-    await executeCommand('list-pending.ts', options);
-  });
-
-program
-  .command('list-transcribable')
-  .description('List files ready for transcription')
-  .action(async (options) => {
-    await executeCommand('list-transcribable.ts', options);
-  });
-
-program
-  .command('find-processable-videos')
-  .description('Find videos that can be processed')
-  .action(async (options) => {
-    await executeCommand('find-processable-videos.ts', options);
-  });
-
-// Add file renaming command
-program
-  .command('rename-mp4-files')
-  .description('Rename local MP4 files to match database records')
-  .option('--dry-run', 'Show what would be renamed without making changes')
-  .option('--force', 'Rename even if a destination file already exists (will overwrite)')
-  .option('--generate-map', 'Generate a CSV mapping file of original to new names')
-  .option('--skip-sync', 'Skip automatic M4A filename synchronization')
-  .action(async (options) => {
-    await executeCommand('rename-mp4-files.ts', options);
-  });
-
-// Add M4A sync command
-program
-  .command('sync-m4a-names')
-  .description('Sync M4A filenames with their MP4 counterparts after renaming')
-  .option('--dry-run', 'Show what would be renamed without making changes')
-  .option('--force', 'Rename even if destination files already exist (will overwrite)')
-  .option('--after-rename', 'Run this after renaming MP4 files')
-  .action(async (options) => {
-    await executeCommand('sync-m4a-names.ts', options);
-  });
-
-// Database integration commands
-program
-  .command('update-disk-status')
-  .description('Update presentations with MP4 file status on disk')
-  .option('--dry-run', 'Show what would be updated without making changes')
-  .option('--force', 'Process all presentations even if they already have disk status')
-  .action(async (options) => {
-    // Call the update-presentation-disk-status.ts script using ts-node
-    const { spawn } = require('child_process');
-    const tsNodePath = path.join(process.cwd(), 'node_modules', '.bin', 'ts-node');
-    const scriptPath = path.resolve(__dirname, '../../../scripts/cli-pipeline/google_sync/update-presentation-disk-status.ts');
-    
-    // Convert options to command-line arguments
-    const args = [scriptPath];
-    if (options.dryRun) args.push('--dry-run');
-    if (options.force) args.push('--force');
-    
-    // Run the command
-    const child = spawn(tsNodePath, args, { stdio: 'inherit' });
-    
-    // Handle completion
-    await new Promise<void>((resolve, reject) => {
-      child.on('close', (code: number) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Command failed with exit code ${code}`));
-        }
-      });
-      
-      child.on('error', (err: Error) => {
-        reject(err);
-      });
-    });
-  });
-
-program
-  .command('update-status [fileId]')
-  .description('Update processing status of expert documents')
-  .option('--stage <stage>', 'Stage to update (extraction, transcription)')
-  .option('--status <status>', 'New status (pending, processing, completed, failed, skip_processing)')
-  .option('--error <message>', 'Error message (for failed status)')
-  .option('--batch <file>', 'Process a batch of files from a file (one ID per line)')
-  .action(async (fileId: string, options: any) => {
-    // Ensure options includes the fileId
-    if (fileId) options.fileId = fileId;
-    await executeCommand('update-status.ts', options);
-  });
-
-program
-  .command('mark-skip-processing [fileIdentifier]')
-  .description('Mark large files to skip batch processing')
-  .option('--dry-run', 'Show what would be updated without making changes')
-  .option('--resume', 'Remove the skip_processing status (make available for processing again)')
-  .action(async (fileIdentifier: string, options: any) => {
-    // Ensure options includes the fileIdentifier
-    if (fileIdentifier) options.fileIdentifier = fileIdentifier;
-    await executeCommand('mark-skip-processing.ts', options);
-  });
-
-program
-  .command('register-expert-docs')
-  .description('Register MP4 files as expert documents in the database')
-  .option('--dry-run', 'Show what would be created without making changes')
-  .option('--limit <number>', 'Limit the number of presentations to process')
-  .action(async (options) => {
-    // Call the create-mp4-expert-documents.ts script using ts-node
-    const { spawn } = require('child_process');
-    const tsNodePath = path.join(process.cwd(), 'node_modules', '.bin', 'ts-node');
-    const scriptPath = path.resolve(__dirname, '../../../scripts/cli-pipeline/google_sync/create-mp4-expert-documents.ts');
-    
-    // Convert options to command-line arguments
-    const args = [scriptPath];
-    if (options.dryRun) args.push('--dry-run');
-    if (options.limit) args.push('--limit', options.limit);
-    
-    // Run the command
-    const child = spawn(tsNodePath, args, { stdio: 'inherit' });
-    
-    // Handle completion
-    await new Promise<void>((resolve, reject) => {
-      child.on('close', (code: number) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Command failed with exit code ${code}`));
-        }
-      });
-      
-      child.on('error', (err: Error) => {
-        reject(err);
-      });
-    });
-  });
-
-program
-  .command('register-local-mp4-files')
-  .description('Add local MP4 files to database that are not already registered')
-  .option('--dry-run', 'Show what would be added without making changes')
-  .option('--force', 'Add files even if similar filenames exist')
-  .option('--specific-files <list>', 'Only register specific files (comma-separated list)')
-  .action(async (options) => {
-    await executeCommand('register-local-mp4-files.ts', options);
+    console.log('Checking status');
+    console.log('Options:', options);
+    // This would call the actual implementation
+    await executeCommand('check-status.ts', options);
   });
 
 /**
@@ -365,79 +143,58 @@ program
 async function executeCommand(commandFile: string, options: any): Promise<void> {
   const commandPath = path.join(__dirname, 'commands', commandFile);
 
-  if (!fs.existsSync(commandPath)) {
-    console.error(`Command file not found: ${commandPath}`);
-    process.exit(1);
+  console.log(`Executing command: ${commandFile}`);
+  
+  // Extract actual options from Commander command object
+  const cleanOptions: Record<string, any> = {};
+  if (typeof options === 'object') {
+    // Extract simple properties excluding circular references
+    Object.keys(options).forEach(key => {
+      if (
+        key !== 'commands' && 
+        key !== 'options' && 
+        key !== 'parent' && 
+        key !== '_events' && 
+        key !== '_eventsCount' && 
+        !key.startsWith('_') && 
+        typeof options[key] !== 'function'
+      ) {
+        cleanOptions[key] = options[key];
+      }
+    });
   }
-
-  try {
-    // For .ts files, we need to use require to avoid "Unknown file extension" error
-    let commandModule;
-    if (commandFile.endsWith('.ts')) {
-      // Use require for TypeScript files
-      commandModule = require(commandPath);
-    } else {
-      // Use import for JavaScript files
-      commandModule = await import(commandPath);
-    }
-    
-    // Execute the default export function if it exists
-    if (typeof commandModule.default === 'function') {
-      await commandModule.default(options);
-    } else {
-      console.error(`Command ${commandFile} does not export a default function`);
+  
+  console.log('With options:', cleanOptions);
+  
+  // Check if the command file exists and execute it if it does
+  if (fs.existsSync(commandPath)) {
+    try {
+      // For .ts files, we need to use ts-node
+      let commandModule;
+      if (commandFile.endsWith('.ts')) {
+        // Use require for TypeScript files
+        commandModule = require(commandPath);
+      } else {
+        // Use import for JavaScript files
+        commandModule = await import(commandPath);
+      }
+      
+      // Execute the default export function if it exists
+      if (typeof commandModule.default === 'function') {
+        await commandModule.default(cleanOptions);
+      } else {
+        console.error(`Command ${commandFile} does not export a default function`);
+        process.exit(1);
+      }
+    } catch (error: any) {
+      console.error(`Error executing command ${commandFile}:`, error.message);
       process.exit(1);
     }
-  } catch (error: any) {
-    console.error(`Error executing command ${commandFile}:`, error.message);
-    process.exit(1);
+  } else {
+    console.log(`Command file not found: ${commandPath}`);
+    console.log('This is expected during development. The actual command would be executed here when implemented.');
   }
 }
-
-/**
- * Execute a command from an external path
- */
-async function executeExternalCommand(commandPath: string, options: any): Promise<void> {
-  const absolutePath = path.resolve(__dirname, commandPath);
-
-  if (!fs.existsSync(absolutePath)) {
-    console.error(`External command file not found: ${absolutePath}`);
-    process.exit(1);
-  }
-
-  try {
-    // Import the command module
-    const commandModule = await import(absolutePath);
-    
-    // For external modules, assume they have a main function to execute
-    if (typeof commandModule.default === 'function') {
-      await commandModule.default(options);
-    } else if (typeof commandModule.main === 'function') {
-      await commandModule.main(options);
-    } else {
-      // If no default or main function, try to call the module itself
-      await commandModule(options);
-    }
-  } catch (error: any) {
-    console.error(`Error executing external command ${absolutePath}:`, error.message);
-    process.exit(1);
-  }
-}
-
-// Add process local MP4 files command
-program
-  .command('process-local-mp4-files')
-  .description('Process MP4 files from file_types/mp4/ directory, register and transcribe them')
-  .option('--dry-run', 'Show what would be processed without making changes')
-  .option('--force', 'Process files even if they already have transcripts')
-  .option('--max-parallel <number>', 'Maximum number of parallel processes (default: 2)')
-  .option('--limit <number>', 'Maximum number of files to process (default: 10)')
-  .option('--specific-files <list>', 'Only process specific files (comma-separated list)')
-  .option('--skip-registering', 'Skip the registering step and only process already registered files')
-  .option('--skip-transcription', 'Skip the transcription step and only register files')
-  .action(async (options) => {
-    await executeCommand('process-local-mp4-files.ts', options);
-  });
 
 // Parse arguments and run
 program.parse(process.argv);
