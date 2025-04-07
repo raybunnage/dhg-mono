@@ -50,7 +50,7 @@ interface ExpertDocument {
   id: string;
   document_type: string;
   document_type_id: string;
-  document_types?: {name: string};
+  document_types?: {document_type: string};
   has_raw_content: boolean;
   has_processed_content: boolean;
   raw_content_preview?: string;
@@ -427,7 +427,7 @@ export class PresentationService {
       const { data: docType, error: docTypeError } = await this.supabaseClient
         .from('document_types')
         .select('id')
-        .eq('name', 'expert_bio')
+        .eq('document_type', 'expert_bio')
         .single();
       
       if (docTypeError || !docType) {
@@ -464,7 +464,7 @@ export class PresentationService {
       const { data: docType, error: docTypeError } = await this.supabaseClient
         .from('document_types')
         .select('id')
-        .eq('name', 'expert_bio')
+        .eq('document_type', 'expert_bio')
         .single();
       
       if (docTypeError || !docType) {
@@ -698,7 +698,7 @@ export class PresentationService {
               } else {
                 expertDocuments.push({
                   ...asset.expert_documents,
-                  document_types: { name: 'Unknown' },
+                  document_types: { document_type: 'Unknown' },
                   linked_through_asset: asset.id,
                   asset_type: asset.asset_type
                 });
@@ -737,10 +737,10 @@ export class PresentationService {
           
           // Check if we have a 'Video Summary Transcript' document with raw_content
           const videoSummaryTranscript = expertDocuments.find(doc => 
-            doc.document_types?.name === 'Video Summary Transcript' && 
+            doc.document_types?.document_type === 'Video Summary Transcript' && 
             doc.source_id === presentation.main_video_id &&
             doc.raw_content && 
-            doc.status === 'Completed'
+            doc.processing_status === 'completed'
           );
           
           // Check if we need to create a presentation_asset record
@@ -826,8 +826,8 @@ export class PresentationService {
           // Determine presentation status
           let status = this.determinePresentationStatus(transformedAssets, transformedDocs);
           
-          // Check for Video Summary Transcript with raw_content and Completed status
-          if (videoSummaryTranscript && videoSummaryTranscript.status === 'Completed') {
+          // Check for Video Summary Transcript with raw_content and completed processing_status
+          if (videoSummaryTranscript && videoSummaryTranscript.processing_status === 'completed') {
             status = 'make-ai-summary';
           } else if (hasTranscriptDocument && status === 'missing-transcript') {
             status = 'has-transcript';
@@ -1164,6 +1164,76 @@ export class PresentationService {
   }
 
   /**
+   * Update AI summary status for expert documents matching the DHG criteria
+   * Uses similar filters to SQL query for documents in Dynamic Healing Discussion Group
+   */
+  public async updateDhgExpertDocumentsStatus(
+    status: 'pending' | 'processing' | 'completed' | 'error',
+    documentTypeId: string
+  ): Promise<{success: number, failed: number}> {
+    try {
+      Logger.info(`Using document type ID: ${documentTypeId}`);
+      Logger.info('Fetching sources from Dynamic Healing Discussion Group...');
+      
+      // Get sources from the specified folder and its paths
+      const { data: folderSources, error: folderError } = await this._supabaseClient
+        .from('sources_google')
+        .select('id')
+        .or(`drive_id.eq.1wriOM2j2IglnMcejplqG_XcCxSIfoRMV,parent_path.like.%/1wriOM2j2IglnMcejplqG_XcCxSIfoRMV/%,parent_path.like.%Dynamic Healing Discussion Group%`);
+      
+      if (folderError) {
+        Logger.error(`Error fetching sources:`, folderError);
+        return { success: 0, failed: 0 };
+      }
+      
+      if (!folderSources || folderSources.length === 0) {
+        Logger.info(`No matching sources found`);
+        return { success: 0, failed: 0 };
+      }
+      
+      const sourceIds = folderSources.map((s: any) => s.id);
+      Logger.info(`Found ${sourceIds.length} matching sources`);
+      
+      // Process source IDs in batches to avoid Supabase limitations
+      const batchSize = 50;
+      let allDocIds: string[] = [];
+      
+      for (let i = 0; i < sourceIds.length; i += batchSize) {
+        const batchSourceIds = sourceIds.slice(i, i + batchSize);
+        Logger.info(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(sourceIds.length/batchSize)} (${batchSourceIds.length} source IDs)`);
+        
+        const { data: docsInBatch, error: batchError } = await this._supabaseClient
+          .from('expert_documents')
+          .select('id')
+          .eq('document_type_id', documentTypeId)
+          .eq('processing_status', 'completed')
+          .in('source_id', batchSourceIds);
+          
+        if (batchError) {
+          Logger.error(`Error in batch ${Math.floor(i/batchSize) + 1}:`, batchError);
+        } else if (docsInBatch && docsInBatch.length > 0) {
+          Logger.info(`Found ${docsInBatch.length} documents in batch ${Math.floor(i/batchSize) + 1}`);
+          const docIds = docsInBatch.map((doc: any) => doc.id);
+          allDocIds = [...allDocIds, ...docIds];
+        }
+      }
+      
+      if (allDocIds.length === 0) {
+        Logger.info('No documents found that match all criteria');
+        return { success: 0, failed: 0 };
+      }
+      
+      Logger.info(`Found ${allDocIds.length} total documents to update`);
+      
+      // Update the documents using our batch method
+      return await this.updateMultipleAiSummaryStatus(allDocIds, status);
+    } catch (error) {
+      Logger.error('Error updating DHG expert documents status:', error);
+      return { success: 0, failed: 0 };
+    }
+  }
+
+  /**
    * Get expert documents that need AI summary processing
    * Only includes documents of type "Video Summary Transcript"
    * that are associated with the specified folder
@@ -1231,7 +1301,7 @@ export class PresentationService {
       // 1. Document type = "Video Summary Transcript"
       // 2. Has raw_content (not null) 
       // 3. Source is in Dynamic Healing Discussion Group
-      // 4. Status is 'Completed'
+      // 4. Processing status is 'completed' (lowercase)
       // 5. AI summary status is pending or null
       const { data, error } = await this._supabaseClient
         .from('expert_documents')
@@ -1242,11 +1312,11 @@ export class PresentationService {
           expert_id,
           ai_summary_status,
           source_id,
-          status
+          processing_status
         `)
         .eq('document_type_id', videoSummaryTypeId)
         .not('raw_content', 'is', null)
-        .eq('status', 'Completed')
+        .eq('processing_status', 'completed')
         .in('source_id', sourceIds)
         .or('ai_summary_status.eq.pending,ai_summary_status.is.null')
         .limit(limit);
@@ -1278,8 +1348,8 @@ export class PresentationService {
         }
         
         // Filter the results manually
-        const filteredData = basicData.filter((doc: {status: string, ai_summary_status: string | null}) => 
-          doc.status === 'Completed' && 
+        const filteredData = basicData.filter((doc: {processing_status: string, ai_summary_status: string | null}) => 
+          doc.processing_status === 'completed' && 
           (doc.ai_summary_status === 'pending' || doc.ai_summary_status === null)
         );
         
