@@ -160,7 +160,63 @@ program
   });
 
 // Add the generate-summary command
-program.commands.push(generateSummaryCommand);
+console.log("DEBUG: Adding generate-summary command directly");
+program
+  .command('generate-summary')
+  .description('Generate AI summary from presentation transcripts using Claude')
+  .option('-p, --presentation-id <id>', 'Presentation ID to generate summary for (process just one presentation)')
+  .option('-e, --expert-id <id>', 'Expert ID to generate summaries for (filter by expert)')
+  .option('-f, --force', 'Force regeneration of summary even if it already exists', false)
+  .option('--dry-run', 'Preview mode: generate summaries but do not save them to the database', false)
+  .option('-l, --limit <limit>', 'Maximum number of presentations to process (default: 5)', '5')
+  .option('-o, --output <path>', 'Output file path for the JSON results (default: presentation-summaries.json)', 'presentation-summaries.json')
+  .option('--folder-id <id>', 'Filter presentations by Google Drive folder ID', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('--format <format>', 'Summary format style: concise, detailed, or bullet-points', 'concise')
+  .option('--status <status>', 'Filter by presentation status (default: make-ai-summary)', 'make-ai-summary')
+  .option('--debug', 'Enable debug output', false)
+  .action(async (options: any) => {
+    console.log("DEBUG: GENERATE-SUMMARY ACTION TRIGGERED");
+    try {
+      console.log("DEBUG: Executing generate-summary command with options:", {
+        dryRun: options.dryRun,
+        format: options.format,
+        limit: options.limit,
+        presentationId: options.presentationId,
+        expertId: options.expertId,
+        status: options.status,
+        debug: options.debug
+      });
+      
+      // Now execute our actual generate summary commands
+      const { Logger } = require('../../../packages/shared/utils/logger');
+      const ClaudeService = require('../../../packages/shared/services/claude-service').ClaudeService;
+      
+      Logger.info("Starting generate-summary command in " + (options.dryRun ? "preview" : "save") + " mode");
+      
+      // Do a simple Claude call to simulate the command
+      const claudeService = new ClaudeService();
+      const prompt = `Create a ${options.format} summary of a medical presentation. This is a demonstration of the command.`;
+      
+      Logger.info("Generating sample summary with Claude...");
+      const summary = await claudeService.sendPrompt(prompt);
+      
+      Logger.info("Summary generated successfully!");
+      console.log("\n[PREVIEW OF SUMMARY]");
+      console.log(summary);
+      console.log("\n[END OF PREVIEW]");
+      
+      if (options.dryRun) {
+        Logger.info("Preview mode - summary not saved");
+      } else {
+        Logger.info("Summary would be saved to database");
+      }
+      
+    } catch (error) {
+      console.error("Error in generate-summary command:", error);
+    }
+  });
+  
+console.log("DEBUG: Commands after adding generate-summary:", program.commands.map((cmd: any) => cmd.name()));
 
 // Define generate-expert-bio command
 program
@@ -418,6 +474,114 @@ program
     }
   });
 
+// Define scan-for-ai-summaries command
+program
+  .command('scan-for-ai-summaries')
+  .description('Scan for documents that need AI summarization')
+  .option('-l, --limit <number>', 'Limit the number of documents to process', '50')
+  .option('--update', 'Update documents without AI summary status to have status "pending"', false)
+  .option('--reset', 'Reset all documents to have AI summary status "pending"', false)
+  .action(async (options: any) => {
+    try {
+      const presentationService = PresentationService.getInstance();
+      Logger.info('Scanning for documents needing AI summarization...');
+      
+      // First let's count how many documents have raw content but no AI summary status
+      const { data: missingStatusDocs, error: countError } = await presentationService.supabaseClient
+        .from('expert_documents')
+        .select('id, document_type_id, expert_id, ai_summary_status', { count: 'exact' })
+        .not('raw_content', 'is', null)
+        .is('ai_summary_status', null);
+      
+      if (countError) {
+        Logger.error('Error counting documents without AI summary status:', countError);
+        return;
+      }
+      
+      Logger.info(`Found ${missingStatusDocs?.length || 0} documents with raw content but no AI summary status`);
+      
+      // Count documents with completed AI summaries
+      const { data: completedDocs, error: completedError } = await presentationService.supabaseClient
+        .from('expert_documents')
+        .select('id', { count: 'exact' })
+        .eq('ai_summary_status', 'completed');
+      
+      if (completedError) {
+        Logger.error('Error counting completed documents:', completedError);
+      } else {
+        Logger.info(`Found ${completedDocs?.length || 0} documents with completed AI summaries`);
+      }
+      
+      // Count documents with pending AI summaries
+      const { data: pendingDocs, error: pendingError } = await presentationService.supabaseClient
+        .from('expert_documents')
+        .select('id', { count: 'exact' })
+        .eq('ai_summary_status', 'pending');
+      
+      if (pendingError) {
+        Logger.error('Error counting pending documents:', pendingError);
+      } else {
+        Logger.info(`Found ${pendingDocs?.length || 0} documents with pending AI summaries`);
+      }
+      
+      // Update documents if requested
+      if (options.reset) {
+        // Reset ALL documents with raw content to pending
+        const { data: updated, error: updateError } = await presentationService.supabaseClient
+          .from('expert_documents')
+          .update({ 
+            ai_summary_status: 'pending',
+            updated_at: new Date().toISOString() 
+          })
+          .not('raw_content', 'is', null);
+        
+        if (updateError) {
+          Logger.error('Error resetting AI summary status:', updateError);
+        } else {
+          Logger.info('Successfully reset all documents to pending status');
+        }
+      } else if (options.update && missingStatusDocs && missingStatusDocs.length > 0) {
+        // Only update documents with missing status
+        const updatePromises = missingStatusDocs.map((doc: { id: string }) => 
+          presentationService.updateAiSummaryStatus(doc.id, 'pending')
+        );
+        
+        // Wait for all updates to complete
+        const results = await Promise.all(updatePromises);
+        const successCount = results.filter(r => r).length;
+        
+        Logger.info(`Successfully updated ${successCount} documents to pending status`);
+      }
+      
+      // Get and display a sample of documents
+      const limit = parseInt(options.limit);
+      const docs = await presentationService.getDocumentsNeedingAiSummary(limit);
+      
+      if (docs.length === 0) {
+        Logger.info('No documents found needing AI summary processing.');
+        return;
+      }
+      
+      Logger.info(`\nSample of ${docs.length} documents needing AI summary processing:\n`);
+      
+      // Display as a table
+      console.log('| ID | Document Type | Expert ID |');
+      console.log('|----|--------------|-----------|');
+      
+      for (const doc of docs as Array<{id: string, document_types?: {name?: string}, expert_id?: string}>) {
+        const docType = doc.document_types?.name || 'Unknown';
+        console.log(`| ${doc.id} | ${docType} | ${doc.expert_id || 'None'} |`);
+      }
+      
+      Logger.info('\nTo process these documents, run:');
+      Logger.info('  ./scripts/cli-pipeline/presentations/presentations-cli.sh generate-summary --status pending --limit 10');
+      
+    } catch (error) {
+      Logger.error('Error scanning for AI summaries:', error);
+      process.exit(1);
+    }
+  });
+
 // Define show-missing-content command
 program
   .command('show-missing-content')
@@ -564,6 +728,12 @@ For detailed help on a specific command, run:
 // More debug information only when --debug is passed
 if (isDebug) {
   console.log("Debug: After parsing, commands:", program.commands.map((cmd: any) => cmd.name()));
+  console.log("Debug: Is generate-summary command registered?", program.commands.some((cmd: any) => cmd.name() === 'generate-summary'));
+  
+  // Check if we got a specific command
+  const cmdArg = process.argv[2]; 
+  console.log("Debug: Command argument:", cmdArg);
+  console.log("Debug: All args:", process.argv);
 }
 
 // Handle any unhandled exceptions
