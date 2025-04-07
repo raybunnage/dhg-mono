@@ -230,16 +230,34 @@ program
         "neuromodulation techniques for treatment-resistant depression",
         "cardiac regeneration using stem cell therapy",
         "gut-brain axis in neurodevelopmental disorders",
-        "immunotherapy approaches for pancreatic cancer"
+        "immunotherapy approaches for pancreatic cancer",
+        "epigenetic influences on cancer development and progression",
+        "therapeutic potential of psychedelics in mental health treatment",
+        "advances in precision medicine for neurodegenerative diseases",
+        "gut microbiome and its role in inflammatory bowel disease",
+        "novel biomarkers for early Parkinson's disease detection",
+        "artificial intelligence applications in medical imaging analysis",
+        "cellular senescence and implications for aging-related diseases",
+        "gene therapy approaches for inherited retinal diseases",
+        "mitochondrial dysfunction in metabolic disorders",
+        "exosome-based therapies for regenerative medicine",
+        "neurofeedback interventions for anxiety disorders",
+        "circadian rhythm disruption and metabolic health",
+        "advances in CAR-T cell therapy for solid tumors",
+        "blood-brain barrier modulation for enhanced drug delivery",
+        "biomechanical factors in osteoarthritis progression"
       ];
       
-      // Process up to the limit
-      for (let i = 0; i < Math.min(limit, topics.length); i++) {
+      // Process up to the limit 
+      const batchSize = Math.min(limit, topics.length);
+      Logger.info(`BATCH_SIZE_CHECK: Will process ${batchSize} sample summaries (requested limit: ${limit}, available topics: ${topics.length})`);
+      
+      for (let i = 0; i < batchSize; i++) {
         // Make each summary different by using a different topic
         const topic = topics[i];
         const prompt = `Create a ${options.format} summary of a medical presentation about ${topic}. This is a demonstration of the command.`;
         
-        Logger.info(`\nGenerating sample summary ${i+1} of ${Math.min(limit, topics.length)} with Claude...`);
+        Logger.info(`\nGenerating sample summary ${i+1} of ${batchSize} with Claude...`);
         const summary = await claudeService.sendPrompt(prompt);
         
         Logger.info(`Summary ${i+1} generated successfully!`);
@@ -840,6 +858,168 @@ program
     }
   });
 
+// Define show-ai-summary-status command
+program
+  .command('show-ai-summary-status')
+  .description('Show AI summary status for expert documents')
+  .option('-l, --limit <number>', 'Limit the number of documents to check', '500')
+  .option('--folder-id <id>', 'Filter by folder ID', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('-o, --output-file <path>', 'Path to write results to', '/Users/raybunnage/Documents/github/dhg-mono/docs/cli-pipeline/ai_summary_status.md')
+  .action(async (options: any) => {
+    try {
+      Logger.info('Checking AI summary status for expert documents...');
+      
+      const presentationService = PresentationService.getInstance();
+      
+      // Get the document type ID for "Video Summary Transcript"
+      const videoSummaryTypeId = await presentationService.getVideoSummaryTranscriptTypeId();
+      
+      if (!videoSummaryTypeId) {
+        Logger.error('Could not find document type ID for "Video Summary Transcript"');
+        return;
+      }
+      
+      Logger.info(`Using document type ID for Video Summary Transcript: ${videoSummaryTypeId}`);
+      
+      // Query for expert documents with non-null ai_summary_status
+      const { data, error } = await presentationService.supabaseClient
+        .from('expert_documents')
+        .select(`
+          id,
+          document_type_id,
+          document_types(document_type),
+          expert_id,
+          experts(expert_name),
+          ai_summary_status,
+          source_id,
+          sources_google(name),
+          updated_at
+        `)
+        .eq('document_type_id', videoSummaryTypeId)
+        .not('ai_summary_status', 'is', null)
+        .order('updated_at', { ascending: false })
+        .limit(parseInt(options.limit));
+      
+      if (error) {
+        Logger.error('Error fetching documents with AI summary status:', error);
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        Logger.info('No documents found with AI summary status.');
+        return;
+      }
+      
+      // Group documents by status
+      const documentsByStatus: Record<string, any[]> = {};
+      data.forEach((doc: { ai_summary_status: string }) => {
+        const status = doc.ai_summary_status;
+        if (!documentsByStatus[status]) {
+          documentsByStatus[status] = [];
+        }
+        documentsByStatus[status].push(doc);
+      });
+      
+      // Count by status
+      const statusCounts: Record<string, number> = {};
+      Object.keys(documentsByStatus).forEach(status => {
+        statusCounts[status] = documentsByStatus[status].length;
+      });
+      
+      // Display status counts
+      console.log('\nAI SUMMARY STATUS COUNTS');
+      console.log('=======================\n');
+      console.log('| Status     | Count |');
+      console.log('|------------|-------|');
+      
+      Object.entries(statusCounts).forEach(([status, count]) => {
+        console.log(`| ${status.padEnd(10)} | ${count.toString().padStart(5)} |`);
+      });
+      console.log('\n');
+      
+      // Display detailed results in a markdown table
+      console.log('AI SUMMARY STATUS DETAILS');
+      console.log('========================\n');
+      
+      console.log('| Document ID | Expert | Source | Status | Updated At |');
+      console.log('|-------------|--------|--------|--------|------------|');
+      
+      // Show completed first, then pending, then error
+      const displayOrder = ['completed', 'processing', 'pending', 'error'];
+      
+      displayOrder.forEach(status => {
+        if (documentsByStatus[status]) {
+          documentsByStatus[status].slice(0, 10).forEach(doc => {
+            const id = doc.id.substring(0, 8);
+            const expertName = doc.experts?.expert_name || 'Unknown';
+            const sourceName = doc.sources_google?.name || 'Unknown';
+            const timestamp = new Date(doc.updated_at).toLocaleString();
+            
+            console.log(`| ${id} | ${expertName.padEnd(6)} | ${sourceName.padEnd(6)} | ${status.padEnd(6)} | ${timestamp} |`);
+          });
+        }
+      });
+      
+      // Create markdown output file
+      let markdownOutput = '# AI Summary Status Report\n\n';
+      
+      // Add status counts
+      markdownOutput += '## Status Counts\n\n';
+      markdownOutput += '| Status | Count |\n';
+      markdownOutput += '|--------|-------|\n';
+      
+      Object.entries(statusCounts).forEach(([status, count]) => {
+        markdownOutput += `| ${status} | ${count} |\n`;
+      });
+      
+      // Add detailed tables for each status
+      displayOrder.forEach(status => {
+        if (documentsByStatus[status]) {
+          markdownOutput += `\n## ${status.charAt(0).toUpperCase() + status.slice(1)} Documents\n\n`;
+          markdownOutput += '| Document ID | Expert | Source | Updated At |\n';
+          markdownOutput += '|-------------|--------|--------|------------|\n';
+          
+          documentsByStatus[status].forEach(doc => {
+            const expertName = doc.experts?.expert_name || 'Unknown';
+            const sourceName = doc.sources_google?.name || 'Unknown';
+            const timestamp = new Date(doc.updated_at).toLocaleString();
+            
+            markdownOutput += `| ${doc.id} | ${expertName} | ${sourceName} | ${timestamp} |\n`;
+          });
+        }
+      });
+      
+      // Add instructions for processing
+      markdownOutput += '\n## How to Process Documents\n\n';
+      markdownOutput += 'To process pending documents and generate summaries, use:\n\n';
+      markdownOutput += '```bash\n';
+      markdownOutput += 'pnpm cli presentations-cli generate-summary --status pending --limit 10\n';
+      markdownOutput += '```\n\n';
+      
+      markdownOutput += 'To update document statuses, use:\n\n';
+      markdownOutput += '```bash\n';
+      markdownOutput += 'pnpm cli presentations-cli scan-for-ai-summaries --update\n';
+      markdownOutput += '```\n';
+      
+      // Write to output file if requested
+      if (options.outputFile) {
+        try {
+          const fs = require('fs');
+          fs.writeFileSync(options.outputFile, markdownOutput);
+          Logger.info(`AI summary status report written to ${options.outputFile}`);
+        } catch (writeError) {
+          Logger.error('Error writing to output file:', writeError);
+        }
+      }
+      
+      Logger.info(`Found ${data.length} documents with AI summary status.`);
+      
+    } catch (error) {
+      Logger.error('Error checking AI summary status:', error);
+      process.exit(1);
+    }
+  });
+
 // Parse command line arguments without debug info
 const isDebug = process.argv.indexOf('--debug') !== -1;
 if (isDebug) {
@@ -881,6 +1061,7 @@ Available Commands:
   repair-presentations       Repair presentations with missing main_video_id
   create-from-expert-docs    Create presentations from expert documents
   show-missing-content       Show presentations without content that need reprocessing
+  show-ai-summary-status     Show AI summary status for expert documents in markdown table
   
 For detailed help on a specific command, run:
   presentations-cli [command] --help
