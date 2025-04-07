@@ -980,6 +980,420 @@ export class PresentationService {
   }
 
   /**
+   * Get non-transcript expert documents from the database
+   */
+  public async getNonTranscriptDocuments(options: {
+    limit?: number;
+    folderId?: string;
+    documentType?: string;
+  }): Promise<any[]> {
+    try {
+      // First get the document type ID for "Video Summary Transcript"
+      const { data: videoSummaryType, error: typeError } = await this._supabaseClient
+        .from('document_types')
+        .select('id')
+        .eq('document_type', 'Video Summary Transcript')
+        .single();
+      
+      if (typeError || !videoSummaryType) {
+        Logger.error('Error finding Video Summary Transcript document type:', typeError);
+        return [];
+      }
+      
+      // Get sources in the specified folder
+      // We need to broaden the search a bit
+      const folderCondition = options.folderId
+        ? `drive_id.eq.${options.folderId}`
+        : `parent_path.ilike.%Discussion%`;
+      
+      const { data: folderSources, error: sourcesError } = await this._supabaseClient
+        .from('sources_google')
+        .select('id')
+        .or(folderCondition);
+      
+      if (sourcesError || !folderSources || folderSources.length === 0) {
+        Logger.error('Error finding sources in folder:', sourcesError);
+        return [];
+      }
+      
+      const sourceIds = folderSources.map((source: { id: string }) => source.id);
+      
+      // Build the query for expert documents that are not Video Summary Transcripts
+      let query = this._supabaseClient
+        .from('expert_documents')
+        .select(`
+          id,
+          document_type_id,
+          document_types(document_type),
+          source_id,
+          sources_google(id, name, parent_id, parent_path, drive_id),
+          created_at,
+          updated_at
+        `)
+        .neq('document_type_id', videoSummaryType.id)
+        .in('source_id', sourceIds);
+      
+      // Add document type filter if specified
+      if (options.documentType) {
+        // Get the document type ID
+        const { data: docType, error: docTypeError } = await this._supabaseClient
+          .from('document_types')
+          .select('id')
+          .eq('document_type', options.documentType)
+          .single();
+        
+        if (!docTypeError && docType) {
+          query = query.eq('document_type_id', docType.id);
+        }
+      }
+      
+      // Add limit
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+      
+      const { data: documents, error: docsError } = await query;
+      
+      if (docsError) {
+        Logger.error('Error finding non-transcript expert documents:', docsError);
+        return [];
+      }
+      
+      return documents || [];
+    } catch (error) {
+      Logger.error('Error in getNonTranscriptDocuments:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Match documents with presentations based on folder structure
+   */
+  public async matchDocumentsWithPresentations(documents: any[]): Promise<any[]> {
+    try {
+      const matches: any[] = [];
+      
+      // Process each document
+      for (const doc of documents) {
+        const documentSource = doc.sources_google;
+        if (!documentSource) {
+          continue;
+        }
+        
+        // Get document parent folder
+        const parentId = documentSource.parent_id;
+        const parentPath = documentSource.parent_path;
+        
+        if (!parentId && !parentPath) {
+          continue;
+        }
+        
+        // Look for other sources in the same folder
+        const folderCondition = parentId 
+          ? `parent_id.eq.${parentId}` 
+          : `parent_path.eq.${parentPath}`;
+        
+        const { data: folderSources, error: sourcesError } = await this._supabaseClient
+          .from('sources_google')
+          .select('id, name, mime_type')
+          .or(folderCondition);
+        
+        if (sourcesError || !folderSources || folderSources.length === 0) {
+          continue;
+        }
+        
+        // Find video files in the folder
+        const videoSources = folderSources.filter((source: any) => 
+          source.mime_type?.includes('video') || 
+          source.name?.toLowerCase().endsWith('.mp4')
+        );
+        
+        if (videoSources.length === 0) {
+          // If no video in the same folder, try to find presentations based on name similarity
+          matches.push(await this.matchByNameSimilarity(doc, documentSource));
+          continue;
+        }
+        
+        // For each video, check if there's a presentation
+        for (const videoSource of videoSources) {
+          const { data: presentations, error: presError } = await this._supabaseClient
+            .from('presentations')
+            .select('id, title')
+            .eq('main_video_id', videoSource.id);
+          
+          if (presError || !presentations || presentations.length === 0) {
+            continue;
+          }
+          
+          // Check if a presentation asset already exists for this document
+          const { data: existingAssets, error: assetError } = await this._supabaseClient
+            .from('presentation_assets')
+            .select('id')
+            .eq('presentation_id', presentations[0].id)
+            .eq('expert_document_id', doc.id);
+          
+          const assetExists = !assetError && existingAssets && existingAssets.length > 0;
+          
+          // Calculate confidence based on various factors
+          let confidence: 'high' | 'medium' | 'low' = 'low';
+          let reason = 'Same folder';
+          
+          // Check name similarity for higher confidence
+          const docName = documentSource.name || '';
+          const videoName = videoSource.name || '';
+          const presentation = presentations[0];
+          
+          if (this.areNamesRelated(docName, videoName)) {
+            confidence = 'high';
+            reason = 'Name similarity and same folder';
+          } else if (videoSources.length === 1) {
+            confidence = 'medium';
+            reason = 'Only one video in folder';
+          }
+          
+          // Add to matches
+          matches.push({
+            expertDocumentId: doc.id,
+            documentName: documentSource.name,
+            documentType: doc.document_types?.document_type || 'Unknown',
+            presentationId: presentation.id,
+            presentationTitle: presentation.title,
+            confidence,
+            reason,
+            assetExists,
+            folderPath: documentSource.parent_path || 'Unknown'
+          });
+        }
+      }
+      
+      return matches;
+    } catch (error) {
+      Logger.error('Error in matchDocumentsWithPresentations:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Create a presentation asset linking a document to a presentation
+   */
+  public async createPresentationAsset(options: {
+    presentationId: string;
+    expertDocumentId: string;
+    assetType: string;
+  }): Promise<boolean> {
+    try {
+      // Check if asset already exists
+      const { data: existingAsset, error: checkError } = await this._supabaseClient
+        .from('presentation_assets')
+        .select('id')
+        .eq('presentation_id', options.presentationId)
+        .eq('expert_document_id', options.expertDocumentId);
+      
+      if (checkError) {
+        Logger.error('Error checking for existing asset:', checkError);
+        return false;
+      }
+      
+      if (existingAsset && existingAsset.length > 0) {
+        Logger.info(`Presentation asset already exists for document ${options.expertDocumentId}`);
+        return true;
+      }
+      
+      // Create the presentation asset
+      const { error: insertError } = await this._supabaseClient
+        .from('presentation_assets')
+        .insert({
+          presentation_id: options.presentationId,
+          expert_document_id: options.expertDocumentId,
+          asset_type: options.assetType,
+          created_at: new Date().toISOString()
+        });
+      
+      if (insertError) {
+        Logger.error('Error creating presentation asset:', insertError);
+        return false;
+      }
+      
+      Logger.info(`Created presentation asset for document ${options.expertDocumentId}`);
+      return true;
+    } catch (error) {
+      Logger.error('Error in createPresentationAsset:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Match document with presentations based on name similarity
+   */
+  private async matchByNameSimilarity(doc: any, documentSource: any): Promise<any> {
+    const docName = documentSource.name || '';
+    
+    // Get all presentations
+    const { data: presentations, error: presError } = await this._supabaseClient
+      .from('presentations')
+      .select('id, title, main_video_id');
+    
+    if (presError || !presentations || presentations.length === 0) {
+      return {
+        expertDocumentId: doc.id,
+        documentName: docName,
+        documentType: doc.document_types?.document_type || 'Unknown',
+        presentationId: null,
+        presentationTitle: null,
+        confidence: 'low',
+        reason: 'No presentations found',
+        assetExists: false,
+        folderPath: documentSource.parent_path || 'Unknown'
+      };
+    }
+    
+    // Get video sources for presentations
+    const videoIds = presentations
+      .map((p: any) => p.main_video_id)
+      .filter((id: string) => id);
+    
+    if (videoIds.length === 0) {
+      return {
+        expertDocumentId: doc.id,
+        documentName: docName,
+        documentType: doc.document_types?.document_type || 'Unknown',
+        presentationId: null,
+        presentationTitle: null,
+        confidence: 'low',
+        reason: 'No video sources found',
+        assetExists: false,
+        folderPath: documentSource.parent_path || 'Unknown'
+      };
+    }
+    
+    const { data: videoSources, error: videoError } = await this._supabaseClient
+      .from('sources_google')
+      .select('id, name')
+      .in('id', videoIds);
+    
+    if (videoError || !videoSources) {
+      return {
+        expertDocumentId: doc.id,
+        documentName: docName,
+        documentType: doc.document_types?.document_type || 'Unknown',
+        presentationId: null,
+        presentationTitle: null,
+        confidence: 'low',
+        reason: 'Error fetching video sources',
+        assetExists: false,
+        folderPath: documentSource.parent_path || 'Unknown'
+      };
+    }
+    
+    // Create a map of video IDs to names
+    const videoNames: Record<string, string> = {};
+    videoSources.forEach((v: any) => {
+      videoNames[v.id] = v.name || '';
+    });
+    
+    // Find the best match based on name similarity
+    let bestMatch = null;
+    let bestScore = 0;
+    
+    for (const presentation of presentations) {
+      const videoName = videoNames[presentation.main_video_id] || '';
+      const score = this.calculateNameSimilarity(docName, videoName);
+      
+      if (score > bestScore && score > 0.5) {
+        bestScore = score;
+        bestMatch = presentation;
+      }
+    }
+    
+    if (!bestMatch) {
+      return {
+        expertDocumentId: doc.id,
+        documentName: docName,
+        documentType: doc.document_types?.document_type || 'Unknown',
+        presentationId: null,
+        presentationTitle: null,
+        confidence: 'low',
+        reason: 'No name match found',
+        assetExists: false,
+        folderPath: documentSource.parent_path || 'Unknown'
+      };
+    }
+    
+    // Check if a presentation asset already exists
+    const { data: existingAssets, error: assetError } = await this._supabaseClient
+      .from('presentation_assets')
+      .select('id')
+      .eq('presentation_id', bestMatch.id)
+      .eq('expert_document_id', doc.id);
+    
+    const assetExists = !assetError && existingAssets && existingAssets.length > 0;
+    
+    // Determine confidence based on similarity score
+    let confidence: 'high' | 'medium' | 'low' = 'low';
+    if (bestScore > 0.8) {
+      confidence = 'high';
+    } else if (bestScore > 0.6) {
+      confidence = 'medium';
+    }
+    
+    return {
+      expertDocumentId: doc.id,
+      documentName: docName,
+      documentType: doc.document_types?.document_type || 'Unknown',
+      presentationId: bestMatch.id,
+      presentationTitle: bestMatch.title,
+      confidence,
+      reason: `Name similarity score: ${bestScore.toFixed(2)}`,
+      assetExists,
+      folderPath: documentSource.parent_path || 'Unknown'
+    };
+  }
+  
+  /**
+   * Check if two file names are related
+   */
+  private areNamesRelated(name1: string, name2: string): boolean {
+    // Clean and normalize the names
+    const clean1 = name1.toLowerCase().replace(/\.[^/.]+$/, ''); // Remove extension
+    const clean2 = name2.toLowerCase().replace(/\.[^/.]+$/, ''); // Remove extension
+    
+    // Check if one is a substring of the other
+    if (clean1.includes(clean2) || clean2.includes(clean1)) {
+      return true;
+    }
+    
+    // Calculate similarity score
+    return this.calculateNameSimilarity(clean1, clean2) > 0.7;
+  }
+  
+  /**
+   * Calculate similarity score between two strings
+   */
+  private calculateNameSimilarity(str1: string, str2: string): number {
+    // Implement a similarity algorithm
+    // Simple implementation: check for common words
+    const words1 = str1.toLowerCase().split(/[^a-z0-9]+/);
+    const words2 = str2.toLowerCase().split(/[^a-z0-9]+/);
+    
+    // Filter out short words and common words
+    const commonWords = ['the', 'and', 'of', 'in', 'to', 'for', 'a', 'on', 'with'];
+    const filteredWords1 = words1.filter(w => w.length > 2 && !commonWords.includes(w));
+    const filteredWords2 = words2.filter(w => w.length > 2 && !commonWords.includes(w));
+    
+    // Calculate intersection
+    const intersection = filteredWords1.filter(w => filteredWords2.includes(w));
+    
+    // Calculate Jaccard similarity
+    const union = new Set([...filteredWords1, ...filteredWords2]);
+    
+    if (union.size === 0) {
+      return 0;
+    }
+    
+    return intersection.length / union.size;
+  }
+
+  /**
    * Update the AI summary status for an expert document
    */
   public async updateAiSummaryStatus(
