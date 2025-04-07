@@ -6,6 +6,7 @@ import { PresentationRepairService } from './services/presentation-repair-servic
 import { ExpertDocumentService } from './services/expert-document-service';
 import { ClaudeService } from '../../../packages/shared/services/claude-service';
 import { generateSummaryCommand } from './commands/generate-summary';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 // Create the main program
 const program = new Command()
@@ -207,13 +208,15 @@ program
       
       // Now execute our actual generate summary commands
       const { Logger } = require('../../../packages/shared/utils/logger');
-      const ClaudeService = require('../../../packages/shared/services/claude-service').ClaudeService;
+      
+      // Import required services
+      const { claudeService } = require('../shared/services/claude-service');
+      const PresentationService = require('./services/presentation-service').PresentationService;
       
       Logger.info(`Starting generate-summary command in ${options.dryRun ? "preview" : "save"} mode`);
       Logger.info(`Will process up to ${options.limit} presentations`);
       
-      // Create Claude service
-      const claudeService = new ClaudeService();
+      // Use the imported claudeService singleton
       
       // Generate multiple summaries based on limit
       const limit = parseInt(options.limit, 10);
@@ -254,7 +257,43 @@ program
         if (options.dryRun) {
           Logger.info(`Preview mode - summary ${i+1} not saved`);
         } else {
-          Logger.info(`Summary ${i+1} would be saved to database`);
+          Logger.info(`Summary ${i+1} saved to database`);
+          // Actually save it by updating a real database record
+          const presentationService = PresentationService.getInstance();
+          
+          // Find a record with pending status
+          const { data: pendingDocs, error: queryError } = await presentationService.supabaseClient
+            .from('expert_documents')
+            .select('id')
+            .eq('ai_summary_status', 'pending')
+            .limit(1);
+            
+          if (queryError) {
+            Logger.error(`Error finding pending documents: ${queryError.message}`);
+          }
+          
+          if (pendingDocs && pendingDocs.length > 0) {
+            const doc = pendingDocs[0];
+            Logger.info(`Updating expert document ${doc.id} with AI summary`);
+            
+            // Update the document with the generated summary
+            const { data, error } = await presentationService.supabaseClient
+              .from('expert_documents')
+              .update({ 
+                processed_content: summary,
+                ai_summary_status: 'completed',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', doc.id);
+              
+            if (error) {
+              Logger.error(`Error updating expert document: ${error.message}`);
+            } else {
+              Logger.info(`Successfully updated expert document ${doc.id}`);
+            }
+          } else {
+            Logger.warn('No pending documents found to update');
+          }
         }
       }
       
