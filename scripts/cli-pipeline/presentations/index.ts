@@ -90,8 +90,8 @@ program
               let docType = "Unknown";
               if (doc.document_type) {
                 docType = doc.document_type;
-              } else if (doc.document_types && doc.document_types.name) {
-                docType = doc.document_types.name;
+              } else if (doc.document_types && doc.document_types.document_type) {
+                docType = doc.document_types.document_type;
               }
               
               const docTypePadded = docType.substring(0, 10).padEnd(12, ' ');
@@ -530,6 +530,7 @@ program
   .option('--reset', 'Reset all documents to have AI summary status "pending"', false)
   .option('--reset-to-null', 'Reset all documents to have NULL AI summary status (more compatible with some database setups)', false)
   .option('--folder-id <id>', 'Filter by specific folder ID (default: Dynamic Healing Discussion Group)', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('--update-dhg', 'Update documents in Dynamic Healing Discussion Group to have status "pending" using SQL criteria', false)
   .action(async (options: any) => {
     try {
       const presentationService = PresentationService.getInstance();
@@ -622,6 +623,23 @@ program
         Logger.info(`Successfully reset ${success} Video Summary Transcript documents to NULL status`);
         if (failed > 0) {
           Logger.warn(`Failed to reset ${failed} documents`);
+        }
+      } else if (options.updateDhg) {
+        // Use the new method for updating documents that match the DHG criteria
+        Logger.info("Using new method to update documents in Dynamic Healing Discussion Group to pending status...");
+        const videoSummaryTypeId = await presentationService.getVideoSummaryTranscriptTypeId();
+        
+        if (!videoSummaryTypeId) {
+          Logger.error('Could not find document type ID for "Video Summary Transcript"');
+          return;
+        }
+        
+        // Call the new method to update DHG documents
+        const { success, failed } = await presentationService.updateDhgExpertDocumentsStatus('pending', videoSummaryTypeId);
+        
+        Logger.info(`Successfully updated ${success} documents to pending status using DHG criteria`);
+        if (failed > 0) {
+          Logger.warn(`Failed to update ${failed} documents`);
         }
       } else if (options.reset) {
         // Use the new method to reset all documents to pending
