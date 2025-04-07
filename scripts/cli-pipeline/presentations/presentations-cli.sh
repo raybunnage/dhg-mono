@@ -47,6 +47,8 @@ function display_help() {
   echo -e "    -l, --limit <number>         Limit the number of documents to display (default: 50)"
   echo -e "    --update                     Update documents with missing AI status to 'pending'"
   echo -e "    --reset                      Reset all documents with raw content to 'pending' status"
+  echo -e "    --reset-to-null              Reset all documents with raw content to NULL status (recommended)"
+  echo -e "    --folder-id <id>             Filter by specific folder ID (default: Dynamic Healing Discussion Group)"
   echo ""
   echo -e "\033[1mExamples:\033[0m"
   echo -e "  # Generate summaries with detailed format"
@@ -54,15 +56,19 @@ function display_help() {
   echo ""
   echo -e "  # Preview a summary for specific presentation without saving"
   echo -e "  presentations-cli generate-summary --presentation-id 1234abcd --dry-run"
+  echo -e "  # Note: Make sure to use exactly two dashes for --dry-run (not three dashes)"
   echo ""
   echo -e "  # Process summaries for a specific expert"
   echo -e "  presentations-cli generate-summary --expert-id 5678efgh --limit 10"
   echo ""
-  echo -e "  # Scan for documents that need AI summary processing"
+  echo -e "  # Scan for documents that need AI summary processing (from Dynamic Healing Discussion Group)"
   echo -e "  presentations-cli scan-for-ai-summaries"
   echo ""
   echo -e "  # Update all documents with raw content but no AI status to 'pending'"
   echo -e "  presentations-cli scan-for-ai-summaries --update"
+  echo ""
+  echo -e "  # Scan for documents from a specific folder"
+  echo -e "  presentations-cli scan-for-ai-summaries --folder-id 1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc"
   echo ""
   echo -e "  # Reset all documents with raw content to have 'pending' status"
   echo -e "  presentations-cli scan-for-ai-summaries --reset"
@@ -80,5 +86,25 @@ if [[ "$1" == "--help" || "$1" == "-h" || "$#" -eq 0 ]]; then
   exit 0
 fi
 
-# Otherwise, execute the presentations CLI
+# Check for and fix triple dash issues directly
+if [[ "$1" == "generate-summary" ]]; then
+  for arg in "$@"; do
+    if [[ "$arg" == "---dry-run" ]]; then
+      echo "WARNING: Detected '---dry-run' instead of '--dry-run', fixing automatically"
+      # Call with fixed args
+      fixed_args=("$@")
+      for i in "${!fixed_args[@]}"; do
+        if [[ "${fixed_args[$i]}" == "---dry-run" ]]; then
+          fixed_args[$i]="--dry-run"
+        fi
+      done
+      
+      # Execute with fixed args
+      ts-node "$SCRIPT_DIR/index.ts" "${fixed_args[@]}"
+      exit $?
+    fi
+  done
+fi
+
+# Otherwise, execute the presentations CLI normally
 ts-node "$SCRIPT_DIR/index.ts" "$@"
