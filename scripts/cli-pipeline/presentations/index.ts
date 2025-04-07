@@ -6,6 +6,7 @@ import { PresentationRepairService } from './services/presentation-repair-servic
 import { ExpertDocumentService } from './services/expert-document-service';
 import { ClaudeService } from '../../../packages/shared/services/claude-service';
 import { generateSummaryCommand } from './commands/generate-summary';
+import { presentationAssetBioCommand } from './commands/presentation-asset-bio';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // Create the main program
@@ -160,8 +161,172 @@ program
     }
   });
 
-// Add the generate-summary command
-console.log("DEBUG: Adding generate-summary command directly");
+// Add commands to the program
+console.log("DEBUG: Adding commands directly");
+// Register presentation-asset-bio command
+program
+  .command('presentation-asset-bio')
+  .description('Match non-transcript expert documents with presentations and create presentation assets')
+  .option('-d, --dry-run', 'Preview matches without creating presentation assets', false)
+  .option('-l, --limit <number>', 'Limit the number of documents to process', '100')
+  .option('-f, --folder-id <id>', 'Filter by specific folder ID (default: Dynamic Healing Discussion Group)', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('-c, --confirm-all', 'Automatically confirm all matches without prompting', false)
+  .option('-t, --document-type <type>', 'Filter by specific document type (e.g., "Presentation Announcement")')
+  .option('-m, --min-confidence <level>', 'Minimum confidence level for auto-confirmation (high, medium, low)', 'high')
+  .action(async (options: any) => {
+    try {
+      console.log('DEBUG: Executing presentation-asset-bio command');
+      
+      const presentationService = PresentationService.getInstance();
+      
+      // Get non-transcript expert documents
+      Logger.info('Finding non-transcript expert documents...');
+      
+      // For testing, if we're in dry-run mode, create some example documents
+      if (options.dryRun && process.env.NODE_ENV !== 'production') {
+        // Sample dummy data for testing
+        const dummyDocs = [
+          {
+            id: 'doc1',
+            document_type_id: 'announcement-id',
+            document_types: { document_type: 'Presentation Announcement' },
+            source_id: 'source1',
+            sources_google: { 
+              id: 'source1', 
+              name: 'Naviaux Announcement.pdf', 
+              parent_id: 'folder1', 
+              parent_path: '/Dynamic Healing Discussion Group/Naviaux',
+              drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+            }
+          },
+          {
+            id: 'doc2',
+            document_type_id: 'bio-id',
+            document_types: { document_type: 'Expert Bio' },
+            source_id: 'source2',
+            sources_google: { 
+              id: 'source2', 
+              name: 'Wager Bio.pdf', 
+              parent_id: 'folder2', 
+              parent_path: '/Dynamic Healing Discussion Group/Wager',
+              drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+            }
+          },
+          {
+            id: 'doc3',
+            document_type_id: 'paper-id',
+            document_types: { document_type: 'Research Paper' },
+            source_id: 'source3',
+            sources_google: { 
+              id: 'source3', 
+              name: 'Clawson Paper.pdf', 
+              parent_id: 'folder3', 
+              parent_path: '/Dynamic Healing Discussion Group/Clawson',
+              drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+            }
+          }
+        ];
+        
+        Logger.info('Using example documents for dry run');
+        return dummyDocs;
+      }
+      
+      // Real implementation
+      const documents = await presentationService.getNonTranscriptDocuments({
+        limit: parseInt(options.limit),
+        folderId: options.folderId,
+        documentType: options.documentType
+      });
+      
+      if (documents.length === 0) {
+        Logger.info('No non-transcript expert documents found.');
+        return;
+      }
+      
+      Logger.info(`Found ${documents.length} non-transcript expert documents.`);
+      
+      // Match documents with presentations
+      Logger.info('Matching documents with presentations by folder structure...');
+      const matches = await presentationService.matchDocumentsWithPresentations(documents);
+      
+      if (matches.length === 0) {
+        Logger.info('No matches found between documents and presentations.');
+        return;
+      }
+      
+      // Count by confidence level
+      const highConfidence = matches.filter(m => m.confidence === 'high').length;
+      const mediumConfidence = matches.filter(m => m.confidence === 'medium').length;
+      const lowConfidence = matches.filter(m => m.confidence === 'low').length;
+      
+      // Display matches summary
+      console.log(`\nFound ${matches.length} possible matches: ${highConfidence} high confidence, ${mediumConfidence} medium confidence, ${lowConfidence} low confidence`);
+      
+      if (options.dryRun) {
+        Logger.info('Dry run - no presentation assets will be created.');
+        
+        // Show a few sample matches
+        const samplesToShow = Math.min(matches.length, 5);
+        if (samplesToShow > 0) {
+          console.log("\nSample matches:");
+          for (let i = 0; i < samplesToShow; i++) {
+            const match = matches[i];
+            console.log(`- ${match.documentName} (${match.documentType}) → ${match.presentationTitle || 'No match'} (Confidence: ${match.confidence})`);
+          }
+        }
+        
+        return;
+      }
+      
+      // Process matches if confirm-all is true
+      if (options.confirmAll) {
+        const confidenceLevels: Record<string, number> = {
+          high: 3,
+          medium: 2,
+          low: 1
+        };
+        
+        const minConfidence = options.minConfidence || 'high';
+        const minConfidenceLevel = confidenceLevels[minConfidence] || 3;
+        
+        let createdCount = 0;
+        
+        for (const match of matches) {
+          // Skip if no presentation match found or asset already exists
+          if (!match.presentationId || match.assetExists) {
+            continue;
+          }
+          
+          // Skip if confidence level is below minimum
+          const matchConfidence = match.confidence || 'low';
+          const matchConfidenceLevel = confidenceLevels[matchConfidence] || 0;
+          if (matchConfidenceLevel < minConfidenceLevel) {
+            continue;
+          }
+          
+          // Create presentation asset
+          const success = await presentationService.createPresentationAsset({
+            presentationId: match.presentationId,
+            expertDocumentId: match.expertDocumentId,
+            assetType: match.documentType === 'Presentation Announcement' ? 'announcement' : 'supporting'
+          });
+          
+          if (success) {
+            createdCount++;
+          }
+        }
+        
+        Logger.info(`Created ${createdCount} new presentation assets.`);
+      } else {
+        Logger.info('To create presentation assets, run with --confirm-all flag:');
+        Logger.info('  presentations-cli presentation-asset-bio --confirm-all');
+        Logger.info('  presentations-cli presentation-asset-bio --confirm-all --min-confidence medium');
+      }
+    } catch (error) {
+      Logger.error('Error matching documents with presentations:', error);
+      process.exit(1);
+    }
+  });
 
 // Function to normalize options - handle common typos
 function normalizeOptions(args: string[]): string[] {
