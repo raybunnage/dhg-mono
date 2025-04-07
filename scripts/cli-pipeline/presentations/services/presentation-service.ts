@@ -625,7 +625,8 @@ export class PresentationService {
                 document_type_id, 
                 raw_content, 
                 processed_content, 
-                status, 
+                status,
+                ai_summary_status,
                 created_at, 
                 updated_at
               )
@@ -811,7 +812,8 @@ export class PresentationService {
               linked_through_asset: doc.linked_through_asset || null,
               asset_type: doc.asset_type || null,
               created_at: doc.created_at,
-              updated_at: doc.updated_at
+              updated_at: doc.updated_at,
+              ai_summary_status: doc.ai_summary_status || 'pending'
             };
           });
           

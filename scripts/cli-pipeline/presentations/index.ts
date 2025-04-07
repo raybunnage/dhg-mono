@@ -55,7 +55,7 @@ program
       console.log('==========================\n');
       
       // Display as markdown table in console with fixed column widths
-      console.log('| Presentation           | Expert      | Whisper Status  | Doc Type     | Raw Content Preview      |');
+      console.log('| Presentation           | Expert      | Whisper Status  | AI Summary   | Raw Content Preview      |');
       console.log('|------------------------|-------------|-----------------|--------------|--------------------------|');
       
       for (const presentation of presentations) {
@@ -87,21 +87,21 @@ program
           if (relevantDocs.length > 0) {
             // Output each document as a separate row
             for (const doc of relevantDocs) {
-              // Get document type from the document_types object
-              let docType = "Unknown";
-              if (doc.document_type) {
-                docType = doc.document_type;
-              } else if (doc.document_types && doc.document_types.document_type) {
-                docType = doc.document_types.document_type;
+              // Get AI summary status instead of document type
+              let aiSummaryStatus = "Unknown";
+              if (doc.ai_summary_status) {
+                aiSummaryStatus = doc.ai_summary_status;
+              } else {
+                aiSummaryStatus = "pending";
               }
               
-              const docTypePadded = docType.substring(0, 10).padEnd(12, ' ');
+              const aiSummaryPadded = aiSummaryStatus.substring(0, 10).padEnd(12, ' ');
               
               const contentPreview = doc.raw_content_preview 
                 ? doc.raw_content_preview.substring(0, 24).replace(/\n/g, ' ').trim() + '...'
                 : 'No content';
               
-              console.log(`| ${titlePadded} | ${expertPadded} | ${statusPadded} | ${docTypePadded} | ${contentPreview.padEnd(24, ' ')} |`);
+              console.log(`| ${titlePadded} | ${expertPadded} | ${statusPadded} | ${aiSummaryPadded} | ${contentPreview.padEnd(24, ' ')} |`);
             }
           } else {
             // If no relevant documents, still show the presentation
