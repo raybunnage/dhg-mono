@@ -108,11 +108,20 @@ generateSummaryCommand
         process.exit(1);
       }
       
-      Logger.info(`${presentationsToProcess.length} presentations have documents with raw content ready for processing`);
+      // Check if we're going to process fewer presentations than requested due to 
+      // not finding enough eligible presentations
+      const requestedLimit = parseInt(options.limit, 10);
+      const actualProcessCount = Math.min(requestedLimit, presentationsToProcess.length);
+      Logger.info(`BATCH_SIZE_CHECK: Will process ${actualProcessCount} presentations (requested: ${requestedLimit}, found: ${presentationsToProcess.length})`);
+      
+      // Limit the presentations to process to the requested limit
+      const limitedPresentationsToProcess = presentationsToProcess.slice(0, requestedLimit);
+      
+      Logger.info(`${limitedPresentationsToProcess.length} presentations have documents with raw content ready for processing`);
       
       // Process each presentation
       const results: any[] = [];
-      for (const presentation of presentationsToProcess) {
+      for (const presentation of limitedPresentationsToProcess) {
         try {
           Logger.info(`Processing presentation: ${presentation.title} (${presentation.id})`);
           
