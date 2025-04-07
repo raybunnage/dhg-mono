@@ -1006,27 +1006,293 @@ export class PresentationService {
   }
   
   /**
-   * Get expert documents that need AI summary processing
+   * Update the AI summary status for multiple expert documents at once
+   * This batch method helps avoid request size limitations
    */
-  public async getDocumentsNeedingAiSummary(limit: number = 10): Promise<any[]> {
+  public async updateMultipleAiSummaryStatus(
+    expertDocumentIds: string[], 
+    status: 'pending' | 'processing' | 'completed' | 'error'
+  ): Promise<{success: number, failed: number}> {
     try {
+      let success = 0;
+      let failed = 0;
+      
+      // Process in batches of 50 to avoid request size limitations
+      const batchSize = 50;
+      for (let i = 0; i < expertDocumentIds.length; i += batchSize) {
+        const batch = expertDocumentIds.slice(i, i + batchSize);
+        Logger.info(`Processing batch ${i/batchSize + 1} of ${Math.ceil(expertDocumentIds.length/batchSize)}, size: ${batch.length}`);
+        
+        const { error } = await this._supabaseClient
+          .from('expert_documents')
+          .update({ 
+            ai_summary_status: status,
+            updated_at: new Date().toISOString() 
+          })
+          .in('id', batch);
+        
+        if (error) {
+          Logger.error(`Error updating AI summary status for batch:`, error);
+          failed += batch.length;
+        } else {
+          success += batch.length;
+          Logger.info(`Successfully updated ${batch.length} documents to status "${status}"`);
+        }
+      }
+      
+      return { success, failed };
+    } catch (error) {
+      Logger.error(`Error in batch update of AI summary status:`, error);
+      return { success: 0, failed: expertDocumentIds.length };
+    }
+  }
+  
+  /**
+   * Reset Video Summary Transcript documents with raw content to have 'pending' or null status
+   * Filters by specified folder ID and completed status
+   */
+  public async resetAllVideoSummaryTranscriptsStatus(status: 'pending' | 'processing' | 'completed' | 'error' | null = null, folderId: string = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'): Promise<{success: number, failed: number}> {
+    try {
+      // First get the document type ID for "Video Summary Transcript"
+      const videoSummaryTypeId = await this.getVideoSummaryTranscriptTypeId();
+      
+      if (!videoSummaryTypeId) {
+        Logger.error('Could not find document type ID for "Video Summary Transcript"');
+        return { success: 0, failed: 0 };
+      }
+      
+      // Use the specified folder ID
+      Logger.info(`Using folder ID: ${folderId}`);
+      
+      // Get sources from the specified folder
+      // Limiting to 100 sources to avoid exceeding request limits
+      const { data: folderSources, error: folderError } = await this._supabaseClient
+        .from('sources_google')
+        .select('id')
+        .eq('drive_id', folderId)
+        .limit(100);
+      
+      if (folderError) {
+        Logger.error(`Error fetching sources for folder ${folderId}:`, folderError);
+        return { success: 0, failed: 0 };
+      }
+      
+      if (!folderSources || folderSources.length === 0) {
+        Logger.info(`No sources found in folder ${folderId}`);
+        return { success: 0, failed: 0 };
+      }
+      
+      const sourceIds = folderSources.map((s: any) => s.id);
+      Logger.info(`Found ${sourceIds.length} sources in folder ${folderId}`);
+      
+      Logger.info(`Filtering for Video Summary Transcript documents with raw content in the specified folder`);
+      
+      // Process the source IDs in smaller batches to avoid request size limits
+      Logger.info(`Processing source IDs in batches and filtering for Video Summary Transcript documents`);
+      
+      let allDocsWithContent: any[] = [];
+      const batchSize = 20;
+      let success = 0;
+      let failed = 0;
+      
+      for (let i = 0; i < sourceIds.length; i += batchSize) {
+        const batchSourceIds = sourceIds.slice(i, i + batchSize);
+        Logger.info(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(sourceIds.length/batchSize)} (${batchSourceIds.length} source IDs)`);
+        
+        try {
+          const { data: docsInBatch, error: batchError } = await this._supabaseClient
+            .from('expert_documents')
+            .select('id')
+            .eq('document_type_id', videoSummaryTypeId)
+            .not('raw_content', 'is', null)
+            .in('source_id', batchSourceIds);
+            
+          if (batchError) {
+            Logger.error(`Error in batch ${Math.floor(i/batchSize) + 1}:`, batchError);
+            failed += batchSourceIds.length;
+          } else if (docsInBatch && docsInBatch.length > 0) {
+            Logger.info(`Found ${docsInBatch.length} documents in batch ${Math.floor(i/batchSize) + 1}`);
+            allDocsWithContent = [...allDocsWithContent, ...docsInBatch];
+            
+            // Directly update these documents in this batch
+            const docIds = docsInBatch.map((doc: any) => doc.id);
+            const { success: batchSuccess, failed: batchFailed } = await this.updateMultipleAiSummaryStatus(docIds, status as any);
+            success += batchSuccess;
+            failed += batchFailed;
+          }
+        } catch (error) {
+          Logger.error(`Error processing batch ${Math.floor(i/batchSize) + 1}:`, error);
+          failed += batchSourceIds.length;
+        }
+      }
+      
+      Logger.info(`Successfully reset ${success} Video Summary Transcript documents to ${status === null ? 'NULL' : status} status`);
+      if (failed > 0) {
+        Logger.warn(`Failed to reset ${failed} documents`);
+      }
+      
+      return { success, failed };
+      
+      // This implementation uses a simpler approach without RPC functions
+    } catch (error) {
+      Logger.error('Error resetting Video Summary Transcript documents:', error);
+      return { success: 0, failed: 0 };
+    }
+  }
+  
+  /**
+   * Get the document type ID for "Video Summary Transcript"
+   */
+  public async getVideoSummaryTranscriptTypeId(): Promise<string | null> {
+    try {
+      const { data, error } = await this._supabaseClient
+        .from('document_types')
+        .select('id')
+        .eq('document_type', 'Video Summary Transcript')
+        .single();
+      
+      if (error || !data) {
+        Logger.error('Error fetching Video Summary Transcript document type:', error);
+        return null;
+      }
+      
+      return data.id;
+    } catch (error) {
+      Logger.error('Error fetching Video Summary Transcript document type:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get expert documents that need AI summary processing
+   * Only includes documents of type "Video Summary Transcript"
+   * that are associated with the specified folder
+   * and have completed audio processing (raw_content available)
+   * and have status "Completed"
+   */
+  public async getDocumentsNeedingAiSummary(limit: number = 50, folderId: string = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'): Promise<any[]> {
+    try {
+      // First get the document type ID for "Video Summary Transcript"
+      const videoSummaryTypeId = await this.getVideoSummaryTranscriptTypeId();
+      
+      if (!videoSummaryTypeId) {
+        Logger.error('Could not find document type ID for "Video Summary Transcript"');
+        return [];
+      }
+      
+      Logger.info(`Using document type ID for Video Summary Transcript: ${videoSummaryTypeId}`);
+      
+      // Get the folder ID from parameter or use default
+      Logger.info(`Using folder ID: ${folderId}`);
+      
+      // Get sources from the specified folder (limit to reasonable number)
+      const { data: folderSources, error: folderError } = await this._supabaseClient
+        .from('sources_google')
+        .select('id')
+        .eq('drive_id', folderId)
+        .limit(200); // Increased limit to 200 sources to catch more documents
+      
+      if (folderError) {
+        Logger.error(`Error fetching sources from folder ${folderId}:`, folderError);
+        return [];
+      }
+      
+      if (!folderSources || folderSources.length === 0) {
+        Logger.info(`No sources found in folder ${folderId}`);
+        return [];
+      }
+      
+      const sourceIds = folderSources.map((s: any) => s.id);
+      Logger.info(`Using ${sourceIds.length} sources for document query`);
+      
+      // First try to find documents that match using SQL query with direct db function 
+      // (this might be more effective for complex conditions)
+      const { data: sqlResult, error: sqlError } = await this._supabaseClient.rpc(
+        'find_documents_needing_ai_summary',
+        {
+          doc_type_id: videoSummaryTypeId,
+          source_ids: sourceIds,
+          max_results: limit
+        }
+      );
+      
+      if (!sqlError && sqlResult && sqlResult.length > 0) {
+        Logger.info(`Found ${sqlResult.length} documents via SQL function that need AI summary processing`);
+        return sqlResult;
+      }
+      
+      if (sqlError) {
+        Logger.info('SQL function not available, falling back to filter API...');
+      } else {
+        Logger.info('SQL function returned no results, falling back to filter API...');
+      }
+      
+      // Query for documents that meet ALL these criteria:
+      // 1. Document type = "Video Summary Transcript"
+      // 2. Has raw_content (not null) 
+      // 3. Source is in Dynamic Healing Discussion Group
+      // 4. Status is 'Completed'
+      // 5. AI summary status is pending or null
       const { data, error } = await this._supabaseClient
         .from('expert_documents')
         .select(`
           id,
           document_type_id,
-          document_types(name),
+          document_types(document_type),
           expert_id,
-          ai_summary_status
+          ai_summary_status,
+          source_id,
+          status
         `)
-        .is('processed_content', null)
+        .eq('document_type_id', videoSummaryTypeId)
         .not('raw_content', 'is', null)
-        .or(`ai_summary_status.eq.pending,ai_summary_status.is.null`)
+        .eq('status', 'Completed')
+        .in('source_id', sourceIds)
+        .or('ai_summary_status.eq.pending,ai_summary_status.is.null')
         .limit(limit);
       
       if (error) {
         Logger.error('Error fetching documents needing AI summary:', error);
-        return [];
+        
+        // Try one more time with a simplified query that doesn't check status
+        Logger.info('Trying simplified query without status checks as last resort...');
+        const { data: basicData, error: basicError } = await this._supabaseClient
+          .from('expert_documents')
+          .select(`
+            id,
+            document_type_id,
+            document_types(document_type),
+            expert_id,
+            ai_summary_status,
+            source_id,
+            status
+          `)
+          .eq('document_type_id', videoSummaryTypeId)
+          .not('raw_content', 'is', null)
+          .in('source_id', sourceIds)
+          .limit(limit);
+          
+        if (basicError) {
+          Logger.error('Even simplified query failed:', basicError);
+          return [];
+        }
+        
+        // Filter the results manually
+        const filteredData = basicData.filter((doc: {status: string, ai_summary_status: string | null}) => 
+          doc.status === 'Completed' && 
+          (doc.ai_summary_status === 'pending' || doc.ai_summary_status === null)
+        );
+        
+        Logger.info(`Found ${filteredData.length} documents via simplified query + manual filtering`);
+        return filteredData;
+      }
+      
+      Logger.info(`Found ${data?.length || 0} documents needing AI summary that match all criteria`);
+      
+      // Log the first few document IDs for debugging
+      if (data && data.length > 0) {
+        const sampleSize = Math.min(5, data.length);
+        Logger.info(`Sample document IDs: ${data.slice(0, sampleSize).map((d: any) => d.id).join(', ')}`);
       }
       
       return data || [];

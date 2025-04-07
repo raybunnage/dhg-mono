@@ -68,6 +68,16 @@ When I identify recurring patterns, issues, or inefficiencies in the development
    - When encountering issues with database columns or functions, create proper migrations that can be applied to all environments
    - Prioritize fixing SQL functions and views in the database over workarounds in TypeScript code
 
+3. **Issue**: Overstepping requested tasks
+   **Solution**: Adhere strictly to what is explicitly requested
+   **Implementation**:
+   - Only execute the exact commands requested by the user
+   - Don't automatically run follow-up actions or suggest next steps unless explicitly asked
+   - For CLI operations, prefer dry-run flags when testing changes
+   - When fixing bugs, focus solely on the specific issue without expanding scope
+   - Always ask before taking additional actions beyond what was explicitly requested
+   - When asked to modify code for preparation, don't automatically execute the prepared code
+
 ## TypeScript Best Practices
 ⚠️ **ALWAYS CHECK FOR TYPESCRIPT ERRORS BEFORE SUBMITTING CODE**
 
@@ -89,3 +99,16 @@ When I identify recurring patterns, issues, or inefficiencies in the development
    - Incorrect typing of Promise results
    - Forgetting to type array method callbacks
    - Not handling possible undefined/null values
+
+## Database Schema Conventions
+
+1. **Column Naming**:
+   - The `document_types` table uses `document_type` as the column name (not `name`)
+   - When querying Supabase with nested selects like `document_types(field)`, use the correct column names:
+     - CORRECT: `document_types(document_type)`
+     - INCORRECT: `document_types(name)`
+
+2. **Table Relationships**:
+   - Always verify foreign key relationships and column names before writing queries
+   - Refer to existing code to confirm the correct column names for joins and selects
+   - Test queries with a small result set before implementing in production code
