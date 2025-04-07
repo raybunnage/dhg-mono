@@ -28,7 +28,15 @@ generateSummaryCommand
   .option('--status <status>', 'Filter by presentation status (default: make-ai-summary)', 'make-ai-summary')
   .action(async (options: any) => {
     try {
+      console.log("DEBUG: STARTING GENERATE-SUMMARY COMMAND");
       console.log("DEBUG: Starting generate-summary command with options:", JSON.stringify(options));
+      console.log("DEBUG: Working directory:", process.cwd());
+      
+      // Print out any errors in try/catch blocks to make sure they're visible
+      process.on('uncaughtException', (error) => {
+        console.error('CRITICAL ERROR:', error);
+        process.exit(1);
+      });
       
       const presentationService = PresentationService.getInstance();
       const claudeService = new ClaudeService();
@@ -61,6 +69,7 @@ generateSummaryCommand
       
       // If presentation ID is provided, process just that one
       if (options.presentationId) {
+        console.log("DEBUG: About to call processSinglePresentation with ID:", options.presentationId);
         await processSinglePresentation(
           options.presentationId as string,
           presentationService,
@@ -68,11 +77,12 @@ generateSummaryCommand
           promptTemplate,
           options
         );
+        console.log("DEBUG: Returned from processSinglePresentation");
         return;
       }
       
       // Otherwise, find presentations with Video Summary Transcript documents
-      Logger.info('Finding presentations with Video Summary Transcript documents...');
+      Logger.info('Finding presentations with content that can be summarized...');
       const presentationReviews = await presentationService.reviewPresentations({
         limit: parseInt(options.limit, 10),
         expertId: options.expertId,
@@ -87,18 +97,19 @@ generateSummaryCommand
       
       Logger.info(`Found ${presentationReviews.length} presentations to review`);
       
-      // Filter to presentations with "make-ai-summary" status, which indicates they have 
-      // Video Summary Transcript documents ready for processing
-      const presentationsToProcess = presentationReviews.filter(p => 
-        (options.status ? p.status === options.status : p.status === 'make-ai-summary') && p.has_raw_content
-      );
+      // Filter to presentations with content that can be summarized
+      // Use status parameter if provided, otherwise look for presentations with raw content
+      const presentationsToProcess = presentationReviews.filter(p => {
+        const hasStatus = options.status ? true : (p.status === 'make-ai-summary');
+        return p.has_raw_content;
+      });
       
       if (presentationsToProcess.length === 0) {
-        Logger.error('No presentations found with Video Summary Transcript documents ready for processing');
+        Logger.error('No presentations found with documents that have raw content for processing');
         process.exit(1);
       }
       
-      Logger.info(`${presentationsToProcess.length} presentations have Video Summary Transcript documents ready for processing`);
+      Logger.info(`${presentationsToProcess.length} presentations have documents with raw content ready for processing`);
       
       // Process each presentation
       const results: any[] = [];
@@ -106,14 +117,28 @@ generateSummaryCommand
         try {
           Logger.info(`Processing presentation: ${presentation.title} (${presentation.id})`);
           
-          // Find the Video Summary Transcript document
+          // Check if presentation has expert_documents
+          if (!presentation.expert_documents || presentation.expert_documents.length === 0) {
+            console.log("DEBUG: No expert documents found for presentation:", presentation.id);
+            Logger.warn(`No expert documents found for presentation ${presentation.id}, skipping`);
+            continue;
+          }
+          
+          console.log("DEBUG: Expert documents for presentation", presentation.id, ":", 
+            JSON.stringify(presentation.expert_documents.map((doc: any) => ({
+              id: doc.id,
+              document_type: doc.document_type || "unknown",
+              has_raw_content: doc.has_raw_content || false
+            })))
+          );
+          
+          // Find any document with raw content - not being picky about document type
           const videoSummaryDoc = presentation.expert_documents.find((doc: any) => 
-            doc.document_type === 'Video Summary Transcript' && 
             doc.has_raw_content
           );
           
           if (!videoSummaryDoc) {
-            Logger.warn(`No Video Summary Transcript document found for presentation ${presentation.id}, skipping`);
+            Logger.warn(`No document with raw content found for presentation ${presentation.id}, skipping`);
             continue;
           }
           
@@ -154,15 +179,40 @@ generateSummaryCommand
             continue;
           }
           
+          // Update the AI summary status to processing
+          await presentationService.updateAiSummaryStatus(videoSummaryDoc.id, 'processing');
+          Logger.info(`Updated AI summary status to 'processing' for document ${videoSummaryDoc.id}`);
+          
           // Replace the placeholder in the prompt with the transcript content
           const customizedPrompt = promptTemplate.replace('{{TRANSCRIPT}}', expertDoc.raw_content);
           
           Logger.info(`Generating summary for presentation ${presentation.id} using Claude...`);
           
-          // Call Claude API to generate summary
-          const summary = await claudeService.sendPrompt(customizedPrompt);
+          let summary: string;
+          try {
+            // Call Claude API to generate summary
+            summary = await claudeService.sendPrompt(customizedPrompt);
+          } catch (error) {
+            // Update status to error if Claude API call fails
+            await presentationService.updateAiSummaryStatus(videoSummaryDoc.id, 'error');
+            Logger.error(`Error generating summary with Claude for document ${videoSummaryDoc.id}:`, error);
+            
+            // Add to results
+            results.push({
+              presentation_id: presentation.id,
+              title: presentation.title,
+              expert_id: expertId,
+              error: `Claude API error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              generated: false,
+              saved: false
+            });
+            
+            continue;
+          }
           
+          console.log("DEBUG: About to show summary preview...");
           if (options.dryRun) {
+            console.log("DEBUG: In dry run mode, will show preview");
             Logger.info(chalk.yellow(`[PREVIEW MODE] Generated summary for "${presentation.title}" (ID: ${presentation.id}):`));
             console.log(chalk.green(summary.substring(0, 300) + '...'));
             console.log(chalk.yellow('\n[PREVIEW MODE] Summary would be saved to database in normal mode. Use without --dry-run to save.\n'));
@@ -272,6 +322,7 @@ async function processSinglePresentation(
   promptTemplate: string,
   options: any
 ) {
+  console.log("DEBUG: processSinglePresentation called with ID:", presentationId);
   Logger.info(`Generating summary for presentation ID: ${presentationId}`);
   
   // Get presentation details
@@ -286,14 +337,26 @@ async function processSinglePresentation(
   
   const presentation = reviews[0];
   
-  // Find the Video Summary Transcript document
+  // Check if presentation has expert_documents
+  if (!presentation.expert_documents || presentation.expert_documents.length === 0) {
+    console.log("DEBUG: No expert documents found for presentation:", presentation.id);
+    Logger.error(`No expert documents found for presentation ${presentationId}`);
+    process.exit(1);
+  }
+  
+  // Find any document with raw content
   const videoSummaryDoc = presentation.expert_documents.find(doc => 
-    doc.document_type === 'Video Summary Transcript' && 
     doc.has_raw_content
   );
   
+  console.log("DEBUG: Expert documents:", JSON.stringify(presentation.expert_documents.map(doc => ({
+    id: doc.id,
+    document_type: doc.document_type || "unknown",
+    has_raw_content: doc.has_raw_content || false
+  }))));
+  
   if (!videoSummaryDoc) {
-    Logger.error(`No Video Summary Transcript document found for presentation ${presentationId}`);
+    Logger.error(`No document with raw content found for presentation ${presentationId}`);
     process.exit(1);
   }
   
@@ -321,15 +384,29 @@ async function processSinglePresentation(
     return;
   }
   
+  // Update the AI summary status to processing
+  await presentationService.updateAiSummaryStatus(videoSummaryDoc.id, 'processing');
+  Logger.info(`Updated AI summary status to 'processing' for document ${videoSummaryDoc.id}`);
+  
   // Replace the placeholder in the prompt with the transcript content
   const customizedPrompt = promptTemplate.replace('{{TRANSCRIPT}}', expertDoc.raw_content);
   
   Logger.info('Generating summary using Claude...');
   
-  // Call Claude API to generate summary
-  const summary = await claudeService.sendPrompt(customizedPrompt);
+  let summary: string;
+  try {
+    // Call Claude API to generate summary
+    summary = await claudeService.sendPrompt(customizedPrompt);
+  } catch (error) {
+    // Update status to error if Claude API call fails
+    await presentationService.updateAiSummaryStatus(videoSummaryDoc.id, 'error');
+    Logger.error(`Error generating summary with Claude for document ${videoSummaryDoc.id}:`, error);
+    throw error;
+  }
   
+  console.log("DEBUG: Single presentation - about to show summary preview...");
   if (options.dryRun) {
+    console.log("DEBUG: Single presentation - in dry run mode, will show preview");
     Logger.info(chalk.yellow(`\n[PREVIEW MODE] Generated summary for "${presentation.title}" (ID: ${presentation.id}):`));
     console.log(chalk.green(summary));
     console.log(chalk.yellow('\n[PREVIEW MODE] Summary would be saved to database in normal mode. Use without --dry-run to save.\n'));
@@ -381,6 +458,8 @@ async function processSinglePresentation(
   } else {
     Logger.error('Failed to save summary');
   }
+  
+  console.log("DEBUG: processSinglePresentation completed");
 }
 
 /**

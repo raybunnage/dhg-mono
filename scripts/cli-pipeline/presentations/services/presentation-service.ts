@@ -58,6 +58,7 @@ interface ExpertDocument {
   asset_type?: string | null;
   created_at: string;
   updated_at: string;
+  ai_summary_status?: 'pending' | 'processing' | 'completed' | 'error';
 }
 
 interface PresentationReview {
@@ -275,27 +276,34 @@ export class PresentationService {
           .from('expert_documents')
           .update({
             processed_content: options.summary,
+            ai_summary_status: 'completed', // Set the status to completed
             updated_at: new Date().toISOString()
           })
           .eq('id', options.existingSummaryId);
         
         if (updateError) {
           Logger.error('Error updating summary:', updateError);
+          
+          // Update status to error
+          await this.updateAiSummaryStatus(options.existingSummaryId, 'error');
           return false;
         }
       } else {
         // Create new summary document
-        const { error: insertError } = await this._supabaseClient
+        const { data: newDocument, error: insertError } = await this._supabaseClient
           .from('expert_documents')
           .insert({
             expert_id: options.expertId,
             document_type_id: documentTypeId,
             processed_content: options.summary,
+            ai_summary_status: 'completed', // Set the status to completed
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          });
+          })
+          .select('id')
+          .single();
         
-        if (insertError) {
+        if (insertError || !newDocument) {
           Logger.error('Error creating summary:', insertError);
           return false;
         }
@@ -306,6 +314,7 @@ export class PresentationService {
           .insert({
             presentation_id: options.presentationId,
             asset_type: 'summary',
+            expert_document_id: newDocument.id, // Link to the new expert document
             created_at: new Date().toISOString()
           });
         
@@ -315,6 +324,7 @@ export class PresentationService {
         }
       }
       
+      Logger.info(`Successfully saved summary for presentation ${options.presentationId}`);
       return true;
     } catch (error) {
       Logger.error('Error saving summary:', error);
@@ -856,7 +866,26 @@ export class PresentationService {
     assets: any[],
     expertDocuments: ExpertDocument[]
   ): string {
-    // Check if there is a 'Video Summary Transcript' document with raw_content
+    // Check if there are any documents that need AI summary processing
+    const needsAiSummary = expertDocuments.some(doc => 
+      doc.has_raw_content && 
+      (doc.ai_summary_status === 'pending' || doc.ai_summary_status === undefined)
+    );
+    
+    if (needsAiSummary) {
+      return 'make-ai-summary';
+    }
+    
+    // Check if any documents are currently being processed
+    const aiProcessing = expertDocuments.some(doc => 
+      doc.ai_summary_status === 'processing'
+    );
+    
+    if (aiProcessing) {
+      return 'ai-summary-processing';
+    }
+    
+    // Check legacy condition for backward compatibility
     const hasVideoSummaryTranscript = expertDocuments.some(doc => 
       doc.document_type === 'Video Summary Transcript' && 
       doc.has_raw_content &&
@@ -919,6 +948,11 @@ export class PresentationService {
         nextSteps.push('Run "generate-summary" command to process transcript');
         break;
       
+      case 'ai-summary-processing':
+        nextSteps.push('AI summary generation is in progress');
+        nextSteps.push('Wait for AI processing to complete');
+        break;
+      
       case 'has-transcript':
         nextSteps.push('Generate AI summary from transcript');
         nextSteps.push('Run "generate-summary" command to process transcript');
@@ -941,6 +975,65 @@ export class PresentationService {
     }
     
     return nextSteps;
+  }
+
+  /**
+   * Update the AI summary status for an expert document
+   */
+  public async updateAiSummaryStatus(
+    expertDocumentId: string, 
+    status: 'pending' | 'processing' | 'completed' | 'error'
+  ): Promise<boolean> {
+    try {
+      const { error } = await this._supabaseClient
+        .from('expert_documents')
+        .update({ 
+          ai_summary_status: status,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', expertDocumentId);
+      
+      if (error) {
+        Logger.error(`Error updating AI summary status for document ${expertDocumentId}:`, error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      Logger.error(`Error updating AI summary status for document ${expertDocumentId}:`, error);
+      return false;
+    }
+  }
+  
+  /**
+   * Get expert documents that need AI summary processing
+   */
+  public async getDocumentsNeedingAiSummary(limit: number = 10): Promise<any[]> {
+    try {
+      const { data, error } = await this._supabaseClient
+        .from('expert_documents')
+        .select(`
+          id,
+          document_type_id,
+          document_types(name),
+          expert_id,
+          ai_summary_status
+        `)
+        .is('processed_content', null)
+        .not('raw_content', 'is', null)
+        .or(`ai_summary_status.eq.pending,ai_summary_status.is.null`)
+        .limit(limit);
+      
+      if (error) {
+        Logger.error('Error fetching documents needing AI summary:', error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      Logger.error('Error fetching documents needing AI summary:', error);
+      return [];
+    }
   }
   
   /**
