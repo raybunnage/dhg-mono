@@ -10,6 +10,24 @@ import * as dotenv from 'dotenv';
 import { EnvironmentConfig, LogLevel } from '../interfaces/types';
 
 /**
+ * Find the project root directory by looking for package.json
+ */
+function findProjectRoot(): string {
+  let currentDir = process.cwd();
+  
+  // Navigate up the directory tree until we find package.json or hit the root
+  while (currentDir !== '/') {
+    if (fs.existsSync(path.join(currentDir, 'package.json'))) {
+      return currentDir;
+    }
+    currentDir = path.dirname(currentDir);
+  }
+  
+  // Fallback to current directory if we can't find a package.json
+  return process.cwd();
+}
+
+/**
  * Environment Service options
  */
 export interface EnvironmentServiceOptions {
@@ -30,7 +48,8 @@ export class EnvironmentService {
    * Private constructor to enforce singleton pattern
    */
   private constructor(options?: EnvironmentServiceOptions) {
-    this.rootDir = options?.rootDir || process.cwd();
+    // Use the project root directory instead of the current directory
+    this.rootDir = options?.rootDir || findProjectRoot();
     
     // Load environment variables from files
     const envFiles = options?.envFiles || ['.env', '.env.local', '.env.development'];

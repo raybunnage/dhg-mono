@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { PresentationService } from '../services/presentation-service';
-import { ClaudeService } from '../../../../packages/shared/services/claude-service';
+import { claudeService } from '../../shared/services/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
 import { PromptQueryService } from '../../../../packages/cli/src/services/prompt-query-service';
 import * as fs from 'fs';
@@ -39,7 +39,7 @@ generateSummaryCommand
       });
       
       const presentationService = PresentationService.getInstance();
-      const claudeService = new ClaudeService();
+      // Using the claudeService singleton imported from the correct location
       const promptQueryService = new PromptQueryService();
 
       // Get the summary prompt from the database
@@ -73,7 +73,6 @@ generateSummaryCommand
         await processSinglePresentation(
           options.presentationId as string,
           presentationService,
-          claudeService,
           promptTemplate,
           options
         );
@@ -318,7 +317,6 @@ generateSummaryCommand
 async function processSinglePresentation(
   presentationId: string,
   presentationService: PresentationService,
-  claudeService: ClaudeService,
   promptTemplate: string,
   options: any
 ) {
