@@ -862,7 +862,7 @@ program
 program
   .command('show-ai-summary-status')
   .description('Show AI summary status for expert documents')
-  .option('-l, --limit <number>', 'Limit the number of documents to check', '500')
+  .option('-l, --limit <number>', 'Limit the number of documents to check', '125')
   .option('--folder-id <id>', 'Filter by folder ID', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
   .option('-o, --output-file <path>', 'Path to write results to', '/Users/raybunnage/Documents/github/dhg-mono/docs/cli-pipeline/ai_summary_status.md')
   .action(async (options: any) => {
@@ -941,8 +941,8 @@ program
       console.log('AI SUMMARY STATUS DETAILS');
       console.log('========================\n');
       
-      console.log('| Document ID | Expert | Source | Status | Updated At |');
-      console.log('|-------------|--------|--------|--------|------------|');
+      console.log('| Document ID | Expert | Status | Updated At | Source |');
+      console.log('|-------------|--------|--------|------------|--------|');
       
       // Show completed first, then pending, then error
       const displayOrder = ['completed', 'processing', 'pending', 'error'];
@@ -955,7 +955,7 @@ program
             const sourceName = doc.sources_google?.name || 'Unknown';
             const timestamp = new Date(doc.updated_at).toLocaleString();
             
-            console.log(`| ${id} | ${expertName.padEnd(6)} | ${sourceName.padEnd(6)} | ${status.padEnd(6)} | ${timestamp} |`);
+            console.log(`| ${id} | ${expertName.padEnd(6)} | ${status.padEnd(6)} | ${timestamp} | ${sourceName.padEnd(6)} |`);
           });
         }
       });
@@ -976,15 +976,15 @@ program
       displayOrder.forEach(status => {
         if (documentsByStatus[status]) {
           markdownOutput += `\n## ${status.charAt(0).toUpperCase() + status.slice(1)} Documents\n\n`;
-          markdownOutput += '| Document ID | Expert | Source | Updated At |\n';
-          markdownOutput += '|-------------|--------|--------|------------|\n';
+          markdownOutput += '| Document ID | Expert | Status | Updated At | Source |\n';
+          markdownOutput += '|-------------|--------|--------|------------|--------|\n';
           
           documentsByStatus[status].forEach(doc => {
             const expertName = doc.experts?.expert_name || 'Unknown';
             const sourceName = doc.sources_google?.name || 'Unknown';
             const timestamp = new Date(doc.updated_at).toLocaleString();
             
-            markdownOutput += `| ${doc.id} | ${expertName} | ${sourceName} | ${timestamp} |\n`;
+            markdownOutput += `| ${doc.id} | ${expertName} | ${status} | ${timestamp} | ${sourceName} |\n`;
           });
         }
       });
