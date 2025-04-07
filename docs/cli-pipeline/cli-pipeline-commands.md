@@ -3,156 +3,71 @@
 This document provides information about the CLI pipeline scripts available in the `scripts/cli-pipeline` directory, including what they do, how to run them, and what services they interact with.
 
 ## Table of Contents
-Based on my inspection of the packages/cli directory and its critical
-  files, here's what I found regarding path handling and environment
-  variables:
-
-  1. Environment Variables:
-    - The config.ts file has a robust mechanism for loading environment
-  variables
-    - It properly searches for .env files in multiple possible root
-  paths, including the monorepo root
-    - It has a good order of precedence: .env.local → .env.[environment]
-  → .env
-    - It correctly handles CLI-specific environment variables with
-  appropriate fallbacks
-  2. Output Path Handling:
-    - The default output directory is set to 'docs' in the config (line
-  31 in config.ts)
-    - Report generation properly resolves paths to the docs folder (line
-  816 in documentation-processor.ts)
-    - Analysis results are also written correctly to the specified output
-   directory
-  3. File Path Resolution:
-    - The CLI properly handles both absolute and relative paths
-    - It has a findProjectRoot function that safely identifies the
-  monorepo root
-    - It correctly resolves paths that start with 'apps/' to be relative
-  to the monorepo root
-  4. Path Safety:
-    - Path operations use proper path.resolve() and path.join() functions
-    - The code checks for directory existence before writing files
-
-  Everything appears to be properly configured to run the CLI from the
-  monorepo root. The CLI will correctly access .env files from the root
-  directory and write output files to the docs directory as expected.
 - [Overview](#overview)
-- [Scripts](#scripts)
-  - [analyze-scripts.sh](#analyze-scriptssh)
-  - [run-ai-analyze.sh](#run-ai-analyzesh)
-  - [import-script-aBased on my inspection of the packages/cli directory and its critical
-  files, here's what I found regarding path handling and environment
-  variables:
-
-  1. Environment Variables:
-    - The config.ts file has a robust mechanism for loading environment
-  variables
-    - It properly searches for .env files in multiple possible root
-  paths, including the monorepo root
-    - It has a good order of precedence: .env.local → .env.[environment]
-  → .env
-    - It correctly handles CLI-specific environment variables with
-  appropriate fallbacks
-  2. Output Path Handling:
-    - The default output directory is set to 'docs' in the config (line
-  31 in config.ts)
-    - Report generation properly resolves paths to the docs folder (line
-  816 in documentation-processor.ts)
-    - Analysis results are also written correctly to the specified output
-   directory
-  3. File Path Resolution:
-    - The CLI properly handles both absolute and relative paths
-    - It has a findProjectRoot function that safely identifies the
-  monorepo root
-    - It correctly resolves paths that start with 'apps/' to be relative
-  to the monorepo root
-  4. Path Safety:
-    - Path operations use proper path.resolve() and path.join() functions
-    - The code checks for directory existence before writing files
-
-  Everything appears to be properly configured to run the CLI from the
-  monorepo root. The CLI will correctly access .env files from the root
-  directory and write output files to the docs directory as expected.Based on my inspection of the packages/cli directory and its critical
-  files, here's what I found regarding path handling and environment
-  variables:
-
-  1. Environment Variables:
-    - The config.ts file has a robust mechanism for loading environment
-  variables
-    - It properly searches for .env files in multiple possible root
-  paths, including the monorepo root
-    - It has a good order of precedence: .env.local → .env.[environment]
-  → .env
-    - It correctly handles CLI-specific environment variables with
-  appropriate fallbacks
-  2. Output Path Handling:
-    - The default output directory is set to 'docs' in the config (line
-  31 in config.ts)
-    - Report generation properly resolves paths to the docs folder (line
-  816 in documentation-processor.ts)
-    - Analysis results are also written correctly to the specified output
-   directory
-  3. File Path Resolution:
-    - The CLI properly handles both absolute and relative paths
-    - It has a findProjectRoot function that safely identifies the
-  monorepo root
-    - It correctly resolves paths that start with 'apps/' to be relative
-  to the monorepo root
-  4. Path Safety:
-    - Path operations use proper path.resolve() and path.join() functions
-    - The code checks for directory existence before writing files
-
-  Everything appears to be properlBased on my inspection of the packages/cli directory and its critical
-  files, here's what I found regarding path handling and environment
-  variables:
-
-  1. Environment Variables:
-    - The config.ts file has a robust mechanism for loading environment
-  variables
-    - It properly searches for .env files in multiple possible root
-  paths, including the monorepo root
-    - It has a good order of precedence: .env.local → .env.[environment]
-  → .env
-    - It correctly handles CLI-specific environment variables with
-  appropriate fallbacks
-  2. Output Path Handling:
-    - The default output directory is set to 'docs' in the config (line
-  31 in config.ts)
-    - Report generation properly resolves paths to the docs folder (line
-  816 in documentation-processor.ts)
-    - Analysis results are also written correctly to the specified output
-   directory
-  3. File Path Resolution:
-    - The CLI properly handles both absolute and relative paths
-    - It has a findProjectRoot function that safely identifies the
-  monorepo root
-    - It correctly resolves paths that start with 'apps/' to be relative
-  to the monorepo root
-  4. Path Safety:
-    - Path operations use proper path.resolve() and path.join() functions
-    - The code checks for directory existence before writing files
-
-  Everything appears to be properly configured to run the CLI from the
-  monorepo root. The CLI will correctly access .env files from the root
-  directory and write output files to the docs directory as expected.y configured to run the CLI from the
-  monorepo root. The CLI will correctly access .env files from the root
-  directory and write output files to the docs directory as expected.nalysis.sh](#import-script-analysissh)
-  - [validate-ai-assets.sh](#validate-ai-assetssh)
-  - [validate-prompt-relationships.sh](#validate-prompt-relationshipssh)
-  - [script-report.sh](#script-reportsh)
-  - [command-history-tracker.ts](#command-history-trackerts)
-  - [check-duplicates.ts](#check-duplicatests)
-  - [Other CLI Pipeline Scripts](#other-cli-pipeline-scripts)
-- [Services and Dependencies](#services-and-dependencies)
-- [Common Workflows](#common-workflows)
+- [Presentations Pipeline Commands](#presentations-pipeline-commands)
+  - [generate-summary](#generate-summary)
+  - [Other Presentation Commands](#other-presentation-commands)
+- [Media Processing Commands](#media-processing-commands)
+- [Script Analysis Commands](#script-analysis-commands)
+- [Document Pipeline Commands](#document-pipeline-commands)
 
 ## Overview
 
-The CLI pipeline scripts provide tools for analyzing scripts, generating reports, testing AI integrations, and managing system-wide configurations. These scripts interact with various services, including:
+The CLI pipeline scripts provide tools for:
+- Analyzing and managing video presentations and transcripts
+- Processing media files (MP4, M4A, transcripts)
+- Analyzing scripts and generating reports
+- Testing AI integrations
+- Managing system-wide configurations
 
-- The CLI package in `packages/cli`
-- Claude AI API for script analysis
-- Supabase database for storing script metadata and analysis results
+These scripts interact with various services, including:
+- Claude AI API for content summarization and analysis
+- Supabase database for storing metadata, documents, and analysis results
+- Local filesystem for media files and transcripts
+
+## Presentations Pipeline Commands
+
+The presentations pipeline provides commands for managing expert presentations, including generating AI summaries from transcriptions, creating expert profiles, and managing presentation assets.
+
+### generate-summary
+
+Generates AI summaries from presentation transcripts using Claude AI.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/presentations/commands/generate-summary.ts [options]
+
+# Examples:
+# Generate summaries for up to 5 presentations with a detailed format
+./scripts/cli-pipeline/presentations/commands/generate-summary.ts --format detailed
+
+# Generate summary for a specific presentation in bullet-point format (dry run)
+./scripts/cli-pipeline/presentations/commands/generate-summary.ts --presentation-id 1234abcd --format bullet-points --dry-run
+
+# Process presentations for a specific expert
+./scripts/cli-pipeline/presentations/commands/generate-summary.ts --expert-id 5678efgh --limit 10
+```
+
+**Options**:
+- `-p, --presentation-id <id>` - Generate summary for a specific presentation ID
+- `-e, --expert-id <id>` - Generate summaries for a specific expert ID
+- `-f, --force` - Force regeneration of summaries, even if they already exist
+- `--dry-run` - Preview mode: generate summaries but do not save to database
+- `-l, --limit <number>` - Maximum number of presentations to process (default: 5)
+- `-o, --output <path>` - Output file path for JSON results (default: presentation-summaries.json)
+- `--folder-id <id>` - Filter presentations by Google Drive folder ID
+- `--format <format>` - Summary format style:
+  - `concise` - 2-3 paragraph summary (default)
+  - `detailed` - 5-7 paragraph thorough summary with supporting evidence
+  - `bullet-points` - 5-10 bullet points covering key presentation points
+- `--status <status>` - Filter by presentation status (default: make-ai-summary)
+
+**Details**:
+- Finds presentations with transcripts ready for AI summarization
+- Uses Claude API with the "final_video-summary-prompt" from the prompts database
+- Generates professionally formatted summaries following the designated style
+- Saves summaries to the database (unless in dry-run mode)
+- Creates a JSON report of processed presentations and results
 
 ## Scripts
 

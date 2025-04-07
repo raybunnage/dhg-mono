@@ -513,19 +513,58 @@ program
     }
   });
 
-// Add debug information
-console.log("Debug: Command line arguments:", process.argv);
+// Parse command line arguments without debug info
+const isDebug = process.argv.indexOf('--debug') !== -1;
+if (isDebug) {
+  console.log("Debug: Command line arguments:", process.argv);
+}
 
 // Parse command line arguments
 program.parse(process.argv);
 
 // Show help if no command is provided
 if (!process.argv.slice(2).length) {
+  console.log(`
+Presentations Pipeline CLI
+=========================
+
+The presentations pipeline provides commands for managing expert presentations, including generating AI 
+summaries from transcriptions, creating expert profiles, and managing presentation assets.
+
+Available Commands:
+  review-presentations       Review presentation status, document types, and content
+  generate-summary           Generate AI summaries from presentation transcripts using Claude
+    Options:
+      -p, --presentation-id <id>   Process a specific presentation ID
+      -e, --expert-id <id>         Process presentations for a specific expert
+      -f, --force                  Regenerate summaries even if they exist
+      --dry-run                    Preview mode: generate but don't save to database
+      -l, --limit <number>         Max presentations to process (default: 5)
+      -o, --output <path>          Output file for JSON results
+      --format <format>            Summary style:
+                                     concise: 2-3 paragraph summary (default)
+                                     detailed: 5-7 paragraph thorough summary
+                                     bullet-points: 5-10 key bullet points
+      --status <status>            Filter by presentation status
+  
+  generate-expert-bio        Generate AI expert bio/profile from presentation content
+  check-professional-docs    Check for professional documents associated with presentations
+  create-missing-assets      Create missing presentation_asset records
+  export-status              Export presentation transcription status to markdown
+  repair-presentations       Repair presentations with missing main_video_id
+  create-from-expert-docs    Create presentations from expert documents
+  show-missing-content       Show presentations without content that need reprocessing
+  
+For detailed help on a specific command, run:
+  presentations-cli [command] --help
+`);
   program.outputHelp();
 }
 
-// More debug information
-console.log("Debug: After parsing, commands:", program.commands.map((cmd: any) => cmd.name()));
+// More debug information only when --debug is passed
+if (isDebug) {
+  console.log("Debug: After parsing, commands:", program.commands.map((cmd: any) => cmd.name()));
+}
 
 // Handle any unhandled exceptions
 process.on('unhandledRejection', (error) => {

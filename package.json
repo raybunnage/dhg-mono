@@ -8,6 +8,8 @@
     "clean": "turbo run clean",
     "test": "turbo run test",
     "test:run": "turbo run test:run",
+    "presentations": "./scripts/cli-pipeline/presentations-cli.sh",
+    "presentations:summary": "./scripts/cli-pipeline/presentations-cli.sh generate-summary",
     "git:info": "./scripts/get-git-info.sh",
     "list-backups": "./scripts/app-management/list-backups.sh",
     "list-backups-date": "./scripts/app-management/list-backups.sh",

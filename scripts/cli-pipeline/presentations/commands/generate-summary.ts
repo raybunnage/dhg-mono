@@ -21,7 +21,10 @@ generateSummaryCommand
   .option('-l, --limit <limit>', 'Maximum number of presentations to process (default: 5)', '5')
   .option('-o, --output <path>', 'Output file path for the JSON results (default: presentation-summaries.json)', 'presentation-summaries.json')
   .option('--folder-id <id>', 'Filter presentations by Google Drive folder ID', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
-  .option('--format <format>', 'Summary format style: concise (2-3 paragraphs), detailed (5-7 paragraphs), or bullet-points', 'concise')
+  .option('--format <format>', `Summary format style:
+    - concise: 2-3 paragraph summary (default)
+    - detailed: 5-7 paragraph thorough summary with supporting evidence
+    - bullet-points: 5-10 bullet points covering key presentation points`, 'concise')
   .option('--status <status>', 'Filter by presentation status (default: make-ai-summary)', 'make-ai-summary')
   .action(async (options: any) => {
     try {
