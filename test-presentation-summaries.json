@@ -1,23 +1,15 @@
 [
   {
-    "presentation_id": "bec465a2-99de-4bc4-9d69-59cb3b8de5cf",
-    "title": "video1202452101",
-    "expert_id": null,
-    "has_raw_content": true,
-    "raw_content_preview": " Okay, we'll get started and not know where Steven Syria is usually on by now, but they'll be honest...",
-    "prompt_preview": "\"# Expert Video Summary Generation Prompt\\n\\nYou are tasked with creating an engaging, concise summa...",
-    "generated": true,
-    "saved": false
-  },
-  {
     "presentation_id": "42020c2a-e397-45ec-b3a3-77d59082e815",
     "title": "Horn.Fasting.9.6.23",
     "expert_id": null,
     "has_raw_content": true,
     "raw_content_preview": " I was discussing what Professor who had studied people in Utah extensively, including that he was o...",
-    "prompt_preview": "\"# Expert Video Summary Generation Prompt\\n\\nYou are tasked with creating an engaging, concise summa...",
+    "summary_preview": "[TEST SUMMARY - DRY RUN MODE]\n\n**Speaker Profile Highlight**\nHorn.Fasting.9.6.23 features an expert discussing important medical concepts.\n\n**Presentation Essence**\nThe presentation covers key insights about health and wellness. The speaker discusses innovative approaches to common medical challenge...",
+    "full_summary": "[TEST SUMMARY - DRY RUN MODE]\n\n**Speaker Profile Highlight**\nHorn.Fasting.9.6.23 features an expert discussing important medical concepts.\n\n**Presentation Essence**\nThe presentation covers key insights about health and wellness. The speaker discusses innovative approaches to common medical challenges.\n\n**Key Takeaways**\n• Important medical research findings were presented\n• Practical advice for health professionals was shared\n• Novel treatment approaches were discussed\n\n**Memorable Quotes**\n\"The evidence suggests a paradigm shift in how we approach these conditions.\" - Speaker\n\n**Discussion Highlights**\nThe Q&A session explored practical applications and challenged some traditional assumptions.\n\n**Why Watch This**\nEssential viewing for healthcare professionals interested in innovative approaches to patient care.",
     "generated": true,
-    "saved": false
+    "saved": false,
+    "preview_only": true
   },
   {
     "presentation_id": "514732d5-8186-4d77-bb34-7c9dda32cd75",
@@ -25,9 +17,11 @@
     "expert_id": null,
     "has_raw_content": true,
     "raw_content_preview": " I like to welcome everybody to the group tonight. This is all these meetings have been interesting....",
-    "prompt_preview": "\"# Expert Video Summary Generation Prompt\\n\\nYou are tasked with creating an engaging, concise summa...",
+    "summary_preview": "[TEST SUMMARY - DRY RUN MODE]\n\n**Speaker Profile Highlight**\nNaviaux.DR.1.24.24 features an expert discussing important medical concepts.\n\n**Presentation Essence**\nThe presentation covers key insights about health and wellness. The speaker discusses innovative approaches to common medical challenges...",
+    "full_summary": "[TEST SUMMARY - DRY RUN MODE]\n\n**Speaker Profile Highlight**\nNaviaux.DR.1.24.24 features an expert discussing important medical concepts.\n\n**Presentation Essence**\nThe presentation covers key insights about health and wellness. The speaker discusses innovative approaches to common medical challenges.\n\n**Key Takeaways**\n• Important medical research findings were presented\n• Practical advice for health professionals was shared\n• Novel treatment approaches were discussed\n\n**Memorable Quotes**\n\"The evidence suggests a paradigm shift in how we approach these conditions.\" - Speaker\n\n**Discussion Highlights**\nThe Q&A session explored practical applications and challenged some traditional assumptions.\n\n**Why Watch This**\nEssential viewing for healthcare professionals interested in innovative approaches to patient care.",
     "generated": true,
-    "saved": false
+    "saved": false,
+    "preview_only": true
   },
   {
     "presentation_id": "f545bd1d-9be3-49a7-b366-82ba687db947",
@@ -35,9 +29,11 @@
     "expert_id": null,
     "has_raw_content": true,
     "raw_content_preview": " For as many zoom meetings as I do, people might, people I work with, make fun of me in my lack of t...",
-    "prompt_preview": "\"# Expert Video Summary Generation Prompt\\n\\nYou are tasked with creating an engaging, concise summa...",
+    "summary_preview": "[TEST SUMMARY - DRY RUN MODE]\n\n**Speaker Profile Highlight**\nLustig.Amygdala.1.8.25 features an expert discussing important medical concepts.\n\n**Presentation Essence**\nThe presentation covers key insights about health and wellness. The speaker discusses innovative approaches to common medical challe...",
+    "full_summary": "[TEST SUMMARY - DRY RUN MODE]\n\n**Speaker Profile Highlight**\nLustig.Amygdala.1.8.25 features an expert discussing important medical concepts.\n\n**Presentation Essence**\nThe presentation covers key insights about health and wellness. The speaker discusses innovative approaches to common medical challenges.\n\n**Key Takeaways**\n• Important medical research findings were presented\n• Practical advice for health professionals was shared\n• Novel treatment approaches were discussed\n\n**Memorable Quotes**\n\"The evidence suggests a paradigm shift in how we approach these conditions.\" - Speaker\n\n**Discussion Highlights**\nThe Q&A session explored practical applications and challenged some traditional assumptions.\n\n**Why Watch This**\nEssential viewing for healthcare professionals interested in innovative approaches to patient care.",
     "generated": true,
-    "saved": false
+    "saved": false,
+    "preview_only": true
   },
   {
     "presentation_id": "d000f9be-955a-42b4-be48-9329bb9f39fc",
@@ -45,8 +41,22 @@
     "expert_id": null,
     "has_raw_content": true,
     "raw_content_preview": " Okay. So I'm very excited about this talk and I am going to encourage anybody who isn't here to lis...",
-    "prompt_preview": "\"# Expert Video Summary Generation Prompt\\n\\nYou are tasked with creating an engaging, concise summa...",
+    "summary_preview": "[TEST SUMMARY - DRY RUN MODE]\n\n**Speaker Profile Highlight**\nEmotional vs physical pain features an expert discussing important medical concepts.\n\n**Presentation Essence**\nThe presentation covers key insights about health and wellness. The speaker discusses innovative approaches to common medical ch...",
+    "full_summary": "[TEST SUMMARY - DRY RUN MODE]\n\n**Speaker Profile Highlight**\nEmotional vs physical pain features an expert discussing important medical concepts.\n\n**Presentation Essence**\nThe presentation covers key insights about health and wellness. The speaker discusses innovative approaches to common medical challenges.\n\n**Key Takeaways**\n• Important medical research findings were presented\n• Practical advice for health professionals was shared\n• Novel treatment approaches were discussed\n\n**Memorable Quotes**\n\"The evidence suggests a paradigm shift in how we approach these conditions.\" - Speaker\n\n**Discussion Highlights**\nThe Q&A session explored practical applications and challenged some traditional assumptions.\n\n**Why Watch This**\nEssential viewing for healthcare professionals interested in innovative approaches to patient care.",
     "generated": true,
-    "saved": false
+    "saved": false,
+    "preview_only": true
+  },
+  {
+    "presentation_id": "98d477ab-1dcf-44da-8b8d-50cad84d8dae",
+    "title": "DHDG.2.21.24.open Discussion",
+    "expert_id": null,
+    "has_raw_content": true,
+    "raw_content_preview": " Okay. Okay. So, are you there? I'm here, yes, I am. Okay. So what I'd like to do at this meeting, w...",
+    "summary_preview": "[TEST SUMMARY - DRY RUN MODE]\n\n**Speaker Profile Highlight**\nDHDG.2.21.24.open Discussion features an expert discussing important medical concepts.\n\n**Presentation Essence**\nThe presentation covers key insights about health and wellness. The speaker discusses innovative approaches to common medical ...",
+    "full_summary": "[TEST SUMMARY - DRY RUN MODE]\n\n**Speaker Profile Highlight**\nDHDG.2.21.24.open Discussion features an expert discussing important medical concepts.\n\n**Presentation Essence**\nThe presentation covers key insights about health and wellness. The speaker discusses innovative approaches to common medical challenges.\n\n**Key Takeaways**\n• Important medical research findings were presented\n• Practical advice for health professionals was shared\n• Novel treatment approaches were discussed\n\n**Memorable Quotes**\n\"The evidence suggests a paradigm shift in how we approach these conditions.\" - Speaker\n\n**Discussion Highlights**\nThe Q&A session explored practical applications and challenged some traditional assumptions.\n\n**Why Watch This**\nEssential viewing for healthcare professionals interested in innovative approaches to patient care.",
+    "generated": true,
+    "saved": false,
+    "preview_only": true
   }
 ]

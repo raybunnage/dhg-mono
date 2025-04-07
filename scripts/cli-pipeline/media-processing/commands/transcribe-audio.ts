@@ -311,10 +311,75 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
         last_processed_at: new Date().toISOString()
       })
       .eq('id', documentId);
-    
+      
     if (saveError) {
       Logger.error(`❌ Error saving transcription: ${saveError.message}`);
       return false;
+    }
+    
+    // Create/update presentation_asset record to link the expert_document to the presentation
+    try {
+      // First, get presentation ID for this document
+      const { data: presentationData, error: presentationError } = await supabase
+        .from('presentations')
+        .select('id')
+        .eq('main_video_id', document.source_id)
+        .maybeSingle();
+        
+      if (presentationError || !presentationData) {
+        Logger.warn(`⚠️ Could not find presentation for source_id ${document.source_id}: ${presentationError?.message || 'No data found'}`);
+      } else {
+        const presentationId = presentationData.id;
+        
+        // Check if a presentation_asset already exists
+        const { data: existingAsset, error: assetError } = await supabase
+          .from('presentation_assets')
+          .select('id')
+          .eq('presentation_id', presentationId)
+          .eq('asset_type', 'transcript')
+          .maybeSingle();
+          
+        if (assetError) {
+          Logger.warn(`⚠️ Error checking for existing presentation_asset: ${assetError.message}`);
+        } else if (existingAsset) {
+          // Update existing asset to point to this expert_document
+          const { error: updateAssetError } = await supabase
+            .from('presentation_assets')
+            .update({
+              expert_document_id: documentId,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingAsset.id);
+            
+          if (updateAssetError) {
+            Logger.warn(`⚠️ Error updating presentation_asset: ${updateAssetError.message}`);
+          } else {
+            Logger.info(`✅ Updated presentation_asset ${existingAsset.id} to link to expert_document ${documentId}`);
+          }
+        } else {
+          // Create new presentation_asset
+          const { data: newAsset, error: createAssetError } = await supabase
+            .from('presentation_assets')
+            .insert({
+              presentation_id: presentationId,
+              asset_type: 'transcript',
+              expert_document_id: documentId,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select('id')
+            .single();
+            
+          if (createAssetError) {
+            Logger.warn(`⚠️ Error creating presentation_asset: ${createAssetError.message}`);
+          } else {
+            Logger.info(`✅ Created presentation_asset ${newAsset.id} linking presentation ${presentationId} to expert_document ${documentId}`);
+          }
+        }
+      }
+    } catch (assetError: any) {
+      Logger.warn(`⚠️ Exception handling presentation_asset: ${assetError.message}`);
+      // Continue execution - the transcription was saved successfully
     }
     
     Logger.info(`📊 Transcription stats: ${wordCount} words, ${processingStats.words_per_minute} WPM, ${processingStats.transcription_time_seconds.toFixed(2)}s processing time`);
