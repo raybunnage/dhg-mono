@@ -163,7 +163,8 @@ program
 
 // Add commands to the program
 console.log("DEBUG: Adding commands directly");
-// Register presentation-asset-bio command
+
+// Register presentation-asset-bio command directly
 program
   .command('presentation-asset-bio')
   .description('Match non-transcript expert documents with presentations and create presentation assets')
@@ -181,55 +182,6 @@ program
       
       // Get non-transcript expert documents
       Logger.info('Finding non-transcript expert documents...');
-      
-      // For testing, if we're in dry-run mode, create some example documents
-      if (options.dryRun && process.env.NODE_ENV !== 'production') {
-        // Sample dummy data for testing
-        const dummyDocs = [
-          {
-            id: 'doc1',
-            document_type_id: 'announcement-id',
-            document_types: { document_type: 'Presentation Announcement' },
-            source_id: 'source1',
-            sources_google: { 
-              id: 'source1', 
-              name: 'Naviaux Announcement.pdf', 
-              parent_id: 'folder1', 
-              parent_path: '/Dynamic Healing Discussion Group/Naviaux',
-              drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-            }
-          },
-          {
-            id: 'doc2',
-            document_type_id: 'bio-id',
-            document_types: { document_type: 'Expert Bio' },
-            source_id: 'source2',
-            sources_google: { 
-              id: 'source2', 
-              name: 'Wager Bio.pdf', 
-              parent_id: 'folder2', 
-              parent_path: '/Dynamic Healing Discussion Group/Wager',
-              drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-            }
-          },
-          {
-            id: 'doc3',
-            document_type_id: 'paper-id',
-            document_types: { document_type: 'Research Paper' },
-            source_id: 'source3',
-            sources_google: { 
-              id: 'source3', 
-              name: 'Clawson Paper.pdf', 
-              parent_id: 'folder3', 
-              parent_path: '/Dynamic Healing Discussion Group/Clawson',
-              drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-            }
-          }
-        ];
-        
-        Logger.info('Using example documents for dry run');
-        return dummyDocs;
-      }
       
       // Real implementation
       const documents = await presentationService.getNonTranscriptDocuments({
@@ -262,19 +214,29 @@ program
       // Display matches summary
       console.log(`\nFound ${matches.length} possible matches: ${highConfidence} high confidence, ${mediumConfidence} medium confidence, ${lowConfidence} low confidence`);
       
+      // Display matches in a table format
+      console.log('\n| Document Name | Document Type | Presentation | Confidence | Folder Path |');
+      console.log('|---------------|--------------|--------------|------------|-------------|');
+      
+      // Show up to 10 matches for preview
+      const matchesToShow = matches.slice(0, 10);
+      for (const match of matchesToShow) {
+        // Truncate long names for display
+        const docName = (match.documentName || 'Unknown').substring(0, 20).padEnd(20);
+        const docType = (match.documentType || 'Unknown').substring(0, 12).padEnd(12);
+        const presTitle = (match.presentationTitle || 'No match').substring(0, 20).padEnd(20);
+        const confidence = match.confidence.padEnd(10);
+        const folderPath = (match.folderPath || 'Unknown').substring(0, 30);
+        
+        console.log(`| ${docName} | ${docType} | ${presTitle} | ${confidence} | ${folderPath} |`);
+      }
+      
+      if (matches.length > 10) {
+        console.log(`\n... and ${matches.length - 10} more matches (use --limit to see more)`);
+      }
+      
       if (options.dryRun) {
-        Logger.info('Dry run - no presentation assets will be created.');
-        
-        // Show a few sample matches
-        const samplesToShow = Math.min(matches.length, 5);
-        if (samplesToShow > 0) {
-          console.log("\nSample matches:");
-          for (let i = 0; i < samplesToShow; i++) {
-            const match = matches[i];
-            console.log(`- ${match.documentName} (${match.documentType}) → ${match.presentationTitle || 'No match'} (Confidence: ${match.confidence})`);
-          }
-        }
-        
+        Logger.info('\nDry run - no presentation assets will be created.');
         return;
       }
       
@@ -291,6 +253,8 @@ program
         
         let createdCount = 0;
         
+        Logger.info(`\nCreating presentation assets for matches with confidence >= ${minConfidence}...`);
+        
         for (const match of matches) {
           // Skip if no presentation match found or asset already exists
           if (!match.presentationId || match.assetExists) {
@@ -305,20 +269,38 @@ program
           }
           
           // Create presentation asset
+          Logger.info(`Creating asset for document "${match.documentName}" linked to presentation "${match.presentationTitle || match.presentationId}"`);
+          
+          // Debug the asset type mapping
+          Logger.info(`Document type: ${match.documentType}`);
+          
+          // Map document type to asset type
+          let assetType = 'document'; // Changed from 'supportingDoc' to valid enum value 'document'
+          if (match.documentType === 'Presentation Announcement') {
+            assetType = 'document'; // Changed from 'announcement' to valid enum value 'document'
+          } else if (match.documentType?.toLowerCase().includes('transcript')) {
+            assetType = 'transcript';
+          }
+          
+          Logger.info(`Mapped asset type: ${assetType}`);
+          
           const success = await presentationService.createPresentationAsset({
             presentationId: match.presentationId,
             expertDocumentId: match.expertDocumentId,
-            assetType: match.documentType === 'Presentation Announcement' ? 'announcement' : 'supporting'
+            assetType: assetType
           });
           
           if (success) {
             createdCount++;
+            Logger.info(`Successfully created presentation asset`);
+          } else {
+            Logger.warn(`Failed to create presentation asset`);
           }
         }
         
-        Logger.info(`Created ${createdCount} new presentation assets.`);
+        Logger.info(`\nCreated ${createdCount} new presentation assets.`);
       } else {
-        Logger.info('To create presentation assets, run with --confirm-all flag:');
+        Logger.info('\nTo create presentation assets, run with --confirm-all flag:');
         Logger.info('  presentations-cli presentation-asset-bio --confirm-all');
         Logger.info('  presentations-cli presentation-asset-bio --confirm-all --min-confidence medium');
       }
@@ -485,7 +467,7 @@ program
     }
   });
   
-console.log("DEBUG: Commands after adding generate-summary:", program.commands.map((cmd: any) => cmd.name()));
+console.log("DEBUG: Commands after adding generate-summary and presentation-asset-bio:", program.commands.map((cmd: any) => cmd.name()));
 
 // Define generate-expert-bio command
 program
@@ -1218,6 +1200,15 @@ Available Commands:
                                      detailed: 5-7 paragraph thorough summary
                                      bullet-points: 5-10 key bullet points
       --status <status>            Filter by presentation status
+  
+  presentation-asset-bio     Match non-transcript expert documents (bios, announcements) with presentations
+    Options:
+      -d, --dry-run                Preview matches without creating presentation assets
+      -l, --limit <number>         Limit the number of documents to process (default: 100)
+      -f, --folder-id <id>         Filter by specific folder ID
+      -c, --confirm-all            Automatically confirm all matches without prompting
+      -t, --document-type <type>   Filter by specific document type
+      -m, --min-confidence <level> Minimum confidence level for auto-confirmation (high, medium, low)
   
   generate-expert-bio        Generate AI expert bio/profile from presentation content
   check-professional-docs    Check for professional documents associated with presentations

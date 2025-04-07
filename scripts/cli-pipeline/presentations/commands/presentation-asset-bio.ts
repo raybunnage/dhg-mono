@@ -133,7 +133,7 @@ presentationAssetBioCommand
           const success = await presentationService.createPresentationAsset({
             presentationId: match.presentationId,
             expertDocumentId: match.expertDocumentId,
-            assetType: match.documentType === 'Presentation Announcement' ? 'announcement' : 'supporting'
+            assetType: match.documentType === 'Presentation Announcement' ? 'document' : 'document'
           });
           
           if (success) {
