@@ -36,6 +36,7 @@ function display_help() {
   echo "  sync-and-update-metadata    Sync folder and update metadata in one operation"
   echo "  sync-mp4-presentations      Sync MP4 files with presentations table (ensure 1:1 mapping)"
   echo "  update-metadata             Update metadata for files in the database"
+  echo "  update-root-drive-id        Update root_drive_id field for all records under a specified root folder"
   echo ""
   echo "Options:"
   echo "  --dry-run                   Show what would be synced without making changes"
@@ -54,6 +55,8 @@ function display_help() {
   echo "  google-drive-cli.sh sync-folder 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
   echo "  google-drive-cli.sh sync-folder dynamic-healing --recursive"
   echo "  google-drive-cli.sh sync-and-update-metadata 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --limit 50"
+  echo "  google-drive-cli.sh update-root-drive-id --root-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
+  echo "  google-drive-cli.sh update-root-drive-id --root-id dynamic-healing"
   echo "  google-drive-cli.sh count-mp4 dynamic-healing --list"
   echo "  google-drive-cli.sh sync-mp4-presentations --dry-run"
   echo "  google-drive-cli.sh sync-mp4-presentations --folder-id dynamic-healing"
@@ -121,6 +124,9 @@ case "$COMMAND" in
     ;;
   update-dynamic-healing)
     ts-node "$SCRIPT_DIR/update-dynamic-healing-metadata.ts" "$@"
+    ;;
+  update-root-drive-id)
+    ts-node "$SCRIPT_DIR/google-drive-manager.ts" update-root-drive-id "$@"
     ;;
   count-mp4)
     ts-node "$SCRIPT_DIR/count-mp4-files.ts" "$@"

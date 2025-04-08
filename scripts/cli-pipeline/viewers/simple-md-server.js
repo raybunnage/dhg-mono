@@ -57,8 +57,10 @@ const server = http.createServer(async (req, res) => {
       path.join(projectRoot, normalizedPath),
       path.join(__dirname, normalizedPath),
       path.join(__dirname, '..', normalizedPath),
-      path.join(projectRoot, 'docs', normalizedPath)
-    ];
+      path.join(projectRoot, 'docs', normalizedPath),
+      // Add direct path to handle docs/cli-pipeline pattern
+      normalizedPath.startsWith('docs/') ? path.join(projectRoot, normalizedPath) : null
+    ].filter(Boolean);
     
     // Handle DELETE request for markdown file
     if (req.method === 'DELETE') {
@@ -131,8 +133,12 @@ const server = http.createServer(async (req, res) => {
     }
     
     // File not found
+    console.log(`File not found: ${normalizedPath}`);
+    console.log(`Tried paths:`);
+    possiblePaths.forEach(p => console.log(`  - ${p}`));
+    
     sendJson(res, 404, { 
-      error: 'File not found',
+      error: `Content could not be loaded for this file: \`${normalizedPath}\``,
       file_path: normalizedPath,
       tried_paths: possiblePaths 
     });
@@ -164,8 +170,10 @@ const server = http.createServer(async (req, res) => {
         path.join(projectRoot, normalizedPath),
         path.join(__dirname, normalizedPath),
         path.join(__dirname, '..', normalizedPath),
-        path.join(projectRoot, 'docs', normalizedPath)
-      ];
+        path.join(projectRoot, 'docs', normalizedPath),
+        // Add direct path to handle docs/cli-pipeline pattern
+        normalizedPath.startsWith('docs/') ? path.join(projectRoot, normalizedPath) : null
+      ].filter(Boolean);
       
       // Try to find the file and archive it
       let fileFound = false;

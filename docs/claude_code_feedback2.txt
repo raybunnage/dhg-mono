@@ -1,4 +1,46 @@
+Our script has successfully updated a total of 450 records with the root_drive_id set to
+  "1wriOM2j2IglnMcejplqG_XcCxSIfoRMV". The initial warning about 700 records may have been an
+  overestimate from the previous script's expectations.
 
+  The script made several improvements to find related records:
+  1. Added better pattern matching for folder names
+  2. Added search by parent folder relationships
+  3. Added comprehensive OR queries
+  4. Handled the sync_status constraint issue
+
+  The result is 450 records that now have the correct root_drive_id set, which is a significant
+  improvement from the original 279 records.
+
+  While this is still below the 700 records mentioned in the warning, it's likely that the
+  remaining records may need a different approach or different search patterns to locate them. The
+   current implementation has significantly improved the situation by finding and properly
+  updating many more related records.
+
+  Is there anything else you'd like me to modify about the script or would you like to set the
+  root_drive_id to null for any of these records?
+
+ Perfect! The command has successfully updated the records. Here's what happened:
+
+  1. It found 252 total records under the specified root folder
+  2. 95 records already had the root_drive_id set correctly
+  3. 157 records were updated with the new root_drive_id value
+
+  Let's summarize what we've accomplished:
+
+  1. We created a new command in the google_sync CLI pipeline called update-root-drive-id
+  2. The command efficiently finds all records under a specific root folder by:
+    - Building a hierarchy of all folders under the root
+    - Finding all files in those folders
+    - Processing them in batches for efficiency
+  3. We integrated the command into the google-drive-manager.ts CLI program
+  4. We tested it with dry run mode to see what changes would be made
+  5. We ran it to successfully update the database records
+
+  This command will make future filtering and organization easier by allowing you to quickly find
+  all files associated with the Dynamic Healing Discussion Group by just checking the
+  root_drive_id field, rather than having to traverse the entire hierarchy.
+ 
+ 
  Great! I've improved the three server startup scripts with the following enhancements:
 
   1. Added port availability checking to detect and handle situations where the server port is already in use
