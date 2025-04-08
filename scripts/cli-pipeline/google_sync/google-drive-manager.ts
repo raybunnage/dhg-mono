@@ -38,6 +38,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Command } from 'commander';
 import type { Database } from '../../../supabase/types';
 import { defaultGoogleAuth } from '../../../packages/shared/services/google-drive';
+import updateRootDriveIdCommand from './update-root-drive-id';
 
 // Load environment variables
 dotenv.config();
@@ -658,6 +659,9 @@ program
   .action(() => {
     program.help();
   });
+
+// Add update-root-drive-id command
+program.addCommand(updateRootDriveIdCommand);
 
 // Parse command line arguments
 program.parse(process.argv);
