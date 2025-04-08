@@ -50,17 +50,30 @@ const server = http.createServer(async (req, res) => {
     }
     
     // Project root - need to go up to the repository root
-    const projectRoot = path.join(__dirname, '..', '..');
+    const projectRoot = path.join(__dirname, '..', '..', '..');
+    console.log(`Project root: ${projectRoot}`);
     
-    // Try multiple locations
+    // Try multiple locations - include all possible paths
     const possiblePaths = [
+      // Direct paths
       path.join(projectRoot, normalizedPath),
+      
+      // Path when file is in docs/ directory
+      normalizedPath.startsWith('docs/') ? path.join(projectRoot, normalizedPath) : null,
+      !normalizedPath.startsWith('docs/') ? path.join(projectRoot, 'docs', normalizedPath) : null,
+      
+      // Try relative to subdirectories
+      path.join(projectRoot, 'docs/code-documentation', path.basename(normalizedPath)),
+      path.join(projectRoot, 'docs/cli-pipeline', path.basename(normalizedPath)),
+      
+      // Path relative to server location
       path.join(__dirname, normalizedPath),
-      path.join(__dirname, '..', normalizedPath),
-      path.join(projectRoot, 'docs', normalizedPath),
-      // Add direct path to handle docs/cli-pipeline pattern
-      normalizedPath.startsWith('docs/') ? path.join(projectRoot, normalizedPath) : null
+      path.join(__dirname, '..', normalizedPath)
     ].filter(Boolean);
+    
+    console.log(`Looking for file: ${normalizedPath}`);
+    console.log(`Will check these paths:`)
+    possiblePaths.forEach(p => console.log(`  - ${p}`));
     
     // Handle DELETE request for markdown file
     if (req.method === 'DELETE') {
@@ -114,19 +127,22 @@ const server = http.createServer(async (req, res) => {
     // Try to find the file
     for (const tryPath of possiblePaths) {
       try {
-        if (fs.existsSync(tryPath)) {
-          const content = fs.readFileSync(tryPath, 'utf8');
-          const fileName = path.basename(tryPath);
-          
-          console.log(`Found file: ${tryPath}`);
-          
-          sendJson(res, 200, {
-            file_path: normalizedPath,
-            title: fileName.replace(/\.md[x]?$/, ''),
-            content
-          });
-          return;
-        }
+        console.log(`Checking path: ${tryPath}`);
+      if (fs.existsSync(tryPath)) {
+        const content = fs.readFileSync(tryPath, 'utf8');
+        const fileName = path.basename(tryPath);
+        
+        console.log(`Found file: ${tryPath}`);
+        
+        sendJson(res, 200, {
+          file_path: normalizedPath,
+          title: fileName.replace(/\.md[x]?$/, ''),
+          content
+        });
+        return;
+      } else {
+        console.log(`Path does not exist: ${tryPath}`);
+      }
       } catch (error) {
         console.error(`Error reading ${tryPath}:`, error);
       }
@@ -163,17 +179,30 @@ const server = http.createServer(async (req, res) => {
       }
       
       // Project root - need to go up to the repository root
-      const projectRoot = path.join(__dirname, '..', '..');
+      const projectRoot = path.join(__dirname, '..', '..', '..');
+      console.log(`Project root: ${projectRoot}`);
       
-      // Try multiple locations
+      // Try multiple locations - include all possible paths
       const possiblePaths = [
+        // Direct paths
         path.join(projectRoot, normalizedPath),
+        
+        // Path when file is in docs/ directory
+        normalizedPath.startsWith('docs/') ? path.join(projectRoot, normalizedPath) : null,
+        !normalizedPath.startsWith('docs/') ? path.join(projectRoot, 'docs', normalizedPath) : null,
+        
+        // Try relative to subdirectories
+        path.join(projectRoot, 'docs/code-documentation', path.basename(normalizedPath)),
+        path.join(projectRoot, 'docs/cli-pipeline', path.basename(normalizedPath)),
+        
+        // Path relative to server location
         path.join(__dirname, normalizedPath),
-        path.join(__dirname, '..', normalizedPath),
-        path.join(projectRoot, 'docs', normalizedPath),
-        // Add direct path to handle docs/cli-pipeline pattern
-        normalizedPath.startsWith('docs/') ? path.join(projectRoot, normalizedPath) : null
+        path.join(__dirname, '..', normalizedPath)
       ].filter(Boolean);
+      
+      console.log(`Looking for file to archive: ${normalizedPath}`);
+      console.log(`Will check these paths:`)
+      possiblePaths.forEach(p => console.log(`  - ${p}`));
       
       // Try to find the file and archive it
       let fileFound = false;
@@ -242,7 +271,8 @@ const server = http.createServer(async (req, res) => {
   else if (pathname === '/api/markdown-files') {
     // List all markdown files
     try {
-      const projectRoot = path.join(__dirname, '..', '..');
+      const projectRoot = path.join(__dirname, '..', '..', '..');
+      console.log(`Project root for file listing: ${projectRoot}`);
       const cmd = `find ${projectRoot} -name "*.md" -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/.archive_docs/*" | head -100`;
       
       const output = execSync(cmd, { encoding: 'utf8' }).trim();
