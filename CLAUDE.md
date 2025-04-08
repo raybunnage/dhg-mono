@@ -8,6 +8,10 @@
 ## Code Organization Principles
 
 1. **Shared Services First**: Always prioritize using and enhancing the shared services in `packages/shared`. Before implementing any functionality, check if an existing service can be used or extended.
+   - Check for existing services in `packages/shared/services` that could solve the problem
+   - Consider creating new shared services when implementing functionality that could be reused
+   - Avoid duplicating functionality that already exists in shared services
+   - When enhancing CLI scripts, first check if the functionality can be implemented by using shared services
 
 2. **UI Pages as Service Sources**: When examining UI pages in `apps/dhg-improve-experts`, treat them as potential sources for shared services. These comprehensive pages often contain functionality that can be abstracted into reusable services. Future refactoring will create "New" + page name versions that leverage these shared services while preserving the React UI components.
 
@@ -15,14 +19,39 @@
    - `scripts/cli-pipeline/google_sync/`
    - `scripts/cli-pipeline/document/`
    - `scripts/cli-pipeline/scripts/`
+   - `scripts/cli-pipeline/media-processing/`
+   - `scripts/cli-pipeline/presentations/`
+   - Other domain-specific pipelines as they are created
    
    Keep a flat file structure within these folders - no nested subfolders. Don't create new script components in the root `scripts/` directory.
 
 4. **Singleton Pattern for External Services**: Always use the established singleton patterns for external service connections:
    - Supabase: `packages/shared/services/supabase-service`
    - Google Drive: `packages/shared/services/google-drive`
+   - Claude AI: `packages/shared/services/claude-service`
 
 5. **Archiving Strategy**: Archive temporary or unused code in `.archived_scripts` folders with the date appended to the filename (e.g., `scripts/cli-pipeline/google_sync/.archived_scripts/some-script.20250330.ts`).
+
+## CLI Pipeline Integration Requirements
+
+1. **Always Integrate New Commands**:
+   - EVERY new script or command MUST be integrated into the appropriate CLI pipeline
+   - Never create standalone scripts outside the pipeline structure
+   - Identify the correct domain pipeline for the functionality (document, google_sync, media-processing, presentations, etc.)
+   - Add the command to the existing program or create a new subcommand if needed
+
+2. **Command Documentation**:
+   - Always add detailed help text to commands using `.description()` and `.option()` methods
+   - Ensure the command appears correctly in the pipeline's `--help` output
+   - Include examples of usage in the command description
+   - Document all available options with clear descriptions
+
+3. **Command Implementation Checklist**:
+   - Implement full functionality, not just placeholder or mock-up code
+   - Avoid "dummy implementations" unless absolutely necessary for testing
+   - Include proper error handling and logging
+   - Only use dry-run flags for testing potentially destructive operations, not as a substitute for real implementation
+   - Test the command with real data before submitting
 
 ## Development Workflow
 
@@ -35,6 +64,8 @@
    - Always test for TypeScript errors after making changes
    - Verify command functionality after fixing errors
    - Document the full paths (from the project root) and arguments needed to run the CLI commands
+   - Always test any new commands by running them with appropriate arguments
+   - Fix any TypeScript errors before considering a task complete
 
 3. **Version Control**:
    - Make logical commits at appropriate intervals
@@ -77,6 +108,32 @@ When I identify recurring patterns, issues, or inefficiencies in the development
    - When fixing bugs, focus solely on the specific issue without expanding scope
    - Always ask before taking additional actions beyond what was explicitly requested
    - When asked to modify code for preparation, don't automatically execute the prepared code
+
+4. **Issue**: Creating standalone scripts or dummy implementations
+   **Solution**: Always create real implementations integrated into CLI pipelines
+   **Implementation**:
+   - Never create standalone scripts outside of CLI pipeline structure
+   - Implement full, working functionality rather than mock-ups or dummy implementations
+   - Always test new commands with real data before considering implementation complete
+   - Only use dry-run flags for testing potentially destructive operations, not as a substitute for implementation
+   - Always run and fix TypeScript errors before submitting any new code
+
+5. **Issue**: Duplicating functionality that exists in shared services
+   **Solution**: Always check shared services before implementing new functionality
+   **Implementation**:
+   - Before adding functionality to CLI pipelines, check if it exists in `packages/shared/services`
+   - Consider whether new functionality should be implemented as a shared service instead of directly in the CLI
+   - Extract common functionality from CLI implementations into shared services when appropriate
+   - Follow the existing patterns for service implementation and consumption
+
+6. **Issue**: Multiple implementations of the Claude AI service
+   **Solution**: Use the consolidated Claude service
+   **Implementation**:
+   - Always use `packages/shared/services/claude-service` for all Claude AI interactions
+   - Import the singleton instance: `import { claudeService } from '../../packages/shared/services/claude-service'`
+   - Never create new implementations or instances of the Claude service
+   - Leverage the existing methods for text generation, JSON responses, and classification
+   - Refer to the README.md in the claude-service folder for usage examples
 
 ## TypeScript Best Practices
 ⚠️ **ALWAYS CHECK FOR TYPESCRIPT ERRORS BEFORE SUBMITTING CODE**
