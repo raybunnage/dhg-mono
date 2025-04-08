@@ -3463,6 +3463,7 @@ export type Database = {
           id: string
           is_root: boolean | null
           last_indexed: string | null
+          main_video_id: string | null
           metadata: Json | null
           mime_type: string
           modified_time: string | null
@@ -3471,6 +3472,7 @@ export type Database = {
           parent_id: string | null
           parent_path: string | null
           path: string | null
+          root_drive_id: string | null
           size: number | null
           size_bytes: number | null
           sync_error: string | null
@@ -3498,6 +3500,7 @@ export type Database = {
           id?: string
           is_root?: boolean | null
           last_indexed?: string | null
+          main_video_id?: string | null
           metadata?: Json | null
           mime_type: string
           modified_time?: string | null
@@ -3506,6 +3509,7 @@ export type Database = {
           parent_id?: string | null
           parent_path?: string | null
           path?: string | null
+          root_drive_id?: string | null
           size?: number | null
           size_bytes?: number | null
           sync_error?: string | null
@@ -3533,6 +3537,7 @@ export type Database = {
           id?: string
           is_root?: boolean | null
           last_indexed?: string | null
+          main_video_id?: string | null
           metadata?: Json | null
           mime_type?: string
           modified_time?: string | null
@@ -3541,6 +3546,7 @@ export type Database = {
           parent_id?: string | null
           parent_path?: string | null
           path?: string | null
+          root_drive_id?: string | null
           size?: number | null
           size_bytes?: number | null
           sync_error?: string | null
@@ -3568,6 +3574,114 @@ export type Database = {
         ]
       }
       sources_google_backup: {
+        Row: {
+          audio_bitrate: number | null
+          audio_channels: number | null
+          audio_duration_seconds: number | null
+          audio_extracted: boolean | null
+          audio_extraction_path: string | null
+          audio_quality_metrics: Json | null
+          content_extracted: boolean | null
+          created_at: string | null
+          deleted: boolean | null
+          document_type_id: string | null
+          drive_id: string | null
+          expert_id: string | null
+          extracted_content: Json | null
+          extraction_error: string | null
+          id: string | null
+          is_root: boolean | null
+          last_indexed: string | null
+          metadata: Json | null
+          mime_type: string | null
+          modified_time: string | null
+          name: string | null
+          parent_folder_id: string | null
+          parent_id: string | null
+          parent_path: string | null
+          path: string | null
+          size: number | null
+          size_bytes: number | null
+          sync_error: string | null
+          sync_id: string | null
+          sync_status: string | null
+          thumbnail_link: string | null
+          updated_at: string | null
+          web_view_link: string | null
+        }
+        Insert: {
+          audio_bitrate?: number | null
+          audio_channels?: number | null
+          audio_duration_seconds?: number | null
+          audio_extracted?: boolean | null
+          audio_extraction_path?: string | null
+          audio_quality_metrics?: Json | null
+          content_extracted?: boolean | null
+          created_at?: string | null
+          deleted?: boolean | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          expert_id?: string | null
+          extracted_content?: Json | null
+          extraction_error?: string | null
+          id?: string | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_time?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          parent_id?: string | null
+          parent_path?: string | null
+          path?: string | null
+          size?: number | null
+          size_bytes?: number | null
+          sync_error?: string | null
+          sync_id?: string | null
+          sync_status?: string | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Update: {
+          audio_bitrate?: number | null
+          audio_channels?: number | null
+          audio_duration_seconds?: number | null
+          audio_extracted?: boolean | null
+          audio_extraction_path?: string | null
+          audio_quality_metrics?: Json | null
+          content_extracted?: boolean | null
+          created_at?: string | null
+          deleted?: boolean | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          expert_id?: string | null
+          extracted_content?: Json | null
+          extraction_error?: string | null
+          id?: string | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_time?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          parent_id?: string | null
+          parent_path?: string | null
+          path?: string | null
+          size?: number | null
+          size_bytes?: number | null
+          sync_error?: string | null
+          sync_id?: string | null
+          sync_status?: string | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Relationships: []
+      }
+      sources_google_backup_2025_04_07: {
         Row: {
           audio_bitrate: number | null
           audio_channels: number | null
@@ -4231,16 +4345,11 @@ export type Database = {
     }
     Functions: {
       add_unique_constraint: {
-        Args: {
-          p_table_name: string
-          p_column_name: string
-        }
+        Args: { p_table_name: string; p_column_name: string }
         Returns: undefined
       }
       analyze_default_values: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: {
           column_name: string
           data_type: string
@@ -4249,9 +4358,7 @@ export type Database = {
         }[]
       }
       analyze_foreign_keys: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: {
           column_name: string
           potential_reference_table: string
@@ -4260,15 +4367,11 @@ export type Database = {
         }[]
       }
       analyze_table_constraints: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: string
       }
       analyze_unique_constraints: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: {
           column_name: string
           distinct_ratio: number
@@ -4295,16 +4398,11 @@ export type Database = {
         }[]
       }
       execute_sql: {
-        Args: {
-          sql: string
-        }
+        Args: { sql: string }
         Returns: Json
       }
       execute_sql_query: {
-        Args: {
-          query_text: string
-          params?: Json
-        }
+        Args: { query_text: string; params?: Json }
         Returns: Json
       }
       export_all_functions_to_json: {
@@ -4316,21 +4414,15 @@ export type Database = {
         Returns: Json
       }
       extract_filename: {
-        Args: {
-          file_path: string
-        }
+        Args: { file_path: string }
         Returns: string
       }
       find_and_sync_scripts: {
-        Args: {
-          existing_files_json: Json
-        }
+        Args: { existing_files_json: Json }
         Returns: Json
       }
       find_mp4_files_in_folder: {
-        Args: {
-          folder_id: string
-        }
+        Args: { folder_id: string }
         Returns: {
           file_id: string
           file_name: string
@@ -4350,15 +4442,11 @@ export type Database = {
         }[]
       }
       generate_table_documentation: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: string
       }
       generate_unique_constraints_sql: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: string
       }
       get_all_foreign_keys: {
@@ -4393,9 +4481,7 @@ export type Database = {
         }[]
       }
       get_command_usage_by_category: {
-        Args: {
-          time_period?: unknown
-        }
+        Args: { time_period?: unknown }
         Returns: {
           category_name: string
           usage_count: number
@@ -4410,9 +4496,7 @@ export type Database = {
         }[]
       }
       get_domain_id_by_name: {
-        Args: {
-          domain_name_input: string
-        }
+        Args: { domain_name_input: string }
         Returns: string
       }
       get_dynamic_healing_domain_id: {
@@ -4420,9 +4504,7 @@ export type Database = {
         Returns: string
       }
       get_foreign_key_info: {
-        Args: {
-          p_constraint_name: string
-        }
+        Args: { p_constraint_name: string }
         Returns: {
           table_schema: string
           constraint_name: string
@@ -4434,15 +4516,11 @@ export type Database = {
         }[]
       }
       get_foreign_keys: {
-        Args: {
-          schema_name: string
-        }
+        Args: { schema_name: string }
         Returns: Json
       }
       get_function_details: {
-        Args: {
-          p_name: string
-        }
+        Args: { p_name: string }
         Returns: {
           function_details: Json
           relationships: Json
@@ -4450,16 +4528,11 @@ export type Database = {
         }[]
       }
       get_functions: {
-        Args: {
-          schema_name: string
-        }
+        Args: { schema_name: string }
         Returns: Json
       }
       get_most_used_commands: {
-        Args: {
-          time_period?: unknown
-          limit_count?: number
-        }
+        Args: { time_period?: unknown; limit_count?: number }
         Returns: {
           command_text: string
           category_name: string
@@ -4476,18 +4549,11 @@ export type Database = {
         }[]
       }
       get_or_create_page: {
-        Args: {
-          p_page_path: string
-          p_app_name: string
-          p_page_name?: string
-        }
+        Args: { p_page_path: string; p_app_name: string; p_page_name?: string }
         Returns: string
       }
       get_page_basic_info: {
-        Args: {
-          p_page_path: string
-          p_app_name?: string
-        }
+        Args: { p_page_path: string; p_app_name?: string }
         Returns: {
           page_id: string
           page_name: string
@@ -4496,9 +4562,7 @@ export type Database = {
         }[]
       }
       get_page_dependencies: {
-        Args: {
-          p_page_id: string
-        }
+        Args: { p_page_id: string }
         Returns: {
           dependency_id: string
           dependency_type: string
@@ -4507,9 +4571,7 @@ export type Database = {
         }[]
       }
       get_page_functions: {
-        Args: {
-          p_page_id: string
-        }
+        Args: { p_page_id: string }
         Returns: {
           function_usage_id: string
           function_id: string
@@ -4523,9 +4585,7 @@ export type Database = {
         }[]
       }
       get_page_tables: {
-        Args: {
-          p_page_id: string
-        }
+        Args: { p_page_id: string }
         Returns: {
           table_usage_id: string
           table_name: string
@@ -4534,15 +4594,11 @@ export type Database = {
         }[]
       }
       get_schema_info: {
-        Args: {
-          schema_name: string
-        }
+        Args: { schema_name: string }
         Returns: Json
       }
       get_table_columns: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: {
           column_name: string
           data_type: string
@@ -4551,9 +4607,7 @@ export type Database = {
         }[]
       }
       get_table_columns_plus: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: {
           ordinal_position: number
           column_name: string
@@ -4568,9 +4622,7 @@ export type Database = {
         }[]
       }
       get_table_columns_with_constraints_and_triggers: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: {
           column_name: string
           data_type: string
@@ -4582,9 +4634,7 @@ export type Database = {
         }[]
       }
       get_table_columns_with_unique: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: {
           column_name: string
           data_type: string
@@ -4594,21 +4644,15 @@ export type Database = {
         }[]
       }
       get_table_constraints: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: Json
       }
       get_table_definition: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: string[]
       }
       get_table_foreign_keys: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: {
           table_schema: string
           constraint_name: string
@@ -4620,9 +4664,7 @@ export type Database = {
         }[]
       }
       get_table_info: {
-        Args: {
-          p_table_name: string
-        }
+        Args: { p_table_name: string }
         Returns: {
           column_name: string
           is_nullable: string
@@ -4631,27 +4673,19 @@ export type Database = {
         }[]
       }
       get_table_metadata: {
-        Args: {
-          p_target_table: string
-        }
+        Args: { p_target_table: string }
         Returns: Json
       }
       get_triggers: {
-        Args: {
-          schema_name: string
-        }
+        Args: { schema_name: string }
         Returns: Json
       }
       get_user_uuid_by_email: {
-        Args: {
-          email_input: string
-        }
+        Args: { email_input: string }
         Returns: string
       }
       increment_favorite_command_usage: {
-        Args: {
-          favorite_id: string
-        }
+        Args: { favorite_id: string }
         Returns: undefined
       }
       list_function_comments: {
@@ -4665,16 +4699,11 @@ export type Database = {
         }[]
       }
       populate_sources_with_fixed_user_id: {
-        Args: {
-          user_email_address: string
-        }
+        Args: { user_email_address: string }
         Returns: undefined
       }
       queue_documentation_file_for_processing: {
-        Args: {
-          file_id: string
-          priority?: number
-        }
+        Args: { file_id: string; priority?: number }
         Returns: string
       }
       refresh_schema_and_fix_metadata: {
@@ -4710,22 +4739,15 @@ export type Database = {
         Returns: string
       }
       sanitize_command: {
-        Args: {
-          command_text: string
-        }
+        Args: { command_text: string }
         Returns: string
       }
       set_current_domain: {
-        Args: {
-          domain_id: string
-        }
+        Args: { domain_id: string }
         Returns: undefined
       }
       table_exists: {
-        Args: {
-          p_schema_name: string
-          p_table_name: string
-        }
+        Args: { p_schema_name: string; p_table_name: string }
         Returns: boolean
       }
       update_document_ai_metadata: {
@@ -4811,27 +4833,29 @@ export type Database = {
   }
 }
 
-type PublicSchema = Database[Extract<keyof Database, "public">]
+type DefaultSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-        Database[PublicTableNameOrOptions["schema"]]["Views"])
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
-        PublicSchema["Views"])
-    ? (PublicSchema["Tables"] &
-        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -4839,20 +4863,22 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -4860,20 +4886,22 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -4881,21 +4909,23 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof PublicSchema["Enums"]
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof PublicSchema["CompositeTypes"]
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof Database
@@ -4904,6 +4934,88 @@ export type CompositeTypes<
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
   ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
-    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      ai_summary_status_type: ["pending", "processing", "completed", "error"],
+      asset_role_enum: [
+        "main",
+        "supplementary",
+        "thumbnail",
+        "preview",
+        "background",
+        "reference",
+        "exhibit",
+        "source",
+      ],
+      asset_type_enum: [
+        "video",
+        "audio",
+        "image",
+        "document",
+        "slide",
+        "transcript",
+        "presentation",
+        "chart",
+        "diagram",
+      ],
+      batch_type: [
+        "google_extraction",
+        "audio_extraction",
+        "transcription",
+        "diarization",
+        "summarization",
+      ],
+      processing_stage: [
+        "queued",
+        "downloading",
+        "extracting",
+        "processing",
+        "saving",
+        "completed",
+        "failed",
+        "retrying",
+      ],
+      processing_status: [
+        "pending",
+        "queued",
+        "processing",
+        "completed",
+        "failed",
+        "retrying",
+      ],
+      prompt_status: ["draft", "active", "deprecated", "archived"],
+      relationship_type: [
+        "extends",
+        "references",
+        "prerequisite",
+        "alternative",
+        "successor",
+      ],
+      script_status: [
+        "ACTIVE",
+        "UPDATE_NEEDED",
+        "OBSOLETE",
+        "DUPLICATE",
+        "UNUSED",
+      ],
+      script_type: [
+        "UTILITY",
+        "DEPLOYMENT",
+        "DATABASE",
+        "BUILD",
+        "SETUP",
+        "OTHER",
+      ],
+      script_usage_status: [
+        "DIRECTLY_REFERENCED",
+        "INDIRECTLY_REFERENCED",
+        "NOT_REFERENCED",
+      ],
+    },
+  },
+} as const
