@@ -48,12 +48,40 @@ if (folderIdIndex !== -1 && args[folderIdIndex + 1]) {
   folderId = args[folderIdIndex + 1];
 }
 
+// Set default output file in docs/script-reports
+const outputIndex = args.indexOf('--output');
+let outputFile = '/Users/raybunnage/Documents/github/dhg-mono/docs/script-reports/main-video-ids-report.md'; // Default output location
+if (outputIndex !== -1 && args[outputIndex + 1]) {
+  outputFile = args[outputIndex + 1];
+}
+
+// Limit number of folders to process
+const limitIndex = args.indexOf('--limit');
+let folderLimit = 0; // Default: process all folders
+if (limitIndex !== -1 && args[limitIndex + 1]) {
+  folderLimit = parseInt(args[limitIndex + 1], 10);
+}
+
 /**
  * Main function to report on main_video_id values
  */
-async function reportMainVideoIds(): Promise<void> {
+export async function reportMainVideoIds(
+  folderIdParam?: string,  
+  verboseParam?: boolean,
+  outputFileParam?: string,
+  limitParam?: number
+): Promise<void> {
+  // Override the global parameters if provided
+  const actualFolderId = folderIdParam || folderId;
+  const actualOutputFile = outputFileParam || outputFile;
+  const actualLimit = limitParam || folderLimit;
+  
+  if (verboseParam) {
+    Logger.setLevel(LogLevel.DEBUG);
+  }
+  
   console.log('=== Report on Main Video IDs ===');
-  console.log(`Root Folder ID: ${folderId}`);
+  console.log(`Root Folder ID: ${actualFolderId}`);
   console.log('===============================');
 
   // Initialize Supabase client
@@ -64,7 +92,7 @@ async function reportMainVideoIds(): Promise<void> {
     const { data: rootFolder, error: rootFolderError } = await supabase
       .from('sources_google')
       .select('id, name, path')
-      .eq('drive_id', folderId)
+      .eq('drive_id', actualFolderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')
       .single();
     
@@ -73,13 +101,13 @@ async function reportMainVideoIds(): Promise<void> {
       process.exit(1);
     }
     
-    Logger.info(`Root folder: "${rootFolder.name}" (${folderId})`);
+    Logger.info(`Root folder: "${rootFolder.name}" (${actualFolderId})`);
     
     // Step 2: Find all subfolders directly under the root folder
     const { data: subFolders, error: subFoldersError } = await supabase
       .from('sources_google')
       .select('id, name, path, drive_id, parent_folder_id')
-      .eq('parent_folder_id', folderId)
+      .eq('parent_folder_id', actualFolderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')
       .eq('deleted', false)
       .order('name');
@@ -96,24 +124,29 @@ async function reportMainVideoIds(): Promise<void> {
     
     Logger.info(`Found ${subFolders.length} subfolders under the root folder.\n`);
     
-    // Create a table header for the report
-    console.log('| Folder Name | Main Video Filename | Main Video ID | Status |');
-    console.log('|-------------|---------------------|--------------|--------|');
+    // Create a markdown table header for the report (video filename first)
+    console.log('| Main Video Filename | Folder Name |');
+    console.log('|---------------------|-------------|');
+    
+    // Apply folder limit if specified
+    const foldersToProcess = actualLimit > 0 ? subFolders.slice(0, actualLimit) : subFolders;
+    Logger.info(`Processing ${foldersToProcess.length} out of ${subFolders.length} folders${actualLimit > 0 ? ' (limited by --limit)' : ''}`);
     
     // Step 3: For each subfolder, check if there's a main_video_id
-    for (const folder of subFolders) {
+    for (const folder of foldersToProcess) {
       Logger.debug(`Processing folder: ${folder.name}`);
       
-      // Find presentations that have this folder's ID as parent_folder_id
+      // Find presentations that have this folder's path in their folder_path
       const { data: presentations, error: presentationsError } = await supabase
         .from('presentations')
         .select(`
           id, 
           title,
           main_video_id,
+          folder_path,
           sources_google!presentations_main_video_id_fkey (id, name)
         `)
-        .eq('folder_id', folder.id)
+        .like('folder_path', `%${folder.name}%`)
         .not('main_video_id', 'is', null);
       
       if (presentationsError) {
@@ -125,16 +158,22 @@ async function reportMainVideoIds(): Promise<void> {
       if (presentations && presentations.length > 0) {
         // Has presentation with main_video_id
         for (const presentation of presentations) {
-          // Handle the nested sources_google object
-          const sourceGoogle = presentation.sources_google as { name: string } | null;
-          const videoName = sourceGoogle?.name || 'Unknown';
-          const videoId = presentation.main_video_id || 'None';
+          // We need to safely access the nested sources_google object
+          let videoName = 'Unknown';
           
-          console.log(`| ${folder.name.padEnd(11)} | ${videoName.padEnd(19)} | ${videoId.padEnd(12)} | Found    |`);
+          // Handle the Supabase nested join result
+          if (presentation.sources_google && typeof presentation.sources_google === 'object') {
+            // It might be an object with a name property
+            if ('name' in presentation.sources_google) {
+              videoName = (presentation.sources_google as { name: string }).name;
+            }
+          }
+          
+          console.log(`| ${videoName} | ${folder.name} |`);
         }
       } else {
         // No presentation with main_video_id found
-        // Check if any MP4 files exist in this folder
+        // Check if any MP4 files exist in this folder (direct children)
         const { data: mp4Files, error: mp4Error } = await supabase
           .from('sources_google')
           .select('id, name')
@@ -148,64 +187,154 @@ async function reportMainVideoIds(): Promise<void> {
         }
         
         if (mp4Files && mp4Files.length > 0) {
-          // Has MP4 files but no main_video_id
-          console.log(`| ${folder.name.padEnd(11)} | ${'No main video set'.padEnd(19)} | ${'None'.padEnd(12)} | Missing  |`);
+          // Has MP4 files but no main_video_id is set - show the first MP4 file
+          console.log(`| ${mp4Files[0].name} (not set as main) | ${folder.name} |`);
         } else {
-          // No MP4 files found
-          console.log(`| ${folder.name.padEnd(11)} | ${'No MP4 files'.padEnd(19)} | ${'None'.padEnd(12)} | No files |`);
+          // No direct MP4 files found - recursively search subfolders
+          Logger.debug(`No direct MP4 files in ${folder.name}, searching subfolders...`);
+          
+          // Get all subfolders
+          const { data: subfolders, error: subfoldersError } = await supabase
+            .from('sources_google')
+            .select('id, name')
+            .eq('parent_folder_id', folder.id)
+            .eq('mime_type', 'application/vnd.google-apps.folder')
+            .eq('deleted', false);
+            
+          if (subfoldersError) {
+            Logger.error(`Error fetching subfolders for ${folder.name}: ${subfoldersError.message}`);
+            console.log(`| No MP4 files | ${folder.name} |`);
+            continue;
+          }
+          
+          // Check each subfolder for MP4 files
+          let foundMp4 = false;
+          let mp4FileName = '';
+          let mp4Path = '';
+          
+          if (subfolders && subfolders.length > 0) {
+            for (const subfolder of subfolders) {
+              // Common media folder names to prioritize
+              const isPriorityFolder = subfolder.name.toLowerCase().includes('presentation') || 
+                                      subfolder.name.toLowerCase().includes('video') || 
+                                      subfolder.name.toLowerCase().includes('media');
+              
+              // Search for MP4 files in this subfolder
+              const { data: subfolderMp4s, error: subfolderMp4Error } = await supabase
+                .from('sources_google')
+                .select('id, name, path')
+                .eq('parent_folder_id', subfolder.id)
+                .eq('mime_type', 'video/mp4')
+                .eq('deleted', false);
+                
+              if (subfolderMp4Error) {
+                Logger.error(`Error fetching MP4s from subfolder ${subfolder.name}: ${subfolderMp4Error.message}`);
+                continue;
+              }
+              
+              if (subfolderMp4s && subfolderMp4s.length > 0) {
+                // If we already found an MP4 in a priority folder, don't override it
+                if (!foundMp4 || isPriorityFolder) {
+                  foundMp4 = true;
+                  mp4FileName = subfolderMp4s[0].name;
+                  mp4Path = `${subfolder.name}/${mp4FileName}`;
+                  
+                  // If this is a priority folder, we can break early
+                  if (isPriorityFolder) {
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          
+          if (foundMp4) {
+            console.log(`| ${mp4FileName} (in subfolder) | ${folder.name} |`);
+            Logger.debug(`Found MP4 in subfolder: ${mp4Path}`);
+          } else {
+            // No MP4 files found in any subfolder
+            console.log(`| No MP4 files | ${folder.name} |`);
+          }
         }
       }
     }
     
-    // Add summary information at the end
-    console.log('\nSummary:');
+    // Add a simple summary at the end
+    console.log('\n_Summary:_ Found ' + subFolders.length + ' folders under ' + rootFolder.name);
     
-    // Count folders with and without main_video_id
-    let foldersWithMainVideo = 0;
-    let foldersWithoutMainVideo = 0;
-    let foldersWithoutMp4 = 0;
-    
-    for (const folder of subFolders) {
-      // Check if there's a presentation with main_video_id
-      const { data: presentations, error: presentationsError } = await supabase
-        .from('presentations')
-        .select('id')
-        .eq('folder_id', folder.id)
-        .not('main_video_id', 'is', null);
-      
-      if (presentationsError) {
-        Logger.error(`Error fetching presentations for folder ${folder.name}: ${presentationsError.message}`);
-        continue;
-      }
-      
-      if (presentations && presentations.length > 0) {
-        foldersWithMainVideo++;
-      } else {
-        // Check if there are MP4 files
-        const { data: mp4Files, error: mp4Error } = await supabase
-          .from('sources_google')
-          .select('id')
-          .eq('parent_folder_id', folder.id)
-          .eq('mime_type', 'video/mp4')
-          .eq('deleted', false);
+    // Write to output file if specified
+    if (actualOutputFile) {
+      try {
+        // Create the output content
+        let fileContent = '# Main Video IDs Report\n\n';
+        fileContent += `Report generated on ${new Date().toISOString()}\n\n`;
+        fileContent += '| Main Video Filename | Folder Name |\n';
+        fileContent += '|---------------------|-------------|\n';
         
-        if (mp4Error) {
-          Logger.error(`Error fetching MP4 files for folder ${folder.name}: ${mp4Error.message}`);
-          continue;
+        // Add each folder and its video
+        for (const folder of subFolders) {
+          // Check if there's a presentation with main_video_id
+          const { data: presentations, error: presentationsError } = await supabase
+            .from('presentations')
+            .select(`
+              id, 
+              title,
+              main_video_id,
+              sources_google!presentations_main_video_id_fkey (id, name)
+            `)
+            .like('folder_path', `%${folder.name}%`)
+            .not('main_video_id', 'is', null);
+          
+          if (presentationsError) {
+            continue;
+          }
+          
+          if (presentations && presentations.length > 0) {
+            // Has presentation with main_video_id
+            for (const presentation of presentations) {
+              // Get video name
+              let videoName = 'Unknown';
+              if (presentation.sources_google && typeof presentation.sources_google === 'object') {
+                if ('name' in presentation.sources_google) {
+                  videoName = (presentation.sources_google as { name: string }).name;
+                }
+              }
+              
+              fileContent += `| ${videoName} | ${folder.name} |\n`;
+            }
+          } else {
+            // Check if any MP4 files exist in this folder
+            const { data: mp4Files, error: mp4Error } = await supabase
+              .from('sources_google')
+              .select('id, name')
+              .eq('parent_folder_id', folder.id)
+              .eq('mime_type', 'video/mp4')
+              .eq('deleted', false);
+            
+            if (mp4Error) {
+              continue;
+            }
+            
+            if (mp4Files && mp4Files.length > 0) {
+              if (mp4Files.length > 0) {
+                fileContent += `| ${mp4Files[0].name} (not set as main) | ${folder.name} |\n`;
+              }
+            } else {
+              fileContent += `| No MP4 files | ${folder.name} |\n`;
+            }
+          }
         }
         
-        if (mp4Files && mp4Files.length > 0) {
-          foldersWithoutMainVideo++;
-        } else {
-          foldersWithoutMp4++;
-        }
+        // Add summary
+        fileContent += `\n_Summary:_ Found ${subFolders.length} folders under ${rootFolder.name}\n`;
+        
+        // Write to file
+        fs.writeFileSync(actualOutputFile, fileContent);
+        Logger.info(`Report written to ${actualOutputFile}`);
+      } catch (writeError: any) {
+        Logger.error(`Error writing to output file: ${writeError.message}`);
       }
     }
-    
-    console.log(`- Folders with main_video_id: ${foldersWithMainVideo}`);
-    console.log(`- Folders missing main_video_id: ${foldersWithoutMainVideo}`);
-    console.log(`- Folders without MP4 files: ${foldersWithoutMp4}`);
-    console.log(`- Total folders: ${subFolders.length}`);
     
   } catch (error: any) {
     Logger.error(`Unexpected error: ${error.message}`);
@@ -213,8 +342,10 @@ async function reportMainVideoIds(): Promise<void> {
   }
 }
 
-// Execute main function
-reportMainVideoIds().catch(error => {
-  Logger.error(`Unhandled error: ${error.message}`);
-  process.exit(1);
-});
+// Execute main function if run directly
+if (require.main === module) {
+  reportMainVideoIds().catch(error => {
+    Logger.error(`Unhandled error: ${error.message}`);
+    process.exit(1);
+  });
+}
