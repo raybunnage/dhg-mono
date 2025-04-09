@@ -16,6 +16,8 @@
  *   check-folder [folderId]   Check if a folder exists in Google Drive
  *   sync [rootId]             Sync files from a root folder (or all if not specified)
  *   sync-folder [folderId]    Sync a specific folder (doesn't need to be a root)
+ *   update-root-drive-id      Update root_drive_id field for all records under a folder
+ *   migrate-table             Migrate sources_google to improved sources_google2 schema
  *   help                      Show this help message
  * 
  * Options:
@@ -29,7 +31,8 @@
  *   ts-node google-drive-manager.ts list-roots
  *   ts-node google-drive-manager.ts add-root 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --name "Dynamic Healing Discussion Group"
  *   ts-node google-drive-manager.ts sync-folder 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run
- *   ts-node google-drive-manager.ts sync-folder 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --timeout 1200000
+ *   ts-node google-drive-manager.ts update-root-drive-id --root-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV
+ *   ts-node google-drive-manager.ts migrate-table --phase 1
  */
 
 import * as dotenv from 'dotenv';
@@ -39,6 +42,7 @@ import { Command } from 'commander';
 import type { Database } from '../../../supabase/types';
 import { defaultGoogleAuth } from '../../../packages/shared/services/google-drive';
 import updateRootDriveIdCommand from './update-root-drive-id';
+import migrateSourcesGoogleCommand from './migrate-sources-google';
 
 // Load environment variables
 dotenv.config();
@@ -662,6 +666,9 @@ program
 
 // Add update-root-drive-id command
 program.addCommand(updateRootDriveIdCommand);
+
+// Add migrate-sources-google command (renamed to migrate-table for user simplicity)
+program.addCommand(migrateSourcesGoogleCommand.name('migrate-table'));
 
 // Parse command line arguments
 program.parse(process.argv);

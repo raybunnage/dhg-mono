@@ -1,3 +1,540 @@
+ [
+  {
+    "column_name": "id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": "uuid_generate_v4()",
+    "is_nullable": "NO",
+    "udt_name": "uuid",
+    "default_value": "uuid_generate_v4()"
+  },
+  {
+    "column_name": "drive_id",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "name",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "mime_type",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "web_view_link",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "parent_folder_id",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "is_root",
+    "data_type": "boolean",
+    "character_maximum_length": null,
+    "column_default": "false",
+    "is_nullable": "YES",
+    "udt_name": "bool",
+    "default_value": "false"
+  },
+  {
+    "column_name": "path",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": "timezone('utc'::text, now())",
+    "is_nullable": "NO",
+    "udt_name": "timestamptz",
+    "default_value": "timezone('utc'::text, now())"
+  },
+  {
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": "timezone('utc'::text, now())",
+    "is_nullable": "NO",
+    "udt_name": "timestamptz",
+    "default_value": "timezone('utc'::text, now())"
+  },
+  {
+    "column_name": "last_indexed",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "timestamptz",
+    "default_value": null
+  },
+  {
+    "column_name": "metadata",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "jsonb",
+    "default_value": null
+  },
+  {
+    "column_name": "expert_id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "uuid",
+    "default_value": null
+  },
+  {
+    "column_name": "sync_status",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "sync_error",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "document_type_id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "uuid",
+    "default_value": null
+  },
+  {
+    "column_name": "content_extracted",
+    "data_type": "boolean",
+    "character_maximum_length": null,
+    "column_default": "false",
+    "is_nullable": "YES",
+    "udt_name": "bool",
+    "default_value": "false"
+  },
+  {
+    "column_name": "extraction_error",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "extracted_content",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "jsonb",
+    "default_value": null
+  },
+  {
+    "column_name": "deleted",
+    "data_type": "boolean",
+    "character_maximum_length": null,
+    "column_default": "false",
+    "is_nullable": "YES",
+    "udt_name": "bool",
+    "default_value": "false"
+  },
+  {
+    "column_name": "parent_path",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "size_bytes",
+    "data_type": "bigint",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "int8",
+    "default_value": null
+  },
+  {
+    "column_name": "thumbnail_link",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "audio_duration_seconds",
+    "data_type": "double precision",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "float8",
+    "default_value": null
+  },
+  {
+    "column_name": "audio_extracted",
+    "data_type": "boolean",
+    "character_maximum_length": null,
+    "column_default": "false",
+    "is_nullable": "YES",
+    "udt_name": "bool",
+    "default_value": "false"
+  },
+  {
+    "column_name": "audio_extraction_path",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "audio_channels",
+    "data_type": "integer",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "int4",
+    "default_value": null
+  },
+  {
+    "column_name": "audio_bitrate",
+    "data_type": "integer",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "int4",
+    "default_value": null
+  },
+  {
+    "column_name": "audio_quality_metrics",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "jsonb",
+    "default_value": null
+  },
+  {
+    "column_name": "sync_id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "uuid",
+    "default_value": null
+  },
+  {
+    "column_name": "parent_id",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  },
+  {
+    "column_name": "modified_time",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "timestamptz",
+    "default_value": null
+  },
+  {
+    "column_name": "size",
+    "data_type": "bigint",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "int8",
+    "default_value": null
+  },
+  {
+    "column_name": "main_video_id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "uuid",
+    "default_value": null
+  },
+  {
+    "column_name": "root_drive_id",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES",
+    "udt_name": "text",
+    "default_value": null
+  }
+]
+ 
+ 
+
+ [
+  {
+    "column_name": "audio_bitrate",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "audio_channels",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "audio_duration_seconds",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "audio_extracted",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "audio_extraction_path",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "audio_quality_metrics",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "content_extracted",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "created_at",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "deleted",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "document_type_id",
+    "total_records": 1024,
+    "non_null_count": 135,
+    "percentage_filled": 13.18359375
+  },
+  {
+    "column_name": "drive_id",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "expert_id",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "extracted_content",
+    "total_records": 1024,
+    "non_null_count": 124,
+    "percentage_filled": 12.109375
+  },
+  {
+    "column_name": "extraction_error",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "id",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "is_root",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "last_indexed",
+    "total_records": 1024,
+    "non_null_count": 1,
+    "percentage_filled": 0.09765625
+  },
+  {
+    "column_name": "main_video_id",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "metadata",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "mime_type",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "modified_time",
+    "total_records": 1024,
+    "non_null_count": 272,
+    "percentage_filled": 26.5625
+  },
+  {
+    "column_name": "name",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "parent_folder_id",
+    "total_records": 1024,
+    "non_null_count": 382,
+    "percentage_filled": 37.3046875
+  },
+  {
+    "column_name": "parent_id",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "parent_path",
+    "total_records": 1024,
+    "non_null_count": 1016,
+    "percentage_filled": 99.21875
+  },
+  {
+    "column_name": "path",
+    "total_records": 1024,
+    "non_null_count": 472,
+    "percentage_filled": 46.09375
+  },
+  {
+    "column_name": "root_drive_id",
+    "total_records": 1024,
+    "non_null_count": 450,
+    "percentage_filled": 43.9453125
+  },
+  {
+    "column_name": "size",
+    "total_records": 1024,
+    "non_null_count": 192,
+    "percentage_filled": 18.75
+  },
+  {
+    "column_name": "size_bytes",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "sync_error",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "sync_id",
+    "total_records": 1024,
+    "non_null_count": 0,
+    "percentage_filled": 0
+  },
+  {
+    "column_name": "sync_status",
+    "total_records": 1024,
+    "non_null_count": 27,
+    "percentage_filled": 2.63671875
+  },
+  {
+    "column_name": "thumbnail_link",
+    "total_records": 1024,
+    "non_null_count": 107,
+    "percentage_filled": 10.44921875
+  },
+  {
+    "column_name": "updated_at",
+    "total_records": 1024,
+    "non_null_count": 1024,
+    "percentage_filled": 100
+  },
+  {
+    "column_name": "web_view_link",
+    "total_records": 1024,
+    "non_null_count": 838,
+    "percentage_filled": 81.8359375
+  }
+]
+ 
+ 
+ 
+ 
+ 
  /Users/raybunnage/Documents/github/
  
  I want you to write this up and put itno the claude.md.  Put it in your own words since it is for you

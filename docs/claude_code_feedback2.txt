@@ -1,3 +1,170 @@
+Update(file_path: docs/technical-specs/sources_google_migration_plan.md)…
+  ⎿ Updated docs/technical-specs/sources_google_migration_plan.md with 14 additions and 2 removals
+     383 
+     384  ## Conclusion: Addressing the Root Cause
+     385 
+     386  The immediate issue with missing metadata for Dynamic Healing Discussion Group files st
+         ems from inconsistent tracking of folder hierarchies during the import process. The `upd
+         ate-root-drive-id.ts` script provides a short-term solution by using multiple pattern-ma
+         tching approaches to identify and link files to their root folder.
+     386  Our investigation revealed the direct cause of the metadata issue: the original sync pr
+         ocess had a limited folder depth (default of 3), while our testing showed that a depth o
+         f 4 is needed to capture all 830 files in the Dynamic Healing Discussion Group folder. A
+         dditionally, the metadata linking these files to their root folder wasn't consistently p
+         opulated.
+     387 
+     388  The long-term solution involves the complete migration to `sources_google2` with a bett
+         er schema design that enforces proper parent-child relationships, consistent path struct
+         ures, and explicit root folder associations. This will prevent similar issues from occur
+         ring in the future and provide a more reliable foundation for file management and retrie
+         val operations.
+     388 \ No newline at end of file
+     389  The immediate fix is a two-phase approach:
+     390  1. Run a full sync with `sync-and-update-metadata.ts` using greater depth (4) and highe
+         r limit (1000) to properly discover all files
+     391  2. Use `update-root-drive-id.ts` to ensure all files have the proper root_drive_id set
+     392  
+     393  This will resolve the immediate issue of "missing" files that actually exist in the dat
+         abase but can't be found through folder traversal queries.
+     394  
+     395  The long-term solution involves the complete migration to `sources_google2` with a bett
+         er schema design that enforces proper parent-child relationships, consistent path struct
+         ures, and explicit root folder associations. This will prevent similar issues from occur
+         ring in the future and provide a more reliable foundation for file management and retrie
+         val operations.
+     396  
+     397  In summary:
+     398  - Current record count: ~451 with proper root_drive_id
+     399  - Expected after fix: 830 files with proper root_drive_id
+     400  - Root cause: Folder depth limitation (3) and incomplete metadata assignment
+     401  - Solution: Two-phase sync and update approach with increased depth (4)
+     402 \ No newline at end of file
+
+⏺ I've found the root cause of the metadata issue! The problem is that the default sync process
+  uses a folder depth of 3, but testing shows we need a depth of 4 to find all 830 files in the
+  Dynamic Healing Discussion Group.
+
+  To fix this, you need a two-step approach:
+
+  1. First, run a full sync with increased depth and higher record limit:
+  npx ts-node scripts/cli-pipeline/google_sync/sync-and-update-metadata.ts --max-depth 4 --limit 
+  1000
+
+  2. Then use the update-root-drive-id script to ensure all files have proper root folder
+  associations:
+  npx ts-node scripts/cli-pipeline/google_sync/update-root-drive-id.ts
+
+  My dry run test found 830 files in Google Drive - 379 more than currently have proper metadata -
+  because it was able to go one level deeper into the folder structure. The document now contains
+  this detailed explanation and solution.
+
+
+
+
+The key findings are:
+
+    1. Our script has successfully updated 237 previously unlinked records with the root_drive_id,
+    bringing the total to 451 records.
+    2. However, there's still a discrepancy with the 802 files found by the sync-and-update-metadata
+     command when it directly checks Google Drive.
+    3. The sync-and-update-metadata command skips all 802 files when trying to insert them,
+    confirming that all the files are already tracked in the database.
+
+    The issue appears to be that some files in the database don't have metadata that allows us to
+    link them back to the Dynamic Healing Discussion Group folder. The actual records exist, but our
+     paths and parent folder relationships aren't complete enough to identify all 802 files.
+
+    This is a data consistency issue in the database that would require a deeper investigation to
+    fix completely. The most direct approach would be to clean the database and re-import all files
+    with the proper structure, but that's a larger project.
+
+    For now, we've successfully set the root_drive_id for 451 of the 802 files, which is a
+    significant improvement over what was there before.
+  I think you finally got to the heart of the matter - the metadat is messed up for a significant 
+  number of files - I do need to fix this - I want to consider creating a sources_google2 table that
+   has the same crucial ids and fields but fixes the problems with the metadata and exports the 
+  records consistently such that the recursive nature of the files, and folders and root folder ids 
+  are set properly - that the paths are all conssistent - that shouold make it easier for viewers 
+  and other analyses work properly - if the table is consistent - tell me how you can make this 
+  happen - with careful backups along the way - the hardest part is to know how the recursive 
+  folders and files should be properly recorded in this new table.  Also, since other tables - 
+  especially expert_documents depend on the id field of this table i am concerned that it get 
+  created with the same ids so it doesn't mess up other tables that depend on it.  Also, I have 
+  found about 9 fields ADD COLUMN IF NOT EXISTS audio_bitrate integer,
+      ADD COLUMN IF NOT EXISTS audio_channels integer,
+      ADD COLUMN IF EXISTS audio_duration_seconds double precision,
+      ADD COLUMN IF NOT EXISTS audio_extraction_path text,
+      ADD COLUMN IF NOT EXISTS audio_quality_metrics jsonb,
+      ADD COLUMN IF NOT EXISTS parent_id text,
+      ADD COLUMN IF NOT EXISTS size_bytes bigint,
+      ADD COLUMN IF NOT EXISTS sync_error text,
+      ADD COLUMN IF NOT EXISTS sync_id uuid;   audio fields are not used at all, as well others so I
+   will be dropping them as well in this new table.  Finallyh there was some confusion about size, 
+  vs file_size  fields and duplication in the metadata field and an actual field in the table - I 
+  want to clean up all of this at the same time.  Finallyu I think the Deleted field needds to be 
+  change to is_deleted to be consisten with soft delete approach and for the sources_google that 
+  syncs with the actual google drive where files can be deleted I think this soft_delete is correct.
+     Can you take all of this in and make a plan for fixing all these issues at once, carefully and 
+  incrementally.  I suppose the plan involves making this new inpromvoed sources_google2 table and 
+  getting it perfect while leaving the original alone, then backing up the table and eventually 
+  shifting over to using the new version once we know it is good.  The hardest part to me seems to 
+  properly store the recursive files and folders and root drives properly so it is easy to find the 
+  objects that belong to a root drive.   Tell me what you think - BUT DON'T TAKE ANY ACTION ON THIS 
+  YET
+
+⏺ Your plan to create a new sources_google2 table is a solid approach. Here's how I'd structure
+  this migration:
+
+  1. Create the new table with improved schema
+  2. Copy data with fixes for metadata inconsistencies
+  3. Implement proper parent-child relationships
+  4. Maintain original IDs for referential integrity
+  5. Drop unused fields and standardize naming
+
+  The recursive relationship structure is the most challenging part. We'll need to ensure:
+  - Each file has correct parent_id
+  - Paths are consistently formatted
+  - Root drive relationships are properly tracked
+
+  A careful incremental approach with validation at each step will be crucial. The migration
+  should preserve all IDs to maintain relationships with dependent tables like expert_documents.
+
+  Would you like me to draft a more detailed implementation plan with SQL scripts for each step?
+
+> YES, can you give me a markdown docjmentation file that I can put into docs/technical-specs that 
+  lays out how to approach this plan and provides instrucrtions for you to do this in the future. 
+
+⏺ Write(file_path: docs/technical-specs/sources_google_migration_plan.md)…
+  ⎿ Wrote 308 lines to docs/technical-specs/sources_google_migration_plan.md
+     # Google Drive Sources Migration Plan
+     ## Overview
+     This document outlines the plan to create an improved `sources_google2` table that addresses
+      data consistency issues in the current `sources_google` table. The migration will fix
+     metadata inconsistencies, properly represent the recursive file/folder structure, and clean
+     up unused or duplicated fields while maintaining referential integrity with dependent
+     tables.
+     ## Current Issues
+     1. **Metadata inconsistency**: Incomplete metadata makes it difficult to link files back to
+     their parent folders and root drives
+     2. **Recursive structure problems**: Folder hierarchies and file relationships are not
+     properly captured
+     ... (+298 lines)
+
+⏺ I've created a comprehensive migration plan document in the technical-specs directory. The
+  document outlines:
+
+  1. A step-by-step approach to create the new sources_google2 table
+  2. SQL scripts for each migration phase
+  3. Data cleaning and relationship fixing strategies
+  4. Validation steps to ensure data integrity
+  5. Implementation strategy with backup procedures
+
+  The plan focuses on maintaining IDs for referential integrity while fixing the recursive
+  structure issues and standardizing field names. It includes specific handling for the Dynamic
+  Healing Discussion Group folder and provides thorough validation steps.
+
+
+
 Our script has successfully updated a total of 450 records with the root_drive_id set to
   "1wriOM2j2IglnMcejplqG_XcCxSIfoRMV". The initial warning about 700 records may have been an
   overestimate from the previous script's expectations.
