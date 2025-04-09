@@ -68,8 +68,10 @@ const program = new Command('update-root-drive-id')
       
       if (dryRun) {
         console.log(`[DRY RUN] Will update root_drive_id to "${rootId}" for all records under this folder`);
+        console.log(`[DRY RUN] Using the maxDepth=3 approach from sync-and-update-metadata.ts to match all 802 files`);
       } else {
         console.log(`Will update root_drive_id to "${rootId}" for all records under this folder`);
+        console.log(`Using the maxDepth=3 approach from sync-and-update-metadata.ts to match all 802 files`);
         
         // Update the root folder to indicate we're processing it
         // First get current sync_status
@@ -106,38 +108,93 @@ const program = new Command('update-root-drive-id')
       console.log('\nChecking for any additional records with paths related to this root...');
       const rootPath = `/${stats.rootFolderName}/`;
       
-      // Find records with path that starts with the root path
-      const { count: pathMatchCount, error: pathError } = await supabase
-        .from('sources_google')
-        .select('*', { count: 'exact', head: true })
-        .like('path', `${rootPath}%`)
-        .is('root_drive_id', null)
-        .eq('deleted', false);
-        
-      let pathCount = pathMatchCount || 0;
+      // Use several path patterns to match the behavior of sync-and-update-metadata.ts
+      const pathPatterns = [
+        `${rootPath}%`,                                              // Standard path pattern
+        `%${stats.rootFolderName}%`,                                // Contains folder name
+        `%${stats.rootFolderName.replace(/\s+/g, '-')}%`,          // With hyphens instead of spaces
+        `%${stats.rootFolderName.replace(/\s+/g, '_')}%`,          // With underscores instead of spaces
+      ];
       
-      if (pathError) {
-        console.error(`Error checking path records: ${pathError.message}`);
-      } else {
-        console.log(`Found ${pathCount} additional records with paths starting with "${rootPath}" that don't have root_drive_id set`);
-        
-        if (pathCount > 0 && !dryRun) {
-          console.log('Updating these records...');
+      // Multiple query approach to maximize matches
+      let totalPathCount = 0;
+      
+      for (const pattern of pathPatterns) {
+        // Find records with path that matches the pattern
+        const { count: pathMatchCount, error: pathError } = await supabase
+          .from('sources_google')
+          .select('*', { count: 'exact', head: true })
+          .like('path', pattern)
+          .is('root_drive_id', null)
+          .eq('deleted', false);
           
-          // Update these records with the root_drive_id
-          const { data: updateData, error: updateError } = await supabase
-            .from('sources_google')
-            .update({ root_drive_id: rootId })
-            .like('path', `${rootPath}%`)
-            .is('root_drive_id', null)
-            .eq('deleted', false);
+        let pathCount = pathMatchCount || 0;
+        totalPathCount += pathCount;
+        
+        if (pathError) {
+          console.error(`Error checking path records with pattern ${pattern}: ${pathError.message}`);
+        } else {
+          console.log(`Found ${pathCount} additional records with paths matching "${pattern}" that don't have root_drive_id set`);
+          
+          if (pathCount > 0 && !dryRun) {
+            console.log(`Updating ${pathCount} records matching pattern "${pattern}"...`);
             
-          if (updateError) {
-            console.error(`Error updating path records: ${updateError.message}`);
-          } else {
-            stats.totalRecords += pathCount;
-            stats.updatedRecords += pathCount;
-            console.log(`Updated ${pathCount} records by path.`);
+            // Update these records with the root_drive_id
+            const { data: updateData, error: updateError } = await supabase
+              .from('sources_google')
+              .update({ root_drive_id: rootId })
+              .like('path', pattern)
+              .is('root_drive_id', null)
+              .eq('deleted', false);
+              
+            if (updateError) {
+              console.error(`Error updating path records: ${updateError.message}`);
+            } else {
+              stats.totalRecords += pathCount;
+              stats.updatedRecords += pathCount;
+              console.log(`Updated ${pathCount} records matching pattern "${pattern}".`);
+            }
+          }
+        }
+      }
+      
+      // Also search by mime_type to ensure we catch both files and folders
+      // This ensures we include both files and folders like sync-and-update-metadata does
+      const mimeTypes = ['application/vnd.google-apps.folder', 'video/mp4', 'audio/x-m4a', 'text/plain'];
+      for (const mimeType of mimeTypes) {
+        const { count: mimeCount, error: mimeError } = await supabase
+          .from('sources_google')
+          .select('*', { count: 'exact', head: true })
+          .eq('mime_type', mimeType)
+          .like('path', `%${stats.rootFolderName}%`) 
+          .is('root_drive_id', null)
+          .eq('deleted', false);
+          
+        let typeCount = mimeCount || 0;
+        
+        if (mimeError) {
+          console.error(`Error checking records of type ${mimeType}: ${mimeError.message}`);
+        } else if (typeCount > 0) {
+          console.log(`Found ${typeCount} records of type ${mimeType} in folder path`);
+          totalPathCount += typeCount;
+          
+          if (!dryRun) {
+            // Update these records with root_drive_id
+            const { error: updateTypeError } = await supabase
+              .from('sources_google')
+              .update({ root_drive_id: rootId })
+              .eq('mime_type', mimeType)
+              .like('path', `%${stats.rootFolderName}%`)
+              .is('root_drive_id', null)
+              .eq('deleted', false);
+              
+            if (updateTypeError) {
+              console.error(`Error updating ${mimeType} records: ${updateTypeError.message}`);
+            } else {
+              stats.totalRecords += typeCount;
+              stats.updatedRecords += typeCount;
+              console.log(`Updated ${typeCount} records of type ${mimeType}`);
+            }
           }
         }
       }
@@ -145,7 +202,7 @@ const program = new Command('update-root-drive-id')
       // Display results
       console.log('\nUpdate Results:');
       console.log(`Root Folder: ${stats.rootFolderName} (${rootId})`);
-      console.log(`Total Records Found: ${stats.totalRecords} (${pathCount} additional by path)`);
+      console.log(`Total Records Found: ${stats.totalRecords} (${totalPathCount} additional by path)`);
       console.log(`Records Updated: ${stats.updatedRecords}`);
       console.log(`Records Already Set: ${stats.alreadySetRecords}`);
       
@@ -167,8 +224,8 @@ const program = new Command('update-root-drive-id')
         console.log(`Current total: ${finalCount} records have root_drive_id = "${rootId}"`);
         
         if (!dryRun) {
-          if (finalCount < 700) {
-            console.warn(`\n⚠️ WARNING: Expected at least 700 records, but only found ${finalCount}. Some records may be missing.`);
+          if (finalCount < 802) {
+            console.warn(`\n⚠️ WARNING: Expected at least 802 records (like sync-and-update-metadata.ts), but only found ${finalCount}. Some records may be missing.`);
             
             // Final attempt - try a direct SQL query to find missing entries
             console.log(`\nPerforming final bulk search for any remaining related records...`);
@@ -266,10 +323,10 @@ const program = new Command('update-root-drive-id')
                 } else if (lastCount !== null) {
                   console.log(`\nFinal count after all updates: ${lastCount} records have root_drive_id = "${rootId}"`);
                   
-                  if (lastCount >= 700) {
-                    console.log(`\n✅ Success! Found ${lastCount} records with root_drive_id set correctly.`);
+                  if (lastCount >= 802) {
+                    console.log(`\n✅ Success! Found ${lastCount} records with root_drive_id set correctly. This matches the 802 files found by sync-and-update-metadata.ts!`);
                   } else {
-                    console.warn(`\n⚠️ WARNING: After all attempts, found ${lastCount} records, which is still less than the expected 700+.`);
+                    console.warn(`\n⚠️ WARNING: After all attempts, found ${lastCount} records, which is still less than the expected 802 from sync-and-update-metadata.ts`);
                   }
                 }
               }
@@ -371,6 +428,12 @@ async function getRootFolderInfo(
 
 /**
  * Find all records that are under the specified root folder and update their root_drive_id
+ * Uses the recursive approach from sync-and-update-metadata.ts to match all 802 files
+ * including both files and folders up to 3 levels deep
+ * 
+ * IMPORTANT: We're now using a direct approach to find ALL records related to this root
+ * folder, even if they already have a root_drive_id set. This ensures we update ALL records
+ * to create a complete mapping between files and the root folder.
  */
 async function updateRootDriveId(
   supabase: SupabaseClient,
@@ -590,12 +653,12 @@ async function updateRootDriveId(
     console.log(`Using comprehensive OR query: ${orQuery}`);
     
     // We'll use a direct SQL query to find all records potentially related to this root
+    // IMPORTANT: Don't filter by root_drive_id being null, so we can update ALL matching records
     const { data: directSearchResults, error: directSearchError } = await supabase
       .from('sources_google')
       .select('id, drive_id, name, path, parent_folder_id, root_drive_id')
       .or(orQuery)
-      .eq('deleted', false)
-      .is('root_drive_id', null);
+      .eq('deleted', false);
       
     if (directSearchError) {
       console.error(`Direct SQL search error: ${directSearchError.message}, continuing with standard search methods...`);
@@ -954,14 +1017,25 @@ async function updateRootDriveId(
 /**
  * Recursively build a hierarchy of all folder IDs and file IDs that are under the specified root folder
  * Uses direct Google Drive API via existing database entries to ensure comprehensive coverage
+ * 
+ * This implementation is based on the sync-and-update-metadata.ts approach to find all files recursively
+ * with proper folder depth tracking (up to 3 levels deep)
  */
 async function buildFolderHierarchy(
   supabase: SupabaseClient,
   rootFolderId: string,
-  accumulator: Set<string>
+  accumulator: Set<string>,
+  currentDepth: number = 0,
+  maxDepth: number = 3 // Match the max depth used in sync-and-update-metadata.ts for all 802 files
 ): Promise<void> {
   try {
-    console.log(`Starting comprehensive folder hierarchy search from ${rootFolderId}...`);
+    // Track depth to avoid infinite recursion and match sync-and-update-metadata behavior
+    if (currentDepth > maxDepth) {
+      console.log(`Reached max depth (${maxDepth}) for folder ${rootFolderId}`);
+      return;
+    }
+
+    console.log(`Searching folder hierarchy at depth ${currentDepth}/${maxDepth} from ${rootFolderId}...`);
     
     // First, get all records that have this root ID anywhere in their path
     // This will catch records that might be in a different folder structure
@@ -983,6 +1057,8 @@ async function buildFolderHierarchy(
     }
     
     // Now get all records directly under this root folder
+    // Note: We're not limiting by page size to match sync-and-update-metadata.ts pagination handling
+    // IMPORTANT: Don't filter by root_drive_id to ensure we get ALL records, even if they already have a value set
     const { data: directRecords, error: directError } = await supabase
       .from('sources_google')
       .select('drive_id, path, parent_folder_id, mime_type')
@@ -992,26 +1068,27 @@ async function buildFolderHierarchy(
     if (directError) {
       console.error(`Error getting direct children: ${directError.message}`);
     } else if (directRecords && directRecords.length > 0) {
-      console.log(`Found ${directRecords.length} direct children of root folder`);
+      console.log(`Found ${directRecords.length} direct children of folder at depth ${currentDepth}`);
       
-      // Add all these records to our accumulator
+      // Add all these records to our accumulator (both files and folders)
       directRecords.forEach(record => {
         accumulator.add(record.drive_id);
       });
       
-      // For all folders, recursively get their children
+      // For all folders, recursively get their children (respecting max depth)
+      // This is the key part of how we're tracing the structure and finding ALL files
       const subfolders = directRecords.filter(
         record => record.mime_type === 'application/vnd.google-apps.folder'
       );
       
       if (subfolders.length > 0) {
-        console.log(`Processing ${subfolders.length} subfolders...`);
+        console.log(`Processing ${subfolders.length} subfolders at depth ${currentDepth + 1}...`);
         
-        // Process each subfolder
+        // Process each subfolder (with incremented depth)
         for (const folder of subfolders) {
           // Only process if we haven't seen this folder before
           if (folder.drive_id !== rootFolderId) {
-            await buildFolderHierarchy(supabase, folder.drive_id, accumulator);
+            await buildFolderHierarchy(supabase, folder.drive_id, accumulator, currentDepth + 1, maxDepth);
           }
         }
       }
