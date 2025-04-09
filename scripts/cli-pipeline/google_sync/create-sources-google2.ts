@@ -19,34 +19,42 @@ async function main() {
     const supabaseClientService = SupabaseClientService.getInstance();
     const supabase = supabaseClientService.getClient();
     
-    // 1. Check if the table exists
-    const { data: tableCheck, error: checkError } = await supabase.rpc('execute_sql', {
-      sql: `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google2')`
-    });
+    // 1. Check if the table exists - try a direct query first
+    let tableExists = false;
     
-    if (checkError) {
-      throw new Error(`Failed to check if table exists: ${checkError.message}`);
+    try {
+      const { count, error } = await supabase
+        .from('sources_google2')
+        .select('id', { count: 'exact', head: true });
+      
+      if (!error) {
+        console.log(`Table exists and has ${count} records`);
+        tableExists = true;
+      }
+    } catch (e) {
+      console.log('Error checking table directly, will attempt to create it');
     }
     
-    const tableExists = tableCheck && tableCheck[0] && tableCheck[0].exists;
-    console.log(`Table exists: ${tableExists}`);
+    // Table existence is already determined above
     
     if (tableExists) {
       // Ask to truncate
       const truncateConfirm = process.argv.includes('--truncate');
       
       if (truncateConfirm) {
-        console.log('Truncating existing table...');
+        console.log('Dropping and recreating table...');
         
-        const { error: truncateError } = await supabase.rpc('execute_sql', {
-          sql: `TRUNCATE TABLE sources_google2`
+        // Drop the table first
+        const { error: dropError } = await supabase.rpc('execute_sql', {
+          sql: `DROP TABLE IF EXISTS public.sources_google2`
         });
         
-        if (truncateError) {
-          throw new Error(`Failed to truncate table: ${truncateError.message}`);
+        if (dropError) {
+          throw new Error(`Failed to drop table: ${dropError.message}`);
         }
         
-        console.log('Table truncated successfully');
+        console.log('Table dropped successfully, will recreate it');
+        tableExists = false;
       } else {
         console.log('Table already exists. Use --truncate flag to clear existing data.');
         return;

@@ -23,52 +23,76 @@ async function main() {
     // 1. Fix paths that don't start with a slash
     console.log('Fixing paths without leading slash...');
     
-    const fixPathsQuery = `
-      UPDATE sources_google2
-      SET path = '/' || path
-      WHERE path NOT LIKE '/%'
-    `;
+    // First, get records that need path fixing
+    const { data: pathsToFix, error: fetchError } = await supabase
+      .from('sources_google2')
+      .select('id, path')
+      .not('path', 'like', '/%');
+      
+    if (fetchError) {
+      throw new Error(`Failed to fetch paths to fix: ${fetchError.message}`);
+    }
     
-    const { error: pathError } = await supabase.rpc('execute_sql', {
-      sql: fixPathsQuery
-    });
+    console.log(`Found ${pathsToFix?.length || 0} paths that need leading slash`);
     
-    if (pathError) {
-      throw new Error(`Failed to fix paths: ${pathError.message}`);
+    // Update them in batches if needed
+    if (pathsToFix && pathsToFix.length > 0) {
+      for (const record of pathsToFix) {
+        if (record.path) {
+          const newPath = '/' + record.path;
+          await supabase
+            .from('sources_google2')
+            .update({ path: newPath })
+            .eq('id', record.id);
+        }
+      }
+      console.log('Fixed paths without leading slash');
     }
     
     // 2. Regenerate path_array and path_depth
-    console.log('Regenerating path_array and path_depth...');
+    console.log('Regenerating path arrays and depths...');
     
-    const pathArrayQuery = `
-      UPDATE sources_google2
-      SET 
-        path_array = string_to_array(path, '/'),
-        path_depth = array_length(string_to_array(path, '/'), 1)
-    `;
+    // Get all records to update path arrays
+    const { data: allRecords, error: recordsError } = await supabase
+      .from('sources_google2')
+      .select('id, path')
+      .order('id');
+      
+    if (recordsError) {
+      throw new Error(`Failed to fetch records for path arrays: ${recordsError.message}`);
+    }
     
-    const { error: arrayError } = await supabase.rpc('execute_sql', {
-      sql: pathArrayQuery
-    });
+    console.log(`Updating path arrays for ${allRecords?.length || 0} records`);
     
-    if (arrayError) {
-      throw new Error(`Failed to update path arrays: ${arrayError.message}`);
+    // Process in batches of 100
+    const batchSize = 100;
+    for (let i = 0; i < (allRecords?.length || 0); i += batchSize) {
+      const batch = allRecords?.slice(i, i + batchSize) || [];
+      console.log(`Processing path array batch ${i/batchSize + 1}/${Math.ceil((allRecords?.length || 0) / batchSize)}`);
+      
+      for (const record of batch) {
+        if (record.path) {
+          const pathArray = record.path.split('/').filter(Boolean);
+          const pathDepth = pathArray.length;
+          
+          await supabase
+            .from('sources_google2')
+            .update({ 
+              path_array: pathArray, 
+              path_depth: pathDepth 
+            })
+            .eq('id', record.id);
+        }
+      }
     }
     
     // 3. Set root_drive_id for Dynamic Healing Discussion Group
     console.log('Setting root_drive_id for Dynamic Healing Discussion Group...');
     
-    const dhgRootQuery = `
-      UPDATE sources_google2
-      SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-      WHERE 
-        path LIKE '%/Dynamic Healing Discussion Group/%'
-        OR drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-    `;
-    
-    const { error: dhgError } = await supabase.rpc('execute_sql', {
-      sql: dhgRootQuery
-    });
+    const { error: dhgError } = await supabase
+      .from('sources_google2')
+      .update({ root_drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' })
+      .or('path.like.%/Dynamic Healing Discussion Group/%,drive_id.eq.1wriOM2j2IglnMcejplqG_XcCxSIfoRMV');
     
     if (dhgError) {
       throw new Error(`Failed to set DHG root_drive_id: ${dhgError.message}`);
@@ -77,17 +101,10 @@ async function main() {
     // 4. Set root_drive_id for Polyvagal Steering Group
     console.log('Setting root_drive_id for Polyvagal Steering Group...');
     
-    const pvsgRootQuery = `
-      UPDATE sources_google2
-      SET root_drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc'
-      WHERE 
-        path LIKE '%/Polyvagal Steering Group/%'
-        OR drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc'
-    `;
-    
-    const { error: pvsgError } = await supabase.rpc('execute_sql', {
-      sql: pvsgRootQuery
-    });
+    const { error: pvsgError } = await supabase
+      .from('sources_google2')
+      .update({ root_drive_id: '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc' })
+      .or('path.like.%/Polyvagal Steering Group/%,drive_id.eq.1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc');
     
     if (pvsgError) {
       throw new Error(`Failed to set PVSG root_drive_id: ${pvsgError.message}`);
@@ -96,46 +113,39 @@ async function main() {
     // 5. Set root_drive_id for any transcript files
     console.log('Setting root_drive_id for transcript files...');
     
-    const transcriptQuery = `
-      UPDATE sources_google2
-      SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-      WHERE 
-        (name ILIKE '%transcript%' OR path ILIKE '%transcript%')
-        AND mime_type IN ('text/plain', 'application/vnd.google-apps.document')
-        AND (root_drive_id IS NULL OR root_drive_id = '')
-    `;
-    
-    const { error: transcriptError } = await supabase.rpc('execute_sql', {
-      sql: transcriptQuery
-    });
+    const { error: transcriptError } = await supabase
+      .from('sources_google2')
+      .update({ root_drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' })
+      .or('name.ilike.%transcript%,path.ilike.%transcript%')
+      .in('mime_type', ['text/plain', 'application/vnd.google-apps.document'])
+      .or('root_drive_id.is.null,root_drive_id.eq.');
     
     if (transcriptError) {
       throw new Error(`Failed to set transcript root_drive_id: ${transcriptError.message}`);
     }
     
     // 6. Count records by root
-    const { data: dhgCount, error: dhgCountError } = await supabase.rpc('execute_sql', {
-      sql: `SELECT COUNT(*) FROM sources_google2 WHERE root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'`
-    });
+    const { count: dhgRecords, error: dhgCountError } = await supabase
+      .from('sources_google2')
+      .select('id', { count: 'exact', head: true })
+      .eq('root_drive_id', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV');
     
     if (dhgCountError) {
       throw new Error(`Failed to count DHG records: ${dhgCountError.message}`);
     }
     
-    const { data: pvsgCount, error: pvsgCountError } = await supabase.rpc('execute_sql', {
-      sql: `SELECT COUNT(*) FROM sources_google2 WHERE root_drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc'`
-    });
+    const { count: pvsgRecords, error: pvsgCountError } = await supabase
+      .from('sources_google2')
+      .select('id', { count: 'exact', head: true })
+      .eq('root_drive_id', '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc');
     
     if (pvsgCountError) {
       throw new Error(`Failed to count PVSG records: ${pvsgCountError.message}`);
     }
     
-    const dhgRecords = dhgCount && dhgCount[0] ? dhgCount[0].count : 0;
-    const pvsgRecords = pvsgCount && pvsgCount[0] ? pvsgCount[0].count : 0;
-    
     console.log('Update complete!');
-    console.log(`- Dynamic Healing Discussion Group: ${dhgRecords} records`);
-    console.log(`- Polyvagal Steering Group: ${pvsgRecords} records`);
+    console.log(`- Dynamic Healing Discussion Group: ${dhgRecords || 0} records`);
+    console.log(`- Polyvagal Steering Group: ${pvsgRecords || 0} records`);
     
   } catch (error) {
     console.error('Error updating paths and roots:', error);

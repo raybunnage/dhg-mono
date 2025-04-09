@@ -19,30 +19,35 @@ async function main() {
     const supabaseClientService = SupabaseClientService.getInstance();
     const supabase = supabaseClientService.getClient();
     
-    // Check if tables exist
-    const { data: sourceCheck, error: sourceError } = await supabase.rpc('execute_sql', {
-      sql: `SELECT COUNT(*) FROM sources_google`
-    });
+    // Get all records from sources_google
+    console.log('Fetching data from sources_google...');
     
-    if (sourceError) {
-      throw new Error(`Failed to check sources_google: ${sourceError.message}`);
+    // First, count the records
+    const { count: sourceCount, error: countError } = await supabase
+      .from('sources_google')
+      .select('*', { count: 'exact', head: true });
+      
+    if (countError) {
+      throw new Error(`Failed to count sources_google: ${countError.message}`);
     }
     
-    const sourceCount = sourceCheck && sourceCheck[0] ? sourceCheck[0].count : 0;
     console.log(`Source table has ${sourceCount} records`);
     
-    const { data: targetCheck, error: targetError } = await supabase.rpc('execute_sql', {
-      sql: `SELECT COUNT(*) FROM sources_google2`
-    });
+    // Then get existing records in the target
+    console.log('Checking target table...');
     
-    if (targetError) {
-      throw new Error(`Failed to check sources_google2: ${targetError.message}`);
+    const { count: targetCount, error: targetCountError } = await supabase
+      .from('sources_google2')
+      .select('*', { count: 'exact', head: true });
+      
+    if (targetCountError) {
+      throw new Error(`Failed to check sources_google2: ${targetCountError.message}`);
     }
     
-    const targetCount = targetCheck && targetCheck[0] ? targetCheck[0].count : 0;
     console.log(`Target table has ${targetCount} records initially`);
     
-    if (targetCount > 0) {
+    // Check if we should proceed
+    if (targetCount && targetCount > 0) {
       const forceOverwrite = process.argv.includes('--force');
       
       if (!forceOverwrite) {
@@ -50,64 +55,80 @@ async function main() {
         return;
       }
       
-      // Truncate the table
-      const { error: truncateError } = await supabase.rpc('execute_sql', {
-        sql: `TRUNCATE TABLE sources_google2`
-      });
-      
-      if (truncateError) {
-        throw new Error(`Failed to truncate target table: ${truncateError.message}`);
-      }
-      
-      console.log('Target table truncated');
+      console.log('Force flag detected, will upsert all records');
     }
     
-    // Copy data
-    console.log('Copying data from sources_google to sources_google2...');
+    // Fetch source records in batches
+    const batchSize = 100;
+    const batches = Math.ceil(Number(sourceCount || 0) / batchSize);
+    let processedCount = 0;
     
-    const copyQuery = `
-      INSERT INTO sources_google2 (
-        id, name, mime_type, drive_id, root_drive_id, parent_folder_id, path, is_root,
-        path_array, path_depth, is_deleted, metadata, size, modified_time, 
-        web_view_link, thumbnail_link, content_extracted, extracted_content,
-        document_type_id, expert_id, created_at, updated_at, last_indexed
-      )
-      SELECT 
-        id, 
-        name, 
-        mime_type, 
-        drive_id,
-        COALESCE(root_drive_id, 
-                CASE WHEN drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' THEN drive_id
-                     WHEN path LIKE '%Dynamic Healing Discussion Group%' THEN '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-                     ELSE drive_id END),
-        parent_id,
-        COALESCE(path, '/' || name),
-        is_root,
-        string_to_array(COALESCE(path, '/' || name), '/'),
-        array_length(string_to_array(COALESCE(path, '/' || name), '/'), 1),
-        COALESCE(deleted, false),
-        metadata,
-        COALESCE(size, size_bytes, (metadata->>'size')::bigint),
-        modified_time, 
-        web_view_link, 
-        thumbnail_link,
-        content_extracted, 
-        extracted_content,
-        document_type_id, 
-        expert_id,
-        created_at, 
-        updated_at, 
-        last_indexed
-      FROM sources_google
-    `;
+    console.log(`Processing ${sourceCount} records in ${batches} batches of ${batchSize}...`);
     
-    const { error: copyError } = await supabase.rpc('execute_sql', {
-      sql: copyQuery
-    });
-    
-    if (copyError) {
-      throw new Error(`Failed to copy data: ${copyError.message}`);
+    for (let i = 0; i < batches; i++) {
+      const offset = i * batchSize;
+      
+      console.log(`Processing batch ${i+1}/${batches}, offset ${offset}...`);
+      
+      // Fetch a batch of records
+      const { data: sourceRecords, error: fetchError } = await supabase
+        .from('sources_google')
+        .select('*')
+        .range(offset, offset + batchSize - 1);
+        
+      if (fetchError) {
+        throw new Error(`Failed to fetch batch ${i+1}: ${fetchError.message}`);
+      }
+      
+      if (!sourceRecords || sourceRecords.length === 0) {
+        console.log(`Batch ${i+1} is empty, skipping`);
+        continue;
+      }
+      
+      console.log(`Batch ${i+1} has ${sourceRecords.length} records`);
+      
+      // Transform the records
+      const transformedRecords = sourceRecords.map(record => ({
+        id: record.id, // Keep the same ID to preserve references
+        name: record.name,
+        mime_type: record.mime_type,
+        drive_id: record.drive_id,
+        root_drive_id: record.root_drive_id || 
+                     (record.drive_id === '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' ? record.drive_id : 
+                     (record.path && record.path.includes('Dynamic Healing Discussion Group') ? 
+                     '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' : record.drive_id)),
+        parent_folder_id: record.parent_id,
+        path: record.path || ('/' + record.name),
+        is_root: record.is_root,
+        path_array: record.path ? record.path.split('/') : ['', record.name],
+        path_depth: record.path ? record.path.split('/').length : 2,
+        is_deleted: record.deleted || false,
+        metadata: record.metadata,
+        size: record.size || record.size_bytes || (record.metadata && record.metadata.size ? parseInt(record.metadata.size) : null),
+        modified_time: record.modified_time,
+        web_view_link: record.web_view_link,
+        thumbnail_link: record.thumbnail_link,
+        content_extracted: record.content_extracted,
+        extracted_content: record.extracted_content,
+        document_type_id: record.document_type_id,
+        expert_id: record.expert_id,
+        created_at: record.created_at,
+        updated_at: record.updated_at,
+        last_indexed: record.last_indexed,
+        main_video_id: record.main_video_id
+      }));
+      
+      // Upsert the records
+      const { error: upsertError } = await supabase
+        .from('sources_google2')
+        .upsert(transformedRecords, { onConflict: 'id' });
+        
+      if (upsertError) {
+        throw new Error(`Failed to upsert batch ${i+1}: ${upsertError.message}`);
+      }
+      
+      processedCount += transformedRecords.length;
+      console.log(`Processed ${processedCount}/${sourceCount} records so far`);
     }
     
     // Check final count
