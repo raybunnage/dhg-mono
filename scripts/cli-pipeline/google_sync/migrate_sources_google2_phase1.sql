@@ -64,20 +64,20 @@ SELECT
     -- Timestamps
     created_at, updated_at, last_indexed
 FROM 
-    public.sources_google;
+    public.sources_google
     
 -- Fix paths that don't start with a slash
 UPDATE public.sources_google2
 SET path = '/' || path
-WHERE path NOT LIKE '/%';
+WHERE path NOT LIKE '/%'
 
 -- Regenerate path_array for any rows where it might be wrong
 UPDATE public.sources_google2
 SET path_array = string_to_array(path, '/'),
-    path_depth = array_length(string_to_array(path, '/'), 1);
+    path_depth = array_length(string_to_array(path, '/'), 1)
 
 -- Add a special update to fix any remaining null root_drive_id values
 UPDATE public.sources_google2
 SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
 WHERE root_drive_id IS NULL 
-  OR root_drive_id = '';
+  OR root_drive_id = ''

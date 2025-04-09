@@ -49,7 +49,7 @@ SET
     path_array = string_to_array(fh.path, '/'),
     path_depth = array_length(string_to_array(fh.path, '/'), 1)
 FROM folder_hierarchy fh
-WHERE s2.id = fh.id;
+WHERE s2.id = fh.id
 
 -- Step 2: Additional comprehensive fix for files by pattern matching
 -- This catches any files the hierarchy didn't fix
@@ -63,7 +63,7 @@ WHERE
         name LIKE '%Dynamic Healing%' OR
         mime_type IN ('video/mp4', 'audio/x-m4a', 'text/plain') -- Known types in Dynamic Healing
     )
-    AND (root_drive_id IS NULL OR root_drive_id = '' OR root_drive_id = drive_id);
+    AND (root_drive_id IS NULL OR root_drive_id = '' OR root_drive_id = drive_id)
 
 -- Step 3: Special fix for transcript files that might be outside the hierarchy
 UPDATE sources_google2 s2
@@ -74,7 +74,7 @@ WHERE
         path ILIKE '%transcript%'
     )
     AND mime_type IN ('text/plain', 'application/vnd.google-apps.document')
-    AND (root_drive_id IS NULL OR root_drive_id = '' OR root_drive_id = drive_id);
+    AND (root_drive_id IS NULL OR root_drive_id = '' OR root_drive_id = drive_id)
 
 -- Step 4: Find main_video_id for each presentation folder
 -- First identify the presentation folders directly under Dynamic Healing root
@@ -113,7 +113,7 @@ WHERE
     -- Match all files belonging to the same presentation (same path prefix)
     (sg2.path LIKE (SELECT path || '/%' FROM presentation_folders WHERE drive_id = mp4_files.folder_id)
      OR sg2.parent_folder_id = mp4_files.folder_id)
-    AND sg2.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';
+    AND sg2.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
 
 -- Step 5: Handle nested presentation folders that aren't direct children of the root
 -- This ensures we catch presentations that might be in deeper subfolders
@@ -147,7 +147,7 @@ FROM mp4_files mp4
 WHERE 
     sg2.path LIKE (mp4.parent_path || '%')
     AND sg2.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-    AND sg2.main_video_id IS NULL;
+    AND sg2.main_video_id IS NULL
 
 -- Step 6: Handle any transcripts that might be related to video files
 -- If a transcript refers to a video by name, link it to that video's main_video_id
@@ -162,4 +162,4 @@ WHERE
     -- Match transcript name to video name (removing _transcript suffix)
     AND replace(transcript.name, '_transcript', '') ILIKE ('%' || replace(video.name, '.mp4', '') || '%')
     AND transcript.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-    AND video.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';
+    AND video.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
