@@ -18,7 +18,7 @@ import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../supabase/types';
+import type { Database } from '../../../supabase/types';
 
 // Load multiple environment files
 function loadEnvFiles() {
