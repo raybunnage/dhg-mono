@@ -1,4 +1,4 @@
-#\!/usr/bin/env ts-node
+#!/usr/bin/env ts-node
 /**
  * Sources Google Migration Manager
  * 
@@ -11,7 +11,6 @@
 
 import * as dotenv from 'dotenv';
 import { Command } from 'commander';
-import { execSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
@@ -21,7 +20,6 @@ const scriptsDir = __dirname;
 
 // Define migration phases
 const PHASES = {
-  CREATE: 'create_sources_google2.sql',
   PHASE1: 'migrate_sources_google2_phase1.sql',
   PHASE2: 'migrate_sources_google2_phase2.sql',
   VALIDATE: 'validate_sources_google2_migration.sql',
@@ -38,23 +36,46 @@ function getSupabaseClient() {
 async function executeSqlFile(filePath: string): Promise<string> {
   try {
     // Check if file exists
-    if (\!existsSync(filePath)) {
+    if (!existsSync(filePath)) {
       throw new Error(`SQL file not found: ${filePath}`);
     }
 
     // Read the SQL file
-    const sql = readFileSync(filePath, 'utf8');
+    const sqlContent = readFileSync(filePath, 'utf8');
+    
+    // Split the SQL into separate statements
+    // We need to execute each statement separately
+    const statements = sqlContent
+      .split(/--.*?\n/) // Remove SQL comments
+      .join('\n')       // Rejoin the content
+      .split(/[\n\r]/)  // Split by newlines
+      .filter(line => line.trim().length > 0) // Remove empty lines
+      .join(' ')        // Join back into a single string
+      .split(/(?<=;)/)  // Split on semicolons
+      .map(stmt => stmt.trim())
+      .filter(stmt => stmt.length > 0 && stmt !== ';');
     
     // Get the Supabase client
     const supabase = getSupabaseClient();
     
-    // Execute the SQL via the Supabase RPC
-    const { data, error } = await supabase.rpc('execute_sql', {
-      sql: sql
-    });
-    
-    if (error) {
-      throw new Error(`Failed to execute SQL: ${error.message}`);
+    // If there's only one statement, execute it directly
+    if (statements.length === 1) {
+      const sql = statements[0];
+      const { data, error } = await supabase.rpc('execute_sql', { sql });
+      
+      if (error) {
+        throw new Error(`Failed to execute SQL: ${error.message}`);
+      }
+    } else {
+      // For multiple statements, execute as a transaction
+      const transaction = `BEGIN; ${statements.join(' ')} COMMIT;`;
+      const { data, error } = await supabase.rpc('execute_sql', { 
+        sql: transaction
+      });
+      
+      if (error) {
+        throw new Error(`Failed to execute SQL transaction: ${error.message}`);
+      }
     }
     
     return `SQL executed successfully: ${filePath}`;
@@ -69,7 +90,7 @@ async function getCounts() {
   const supabase = getSupabaseClient();
   
   // Get count from original table
-  const { data: originalCount, error: originalError } = await supabase
+  const { data: originalCountData, error: originalError } = await supabase
     .from('sources_google')
     .select('*', { count: 'exact', head: true });
     
@@ -77,9 +98,11 @@ async function getCounts() {
     throw new Error(`Failed to get count from sources_google: ${originalError.message}`);
   }
   
+  const originalCount = originalCountData ? (originalCountData as any).count || 0 : 0;
+  
   // Check if sources_google2 exists
   const { data: tableExists, error: existsError } = await supabase.rpc('execute_sql', {
-    sql: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google2');"
+    sql: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google2')"
   });
   
   if (existsError) {
@@ -98,11 +121,11 @@ async function getCounts() {
       throw new Error(`Failed to get count from sources_google2: ${newError.message}`);
     }
     
-    newCount = newCountData?.count || 0;
+    newCount = newCountData ? (newCountData as any).count || 0 : 0;
   }
   
   // Get count of Dynamic Healing files
-  const { data: dhgCount, error: dhgError } = await supabase
+  const { data: dhgCountData, error: dhgError } = await supabase
     .from('sources_google')
     .select('*', { count: 'exact', head: true })
     .eq('root_drive_id', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV');
@@ -111,23 +134,32 @@ async function getCounts() {
     throw new Error(`Failed to get DHG count: ${dhgError.message}`);
   }
   
+  const dhgCount = dhgCountData ? (dhgCountData as any).count || 0 : 0;
+  
   return {
-    originalCount: originalCount?.count || 0,
+    originalCount,
     newCount,
-    dhgCount: dhgCount?.count || 0,
+    dhgCount,
     tableExists: tableExists && tableExists.length > 0 && tableExists[0].exists
   };
+}
+
+interface MigrationOptions {
+  createOnly?: boolean;
+  validateOnly?: boolean;
+  finalize?: boolean;
+  dryRun?: boolean;
+  phase?: string;
 }
 
 // Create command
 const program = new Command('migrate-sources-google')
   .description('Migrate sources_google table to an improved sources_google2 schema')
-  .option('-c, --create-only', 'Only create the sources_google2 table structure without copying data', false)
   .option('-v, --validate-only', 'Only run the validation without making changes', false)
   .option('-f, --finalize', 'Finalize the migration (rename tables, create view, etc.)', false)
   .option('-d, --dry-run', 'Show what would happen without making changes', false)
-  .option('-p, --phase <number>', 'Run a specific phase (1, 2)', null)
-  .action(async (options) => {
+  .option('-p, --phase <number>', 'Run a specific phase (1, 2)')
+  .action(async (options: MigrationOptions) => {
     try {
       // Load environment variables
       dotenv.config();
@@ -146,20 +178,20 @@ const program = new Command('migrate-sources-google')
       
       // Handle validate-only option
       if (options.validateOnly) {
-        if (\!tableExists) {
+        if (!tableExists) {
           console.error('Cannot validate - sources_google2 table does not exist');
           process.exit(1);
         }
         
         console.log('Running validation only...');
         const result = await executeSqlFile(join(scriptsDir, PHASES.VALIDATE));
-        console.log('Validation complete\!');
+        console.log('Validation complete!');
         process.exit(0);
       }
       
       // Handle finalize option
       if (options.finalize) {
-        if (\!tableExists) {
+        if (!tableExists) {
           console.error('Cannot finalize - sources_google2 table does not exist');
           process.exit(1);
         }
@@ -173,12 +205,12 @@ const program = new Command('migrate-sources-google')
         
         console.log('Finalizing migration...');
         const result = await executeSqlFile(join(scriptsDir, PHASES.FINALIZE));
-        console.log('Migration finalized successfully\!');
+        console.log('Migration finalized successfully!');
         process.exit(0);
       }
       
       // Check if sources_google2 already exists when not in dry-run mode
-      if (tableExists && \!options.dryRun && \!options.phase) {
+      if (tableExists && !options.dryRun && !options.phase) {
         console.error('sources_google2 table already exists. Options:');
         console.error('1. Use --validate-only to check its state');
         console.error('2. Use --finalize to complete the migration');
@@ -191,23 +223,10 @@ const program = new Command('migrate-sources-google')
         console.log('Dry run mode - no changes will be made');
       }
       
-      // Create only
-      if (options.createOnly) {
-        if (options.dryRun) {
-          console.log('Would create sources_google2 table structure (dry run)');
-          process.exit(0);
-        }
-        
-        console.log('Creating sources_google2 table structure...');
-        const result = await executeSqlFile(join(scriptsDir, PHASES.CREATE));
-        console.log('Table created successfully\!');
-        process.exit(0);
-      }
-      
       // Run specific phase
       if (options.phase) {
         const phase = parseInt(options.phase);
-        if (phase \!== 1 && phase \!== 2) {
+        if (phase !== 1 && phase !== 2) {
           console.error('Invalid phase. Use 1 or 2.');
           process.exit(1);
         }
@@ -219,43 +238,34 @@ const program = new Command('migrate-sources-google')
         
         if (phase === 1) {
           console.log('Running phase 1: Initial data migration...');
-          if (\!tableExists) {
-            console.log('Creating sources_google2 table first...');
-            await executeSqlFile(join(scriptsDir, PHASES.CREATE));
-          }
           await executeSqlFile(join(scriptsDir, PHASES.PHASE1));
-          console.log('Phase 1 completed successfully\!');
+          console.log('Phase 1 completed successfully!');
         } else if (phase === 2) {
           console.log('Running phase 2: Recursive traversal and main_video_id association...');
           await executeSqlFile(join(scriptsDir, PHASES.PHASE2));
-          console.log('Phase 2 completed successfully\!');
+          console.log('Phase 2 completed successfully!');
         }
         
         console.log('Running validation...');
         await executeSqlFile(join(scriptsDir, PHASES.VALIDATE));
-        console.log('Phase completed and validated\!');
+        console.log('Phase completed and validated!');
         process.exit(0);
       }
       
       // Run full migration
       if (options.dryRun) {
         console.log('Would run full migration (dry run):');
-        console.log('1. Create sources_google2 table');
-        console.log('2. Run phase 1: Initial data migration');
-        console.log('3. Run phase 2: Recursive traversal and main_video_id association');
-        console.log('4. Validate results');
+        console.log('1. Run phase 1: Initial data migration');
+        console.log('2. Run phase 2: Recursive traversal and main_video_id association');
+        console.log('3. Validate results');
         console.log('Run without --dry-run to execute');
         process.exit(0);
       }
       
       console.log('Starting full migration...');
       
-      // Step 1: Create the new table
-      console.log('Step 1: Creating sources_google2 table...');
-      await executeSqlFile(join(scriptsDir, PHASES.CREATE));
-      
-      // Step 2: Run phase 1
-      console.log('Step 2: Running phase 1 (initial data migration)...');
+      // Step 1: Run phase 1
+      console.log('Step 1: Running phase 1 (initial data migration)...');
       await executeSqlFile(join(scriptsDir, PHASES.PHASE1));
       
       // Validate phase 1
@@ -265,20 +275,20 @@ const program = new Command('migrate-sources-google')
       if (afterPhase1.newCount < originalCount * 0.9) {
         console.error(`Warning: After phase 1, sources_google2 has only ${afterPhase1.newCount} records,`);
         console.error(`which is less than 90% of the original ${originalCount} records.`);
-        console.error('This could indicate data loss. Continue with caution\!');
+        console.error('This could indicate data loss. Continue with caution!');
       }
       
-      // Step 3: Run phase 2
-      console.log('Step 3: Running phase 2 (recursive traversal and main_video_id association)...');
+      // Step 2: Run phase 2
+      console.log('Step 2: Running phase 2 (recursive traversal and main_video_id association)...');
       await executeSqlFile(join(scriptsDir, PHASES.PHASE2));
       
-      // Step 4: Validate
-      console.log('Step 4: Validating results...');
+      // Step 3: Validate
+      console.log('Step 3: Validating results...');
       await executeSqlFile(join(scriptsDir, PHASES.VALIDATE));
       
       // Final counts
       const afterPhase2 = await getCounts();
-      console.log(`\nMigration complete\!`);
+      console.log(`\nMigration complete!`);
       console.log(`- Original records: ${originalCount}`);
       console.log(`- New records: ${afterPhase2.newCount}`);
       
