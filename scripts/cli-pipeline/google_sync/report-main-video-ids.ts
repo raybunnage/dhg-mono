@@ -303,7 +303,7 @@ export async function reportMainVideoIds(
               fileContent += `| ${videoName} | ${folder.name} |\n`;
             }
           } else {
-            // Check if any MP4 files exist in this folder
+            // Check if any MP4 files exist in this folder (direct children)
             const { data: mp4Files, error: mp4Error } = await supabase
               .from('sources_google')
               .select('id, name')
@@ -316,11 +316,71 @@ export async function reportMainVideoIds(
             }
             
             if (mp4Files && mp4Files.length > 0) {
-              if (mp4Files.length > 0) {
-                fileContent += `| ${mp4Files[0].name} (not set as main) | ${folder.name} |\n`;
-              }
+              // Has MP4 files but no main_video_id is set - show the first MP4 file
+              fileContent += `| ${mp4Files[0].name} (not set as main) | ${folder.name} |\n`;
             } else {
-              fileContent += `| No MP4 files | ${folder.name} |\n`;
+              // No direct MP4 files found - recursively search subfolders
+              Logger.debug(`No direct MP4 files in ${folder.name}, searching subfolders for report file...`);
+              
+              // Get all subfolders
+              const { data: subfolders, error: subfoldersError } = await supabase
+                .from('sources_google')
+                .select('id, name')
+                .eq('parent_folder_id', folder.id)
+                .eq('mime_type', 'application/vnd.google-apps.folder')
+                .eq('deleted', false);
+                
+              if (subfoldersError) {
+                Logger.error(`Error fetching subfolders for ${folder.name}: ${subfoldersError.message}`);
+                fileContent += `| No MP4 files | ${folder.name} |\n`;
+                continue;
+              }
+              
+              // Check each subfolder for MP4 files
+              let foundMp4 = false;
+              let mp4FileName = '';
+              
+              if (subfolders && subfolders.length > 0) {
+                for (const subfolder of subfolders) {
+                  // Common media folder names to prioritize
+                  const isPriorityFolder = subfolder.name.toLowerCase().includes('presentation') || 
+                                          subfolder.name.toLowerCase().includes('video') || 
+                                          subfolder.name.toLowerCase().includes('media');
+                  
+                  // Search for MP4 files in this subfolder
+                  const { data: subfolderMp4s, error: subfolderMp4Error } = await supabase
+                    .from('sources_google')
+                    .select('id, name')
+                    .eq('parent_folder_id', subfolder.id)
+                    .eq('mime_type', 'video/mp4')
+                    .eq('deleted', false);
+                    
+                  if (subfolderMp4Error) {
+                    Logger.error(`Error fetching MP4s from subfolder ${subfolder.name}: ${subfolderMp4Error.message}`);
+                    continue;
+                  }
+                  
+                  if (subfolderMp4s && subfolderMp4s.length > 0) {
+                    // If we already found an MP4 in a priority folder, don't override it
+                    if (!foundMp4 || isPriorityFolder) {
+                      foundMp4 = true;
+                      mp4FileName = subfolderMp4s[0].name;
+                      
+                      // If this is a priority folder, we can break early
+                      if (isPriorityFolder) {
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+              
+              if (foundMp4) {
+                fileContent += `| ${mp4FileName} (in subfolder) | ${folder.name} |\n`;
+              } else {
+                // No MP4 files found in any subfolder
+                fileContent += `| No MP4 files | ${folder.name} |\n`;
+              }
             }
           }
         }
