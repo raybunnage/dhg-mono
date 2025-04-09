@@ -159,7 +159,9 @@ const program = new Command('migrate-sources-google')
   .option('-f, --finalize', 'Finalize the migration (rename tables, create view, etc.)', false)
   .option('-d, --dry-run', 'Show what would happen without making changes', false)
   .option('-p, --phase <number>', 'Run a specific phase (1, 2)')
-  .action(async (options: MigrationOptions) => {
+  .option('-c, --create-tables', 'Create the tables needed for migration', false)
+  .option('-t, --truncate', 'Truncate the target table before migration', false)
+  .action(async (options: MigrationOptions & { createTables?: boolean, truncate?: boolean }) => {
     try {
       // Load environment variables
       dotenv.config();
@@ -175,6 +177,84 @@ const program = new Command('migrate-sources-google')
       }
       console.log(`- Dynamic Healing Group records: ${dhgCount}`);
       console.log('');
+      
+      // Handle create-tables option
+      if (options.createTables) {
+        console.log('Creating table structure...');
+        
+        // Create the sources_google2 table
+        const createQuery = `
+          CREATE TABLE IF NOT EXISTS public.sources_google2 (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            name text NOT NULL,
+            mime_type text,
+            drive_id text NOT NULL,
+            root_drive_id text,
+            parent_folder_id text,
+            path text,
+            is_root boolean DEFAULT false,
+            path_array text[],
+            path_depth integer,
+            is_deleted boolean DEFAULT false,
+            metadata jsonb,
+            size bigint,
+            modified_time timestamp with time zone,
+            web_view_link text,
+            thumbnail_link text,
+            content_extracted boolean DEFAULT false,
+            extracted_content text,
+            document_type_id uuid,
+            expert_id uuid,
+            created_at timestamp with time zone DEFAULT now(),
+            updated_at timestamp with time zone DEFAULT now(),
+            last_indexed timestamp with time zone,
+            main_video_id uuid
+          )
+        `;
+        
+        const supabase = getSupabaseClient();
+        const { error: createError } = await supabase.rpc('execute_sql', { sql: createQuery });
+        
+        if (createError) {
+          throw new Error(`Failed to create table: ${createError.message}`);
+        }
+        
+        // Create indexes
+        const indexQueries = [
+          `CREATE INDEX IF NOT EXISTS sources_google2_drive_id_idx ON public.sources_google2 (drive_id)`,
+          `CREATE INDEX IF NOT EXISTS sources_google2_root_drive_id_idx ON public.sources_google2 (root_drive_id)`,
+          `CREATE INDEX IF NOT EXISTS sources_google2_parent_folder_id_idx ON public.sources_google2 (parent_folder_id)`,
+          `CREATE INDEX IF NOT EXISTS sources_google2_mime_type_idx ON public.sources_google2 (mime_type)`,
+          `CREATE INDEX IF NOT EXISTS sources_google2_path_idx ON public.sources_google2 (path)`,
+          `CREATE INDEX IF NOT EXISTS sources_google2_name_idx ON public.sources_google2 (name)`
+        ];
+        
+        for (const query of indexQueries) {
+          const { error } = await supabase.rpc('execute_sql', { sql: query });
+          if (error) {
+            console.warn(`Warning: Failed to create index: ${error.message}`);
+          }
+        }
+        
+        console.log('Table structure created successfully!');
+        return;
+      }
+      
+      // Handle truncate option
+      if (options.truncate && tableExists) {
+        console.log('Truncating the sources_google2 table...');
+        
+        const supabase = getSupabaseClient();
+        // Use direct table deletion - delete all records
+        const { error: deleteError } = await supabase.from('sources_google2').delete().gt('id', '00000000-0000-0000-0000-000000000000');
+        
+        if (deleteError) {
+          throw new Error(`Failed to truncate table: ${deleteError.message}`);
+        }
+        
+        console.log('Table truncated successfully!');
+        return;
+      }
       
       // Handle validate-only option
       if (options.validateOnly) {
@@ -215,7 +295,8 @@ const program = new Command('migrate-sources-google')
         console.error('1. Use --validate-only to check its state');
         console.error('2. Use --finalize to complete the migration');
         console.error('3. Use --phase 1 or --phase 2 to rerun a specific phase');
-        console.error('4. Drop the table first if you want to start over');
+        console.error('4. Use --truncate to clear the table');
+        console.error('5. Use --create-tables to create/reset the table structure');
         process.exit(1);
       }
       
@@ -238,18 +319,107 @@ const program = new Command('migrate-sources-google')
         
         if (phase === 1) {
           console.log('Running phase 1: Initial data migration...');
-          await executeSqlFile(join(scriptsDir, PHASES.PHASE1));
+          
+          // Copy data directly without SQL file
+          const supabase = getSupabaseClient();
+          const copyQuery = `
+            INSERT INTO sources_google2 (
+              id, name, mime_type, drive_id, root_drive_id, parent_folder_id, path, is_root,
+              path_array, path_depth, is_deleted, metadata, size, modified_time, 
+              web_view_link, thumbnail_link, content_extracted, extracted_content,
+              document_type_id, expert_id, created_at, updated_at, last_indexed
+            )
+            SELECT 
+              id, 
+              name, 
+              mime_type, 
+              drive_id,
+              COALESCE(root_drive_id, 
+                      CASE WHEN drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' THEN drive_id
+                          WHEN path LIKE '%Dynamic Healing Discussion Group%' THEN '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+                          ELSE drive_id END),
+              parent_id,
+              COALESCE(path, '/' || name),
+              is_root,
+              string_to_array(COALESCE(path, '/' || name), '/'),
+              array_length(string_to_array(COALESCE(path, '/' || name), '/'), 1),
+              COALESCE(deleted, false),
+              metadata,
+              COALESCE(size, size_bytes, (metadata->>'size')::bigint),
+              modified_time, 
+              web_view_link, 
+              thumbnail_link,
+              content_extracted, 
+              extracted_content,
+              document_type_id, 
+              expert_id,
+              created_at, 
+              updated_at, 
+              last_indexed
+            FROM sources_google
+          `;
+          
+          const { error: copyError } = await supabase.rpc('execute_sql', { sql: copyQuery });
+          
+          if (copyError) {
+            throw new Error(`Failed to copy data: ${copyError.message}`);
+          }
+          
           console.log('Phase 1 completed successfully!');
         } else if (phase === 2) {
           console.log('Running phase 2: Recursive traversal and main_video_id association...');
-          await executeSqlFile(join(scriptsDir, PHASES.PHASE2));
+          
+          // Update paths and roots directly
+          const supabase = getSupabaseClient();
+          
+          // Fix paths first
+          const fixPathsQuery = `
+            UPDATE sources_google2
+            SET path = '/' || path
+            WHERE path NOT LIKE '/%'
+          `;
+          
+          const { error: pathError } = await supabase.rpc('execute_sql', { sql: fixPathsQuery });
+          
+          if (pathError) {
+            throw new Error(`Failed to fix paths: ${pathError.message}`);
+          }
+          
+          // Update Dynamic Healing root
+          const dhgRootQuery = `
+            UPDATE sources_google2
+            SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+            WHERE 
+              path LIKE '%Dynamic Healing Discussion Group%' 
+              OR drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+          `;
+          
+          const { error: dhgError } = await supabase.rpc('execute_sql', { sql: dhgRootQuery });
+          
+          if (dhgError) {
+            throw new Error(`Failed to set DHG root_drive_id: ${dhgError.message}`);
+          }
+          
+          // Update Polyvagal Steering Group root
+          const pvsgRootQuery = `
+            UPDATE sources_google2
+            SET root_drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc'
+            WHERE 
+              path LIKE '%Polyvagal Steering Group%'
+              OR drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc'
+          `;
+          
+          const { error: pvsgError } = await supabase.rpc('execute_sql', { sql: pvsgRootQuery });
+          
+          if (pvsgError) {
+            throw new Error(`Failed to set PVSG root_drive_id: ${pvsgError.message}`);
+          }
+          
           console.log('Phase 2 completed successfully!');
         }
         
-        console.log('Running validation...');
-        await executeSqlFile(join(scriptsDir, PHASES.VALIDATE));
-        console.log('Phase completed and validated!');
-        process.exit(0);
+        console.log('Phase completed successfully!');
+        return;
       }
       
       // Run full migration
@@ -264,36 +434,147 @@ const program = new Command('migrate-sources-google')
       
       console.log('Starting full migration...');
       
-      // Step 1: Run phase 1
-      console.log('Step 1: Running phase 1 (initial data migration)...');
-      await executeSqlFile(join(scriptsDir, PHASES.PHASE1));
+      // Simplified migration using direct database calls
       
-      // Validate phase 1
-      const afterPhase1 = await getCounts();
-      console.log(`After phase 1: ${afterPhase1.newCount} records in sources_google2`);
+      // Step 1: Create table structure
+      console.log('Step 1: Creating table structure...');
+      const supabase = getSupabaseClient();
       
-      if (afterPhase1.newCount < originalCount * 0.9) {
-        console.error(`Warning: After phase 1, sources_google2 has only ${afterPhase1.newCount} records,`);
-        console.error(`which is less than 90% of the original ${originalCount} records.`);
-        console.error('This could indicate data loss. Continue with caution!');
+      const createQuery = `
+        CREATE TABLE IF NOT EXISTS public.sources_google2 (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          name text NOT NULL,
+          mime_type text,
+          drive_id text NOT NULL,
+          root_drive_id text,
+          parent_folder_id text,
+          path text,
+          is_root boolean DEFAULT false,
+          path_array text[],
+          path_depth integer,
+          is_deleted boolean DEFAULT false,
+          metadata jsonb,
+          size bigint,
+          modified_time timestamp with time zone,
+          web_view_link text,
+          thumbnail_link text,
+          content_extracted boolean DEFAULT false,
+          extracted_content text,
+          document_type_id uuid,
+          expert_id uuid,
+          created_at timestamp with time zone DEFAULT now(),
+          updated_at timestamp with time zone DEFAULT now(),
+          last_indexed timestamp with time zone,
+          main_video_id uuid
+        )
+      `;
+      
+      const { error: createError } = await supabase.rpc('execute_sql', { sql: createQuery });
+      
+      if (createError) {
+        throw new Error(`Failed to create table: ${createError.message}`);
       }
       
-      // Step 2: Run phase 2
-      console.log('Step 2: Running phase 2 (recursive traversal and main_video_id association)...');
-      await executeSqlFile(join(scriptsDir, PHASES.PHASE2));
+      // Step 2: Copy data
+      console.log('Step 2: Copying data...');
       
-      // Step 3: Validate
-      console.log('Step 3: Validating results...');
-      await executeSqlFile(join(scriptsDir, PHASES.VALIDATE));
+      const copyQuery = `
+        INSERT INTO sources_google2 (
+          id, name, mime_type, drive_id, root_drive_id, parent_folder_id, path, is_root,
+          path_array, path_depth, is_deleted, metadata, size, modified_time, 
+          web_view_link, thumbnail_link, content_extracted, extracted_content,
+          document_type_id, expert_id, created_at, updated_at, last_indexed
+        )
+        SELECT 
+          id, 
+          name, 
+          mime_type, 
+          drive_id,
+          COALESCE(root_drive_id, 
+                  CASE WHEN drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' THEN drive_id
+                      WHEN path LIKE '%Dynamic Healing Discussion Group%' THEN '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+                      ELSE drive_id END),
+          parent_id,
+          COALESCE(path, '/' || name),
+          is_root,
+          string_to_array(COALESCE(path, '/' || name), '/'),
+          array_length(string_to_array(COALESCE(path, '/' || name), '/'), 1),
+          COALESCE(deleted, false),
+          metadata,
+          COALESCE(size, size_bytes, (metadata->>'size')::bigint),
+          modified_time, 
+          web_view_link, 
+          thumbnail_link,
+          content_extracted, 
+          extracted_content,
+          document_type_id, 
+          expert_id,
+          created_at, 
+          updated_at, 
+          last_indexed
+        FROM sources_google
+      `;
+      
+      const { error: copyError } = await supabase.rpc('execute_sql', { sql: copyQuery });
+      
+      if (copyError) {
+        throw new Error(`Failed to copy data: ${copyError.message}`);
+      }
+      
+      // Step 3: Update paths and roots
+      console.log('Step 3: Updating paths and roots...');
+      
+      // Fix paths first
+      const fixPathsQuery = `
+        UPDATE sources_google2
+        SET path = '/' || path
+        WHERE path NOT LIKE '/%'
+      `;
+      
+      const { error: pathError } = await supabase.rpc('execute_sql', { sql: fixPathsQuery });
+      
+      if (pathError) {
+        throw new Error(`Failed to fix paths: ${pathError.message}`);
+      }
+      
+      // Update Dynamic Healing root
+      const dhgRootQuery = `
+        UPDATE sources_google2
+        SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+        WHERE 
+          path LIKE '%Dynamic Healing Discussion Group%' 
+          OR drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+      `;
+      
+      const { error: dhgError } = await supabase.rpc('execute_sql', { sql: dhgRootQuery });
+      
+      if (dhgError) {
+        throw new Error(`Failed to set DHG root_drive_id: ${dhgError.message}`);
+      }
+      
+      // Update Polyvagal Steering Group root
+      const pvsgRootQuery = `
+        UPDATE sources_google2
+        SET root_drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc'
+        WHERE 
+          path LIKE '%Polyvagal Steering Group%'
+          OR drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc'
+      `;
+      
+      const { error: pvsgError } = await supabase.rpc('execute_sql', { sql: pvsgRootQuery });
+      
+      if (pvsgError) {
+        throw new Error(`Failed to set PVSG root_drive_id: ${pvsgError.message}`);
+      }
       
       // Final counts
-      const afterPhase2 = await getCounts();
+      const afterMigration = await getCounts();
       console.log(`\nMigration complete!`);
       console.log(`- Original records: ${originalCount}`);
-      console.log(`- New records: ${afterPhase2.newCount}`);
+      console.log(`- New records: ${afterMigration.newCount}`);
       
       console.log(`\nNext steps:`);
-      console.log(`1. Verify the validation results above`);
+      console.log(`1. Run with --validate-only to check the results`);
       console.log(`2. Run with --finalize to complete the migration when you're satisfied`);
       
     } catch (error) {

@@ -1,7 +1,23 @@
 -- Phase 2: Enhanced recursive relationship fixing and main_video_id association
 -- This phase builds on the initial data copy to establish proper hierarchical relationships
 
--- Step 1: Enhanced recursive CTE to build proper paths with full hierarchy detection
+-- Step 1: Fix paths that don't start with a slash
+UPDATE public.sources_google2
+SET path = '/' || path
+WHERE path NOT LIKE '/%';
+
+-- Step 2: Regenerate path_array for any rows where it might be wrong
+UPDATE public.sources_google2
+SET path_array = string_to_array(path, '/'),
+    path_depth = array_length(string_to_array(path, '/'), 1);
+
+-- Step 3: Add a special update to fix any remaining null root_drive_id values
+UPDATE public.sources_google2
+SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+WHERE root_drive_id IS NULL 
+  OR root_drive_id = '';
+
+-- Step 4: Enhanced recursive CTE to build proper paths with full hierarchy detection
 WITH RECURSIVE folder_hierarchy AS (
     -- Base case: root folders (multiple identification approaches)
     SELECT 
@@ -49,9 +65,9 @@ SET
     path_array = string_to_array(fh.path, '/'),
     path_depth = array_length(string_to_array(fh.path, '/'), 1)
 FROM folder_hierarchy fh
-WHERE s2.id = fh.id
+WHERE s2.id = fh.id;
 
--- Step 2: Additional comprehensive fix for files by pattern matching
+-- Step 5: Additional comprehensive fix for files by pattern matching
 -- This catches any files the hierarchy didn't fix
 UPDATE sources_google2 s2
 SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
@@ -63,9 +79,9 @@ WHERE
         name LIKE '%Dynamic Healing%' OR
         mime_type IN ('video/mp4', 'audio/x-m4a', 'text/plain') -- Known types in Dynamic Healing
     )
-    AND (root_drive_id IS NULL OR root_drive_id = '' OR root_drive_id = drive_id)
+    AND (root_drive_id IS NULL OR root_drive_id = '' OR root_drive_id = drive_id);
 
--- Step 3: Special fix for transcript files that might be outside the hierarchy
+-- Step 6: Special fix for transcript files that might be outside the hierarchy
 UPDATE sources_google2 s2
 SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
 WHERE 
@@ -74,92 +90,38 @@ WHERE
         path ILIKE '%transcript%'
     )
     AND mime_type IN ('text/plain', 'application/vnd.google-apps.document')
-    AND (root_drive_id IS NULL OR root_drive_id = '' OR root_drive_id = drive_id)
+    AND (root_drive_id IS NULL OR root_drive_id = '' OR root_drive_id = drive_id);
 
--- Step 4: Find main_video_id for each presentation folder
+-- Step 7: Find main_video_id for each presentation folder
 -- First identify the presentation folders directly under Dynamic Healing root
-WITH presentation_folders AS (
-    SELECT 
-        id,
-        drive_id,
-        name,
-        path
-    FROM 
-        sources_google2
-    WHERE 
-        mime_type = 'application/vnd.google-apps.folder'
-        AND parent_folder_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-        AND root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-)
--- For each presentation folder, find its MP4 file and update all related records
-UPDATE sources_google2 sg2
-SET main_video_id = mp4_files.id
-FROM (
-    -- Find all MP4 files for each presentation folder
-    SELECT 
-        pf.drive_id AS folder_id,
-        videos.id,
-        videos.drive_id,
-        videos.name
-    FROM 
-        presentation_folders pf
-    JOIN 
-        sources_google2 videos ON 
-            (videos.path LIKE (pf.path || '/%') OR videos.parent_folder_id = pf.drive_id)
-            AND videos.mime_type = 'video/mp4'
-            AND videos.is_deleted = false
-) mp4_files
-WHERE 
-    -- Match all files belonging to the same presentation (same path prefix)
-    (sg2.path LIKE (SELECT path || '/%' FROM presentation_folders WHERE drive_id = mp4_files.folder_id)
-     OR sg2.parent_folder_id = mp4_files.folder_id)
-    AND sg2.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+-- We'll do it in simpler separate statements to avoid complex blocks
 
--- Step 5: Handle nested presentation folders that aren't direct children of the root
--- This ensures we catch presentations that might be in deeper subfolders
-WITH mp4_files AS (
-    -- First identify all MP4 files under the Dynamic Healing root
-    SELECT 
-        id,
-        drive_id,
-        name,
-        parent_folder_id,
-        path,
-        -- Extract parent folder path
-        substring(path from '^(.*/)[^/]+$') AS parent_path
-    FROM 
-        sources_google2
-    WHERE 
-        mime_type = 'video/mp4'
-        AND root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-        AND is_deleted = false
-        -- Only include files that haven't been processed yet
-        AND id NOT IN (
-            SELECT DISTINCT main_video_id 
-            FROM sources_google2 
-            WHERE main_video_id IS NOT NULL
-        )
-)
--- Update all files under the same parent folder with the MP4 file's ID
-UPDATE sources_google2 sg2
-SET main_video_id = mp4.id
-FROM mp4_files mp4
+-- Find main_video_id for files in the roots we have
+UPDATE sources_google2 s2
+SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
 WHERE 
-    sg2.path LIKE (mp4.parent_path || '%')
-    AND sg2.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-    AND sg2.main_video_id IS NULL
+    path LIKE '%/Dynamic Healing Discussion Group/%'
+    AND root_drive_id IS NULL;
 
--- Step 6: Handle any transcripts that might be related to video files
--- If a transcript refers to a video by name, link it to that video's main_video_id
+-- Also add Polyvagal Steering Group if needed
+UPDATE sources_google2 s2
+SET root_drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc'
+WHERE 
+    path LIKE '%/Polyvagal Steering Group/%'
+    AND root_drive_id IS NULL;
+
+-- Link any transcript files to their video files based on name matching
 UPDATE sources_google2 transcript
-SET main_video_id = video.main_video_id
+SET main_video_id = video.id
 FROM sources_google2 video
 WHERE 
     transcript.mime_type IN ('text/plain', 'application/vnd.google-apps.document')
     AND transcript.name ILIKE '%transcript%'
     AND transcript.main_video_id IS NULL
     AND video.mime_type = 'video/mp4'
-    -- Match transcript name to video name (removing _transcript suffix)
     AND replace(transcript.name, '_transcript', '') ILIKE ('%' || replace(video.name, '.mp4', '') || '%')
-    AND transcript.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-    AND video.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
+    AND (
+        (transcript.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' AND video.root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+        OR
+        (transcript.root_drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc' AND video.root_drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc')
+    );

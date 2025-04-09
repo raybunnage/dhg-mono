@@ -1,83 +1,80 @@
 -- Phase 1: Initial data migration with metadata cleanup
 -- Copy and clean basic data from original table with complete data cleanup
 
+-- First, make sure the sources_google2 table exists
+CREATE TABLE IF NOT EXISTS public.sources_google2 (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL,
+    mime_type text,
+    drive_id text NOT NULL,
+    root_drive_id text,
+    parent_folder_id text,
+    path text,
+    is_root boolean DEFAULT false,
+    path_array text[],
+    path_depth integer,
+    is_deleted boolean DEFAULT false,
+    metadata jsonb,
+    size bigint,
+    modified_time timestamp with time zone,
+    web_view_link text,
+    thumbnail_link text,
+    content_extracted boolean DEFAULT false,
+    extracted_content text,
+    document_type_id uuid,
+    expert_id uuid,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    last_indexed timestamp with time zone,
+    main_video_id uuid
+);
+
+-- Create any necessary indexes
+CREATE INDEX IF NOT EXISTS sources_google2_drive_id_idx ON public.sources_google2 (drive_id);
+CREATE INDEX IF NOT EXISTS sources_google2_root_drive_id_idx ON public.sources_google2 (root_drive_id);
+CREATE INDEX IF NOT EXISTS sources_google2_parent_folder_id_idx ON public.sources_google2 (parent_folder_id);
+CREATE INDEX IF NOT EXISTS sources_google2_mime_type_idx ON public.sources_google2 (mime_type);
+CREATE INDEX IF NOT EXISTS sources_google2_path_idx ON public.sources_google2 (path);
+CREATE INDEX IF NOT EXISTS sources_google2_name_idx ON public.sources_google2 (name);
+CREATE INDEX IF NOT EXISTS sources_google2_document_type_id_idx ON public.sources_google2 (document_type_id);
+CREATE INDEX IF NOT EXISTS sources_google2_expert_id_idx ON public.sources_google2 (expert_id);
+
+-- Clear any existing data (in case of rerun)
+TRUNCATE TABLE public.sources_google2;
+
+-- Now copy data from the original table
 INSERT INTO public.sources_google2 (
-    -- Core identity fields
-    id, name, mime_type, drive_id,
-    
-    -- Enhanced hierarchy fields
-    root_drive_id, parent_folder_id, path, is_root,
-    
-    -- Set path_array and path_depth from path
-    path_array, path_depth,
-    
-    -- Soft delete
-    is_deleted,
-    
-    -- Metadata and file attributes
-    metadata, size, modified_time, web_view_link, thumbnail_link,
-    
-    -- Processing fields
-    content_extracted, extracted_content,
-    
-    -- Foreign keys
-    document_type_id, expert_id,
-    
-    -- Timestamps
-    created_at, updated_at, last_indexed
+    id, name, mime_type, drive_id, root_drive_id, parent_folder_id, path, is_root,
+    path_array, path_depth, is_deleted, metadata, size, modified_time, 
+    web_view_link, thumbnail_link, content_extracted, extracted_content,
+    document_type_id, expert_id, created_at, updated_at, last_indexed
 )
 SELECT 
-    -- Core identity fields
-    id, name, mime_type, drive_id,
-    
-    -- Enhanced hierarchy - CRITICAL: Set default root_drive_id for Dynamic Healing Group folder
+    id, 
+    name, 
+    mime_type, 
+    drive_id,
     COALESCE(root_drive_id, 
              CASE WHEN drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' THEN drive_id
                   WHEN path LIKE '%Dynamic Healing Discussion Group%' THEN '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-                  ELSE drive_id END) AS root_drive_id,
-                  
-    -- Use parent_id as parent_folder_id
+                  ELSE drive_id END),
     parent_id,
-    
-    -- Paths - COALESCE ensures no NULLs
-    COALESCE(path, '/' || name) AS path,
+    COALESCE(path, '/' || name),
     is_root,
-    
-    -- Parse path into array and compute depth 
-    string_to_array(COALESCE(path, '/' || name), '/') AS path_array,
-    array_length(string_to_array(COALESCE(path, '/' || name), '/'), 1) AS path_depth,
-    
-    -- Convert deleted to is_deleted
-    COALESCE(deleted, false) AS is_deleted,
-    
-    -- Metadata and file attributes
+    string_to_array(COALESCE(path, '/' || name), '/'),
+    array_length(string_to_array(COALESCE(path, '/' || name), '/'), 1),
+    COALESCE(deleted, false),
     metadata,
-    COALESCE(size, size_bytes, (metadata->>'size')::bigint) AS size,
-    modified_time, web_view_link, thumbnail_link,
-    
-    -- Processing fields
-    content_extracted, extracted_content,
-    
-    -- Foreign keys
-    document_type_id, expert_id,
-    
-    -- Timestamps
-    created_at, updated_at, last_indexed
+    COALESCE(size, size_bytes, (metadata->>'size')::bigint),
+    modified_time, 
+    web_view_link, 
+    thumbnail_link,
+    content_extracted, 
+    extracted_content,
+    document_type_id, 
+    expert_id,
+    created_at, 
+    updated_at, 
+    last_indexed
 FROM 
-    public.sources_google
-    
--- Fix paths that don't start with a slash
-UPDATE public.sources_google2
-SET path = '/' || path
-WHERE path NOT LIKE '/%'
-
--- Regenerate path_array for any rows where it might be wrong
-UPDATE public.sources_google2
-SET path_array = string_to_array(path, '/'),
-    path_depth = array_length(string_to_array(path, '/'), 1)
-
--- Add a special update to fix any remaining null root_drive_id values
-UPDATE public.sources_google2
-SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
-WHERE root_drive_id IS NULL 
-  OR root_drive_id = ''
+    public.sources_google;
