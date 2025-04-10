@@ -20,17 +20,18 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { google } from 'googleapis';
-import { defaultGoogleAuth } from '../../../../../../packages/shared/services/google-drive';
+import { defaultGoogleAuth } from '../../../packages/shared/services/google-drive';
 
 // Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '../../../../../../.env.development') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env.development') });
 
 // Get command line arguments
 const args = process.argv.slice(2);
 const command = args[0] || '';
 const param = args[1];
 const options = {
-  recursive: args.includes('--recursive')
+  recursive: args.includes('--recursive'),
+  json: args.includes('--json')
 };
 
 // Map commands
@@ -110,7 +111,7 @@ async function initDriveClient() {
     // Get service account key file path from environment or use default
     const keyFilePath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH || 
                         process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-                        path.resolve(__dirname, '../../../../../../.service-account.json');
+                        path.resolve(__dirname, '../../../.service-account.json');
     
     console.log(`🔑 Using service account key file: ${keyFilePath}`);
     
@@ -169,21 +170,34 @@ async function listFolder(drive: any, folderId: string, recursive: boolean = fal
       fileTypes[type] = (fileTypes[type] || 0) + 1;
     });
     
-    // Display results
-    console.log(`\n✅ Found ${allFiles.length} files`);
+    // Check if the --json flag is provided
+    const jsonOutput = args.includes('--json');
     
-    console.log('\nFile types:');
-    Object.entries(fileTypes).forEach(([type, count]) => {
-      console.log(`- ${type}: ${count} files`);
-    });
-    
-    console.log('\nSample of files:');
-    allFiles.slice(0, 10).forEach((file: any, i: number) => {
-      console.log(`${i+1}. ${file.name} (${file.mimeType})`);
-    });
-    
-    if (allFiles.length > 10) {
-      console.log(`... and ${allFiles.length - 10} more files`);
+    if (jsonOutput) {
+      // Output as JSON for easier parsing
+      const result = {
+        totalFiles: allFiles.length,
+        fileTypes,
+        files: allFiles
+      };
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      // Display human-readable results
+      console.log(`\n✅ Found ${allFiles.length} files`);
+      
+      console.log('\nFile types:');
+      Object.entries(fileTypes).forEach(([type, count]) => {
+        console.log(`- ${type}: ${count} files`);
+      });
+      
+      console.log('\nSample of files:');
+      allFiles.slice(0, 10).forEach((file: any, i: number) => {
+        console.log(`${i+1}. ${file.name} (${file.mimeType})`);
+      });
+      
+      if (allFiles.length > 10) {
+        console.log(`... and ${allFiles.length - 10} more files`);
+      }
     }
     
     return allFiles;

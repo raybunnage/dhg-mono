@@ -1,3 +1,7 @@
+   google-drive-cli.sh cli-recursive-search 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --json >
+  folder-contents.json
+ 
+ 
  [
   {
     "column_name": "id",
