@@ -36,6 +36,8 @@
 
 1. **Always Integrate New Commands**:
    - EVERY new script or command MUST be integrated into the appropriate CLI pipeline
+   - do not provide me scripts that start with ts-node - instead make this command accessible via the CLI like the other commands,
+   we need to make it runnable through the CLI pipeline.
    - Never create standalone scripts outside the pipeline structure
    - Identify the correct domain pipeline for the functionality (document, google_sync, media-processing, presentations, etc.)
    - Add the command to the existing program or create a new subcommand if needed

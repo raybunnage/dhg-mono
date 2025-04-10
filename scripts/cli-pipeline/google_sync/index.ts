@@ -1,6 +1,8 @@
 #!/usr/bin/env ts-node
 import { Command } from 'commander';
 import { Logger } from '../../../packages/shared/utils/logger';
+import * as fs from 'fs';
+import * as path from 'path';
 import { reportMainVideoIds } from './report-main-video-ids';
 
 // Create the main program
@@ -53,7 +55,7 @@ program
       
       Logger.debug(`Executing: ${cmd}`);
       
-      exec(cmd, (error, stdout, stderr) => {
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
         if (error) {
           Logger.error(`Error: ${error.message}`);
           return;
@@ -66,6 +68,59 @@ program
       });
     } catch (error) {
       Logger.error('Error updating main video IDs:', error);
+      process.exit(1);
+    }
+  });
+
+// Define browser-recursive-search command
+program
+  .command('browser-recursive-search')
+  .description('Generate browser-based recursive folder search script and save it to a markdown file')
+  .option('--folder-id <id>', 'Specify a folder ID (default: Dynamic Healing Discussion Group)', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('--output <path>', 'Path to write markdown output (default: docs/cli-pipeline/browser-recursive-search.md)', 'docs/cli-pipeline/browser-recursive-search.md')
+  .action(async (options: any) => {
+    try {
+      const { exec } = require('child_process');
+      
+      // Create docs/cli-pipeline directory if it doesn't exist
+      const outputDir = path.dirname(options.output);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+        Logger.info(`Created directory: ${outputDir}`);
+      }
+
+      // Get the script path
+      const scriptPath = path.resolve(__dirname, 'browser-recursive-search.sh');
+      
+      // Execute the script and capture its output
+      Logger.info(`Generating browser recursive search script for folder ID: ${options.folderId}`);
+      Logger.info(`Output will be saved to: ${options.output}`);
+      
+      exec(`bash "${scriptPath}"`, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          Logger.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          Logger.error(`stderr: ${stderr}`);
+          return;
+        }
+        
+        // Modify the output to use the specified folder ID
+        const modifiedOutput = stdout.replace(
+          /const folderId = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';/,
+          `const folderId = '${options.folderId}';`
+        );
+        
+        // Add a proper markdown header
+        const markdownContent = `# Browser Recursive Search Tool for Google Drive\n\n${modifiedOutput}`;
+        
+        // Write to the output file
+        fs.writeFileSync(options.output, markdownContent);
+        Logger.info(`Successfully saved browser recursive search script to: ${options.output}`);
+      });
+    } catch (error) {
+      Logger.error('Error generating browser recursive search script:', error);
       process.exit(1);
     }
   });
@@ -101,6 +156,12 @@ Available Commands:
       --verbose            Show detailed logs
       --limit <number>     Limit the number of presentations to process
       --use-sources-google Use sources_google table instead of sources_google2 (default uses sources_google2)
+  
+  browser-recursive-search Generate browser-based recursive folder search script
+                          Creates a markdown file with JavaScript for searching Google Drive folders
+    Options:
+      --folder-id <id>     Specify a folder ID (default: Dynamic Healing Discussion Group)
+      --output <path>      Path to write markdown output to a file
 
 For detailed help on a specific command, run:
   google-sync-cli [command] --help

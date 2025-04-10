@@ -27,19 +27,24 @@ function display_help() {
   echo ""
   echo "Advanced Commands:"
   echo "  add-root-service [folderId] Add a new root folder using service account"
+  echo "  browser-recursive-search    Generate browser-based recursive folder search script (saves to markdown)"
+  echo "  cli-recursive-search <id>   Search Google Drive folder recursively from command line (no browser needed)"
   echo "  check-roots                 Check the status of all registered root folders"
   echo "  count-mp4 [drive_id]        Count MP4 files in a Google Drive folder"
   echo "  disk-status                 Update presentations table with disk status for MP4 files"
   echo "  list-drive-direct           List files in Drive directly (no DB interaction)"
   echo "  mp4-experts                 Create expert documents for presentations with MP4 files"
   echo "  report-drive-roots          Generate a detailed report about all root folders"
+  echo "  report-main-video-ids       Report on video files for folders, prioritizing Presentation folders"
   echo "  sync-and-update-metadata    Sync folder and update metadata in one operation"
   echo "  sync-mp4-presentations      Sync MP4 files with presentations table (ensure 1:1 mapping)"
+  echo "  update-main-video-ids       Update main_video_id for presentations by recursively searching folders"
   echo "  update-metadata             Update metadata for files in the database"
   echo "  update-root-drive-id        Update root_drive_id field for all records under a specified root folder"
   echo ""
   echo "Options:"
   echo "  --dry-run                   Show what would be synced without making changes"
+  echo "  --json                      Output in JSON format (for cli-recursive-search command)"
   echo "  --list                      List all files found (for count-mp4 command)"
   echo "  --summary                   Show only summary information (for count-mp4 command)"
   echo "  --local                     Use local filesystem instead of Google Drive (for count-mp4 command)"
@@ -62,6 +67,10 @@ function display_help() {
   echo "  google-drive-cli.sh sync-mp4-presentations --folder-id dynamic-healing"
   echo "  google-drive-cli.sh disk-status --dry-run"
   echo "  google-drive-cli.sh mp4-experts --dry-run"
+  echo "  google-drive-cli.sh browser-recursive-search --folder-id d7e2cf82-26ff-4c36-8a4e-df9f98e8723a --output docs/custom-path.md"
+  echo "  google-drive-cli.sh cli-recursive-search 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --json > folder-contents.json"
+  echo "  google-drive-cli.sh report-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --output docs/video-report.md"
+  echo "  google-drive-cli.sh update-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
 }
 
 # No arguments provided
@@ -101,6 +110,12 @@ case "$COMMAND" in
   add-root-service)
     ts-node "$SCRIPT_DIR/add-drive-root-service.ts" "$@"
     ;;
+  browser-recursive-search)
+    ts-node "$SCRIPT_DIR/index.ts" browser-recursive-search "$@"
+    ;;
+  cli-recursive-search)
+    ts-node "$SCRIPT_DIR/google-drive-service-account.ts" list-folder "$@" --recursive
+    ;;
   check-roots)
     ts-node "$SCRIPT_DIR/check-roots.ts" "$@"
     ;;
@@ -113,8 +128,14 @@ case "$COMMAND" in
   report-drive-roots)
     ts-node "$SCRIPT_DIR/report-drive-roots.ts" "$@"
     ;;
+  report-main-video-ids)
+    ts-node "$SCRIPT_DIR/index.ts" report-main-video-ids "$@"
+    ;;
   sync-and-update-metadata)
     ts-node "$SCRIPT_DIR/sync-and-update-metadata.ts" "$@"
+    ;;
+  update-main-video-ids)
+    ts-node "$SCRIPT_DIR/index.ts" update-main-video-ids "$@"
     ;;
   sync-mp4-presentations)
     ts-node "$SCRIPT_DIR/sync-mp4-presentations.ts" "$@"
