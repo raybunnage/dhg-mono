@@ -28,7 +28,7 @@ function display_help() {
   echo "Advanced Commands:"
   echo "  add-root-service [folderId] Add a new root folder using service account"
   echo "  browser-recursive-search    Generate browser-based recursive folder search script (saves to markdown)"
-  echo "  cli-recursive-search <id>   Search Google Drive folder recursively from command line (no browser needed)"
+  echo "  cli-recursive-search <id>   Search Google Drive folder recursively and save to file_types/json/google-drive.json"
   echo "  check-roots                 Check the status of all registered root folders"
   echo "  count-mp4 [drive_id]        Count MP4 files in a Google Drive folder"
   echo "  disk-status                 Update presentations table with disk status for MP4 files"
@@ -68,7 +68,7 @@ function display_help() {
   echo "  google-drive-cli.sh disk-status --dry-run"
   echo "  google-drive-cli.sh mp4-experts --dry-run"
   echo "  google-drive-cli.sh browser-recursive-search --folder-id d7e2cf82-26ff-4c36-8a4e-df9f98e8723a --output docs/custom-path.md"
-  echo "  google-drive-cli.sh cli-recursive-search 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --json > folder-contents.json"
+  echo "  google-drive-cli.sh cli-recursive-search 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --json"
   echo "  google-drive-cli.sh report-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --output docs/video-report.md"
   echo "  google-drive-cli.sh update-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
 }
@@ -114,7 +114,12 @@ case "$COMMAND" in
     ts-node "$SCRIPT_DIR/index.ts" browser-recursive-search "$@"
     ;;
   cli-recursive-search)
-    ts-node "$SCRIPT_DIR/google-drive-service-account.ts" list-folder "$@" --recursive
+    # Always add --recursive flag, and check if --json is already included
+    if [[ "$*" == *"--json"* ]]; then
+      ts-node "$SCRIPT_DIR/google-drive-service-account.ts" list-folder "$@" --recursive
+    else
+      ts-node "$SCRIPT_DIR/google-drive-service-account.ts" list-folder "$@" --recursive --json
+    fi
     ;;
   check-roots)
     ts-node "$SCRIPT_DIR/check-roots.ts" "$@"

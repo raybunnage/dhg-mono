@@ -174,13 +174,32 @@ async function listFolder(drive: any, folderId: string, recursive: boolean = fal
     const jsonOutput = args.includes('--json');
     
     if (jsonOutput) {
-      // Output as JSON for easier parsing
+      // Create result object
       const result = {
         totalFiles: allFiles.length,
         fileTypes,
         files: allFiles
       };
-      console.log(JSON.stringify(result, null, 2));
+      
+      // Check if we should output to a specific file
+      const outputPath = path.resolve(__dirname, '../../../file_types/json/google-drive.json');
+      
+      // Make sure directory exists
+      const outputDir = path.dirname(outputPath);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+        console.log(`Created directory: ${outputDir}`);
+      }
+      
+      // Write to file
+      try {
+        fs.writeFileSync(outputPath, JSON.stringify(result, null, 2));
+        console.log(`✅ JSON output written to: ${outputPath}`);
+      } catch (error: any) {
+        console.error(`❌ Error writing to file: ${error.message}`);
+        // Still output to console as fallback
+        console.log(JSON.stringify(result, null, 2));
+      }
     } else {
       // Display human-readable results
       console.log(`\n✅ Found ${allFiles.length} files`);
@@ -210,7 +229,7 @@ async function listFolder(drive: any, folderId: string, recursive: boolean = fal
 /**
  * List files recursively
  */
-async function listFilesRecursively(drive: any, folderId: string, recursive: boolean = false, parentPath: string = ''): Promise<any[]> {
+async function listFilesRecursively(drive: any, folderId: string, recursive: boolean = false, parentPath: string = '', depth: number = 0): Promise<any[]> {
   let allFiles: any[] = [];
   let pageToken: string | null = null;
   
@@ -231,10 +250,15 @@ async function listFilesRecursively(drive: any, folderId: string, recursive: boo
     // Process files
     const enhancedFiles = files.map((file: any) => {
       const filePath = parentPath ? `${parentPath}/${file.name}` : `/${file.name}`;
+      // Create path array by splitting the path and filtering out empty elements
+      const pathArray = filePath.split('/').filter((segment: string) => segment.length > 0);
+      
       return {
         ...file,
         path: filePath,
-        parentPath: parentPath || '/'
+        parentPath: parentPath || '/',
+        path_array: pathArray,
+        depth: depth
       };
     });
     
@@ -251,7 +275,8 @@ async function listFilesRecursively(drive: any, folderId: string, recursive: boo
       
       for (const folder of folders) {
         const folderPath = parentPath ? `${parentPath}/${folder.name}` : `/${folder.name}`;
-        const subFiles = await listFilesRecursively(drive, folder.id, true, folderPath);
+        // Increment depth for subfolders
+        const subFiles = await listFilesRecursively(drive, folder.id, true, folderPath, depth + 1);
         allFiles = [...allFiles, ...subFiles];
       }
     }
