@@ -4,6 +4,9 @@ import { Logger } from '../../../packages/shared/utils/logger';
 import * as fs from 'fs';
 import * as path from 'path';
 import { reportMainVideoIds } from './report-main-video-ids';
+import { updateSourcesFromJson } from './update-sources-from-json';
+import { insertMissingSources } from './insert-missing-sources';
+import { updateSchemaFromJson } from './update-schema-from-json';
 
 // Create the main program
 const program = new Command()
@@ -125,6 +128,94 @@ program
     }
   });
 
+// Define update-sources-from-json command
+program
+  .command('update-sources-from-json')
+  .description('Update sources_google2 records using JSON file data with folder metadata and path information')
+  .argument('[json-file]', 'Path to the JSON file (default: file_types/json/google-drive.json)', 'file_types/json/google-drive.json')
+  .option('--dry-run', 'Show what would be updated without making changes', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .option('--drive-id <id>', 'Update only a specific drive ID')
+  .action(async (jsonFile: string, options: any) => {
+    try {
+      await updateSourcesFromJson(jsonFile, options.dryRun, options.verbose, options.driveId);
+    } catch (error) {
+      Logger.error('Error updating sources from JSON:', error);
+      process.exit(1);
+    }
+  });
+
+// Define insert-missing-sources command
+program
+  .command('insert-missing-sources')
+  .description('Insert records from JSON file that do not exist in sources_google2')
+  .argument('[json-file]', 'Path to the JSON file (default: file_types/json/google-drive.json)', 'file_types/json/google-drive.json')
+  .option('--dry-run', 'Show what would be inserted without making changes', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .option('--ids <ids>', 'Comma-separated list of specific drive IDs to insert')
+  .option('--missing-nine', 'Insert the 9 specific missing records identified in the recent analysis', false)
+  .option('--check-all-dhdg', 'Check for any missing files across the entire DHDG folder structure', false)
+  .action(async (jsonFile: string, options: any) => {
+    try {
+      // Parse IDs if provided
+      const specificIds: string[] = [];
+      if (options.ids) {
+        specificIds.push(...options.ids.split(',').map((id: string) => id.trim()));
+      }
+      
+      // Handle --missing-nine flag
+      if (options.missingNine) {
+        specificIds.push(
+          '1lY0Vxhv51RBZ5K9PmVQ9_T5PGpmcnkdh',
+          '16FpSTTysb1KQ27pKX4gpMnCU4UawN_te',
+          '16_yUoUFiyIT1lCRp3djQroTmKJjs9pYx',
+          '1UxtOppPsbbbvG5BHP2M89TCPAs6ygAKQ',
+          '1v9o3h8szKYHV_ZMKnph2XzAQYhMJmI-h',
+          '1R3KlwjPNO6imIerLeBxg9cAXtU23WOcE',
+          '1ab12OG1nS8jeWyY8gb4fCc_NPOP52F6k',
+          '1Ldhx29BXAKJEU0F9mFN_AodvykRGZ06-',
+          '13G5WPeK47jeeJI8kGG26jxqcIsjRAzQR'
+        );
+      }
+      
+      await insertMissingSources(
+        jsonFile, 
+        options.dryRun, 
+        options.verbose, 
+        specificIds.length > 0 ? specificIds : undefined,
+        options.checkAllDhdg
+      );
+    } catch (error) {
+      Logger.error('Error inserting missing sources:', error);
+      process.exit(1);
+    }
+  });
+
+// Define update-schema-from-json command
+program
+  .command('update-schema-from-json')
+  .description('Update database schema based on a JSON schema definition')
+  .argument('[json-file]', 'Path to the JSON schema file', 'schema.json')
+  .option('--table=<name>', 'Table name to update', 'sources_google2')
+  .option('--dry-run', 'Show what would be updated without making changes (default)', true)
+  .option('--execute', 'Actually execute the schema changes', false)
+  .option('--generate-sql', 'Generate SQL migration file', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (jsonFile: string, options: any) => {
+    try {
+      await updateSchemaFromJson(
+        jsonFile,
+        options.table,
+        !options.execute,  // dryRun is true unless --execute is specified
+        options.generateSql,
+        options.verbose
+      );
+    } catch (error) {
+      Logger.error('Error updating schema from JSON:', error);
+      process.exit(1);
+    }
+  });
+
 // Add more commands as needed
 
 // Parse command line arguments
@@ -162,6 +253,26 @@ Available Commands:
     Options:
       --folder-id <id>     Specify a folder ID (default: Dynamic Healing Discussion Group)
       --output <path>      Path to write markdown output to a file
+
+  update-sources-from-json Update sources_google2 records from a JSON file
+                          Updates path arrays, path depth, web links, and parent folder information
+    Arguments:
+      [json-file]          Path to JSON file (default: file_types/json/google-drive.json)
+    Options:
+      --dry-run            Show what would be updated without making changes
+      --verbose            Show detailed logs
+      --drive-id <id>      Update only a specific drive ID
+
+  update-schema-from-json  Update database schema based on a JSON schema definition
+                          Compares schema definition with database and generates SQL
+    Arguments:
+      [json-file]          Path to JSON schema file (default: schema.json)
+    Options:
+      --table=<name>       Table name to update (default: sources_google2)
+      --dry-run            Show what would be updated without making changes (default)
+      --execute            Actually execute the schema changes
+      --generate-sql       Generate SQL migration file
+      --verbose            Show detailed logs
 
 For detailed help on a specific command, run:
   google-sync-cli [command] --help

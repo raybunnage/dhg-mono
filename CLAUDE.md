@@ -36,6 +36,8 @@
 
 1. **Always Integrate New Commands**:
    - EVERY new script or command MUST be integrated into the appropriate CLI pipeline
+   - there are often 2 cli pipelines - 1) the The Node.js/TypeScript CLI that you seem to first develop and then  2. A shell script CLI - for examp;le the google-drive-cli.sh (./scripts/cli-pipeline/google_sync/google-drive-cli.sh)
+   - I always want you to integrate the new command into the shell script CLI which is the only one I use to actually do the commands with.
    - do not provide me scripts that start with ts-node - instead make this command accessible via the CLI like the other commands,
    we need to make it runnable through the CLI pipeline.
    - Never create standalone scripts outside the pipeline structure

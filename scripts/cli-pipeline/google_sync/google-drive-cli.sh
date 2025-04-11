@@ -41,6 +41,9 @@ function display_help() {
   echo "  update-main-video-ids       Update main_video_id for presentations by recursively searching folders"
   echo "  update-metadata             Update metadata for files in the database"
   echo "  update-root-drive-id        Update root_drive_id field for all records under a specified root folder"
+  echo "  update-sources-from-json    Update sources_google2 records using JSON file data with path and parent information"
+  echo "  insert-missing-sources      Insert records from JSON file that do not exist in sources_google2"
+  echo "  update-schema-from-json     Update the Supabase schema from JSON data"
   echo ""
   echo "Options:"
   echo "  --dry-run                   Show what would be synced without making changes"
@@ -71,6 +74,11 @@ function display_help() {
   echo "  google-drive-cli.sh cli-recursive-search 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --json"
   echo "  google-drive-cli.sh report-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --output docs/video-report.md"
   echo "  google-drive-cli.sh update-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
+  echo "  google-drive-cli.sh update-sources-from-json --verbose"
+  echo "  google-drive-cli.sh update-sources-from-json file_types/json/google-drive.json --dry-run --drive-id 1XZlq1NQNmcLxgiuPooJ8QH3LP3lJlZB3"
+  echo "  google-drive-cli.sh insert-missing-sources --missing-nine --verbose"
+  echo "  google-drive-cli.sh insert-missing-sources --ids=1lY0Vxhv51RBZ5K9PmVQ9_T5PGpmcnkdh,16FpSTTysb1KQ27pKX4gpMnCU4UawN_te --dry-run"
+  echo "  google-drive-cli.sh update-schema-from-json sources_google2-schema.json"
 }
 
 # No arguments provided
@@ -153,6 +161,15 @@ case "$COMMAND" in
     ;;
   update-root-drive-id)
     ts-node "$SCRIPT_DIR/google-drive-manager.ts" update-root-drive-id "$@"
+    ;;
+  update-sources-from-json)
+    ts-node "$SCRIPT_DIR/index.ts" update-sources-from-json "$@"
+    ;;
+  insert-missing-sources)
+    ts-node "$SCRIPT_DIR/index.ts" insert-missing-sources "$@"
+    ;;
+  update-schema-from-json)
+    ts-node "$SCRIPT_DIR/index.ts" update-schema-from-json "$@"
     ;;
   count-mp4)
     ts-node "$SCRIPT_DIR/count-mp4-files.ts" "$@"
