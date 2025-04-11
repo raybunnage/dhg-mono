@@ -162,7 +162,9 @@ async function updateSourcesFromJson(
             // 5) Write the webViewLink to web_view_link
             web_view_link: entry.webViewLink || entry.web_view_link,
             // 6) Set is_deleted to false
-            is_deleted: false
+            is_deleted: false,
+            // 7) Update size if available
+            size: entry.size ? parseInt(entry.size) : null
           };
           
           // 7) Set parent_folder_id from the parents array, if available

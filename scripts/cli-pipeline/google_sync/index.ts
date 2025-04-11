@@ -256,12 +256,24 @@ Available Commands:
 
   update-sources-from-json Update sources_google2 records from a JSON file
                           Updates path arrays, path depth, web links, and parent folder information
+                          NOTE: extracted_content is now deprecated
     Arguments:
       [json-file]          Path to JSON file (default: file_types/json/google-drive.json)
     Options:
       --dry-run            Show what would be updated without making changes
       --verbose            Show detailed logs
       --drive-id <id>      Update only a specific drive ID
+
+  insert-missing-sources   Insert records from JSON file that do not exist in sources_google2
+                          Checks if records exist before insertion to avoid duplicate key errors
+    Arguments:
+      [json-file]          Path to JSON file (default: file_types/json/google-drive.json)
+    Options:
+      --dry-run            Show what would be inserted without making changes
+      --verbose            Show detailed logs
+      --ids <ids>          Comma-separated list of specific drive IDs to insert
+      --missing-nine       Insert the 9 specific missing records identified in the recent analysis
+      --check-all-dhdg     Check for any missing files across the entire DHDG folder structure
 
   update-schema-from-json  Update database schema based on a JSON schema definition
                           Compares schema definition with database and generates SQL

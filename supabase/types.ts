@@ -4019,12 +4019,10 @@ export type Database = {
       }
       sources_google2: {
         Row: {
-          content_extracted: boolean | null
           created_at: string
           document_type_id: string | null
           drive_id: string
           expert_id: string | null
-          extracted_content: Json | null
           id: string
           is_deleted: boolean | null
           is_root: boolean | null
@@ -4045,12 +4043,10 @@ export type Database = {
           web_view_link: string | null
         }
         Insert: {
-          content_extracted?: boolean | null
           created_at?: string
           document_type_id?: string | null
           drive_id: string
           expert_id?: string | null
-          extracted_content?: Json | null
           id: string
           is_deleted?: boolean | null
           is_root?: boolean | null
@@ -4071,12 +4067,10 @@ export type Database = {
           web_view_link?: string | null
         }
         Update: {
-          content_extracted?: boolean | null
           created_at?: string
           document_type_id?: string | null
           drive_id?: string
           expert_id?: string | null
-          extracted_content?: Json | null
           id?: string
           is_deleted?: boolean | null
           is_root?: boolean | null
