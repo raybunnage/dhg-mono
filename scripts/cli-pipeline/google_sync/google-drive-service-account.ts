@@ -174,10 +174,21 @@ async function listFolder(drive: any, folderId: string, recursive: boolean = fal
     const jsonOutput = args.includes('--json');
     
     if (jsonOutput) {
-      // Create result object
+      // Calculate total size
+      const totalSizeBytes = allFiles.reduce((total, file) => total + (file.size_bytes || 0), 0);
+      
+      // Create result object with enhanced metadata
       const result = {
         totalFiles: allFiles.length,
+        totalSizeBytes: totalSizeBytes,
+        totalSizeFormatted: formatFileSize(totalSizeBytes),
         fileTypes,
+        queryInfo: {
+          folderId: folderId,
+          folderName: folderData.data.name,
+          timestamp: new Date().toISOString(),
+          recursive: recursive
+        },
         files: allFiles
       };
       
@@ -211,7 +222,10 @@ async function listFolder(drive: any, folderId: string, recursive: boolean = fal
       
       console.log('\nSample of files:');
       allFiles.slice(0, 10).forEach((file: any, i: number) => {
-        console.log(`${i+1}. ${file.name} (${file.mimeType})`);
+        const sizeInfo = file.size_formatted ? `, ${file.size_formatted}` : '';
+        const dateInfo = file.createdTime ? `, Created: ${new Date(file.createdTime).toLocaleString()}` : '';
+        const linkInfo = file.view_url ? `\n   Link: ${file.view_url}` : '';
+        console.log(`${i+1}. ${file.name} (${file.mimeType}${sizeInfo}${dateInfo})${linkInfo}`);
       });
       
       if (allFiles.length > 10) {
@@ -237,11 +251,11 @@ async function listFilesRecursively(drive: any, folderId: string, recursive: boo
   const query = `'${folderId}' in parents and trashed=false`;
   
   do {
-    // Get a page of files
+    // Get a page of files with additional fields for size, creation date, and web links
     const response: any = await drive.files.list({
       q: query,
       pageSize: 1000,
-      fields: 'nextPageToken, files(id, name, mimeType, parents, modifiedTime)',
+      fields: 'nextPageToken, files(id, name, mimeType, parents, modifiedTime, createdTime, size, webViewLink, webContentLink)',
       pageToken: pageToken
     });
     
@@ -253,12 +267,27 @@ async function listFilesRecursively(drive: any, folderId: string, recursive: boo
       // Create path array by splitting the path and filtering out empty elements
       const pathArray = filePath.split('/').filter((segment: string) => segment.length > 0);
       
+      // Convert size to a number if it exists, otherwise set to 0 for folders or unknown
+      const fileSize = file.size ? parseInt(file.size, 10) : 0;
+      
+      // Format size for human readability
+      const formattedSize = formatFileSize(fileSize);
+      
+      // The webViewLink is usually available for all files, but webContentLink might be missing for some
+      // Create a normalized view_url that prefers webViewLink but falls back to webContentLink
+      const viewUrl = file.webViewLink || file.webContentLink || null;
+      
       return {
         ...file,
         path: filePath,
         parentPath: parentPath || '/',
         path_array: pathArray,
-        depth: depth
+        depth: depth,
+        size_bytes: fileSize,
+        size_formatted: formattedSize,
+        view_url: viewUrl,
+        web_view_link: file.webViewLink || null,
+        web_content_link: file.webContentLink || null
       };
     });
     
@@ -285,6 +314,19 @@ async function listFilesRecursively(drive: any, folderId: string, recursive: boo
   } while (pageToken);
   
   return allFiles;
+}
+
+/**
+ * Format file size into a human-readable string
+ */
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  
+  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  
+  // Round to 2 decimal places
+  return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + units[i];
 }
 
 /**
