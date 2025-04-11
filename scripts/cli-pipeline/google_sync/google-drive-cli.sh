@@ -44,6 +44,7 @@ function display_help() {
   echo "  update-sources-from-json    Update sources_google2 records using JSON file data with path and parent information"
   echo "  insert-missing-sources      Insert records from JSON file that do not exist in sources_google2"
   echo "  update-schema-from-json     Update the Supabase schema from JSON data"
+  echo "  NOTE: The extracted_content field is deprecated and any size data should only be stored in the size field"
   echo ""
   echo "Options:"
   echo "  --dry-run                   Show what would be synced without making changes"
@@ -77,6 +78,7 @@ function display_help() {
   echo "  google-drive-cli.sh update-sources-from-json --verbose"
   echo "  google-drive-cli.sh update-sources-from-json file_types/json/google-drive.json --dry-run --drive-id 1XZlq1NQNmcLxgiuPooJ8QH3LP3lJlZB3"
   echo "  google-drive-cli.sh insert-missing-sources --missing-nine --verbose"
+  echo "  google-drive-cli.sh insert-missing-sources --check-all-dhdg --verbose"
   echo "  google-drive-cli.sh insert-missing-sources --ids=1lY0Vxhv51RBZ5K9PmVQ9_T5PGpmcnkdh,16FpSTTysb1KQ27pKX4gpMnCU4UawN_te --dry-run"
   echo "  google-drive-cli.sh update-schema-from-json sources_google2-schema.json"
 }

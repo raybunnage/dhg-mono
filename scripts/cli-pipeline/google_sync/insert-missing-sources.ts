@@ -228,7 +228,8 @@ async function insertMissingSources(
             path_depth: entry.depth !== undefined ? entry.depth : (entry.path_array ? entry.path_array.length - 1 : 0),
             web_view_link: entry.webViewLink || entry.web_view_link,
             is_deleted: false,
-            size: entry.size || null,
+            // Use the size field in the table
+            size: entry.size ? parseInt(entry.size) : null,
             created_at: entry.createdTime ? new Date(entry.createdTime).toISOString() : new Date().toISOString(),
             updated_at: new Date().toISOString(),
             modified_time: entry.modifiedTime || null,

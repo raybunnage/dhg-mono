@@ -1,6 +1,179 @@
    
 [
   {
+    "column_name": "id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "drive_id",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "name",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "mime_type",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "root_drive_id",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "parent_folder_id",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "path",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "path_array",
+    "data_type": "ARRAY",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "path_depth",
+    "data_type": "integer",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "is_root",
+    "data_type": "boolean",
+    "character_maximum_length": null,
+    "column_default": "false",
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "is_deleted",
+    "data_type": "boolean",
+    "character_maximum_length": null,
+    "column_default": "false",
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "metadata",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "size",
+    "data_type": "bigint",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "modified_time",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "web_view_link",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "thumbnail_link",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "content_extracted",
+    "data_type": "boolean",
+    "character_maximum_length": null,
+    "column_default": "false",
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "extracted_content",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "document_type_id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "expert_id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": "now()",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": "now()",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "last_indexed",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "main_video_id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  }
+]
+
+
+
+[
+  {
     "id": "56ff4e62-4270-405f-bbea-2cf3cb301025",
     "drive_id": "1XZlq1NQNmcLxgiuPooJ8QH3LP3lJlZB3",
     "name": "2025-05-07 - Raison - Depression a survival strategy",
