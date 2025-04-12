@@ -81,6 +81,8 @@ interface FileInfo {
   drive_id: string;
   path: string;
   main_video_id: string | null;
+  document_type_id: string | null;
+  document_type?: string;
 }
 
 /**
@@ -174,7 +176,7 @@ export async function generateMainVideoFilesReport(
       // Find all files under this folder using the path_array
       const { data: folderFiles, error: folderFilesError } = await supabase
         .from('sources_google2')
-        .select('id, name, mime_type, path, drive_id, main_video_id')
+        .select('id, name, mime_type, path, drive_id, main_video_id, document_type_id')
         .contains('path_array', [folder.name])
         .eq('is_deleted', false)
         .not('mime_type', 'eq', 'application/vnd.google-apps.folder') // Exclude folders
@@ -193,21 +195,51 @@ export async function generateMainVideoFilesReport(
       
       fileCount += folderFiles.length;
       
+      // Collect unique document_type_ids for lookup
+      const documentTypeIds = folderFiles
+        .map(file => file.document_type_id)
+        .filter(id => id !== null) as string[];
+      
+      // Fetch document_types for these IDs
+      const documentTypeMap: Record<string, string> = {};
+      
+      if (documentTypeIds.length > 0) {
+        const { data: documentTypes, error: documentTypesError } = await supabase
+          .from('document_types')
+          .select('id, document_type')
+          .in('id', documentTypeIds);
+          
+        if (!documentTypesError && documentTypes) {
+          for (const docType of documentTypes) {
+            documentTypeMap[docType.id] = docType.document_type;
+          }
+        } else if (documentTypesError) {
+          Logger.error(`Error fetching document types: ${documentTypesError.message}`);
+        }
+      }
+      
       // Add table headers
-      reportContent += `| File Path | Main Video ID | Match Status |\n`;
-      reportContent += `|-----------|--------------|-------------|\n`;
+      reportContent += `| File Path | Document Type | Main Video ID | Match Status |\n`;
+      reportContent += `|-----------|--------------|--------------|-------------|\n`;
       
       // Process each file
       const files: FileInfo[] = [];
       
       for (const file of folderFiles) {
+        // Get document type name if available
+        const documentType = file.document_type_id 
+          ? (documentTypeMap[file.document_type_id] || `Unknown (${file.document_type_id})`) 
+          : '-';
+          
         files.push({
           id: file.id,
           name: file.name,
           mime_type: file.mime_type,
           drive_id: file.drive_id,
           path: file.path,
-          main_video_id: file.main_video_id
+          main_video_id: file.main_video_id,
+          document_type_id: file.document_type_id,
+          document_type: documentType
         });
         
         // Determine match status
@@ -221,8 +253,8 @@ export async function generateMainVideoFilesReport(
           }
         }
         
-        // Add file to the table
-        reportContent += `| ${file.path} | ${file.main_video_id || 'null'} | ${matchStatus} |\n`;
+        // Add file to the table, keeping it on one line
+        reportContent += `| ${file.path} | ${documentType} | ${file.main_video_id || 'null'} | ${matchStatus} |\n`;
       }
       
       // Add a blank line after the table

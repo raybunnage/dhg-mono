@@ -47,6 +47,7 @@ function display_help() {
   echo "  update-sources-from-json    Update sources_google2 records using JSON file data with path and parent information"
   echo "  insert-missing-sources      Insert records from JSON file that do not exist in sources_google2"
   echo "  update-schema-from-json     Update the Supabase schema from JSON data"
+  echo "  check-document-types        Check for .docx and .txt files missing document_type_id"
   echo "  check-duplicates            Check for duplicate files in sources_google2 by name or drive_id"
   echo "  update-file-signatures      Update all file signatures to use the consistent new format"
   echo "  NOTE: The extracted_content field is deprecated and any size data should only be stored in the size field"
@@ -82,6 +83,7 @@ function display_help() {
   echo "  google-drive-cli.sh cli-recursive-search 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --json"
   echo "  google-drive-cli.sh report-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --output docs/video-report.md"
   echo "  google-drive-cli.sh generate-main-video-report --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --verbose"
+  echo "  google-drive-cli.sh check-document-types --output docs/missing-types.md --verbose"
   echo "  google-drive-cli.sh update-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
   echo "  google-drive-cli.sh update-sources-from-json --verbose"
   echo "  google-drive-cli.sh update-sources-from-json file_types/json/google-drive.json --dry-run --drive-id 1XZlq1NQNmcLxgiuPooJ8QH3LP3lJlZB3"
@@ -198,6 +200,9 @@ case "$COMMAND" in
     ;;
   mp4-experts)
     ts-node "$SCRIPT_DIR/create-mp4-expert-documents.ts" "$@"
+    ;;
+  check-document-types)
+    ts-node "$SCRIPT_DIR/check-document-types.ts" "$@"
     ;;
   check-duplicates)
     ts-node "$SCRIPT_DIR/check-duplicates.ts" "$@"
