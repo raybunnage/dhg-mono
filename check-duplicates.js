@@ -1,67 +1,75 @@
-import { SupabaseClientService } from './packages/shared/services/supabase-client';
+// Simple script to check for duplicate files in sources_google2
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
+
+// Get URL and key from env or set default for localhost
+const supabaseUrl = process.env.SUPABASE_URL || 'http://localhost:54321';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
 async function main() {
   try {
-    const supabaseClientService = SupabaseClientService.getInstance();
-    const supabase = supabaseClientService.getClient();
+    const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Query for possible duplicate files
+    // Query all records from sources_google2
     const { data, error } = await supabase
       .from('sources_google2')
-      .select('name, count(*)')
-      .group('name')
-      .having('count(*)', 'gt', 1)
-      .order('count(*)', { ascending: false })
-      .limit(20);
+      .select('id, drive_id, name, path, created_at, updated_at')
+      .order('name');
       
     if (error) {
       console.error('Error:', error);
       return;
     }
     
-    console.log('Files with multiple entries:');
-    console.log(JSON.stringify(data, null, 2));
+    // Find duplicates by name
+    const nameCount = {};
+    data.forEach(record => {
+      if (!nameCount[record.name]) {
+        nameCount[record.name] = [];
+      }
+      nameCount[record.name].push(record);
+    });
     
-    // For specific file
-    console.log('\nChecking "Stockdale_Seigel" files:');
-    const { data: stockdaleData, error: stockdaleError } = await supabase
-      .from('sources_google2')
-      .select('id, drive_id, name, path, path_array, created_at, updated_at, modified_at')
-      .ilike('name', '%Stockdale%Seigel%');
-      
-    if (stockdaleError) {
-      console.error('Error:', stockdaleError);
-      return;
-    }
+    // Filter for names with more than one entry
+    const duplicates = Object.entries(nameCount)
+      .filter(([name, records]) => records.length > 1)
+      .map(([name, records]) => ({
+        name,
+        count: records.length,
+        records
+      }))
+      .sort((a, b) => b.count - a.count);
     
-    console.log(JSON.stringify(stockdaleData, null, 2));
+    console.log('Files with duplicate names:');
+    console.log(JSON.stringify(duplicates.slice(0, 10), null, 2));
+    console.log(`Total files with duplicate names: ${duplicates.length}`);
+    
+    // Check for drive_id duplicates
+    const driveIdCount = {};
+    data.forEach(record => {
+      if (!driveIdCount[record.drive_id]) {
+        driveIdCount[record.drive_id] = [];
+      }
+      driveIdCount[record.drive_id].push(record);
+    });
+    
+    // Filter for drive_ids with more than one entry
+    const driveIdDuplicates = Object.entries(driveIdCount)
+      .filter(([driveId, records]) => records.length > 1)
+      .map(([driveId, records]) => ({
+        drive_id: driveId,
+        count: records.length,
+        records
+      }))
+      .sort((a, b) => b.count - a.count);
+    
+    console.log('\nFiles with duplicate drive_ids:');
+    console.log(JSON.stringify(driveIdDuplicates.slice(0, 10), null, 2));
+    console.log(`Total files with duplicate drive_ids: ${driveIdDuplicates.length}`);
     
     // Check total count
-    const { data: countData, error: countError } = await supabase
-      .from('sources_google2')
-      .select('count(*)', { count: 'exact' });
-      
-    if (countError) {
-      console.error('Error:', countError);
-      return;
-    }
+    console.log('\nTotal records in sources_google2:', data.length);
     
-    console.log('\nTotal records in sources_google2:', countData[0].count);
-    
-    // Check recent additions
-    const { data: recentData, error: recentError } = await supabase
-      .from('sources_google2')
-      .select('id, drive_id, name, created_at, updated_at, modified_at')
-      .order('updated_at', { ascending: false })
-      .limit(5);
-      
-    if (recentError) {
-      console.error('Error:', recentError);
-      return;
-    }
-    
-    console.log('\nMost recently updated records:');
-    console.log(JSON.stringify(recentData, null, 2));
   } catch (error) {
     console.error('Unexpected error:', error);
   }

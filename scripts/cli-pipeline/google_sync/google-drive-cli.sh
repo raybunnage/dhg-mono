@@ -44,6 +44,7 @@ function display_help() {
   echo "  update-sources-from-json    Update sources_google2 records using JSON file data with path and parent information"
   echo "  insert-missing-sources      Insert records from JSON file that do not exist in sources_google2"
   echo "  update-schema-from-json     Update the Supabase schema from JSON data"
+  echo "  check-duplicates            Check for duplicate files in sources_google2 by name or drive_id"
   echo "  NOTE: The extracted_content field is deprecated and any size data should only be stored in the size field"
   echo ""
   echo "Options:"
@@ -81,6 +82,9 @@ function display_help() {
   echo "  google-drive-cli.sh insert-missing-sources --check-all-dhdg --verbose"
   echo "  google-drive-cli.sh insert-missing-sources --ids=1lY0Vxhv51RBZ5K9PmVQ9_T5PGpmcnkdh,16FpSTTysb1KQ27pKX4gpMnCU4UawN_te --dry-run"
   echo "  google-drive-cli.sh update-schema-from-json sources_google2-schema.json"
+  echo "  google-drive-cli.sh check-duplicates --all --verbose"
+  echo "  google-drive-cli.sh check-duplicates --by-name --limit 20"
+  echo "  google-drive-cli.sh check-duplicates --by-drive-id --json"
 }
 
 # No arguments provided
@@ -181,6 +185,9 @@ case "$COMMAND" in
     ;;
   mp4-experts)
     ts-node "$SCRIPT_DIR/create-mp4-expert-documents.ts" "$@"
+    ;;
+  check-duplicates)
+    ts-node "$SCRIPT_DIR/check-duplicates.ts" "$@"
     ;;
     
   # Help commands
