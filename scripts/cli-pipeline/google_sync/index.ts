@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import { Logger } from '../../../packages/shared/utils/logger';
 import * as fs from 'fs';
 import * as path from 'path';
-// Import the new report-main-video-ids for sources_google2
+// Import the new report-main-video-ids for sources_google
 import { reportMainVideoIds } from './report-main-video-ids';
 import { updateSourcesFromJson } from './update-sources-from-json';
 import { insertMissingSources } from './insert-missing-sources';
@@ -47,7 +47,7 @@ program
   .option('--dry-run', 'Show what would be updated without making changes', false)
   .option('--verbose', 'Show detailed logs', false)
   .option('--limit <number>', 'Limit the number of presentations to process')
-  .option('--use-sources-google', 'Use sources_google table instead of sources_google2', false)
+  .option('--use-sources-google', 'Use sources_google table instead of sources_google', false)
   .action(async (options: any) => {
     try {
       // Execute the script directly
@@ -139,7 +139,7 @@ program
 // Define update-sources-from-json command
 program
   .command('update-sources-from-json')
-  .description('Update sources_google2 records using JSON file data with folder metadata and path information')
+  .description('Update sources_google records using JSON file data with folder metadata and path information')
   .argument('[json-file]', 'Path to the JSON file (default: file_types/json/google-drive.json)', 'file_types/json/google-drive.json')
   .option('--dry-run', 'Show what would be updated without making changes', false)
   .option('--verbose', 'Show detailed logs', false)
@@ -156,7 +156,7 @@ program
 // Define insert-missing-sources command
 program
   .command('insert-missing-sources')
-  .description('Insert records from JSON file that do not exist in sources_google2')
+  .description('Insert records from JSON file that do not exist in sources_google')
   .argument('[json-file]', 'Path to the JSON file (default: file_types/json/google-drive.json)', 'file_types/json/google-drive.json')
   .option('--dry-run', 'Show what would be inserted without making changes', false)
   .option('--verbose', 'Show detailed logs', false)
@@ -204,7 +204,7 @@ program
   .command('update-schema-from-json')
   .description('Update database schema based on a JSON schema definition')
   .argument('[json-file]', 'Path to the JSON schema file', 'schema.json')
-  .option('--table=<name>', 'Table name to update', 'sources_google2')
+  .option('--table=<name>', 'Table name to update', 'sources_google')
   .option('--dry-run', 'Show what would be updated without making changes (default)', true)
   .option('--execute', 'Actually execute the schema changes', false)
   .option('--generate-sql', 'Generate SQL migration file', false)
@@ -294,7 +294,7 @@ Available Commands:
       --dry-run            Show what would be updated without making changes
       --verbose            Show detailed logs
       --limit <number>     Limit the number of presentations to process
-      --use-sources-google Use sources_google table instead of sources_google2 (default uses sources_google2)
+      --use-sources-google Use sources_google table instead of sources_google (default uses sources_google)
   
   browser-recursive-search Generate browser-based recursive folder search script
                           Creates a markdown file with JavaScript for searching Google Drive folders
@@ -302,7 +302,7 @@ Available Commands:
       --folder-id <id>     Specify a folder ID (default: Dynamic Healing Discussion Group)
       --output <path>      Path to write markdown output to a file
 
-  update-sources-from-json Update sources_google2 records from a JSON file
+  update-sources-from-json Update sources_google records from a JSON file
                           Updates path arrays, path depth, web links, and parent folder information
                           NOTE: extracted_content is now deprecated
     Arguments:
@@ -312,7 +312,7 @@ Available Commands:
       --verbose            Show detailed logs
       --drive-id <id>      Update only a specific drive ID
 
-  insert-missing-sources   Insert records from JSON file that do not exist in sources_google2
+  insert-missing-sources   Insert records from JSON file that do not exist in sources_google
                           Checks if records exist before insertion to avoid duplicate key errors
     Arguments:
       [json-file]          Path to JSON file (default: file_types/json/google-drive.json)
@@ -328,7 +328,7 @@ Available Commands:
     Arguments:
       [json-file]          Path to JSON schema file (default: schema.json)
     Options:
-      --table=<name>       Table name to update (default: sources_google2)
+      --table=<name>       Table name to update (default: sources_google)
       --dry-run            Show what would be updated without making changes (default)
       --execute            Actually execute the schema changes
       --generate-sql       Generate SQL migration file

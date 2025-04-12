@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 /**
- * Check Duplicates in sources_google2 Script
+ * Check Duplicates in sources_google Script
  * 
- * This script checks for duplicate records in sources_google2 by name and drive_id
+ * This script checks for duplicate records in sources_google by name and drive_id
  */
 
 import * as dotenv from 'dotenv';
@@ -35,7 +35,7 @@ const program = new Command();
 
 program
   .name('check-duplicates')
-  .description('Check for duplicate records in sources_google2 table')
+  .description('Check for duplicate records in sources_google table')
   .option('-l, --limit <number>', 'Limit the number of duplicate groups to display', '10')
   .option('-j, --json', 'Output in JSON format')
   .option('-n, --by-name', 'Check duplicates by name (default)', true)
@@ -48,7 +48,7 @@ const options = program.opts();
 
 async function main() {
   try {
-    console.log('Checking for duplicates in sources_google2 table...');
+    console.log('Checking for duplicates in sources_google table...');
     
     // Create Supabase client
     const supabaseClientService = SupabaseClientService.getInstance();
@@ -56,19 +56,19 @@ async function main() {
     
     // Get total count
     const { count, error: countError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*', { count: 'exact', head: true });
       
     if (countError) {
       throw new Error(`Failed to count records: ${countError.message}`);
     }
     
-    console.log(`Total records in sources_google2: ${count}`);
+    console.log(`Total records in sources_google: ${count}`);
     
     // Fetch all records - this approach is suitable for smaller tables
     // For large tables, we would use SQL directly with GROUP BY
     const { data, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, drive_id, name, path, created_at, updated_at, modified_at')
       .order('name');
       
@@ -77,7 +77,7 @@ async function main() {
     }
     
     if (!data || data.length === 0) {
-      console.log('No records found in sources_google2');
+      console.log('No records found in sources_google');
       return;
     }
     

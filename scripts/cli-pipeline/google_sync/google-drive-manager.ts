@@ -17,7 +17,7 @@
  *   sync [rootId]             Sync files from a root folder (or all if not specified)
  *   sync-folder [folderId]    Sync a specific folder (doesn't need to be a root)
  *   update-root-drive-id      Update root_drive_id field for all records under a folder
- *   migrate-table             Migrate sources_google to improved sources_google2 schema
+ *   migrate-table             Migrate sources_google to improved schema
  *   help                      Show this help message
  * 
  * Options:

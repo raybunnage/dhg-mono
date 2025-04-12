@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 /**
- * Create sources_google2 Table Script
+ * Create sources_google Table Script
  * 
- * This script creates the sources_google2 table for the migration
+ * This script creates the sources_google table for the migration
  */
 
 import * as dotenv from 'dotenv';
@@ -13,7 +13,7 @@ dotenv.config();
 
 async function main() {
   try {
-    console.log('Setting up sources_google2 table...');
+    console.log('Setting up sources_google table...');
     
     // Create Supabase client
     const supabaseClientService = SupabaseClientService.getInstance();
@@ -24,7 +24,7 @@ async function main() {
     
     try {
       const { count, error } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('id', { count: 'exact', head: true });
       
       if (!error) {
@@ -46,7 +46,7 @@ async function main() {
         
         // Drop the table first
         const { error: dropError } = await supabase.rpc('execute_sql', {
-          sql: `DROP TABLE IF EXISTS public.sources_google2`
+          sql: `DROP TABLE IF EXISTS public.sources_google`
         });
         
         if (dropError) {
@@ -61,10 +61,10 @@ async function main() {
       }
     } else {
       // Create the table
-      console.log('Creating sources_google2 table...');
+      console.log('Creating sources_google table...');
       
       const createQuery = `
-        CREATE TABLE IF NOT EXISTS public.sources_google2 (
+        CREATE TABLE IF NOT EXISTS public.sources_google (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
           name text NOT NULL,
           mime_type text,
@@ -107,12 +107,12 @@ async function main() {
     console.log('Creating indexes...');
     
     const indexQueries = [
-      `CREATE INDEX IF NOT EXISTS sources_google2_drive_id_idx ON public.sources_google2 (drive_id)`,
-      `CREATE INDEX IF NOT EXISTS sources_google2_root_drive_id_idx ON public.sources_google2 (root_drive_id)`,
-      `CREATE INDEX IF NOT EXISTS sources_google2_parent_folder_id_idx ON public.sources_google2 (parent_folder_id)`,
-      `CREATE INDEX IF NOT EXISTS sources_google2_mime_type_idx ON public.sources_google2 (mime_type)`,
-      `CREATE INDEX IF NOT EXISTS sources_google2_path_idx ON public.sources_google2 (path)`,
-      `CREATE INDEX IF NOT EXISTS sources_google2_name_idx ON public.sources_google2 (name)`
+      `CREATE INDEX IF NOT EXISTS sources_google_drive_id_idx ON public.sources_google (drive_id)`,
+      `CREATE INDEX IF NOT EXISTS sources_google_root_drive_id_idx ON public.sources_google (root_drive_id)`,
+      `CREATE INDEX IF NOT EXISTS sources_google_parent_folder_id_idx ON public.sources_google (parent_folder_id)`,
+      `CREATE INDEX IF NOT EXISTS sources_google_mime_type_idx ON public.sources_google (mime_type)`,
+      `CREATE INDEX IF NOT EXISTS sources_google_path_idx ON public.sources_google (path)`,
+      `CREATE INDEX IF NOT EXISTS sources_google_name_idx ON public.sources_google (name)`
     ];
     
     for (const query of indexQueries) {

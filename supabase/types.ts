@@ -257,13 +257,6 @@ export type Database = {
             referencedRelation: "processing_batches"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "audio_processing_stages_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
-          },
         ]
       }
       audio_processor_steps: {
@@ -1696,13 +1689,6 @@ export type Database = {
             referencedRelation: "expert_documents"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "expert_documents_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
-          },
         ]
       }
       expert_documents_backup_2025_02_16: {
@@ -2394,13 +2380,6 @@ export type Database = {
             referencedRelation: "presentations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "presentation_assets_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
-          },
         ]
       }
       presentation_collection_items: {
@@ -2431,13 +2410,6 @@ export type Database = {
             columns: ["collection_id"]
             isOneToOne: false
             referencedRelation: "presentation_collections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "presentation_collection_items_presentation_id_fkey"
-            columns: ["presentation_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
             referencedColumns: ["id"]
           },
         ]
@@ -2527,15 +2499,7 @@ export type Database = {
           title_vector?: unknown | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "presentation_search_index_presentation_id_fkey"
-            columns: ["presentation_id"]
-            isOneToOne: true
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       presentation_tag_links: {
         Row: {
@@ -2554,13 +2518,6 @@ export type Database = {
           tag_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "presentation_tag_links_presentation_id_fkey"
-            columns: ["presentation_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "presentation_tag_links_tag_id_fkey"
             columns: ["tag_id"]
@@ -2611,13 +2568,6 @@ export type Database = {
           theme_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "presentation_theme_links_presentation_id_fkey"
-            columns: ["presentation_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "presentation_theme_links_theme_id_fkey"
             columns: ["theme_id"]
@@ -2706,15 +2656,7 @@ export type Database = {
           updated_at?: string | null
           view_count?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "presentations_main_video_id_fkey"
-            columns: ["main_video_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       presentations_backup_2024_04_06: {
         Row: {
@@ -3446,132 +3388,81 @@ export type Database = {
       }
       sources_google: {
         Row: {
-          audio_bitrate: number | null
-          audio_channels: number | null
-          audio_duration_seconds: number | null
-          audio_extracted: boolean | null
-          audio_extraction_path: string | null
-          audio_quality_metrics: Json | null
-          content_extracted: boolean | null
-          created_at: string
-          deleted: boolean | null
+          created_at: string | null
           document_type_id: string | null
-          drive_id: string
+          drive_id: string | null
           expert_id: string | null
-          extracted_content: Json | null
-          extraction_error: string | null
-          id: string
+          file_signature: string | null
+          id: string | null
+          is_deleted: boolean | null
           is_root: boolean | null
           last_indexed: string | null
           main_video_id: string | null
           metadata: Json | null
-          mime_type: string
-          modified_time: string | null
-          name: string
+          mime_type: string | null
+          modified_at: string | null
+          name: string | null
           parent_folder_id: string | null
-          parent_id: string | null
-          parent_path: string | null
           path: string | null
+          path_array: string[] | null
+          path_depth: number | null
           root_drive_id: string | null
           size: number | null
-          size_bytes: number | null
-          sync_error: string | null
-          sync_id: string | null
-          sync_status: string | null
           thumbnail_link: string | null
-          updated_at: string
+          updated_at: string | null
           web_view_link: string | null
         }
         Insert: {
-          audio_bitrate?: number | null
-          audio_channels?: number | null
-          audio_duration_seconds?: number | null
-          audio_extracted?: boolean | null
-          audio_extraction_path?: string | null
-          audio_quality_metrics?: Json | null
-          content_extracted?: boolean | null
-          created_at?: string
-          deleted?: boolean | null
+          created_at?: string | null
           document_type_id?: string | null
-          drive_id: string
+          drive_id?: string | null
           expert_id?: string | null
-          extracted_content?: Json | null
-          extraction_error?: string | null
-          id?: string
+          file_signature?: string | null
+          id?: string | null
+          is_deleted?: boolean | null
           is_root?: boolean | null
           last_indexed?: string | null
           main_video_id?: string | null
           metadata?: Json | null
-          mime_type: string
-          modified_time?: string | null
-          name: string
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
           parent_folder_id?: string | null
-          parent_id?: string | null
-          parent_path?: string | null
           path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
           root_drive_id?: string | null
           size?: number | null
-          size_bytes?: number | null
-          sync_error?: string | null
-          sync_id?: string | null
-          sync_status?: string | null
           thumbnail_link?: string | null
-          updated_at?: string
+          updated_at?: string | null
           web_view_link?: string | null
         }
         Update: {
-          audio_bitrate?: number | null
-          audio_channels?: number | null
-          audio_duration_seconds?: number | null
-          audio_extracted?: boolean | null
-          audio_extraction_path?: string | null
-          audio_quality_metrics?: Json | null
-          content_extracted?: boolean | null
-          created_at?: string
-          deleted?: boolean | null
+          created_at?: string | null
           document_type_id?: string | null
-          drive_id?: string
+          drive_id?: string | null
           expert_id?: string | null
-          extracted_content?: Json | null
-          extraction_error?: string | null
-          id?: string
+          file_signature?: string | null
+          id?: string | null
+          is_deleted?: boolean | null
           is_root?: boolean | null
           last_indexed?: string | null
           main_video_id?: string | null
           metadata?: Json | null
-          mime_type?: string
-          modified_time?: string | null
-          name?: string
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
           parent_folder_id?: string | null
-          parent_id?: string | null
-          parent_path?: string | null
           path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
           root_drive_id?: string | null
           size?: number | null
-          size_bytes?: number | null
-          sync_error?: string | null
-          sync_id?: string | null
-          sync_status?: string | null
           thumbnail_link?: string | null
-          updated_at?: string
+          updated_at?: string | null
           web_view_link?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sources_google_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sources_google_expert_id_fkey"
-            columns: ["expert_id"]
-            isOneToOne: false
-            referencedRelation: "experts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       sources_google_backup: {
         Row: {
@@ -4017,98 +3908,239 @@ export type Database = {
         }
         Relationships: []
       }
-      sources_google2: {
+      sources_google2_backup_2024_03_26: {
         Row: {
-          created_at: string
+          created_at: string | null
           document_type_id: string | null
-          drive_id: string
+          drive_id: string | null
           expert_id: string | null
           file_signature: string | null
-          id: string
+          id: string | null
           is_deleted: boolean | null
           is_root: boolean | null
           last_indexed: string | null
           main_video_id: string | null
           metadata: Json | null
-          mime_type: string
+          mime_type: string | null
           modified_at: string | null
-          name: string
+          name: string | null
           parent_folder_id: string | null
-          path: string
+          path: string | null
           path_array: string[] | null
           path_depth: number | null
-          root_drive_id: string
+          root_drive_id: string | null
           size: number | null
           thumbnail_link: string | null
-          updated_at: string
+          updated_at: string | null
           web_view_link: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           document_type_id?: string | null
-          drive_id: string
+          drive_id?: string | null
           expert_id?: string | null
           file_signature?: string | null
-          id: string
+          id?: string | null
           is_deleted?: boolean | null
           is_root?: boolean | null
           last_indexed?: string | null
           main_video_id?: string | null
           metadata?: Json | null
-          mime_type: string
+          mime_type?: string | null
           modified_at?: string | null
-          name: string
+          name?: string | null
           parent_folder_id?: string | null
-          path: string
+          path?: string | null
           path_array?: string[] | null
           path_depth?: number | null
-          root_drive_id: string
+          root_drive_id?: string | null
           size?: number | null
           thumbnail_link?: string | null
-          updated_at?: string
+          updated_at?: string | null
           web_view_link?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           document_type_id?: string | null
-          drive_id?: string
+          drive_id?: string | null
           expert_id?: string | null
           file_signature?: string | null
-          id?: string
+          id?: string | null
           is_deleted?: boolean | null
           is_root?: boolean | null
           last_indexed?: string | null
           main_video_id?: string | null
           metadata?: Json | null
-          mime_type?: string
+          mime_type?: string | null
           modified_at?: string | null
-          name?: string
+          name?: string | null
           parent_folder_id?: string | null
-          path?: string
+          path?: string | null
           path_array?: string[] | null
           path_depth?: number | null
-          root_drive_id?: string
+          root_drive_id?: string | null
           size?: number | null
           thumbnail_link?: string | null
-          updated_at?: string
+          updated_at?: string | null
           web_view_link?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sources_google2_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sources_google2_expert_id_fkey"
-            columns: ["expert_id"]
-            isOneToOne: false
-            referencedRelation: "experts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      sources_google2_backup_2025_04_11: {
+        Row: {
+          created_at: string | null
+          document_type_id: string | null
+          drive_id: string | null
+          expert_id: string | null
+          file_signature: string | null
+          id: string | null
+          is_deleted: boolean | null
+          is_root: boolean | null
+          last_indexed: string | null
+          main_video_id: string | null
+          metadata: Json | null
+          mime_type: string | null
+          modified_at: string | null
+          name: string | null
+          parent_folder_id: string | null
+          path: string | null
+          path_array: string[] | null
+          path_depth: number | null
+          root_drive_id: string | null
+          size: number | null
+          thumbnail_link: string | null
+          updated_at: string | null
+          web_view_link: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          expert_id?: string | null
+          file_signature?: string | null
+          id?: string | null
+          is_deleted?: boolean | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
+          root_drive_id?: string | null
+          size?: number | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          expert_id?: string | null
+          file_signature?: string | null
+          id?: string | null
+          is_deleted?: boolean | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
+          root_drive_id?: string | null
+          size?: number | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Relationships: []
+      }
+      sources_google2_backup_2025_04_12: {
+        Row: {
+          created_at: string | null
+          document_type_id: string | null
+          drive_id: string | null
+          expert_id: string | null
+          file_signature: string | null
+          id: string | null
+          is_deleted: boolean | null
+          is_root: boolean | null
+          last_indexed: string | null
+          main_video_id: string | null
+          metadata: Json | null
+          mime_type: string | null
+          modified_at: string | null
+          name: string | null
+          parent_folder_id: string | null
+          path: string | null
+          path_array: string[] | null
+          path_depth: number | null
+          root_drive_id: string | null
+          size: number | null
+          thumbnail_link: string | null
+          updated_at: string | null
+          web_view_link: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          expert_id?: string | null
+          file_signature?: string | null
+          id?: string | null
+          is_deleted?: boolean | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
+          root_drive_id?: string | null
+          size?: number | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          expert_id?: string | null
+          file_signature?: string | null
+          id?: string | null
+          is_deleted?: boolean | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
+          root_drive_id?: string | null
+          size?: number | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Relationships: []
       }
       speaker_profiles: {
         Row: {

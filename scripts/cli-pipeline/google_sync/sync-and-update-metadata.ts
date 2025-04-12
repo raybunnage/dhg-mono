@@ -233,12 +233,12 @@ async function listFilesRecursively(
 }
 
 /**
- * Check if file already exists in sources_google2
+ * Check if file already exists in sources_google
  */
 async function checkFileExists(fileId: string): Promise<{ exists: boolean, data?: any, error?: any }> {
   try {
     const { data, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, drive_id, name')
       .eq('drive_id', fileId)
       .eq('is_deleted', false);
@@ -256,7 +256,7 @@ async function checkFileExists(fileId: string): Promise<{ exists: boolean, data?
 }
 
 /**
- * Insert a specific file from Google Drive into sources_google2
+ * Insert a specific file from Google Drive into sources_google
  */
 async function insertSpecificFile(drive: any, fileId: string, parentId: string, isDryRun: boolean, isVerbose: boolean): Promise<{ success: boolean, message?: string, data?: any }> {
   console.log(`=== Attempting to insert specific file ${fileId} ===`);
@@ -360,7 +360,7 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
     
     // Insert the file
     const { data, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .insert(insertData);
       
     if (error) {
@@ -378,7 +378,7 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
 }
 
 /**
- * Sync files from Google Drive to Supabase sources_google2 table
+ * Sync files from Google Drive to Supabase sources_google table
  */
 async function syncFiles(
   drive: any, 
@@ -409,7 +409,7 @@ async function syncFiles(
     if (!isDryRun) {
       console.log('Ensuring folder is registered as a root folder...');
       const { data: existingFolders, error: queryError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('id, drive_id, name, is_root')
         .eq('drive_id', folderId)
         .eq('is_deleted', false);
@@ -428,7 +428,7 @@ async function syncFiles(
         } else {
           // Update it to be a root folder
           const { error } = await supabase
-            .from('sources_google2')
+            .from('sources_google')
             .update({
               name: folder.data.name,
               is_root: true,
@@ -478,7 +478,7 @@ async function syncFiles(
         }
         
         const { error } = await supabase
-          .from('sources_google2')
+          .from('sources_google')
           .insert(insertData);
           
         if (error) {
@@ -550,7 +550,7 @@ async function syncFiles(
     
     // Get existing files to avoid duplicates
     const { data: existingRecords, error: queryError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, drive_id, root_drive_id, name')
       .eq('is_deleted', false);
       
@@ -644,7 +644,7 @@ async function syncFiles(
           const idsToUpdate = batch.map(record => record.id);
           
           const { error } = await supabase
-            .from('sources_google2')
+            .from('sources_google')
             .update({
               is_deleted: true,
               updated_at: new Date().toISOString()
@@ -811,7 +811,7 @@ async function syncFiles(
         }
         
         const { error } = await supabase
-          .from('sources_google2')
+          .from('sources_google')
           .insert(filesToInsert);
         
         if (error) {
@@ -826,7 +826,7 @@ async function syncFiles(
           // TEMPORARY DEBUG: Get table structure to verify column names
           if (isVerbose && i === 0) {
             console.log("\n=== DEBUGGING TABLE STRUCTURE ===");
-            console.log("Checking sources_google2 table structure to identify issues...");
+            console.log("Checking sources_google table structure to identify issues...");
             
             // Output the field that's causing problems based on error code
             if (error.code === '23502') { // not-null constraint violation
@@ -893,7 +893,7 @@ async function updateMetadata(
     
     // Fetch all records under this root folder ID
     const { data: records, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*')
       .eq('root_drive_id', folderId)  // Get all files with this root folder 
       .eq('is_deleted', false)
@@ -1063,7 +1063,7 @@ async function updateMetadata(
             delete updateData.id; // Remove ID from update data
             
             const { error: updateError } = await supabase
-              .from('sources_google2')
+              .from('sources_google')
               .update(updateData)
               .eq('id', recordId);
               
@@ -1258,7 +1258,7 @@ async function syncAndUpdateMetadata(specificFileId?: string): Promise<void> {
       try {
         // Check if the root folder exists and is marked as deleted
         const { data: rootFolderCheck, error: rootCheckError } = await supabase
-          .from('sources_google2')
+          .from('sources_google')
           .select('id, is_deleted')
           .eq('drive_id', DYNAMIC_HEALING_FOLDER_ID)
           .single();
@@ -1271,7 +1271,7 @@ async function syncAndUpdateMetadata(specificFileId?: string): Promise<void> {
             
             // Update the root folder to ensure it's not marked as deleted
             const { error: updateError } = await supabase
-              .from('sources_google2')
+              .from('sources_google')
               .update({
                 is_deleted: false,
                 updated_at: new Date().toISOString()

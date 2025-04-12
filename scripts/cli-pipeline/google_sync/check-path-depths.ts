@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /**
- * Check path_depth in sources_google2 against depth in google-drive.json
+ * Check path_depth in sources_google against depth in google-drive.json
  */
 
 import * as dotenv from 'dotenv';
@@ -18,7 +18,7 @@ const supabaseClientService = SupabaseClientService.getInstance();
 const supabase = supabaseClientService.getClient();
 
 async function checkPathDepths() {
-  console.log('Comparing depth fields between google-drive.json and sources_google2 table');
+  console.log('Comparing depth fields between google-drive.json and sources_google table');
   
   try {
     // Read the JSON file
@@ -55,7 +55,7 @@ async function checkPathDepths() {
       totalChecked++;
       
       const { data, error } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('id, name, drive_id, path_depth')
         .eq('drive_id', file.id);
         

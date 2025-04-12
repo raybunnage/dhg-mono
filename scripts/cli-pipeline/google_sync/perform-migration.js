@@ -3,7 +3,7 @@
 /**
  * Complete Sources Google Migration Script
  * 
- * This script performs a full migration from sources_google to sources_google2
+ * This script performs a full migration from sources_google to sources_google
  * with improved structure, and focuses on the root folders we care about.
  */
 
@@ -77,9 +77,9 @@ async function main() {
     const sourceCount = sgData?.count || 0;
     console.log(`sources_google has ${sourceCount} records`);
     
-    // Check if sources_google2 exists
+    // Check if sources_google exists
     const { data: sg2Data, error: sg2Error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id', { count: 'exact', head: true });
     
     let targetTableExists = true;
@@ -87,23 +87,23 @@ async function main() {
     
     if (sg2Error) {
       if (sg2Error.code === 'PGRST116') {
-        console.log('sources_google2 table does not exist, will create it');
+        console.log('sources_google table does not exist, will create it');
         targetTableExists = false;
       } else {
-        throw new Error(`Error checking sources_google2: ${sg2Error.message}`);
+        throw new Error(`Error checking sources_google: ${sg2Error.message}`);
       }
     } else {
       targetCount = sg2Data?.count || 0;
-      console.log(`sources_google2 exists with ${targetCount} records`);
+      console.log(`sources_google exists with ${targetCount} records`);
     }
     
-    // Step 2: Create sources_google2 table if needed
+    // Step 2: Create sources_google table if needed
     console.log('\nSTEP 2: Creating table structure...');
     
     if (!targetTableExists || targetCount === 0 || !skipTruncate) {
       // Create the table structure
       const createTableSql = `
-        CREATE TABLE IF NOT EXISTS public.sources_google2 (
+        CREATE TABLE IF NOT EXISTS public.sources_google (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
           name text NOT NULL,
           mime_type text,
@@ -131,12 +131,12 @@ async function main() {
         );
         
         -- Create indexes
-        CREATE INDEX IF NOT EXISTS sources_google2_drive_id_idx ON public.sources_google2 (drive_id);
-        CREATE INDEX IF NOT EXISTS sources_google2_root_drive_id_idx ON public.sources_google2 (root_drive_id);
-        CREATE INDEX IF NOT EXISTS sources_google2_parent_folder_id_idx ON public.sources_google2 (parent_folder_id);
-        CREATE INDEX IF NOT EXISTS sources_google2_mime_type_idx ON public.sources_google2 (mime_type);
-        CREATE INDEX IF NOT EXISTS sources_google2_path_idx ON public.sources_google2 (path);
-        CREATE INDEX IF NOT EXISTS sources_google2_name_idx ON public.sources_google2 (name);
+        CREATE INDEX IF NOT EXISTS sources_google_drive_id_idx ON public.sources_google (drive_id);
+        CREATE INDEX IF NOT EXISTS sources_google_root_drive_id_idx ON public.sources_google (root_drive_id);
+        CREATE INDEX IF NOT EXISTS sources_google_parent_folder_id_idx ON public.sources_google (parent_folder_id);
+        CREATE INDEX IF NOT EXISTS sources_google_mime_type_idx ON public.sources_google (mime_type);
+        CREATE INDEX IF NOT EXISTS sources_google_path_idx ON public.sources_google (path);
+        CREATE INDEX IF NOT EXISTS sources_google_name_idx ON public.sources_google (name);
       `;
       
       const createResult = await executeSql(supabase, createTableSql, 'Create table structure');
@@ -149,11 +149,11 @@ async function main() {
       
       // Truncate if the table exists and has data
       if (targetTableExists && targetCount > 0 && !skipTruncate) {
-        console.log('Truncating existing sources_google2 table...');
+        console.log('Truncating existing sources_google table...');
         
         if (!isDryRun) {
           const { error: deleteError } = await supabase
-            .from('sources_google2')
+            .from('sources_google')
             .delete()
             .neq('id', '00000000-0000-0000-0000-000000000000');
           
@@ -170,7 +170,7 @@ async function main() {
       console.log('Using existing table structure (--skip-truncate specified)');
     }
     
-    // Step 3: Copy data from sources_google to sources_google2
+    // Step 3: Copy data from sources_google to sources_google
     console.log('\nSTEP 3: Copying data...');
     
     // Build WHERE clause based on options
@@ -184,7 +184,7 @@ async function main() {
     }
     
     const copyDataSql = `
-      INSERT INTO sources_google2 (
+      INSERT INTO sources_google (
         id, name, mime_type, drive_id, root_drive_id, parent_folder_id, path, is_root,
         path_array, path_depth, is_deleted, metadata, size, modified_time, 
         web_view_link, thumbnail_link, content_extracted, extracted_content,
@@ -223,7 +223,7 @@ async function main() {
       ${whereClause}
     `;
     
-    const copyResult = await executeSql(supabase, copyDataSql, 'Copy data to sources_google2');
+    const copyResult = await executeSql(supabase, copyDataSql, 'Copy data to sources_google');
     
     if (!copyResult.success) {
       throw new Error('Failed to copy data');
@@ -237,7 +237,7 @@ async function main() {
     // 4.1: Fix paths that don't start with a slash
     const fixPathsResult = await executeSql(
       supabase,
-      `UPDATE sources_google2 SET path = '/' || path WHERE path NOT LIKE '/%'`,
+      `UPDATE sources_google SET path = '/' || path WHERE path NOT LIKE '/%'`,
       'Fix paths without leading slash'
     );
     
@@ -248,7 +248,7 @@ async function main() {
     // 4.2: Regenerate path_array and path_depth
     const fixArraysResult = await executeSql(
       supabase,
-      `UPDATE sources_google2 SET 
+      `UPDATE sources_google SET 
         path_array = string_to_array(path, '/'),
         path_depth = array_length(string_to_array(path, '/'), 1)`,
       'Regenerate path arrays'
@@ -261,7 +261,7 @@ async function main() {
     // 4.3: Set Dynamic Healing Discussion Group root_drive_id
     const fixDhgResult = await executeSql(
       supabase,
-      `UPDATE sources_google2 SET root_drive_id = '${ROOT_FOLDERS.DHG}'
+      `UPDATE sources_google SET root_drive_id = '${ROOT_FOLDERS.DHG}'
        WHERE path LIKE '%Dynamic Healing Discussion Group%' 
              OR drive_id = '${ROOT_FOLDERS.DHG}'`,
       'Fix Dynamic Healing Discussion Group root_drive_id'
@@ -274,7 +274,7 @@ async function main() {
     // 4.4: Set Polyvagal Steering Group root_drive_id
     const fixPvsgResult = await executeSql(
       supabase,
-      `UPDATE sources_google2 SET root_drive_id = '${ROOT_FOLDERS.PVSG}'
+      `UPDATE sources_google SET root_drive_id = '${ROOT_FOLDERS.PVSG}'
        WHERE path LIKE '%Polyvagal Steering Group%' 
              OR drive_id = '${ROOT_FOLDERS.PVSG}'`,
       'Fix Polyvagal Steering Group root_drive_id'
@@ -290,7 +290,7 @@ async function main() {
     if (!isDryRun) {
       // Check DHG records
       const { count: dhgCount, error: dhgError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('*', { count: 'exact', head: true })
         .eq('root_drive_id', ROOT_FOLDERS.DHG);
       
@@ -302,7 +302,7 @@ async function main() {
       
       // Check PVSG records
       const { count: pvsgCount, error: pvsgError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('*', { count: 'exact', head: true })
         .eq('root_drive_id', ROOT_FOLDERS.PVSG);
       
@@ -314,7 +314,7 @@ async function main() {
       
       // Check total count
       const { count: finalCount, error: countError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('*', { count: 'exact', head: true });
       
       if (countError) {
@@ -328,7 +328,7 @@ async function main() {
     
     console.log('\nMigration completed successfully!');
     console.log('Next steps:');
-    console.log('1. Review the results in sources_google2');
+    console.log('1. Review the results in sources_google');
     console.log('2. When satisfied, run finalize-migration.js to rename the tables');
     
   } catch (error) {

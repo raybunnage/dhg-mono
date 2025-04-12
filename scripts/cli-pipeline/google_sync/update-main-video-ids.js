@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * Update Main Video IDs in sources_google2
+ * Update Main Video IDs in sources_google
  * 
- * This script analyzes the folder structure in sources_google2 to identify
+ * This script analyzes the folder structure in sources_google to identify
  * the main video file (mp4) for each presentation folder and sets the
  * main_video_id field accordingly.
  */
@@ -26,12 +26,12 @@ const batchSize = 100;
 const maxDepth = 6; // Increase depth to 6 to catch all nested files
 
 /**
- * Find all MP4 files in the sources_google2 table
+ * Find all MP4 files in the sources_google table
  */
 async function findAllMp4Files(supabase) {
   try {
     const { data: mp4Files, error: mp4Error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, drive_id, parent_folder_id, path, path_depth, root_drive_id')
       .eq('root_drive_id', DHG_ROOT_ID)
       .like('mime_type', '%mp4%')
@@ -51,12 +51,12 @@ async function findAllMp4Files(supabase) {
 }
 
 /**
- * Find all directories in sources_google2
+ * Find all directories in sources_google
  */
 async function findAllDirectories(supabase, maxDepth) {
   try {
     const { data: directories, error: dirError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, drive_id, parent_folder_id, path, path_depth, root_drive_id')
       .eq('root_drive_id', DHG_ROOT_ID)
       .like('mime_type', '%folder%')
@@ -201,7 +201,7 @@ async function updateDirectoryHierarchy(supabase, mainVideos) {
     
     // First update the directory itself
     const { error: dirError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .update({ main_video_id: mainVideo.id })
       .eq('id', directory.id);
     
@@ -214,7 +214,7 @@ async function updateDirectoryHierarchy(supabase, mainVideos) {
     const folderPath = directory.path;
     
     const { data: files, error: filesError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, path')
       .eq('parent_folder_id', directory.drive_id);
     
@@ -232,7 +232,7 @@ async function updateDirectoryHierarchy(supabase, mainVideos) {
         const ids = batch.map(file => file.id);
         
         const { data, error } = await supabase
-          .from('sources_google2')
+          .from('sources_google')
           .update({ main_video_id: mainVideo.id })
           .in('id', ids);
         
@@ -247,7 +247,7 @@ async function updateDirectoryHierarchy(supabase, mainVideos) {
     // Also update files with paths that are underneath this directory
     const { error: pathUpdateError } = await supabase.rpc('execute_sql', {
       sql: `
-        UPDATE sources_google2
+        UPDATE sources_google
         SET main_video_id = '${mainVideo.id}'
         WHERE path LIKE '${folderPath}/%'
         AND main_video_id IS NULL
@@ -261,7 +261,7 @@ async function updateDirectoryHierarchy(supabase, mainVideos) {
       const { data: pathUpdateCount, error: countError } = await supabase.rpc('execute_sql', {
         sql: `
           SELECT COUNT(*) 
-          FROM sources_google2 
+          FROM sources_google 
           WHERE main_video_id = '${mainVideo.id}'
           AND path LIKE '${folderPath}/%'
         `
@@ -283,7 +283,7 @@ async function updateDirectoryHierarchy(supabase, mainVideos) {
  */
 async function main() {
   try {
-    console.log('Updating main_video_id in sources_google2...');
+    console.log('Updating main_video_id in sources_google...');
     console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'LIVE RUN'}`);
     console.log(`Maximum depth: ${maxDepth}`);
     
@@ -328,7 +328,7 @@ async function main() {
       const { data: updatedCount, error: updatedError } = await supabase.rpc('execute_sql', {
         sql: `
           SELECT COUNT(*) 
-          FROM sources_google2 
+          FROM sources_google 
           WHERE main_video_id IS NOT NULL
           AND root_drive_id = '${DHG_ROOT_ID}'
         `

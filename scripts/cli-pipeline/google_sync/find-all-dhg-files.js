@@ -320,7 +320,7 @@ async function findAllDHGFiles(supabase) {
 }
 
 /**
- * Transform sources_google records into sources_google2 format
+ * Transform sources_google records into sources_google format
  */
 function transformRecord(record) {
   // Generate a path if none exists
@@ -363,24 +363,24 @@ function transformRecord(record) {
 }
 
 /**
- * Copy all found DHG files to sources_google2
+ * Copy all found DHG files to sources_google
  */
 async function copyToSourcesGoogle2(supabase, dhgFiles) {
-  console.log('\nCopying files to sources_google2...');
+  console.log('\nCopying files to sources_google...');
   
   if (isDryRun) {
-    console.log(`DRY RUN - Would copy ${dhgFiles.length} files to sources_google2`);
+    console.log(`DRY RUN - Would copy ${dhgFiles.length} files to sources_google`);
     return;
   }
   
-  // Check if sources_google2 exists and clear it if needed
+  // Check if sources_google exists and clear it if needed
   const { data: sg2Count, error: sg2Error } = await supabase
-    .from('sources_google2')
+    .from('sources_google')
     .select('*', { count: 'exact', head: true });
   
   if (sg2Error) {
     if (sg2Error.code === 'PGRST116') {
-      console.log('sources_google2 table does not exist');
+      console.log('sources_google table does not exist');
       
       if (skipCreate) {
         console.error('Table does not exist and --skip-create specified. Cannot proceed.');
@@ -388,13 +388,13 @@ async function copyToSourcesGoogle2(supabase, dhgFiles) {
       }
       
       // Create the table - note we'd need execute_sql RPC function for this in practice
-      console.log('Would create sources_google2 table here...');
+      console.log('Would create sources_google table here...');
     } else {
-      console.error('Error checking sources_google2:', sg2Error.message);
+      console.error('Error checking sources_google:', sg2Error.message);
       process.exit(1);
     }
   } else {
-    console.log(`sources_google2 table exists with ${sg2Count} records`);
+    console.log(`sources_google table exists with ${sg2Count} records`);
     
     if (sg2Count > 0 && !forceOverwrite) {
       console.log('Table has data. Use --force to overwrite existing data.');
@@ -402,9 +402,9 @@ async function copyToSourcesGoogle2(supabase, dhgFiles) {
     }
     
     if (sg2Count > 0 && forceOverwrite) {
-      console.log('Clearing existing data from sources_google2...');
+      console.log('Clearing existing data from sources_google...');
       const { error: clearError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       
@@ -428,7 +428,7 @@ async function copyToSourcesGoogle2(supabase, dhgFiles) {
     
     try {
       const { error: insertError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .upsert(batch);
       
       if (insertError) {
@@ -446,11 +446,11 @@ async function copyToSourcesGoogle2(supabase, dhgFiles) {
   
   // Final verification
   const { count: finalCount, error: finalError } = await supabase
-    .from('sources_google2')
+    .from('sources_google')
     .select('*', { count: 'exact', head: true });
   
   if (!finalError) {
-    console.log(`Final record count in sources_google2: ${finalCount}`);
+    console.log(`Final record count in sources_google: ${finalCount}`);
   }
 }
 
@@ -468,7 +468,7 @@ async function main() {
     // Step 1: Find all DHG files using multiple methods
     const dhgFiles = await findAllDHGFiles(supabase);
     
-    // Step 2: Copy found files to sources_google2
+    // Step 2: Copy found files to sources_google
     await copyToSourcesGoogle2(supabase, dhgFiles);
     
     console.log('\nOperation completed successfully!');

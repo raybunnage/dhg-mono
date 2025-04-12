@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * Test Sources Google2 Implementation
+ * Test Sources Google Implementation
  * 
- * This script verifies that the sources_google2 table is properly set up
+ * This script verifies that the sources_google table is properly set up
  * and that we can correctly traverse the folder structure, especially
  * for the Dynamic Healing Discussion Group.
  */
@@ -25,13 +25,13 @@ const specificFolderId = args[1];
 const maxFiles = parseInt(args[2] || '10');
 
 /**
- * Get basic stats about sources_google2
+ * Get basic stats about sources_google
  */
-async function getSourcesGoogle2Stats(supabase) {
+async function getSourcesGoogleStats(supabase) {
   try {
     // Total record count
     const { count: totalCount, error: totalError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*', { count: 'exact', head: true });
     
     if (totalError) {
@@ -42,7 +42,7 @@ async function getSourcesGoogle2Stats(supabase) {
     const { data: mimeData, error: mimeError } = await supabase.rpc('execute_sql', {
       sql: `
         SELECT mime_type, COUNT(*) as count
-        FROM sources_google2
+        FROM sources_google
         WHERE mime_type IS NOT NULL
         GROUP BY mime_type
         ORDER BY count DESC
@@ -58,7 +58,7 @@ async function getSourcesGoogle2Stats(supabase) {
     const { data: depthData, error: depthError } = await supabase.rpc('execute_sql', {
       sql: `
         SELECT path_depth, COUNT(*) as count
-        FROM sources_google2
+        FROM sources_google
         WHERE path_depth IS NOT NULL
         GROUP BY path_depth
         ORDER BY path_depth
@@ -73,7 +73,7 @@ async function getSourcesGoogle2Stats(supabase) {
     const { data: matchData, error: matchError } = await supabase.rpc('execute_sql', {
       sql: `
         SELECT metadata->>'_match_method' as match_method, COUNT(*) as count
-        FROM sources_google2
+        FROM sources_google
         WHERE metadata->>'_match_method' IS NOT NULL
         GROUP BY metadata->>'_match_method'
         ORDER BY count DESC
@@ -86,7 +86,7 @@ async function getSourcesGoogle2Stats(supabase) {
     
     // Get some example files at different depths
     const { data: exampleFiles, error: exampleError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('name, path, path_depth, mime_type')
       .order('path_depth', { ascending: true })
       .limit(10);
@@ -114,7 +114,7 @@ async function getSourcesGoogle2Stats(supabase) {
 async function getSubfolders(supabase, parentFolderId) {
   try {
     const { data, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, drive_id, path')
       .eq('parent_folder_id', parentFolderId)
       .like('mime_type', '%folder%');
@@ -136,7 +136,7 @@ async function getSubfolders(supabase, parentFolderId) {
 async function getFilesInFolder(supabase, folderId, limit = 10) {
   try {
     const { data, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, drive_id, path, mime_type')
       .eq('parent_folder_id', folderId)
       .not('mime_type', 'like', '%folder%')
@@ -224,7 +224,7 @@ async function testRecursiveTraversal(supabase) {
   
   // Get all files at depth 1 (direct children of root)
   const { data: level1Files, error: level1Error } = await supabase
-    .from('sources_google2')
+    .from('sources_google')
     .select('id, name, drive_id, path, mime_type, path_depth')
     .eq('path_depth', 1)
     .eq('root_drive_id', DHG_ROOT_ID)
@@ -250,7 +250,7 @@ async function testRecursiveTraversal(supabase) {
   // Get counts by depth
   for (let depth = 1; depth <= 5; depth++) {
     const { count, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*', { count: 'exact', head: true })
       .eq('path_depth', depth)
       .eq('root_drive_id', DHG_ROOT_ID);
@@ -266,7 +266,7 @@ async function testRecursiveTraversal(supabase) {
   const { data: arrayTest, error: arrayError } = await supabase.rpc('execute_sql', {
     sql: `
       SELECT name, path, path_array
-      FROM sources_google2
+      FROM sources_google
       WHERE root_drive_id = '${DHG_ROOT_ID}'
       AND path_array && ARRAY['transcripts']
       LIMIT 5
@@ -288,21 +288,21 @@ async function testRecursiveTraversal(supabase) {
  */
 async function main() {
   try {
-    console.log('Testing sources_google2 implementation...');
+    console.log('Testing sources_google implementation...');
     
     // Create Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     
     // Step 1: Get basic stats
     console.log('\nSTEP 1: Getting basic statistics...');
-    const stats = await getSourcesGoogle2Stats(supabase);
+    const stats = await getSourcesGoogleStats(supabase);
     
     if (!stats) {
       console.error('Could not get basic stats. Exiting.');
       process.exit(1);
     }
     
-    console.log(`Total records in sources_google2: ${stats.totalCount}`);
+    console.log(`Total records in sources_google: ${stats.totalCount}`);
     
     console.log('\nDistribution by mime type:');
     stats.mimeTypes.forEach(row => {
@@ -329,7 +329,7 @@ async function main() {
     
     // First get the root folder
     const { data: rootFolder, error: rootError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, drive_id')
       .eq('drive_id', DHG_ROOT_ID)
       .eq('is_root', true)
@@ -349,7 +349,7 @@ async function main() {
       console.log(`\nTraversing specific folder: ${specificFolderId}`);
       
       const { data: folderInfo, error: folderError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('id, name')
         .eq('drive_id', specificFolderId)
         .limit(1);

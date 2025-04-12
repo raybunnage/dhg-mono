@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Test Compatibility between sources_google and sources_google2
+ * Test Compatibility between sources_google and sources_google
  * 
  * This script checks that applications using sources_google will be able
- * to work with sources_google2 after migration.
+ * to work with sources_google after migration.
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -21,7 +21,7 @@ const args = process.argv.slice(2);
 const testId = args[0]; // Specific file ID to test
 
 /**
- * Create a simplified compatibility view from sources_google2
+ * Create a simplified compatibility view from sources_google
  */
 async function createCompatibilityView(supabase) {
   console.log('Creating a temporary compatibility view...');
@@ -52,7 +52,7 @@ async function createCompatibilityView(supabase) {
           last_indexed,
           main_video_id
       FROM
-          sources_google2
+          sources_google
     `;
     
     const { error } = await supabase.rpc('execute_sql', { sql: viewQuery });
@@ -76,7 +76,7 @@ async function createCompatibilityView(supabase) {
 async function runTypicalQueries(supabase, useCompat = false) {
   console.log(`\nRunning typical application queries ${useCompat ? 'on compat view' : 'with field mapping'}...`);
   
-  const tableName = useCompat ? 'sources_google_compat' : 'sources_google2';
+  const tableName = useCompat ? 'sources_google_compat' : 'sources_google';
   const parentField = useCompat ? 'parent_id' : 'parent_folder_id';
   const deletedField = useCompat ? 'deleted' : 'is_deleted';
   
@@ -127,7 +127,7 @@ async function runTypicalQueries(supabase, useCompat = false) {
     
     if (!fileId) {
       const { data: sampleData, error: sampleError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('id')
         .limit(1);
       
@@ -141,22 +141,22 @@ async function runTypicalQueries(supabase, useCompat = false) {
     
     console.log(`Using file ID: ${fileId}`);
     
-    // Query in sources_google2 format
+    // Query in sources_google format
     const { data: sg2Data, error: sg2Error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, mime_type, drive_id, parent_folder_id, path')
       .eq('id', fileId)
       .limit(1);
     
     if (sg2Error) {
-      console.error('Error querying sources_google2:', sg2Error.message);
+      console.error('Error querying sources_google:', sg2Error.message);
     } else if (sg2Data && sg2Data.length > 0) {
-      console.log('Found in sources_google2:');
+      console.log('Found in sources_google:');
       console.log(`- Name: ${sg2Data[0].name}`);
       console.log(`- Path: ${sg2Data[0].path}`);
       console.log(`- Parent: ${sg2Data[0].parent_folder_id}`);
     } else {
-      console.log('File not found in sources_google2');
+      console.log('File not found in sources_google');
     }
     
     // Check in original sources_google for comparison
@@ -289,14 +289,14 @@ async function checkExpertReferences(supabase) {
         JOIN 
           information_schema.constraint_column_usage ccu ON ccu.constraint_name = rc.constraint_name
         WHERE 
-          target_table = 'sources_google' OR target_table = 'sources_google2'
+          target_table = 'sources_google' OR target_table = 'sources_google'
       `
     });
     
     if (refError) {
       console.warn('Warning: Could not check references -', refError.message);
     } else {
-      console.log('References to sources_google/sources_google2:');
+      console.log('References to sources_google/sources_google:');
       if (refData.length === 0) {
         console.log('- No direct foreign key references found');
       } else {
@@ -345,9 +345,9 @@ async function checkExpertReferences(supabase) {
           const sample = edData[0];
           console.log(`Sample: expert_id=${sample.expert_id}, document_id=${sample.document_id}`);
           
-          // Check if the document_id exists in sources_google2
+          // Check if the document_id exists in sources_google
           const { data: documentData, error: documentError } = await supabase
-            .from('sources_google2')
+            .from('sources_google')
             .select('id, name, expert_id')
             .eq('id', sample.document_id)
             .limit(1);
@@ -355,16 +355,16 @@ async function checkExpertReferences(supabase) {
           if (documentError) {
             console.error('Error looking up document:', documentError.message);
           } else if (documentData.length > 0) {
-            console.log(`- Document found in sources_google2: ${documentData[0].name}`);
+            console.log(`- Document found in sources_google: ${documentData[0].name}`);
             
             // Check if the expert_id matches
             if (documentData[0].expert_id === sample.expert_id) {
-              console.log('- ✓ expert_id in sources_google2 matches expert_id in expert_documents');
+              console.log('- ✓ expert_id in sources_google matches expert_id in expert_documents');
             } else {
               console.log(`- ✗ expert_id mismatch: ${documentData[0].expert_id} vs ${sample.expert_id}`);
             }
           } else {
-            console.log('- ✗ Document not found in sources_google2');
+            console.log('- ✗ Document not found in sources_google');
           }
         }
       }
@@ -379,7 +379,7 @@ async function checkExpertReferences(supabase) {
  */
 async function main() {
   try {
-    console.log('Testing compatibility between sources_google and sources_google2...');
+    console.log('Testing compatibility between sources_google and sources_google...');
     
     // Create Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -397,7 +397,7 @@ async function main() {
         FROM 
           information_schema.columns 
         WHERE 
-          table_name IN ('sources_google', 'sources_google2')
+          table_name IN ('sources_google', 'sources_google')
         ORDER BY 
           table_name, 
           ordinal_position
@@ -409,10 +409,10 @@ async function main() {
     } else {
       // Group columns by table
       const sgColumns = schemas.filter(col => col.table_name === 'sources_google');
-      const sg2Columns = schemas.filter(col => col.table_name === 'sources_google2');
+      const sg2Columns = schemas.filter(col => col.table_name === 'sources_google');
       
       console.log(`sources_google: ${sgColumns.length} columns`);
-      console.log(`sources_google2: ${sg2Columns.length} columns`);
+      console.log(`sources_google: ${sg2Columns.length} columns`);
       
       // Compare essential columns
       const essentialColumns = [
@@ -457,7 +457,7 @@ async function main() {
     await checkExpertReferences(supabase);
     
     console.log('\nCompatibility testing completed successfully!');
-    console.log('Recommendation: sources_google2 appears to be a compatible replacement for sources_google');
+    console.log('Recommendation: sources_google appears to be a compatible replacement for sources_google');
     
   } catch (error) {
     console.error('Error during compatibility testing:', error);

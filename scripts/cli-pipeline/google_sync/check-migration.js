@@ -100,19 +100,19 @@ async function main() {
       }
     }
     
-    // Check sources_google2
+    // Check sources_google
     const { data: sg2Data, error: sg2Error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id')
       .limit(1);
     
     if (sg2Error) {
-      console.log('sources_google2 not accessible (expected if migration completed)');
+      console.log('sources_google not accessible (expected if migration completed)');
     } else {
-      console.log('\nsources_google2 accessible:', sg2Data !== null);
+      console.log('\nsources_google accessible:', sg2Data !== null);
       
       if (sg2Data && sg2Data.length > 0) {
-        console.log('sources_google2 has data:', sg2Data.length > 0);
+        console.log('sources_google has data:', sg2Data.length > 0);
       }
     }
     

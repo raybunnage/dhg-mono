@@ -166,15 +166,15 @@ async function listFilesRecursively(drive: any, folderId: string, parentPath = '
 }
 
 /**
- * Find MP4 files recursively in a folder using Supabase sources_google2 table
+ * Find MP4 files recursively in a folder using Supabase sources_google table
  */
 async function findMp4FilesInFolder(supabase: any, folderId: string): Promise<Mp4FileInfo[]> {
   const mp4Files: Mp4FileInfo[] = [];
   
   try {
-    // First check if the folder exists in sources_google2
+    // First check if the folder exists in sources_google
     const { data: folder, error: folderError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, path, drive_id')
       .eq('drive_id', folderId)
       .eq('is_deleted', false)
@@ -199,7 +199,7 @@ async function findMp4FilesInFolder(supabase: any, folderId: string): Promise<Mp
     
     // Build a query to find any MP4 files that might match this folder
     let query = supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, path, drive_id, parent_folder_id, path_array')
       .eq('mime_type', 'video/mp4')
       .eq('is_deleted', false)
@@ -313,7 +313,7 @@ async function findMp4FilesInFolder(supabase: any, folderId: string): Promise<Mp
     for (const file of filteredFiles) {
       // Check if the parent folder contains "Presentation" or "Video"
       const { data: parentFolder, error: parentError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('id, name')
         .eq('id', file.parent_folder_id)
         .single();
@@ -370,7 +370,7 @@ export async function reportMainVideoIds(
     Logger.setLevel(LogLevel.DEBUG);
   }
   
-  console.log('=== Report on Main Video IDs (sources_google2) ===');
+  console.log('=== Report on Main Video IDs (sources_google) ===');
   console.log(`Root Folder ID: ${actualFolderId}`);
   if (shouldUpdateDb) {
     console.log('Mode: UPDATE - Will update main_video_id values in the database');
@@ -390,9 +390,9 @@ export async function reportMainVideoIds(
   const supabase = SupabaseClientService.getInstance().getClient();
   
   try {
-    // Step 1: Verify the root folder exists in sources_google2
+    // Step 1: Verify the root folder exists in sources_google
     const { data: rootFolder, error: rootFolderError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, path, drive_id')
       .eq('drive_id', actualFolderId)
       .eq('is_deleted', false)
@@ -407,7 +407,7 @@ export async function reportMainVideoIds(
     
     // Step 2: Find all subfolders directly under the root folder (path_depth = 0)
     const { data: subFolders, error: subFoldersError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, path, drive_id, path_depth')
       .eq('parent_folder_id', actualFolderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -447,7 +447,7 @@ export async function reportMainVideoIds(
       
       // Check if the folder already has a main_video_id set
       const { data: currentMainVideo, error: mainVideoError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('id, name, main_video_id')
         .eq('id', folder.id)
         .single();
@@ -484,7 +484,7 @@ export async function reportMainVideoIds(
           // Update the database if requested
           if (shouldUpdateDb) {
             const { error: updateError } = await supabase
-              .from('sources_google2')
+              .from('sources_google')
               .update({ main_video_id: mainVideoId })
               .eq('id', folder.id);
               
@@ -501,7 +501,7 @@ export async function reportMainVideoIds(
           if (shouldUpdateDb) {
             // Find all files under this folder's path
             const { data: relatedFiles, error: relatedError } = await supabase
-              .from('sources_google2')
+              .from('sources_google')
               .select('id')
               .eq('is_deleted', false)
               .contains('path_array', [folder.name]);
@@ -516,7 +516,7 @@ export async function reportMainVideoIds(
               for (let i = 0; i < relatedIds.length; i += batchSize) {
                 const batch = relatedIds.slice(i, i + batchSize);
                 const { error: batchError } = await supabase
-                  .from('sources_google2')
+                  .from('sources_google')
                   .update({ main_video_id: mainVideoId })
                   .in('id', batch);
                   

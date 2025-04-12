@@ -4,8 +4,8 @@
  * 
  * This script:
  * 1. Reads the Google Drive JSON file
- * 2. Identifies records that exist in the JSON but not in sources_google2
- * 3. Inserts these records into sources_google2 with proper fields
+ * 2. Identifies records that exist in the JSON but not in sources_google
+ * 3. Inserts these records into sources_google with proper fields
  */
 
 import * as dotenv from 'dotenv';
@@ -91,10 +91,10 @@ async function insertMissingSources(
     // Step 2: Find entries to insert
     let entriesToInsert: JsonFileEntry[] = [];
     
-    // Get all existing IDs from sources_google2 (needed regardless of flow)
-    Logger.info('Fetching all drive_ids from sources_google2...');
+    // Get all existing IDs from sources_google (needed regardless of flow)
+    Logger.info('Fetching all drive_ids from sources_google...');
     const { data: existingRecords, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('drive_id');
       
     if (error) {
@@ -102,7 +102,7 @@ async function insertMissingSources(
     }
     
     const existingIds = existingRecords?.map(record => record.drive_id) || [];
-    Logger.info(`Found ${existingIds.length} existing records in sources_google2`);
+    Logger.info(`Found ${existingIds.length} existing records in sources_google`);
     
     // If specific IDs are provided, only look for those and check if they exist first
     if (specificIds && specificIds.length > 0) {
@@ -179,7 +179,7 @@ async function insertMissingSources(
     } 
     // Otherwise, look for all files in JSON that don't exist in DB
     else {
-      // Find entries in JSON that don't exist in sources_google2
+      // Find entries in JSON that don't exist in sources_google
       jsonData.files.forEach((entry: JsonFileEntry) => {
         if (!existingIds.includes(entry.id)) {
           entriesToInsert.push(entry);
@@ -192,7 +192,7 @@ async function insertMissingSources(
     
     Logger.info(`Found ${entriesToInsert.length} entries to insert`);
     
-    // Step 3: Insert entries into sources_google2 one by one to avoid duplicate key errors
+    // Step 3: Insert entries into sources_google one by one to avoid duplicate key errors
     if (!dryRun && entriesToInsert.length > 0) {
       const insertBatchSize = 1; // Insert one at a time to better handle errors
       let insertedCount = 0;
@@ -206,7 +206,7 @@ async function insertMissingSources(
         for (const entry of batch) {
           // Check one more time if the record already exists (in case it was added during processing)
           const { data: existCheck, error: existError } = await supabase
-            .from('sources_google2')
+            .from('sources_google')
             .select('drive_id')
             .eq('drive_id', entry.id);
             
@@ -301,7 +301,7 @@ async function insertMissingSources(
           
           // Insert the record
           const { data, error } = await supabase
-            .from('sources_google2')
+            .from('sources_google')
             .insert([record])
             .select();
             

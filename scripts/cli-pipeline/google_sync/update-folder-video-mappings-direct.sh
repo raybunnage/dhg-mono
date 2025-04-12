@@ -130,7 +130,7 @@ function find_folder {
   
   # Try exact match first
   local query="select=id,name,drive_id,path,path_depth&mime_type=eq.application/vnd.google-apps.folder&is_deleted=eq.false&name=eq.$encoded_name"
-  local result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+  local result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
   
   # Check if we found an exact match
   if [[ "$result" == "[]" ]]; then
@@ -141,7 +141,7 @@ function find_folder {
     local encoded_simple=$(echo "$simplified_name" | sed 's/ /%20/g')
     
     query="select=id,name,drive_id,path,path_depth&mime_type=eq.application/vnd.google-apps.folder&is_deleted=eq.false&name=ilike.*$encoded_simple*"
-    result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+    result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
     
     if [[ "$result" == "[]" ]]; then
       echo "Error: No folder found matching '$folder_name'"
@@ -169,7 +169,7 @@ function find_file {
   
   # Try exact match first
   local query="select=id,name,drive_id,path&mime_type=eq.video/mp4&is_deleted=eq.false&name=eq.$encoded_name"
-  local result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+  local result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
   
   # Check if we found an exact match
   if [[ "$result" == "[]" ]]; then
@@ -180,7 +180,7 @@ function find_file {
     local encoded_base=$(echo "$base_name" | sed 's/ /%20/g')
     
     query="select=id,name,drive_id,path&mime_type=eq.video/mp4&is_deleted=eq.false&name=ilike.*$encoded_base*"
-    result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+    result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
     
     if [[ "$result" == "[]" ]]; then
       echo "Error: No file found matching '$file_name'"
@@ -209,7 +209,7 @@ function update_folder_with_video_id {
   
   local query="id=eq.$folder_id"
   local data="{\"main_video_id\":\"$video_id\"}"
-  local result=$(supabase_api "PATCH" "/rest/v1/sources_google2" "$query" "$data")
+  local result=$(supabase_api "PATCH" "/rest/v1/sources_google" "$query" "$data")
   
   echo "Updated folder $folder_id with main_video_id = $video_id"
   return 0
@@ -226,7 +226,7 @@ function update_related_items {
   # Find related items by path_array
   local encoded_name=$(echo "$folder_name" | sed 's/ /%20/g')
   local query="select=id,name,mime_type&is_deleted=eq.false&path_array=cs.{$encoded_name}"
-  local result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+  local result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
   
   if [[ "$result" == "[]" && -n "$folder_path" ]]; then
     echo "No related items found by path_array, trying by path..."
@@ -234,7 +234,7 @@ function update_related_items {
     # Try finding by path as fallback
     local encoded_path=$(echo "$folder_path" | sed 's/ /%20/g' | sed 's/\//\\\//g')
     query="select=id,name,mime_type&is_deleted=eq.false&path=like.$encoded_path*"
-    result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+    result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
   fi
   
   # Count matches
@@ -278,7 +278,7 @@ function update_related_items {
     local query="id=in.(${id_list})"
     local data="{\"main_video_id\":\"$video_id\"}"
     
-    supabase_api "PATCH" "/rest/v1/sources_google2" "$query" "$data" > /dev/null
+    supabase_api "PATCH" "/rest/v1/sources_google" "$query" "$data" > /dev/null
     
     echo "Updated batch $(( i + 1 )) of $batches ($(( end - start )) items)"
   done
@@ -323,27 +323,27 @@ function process_mapping {
   
   # Try exact match first
   local query="select=id,name,drive_id,path,path_depth&mime_type=eq.application/vnd.google-apps.folder&is_deleted=eq.false&name=eq.${folder_name// /%20}"
-  local result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+  local result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
   
   # If exact match fails, try with both date and name parts (most specific)
   if [[ "$result" == "[]" && -n "$date_part" && -n "$name_part" ]]; then
     echo "No exact match, trying with date ($date_part) and name ($name_part) parts..."
     query="select=id,name,drive_id,path,path_depth&mime_type=eq.application/vnd.google-apps.folder&is_deleted=eq.false&name=ilike.*${date_part}*&name=ilike.*${name_part}*"
-    result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+    result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
   fi
   
   # If still no match, try with just the date part
   if [[ "$result" == "[]" && -n "$date_part" ]]; then
     echo "Still no match, trying with just date part ($date_part)..."
     query="select=id,name,drive_id,path,path_depth&mime_type=eq.application/vnd.google-apps.folder&is_deleted=eq.false&name=ilike.*${date_part}*"
-    result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+    result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
   fi
   
   # If still no match, try with just the name part
   if [[ "$result" == "[]" && -n "$name_part" ]]; then
     echo "Still no match, trying with just name part ($name_part)..."
     query="select=id,name,drive_id,path,path_depth&mime_type=eq.application/vnd.google-apps.folder&is_deleted=eq.false&name=ilike.*${name_part}*"
-    result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+    result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
   fi
   
   # Last resort - try first part of folder name
@@ -351,7 +351,7 @@ function process_mapping {
     echo "Still no match, trying with first part of folder name..."
     local first_part=${folder_name%% *}
     query="select=id,name,drive_id,path,path_depth&mime_type=eq.application/vnd.google-apps.folder&is_deleted=eq.false&name=ilike.*${first_part}*"
-    result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+    result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
   fi
   
   if [[ "$VERBOSE" == "true" ]]; then
@@ -373,13 +373,13 @@ function process_mapping {
   # Find file
   echo "Searching for file: '$file_name'"
   query="select=id,name,drive_id,path&mime_type=eq.video/mp4&is_deleted=eq.false&name=eq.${file_name// /%20}"
-  result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+  result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
   
   if [[ "$result" == "[]" ]]; then
     echo "No exact file match found, trying flexible search..."
     local base_name=${file_name%.*}
     query="select=id,name,drive_id,path&mime_type=eq.video/mp4&is_deleted=eq.false&name=ilike.*${base_name// /%20}*"
-    result=$(supabase_api "GET" "/rest/v1/sources_google2" "$query")
+    result=$(supabase_api "GET" "/rest/v1/sources_google" "$query")
     
     if [[ "$result" == "[]" ]]; then
       echo "Error: No file found matching '$file_name'"

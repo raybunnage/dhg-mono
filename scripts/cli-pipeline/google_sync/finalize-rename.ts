@@ -2,7 +2,7 @@
 /**
  * Finalize Migration by Renaming Tables
  * 
- * This script renames the sources_google2 table to sources_google
+ * This script renames the sources_google table to sources_google
  * and creates a compatibility view if needed.
  */
 
@@ -33,7 +33,7 @@ async function main() {
     
     // Check if new table exists
     const { data: newTableCheck, error: newTableError } = await supabase.rpc('execute_sql', {
-      sql: `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google2')`
+      sql: `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google')`
     });
     
     if (newTableError) {
@@ -46,7 +46,7 @@ async function main() {
     console.log(`New table exists: ${newTableExists}`);
     
     if (!newTableExists) {
-      console.error('Cannot finalize - sources_google2 table does not exist');
+      console.error('Cannot finalize - sources_google table does not exist');
       process.exit(1);
     }
     
@@ -66,10 +66,10 @@ async function main() {
     }
     
     // Rename new table
-    console.log('Renaming sources_google2 to sources_google...');
+    console.log('Renaming sources_google to sources_google...');
     
     const { error: renameNewError } = await supabase.rpc('execute_sql', {
-      sql: `ALTER TABLE sources_google2 RENAME TO sources_google`
+      sql: `ALTER TABLE sources_google RENAME TO sources_google`
     });
     
     if (renameNewError) {
@@ -123,14 +123,14 @@ async function main() {
     console.log('Renaming indexes...');
     
     const indexQueries = [
-      `ALTER INDEX IF EXISTS sources_google2_drive_id_idx RENAME TO sources_google_drive_id_idx`,
-      `ALTER INDEX IF EXISTS sources_google2_root_drive_id_idx RENAME TO sources_google_root_drive_id_idx`,
-      `ALTER INDEX IF EXISTS sources_google2_parent_folder_id_idx RENAME TO sources_google_parent_folder_id_idx`,
-      `ALTER INDEX IF EXISTS sources_google2_mime_type_idx RENAME TO sources_google_mime_type_idx`,
-      `ALTER INDEX IF EXISTS sources_google2_path_idx RENAME TO sources_google_path_idx`,
-      `ALTER INDEX IF EXISTS sources_google2_name_idx RENAME TO sources_google_name_idx`,
-      `ALTER INDEX IF EXISTS sources_google2_document_type_id_idx RENAME TO sources_google_document_type_id_idx`,
-      `ALTER INDEX IF EXISTS sources_google2_expert_id_idx RENAME TO sources_google_expert_id_idx`
+      `ALTER INDEX IF EXISTS sources_google_drive_id_idx RENAME TO sources_google_drive_id_idx`,
+      `ALTER INDEX IF EXISTS sources_google_root_drive_id_idx RENAME TO sources_google_root_drive_id_idx`,
+      `ALTER INDEX IF EXISTS sources_google_parent_folder_id_idx RENAME TO sources_google_parent_folder_id_idx`,
+      `ALTER INDEX IF EXISTS sources_google_mime_type_idx RENAME TO sources_google_mime_type_idx`,
+      `ALTER INDEX IF EXISTS sources_google_path_idx RENAME TO sources_google_path_idx`,
+      `ALTER INDEX IF EXISTS sources_google_name_idx RENAME TO sources_google_name_idx`,
+      `ALTER INDEX IF EXISTS sources_google_document_type_id_idx RENAME TO sources_google_document_type_id_idx`,
+      `ALTER INDEX IF EXISTS sources_google_expert_id_idx RENAME TO sources_google_expert_id_idx`
     ];
     
     for (const query of indexQueries) {

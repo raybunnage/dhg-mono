@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /**
- * Verify a file exists in the sources_google2 table
+ * Verify a file exists in the sources_google table
  */
 
 import * as dotenv from 'dotenv';
@@ -25,7 +25,7 @@ async function verifyFile() {
   
   try {
     const { data, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*')
       .eq('drive_id', fileId);
       
