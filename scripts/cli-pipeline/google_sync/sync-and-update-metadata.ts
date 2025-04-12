@@ -110,6 +110,7 @@ interface GoogleDriveFile {
   path?: string;
   parentPath?: string;
   parentFolderId?: string;
+  depth?: number; // Track the folder depth level
 }
 
 /**
@@ -191,7 +192,8 @@ async function listFilesRecursively(
           ...file,
           path: filePath,
           parentPath: parentPath,
-          parentFolderId: folderId
+          parentFolderId: folderId,
+          depth: currentDepth  // Include the current depth level
         };
       });
       
@@ -298,13 +300,17 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
       pathArray.unshift('');
     }
     
-    // Calculate path_depth - for files in the root folder, depth should be 0
-    const path_depth = 0;
+    // Calculate path_depth - if parent is the root folder, depth should be 1
+    // Since this is a direct file lookup, we need to determine the depth based on the parent
+    // If parentId is the root folder, depth is 1, otherwise it's unknown so default to 1
+    const path_depth = (parentId === DYNAMIC_HEALING_FOLDER_ID) ? 1 : 1;
     
     if (isVerbose) {
       console.log(`Path depth calculation:`);
       console.log(`- Path: ${filePath}`);
-      console.log(`- Setting path_depth to 0 as per requirements`);
+      console.log(`- Parent ID: ${parentId}`);
+      console.log(`- Root folder ID: ${DYNAMIC_HEALING_FOLDER_ID}`);
+      console.log(`- Setting path_depth to ${path_depth}`);
     }
     
     // Create insertion data
@@ -769,7 +775,7 @@ async function syncFiles(
           mime_type: file.mimeType,
           path: file.path || `/${file.name}`,
           path_array: pathArray,
-          path_depth: pathArray.length,
+          path_depth: file.depth || 0, // Use the folder depth from recursive search
           parent_folder_id: file.parentFolderId,
           root_drive_id: DYNAMIC_HEALING_FOLDER_ID,
           is_deleted: false,
