@@ -1,4 +1,4 @@
-import { Database } from '@/integrations/supabase/types'
+import { Database } from '../../../../../supabase/types'
 
 // Derived types from your Supabase database
 export type Expert = Database['public']['Tables']['experts']['Row']
