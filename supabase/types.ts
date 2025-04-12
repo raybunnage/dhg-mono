@@ -1,10 +1,10 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+/**
+ * @deprecated - This file is being maintained for backward compatibility
+ * All new code should import directly from /supabase/types.ts
+ */
+
+// Re-export all types from the central Supabase types file
+export * from '../../../../../supabase/types'
 
 export type Database = {
   public: {

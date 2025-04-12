@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/supabase'
+import type { Database } from '../types/supabase'
 
 // Add debug logging at the top
 console.log('Supabase Config:', {
@@ -84,7 +84,10 @@ export async function testAuth() {
 } 
 
 // System user ID used across the codebase and database functions
-  
+export const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+
+// Helper function to add user references to records
+export async function addUserReferences<T extends Record<string, any>>(recordWithUser: T): Promise<T> {
   try {
     // Try to get the current user session
     const { data } = await supabase.auth.getSession();

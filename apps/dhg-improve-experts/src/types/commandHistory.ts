@@ -1,4 +1,4 @@
-import { Database } from '../integrations/supabase/types';
+import { Database } from '../../../../supabase/types';
 
 // Command Categories
 export type CommandCategory = Database['public']['Tables']['command_categories']['Row'];
