@@ -37,6 +37,7 @@ function display_help() {
   echo "  mp4-experts                 Create expert documents for presentations with MP4 files"
   echo "  report-drive-roots          Generate a detailed report about all root folders"
   echo "  report-main-video-ids       Report on video files for folders, prioritizing Presentation folders"
+  echo "  generate-main-video-report  Generate markdown report of all files and their main_video_id values"
   echo "  update-folder-video-mapping Update main_video_id for folder and subfolders based on folder:video mapping"
   echo "  sync-and-update-metadata    Sync folder and update metadata in one operation. Use --file-id to insert a specific file"
   echo "  sync-mp4-presentations      Sync MP4 files with presentations table (ensure 1:1 mapping)"
@@ -80,6 +81,7 @@ function display_help() {
   echo "  google-drive-cli.sh browser-recursive-search --folder-id d7e2cf82-26ff-4c36-8a4e-df9f98e8723a --output docs/custom-path.md"
   echo "  google-drive-cli.sh cli-recursive-search 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --json"
   echo "  google-drive-cli.sh report-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --output docs/video-report.md"
+  echo "  google-drive-cli.sh generate-main-video-report --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --verbose"
   echo "  google-drive-cli.sh update-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
   echo "  google-drive-cli.sh update-sources-from-json --verbose"
   echo "  google-drive-cli.sh update-sources-from-json file_types/json/google-drive.json --dry-run --drive-id 1XZlq1NQNmcLxgiuPooJ8QH3LP3lJlZB3"
@@ -157,6 +159,9 @@ case "$COMMAND" in
     ;;
   report-main-video-ids)
     ts-node "$SCRIPT_DIR/index.ts" report-main-video-ids "$@"
+    ;;
+  generate-main-video-report)
+    ts-node "$SCRIPT_DIR/generate-main-video-files-report.ts" "$@"
     ;;
   sync-and-update-metadata)
     ts-node "$SCRIPT_DIR/sync-and-update-metadata.ts" "$@"

@@ -8,13 +8,14 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Default values
 DRY_RUN=""
 VERBOSE=""
-MAPPING=""
+MAPPINGS=()
 
 # Parse command line args
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --mapping)
-      MAPPING="$2"
+      # Add mapping to array
+      MAPPINGS+=("$2")
       shift 2
       ;;
     --dry-run)
@@ -32,15 +33,34 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$MAPPING" ]]; then
-  echo "Error: --mapping parameter is required"
-  echo "Usage: update-folder-video-mapping.sh --mapping '2022-04-20-Tauben': 'Tauben.Sullivan.4.20.22.mp4' [--dry-run] [--verbose]"
+if [[ ${#MAPPINGS[@]} -eq 0 ]]; then
+  echo "Error: at least one --mapping parameter is required"
+  echo "Usage: update-folder-video-mapping.sh --mapping '2022-04-20-Tauben': 'Tauben.Sullivan.4.20.22.mp4' [--mapping 'folder2': 'file2.mp4'] [--dry-run] [--verbose]"
   exit 1
 fi
 
-# Run the TypeScript script
-ts-node "$SCRIPT_DIR/update-folder-video-mapping.ts" --mapping "$MAPPING" $DRY_RUN $VERBOSE "$@"
+# Make sure the Python script is executable
+chmod +x "$SCRIPT_DIR/update-folder-video-mapping.py"
 
-if [ $? -eq 0 ]; then
-  echo "=== Command completed successfully ==="
-fi
+# Process each mapping
+TOTAL_MAPPINGS=${#MAPPINGS[@]}
+CURRENT=1
+
+for MAPPING in "${MAPPINGS[@]}"; do
+  echo "Processing mapping $CURRENT of $TOTAL_MAPPINGS: $MAPPING"
+  
+  # Run the Python script for each mapping
+  python3 "$SCRIPT_DIR/update-folder-video-mapping.py" --mapping "$MAPPING" $DRY_RUN $VERBOSE "$@"
+  
+  RESULT=$?
+  if [ $RESULT -eq 0 ]; then
+    echo "=== Mapping $CURRENT completed successfully ==="
+  else
+    echo "=== Mapping $CURRENT failed with error code $RESULT ==="
+  fi
+  
+  echo ""
+  ((CURRENT++))
+done
+
+echo "=== All mappings processed ==="
