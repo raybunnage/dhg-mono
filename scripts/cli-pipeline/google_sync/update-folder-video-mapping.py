@@ -119,26 +119,21 @@ def update_folder_with_video_id(folder_id, video_id, dry_run=False):
 
 def find_related_items(folder_name):
     """Find all items with this folder in their path_array."""
+    # Use PostgreSQL's contains operator (cs) to efficiently find items with folder in path_array
     response = make_supabase_request(
         "GET", 
         "/rest/v1/sources_google2",
         params={
             "select": "id,name,mime_type",
-            "is_deleted": "eq.false"
+            "is_deleted": "eq.false",
+            "path_array": f"cs.{{{folder_name}}}"
         }
     )
     
     if not response:
         return []
-        
-    # Filter items that have the folder name in their path_array
-    related_items = []
-    for item in response:
-        path_array = item.get("path_array", [])
-        if isinstance(path_array, list) and folder_name in path_array:
-            related_items.append(item)
-            
-    return related_items
+    
+    return response
 
 def update_related_items(item_ids, video_id, dry_run=False):
     """Update main_video_id for related items."""

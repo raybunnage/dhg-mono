@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#\!/usr/bin/env ts-node
 /**
  * Update Main Video ID from Folder-Video Mapping
  * 
@@ -30,6 +30,9 @@ for (const file of envFiles) {
   }
 }
 
+// Show loaded env vars for debugging
+console.log(`Current process.env after loading: ${Object.keys(process.env)}`);
+
 // Process command line arguments
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
@@ -46,7 +49,7 @@ const mappingIndex = args.indexOf('--mapping');
 let folderName = '';
 let fileName = '';
 
-if (mappingIndex !== -1 && args[mappingIndex + 1]) {
+if (mappingIndex \!== -1 && args[mappingIndex + 1]) {
   const mappingStr = args[mappingIndex + 1];
   
   try {
@@ -61,14 +64,14 @@ if (mappingIndex !== -1 && args[mappingIndex + 1]) {
     
     // Extract folder name from single quotes
     const folderMatch = folderPart.match(/^['"](.+)['"]$/);
-    if (!folderMatch) {
+    if (\!folderMatch) {
       throw new Error("Folder name must be in quotes");
     }
     folderName = folderMatch[1];
     
     // Extract file name from single quotes
     const fileMatch = filePart.match(/^['"](.+)['"]$/);
-    if (!fileMatch) {
+    if (\!fileMatch) {
       throw new Error("File name must be in quotes");
     }
     fileName = fileMatch[1];
@@ -134,16 +137,102 @@ async function updateFolderWithVideoId(
   }
   
   // Find all related items (subfolders, files) that need the same main_video_id
+  // Let's try a different approach using path like
+  // Folder path often included in path field even if path_array querying fails
+  Logger.debug(`Folder path: ${folder.path}`);
+  
+  // Try alternative approach to find related files - sometimes path_array doesn't work
+  // This query looks for items with paths that contain the folder's path
+  if (isVerbose) {
+    Logger.debug(`Attempting to find related items for folder "${folder.name}" with ID ${folder.id}`);
+  }
+  
+  // Try to find related items by using path_array first
   const { data: relatedItems, error: relatedError } = await supabase
     .from('sources_google2')
-    .select('id, name, mime_type')
+    .select('id, name, mime_type, path, path_array')
     .eq('is_deleted', false)
-    .contains('path_array', [folder.name]);
+    .filter('path_array', 'cs', `{${folder.name}}`);
   
   if (relatedError) {
     Logger.error(`Error finding related items: ${relatedError.message}`);
+  } 
+  
+  // If no related items found or error occurred, try a fallback method
+  if (\!relatedItems || relatedItems.length === 0) {
+    Logger.debug(`No related items found with path_array filter. Trying fallback method using path LIKE query...`);
+    
+    // Fallback: Try to find items using a LIKE query on the path field
+    let folderPath = folder.path || '';
+    if (\!folderPath && folder.name) {
+      // If no path available, construct a simple one from the name
+      folderPath = `/${folder.name}`;
+    }
+    
+    // Escape special characters for LIKE pattern
+    const escapedPath = folderPath.replace(/[%_]/g, '\\$&');
+    
+    if (isVerbose) {
+      Logger.debug(`Using fallback search with path LIKE '${escapedPath}%'`);
+    }
+    
+    // Query using LIKE on path field
+    const { data: fallbackItems, error: fallbackError } = await supabase
+      .from('sources_google2')
+      .select('id, name, mime_type, path')
+      .eq('is_deleted', false)
+      .like('path', `${escapedPath}%`);
+    
+    if (fallbackError) {
+      Logger.error(`Error in fallback search: ${fallbackError.message}`);
+    } else if (fallbackItems && fallbackItems.length > 0) {
+      Logger.info(`Found ${fallbackItems.length} related items using fallback path search`);
+      
+      // Log a few sample items for debugging
+      if (isVerbose && fallbackItems.length > 0) {
+        const sampleItems = fallbackItems.slice(0, Math.min(5, fallbackItems.length));
+        Logger.debug(`Sample related items (fallback search):`);
+        sampleItems.forEach((item: any) => {
+          Logger.debug(`  - ${item.name} (${item.id}), type: ${item.mime_type}`);
+        });
+      }
+      
+      // Update relatedItems with the fallback results
+      if (isDryRun) {
+        Logger.info(`DRY RUN: Would update ${fallbackItems.length} related items with main_video_id = ${file.id}`);
+      } else {
+        // Update in batches to avoid hitting API limits
+        const batchSize = 50;
+        for (let i = 0; i < fallbackItems.length; i += batchSize) {
+          const batch = fallbackItems.slice(i, i + batchSize);
+          const batchIds = batch.map((item: { id: string }) => item.id);
+          
+          const { error: batchUpdateError } = await supabase
+            .from('sources_google2')
+            .update({ main_video_id: file.id })
+            .in('id', batchIds);
+          
+          if (batchUpdateError) {
+            Logger.error(`Error updating batch: ${batchUpdateError.message}`);
+          } else {
+            Logger.info(`Updated batch of ${batch.length} items with main_video_id = ${file.id}`);
+          }
+        }
+      }
+    } else {
+      Logger.info(`No related items found using fallback method either.`);
+    }
   } else if (relatedItems && relatedItems.length > 0) {
     Logger.info(`Found ${relatedItems.length} related items to update with main_video_id`);
+    
+    // Log a few sample items for debugging
+    if (isVerbose && relatedItems.length > 0) {
+      const sampleItems = relatedItems.slice(0, Math.min(5, relatedItems.length));
+      Logger.debug(`Sample related items:`);
+      sampleItems.forEach((item: any) => {
+        Logger.debug(`  - ${item.name} (${item.id}), type: ${item.mime_type}`);
+      });
+    }
     
     if (isDryRun) {
       Logger.info(`DRY RUN: Would update ${relatedItems.length} related items with main_video_id = ${file.id}`);
@@ -188,18 +277,18 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
   console.log('=========================================');
 
   // Validate inputs
-  if (!folderName) {
+  if (\!folderName) {
     Logger.error('Folder name is required');
     process.exit(1);
   }
 
-  if (!fileName) {
+  if (\!fileName) {
     Logger.error('File name is required');
     process.exit(1);
   }
   
   // Verify file has proper extension
-  if (!fileName.endsWith('.mp4') && !fileName.endsWith('.m4v')) {
+  if (\!fileName.endsWith('.mp4') && \!fileName.endsWith('.m4v')) {
     Logger.warn(`Warning: File ${fileName} does not have an expected video extension (.mp4 or .m4v)`);
   }
 
@@ -221,7 +310,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
     }
 
     // If exact match fails, try fuzzy search
-    if (!exactFolders || exactFolders.length === 0) {
+    if (\!exactFolders || exactFolders.length === 0) {
       // Try a more flexible search
       Logger.debug(`Exact folder match failed, trying flexible search for: "${folderName}"`);
       
@@ -235,7 +324,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
         .eq('is_deleted', false)
         .ilike('name', `%${simplifiedName}%`);
       
-      if (fuzzyError || !fuzzyFolders || fuzzyFolders.length === 0) {
+      if (fuzzyError || \!fuzzyFolders || fuzzyFolders.length === 0) {
         Logger.error(`No folder found with name: ${folderName}`);
         process.exit(1);
       }
@@ -272,7 +361,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
       }
       
       // If exact match fails, try fuzzy search
-      if (!exactFiles || exactFiles.length === 0) {
+      if (\!exactFiles || exactFiles.length === 0) {
         // Try fuzzy search for file
         Logger.debug(`Exact file match failed, trying flexible search for: "${fileName}"`);
         
@@ -286,7 +375,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
           .eq('is_deleted', false)
           .ilike('name', `%${baseName}%`);
         
-        if (fuzzyFileError || !fuzzyFiles || fuzzyFiles.length === 0) {
+        if (fuzzyFileError || \!fuzzyFiles || fuzzyFiles.length === 0) {
           Logger.error(`No file found with name: ${fileName}`);
           process.exit(1);
         }
@@ -303,7 +392,6 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
         
         // Update folder and related items
         await updateFolderWithVideoId(bestFolder, bestFile, supabase, isDryRun);
-        return;
       } else {
         // Use exact file match
         const bestFile = exactFiles[0];
@@ -311,7 +399,6 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
         
         // Update folder and related items
         await updateFolderWithVideoId(bestFolder, bestFile, supabase, isDryRun);
-        return;
       }
     } else {
       // Use exact folder match
@@ -333,7 +420,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
       }
       
       // If exact match fails, try fuzzy search
-      if (!exactFiles || exactFiles.length === 0) {
+      if (\!exactFiles || exactFiles.length === 0) {
         // Try fuzzy search for file
         Logger.debug(`Exact file match failed, trying flexible search for: "${fileName}"`);
         
@@ -347,7 +434,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
           .eq('is_deleted', false)
           .ilike('name', `%${baseName}%`);
         
-        if (fuzzyFileError || !fuzzyFiles || fuzzyFiles.length === 0) {
+        if (fuzzyFileError || \!fuzzyFiles || fuzzyFiles.length === 0) {
           Logger.error(`No file found with name: ${fileName}`);
           process.exit(1);
         }
@@ -364,7 +451,6 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
         
         // Update folder and related items
         await updateFolderWithVideoId(bestFolder, bestFile, supabase, isDryRun);
-        return;
       } else {
         // Use exact file match
         const bestFile = exactFiles[0];
@@ -372,7 +458,6 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
         
         // Update folder and related items
         await updateFolderWithVideoId(bestFolder, bestFile, supabase, isDryRun);
-        return;
       }
     }
   } catch (error: any) {
