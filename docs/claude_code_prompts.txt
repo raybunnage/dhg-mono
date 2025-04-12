@@ -1,4 +1,7 @@
    
+
+
+   now I need you to lookup each file from file_types/json/google-drive.json which has a depth field for each id - use that id to find the corresponding record in source and check to see if the path_depth field = the depth field - actually write out each filename and the values from the json file compared against the path_depth field in sources_google2 so I can confirm they are all properly set
 [
   {
     "column_name": "id",

@@ -24,6 +24,7 @@ function display_help() {
   echo "  check-folder [folderId]     Check if a folder exists in Google Drive"
   echo "  sync [rootId]               Sync files from a root folder (or all if not specified)"
   echo "  sync-folder [folderId]      Sync a specific folder (doesn't need to be a root)"
+  echo "  insert-file                 Insert a specific file from Google Drive into database"
   echo ""
   echo "Advanced Commands:"
   echo "  add-root-service [folderId] Add a new root folder using service account"
@@ -36,7 +37,7 @@ function display_help() {
   echo "  mp4-experts                 Create expert documents for presentations with MP4 files"
   echo "  report-drive-roots          Generate a detailed report about all root folders"
   echo "  report-main-video-ids       Report on video files for folders, prioritizing Presentation folders"
-  echo "  sync-and-update-metadata    Sync folder and update metadata in one operation"
+  echo "  sync-and-update-metadata    Sync folder and update metadata in one operation. Use --file-id to insert a specific file"
   echo "  sync-mp4-presentations      Sync MP4 files with presentations table (ensure 1:1 mapping)"
   echo "  update-main-video-ids       Update main_video_id for presentations by recursively searching folders"
   echo "  update-metadata             Update metadata for files in the database"
@@ -56,6 +57,7 @@ function display_help() {
   echo "  --timeout [ms]              Set timeout for sync operations (default: 600000ms/10min)"
   echo "  --name [name]               Specify a name when adding a root folder"
   echo "  --description [desc]        Specify a description when adding a root folder"
+  echo "  --file-id [id]              Specify a file ID for direct file lookup and insertion"
   echo "  --verbose                   Show more detailed output"
   echo "  --recursive                 Recursively sync subfolders (for sync-folder command)"
   echo ""
@@ -65,6 +67,7 @@ function display_help() {
   echo "  google-drive-cli.sh sync-folder 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
   echo "  google-drive-cli.sh sync-folder dynamic-healing --recursive"
   echo "  google-drive-cli.sh sync-and-update-metadata 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --limit 50"
+  echo "  google-drive-cli.sh sync-and-update-metadata --file-id 1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM --verbose"
   echo "  google-drive-cli.sh update-root-drive-id --root-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
   echo "  google-drive-cli.sh update-root-drive-id --root-id dynamic-healing"
   echo "  google-drive-cli.sh count-mp4 dynamic-healing --list"
@@ -85,6 +88,7 @@ function display_help() {
   echo "  google-drive-cli.sh check-duplicates --all --verbose"
   echo "  google-drive-cli.sh check-duplicates --by-name --limit 20"
   echo "  google-drive-cli.sh check-duplicates --by-drive-id --json"
+  echo "  google-drive-cli.sh insert-file --file-id 1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM --verbose"
 }
 
 # No arguments provided
@@ -188,6 +192,9 @@ case "$COMMAND" in
     ;;
   check-duplicates)
     ts-node "$SCRIPT_DIR/check-duplicates.ts" "$@"
+    ;;
+  insert-file)
+    ts-node "$SCRIPT_DIR/insert-specific-file.ts" "$@"
     ;;
     
   # Help commands

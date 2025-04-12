@@ -87,6 +87,68 @@
 ## Continuous Improvement
 When I identify recurring patterns, issues, or inefficiencies in the development workflow, I'll document them here along with solutions:
 
+7. **Issue**: Missing ID fields in database records
+   **Solution**: Always ensure tables have proper ID fields and use them in inserts
+   **Implementation**:
+   - Every table must have an `id` field as the primary key
+   - For new tables, always include:
+     ```sql
+     id uuid default gen_random_uuid() primary key
+     ```
+   - When inserting records, either:
+     - Let the database auto-generate IDs (preferred):
+       ```typescript
+       const { data, error } = await supabase
+         .from('table')
+         .insert({ 
+           field1: value1,
+           field2: value2
+           // id will be auto-generated
+         })
+         .select()
+       ```
+     - Or explicitly provide UUIDs if needed:
+       ```typescript
+       import { v4 as uuidv4 } from 'uuid';
+       
+       const { data, error } = await supabase
+         .from('table')
+         .insert({
+           id: uuidv4(), // explicitly set UUID
+           field1: value1,
+           field2: value2
+         })
+         .select()
+       ```
+   - Common pitfalls to avoid:
+     - Never omit the ID field in table definitions
+     - Don't use sequential IDs (use UUIDs)
+     - Always include `.select()` after insert to get the generated ID
+     - Check that ID was generated in error handling
+   - When writing migrations, ensure ID field is first column defined
+   - For existing tables missing IDs, create migration to add UUID primary key
+
+7. **Issue**: Direct PSQL queries to Supabase database
+   **Solution**: Use established CLI pipeline patterns for Supabase interactions
+   **Implementation**:
+   - Never use direct PSQL queries or psql command line tool to interact with Supabase
+   - Instead, look at successful examples in the CLI pipeline:
+     - `scripts/cli-pipeline/document/process-documents.ts` - Uses SupabaseClientService for document operations
+     - `scripts/cli-pipeline/presentations/sync-presentations.ts` - Shows proper pattern for batch updates
+     - `scripts/cli-pipeline/google_sync/sync-folders.ts` - Demonstrates correct transaction handling
+   - Always use the singleton SupabaseClientService:
+     ```typescript
+     import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+     const supabase = SupabaseClientService.getInstance();
+     ```
+   - Follow established patterns for:
+     - Querying data: `supabase.from('table').select()`
+     - Inserting records: `supabase.from('table').insert()`
+     - Updating records: `supabase.from('table').update()`
+     - Transaction handling: Use the service's transaction methods
+   - Leverage existing utility functions in shared services rather than writing raw SQL
+   - When adding new query patterns, contribute them to the shared service layer for reuse
+
 1. **Issue**: Authentication and credential management for external services
    **Solution**: Always use the existing singleton services for authentication
    **Implementation**: 
