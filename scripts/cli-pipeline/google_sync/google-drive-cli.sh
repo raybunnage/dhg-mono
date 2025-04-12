@@ -46,6 +46,7 @@ function display_help() {
   echo "  insert-missing-sources      Insert records from JSON file that do not exist in sources_google2"
   echo "  update-schema-from-json     Update the Supabase schema from JSON data"
   echo "  check-duplicates            Check for duplicate files in sources_google2 by name or drive_id"
+  echo "  update-file-signatures      Update all file signatures to use the consistent new format"
   echo "  NOTE: The extracted_content field is deprecated and any size data should only be stored in the size field"
   echo ""
   echo "Options:"
@@ -88,6 +89,7 @@ function display_help() {
   echo "  google-drive-cli.sh check-duplicates --all --verbose"
   echo "  google-drive-cli.sh check-duplicates --by-name --limit 20"
   echo "  google-drive-cli.sh check-duplicates --by-drive-id --json"
+  echo "  google-drive-cli.sh update-file-signatures --dry-run --verbose"
   echo "  google-drive-cli.sh insert-file --file-id 1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM --verbose"
 }
 
@@ -192,6 +194,9 @@ case "$COMMAND" in
     ;;
   check-duplicates)
     ts-node "$SCRIPT_DIR/check-duplicates.ts" "$@"
+    ;;
+  update-file-signatures)
+    ts-node "$SCRIPT_DIR/update-file-signatures.ts" "$@"
     ;;
   insert-file)
     ts-node "$SCRIPT_DIR/insert-specific-file.ts" "$@"
