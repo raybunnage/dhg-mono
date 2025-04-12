@@ -3,7 +3,8 @@ import { Command } from 'commander';
 import { Logger } from '../../../packages/shared/utils/logger';
 import * as fs from 'fs';
 import * as path from 'path';
-import { reportMainVideoIds } from './report-main-video-ids';
+// Import removed as file doesn't exist
+// import { reportMainVideoIds } from './report-main-video-ids';
 import { updateSourcesFromJson } from './update-sources-from-json';
 import { insertMissingSources } from './insert-missing-sources';
 import { updateSchemaFromJson } from './update-schema-from-json';
@@ -24,7 +25,9 @@ program
   .option('--limit <number>', 'Limit the number of folders to process')
   .action(async (options: any) => {
     try {
-      await reportMainVideoIds(options.folderId, options.verbose, options.output, options.limit ? parseInt(options.limit) : 0);
+      // Function temporarily removed as it's not available
+      Logger.error('The report-main-video-ids function is not currently available.');
+      process.exit(1);
     } catch (error) {
       Logger.error('Error reporting main video IDs:', error);
       process.exit(1);

@@ -4023,6 +4023,7 @@ export type Database = {
           document_type_id: string | null
           drive_id: string
           expert_id: string | null
+          file_signature: string | null
           id: string
           is_deleted: boolean | null
           is_root: boolean | null
@@ -4030,7 +4031,7 @@ export type Database = {
           main_video_id: string | null
           metadata: Json | null
           mime_type: string
-          modified_time: string | null
+          modified_at: string | null
           name: string
           parent_folder_id: string | null
           path: string
@@ -4047,6 +4048,7 @@ export type Database = {
           document_type_id?: string | null
           drive_id: string
           expert_id?: string | null
+          file_signature?: string | null
           id: string
           is_deleted?: boolean | null
           is_root?: boolean | null
@@ -4054,7 +4056,7 @@ export type Database = {
           main_video_id?: string | null
           metadata?: Json | null
           mime_type: string
-          modified_time?: string | null
+          modified_at?: string | null
           name: string
           parent_folder_id?: string | null
           path: string
@@ -4071,6 +4073,7 @@ export type Database = {
           document_type_id?: string | null
           drive_id?: string
           expert_id?: string | null
+          file_signature?: string | null
           id?: string
           is_deleted?: boolean | null
           is_root?: boolean | null
@@ -4078,7 +4081,7 @@ export type Database = {
           main_video_id?: string | null
           metadata?: Json | null
           mime_type?: string
-          modified_time?: string | null
+          modified_at?: string | null
           name?: string
           parent_folder_id?: string | null
           path?: string
