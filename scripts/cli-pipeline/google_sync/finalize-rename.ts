@@ -100,7 +100,6 @@ async function main() {
           content_extracted,
           extracted_content,
           document_type_id,
-          expert_id,
           created_at,
           updated_at,
           last_indexed,
@@ -129,8 +128,7 @@ async function main() {
       `ALTER INDEX IF EXISTS sources_google_mime_type_idx RENAME TO sources_google_mime_type_idx`,
       `ALTER INDEX IF EXISTS sources_google_path_idx RENAME TO sources_google_path_idx`,
       `ALTER INDEX IF EXISTS sources_google_name_idx RENAME TO sources_google_name_idx`,
-      `ALTER INDEX IF EXISTS sources_google_document_type_id_idx RENAME TO sources_google_document_type_id_idx`,
-      `ALTER INDEX IF EXISTS sources_google_expert_id_idx RENAME TO sources_google_expert_id_idx`
+      `ALTER INDEX IF EXISTS sources_google_document_type_id_idx RENAME TO sources_google_document_type_id_idx`
     ];
     
     for (const query of indexQueries) {

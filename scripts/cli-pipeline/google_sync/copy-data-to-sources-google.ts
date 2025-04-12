@@ -111,7 +111,6 @@ async function main() {
         content_extracted: record.content_extracted,
         extracted_content: record.extracted_content,
         document_type_id: record.document_type_id,
-        expert_id: record.expert_id,
         created_at: record.created_at,
         updated_at: record.updated_at,
         last_indexed: record.last_indexed,

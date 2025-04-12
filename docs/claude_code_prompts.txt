@@ -1,166 +1,21 @@
-   [
-  {
-    "field_name": "Total Rows",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.0",
-    "sort_order": 0
-  },
-  {
-    "field_name": "expert_id",
-    "total_count": 839,
-    "null_count": 839,
-    "null_percentage": "100.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "last_indexed",
-    "total_count": 839,
-    "null_count": 838,
-    "null_percentage": "99.88",
-    "sort_order": 1
-  },
-  {
-    "field_name": "document_type_id",
-    "total_count": 839,
-    "null_count": 704,
-    "null_percentage": "83.91",
-    "sort_order": 1
-  },
-  {
-    "field_name": "thumbnail_link",
-    "total_count": 839,
-    "null_count": 280,
-    "null_percentage": "33.37",
-    "sort_order": 1
-  },
-  {
-    "field_name": "main_video_id",
-    "total_count": 839,
-    "null_count": 200,
-    "null_percentage": "23.84",
-    "sort_order": 1
-  },
-  {
-    "field_name": "size",
-    "total_count": 839,
-    "null_count": 181,
-    "null_percentage": "21.57",
-    "sort_order": 1
-  },
-  {
-    "field_name": "is_root",
-    "total_count": 839,
-    "null_count": 2,
-    "null_percentage": "0.24",
-    "sort_order": 1
-  },
-  {
-    "field_name": "parent_folder_id",
-    "total_count": 839,
-    "null_count": 1,
-    "null_percentage": "0.12",
-    "sort_order": 1
-  },
-  {
-    "field_name": "path_depth",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "is_deleted",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "metadata",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "modified_at",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "web_view_link",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "root_drive_id",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "drive_id",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "mime_type",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "created_at",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "updated_at",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "name",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "id",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "path",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  },
-  {
-    "field_name": "path_array",
-    "total_count": 839,
-    "null_count": 0,
-    "null_percentage": "0.00",
-    "sort_order": 1
-  }
-]
+   
+CREATE TABLE sources_google_experts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source_id UUID NOT NULL REFERENCES sources_google(id),
+    expert_id UUID NOT NULL REFERENCES experts(id),
+    role_description TEXT,                    -- For additional context when role is 'other'
+    is_primary BOOLEAN DEFAULT false,         -- Whether this expert is the primary for this source
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Add index for faster lookups
+CREATE INDEX idx_sources_google_experts_source_id ON
+sources_google_experts(source_id);
+CREATE INDEX idx_sources_google_experts_expert_id ON
+sources_google_experts(expert_id);
+
+   
    
    
    

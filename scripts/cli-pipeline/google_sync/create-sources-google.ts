@@ -84,7 +84,6 @@ async function main() {
           content_extracted boolean DEFAULT false,
           extracted_content text,
           document_type_id uuid,
-          expert_id uuid,
           created_at timestamp with time zone DEFAULT now(),
           updated_at timestamp with time zone DEFAULT now(),
           last_indexed timestamp with time zone,

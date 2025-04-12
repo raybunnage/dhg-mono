@@ -1,10 +1,10 @@
-/**
- * @deprecated - This file is being maintained for backward compatibility
- * All new code should import directly from /supabase/types.ts
- */
-
-// Re-export all types from the central Supabase types file
-export * from '../../../../../supabase/types'
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   public: {
@@ -3391,9 +3391,8 @@ export type Database = {
           created_at: string | null
           document_type_id: string | null
           drive_id: string | null
-          expert_id: string | null
           file_signature: string | null
-          id: string | null
+          id: string
           is_deleted: boolean | null
           is_root: boolean | null
           last_indexed: string | null
@@ -3416,9 +3415,8 @@ export type Database = {
           created_at?: string | null
           document_type_id?: string | null
           drive_id?: string | null
-          expert_id?: string | null
           file_signature?: string | null
-          id?: string | null
+          id: string
           is_deleted?: boolean | null
           is_root?: boolean | null
           last_indexed?: string | null
@@ -3441,9 +3439,8 @@ export type Database = {
           created_at?: string | null
           document_type_id?: string | null
           drive_id?: string | null
-          expert_id?: string | null
           file_signature?: string | null
-          id?: string | null
+          id?: string
           is_deleted?: boolean | null
           is_root?: boolean | null
           last_indexed?: string | null
@@ -3907,6 +3904,51 @@ export type Database = {
           web_view_link?: string | null
         }
         Relationships: []
+      }
+      sources_google_experts: {
+        Row: {
+          created_at: string | null
+          expert_id: string
+          id: string
+          is_primary: boolean | null
+          role_description: string | null
+          source_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expert_id: string
+          id?: string
+          is_primary?: boolean | null
+          role_description?: string | null
+          source_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expert_id?: string
+          id?: string
+          is_primary?: boolean | null
+          role_description?: string | null
+          source_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sources_google_experts_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "experts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sources_google_experts_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sources_google2_backup_2024_03_26: {
         Row: {

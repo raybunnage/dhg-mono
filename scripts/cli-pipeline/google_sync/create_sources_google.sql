@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS public.sources_google (
     
     -- Foreign keys
     document_type_id uuid REFERENCES public.document_types(id),
-    expert_id uuid REFERENCES public.experts(id),
     
     -- Timestamps
     created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
