@@ -14,6 +14,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { Logger } from '../../../packages/shared/utils/logger';
+import { Json } from '../../../supabase/types';
 
 // Load environment variables
 dotenv.config();
@@ -22,16 +23,20 @@ interface JsonFileEntry {
   id: string;
   mimeType: string;
   parents: string[];
-  webViewLink: string;
+  webViewLink?: string;
   webContentLink?: string;
   name: string;
   path: string;
   path_array?: string[];
   depth?: number;
   web_view_link?: string;
+  view_url?: string;
+  web_content_link?: string;
   createdTime?: string;
   modifiedTime?: string;
   size?: string;
+  is_root?: boolean;
+  metadata?: Json;
 }
 
 async function insertMissingSources(
@@ -216,6 +221,29 @@ async function insertMissingSources(
             continue;
           }
           
+          // Generate a file signature
+          let fileSignature = null;
+          // If it's a file (not a folder) and has a size and name
+          if (entry.mimeType !== 'application/vnd.google-apps.folder' && entry.name) {
+            // Create a signature using name, size, and modified time if available
+            const signatureComponents = [
+              entry.id,
+              entry.name,
+              entry.size || '0',
+              entry.modifiedTime || new Date().toISOString()
+            ];
+            fileSignature = crypto.createHash('md5').update(signatureComponents.join('-')).digest('hex');
+          }
+
+          // Create a metadata object with relevant fields, excluding size since it's a top-level field
+          const metadata: any = {
+            view_url: entry.view_url || null,
+            web_content_link: entry.web_content_link || null,
+            last_modified: entry.modifiedTime || null,
+            created: entry.createdTime || null,
+            // Include any other metadata that might be useful, but exclude size
+          };
+
           // Prepare record data
           const record: any = {
             id: crypto.randomUUID(), // Generate UUID for the ID field
@@ -232,16 +260,18 @@ async function insertMissingSources(
             size: entry.size ? parseInt(entry.size) : null,
             created_at: entry.createdTime ? new Date(entry.createdTime).toISOString() : new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            modified_time: entry.modifiedTime || null,
+            modified_at: entry.modifiedTime || null,
             // Set root_drive_id to Dynamic Healing Discussion Group
             root_drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV',
+            // Do not set file_signature field as it has DEFAULT handling in the database
             // The following fields are allowed to be null
             thumbnail_link: null,
-            extracted_content: null,
             document_type_id: null,
             expert_id: null,
             last_indexed: null,
-            main_video_id: null
+            main_video_id: null,
+            is_root: entry.is_root || false,
+            metadata: entry.metadata || metadata
           };
           
           // Set parent_folder_id from the parents array, if available
@@ -300,16 +330,69 @@ async function insertMissingSources(
     } else if (dryRun) {
       Logger.info('This was a dry run - no records were inserted');
       
-      // Log records that would be inserted
+      // Always log records that would be inserted in dry run mode
+      entriesToInsert.forEach(entry => {
+        // Generate file signature for logging
+        let fileSignature = null;
+        if (entry.mimeType !== 'application/vnd.google-apps.folder' && entry.name) {
+          const signatureComponents = [
+            entry.id,
+            entry.name,
+            entry.size || '0',
+            entry.modifiedTime || new Date().toISOString()
+          ];
+          fileSignature = crypto.createHash('md5').update(signatureComponents.join('-')).digest('hex');
+        }
+        
+        // Create metadata object for logging
+        const metadata = {
+          view_url: entry.view_url || null,
+          web_content_link: entry.web_content_link || null,
+          last_modified: entry.modifiedTime || null,
+          created: entry.createdTime || null,
+        };
+        
+        // Generate a file signature using a slightly different approach for display
+        if (fileSignature) {
+          Logger.info(`Would insert file: ${entry.id} (${entry.name})`);
+          Logger.info(`  mimeType: ${entry.mimeType}`);
+          Logger.info(`  path: ${entry.path}`);
+          Logger.info(`  size: ${entry.size ? parseInt(entry.size) : 0}`);
+          Logger.info(`  file_signature: ${fileSignature}`);
+          
+          // Show the exact record that would be inserted
+          const record: any = {
+            id: '<random-uuid>',
+            drive_id: entry.id,
+            name: entry.name,
+            mime_type: entry.mimeType,
+            path: entry.path || `/${entry.name}`,
+            path_array: entry.path_array || (entry.path ? entry.path.split('/').filter(Boolean) : []),
+            path_depth: entry.depth !== undefined ? entry.depth : (entry.path_array ? entry.path_array.length - 1 : 0),
+            web_view_link: entry.webViewLink || entry.web_view_link,
+            is_deleted: false,
+            size: entry.size ? parseInt(entry.size) : null,
+            created_at: entry.createdTime ? new Date(entry.createdTime).toISOString() : new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            modified_at: entry.modifiedTime || null,
+            root_drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV',
+            // file_signature: handled by database default
+            thumbnail_link: null,
+            document_type_id: null,
+            expert_id: null,
+            last_indexed: null,
+            main_video_id: null,
+            is_root: entry.is_root || false,
+            metadata: metadata
+          };
+          
+          Logger.info(`Record to insert: ${JSON.stringify(record, null, 2)}`);
+          Logger.info('-----------------------------------');
+        }
+      });
+      
       if (verbose) {
-        entriesToInsert.forEach(entry => {
-          Logger.debug(`Would insert: ${entry.id} (${entry.name})`);
-          Logger.debug(`  mimeType: ${entry.mimeType}`);
-          Logger.debug(`  path: ${entry.path}`);
-          Logger.debug(`  depth: ${entry.depth !== undefined ? entry.depth : (entry.path_array ? entry.path_array.length - 1 : 0)}`);
-          Logger.debug(`  parents: ${entry.parents ? JSON.stringify(entry.parents) : 'none'}`);
-          Logger.debug('-----------------------------------');
-        });
+        // Additional verbose logging here if needed
       }
     }
     
