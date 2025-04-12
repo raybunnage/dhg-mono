@@ -311,6 +311,9 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
     const { v4: uuidv4 } = require('uuid');
     const recordId = uuidv4(); // Generate a UUID for the record
     
+    // Generate a file signature based on name and modification time
+    const fileSignature = `${file.name}-${file.modifiedTime}`.replace(/[^a-zA-Z0-9]/g, '');
+    
     const insertData = {
       id: recordId, // Explicitly set the ID field
       drive_id: file.id,
@@ -328,6 +331,7 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
       thumbnail_link: file.thumbnailLink,
       modified_at: file.modifiedTime,
       size: file.size ? parseInt(file.size, 10) : null,
+      file_signature: fileSignature,
       metadata: {
         modifiedTime: file.modifiedTime,
         webViewLink: file.webViewLink,
@@ -749,6 +753,9 @@ async function syncFiles(
           pathArray.unshift('');
         }
         
+        // Generate a file signature based on name and modification time
+        const fileSignature = `${file.name}-${file.modifiedTime || new Date().toISOString()}`.replace(/[^a-zA-Z0-9]/g, '');
+        
         const insertData = {
           drive_id: file.id,
           name: file.name,
@@ -765,6 +772,7 @@ async function syncFiles(
           thumbnail_link: file.thumbnailLink,
           modified_at: file.modifiedTime,
           size: file.size ? parseInt(file.size, 10) : null,
+          file_signature: fileSignature,
           metadata: {
             modifiedTime: file.modifiedTime,
             webViewLink: file.webViewLink,
@@ -990,6 +998,12 @@ async function updateMetadata(
         
         if (fileData.webViewLink !== undefined) {
           updateData.web_view_link = fileData.webViewLink;
+        }
+        
+        // Generate and update file signature based on name and modification time
+        if (fileData.name && fileData.modifiedTime) {
+          const fileSignature = `${fileData.name}-${fileData.modifiedTime}`.replace(/[^a-zA-Z0-9]/g, '');
+          updateData.file_signature = fileSignature;
         }
         
         recordsToUpdate.push(updateData);

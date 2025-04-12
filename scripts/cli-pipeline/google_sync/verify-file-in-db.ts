@@ -51,6 +51,7 @@ async function verifyFile() {
       console.log(`Parent Folder ID: ${record.parent_folder_id}`);
       console.log(`Root Drive ID: ${record.root_drive_id}`);
       console.log(`Is Deleted: ${record.is_deleted}`);
+      console.log(`File Signature: ${record.file_signature || 'Not set'}`);
       console.log(`Created At: ${record.created_at}`);
       console.log(`Updated At: ${record.updated_at}`);
     });
