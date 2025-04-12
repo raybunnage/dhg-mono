@@ -1,4 +1,253 @@
    
+./scripts/cli-pipeline/google_sync/google-drive-cli.sh update-path-array-video --path-array '
+
+
+./scripts/cli-pipeline/google_sync/google-drive-cli.sh update-folder-video-mapping --mapping "
+
+
+'2023-05-03-Sullivan': 'Sullivan.Ballantyne.5.3.23.mp4'
+'2022-04-20-Tauben': 'Tauben.Sullivan.4.20.22.mp4'
+'2022-09-21-Sue Carter - Sex, love, and oxytocin': 'Sue Carter talk 9-21-2022.mp4'
+'2020-10-21-Lederman-Relationship Connection': 'Matt and Alona.10.21.20.mp4'
+'2024-04-03-Lederman-NonViolent Commun': 'Lederman.4.4.24.mp4'
+'2024-01-24-Naviaux': 'Naviaux.DR.1.24.24.mp4'
+'2021-02-10-Eagle': 'Amster.Eagle.2.10.21.mp4'
+'2021-08-18-Mel Pohl - addiction': '8.18.21.Mel Pohl.mp4'
+'2021-1-27-Garbho-Q&A-f': 'Gharbo.1.28.21.mp4'
+'2023-12-06-Napadow-Patient': 'video1168985783.mp4'
+'2024-04-17-Naviaux-Basics of mitochondria': 'Navaux.4.17.24.mp4'
+'2020-06-03-Vagal state and vagal stimulation': '6.3.20.Vagal Stim.mp4'
+'2024-11-06 - Sutphin - aging': 'Sutphinb.10.6.24.mp4'
+'2022-11-2 - Peter Staats.Overview of Vagal Stimulation': '11.2.22.Staats.mp4'
+'2021-02-03-Wolovsky-Cues of Safety': 'Kate Wolovsky.2.3.21.mp4'
+'2024-02-21-Where do we go from here.Carter.Clawson,Hanscom': 'DHDG.2.21.24.open Discussion.mp4'
+'2024-02-04-Grinevich-oxytocin': 'Valery Grinevich 2-4-2024 video.mp4'
+'2023-09-20-Lane': 'Emotional vs physical pain.mp4'
+'2024-05-22-Cook': 'Cook.Clawson.5.22.244.mp4'
+
+'2025-01-22 - Clauw – Fibromyalgia, Nociplastic pain, and Autonomic Dysfunction': 'Dan Clauw.1.22.25.mp4'
+
+
+
+
+
+
+["2023-05-03-Sullivan", "Ballantyne - Opioids updated", "Sullivan.Ballantyne.5.3.23.mp4"]
+["2022-04-20-Tauben", " Sullivan-The Necessity of Listening", "Tauben.Sullivan.4.20.22.mp4"]
+["2022-09-21-Sue Carter - Sex, love, and oxytocin", "Sue Carter talk 9-21-2022.mp4"]
+["2020-10-21-Lederman-Relationship Connection ", "Matt and Alona.10.21.20.mp4"]
+["2024-04-03-Lederman-NonViolent Commun", " AI powered", "Lederman.4.4.24.mp4"]
+["2024-01-24-Naviaux", "Clawson-Update chronic fatigue - eATP, mitochondria, and healing", "Naviaux.DR.1.24.24.mp4"]
+["2021-02-10-Eagle", "Amster-AWE Q&A", "Amster.Eagle.2.10.21.mp4"]
+["2021-08-18-Mel Pohl - addiction", " Pain", "8.18.21.Mel Pohl.mp4"]
+["2021-1-27-Garbho-Q&A-f", "up ANS monitoring", "Gharbo.1.28.21.mp4"]
+["2023-12-06-Napadow-Patient", "Doctor", "neuroimaging", "video1168985783.mp4"]
+["2024-04-17-Naviaux-Basics of mitochondria", "CDR", "Navaux.4.17.24.mp4"]
+["2020-06-03-Vagal state and vagal stimulation ", "6.3.20.Vagal Stim.mp4"]
+["2024-11-06 - Sutphin - aging", "OXY", " in nematodes", "Presentation", "Sutphinb.10.6.24.mp4"]
+["2022-11-2 - Peter Staats.Overview of Vagal Stimulation ", "11.2.22.Staats.mp4"]
+["2021-02-03-Wolovsky-Cues of Safety", "Threat", "Kate Wolovsky.2.3.21.mp4"]
+["2024-02-21-Where do we go from here.Carter.Clawson,Hanscom", "DHDG.2.21.24.open Discussion.mp4"]
+["2024-02-04-Grinevich-oxytocin", "Pain", "Neuro", "Valery Grinevich 2-4-2024 video.mp4"]
+["2023-09-20-Lane", "Davis-Emotional vs Physical Pain", "Emotional vs physical pain.mp4"]
+["2024-05-22-Cook", "Clawson - Mental Health", "Teens", "Cook.Clawson.5.22.244.mp4"]
+["2025-01-22 - Clauw – Fibromyalgia, Nociplastic pain, and Autonomic Dysfunction", "Presentation", "Dan Clauw.1.22.25.mp4"]
+
+
+[
+  {
+    "name": "10.4.23.Hanscom:Clawson.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2023-10-04-Hanscom",
+      "Clawson-RUTs neuroscience",
+      "10.4.23.Hanscom:Clawson.mp4"
+    ]
+  },
+  {
+    "name": "Sullivan.Ballantyne.5.3.23.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2023-05-03-Sullivan",
+      "Ballantyne - Opioids updated",
+      "Sullivan.Ballantyne.5.3.23.mp4"
+    ]
+  },
+  {
+    "name": "Tauben.Sullivan.4.20.22.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2022-04-20-Tauben",
+      " Sullivan-The Necessity of Listening",
+      "Tauben.Sullivan.4.20.22.mp4"
+    ]
+  },
+  {
+    "name": "Sue Carter talk 9-21-2022.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2022-09-21-Sue Carter - Sex, love, and oxytocin",
+      "Sue Carter talk 9-21-2022.mp4"
+    ]
+  },
+  {
+    "name": "Matt and Alona.10.21.20.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2020-10-21-Lederman-Relationship Connection ",
+      "Matt and Alona.10.21.20.mp4"
+    ]
+  },
+  {
+    "name": "Lederman.4.4.24.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2024-04-03-Lederman-NonViolent Commun",
+      " AI powered",
+      "Lederman.4.4.24.mp4"
+    ]
+  },
+  {
+    "name": "Naviaux.DR.1.24.24.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2024-01-24-Naviaux",
+      "Clawson-Update chronic fatigue - eATP, mitochondria, and healing",
+      "Naviaux.DR.1.24.24.mp4"
+    ]
+  },
+  {
+    "name": "Amster.Eagle.2.10.21.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2021-02-10-Eagle",
+      "Amster-AWE Q&A",
+      "Amster.Eagle.2.10.21.mp4"
+    ]
+  },
+  {
+    "name": "8.18.21.Mel Pohl.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2021-08-18-Mel Pohl - addiction",
+      " Pain",
+      "8.18.21.Mel Pohl.mp4"
+    ]
+  },
+  {
+    "name": "Gharbo.1.28.21.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2021-1-27-Garbho-Q&A-f",
+      "up ANS monitoring",
+      "Gharbo.1.28.21.mp4"
+    ]
+  },
+  {
+    "name": "video1168985783.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2023-12-06-Napadow-Patient",
+      "Doctor",
+      "neuroimaging",
+      "video1168985783.mp4"
+    ]
+  },
+  {
+    "name": "Navaux.4.17.24.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2024-04-17-Naviaux-Basics of mitochondria",
+      "CDR",
+      "Navaux.4.17.24.mp4"
+    ]
+  },
+  {
+    "name": "6.3.20.Vagal Stim.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2020-06-03-Vagal state and vagal stimulation ",
+      "6.3.20.Vagal Stim.mp4"
+    ]
+  },
+  {
+    "name": "Sutphinb.10.6.24.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2024-11-06 - Sutphin - aging",
+      "OXY",
+      " in nematodes",
+      "Presentation",
+      "Sutphinb.10.6.24.mp4"
+    ]
+  },
+  {
+    "name": "11.2.22.Staats.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2022-11-2 - Peter Staats.Overview of Vagal Stimulation ",
+      "11.2.22.Staats.mp4"
+    ]
+  },
+  {
+    "name": "Kate Wolovsky.2.3.21.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2021-02-03-Wolovsky-Cues of Safety",
+      "Threat",
+      "Kate Wolovsky.2.3.21.mp4"
+    ]
+  },
+  {
+    "name": "DHDG.2.21.24.open Discussion.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2024-02-21-Where do we go from here.Carter.Clawson,Hanscom",
+      "DHDG.2.21.24.open Discussion.mp4"
+    ]
+  },
+  {
+    "name": "Valery Grinevich 2-4-2024 video.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2024-02-04-Grinevich-oxytocin",
+      "Pain",
+      "Neuro",
+      "Valery Grinevich 2-4-2024 video.mp4"
+    ]
+  },
+  {
+    "name": "Emotional vs physical pain.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2023-09-20-Lane",
+      "Davis-Emotional vs Physical Pain",
+      "Emotional vs physical pain.mp4"
+    ]
+  },
+  {
+    "name": "Cook.Clawson.5.22.244.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2024-05-22-Cook",
+      "Clawson - Mental Health",
+      "Teens",
+      "Cook.Clawson.5.22.244.mp4"
+    ]
+  },
+  {
+    "name": "Dan Clauw.1.22.25.mp4",
+    "main_video_id": null,
+    "path_array": [
+      "2025-01-22 - Clauw – Fibromyalgia, Nociplastic pain, and Autonomic Dysfunction",
+      "Presentation",
+      "Dan Clauw.1.22.25.mp4"
+    ]
+  }
+]
+
+
+
 Here's the detailed metadata for the file with ID 1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM:
 
   {

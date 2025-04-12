@@ -1,7 +1,7 @@
 #!/bin/bash
-# Archived on 2025-04-11 - Original file used with sources_google table
-# Script to run the report-main-video-ids command, which searches for MP4 files
-# in folders and their subfolders, prioritizing "Presentation" folders
+# Script to run the report-main-video-ids command for sources_google2
+# This script searches for MP4 files in folders at path_depth=1 and their subfolders,
+# prioritizing "Presentation" folders, and can update main_video_id for all related files.
 # Usage: ./report-main-video-ids.sh [options]
 
 # Get the directory of this script
@@ -15,6 +15,7 @@ FOLDER_ID=""
 VERBOSE=""
 OUTPUT="$DEFAULT_OUTPUT"
 LIMIT=""
+UPDATE_DB=""
 
 # Parse command line args
 while [[ $# -gt 0 ]]; do
@@ -35,6 +36,14 @@ while [[ $# -gt 0 ]]; do
       LIMIT="--limit $2"
       shift 2
       ;;
+    --update-db)
+      UPDATE_DB="--update-db"
+      shift
+      ;;
+    --dry-run)
+      # dry-run is the default, but kept for backward compatibility
+      shift
+      ;;
     *)
       # Pass any unknown options directly to the TS script
       break
@@ -42,11 +51,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo "=== Generating Main Video IDs Report ==="
+echo "=== Generating Main Video IDs Report (sources_google2) ==="
 echo "Output file: $OUTPUT"
+if [[ -n "$UPDATE_DB" ]]; then
+  echo "Mode: UPDATE - Will update main_video_id values in the database"
+else
+  echo "Mode: REPORT ONLY - Will not modify the database"
+fi
 
-# Run the command using index.ts with the CLI command structure
-ts-node "$SCRIPT_DIR/index.ts" report-main-video-ids $FOLDER_ID $VERBOSE --output "$OUTPUT" $LIMIT "$@"
+# Run the command using the TS file directly
+ts-node "$SCRIPT_DIR/report-main-video-ids.ts" $FOLDER_ID $VERBOSE --output "$OUTPUT" $LIMIT $UPDATE_DB "$@"
 
 if [ $? -eq 0 ]; then
   echo "=== Report generated successfully ==="
