@@ -46,7 +46,6 @@ async function createCompatibilityView(supabase) {
           content_extracted,
           extracted_content,
           document_type_id,
-          expert_id,
           created_at,
           updated_at,
           last_indexed,
@@ -348,7 +347,7 @@ async function checkExpertReferences(supabase) {
           // Check if the document_id exists in sources_google
           const { data: documentData, error: documentError } = await supabase
             .from('sources_google')
-            .select('id, name, expert_id')
+            .select('id, name')
             .eq('id', sample.document_id)
             .limit(1);
           
@@ -357,12 +356,8 @@ async function checkExpertReferences(supabase) {
           } else if (documentData.length > 0) {
             console.log(`- Document found in sources_google: ${documentData[0].name}`);
             
-            // Check if the expert_id matches
-            if (documentData[0].expert_id === sample.expert_id) {
-              console.log('- ✓ expert_id in sources_google matches expert_id in expert_documents');
-            } else {
-              console.log(`- ✗ expert_id mismatch: ${documentData[0].expert_id} vs ${sample.expert_id}`);
-            }
+            // Note about expert_id now being in a separate table
+            console.log('- Expert association now handled through sources_google_experts table')
           } else {
             console.log('- ✗ Document not found in sources_google');
           }
@@ -423,7 +418,6 @@ async function main() {
         { sg: 'parent_id', sg2: 'parent_folder_id' },
         { sg: 'deleted', sg2: 'is_deleted' },
         { sg: 'path', sg2: 'path' },
-        { sg: 'expert_id', sg2: 'expert_id' },
         { sg: 'document_type_id', sg2: 'document_type_id' }
       ];
       

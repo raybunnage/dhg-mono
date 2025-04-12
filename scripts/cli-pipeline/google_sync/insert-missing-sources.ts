@@ -267,7 +267,6 @@ async function insertMissingSources(
             // The following fields are allowed to be null
             thumbnail_link: null,
             document_type_id: null,
-            expert_id: null,
             last_indexed: null,
             main_video_id: null,
             is_root: entry.is_root || false,

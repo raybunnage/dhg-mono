@@ -28,7 +28,6 @@ SELECT
     content_extracted,
     extracted_content,
     document_type_id,
-    expert_id,
     created_at,
     updated_at,
     last_indexed,
@@ -45,4 +44,3 @@ CREATE INDEX IF NOT EXISTS sources_google_mime_type_idx ON sources_google(mime_t
 CREATE INDEX IF NOT EXISTS sources_google_path_idx ON sources_google(path);
 CREATE INDEX IF NOT EXISTS sources_google_name_idx ON sources_google(name);
 CREATE INDEX IF NOT EXISTS sources_google_document_type_id_idx ON sources_google(document_type_id);
-CREATE INDEX IF NOT EXISTS sources_google_expert_id_idx ON sources_google(expert_id);
