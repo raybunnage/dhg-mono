@@ -32,6 +32,11 @@
 
 5. **Archiving Strategy**: Archive temporary or unused code in `.archived_scripts` folders with the date appended to the filename (e.g., `scripts/cli-pipeline/google_sync/.archived_scripts/some-script.20250330.ts`).
 
+6. **Supabase TypeScript Types**:
+   - Use the `supabase.types.ts` file to define the types for the Supabase database
+   - do not use any other types.ts file for types from supbase - this file is the source of truth
+
+
 ## CLI Pipeline Integration Requirements
 
 1. **Always Integrate New Commands**:
