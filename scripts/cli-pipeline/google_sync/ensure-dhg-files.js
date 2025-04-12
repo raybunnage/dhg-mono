@@ -4,7 +4,7 @@
  * Ensure Dynamic Healing Discussion Group Files Script
  * 
  * This script ensures all DHG files from transcripts directory are correctly
- * represented in sources_google2 table with proper metadata.
+ * represented in sources_google table with proper metadata.
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -35,7 +35,7 @@ const batchSize = 50; // Insert in smaller batches to prevent issues
 async function getExistingRecords(supabase) {
   try {
     const { data, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, drive_id, path')
       .eq('root_drive_id', DHG_ROOT_ID);
     
@@ -120,7 +120,7 @@ async function insertBatch(supabase, records) {
   
   try {
     const { data, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .upsert(records, { onConflict: 'drive_id' });
     
     if (error) {
@@ -136,36 +136,36 @@ async function insertBatch(supabase, records) {
 
 async function main() {
   try {
-    console.log('Ensuring Dynamic Healing Discussion Group files in sources_google2...');
+    console.log('Ensuring Dynamic Healing Discussion Group files in sources_google...');
     console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'LIVE RUN'}`);
     
     // Create Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    // Step 1: Check if sources_google2 exists
-    console.log('\nSTEP 1: Checking sources_google2 table...');
+    // Step 1: Check if sources_google exists
+    console.log('\nSTEP 1: Checking sources_google table...');
     
     let tableExists = false;
     try {
       const { count, error } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('*', { count: 'exact', head: true });
       
       if (!error) {
         tableExists = true;
-        console.log(`- sources_google2 exists with ${count} records`);
+        console.log(`- sources_google exists with ${count} records`);
       }
     } catch (error) {
-      console.log('- sources_google2 does not exist or is not accessible');
+      console.log('- sources_google does not exist or is not accessible');
     }
     
     if (!tableExists) {
-      console.error('sources_google2 table does not exist. Please create it first.');
+      console.error('sources_google table does not exist. Please create it first.');
       process.exit(1);
     }
     
     // Step 2: Get existing records
-    console.log('\nSTEP 2: Getting existing DHG records from sources_google2...');
+    console.log('\nSTEP 2: Getting existing DHG records from sources_google...');
     const existingRecords = await getExistingRecords(supabase);
     console.log(`- Found ${existingRecords.length} existing DHG records`);
     
@@ -272,7 +272,7 @@ async function main() {
       const expectedTotal = existingRecords.length + newFiles.length;
       
       if (finalRecords.length >= expectedTotal) {
-        console.log('\nSUCCESS: All files have been added to sources_google2');
+        console.log('\nSUCCESS: All files have been added to sources_google');
       } else {
         console.warn(`\nWARNING: Expected at least ${expectedTotal} records, but found ${finalRecords.length}`);
         console.warn('Some files may not have been added correctly.');

@@ -1,6 +1,6 @@
 #\!/usr/bin/env python3
 """
-Update main_video_id in sources_google2 table based on a folder-to-video mapping.
+Update main_video_id in sources_google table based on a folder-to-video mapping.
 """
 
 import sys
@@ -55,10 +55,10 @@ def make_supabase_request(method, path, params=None, data=None):
     return response.json()
 
 def find_folder(folder_name):
-    """Find a folder in sources_google2 by name."""
+    """Find a folder in sources_google by name."""
     response = make_supabase_request(
         "GET", 
-        "/rest/v1/sources_google2",
+        "/rest/v1/sources_google",
         params={
             "select": "id,name,drive_id,path,path_depth",
             "mime_type": "eq.application/vnd.google-apps.folder",
@@ -79,10 +79,10 @@ def find_folder(folder_name):
     return response[0]  # Return first one if no path_depth = 0 found
 
 def find_file(file_name):
-    """Find a file in sources_google2 by name."""
+    """Find a file in sources_google by name."""
     response = make_supabase_request(
         "GET", 
-        "/rest/v1/sources_google2",
+        "/rest/v1/sources_google",
         params={
             "select": "id,name,drive_id,path",
             "mime_type": "eq.video/mp4",
@@ -105,7 +105,7 @@ def update_folder_with_video_id(folder_id, video_id, dry_run=False):
         
     response = make_supabase_request(
         "PATCH",
-        f"/rest/v1/sources_google2",
+        f"/rest/v1/sources_google",
         params={"id": f"eq.{folder_id}"},
         data={"main_video_id": video_id}
     )
@@ -122,7 +122,7 @@ def find_related_items(folder_name):
     # Use PostgreSQL's contains operator (cs) to efficiently find items with folder in path_array
     response = make_supabase_request(
         "GET", 
-        "/rest/v1/sources_google2",
+        "/rest/v1/sources_google",
         params={
             "select": "id,name,mime_type",
             "is_deleted": "eq.false",
@@ -149,7 +149,7 @@ def update_related_items(item_ids, video_id, dry_run=False):
         
         response = make_supabase_request(
             "PATCH",
-            f"/rest/v1/sources_google2",
+            f"/rest/v1/sources_google",
             params={"id": f"in.({id_list})"},
             data={"main_video_id": video_id}
         )
@@ -191,7 +191,7 @@ def parse_mapping(mapping_str):
         return None, None
 
 def main():
-    parser = argparse.ArgumentParser(description="Update main_video_id in sources_google2")
+    parser = argparse.ArgumentParser(description="Update main_video_id in sources_google")
     parser.add_argument("--mapping", required=True, help="Mapping in format: 'folder name': 'file name.mp4'")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be updated without making changes")
     parser.add_argument("--verbose", action="store_true", help="Show detailed logs")

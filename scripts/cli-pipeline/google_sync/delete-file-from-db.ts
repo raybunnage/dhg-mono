@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /**
- * Delete a specific file from sources_google2 table
+ * Delete a specific file from sources_google table
  */
 
 import * as dotenv from 'dotenv';
@@ -26,7 +26,7 @@ async function deleteFile() {
   try {
     // First check if file exists
     const { data, error: queryError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, drive_id')
       .eq('drive_id', fileId);
       
@@ -44,7 +44,7 @@ async function deleteFile() {
     
     // Delete the file
     const { error: deleteError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .delete()
       .eq('drive_id', fileId);
       

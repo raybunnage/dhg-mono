@@ -20,10 +20,10 @@ const scriptsDir = __dirname;
 
 // Define migration phases
 const PHASES = {
-  PHASE1: 'migrate_sources_google2_phase1.sql',
-  PHASE2: 'migrate_sources_google2_phase2.sql',
-  VALIDATE: 'validate_sources_google2_migration.sql',
-  FINALIZE: 'finalize_sources_google2_migration.sql'
+  PHASE1: 'migrate_sources_google_phase1.sql',
+  PHASE2: 'migrate_sources_google_phase2.sql',
+  VALIDATE: 'validate_sources_google_migration.sql',
+  FINALIZE: 'finalize_sources_google_migration.sql'
 };
 
 // Create the Supabase client service
@@ -100,13 +100,13 @@ async function getCounts() {
   
   const originalCount = originalCountData ? (originalCountData as any).count || 0 : 0;
   
-  // Check if sources_google2 exists
+  // Check if sources_google exists
   const { data: tableExists, error: existsError } = await supabase.rpc('execute_sql', {
-    sql: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google2')"
+    sql: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google')"
   });
   
   if (existsError) {
-    throw new Error(`Failed to check if sources_google2 exists: ${existsError.message}`);
+    throw new Error(`Failed to check if sources_google exists: ${existsError.message}`);
   }
   
   let newCount = 0;
@@ -114,11 +114,11 @@ async function getCounts() {
   // Get count from new table if it exists
   if (tableExists && tableExists.length > 0 && tableExists[0].exists) {
     const { data: newCountData, error: newError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*', { count: 'exact', head: true });
       
     if (newError) {
-      throw new Error(`Failed to get count from sources_google2: ${newError.message}`);
+      throw new Error(`Failed to get count from sources_google: ${newError.message}`);
     }
     
     newCount = newCountData ? (newCountData as any).count || 0 : 0;
@@ -154,7 +154,7 @@ interface MigrationOptions {
 
 // Create command
 const program = new Command('migrate-sources-google')
-  .description('Migrate sources_google table to an improved sources_google2 schema')
+  .description('Migrate sources_google table to an improved schema')
   .option('-v, --validate-only', 'Only run the validation without making changes', false)
   .option('-f, --finalize', 'Finalize the migration (rename tables, create view, etc.)', false)
   .option('-d, --dry-run', 'Show what would happen without making changes', false)
@@ -171,9 +171,9 @@ const program = new Command('migrate-sources-google')
       
       console.log('Current database state:');
       console.log(`- sources_google records: ${originalCount}`);
-      console.log(`- sources_google2 table exists: ${tableExists}`);
+      console.log(`- improved sources_google table exists: ${tableExists}`);
       if (tableExists) {
-        console.log(`- sources_google2 records: ${newCount}`);
+        console.log(`- improved sources_google records: ${newCount}`);
       }
       console.log(`- Dynamic Healing Group records: ${dhgCount}`);
       console.log('');
@@ -182,9 +182,9 @@ const program = new Command('migrate-sources-google')
       if (options.createTables) {
         console.log('Creating table structure...');
         
-        // Create the sources_google2 table
+        // Create the improved sources_google table
         const createQuery = `
-          CREATE TABLE IF NOT EXISTS public.sources_google2 (
+          CREATE TABLE IF NOT EXISTS public.sources_google (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             name text NOT NULL,
             mime_type text,
@@ -221,12 +221,12 @@ const program = new Command('migrate-sources-google')
         
         // Create indexes
         const indexQueries = [
-          `CREATE INDEX IF NOT EXISTS sources_google2_drive_id_idx ON public.sources_google2 (drive_id)`,
-          `CREATE INDEX IF NOT EXISTS sources_google2_root_drive_id_idx ON public.sources_google2 (root_drive_id)`,
-          `CREATE INDEX IF NOT EXISTS sources_google2_parent_folder_id_idx ON public.sources_google2 (parent_folder_id)`,
-          `CREATE INDEX IF NOT EXISTS sources_google2_mime_type_idx ON public.sources_google2 (mime_type)`,
-          `CREATE INDEX IF NOT EXISTS sources_google2_path_idx ON public.sources_google2 (path)`,
-          `CREATE INDEX IF NOT EXISTS sources_google2_name_idx ON public.sources_google2 (name)`
+          `CREATE INDEX IF NOT EXISTS sources_google_drive_id_idx ON public.sources_google (drive_id)`,
+          `CREATE INDEX IF NOT EXISTS sources_google_root_drive_id_idx ON public.sources_google (root_drive_id)`,
+          `CREATE INDEX IF NOT EXISTS sources_google_parent_folder_id_idx ON public.sources_google (parent_folder_id)`,
+          `CREATE INDEX IF NOT EXISTS sources_google_mime_type_idx ON public.sources_google (mime_type)`,
+          `CREATE INDEX IF NOT EXISTS sources_google_path_idx ON public.sources_google (path)`,
+          `CREATE INDEX IF NOT EXISTS sources_google_name_idx ON public.sources_google (name)`
         ];
         
         for (const query of indexQueries) {
@@ -242,11 +242,11 @@ const program = new Command('migrate-sources-google')
       
       // Handle truncate option
       if (options.truncate && tableExists) {
-        console.log('Truncating the sources_google2 table...');
+        console.log('Truncating the sources_google table...');
         
         const supabase = getSupabaseClient();
         // Use direct table deletion - delete all records
-        const { error: deleteError } = await supabase.from('sources_google2').delete().gt('id', '00000000-0000-0000-0000-000000000000');
+        const { error: deleteError } = await supabase.from('sources_google').delete().gt('id', '00000000-0000-0000-0000-000000000000');
         
         if (deleteError) {
           throw new Error(`Failed to truncate table: ${deleteError.message}`);
@@ -259,7 +259,7 @@ const program = new Command('migrate-sources-google')
       // Handle validate-only option
       if (options.validateOnly) {
         if (!tableExists) {
-          console.error('Cannot validate - sources_google2 table does not exist');
+          console.error('Cannot validate - sources_google table does not exist');
           process.exit(1);
         }
         
@@ -272,14 +272,14 @@ const program = new Command('migrate-sources-google')
       // Handle finalize option
       if (options.finalize) {
         if (!tableExists) {
-          console.error('Cannot finalize - sources_google2 table does not exist');
+          console.error('Cannot finalize - sources_google table does not exist');
           process.exit(1);
         }
         
         if (options.dryRun) {
           console.log('Would finalize the migration (dry run)');
           console.log('This would rename sources_google to sources_google_deprecated');
-          console.log('And rename sources_google2 to sources_google');
+          console.log('And rename improved sources_google structure');
           process.exit(0);
         }
         
@@ -289,9 +289,9 @@ const program = new Command('migrate-sources-google')
         process.exit(0);
       }
       
-      // Check if sources_google2 already exists when not in dry-run mode
+      // Check if sources_google already exists when not in dry-run mode
       if (tableExists && !options.dryRun && !options.phase) {
-        console.error('sources_google2 table already exists. Options:');
+        console.error('sources_google table already exists. Options:');
         console.error('1. Use --validate-only to check its state');
         console.error('2. Use --finalize to complete the migration');
         console.error('3. Use --phase 1 or --phase 2 to rerun a specific phase');
@@ -323,7 +323,7 @@ const program = new Command('migrate-sources-google')
           // Copy data directly without SQL file
           const supabase = getSupabaseClient();
           const copyQuery = `
-            INSERT INTO sources_google2 (
+            INSERT INTO sources_google (
               id, name, mime_type, drive_id, root_drive_id, parent_folder_id, path, is_root,
               path_array, path_depth, is_deleted, metadata, size, modified_time, 
               web_view_link, thumbnail_link, content_extracted, extracted_content,
@@ -374,7 +374,7 @@ const program = new Command('migrate-sources-google')
           
           // Fix paths first
           const fixPathsQuery = `
-            UPDATE sources_google2
+            UPDATE sources_google
             SET path = '/' || path
             WHERE path NOT LIKE '/%'
           `;
@@ -387,7 +387,7 @@ const program = new Command('migrate-sources-google')
           
           // Update Dynamic Healing root
           const dhgRootQuery = `
-            UPDATE sources_google2
+            UPDATE sources_google
             SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
             WHERE 
               path LIKE '%Dynamic Healing Discussion Group%' 
@@ -402,7 +402,7 @@ const program = new Command('migrate-sources-google')
           
           // Update Polyvagal Steering Group root
           const pvsgRootQuery = `
-            UPDATE sources_google2
+            UPDATE sources_google
             SET root_drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc'
             WHERE 
               path LIKE '%Polyvagal Steering Group%'
@@ -441,7 +441,7 @@ const program = new Command('migrate-sources-google')
       const supabase = getSupabaseClient();
       
       const createQuery = `
-        CREATE TABLE IF NOT EXISTS public.sources_google2 (
+        CREATE TABLE IF NOT EXISTS public.sources_google (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
           name text NOT NULL,
           mime_type text,
@@ -479,7 +479,7 @@ const program = new Command('migrate-sources-google')
       console.log('Step 2: Copying data...');
       
       const copyQuery = `
-        INSERT INTO sources_google2 (
+        INSERT INTO sources_google (
           id, name, mime_type, drive_id, root_drive_id, parent_folder_id, path, is_root,
           path_array, path_depth, is_deleted, metadata, size, modified_time, 
           web_view_link, thumbnail_link, content_extracted, extracted_content,
@@ -526,7 +526,7 @@ const program = new Command('migrate-sources-google')
       
       // Fix paths first
       const fixPathsQuery = `
-        UPDATE sources_google2
+        UPDATE sources_google
         SET path = '/' || path
         WHERE path NOT LIKE '/%'
       `;
@@ -539,7 +539,7 @@ const program = new Command('migrate-sources-google')
       
       // Update Dynamic Healing root
       const dhgRootQuery = `
-        UPDATE sources_google2
+        UPDATE sources_google
         SET root_drive_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'
         WHERE 
           path LIKE '%Dynamic Healing Discussion Group%' 
@@ -554,7 +554,7 @@ const program = new Command('migrate-sources-google')
       
       // Update Polyvagal Steering Group root
       const pvsgRootQuery = `
-        UPDATE sources_google2
+        UPDATE sources_google
         SET root_drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc'
         WHERE 
           path LIKE '%Polyvagal Steering Group%'

@@ -4,7 +4,7 @@
  * Direct Copy Script for DHG Records
  * 
  * This script directly pulls records from sources_google that match
- * the Dynamic Healing Discussion Group pattern and creates new records in sources_google2
+ * the Dynamic Healing Discussion Group pattern and creates new records in sources_google
  * with the proper structure.
  */
 
@@ -36,7 +36,7 @@ const batchSize = 100; // Number of records to process at once
 
 async function main() {
   try {
-    console.log('Starting DIRECT copy from sources_google to sources_google2...');
+    console.log('Starting DIRECT copy from sources_google to sources_google...');
     console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'LIVE RUN'}`);
     
     // Filter logic
@@ -120,40 +120,40 @@ async function main() {
       process.exit(1);
     }
     
-    // Check sources_google2
+    // Check sources_google
     try {
       const { count, error } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('*', { count: 'exact', head: true });
       
       if (error) {
         if (error.code === 'PGRST116') {
-          console.log('- sources_google2 table does not exist yet');
+          console.log('- sources_google table does not exist yet');
         } else {
-          throw new Error(`Error checking sources_google2: ${error.message}`);
+          throw new Error(`Error checking sources_google: ${error.message}`);
         }
       } else {
         targetRecords = count;
-        console.log(`- sources_google2 table has ${targetRecords} records`);
+        console.log(`- sources_google table has ${targetRecords} records`);
       }
     } catch (error) {
       if (error.message.includes('does not exist')) {
-        console.log('- sources_google2 table does not exist yet');
+        console.log('- sources_google table does not exist yet');
       } else {
-        console.error(`Error checking sources_google2: ${error.message}`);
+        console.error(`Error checking sources_google: ${error.message}`);
       }
     }
     
-    // Step 2: Create the sources_google2 table structure using direct schema manipulation
+    // Step 2: Create the sources_google table structure using direct schema manipulation
     if (!skipCreate) {
-      console.log('\nSTEP 2: Creating sources_google2 table structure...');
+      console.log('\nSTEP 2: Creating sources_google table structure...');
       
       if (isDryRun) {
-        console.log('DRY RUN - Would create sources_google2 table');
+        console.log('DRY RUN - Would create sources_google table');
       } else {
         try {
           // Use direct schema manipulation to create the table
-          const { error } = await supabase.schema('public').createTable('sources_google2', [
+          const { error } = await supabase.schema('public').createTable('sources_google', [
             { name: 'id', type: 'uuid', primaryKey: true },
             { name: 'name', type: 'text', notNull: true },
             { name: 'mime_type', type: 'text' },
@@ -200,11 +200,11 @@ async function main() {
       console.log('\nSTEP 2: Skipping table creation (--skip-create specified)');
     }
     
-    // Step 3: Fetch DHG records from sources_google and copy to sources_google2
+    // Step 3: Fetch DHG records from sources_google and copy to sources_google
     console.log('\nSTEP 3: Copying records...');
     
     if (isDryRun) {
-      console.log(`DRY RUN - Would copy records from sources_google to sources_google2`);
+      console.log(`DRY RUN - Would copy records from sources_google to sources_google`);
       
       if (targetRootPattern) {
         console.log(`- Would copy records matching path ILIKE '${targetRootPattern}'`);
@@ -217,7 +217,7 @@ async function main() {
       if (!skipCreate) {
         try {
           const { error: clearError } = await supabase
-            .from('sources_google2')
+            .from('sources_google')
             .delete()
             .neq('id', '00000000-0000-0000-0000-000000000000');
           
@@ -331,9 +331,9 @@ async function main() {
         });
         
         if (filteredRecords.length > 0) {
-          // Insert the transformed records into sources_google2
+          // Insert the transformed records into sources_google
           const { error: insertError } = await supabase
-            .from('sources_google2')
+            .from('sources_google')
             .upsert(filteredRecords);
           
           if (insertError) {
@@ -352,7 +352,7 @@ async function main() {
         }
       }
       
-      console.log(`- Successfully copied ${totalCopied} records to sources_google2`);
+      console.log(`- Successfully copied ${totalCopied} records to sources_google`);
     }
     
     // Step 4: Verify the results
@@ -360,20 +360,20 @@ async function main() {
       console.log('\nSTEP 4: Verifying results...');
       
       try {
-        // Count the records in sources_google2
+        // Count the records in sources_google
         const { count: finalCount, error: countError } = await supabase
-          .from('sources_google2')
+          .from('sources_google')
           .select('*', { count: 'exact', head: true });
         
         if (countError) {
           throw new Error(`Failed to count records: ${countError.message}`);
         }
         
-        console.log(`- sources_google2 now has ${finalCount} records`);
+        console.log(`- sources_google now has ${finalCount} records`);
         
         // Get a sample record
         const { data: sampleData, error: sampleError } = await supabase
-          .from('sources_google2')
+          .from('sources_google')
           .select('*')
           .limit(1);
         
@@ -396,7 +396,7 @@ async function main() {
             console.log('- Path Array: not set');
           }
         } else {
-          console.warn('No records found in sources_google2');
+          console.warn('No records found in sources_google');
         }
         
         // Check the expected counts
@@ -410,10 +410,10 @@ async function main() {
         }
         
         if (finalCount < expectedCount * 0.8) { // Allow for some filtering variations
-          console.warn(`\nWARNING: sources_google2 has ${finalCount} records, which is fewer than expected (${expectedCount})`);
+          console.warn(`\nWARNING: sources_google has ${finalCount} records, which is fewer than expected (${expectedCount})`);
           console.warn('This might indicate that some records were not properly copied.');
         } else {
-          console.log(`\nSUCCESS: sources_google2 has ${finalCount} records (expected approximately ${expectedCount})`);
+          console.log(`\nSUCCESS: sources_google has ${finalCount} records (expected approximately ${expectedCount})`);
         }
       } catch (error) {
         console.error(`Error verifying results: ${error.message}`);

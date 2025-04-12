@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /**
- * Check the schema of the sources_google2 table
+ * Check the schema of the sources_google table
  */
 
 import * as dotenv from 'dotenv';
@@ -17,12 +17,12 @@ const supabaseClientService = SupabaseClientService.getInstance();
 const supabase = supabaseClientService.getClient();
 
 async function checkSchema() {
-  console.log('Checking schema of sources_google2 table...');
+  console.log('Checking schema of sources_google table...');
   
   try {
     // Query the information schema to get column details
     const { data, error } = await supabase.rpc('get_table_definition', {
-      table_name: 'sources_google2'
+      table_name: 'sources_google'
     });
     
     if (error) {
@@ -32,7 +32,7 @@ async function checkSchema() {
       console.log('Trying fallback approach...');
       
       const { data: sampleData, error: sampleError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('*')
         .limit(1);
         

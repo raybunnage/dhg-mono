@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 /**
- * Copy Data to sources_google2 Script
+ * Copy Data to sources_google Script
  * 
- * This script copies data from sources_google to sources_google2 with improved structure
+ * This script copies data from sources_google to sources_google with improved structure
  */
 
 import * as dotenv from 'dotenv';
@@ -13,7 +13,7 @@ dotenv.config();
 
 async function main() {
   try {
-    console.log('Copying data to sources_google2 table...');
+    console.log('Copying data to sources_google table...');
     
     // Create Supabase client
     const supabaseClientService = SupabaseClientService.getInstance();
@@ -37,11 +37,11 @@ async function main() {
     console.log('Checking target table...');
     
     const { count: targetCount, error: targetCountError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*', { count: 'exact', head: true });
       
     if (targetCountError) {
-      throw new Error(`Failed to check sources_google2: ${targetCountError.message}`);
+      throw new Error(`Failed to check sources_google: ${targetCountError.message}`);
     }
     
     console.log(`Target table has ${targetCount} records initially`);
@@ -120,7 +120,7 @@ async function main() {
       
       // Upsert the records
       const { error: upsertError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .upsert(transformedRecords, { onConflict: 'id' });
         
       if (upsertError) {
@@ -133,7 +133,7 @@ async function main() {
     
     // Check final count
     const { data: finalCheck, error: finalError } = await supabase.rpc('execute_sql', {
-      sql: `SELECT COUNT(*) FROM sources_google2`
+      sql: `SELECT COUNT(*) FROM sources_google`
     });
     
     if (finalError) {

@@ -2,7 +2,7 @@
 /**
  * Update File Signatures Script
  * 
- * This script updates all existing file_signature values in the sources_google2 table
+ * This script updates all existing file_signature values in the sources_google table
  * to use the new consistent format that properly handles file renames.
  * 
  * Usage:
@@ -86,7 +86,7 @@ async function updateFileSignatures(): Promise<UpdateStats> {
   try {
     // Count total records
     const { count, error: countError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id', { count: 'exact', head: true });
       
     if (countError) {
@@ -115,7 +115,7 @@ async function updateFileSignatures(): Promise<UpdateStats> {
       
       // Fetch batch of records
       const { data: records, error: selectError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('id, name, file_signature, modified_at')
         .range(offset, offset + BATCH_SIZE - 1);
         
@@ -169,7 +169,7 @@ async function updateFileSignatures(): Promise<UpdateStats> {
         if (!isDryRun) {
           // Update file signature in database
           const { error: updateError } = await supabase
-            .from('sources_google2')
+            .from('sources_google')
             .update({ 
               file_signature: newSignature,
               updated_at: new Date().toISOString()

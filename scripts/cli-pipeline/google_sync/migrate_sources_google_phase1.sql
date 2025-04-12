@@ -1,8 +1,8 @@
 -- Phase 1: Initial data migration with metadata cleanup
 -- Copy and clean basic data from original table with complete data cleanup
 
--- First, make sure the sources_google2 table exists
-CREATE TABLE IF NOT EXISTS public.sources_google2 (
+-- First, make sure the sources_google table exists
+CREATE TABLE IF NOT EXISTS public.sources_google (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL,
     mime_type text,
@@ -30,20 +30,20 @@ CREATE TABLE IF NOT EXISTS public.sources_google2 (
 );
 
 -- Create any necessary indexes
-CREATE INDEX IF NOT EXISTS sources_google2_drive_id_idx ON public.sources_google2 (drive_id);
-CREATE INDEX IF NOT EXISTS sources_google2_root_drive_id_idx ON public.sources_google2 (root_drive_id);
-CREATE INDEX IF NOT EXISTS sources_google2_parent_folder_id_idx ON public.sources_google2 (parent_folder_id);
-CREATE INDEX IF NOT EXISTS sources_google2_mime_type_idx ON public.sources_google2 (mime_type);
-CREATE INDEX IF NOT EXISTS sources_google2_path_idx ON public.sources_google2 (path);
-CREATE INDEX IF NOT EXISTS sources_google2_name_idx ON public.sources_google2 (name);
-CREATE INDEX IF NOT EXISTS sources_google2_document_type_id_idx ON public.sources_google2 (document_type_id);
-CREATE INDEX IF NOT EXISTS sources_google2_expert_id_idx ON public.sources_google2 (expert_id);
+CREATE INDEX IF NOT EXISTS sources_google_drive_id_idx ON public.sources_google (drive_id);
+CREATE INDEX IF NOT EXISTS sources_google_root_drive_id_idx ON public.sources_google (root_drive_id);
+CREATE INDEX IF NOT EXISTS sources_google_parent_folder_id_idx ON public.sources_google (parent_folder_id);
+CREATE INDEX IF NOT EXISTS sources_google_mime_type_idx ON public.sources_google (mime_type);
+CREATE INDEX IF NOT EXISTS sources_google_path_idx ON public.sources_google (path);
+CREATE INDEX IF NOT EXISTS sources_google_name_idx ON public.sources_google (name);
+CREATE INDEX IF NOT EXISTS sources_google_document_type_id_idx ON public.sources_google (document_type_id);
+CREATE INDEX IF NOT EXISTS sources_google_expert_id_idx ON public.sources_google (expert_id);
 
 -- Clear any existing data (in case of rerun)
-TRUNCATE TABLE public.sources_google2;
+TRUNCATE TABLE public.sources_google;
 
 -- Now copy data from the original table
-INSERT INTO public.sources_google2 (
+INSERT INTO public.sources_google (
     id, name, mime_type, drive_id, root_drive_id, parent_folder_id, path, is_root,
     path_array, path_depth, is_deleted, metadata, size, modified_time, 
     web_view_link, thumbnail_link, content_extracted, extracted_content,

@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 /**
- * Check files marked as deleted in sources_google2
+ * Check files marked as deleted in sources_google
  * 
- * This script examines records marked as deleted in the sources_google2 table
+ * This script examines records marked as deleted in the sources_google table
  * and helps to verify if they actually exist in Google Drive.
  */
 
@@ -89,7 +89,7 @@ async function checkDeletedFiles() {
     // Fetch deleted files
     console.log('Fetching files marked as deleted...');
     const { data: deletedFiles, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, drive_id, name, path_array, root_drive_id, updated_at')
       .eq('is_deleted', true)
       .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)

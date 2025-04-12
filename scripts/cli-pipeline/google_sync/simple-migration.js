@@ -3,7 +3,7 @@
 /**
  * Simple Sources Google Migration Script
  * 
- * This script performs a direct copy from sources_google to sources_google2,
+ * This script performs a direct copy from sources_google to sources_google,
  * focusing on just the Dynamic Healing Discussion Group and Polyvagal Steering Group.
  */
 
@@ -48,11 +48,11 @@ async function runQuery(supabase, query, params = {}) {
 }
 
 async function createSourcesGoogle2Table(supabase) {
-  console.log('Creating sources_google2 table...');
+  console.log('Creating sources_google table...');
   
   // This is the SQL for creating the table
   const createTableSQL = `
-    CREATE TABLE IF NOT EXISTS public.sources_google2 (
+    CREATE TABLE IF NOT EXISTS public.sources_google (
       id uuid PRIMARY KEY,
       name text NOT NULL,
       mime_type text,
@@ -101,7 +101,7 @@ async function copyRecords(supabase, targetRootIds) {
   
   // Build the SQL for copying records
   const copySQL = `
-    INSERT INTO sources_google2 (
+    INSERT INTO sources_google (
       id, name, mime_type, drive_id, 
       root_drive_id, parent_folder_id, path, is_root,
       metadata, size, modified_time, web_view_link, thumbnail_link,
@@ -138,7 +138,7 @@ async function updatePathArrays(supabase) {
   console.log('Updating path arrays...');
   
   const updateSQL = `
-    UPDATE sources_google2
+    UPDATE sources_google
     SET 
       path_array = string_to_array(COALESCE(path, '/' || name), '/'),
       path_depth = array_length(string_to_array(COALESCE(path, '/' || name), '/'), 1),
@@ -184,10 +184,10 @@ async function getRecordCounts(supabase) {
     
     const pvsgCount = (pvsgError || !pvsgData) ? 0 : pvsgData.count || 0;
     
-    // Get counts from sources_google2
+    // Get counts from sources_google
     try {
       const { data: sg2Data, error: sg2Error } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('*', { count: 'exact', head: true });
       
       const newCount = (sg2Error || !sg2Data) ? 0 : sg2Data.count || 0;
@@ -199,7 +199,7 @@ async function getRecordCounts(supabase) {
         new: newCount
       };
     } catch (error) {
-      console.warn('Warning: Error checking sources_google2 count:', error.message);
+      console.warn('Warning: Error checking sources_google count:', error.message);
       return {
         original: originalCount,
         dhg: dhgCount,
@@ -254,14 +254,14 @@ async function main() {
     console.log(`- New table: ${initialCounts.new} records`);
     
     if (initialCounts.new > 0) {
-      console.warn('\nWARNING: sources_google2 already has data');
+      console.warn('\nWARNING: sources_google already has data');
       
       if (!isDryRun) {
         // Drop the table if not in dry run mode and we want to create it
         if (!skipCreate) {
-          console.log('Dropping existing sources_google2 table...');
+          console.log('Dropping existing sources_google table...');
           
-          const dropResult = await runQuery(supabase, 'DROP TABLE IF EXISTS sources_google2');
+          const dropResult = await runQuery(supabase, 'DROP TABLE IF EXISTS sources_google');
           
           if (!dropResult.success) {
             throw new Error('Failed to drop existing table');
@@ -280,7 +280,7 @@ async function main() {
     let tableReady = initialCounts.new > 0 && skipCreate;
     
     if (!tableReady) {
-      console.log('\nSTEP 2: Creating sources_google2 table...');
+      console.log('\nSTEP 2: Creating sources_google table...');
       
       if (skipCreate) {
         console.log('Skipping table creation (--skip-create specified)');
@@ -289,14 +289,14 @@ async function main() {
         const createSuccess = await createSourcesGoogle2Table(supabase);
         
         if (!createSuccess) {
-          throw new Error('Failed to create sources_google2 table');
+          throw new Error('Failed to create sources_google table');
         }
         
         console.log('Table created successfully');
         tableReady = true;
       }
     } else {
-      console.log('\nSTEP 2: Using existing sources_google2 table (--skip-create specified)');
+      console.log('\nSTEP 2: Using existing sources_google table (--skip-create specified)');
     }
     
     // Step 3: Copy the records
@@ -351,9 +351,9 @@ async function main() {
         console.log(`\nSUCCESS: New table has ${finalCounts.new} records (expected around ${expectedCount})`);
       }
       
-      // Get a sample record from sources_google2
+      // Get a sample record from sources_google
       const { data: sampleData, error: sampleError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('*')
         .limit(1);
       
@@ -361,7 +361,7 @@ async function main() {
         console.error('Error getting sample record:', sampleError.message);
       } else if (sampleData && sampleData.length > 0) {
         const record = sampleData[0];
-        console.log('\nSample record from sources_google2:');
+        console.log('\nSample record from sources_google:');
         console.log(`- ID: ${record.id}`);
         console.log(`- Name: ${record.name}`);
         console.log(`- Path: ${record.path}`);
@@ -370,7 +370,7 @@ async function main() {
         console.log(`- Path Array: ${record.path_array ? '[' + record.path_array.join(', ') + ']' : 'null'}`);
         console.log(`- Path Depth: ${record.path_depth}`);
       } else {
-        console.warn('No records found in sources_google2');
+        console.warn('No records found in sources_google');
       }
     } else {
       console.log('\nDRY RUN - Would verify results');

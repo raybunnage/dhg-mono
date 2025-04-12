@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script runs the migration process for sources_google to sources_google2
+# This script runs the migration process for sources_google to sources_google
 # It includes safeguards and validation steps to ensure data integrity
 
 set -e  # Exit on any error
@@ -14,7 +14,7 @@ YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
 echo -e "${YELLOW}Sources Google Migration Tool${NC}"
-echo "This script will migrate the sources_google table to an improved sources_google2 schema."
+echo "This script will migrate the sources_google table to an improved sources_google schema."
 echo "The process has multiple phases with validation between each step."
 echo ""
 
@@ -30,7 +30,7 @@ fi
 # Phase 1: Initial data migration
 echo -e "${YELLOW}Phase 1: Performing initial data migration...${NC}"
 echo "This phase will:"
-echo "- Copy data from sources_google to sources_google2"
+echo "- Copy data from sources_google to sources_google"
 echo "- Fix path structures and ensure no NULL root_drive_id values"
 echo "- Ensure all Dynamic Healing Group files are properly identified"
 read -p "Run Phase 1? (y/n): " RUN_PHASE1
@@ -76,7 +76,7 @@ fi
 echo -e "${YELLOW}Finalization...${NC}"
 echo "This will:"
 echo "- Rename sources_google to sources_google_deprecated"
-echo "- Rename sources_google2 to sources_google"
+echo "- Rename sources_google to sources_google"
 echo "- Create a compatibility view for existing applications"
 echo -e "${RED}WARNING: This step will affect running applications!${NC}"
 read -p "Finalize the migration? (y/n): " FINALIZE

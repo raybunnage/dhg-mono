@@ -4,7 +4,7 @@
  * 
  * This script:
  * 1. Builds a lookup table for all folder mime types with IDs from Google Drive
- * 2. Updates sources_google2 records by finding matching records by ID
+ * 2. Updates sources_google records by finding matching records by ID
  * 3. Updates the path_array, path_depth, web_view_link, is_deleted, and parent_folder_id
  */
 
@@ -100,7 +100,7 @@ async function updateSourcesFromJson(
       Logger.info(`Fetching records batch ${Math.floor(i/dbBatchSize) + 1} of ${Math.ceil(allIds.length/dbBatchSize)}...`);
       
       const { data, error } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('*')
         .in('drive_id', idBatch);
         
@@ -117,7 +117,7 @@ async function updateSourcesFromJson(
       await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    Logger.info(`Found ${existingRecords.length} existing records in sources_google2`);
+    Logger.info(`Found ${existingRecords.length} existing records in sources_google`);
     
     // Build a map of existing records by drive_id for faster lookups
     const recordMap: Record<string, any> = {};
@@ -218,7 +218,7 @@ async function updateSourcesFromJson(
           try {
             const promises = updateChunk.map(update => 
               supabase
-                .from('sources_google2')
+                .from('sources_google')
                 .update(update.data)
                 .eq('drive_id', update.id)
             );

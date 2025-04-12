@@ -53,13 +53,13 @@ async function checkTableCounts(supabase) {
       return null;
     }
     
-    // Check sources_google2
+    // Check sources_google
     const { count: sg2Count, error: sg2Error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*', { count: 'exact', head: true });
     
     if (sg2Error) {
-      console.error('Error checking sources_google2:', sg2Error.message);
+      console.error('Error checking sources_google:', sg2Error.message);
       return null;
     }
     
@@ -90,11 +90,11 @@ async function main() {
     }
     
     console.log(`- sources_google: ${counts.original} records`);
-    console.log(`- sources_google2: ${counts.new} records`);
+    console.log(`- sources_google: ${counts.new} records`);
     
-    // Safety check - warn if sources_google2 has fewer records
+    // Safety check - warn if sources_google has fewer records
     if (counts.new < counts.original && !force) {
-      console.warn(`\nWARNING: sources_google2 has ${counts.new} records, which is less than sources_google (${counts.original})`);
+      console.warn(`\nWARNING: sources_google has ${counts.new} records, which is less than sources_google (${counts.original})`);
       console.warn('This could indicate data loss. Use --force to proceed anyway.');
       console.warn('Exiting without making changes...');
       
@@ -117,11 +117,11 @@ async function main() {
       throw new Error('Failed to rename sources_google table');
     }
     
-    // 2.2: Rename sources_google2 to sources_google
+    // 2.2: Rename sources_google to sources_google
     const renameNewResult = await executeSql(
       supabase,
-      'ALTER TABLE sources_google2 RENAME TO sources_google',
-      'Rename sources_google2 to sources_google'
+      'ALTER TABLE sources_google RENAME TO sources_google',
+      'Rename sources_google to sources_google'
     );
     
     if (!renameNewResult.success) {
@@ -135,7 +135,7 @@ async function main() {
         );
       }
       
-      throw new Error('Failed to rename sources_google2 table');
+      throw new Error('Failed to rename sources_google table');
     }
     
     // Step 3: Create compatibility view
@@ -186,7 +186,7 @@ async function main() {
     for (const idx of indexNames) {
       const renameIndexResult = await executeSql(
         supabase,
-        `ALTER INDEX IF EXISTS sources_google2_${idx}_idx RENAME TO sources_google_${idx}_idx`,
+        `ALTER INDEX IF EXISTS sources_google_${idx}_idx RENAME TO sources_google_${idx}_idx`,
         `Rename ${idx} index`
       );
       

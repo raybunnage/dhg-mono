@@ -1,6 +1,6 @@
 # Sources Google Migration Guide
 
-This folder contains scripts to migrate the `sources_google` table to an improved `sources_google2` schema that addresses metadata issues and enhances path structures.
+This folder contains scripts to migrate the `sources_google` table to an improved `sources_google` schema that addresses metadata issues and enhances path structures.
 
 ## Overview
 
@@ -14,12 +14,12 @@ The migration addresses several issues in the current `sources_google` table:
 
 The migration is divided into multiple phases for reliability and validation:
 
-1. `create_sources_google2.sql` - Creates the new table schema with improved structure
-2. `migrate_sources_google2_phase1.sql` - Initial data copying with metadata cleanup
-3. `migrate_sources_google2_phase2.sql` - Comprehensive recursive traversal for hierarchy and main_video_id population
-4. `validate_sources_google2_migration.sql` - Validates the migration results
-5. `finalize_sources_google2_migration.sql` - Renames tables and creates backward compatibility
-6. `run_sources_google2_migration.sh` - Master script that runs all steps with validation
+1. `create_sources_google.sql` - Creates the new table schema with improved structure
+2. `migrate_sources_google_phase1.sql` - Initial data copying with metadata cleanup
+3. `migrate_sources_google_phase2.sql` - Comprehensive recursive traversal for hierarchy and main_video_id population
+4. `validate_sources_google_migration.sql` - Validates the migration results
+5. `finalize_sources_google_migration.sql` - Renames tables and creates backward compatibility
+6. `run_sources_google_migration.sh` - Master script that runs all steps with validation
 
 ## Key Improvements
 
@@ -54,7 +54,7 @@ To run the complete migration process with validation:
 
 ```bash
 cd /scripts/cli-pipeline/google_sync
-./run_sources_google2_migration.sh
+./run_sources_google_migration.sh
 ```
 
 This script will:
@@ -70,19 +70,19 @@ You can also run individual phases manually if needed:
 
 ```bash
 # Create the new table
-psql $DATABASE_URL -f create_sources_google2.sql
+psql $DATABASE_URL -f create_sources_google.sql
 
 # Run phase 1
-psql $DATABASE_URL -f migrate_sources_google2_phase1.sql
+psql $DATABASE_URL -f migrate_sources_google_phase1.sql
 
 # Run phase 2
-psql $DATABASE_URL -f migrate_sources_google2_phase2.sql
+psql $DATABASE_URL -f migrate_sources_google_phase2.sql
 
 # Validate
-psql $DATABASE_URL -f validate_sources_google2_migration.sql
+psql $DATABASE_URL -f validate_sources_google_migration.sql
 
 # Finalize (only after thorough validation)
-psql $DATABASE_URL -f finalize_sources_google2_migration.sql
+psql $DATABASE_URL -f finalize_sources_google_migration.sql
 ```
 
 ## Verification

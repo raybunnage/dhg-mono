@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to run the report-main-video-ids command for sources_google2
+# Script to run the report-main-video-ids command for sources_google
 # This script searches for MP4 files in folders at path_depth=1 and their subfolders,
 # prioritizing "Presentation" folders, and can update main_video_id for all related files.
 # Usage: ./report-main-video-ids.sh [options]
@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo "=== Generating Main Video IDs Report (sources_google2) ==="
+echo "=== Generating Main Video IDs Report (sources_google) ==="
 echo "Output file: $OUTPUT"
 if [[ -n "$UPDATE_DB" ]]; then
   echo "Mode: UPDATE - Will update main_video_id values in the database"

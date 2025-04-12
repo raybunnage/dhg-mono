@@ -103,7 +103,7 @@ export async function generateMainVideoFilesReport(
     Logger.setLevel(LogLevel.DEBUG);
   }
   
-  console.log('=== Generate Main Video Files Report (sources_google2) ===');
+  console.log('=== Generate Main Video Files Report (sources_google) ===');
   console.log(`Root Folder ID: ${actualFolderId}`);
   console.log('===================================================');
 
@@ -111,9 +111,9 @@ export async function generateMainVideoFilesReport(
   const supabase = SupabaseClientService.getInstance().getClient();
   
   try {
-    // Step 1: Verify the root folder exists in sources_google2
+    // Step 1: Verify the root folder exists in sources_google
     const { data: rootFolder, error: rootFolderError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, path, drive_id')
       .eq('drive_id', actualFolderId)
       .eq('is_deleted', false)
@@ -128,7 +128,7 @@ export async function generateMainVideoFilesReport(
     
     // Step 2: Find all subfolders with path_depth = 0 that have a main_video_id
     const { data: targetFolders, error: targetFoldersError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, path, drive_id, path_depth, main_video_id')
       .eq('parent_folder_id', actualFolderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -175,7 +175,7 @@ export async function generateMainVideoFilesReport(
       
       // Find all files under this folder using the path_array
       const { data: folderFiles, error: folderFilesError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('id, name, mime_type, path, drive_id, main_video_id, document_type_id')
         .contains('path_array', [folder.name])
         .eq('is_deleted', false)

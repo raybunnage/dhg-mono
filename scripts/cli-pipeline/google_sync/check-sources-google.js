@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * This script checks the sources_google2 table
+ * This script checks the sources_google table
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -13,41 +13,41 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 async function main() {
   try {
-    console.log('Checking sources_google2 table...');
+    console.log('Checking sources_google table...');
     
     // Create Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    // Check sources_google2
+    // Check sources_google
     const { data: sg2Data, error: sg2Error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*')
       .limit(1);
     
     if (sg2Error) {
-      console.error('Error accessing sources_google2:', sg2Error.message);
+      console.error('Error accessing sources_google:', sg2Error.message);
       return;
     }
     
-    console.log('sources_google2 accessible:', sg2Data !== null);
+    console.log('sources_google accessible:', sg2Data !== null);
     
     if (sg2Data && sg2Data.length > 0) {
-      console.log('sources_google2 has data:', sg2Data.length > 0);
+      console.log('sources_google has data:', sg2Data.length > 0);
       
       // Check sample record
       const record = sg2Data[0];
-      console.log('\nSample record from sources_google2:');
+      console.log('\nSample record from sources_google:');
       console.log('Fields:', Object.keys(record).join(', '));
       
       // Count records
       const { count: totalCount, error: countError } = await supabase
-        .from('sources_google2')
+        .from('sources_google')
         .select('*', { count: 'exact', head: true });
       
       if (countError) {
-        console.error('Error counting sources_google2 records:', countError.message);
+        console.error('Error counting sources_google records:', countError.message);
       } else {
-        console.log(`\nTotal records in sources_google2: ${totalCount}`);
+        console.log(`\nTotal records in sources_google: ${totalCount}`);
       }
       
       // Check for our target root folders
@@ -62,10 +62,10 @@ async function main() {
         }
       ];
       
-      console.log('\nRoot folder counts in sources_google2:');
+      console.log('\nRoot folder counts in sources_google:');
       for (const rootType of rootQueries) {
         const { count, error } = await supabase
-          .from('sources_google2')
+          .from('sources_google')
           .select('*', { count: 'exact', head: true })
           .eq('root_drive_id', rootType.id);
         
@@ -76,7 +76,7 @@ async function main() {
         }
       }
     } else {
-      console.log('No records found in sources_google2');
+      console.log('No records found in sources_google');
     }
   } catch (error) {
     console.error('Error:', error);

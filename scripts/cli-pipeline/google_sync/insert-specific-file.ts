@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 /**
- * Insert a specific file from Google Drive into sources_google2
+ * Insert a specific file from Google Drive into sources_google
  * 
- * This script inserts a specific file from Google Drive into the sources_google2 table.
+ * This script inserts a specific file from Google Drive into the sources_google table.
  * It's useful for testing or inserting specific files that other sync tools might miss.
  * 
  * Usage:
@@ -138,11 +138,11 @@ async function getParentPath(drive: any, folderId: string): Promise<string> {
 }
 
 /**
- * Check if file already exists in sources_google2
+ * Check if file already exists in sources_google
  */
 async function checkFileExists(fileId: string) {
   const { data, error } = await supabase
-    .from('sources_google2')
+    .from('sources_google')
     .select('id, drive_id, name')
     .eq('drive_id', fileId)
     .eq('is_deleted', false);
@@ -156,7 +156,7 @@ async function checkFileExists(fileId: string) {
 }
 
 /**
- * Insert file into sources_google2
+ * Insert file into sources_google
  */
 async function insertFile(drive: any, fileId: string, parentId: string) {
   console.log(`=== Inserting file ${fileId} ===`);
@@ -253,7 +253,7 @@ async function insertFile(drive: any, fileId: string, parentId: string) {
     
     // Insert the file
     const { data, error } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .insert(insertData);
       
     if (error) {

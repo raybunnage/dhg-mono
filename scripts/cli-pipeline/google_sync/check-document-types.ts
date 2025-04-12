@@ -2,7 +2,7 @@
 /**
  * Check Document Types
  * 
- * This script checks for .docx and .txt files in the sources_google2 table that
+ * This script checks for .docx and .txt files in the sources_google table that
  * don't have a document_type_id set, and generates a report of these files.
  * 
  * Usage:
@@ -88,7 +88,7 @@ export async function checkDocumentTypes(
   try {
     // Build query for .docx and .txt files
     const query = supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, mime_type, path, drive_id, document_type_id')
       .eq('is_deleted', false)
       .or('mime_type.eq.application/vnd.openxmlformats-officedocument.wordprocessingml.document,mime_type.eq.text/plain')

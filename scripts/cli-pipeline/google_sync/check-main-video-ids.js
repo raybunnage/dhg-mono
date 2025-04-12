@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Check Main Video ID Stats in sources_google2
+ * Check Main Video ID Stats in sources_google
  * 
  * This script checks how many files have main_video_id set
  * and provides statistics on main video usage.
@@ -18,14 +18,14 @@ const DHG_ROOT_ID = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';
 
 async function main() {
   try {
-    console.log('Checking main_video_id stats in sources_google2...');
+    console.log('Checking main_video_id stats in sources_google...');
     
     // Create Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     
     // Get total count
     const { count: totalCount, error: totalError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*', { count: 'exact', head: true });
     
     if (totalError) {
@@ -35,7 +35,7 @@ async function main() {
     
     // Get count with main_video_id set
     const { count: withMainVideo, error: mainVideoError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('*', { count: 'exact', head: true })
       .not('main_video_id', 'is', null);
     
@@ -53,7 +53,7 @@ async function main() {
     const { data: mimeTypeData, error: mimeError } = await supabase.rpc('execute_sql', {
       sql: `
         SELECT mime_type, COUNT(*) as count
-        FROM sources_google2
+        FROM sources_google
         WHERE main_video_id IS NOT NULL
         GROUP BY mime_type
         ORDER BY count DESC
@@ -74,7 +74,7 @@ async function main() {
     const { data: missingMimeData, error: missingMimeError } = await supabase.rpc('execute_sql', {
       sql: `
         SELECT mime_type, COUNT(*) as count
-        FROM sources_google2
+        FROM sources_google
         WHERE main_video_id IS NULL
         GROUP BY mime_type
         ORDER BY count DESC
@@ -93,7 +93,7 @@ async function main() {
     // Test the associations
     console.log('\nChecking some file associations:');
     const { data: testFiles, error: testError } = await supabase
-      .from('sources_google2')
+      .from('sources_google')
       .select('id, name, mime_type, main_video_id')
       .not('main_video_id', 'is', null)
       .limit(5);
@@ -103,7 +103,7 @@ async function main() {
     } else if (testFiles) {
       for (const file of testFiles) {
         const { data: videoData, error: videoError } = await supabase
-          .from('sources_google2')
+          .from('sources_google')
           .select('name, mime_type')
           .eq('id', file.main_video_id)
           .single();
