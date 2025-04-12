@@ -230,6 +230,143 @@ async function listFilesRecursively(
 }
 
 /**
+ * Check if file already exists in sources_google2
+ */
+async function checkFileExists(fileId: string): Promise<{ exists: boolean, data?: any, error?: any }> {
+  try {
+    const { data, error } = await supabase
+      .from('sources_google2')
+      .select('id, drive_id, name')
+      .eq('drive_id', fileId)
+      .eq('is_deleted', false);
+      
+    if (error) {
+      console.error(`Error checking if file exists: ${error.message}`);
+      return { exists: false, error };
+    }
+    
+    return { exists: data && data.length > 0, data: data?.[0] };
+  } catch (error: any) {
+    console.error(`Unexpected error checking file existence: ${error.message || error}`);
+    return { exists: false, error };
+  }
+}
+
+/**
+ * Insert a specific file from Google Drive into sources_google2
+ */
+async function insertSpecificFile(drive: any, fileId: string, parentId: string, isDryRun: boolean, isVerbose: boolean): Promise<{ success: boolean, message?: string, data?: any }> {
+  console.log(`=== Attempting to insert specific file ${fileId} ===`);
+  
+  try {
+    // First check if file already exists
+    const existsCheck = await checkFileExists(fileId);
+    if (existsCheck.exists && existsCheck.data) {
+      console.log(`File already exists in the database: ${existsCheck.data.name} (ID: ${existsCheck.data.id})`);
+      return { success: false, message: 'File already exists' };
+    }
+    
+    // Get file details from Google Drive
+    const response = await drive.files.get({
+      fileId: fileId,
+      fields: 'id,name,mimeType,parents,modifiedTime,size,thumbnailLink,webViewLink'
+    });
+    
+    const file = response.data;
+    console.log(`✅ Found file in Google Drive: ${file.name} (${file.mimeType})`);
+    
+    // Get parent path
+    let parentPath = '/';
+    try {
+      const parentResponse = await drive.files.get({
+        fileId: parentId,
+        fields: 'id,name,parents'
+      });
+      
+      const folderName = parentResponse.data.name;
+      parentPath = `/${folderName}/`;
+      console.log(`✅ Parent path: ${parentPath}`);
+    } catch (error) {
+      console.warn(`⚠️ Could not determine parent path: ${error}`);
+    }
+    
+    // Prepare path array
+    const filePath = `${parentPath}${file.name}`;
+    const pathArray = filePath.split('/').filter(Boolean);
+    if (filePath.startsWith('/')) {
+      pathArray.unshift('');
+    }
+    
+    // Calculate path_depth - for files in the root folder, depth should be 0
+    const path_depth = 0;
+    
+    if (isVerbose) {
+      console.log(`Path depth calculation:`);
+      console.log(`- Path: ${filePath}`);
+      console.log(`- Setting path_depth to 0 as per requirements`);
+    }
+    
+    // Create insertion data
+    const now = new Date().toISOString();
+    const { v4: uuidv4 } = require('uuid');
+    const recordId = uuidv4(); // Generate a UUID for the record
+    
+    const insertData = {
+      id: recordId, // Explicitly set the ID field
+      drive_id: file.id,
+      name: file.name,
+      mime_type: file.mimeType,
+      path: filePath,
+      path_array: pathArray,
+      path_depth,
+      parent_folder_id: parentId,
+      root_drive_id: DYNAMIC_HEALING_FOLDER_ID,
+      is_deleted: false,
+      created_at: now,
+      updated_at: now,
+      web_view_link: file.webViewLink,
+      thumbnail_link: file.thumbnailLink,
+      modified_at: file.modifiedTime,
+      size: file.size ? parseInt(file.size, 10) : null,
+      metadata: {
+        modifiedTime: file.modifiedTime,
+        webViewLink: file.webViewLink,
+        thumbnailLink: file.thumbnailLink,
+        mimeType: file.mimeType
+      }
+    };
+    
+    // Log the insert data in verbose mode
+    if (isVerbose) {
+      console.log('\nInsertion data:');
+      console.log(JSON.stringify(insertData, null, 2));
+    }
+    
+    if (isDryRun) {
+      console.log(`DRY RUN: Would insert file ${file.name} (${file.id})`);
+      return { success: true, message: 'Dry run successful' };
+    }
+    
+    // Insert the file
+    const { data, error } = await supabase
+      .from('sources_google2')
+      .insert(insertData);
+      
+    if (error) {
+      console.error(`❌ Error inserting file: ${error.message}`);
+      console.error('Detailed error:', JSON.stringify(error, null, 2));
+      return { success: false, message: error.message };
+    }
+    
+    console.log(`✅ Successfully inserted file ${file.name} (${file.id})`);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error(`❌ Unexpected error inserting file: ${error.message || error}`);
+    return { success: false, message: error.message || error };
+  }
+}
+
+/**
  * Sync files from Google Drive to Supabase sources_google2 table
  */
 async function syncFiles(
@@ -349,6 +486,27 @@ async function syncFiles(
     result.filesFound = allFiles.length;
     console.log(`Found ${allFiles.length} files`);
     
+    // Debug output for all found files
+    if (isVerbose) {
+      console.log('DEBUG: First 10 files found:');
+      allFiles.slice(0, 10).forEach(file => {
+        console.log(`- ${file.name} (${file.id}) - ${file.mimeType}`);
+      });
+      
+      // Check specifically for test file in allFiles
+      const testFileId = '1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM';
+      const testFile = allFiles.find(file => file.id === testFileId);
+      
+      console.log("\n=== TEST FILE IN RECURSIVE SEARCH CHECK ===");
+      console.log(`Test file found in recursive search: ${testFile ? 'YES' : 'NO'}`);
+      if (testFile) {
+        console.log(`Test file details: ${testFile.name} (${testFile.id})`);
+        console.log(`Path: ${testFile.path}`);
+        console.log(`Parent folder ID: ${testFile.parentFolderId}`);
+      }
+      console.log("=== END TEST FILE RECURSIVE SEARCH CHECK ===\n");
+    }
+    
     // Organize files by type
     allFiles.forEach(file => {
       const type = file.mimeType || 'unknown';
@@ -367,12 +525,20 @@ async function syncFiles(
     }
     
     // Create a Set of all found drive IDs for checking deletions later
-    const foundDriveIds = new Set(allFiles.map(file => file.id));
+    // Always include the root folder ID in the foundDriveIds Set to prevent it from being marked as deleted
+    const foundDriveIds = new Set([
+      ...allFiles.map(file => file.id),
+      folderId // Always include the root folder ID to prevent it from being marked as deleted
+    ]);
+    
+    if (isVerbose) {
+      console.log(`Root folder ID (${folderId}) added to foundDriveIds to prevent deletion`);
+    }
     
     // Get existing files to avoid duplicates
     const { data: existingRecords, error: queryError } = await supabase
       .from('sources_google2')
-      .select('id, drive_id, root_drive_id')
+      .select('id, drive_id, root_drive_id, name')
       .eq('is_deleted', false);
       
     if (queryError) {
@@ -389,10 +555,66 @@ async function syncFiles(
     // Track files that need to be marked as deleted
     // Filter for records with root_drive_id = DYNAMIC_HEALING_FOLDER_ID that are missing from foundDriveIds
     const recordsToMarkDeleted = (existingRecords || [])
-      .filter(record => record.root_drive_id === DYNAMIC_HEALING_FOLDER_ID && !foundDriveIds.has(record.drive_id));
+      .filter(record => 
+        record.root_drive_id === DYNAMIC_HEALING_FOLDER_ID && 
+        !foundDriveIds.has(record.drive_id)
+      );
+      
+    // Double-check to make sure root folder isn't in the deletion list
+    const rootFolderInDeletionList = recordsToMarkDeleted.some(record => record.drive_id === folderId);
+    if (rootFolderInDeletionList && isVerbose) {
+      console.error(`WARNING: Root folder found in deletion list despite safeguards! This shouldn't happen.`);
+    }
+    
+    // Debug check for the root folder
+    if (isVerbose) {
+      const rootFolderRecord = (existingRecords || []).find(record => record.drive_id === DYNAMIC_HEALING_FOLDER_ID);
+      console.log("\n=== ROOT FOLDER CHECK ===");
+      console.log(`Root folder found in database: ${rootFolderRecord ? 'YES' : 'NO'}`);
+      if (rootFolderRecord) {
+        console.log(`Root folder ID: ${rootFolderRecord.id}`);
+        console.log(`Root folder would be marked as deleted: ${!foundDriveIds.has(DYNAMIC_HEALING_FOLDER_ID) ? 'YES (but prevented)' : 'NO'}`);
+      }
+      console.log("=== END ROOT FOLDER CHECK ===\n");
+    }
     
     if (recordsToMarkDeleted.length > 0) {
       console.log(`Found ${recordsToMarkDeleted.length} files to mark as deleted`);
+      
+      // In verbose mode, show the files that will be marked as deleted
+      if (isVerbose) {
+        console.log("\n=== Files to mark as deleted ===");
+        recordsToMarkDeleted.slice(0, 10).forEach((record, index) => {
+          console.log(`${index + 1}. ${record.name || 'Unnamed'} (${record.drive_id})`);
+          // Try to verify if the file truly doesn't exist in Google Drive
+          try {
+            const checkFilePromise = async () => {
+              try {
+                await drive.files.get({
+                  fileId: record.drive_id,
+                  fields: 'id,name'
+                });
+                return { exists: true };
+              } catch (error: any) {
+                return { exists: false, error: error.message };
+              }
+            };
+            checkFilePromise().then(result => {
+              if (result.exists) {
+                console.log(`   ⚠️ WARNING: File ${record.drive_id} actually EXISTS in Google Drive!`);
+              } else {
+                console.log(`   ✓ Verified: File doesn't exist in Google Drive`);
+              }
+            });
+          } catch (error) {
+            console.log(`   ? Unable to verify file existence: ${error}`);
+          }
+        });
+        if (recordsToMarkDeleted.length > 10) {
+          console.log(`... and ${recordsToMarkDeleted.length - 10} more files`);
+        }
+        console.log("=== End files to mark as deleted ===\n");
+      }
       
       if (!isDryRun) {
         // Mark files as deleted in batches
@@ -450,9 +672,72 @@ async function syncFiles(
       
       result.filesSkipped += (batch.length - newFilesInBatch.length);
       
+      // Check for test file specifically
+      const testFileId = '1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM';
+      const testFileInBatch = batch.find(file => file.id === testFileId);
+      
+      if (isVerbose) {
+        const testFileIsNew = newFilesInBatch.find(file => file.id === testFileId);
+        
+        console.log("\n=== TEST FILE IN SYNC BATCH CHECK ===");
+        console.log(`Test file found in batch: ${testFileInBatch ? 'YES' : 'NO'}`);
+        if (testFileInBatch) {
+          console.log(`Test file details: ${testFileInBatch.name} (${testFileInBatch.id})`);
+          console.log(`Will be inserted as new: ${testFileIsNew ? 'YES' : 'NO'}`);
+          if (!testFileIsNew) {
+            console.log(`Reason: File ID ${testFileId} already exists in database`);
+          }
+        }
+        console.log("=== END TEST FILE CHECK ===\n");
+      }
+      
+      // Specifically handle the test file if it's not in the database but was found in Google Drive
+      if (testFileInBatch && !existingDriveIds.has(testFileId)) {
+        console.log(`\n✨ Special case: Test file found in Google Drive but not in database. Handling explicitly...`);
+        const insertResult = await insertSpecificFile(
+          drive, 
+          testFileId, 
+          testFileInBatch.parentFolderId || DYNAMIC_HEALING_FOLDER_ID, 
+          isDryRun,
+          isVerbose
+        );
+        
+        if (insertResult.success) {
+          console.log(`✅ Successfully inserted test file ${testFileInBatch.name} (${testFileId})`);
+          result.filesInserted++;
+          // Remove from newFilesInBatch to avoid duplicate insertion
+          const testFileIndex = newFilesInBatch.findIndex(file => file.id === testFileId);
+          if (testFileIndex !== -1) {
+            newFilesInBatch.splice(testFileIndex, 1);
+          }
+        } else {
+          console.error(`❌ Failed to insert test file: ${insertResult.message}`);
+          result.errors.push(`Failed to insert test file: ${insertResult.message}`);
+        }
+      }
+      
       if (newFilesInBatch.length === 0) {
         console.log('No new files in this batch, skipping...');
         continue;
+      }
+      
+      // TEMPORARY DEBUG: Show information about new files found (just for debugging)
+      if (isVerbose) {
+        console.log("\n=== TEMPORARY DEBUGGING: NEW FILES FOUND ===");
+        console.log(`Found ${newFilesInBatch.length} new files to insert:`);
+        newFilesInBatch.forEach((file, index) => {
+          console.log(`${index + 1}. ${file.name} (${file.id}) - Type: ${file.mimeType}`);
+          console.log(`   Path: ${file.path}`);
+          console.log(`   Parent: ${file.parentFolderId}`);
+        });
+        
+        // Add a prompt to continue - comment out in production
+        if (i === 0 && !isDryRun) { // Only for the first batch and not in dry run mode
+          console.log("\n=== DEBUGGING PAUSE ===");
+          console.log("This is just temporary debug info. The script should now prepare data for insertion.");
+          console.log("Check the above output to verify if your test file appears in the list of new files.");
+          console.log("=== END DEBUGGING INFO ===\n");
+        }
       }
       
       // Prepare the data for insertion
@@ -464,7 +749,7 @@ async function syncFiles(
           pathArray.unshift('');
         }
         
-        return {
+        const insertData = {
           drive_id: file.id,
           name: file.name,
           mime_type: file.mimeType,
@@ -487,6 +772,15 @@ async function syncFiles(
             mimeType: file.mimeType
           }
         };
+        
+        // TEMPORARY DEBUG: Show full insert data for first file only
+        if (isVerbose && file === newFilesInBatch[0]) {
+          console.log("\n=== FIRST FILE INSERT DATA ===");
+          console.log(JSON.stringify(insertData, null, 2));
+          console.log("=== END FIRST FILE INSERT DATA ===\n");
+        }
+        
+        return insertData;
       });
       
       // Insert the files into the database
@@ -506,6 +800,24 @@ async function syncFiles(
           // If there's a constraint violation, log the first record to help debug
           if (error.code === '23502' || error.code === '23505') {
             console.error(`First record in the problematic batch:`, JSON.stringify(filesToInsert[0], null, 2));
+          }
+          
+          // TEMPORARY DEBUG: Get table structure to verify column names
+          if (isVerbose && i === 0) {
+            console.log("\n=== DEBUGGING TABLE STRUCTURE ===");
+            console.log("Checking sources_google2 table structure to identify issues...");
+            
+            // Output the field that's causing problems based on error code
+            if (error.code === '23502') { // not-null constraint violation
+              const details = error.details || '';
+              const match = details.match(/column "(.*?)"/);
+              if (match && match[1]) {
+                console.error(`The column "${match[1]}" cannot be NULL but we're not providing a value.`);
+                console.error(`This suggests we need to add "${match[1]}" to our insert data or set a default in the database.`);
+              }
+            }
+            
+            console.log("=== END TABLE STRUCTURE DEBUG ===\n");
           }
           
           result.errors.push(`Error inserting batch ${i + 1}: ${error.message}`);
@@ -573,11 +885,25 @@ async function updateMetadata(
     result.records = records.length;
     if (verbose) console.log(`Found ${records.length} records`);
     
-    // Process each record
-    for (const record of records) {
-      try {
-        if (verbose) console.log(`Processing record: ${record.name} (${record.drive_id})`);
-        
+    // Process records in batches to improve performance
+    const BATCH_SIZE = 20; // Process 20 records at a time
+    const batches = Math.ceil(records.length / BATCH_SIZE);
+    
+    if (verbose) console.log(`Will process in ${batches} batches of ${BATCH_SIZE} records`);
+    
+    for (let batchIndex = 0; batchIndex < batches; batchIndex++) {
+      const start = batchIndex * BATCH_SIZE;
+      const end = Math.min(start + BATCH_SIZE, records.length);
+      const batchRecords = records.slice(start, end);
+      
+      if (verbose) console.log(`\nProcessing batch ${batchIndex + 1}/${batches} (${batchRecords.length} records)`);
+      
+      // Array to hold batch promises
+      const batchPromises = [];
+      const batchResults = [];
+      
+      // Prepare batch of promises for Google Drive API calls
+      for (const record of batchRecords) {
         // Skip records without drive_id
         if (!record.drive_id) {
           if (verbose) console.log(`Skipping record without drive_id: ${record.id}`);
@@ -585,86 +911,122 @@ async function updateMetadata(
           continue;
         }
         
-        // Get current file metadata from Google Drive using service account
-        try {
-          const response = await drive.files.get({
-            fileId: record.drive_id,
-            fields: 'id,name,mimeType,webViewLink,modifiedTime,size,thumbnailLink'
-          });
-          
-          const fileData = response.data;
-          
-          if (!fileData) {
-            if (verbose) console.log(`No data found for file: ${record.drive_id}`);
-            result.skipped++;
-            continue;
+        // Create promise for each record's Google Drive API call
+        const getFilePromise = async () => {
+          try {
+            if (verbose) console.log(`Fetching data for: ${record.name} (${record.drive_id})`);
+            
+            const response = await drive.files.get({
+              fileId: record.drive_id,
+              fields: 'id,name,mimeType,webViewLink,modifiedTime,size,thumbnailLink'
+            });
+            
+            return { record, fileData: response.data, success: true };
+          } catch (error: any) {
+            const errorMessage = `Error getting file metadata for ${record.drive_id}: ${error.message || 'Unknown error'}`;
+            console.error(errorMessage);
+            result.errors.push(errorMessage);
+            return { record, error, success: false };
           }
-          
-          // Prepare update data
-          const metadata: Record<string, any> = record.metadata ? 
-            (typeof record.metadata === 'object' ? { ...record.metadata } : {}) : 
-            {};
-          
-          // Update metadata fields
-          ['modifiedTime', 'thumbnailLink', 'webViewLink', 'mimeType'].forEach(field => {
-            if (fileData[field] !== undefined) {
-              metadata[field] = fileData[field];
-            }
-          });
-          
-          // Mark last updated time
-          metadata.lastUpdated = new Date().toISOString();
-          
-          // Additional column-specific updates
-          const updateData: any = {
-            metadata,
-            updated_at: new Date().toISOString()
-          };
-          
-          if (fileData.size !== undefined) {
-            updateData.size = parseInt(fileData.size, 10) || null;
+        };
+        
+        batchPromises.push(getFilePromise());
+      }
+      
+      // Execute all Google Drive API calls in parallel
+      if (verbose) console.log(`Executing ${batchPromises.length} Google Drive API calls in parallel...`);
+      const fileDataResults = await Promise.all(batchPromises);
+      
+      // Process results and prepare database updates
+      const recordsToUpdate = [];
+      
+      for (const item of fileDataResults) {
+        if (!item.success) {
+          result.skipped++;
+          continue;
+        }
+        
+        const { record, fileData } = item;
+        
+        if (!fileData) {
+          if (verbose) console.log(`No data found for file: ${record.drive_id}`);
+          result.skipped++;
+          continue;
+        }
+        
+        // Prepare update data
+        const metadata: Record<string, any> = record.metadata ? 
+          (typeof record.metadata === 'object' ? { ...record.metadata } : {}) : 
+          {};
+        
+        // Update metadata fields
+        ['modifiedTime', 'thumbnailLink', 'webViewLink', 'mimeType'].forEach(field => {
+          if (fileData[field] !== undefined) {
+            metadata[field] = fileData[field];
           }
+        });
+        
+        // Mark last updated time
+        metadata.lastUpdated = new Date().toISOString();
+        
+        // Additional column-specific updates
+        const updateData: any = {
+          id: record.id, // Include ID for batch updates
+          metadata,
+          updated_at: new Date().toISOString()
+        };
+        
+        if (fileData.size !== undefined) {
+          updateData.size = parseInt(fileData.size, 10) || null;
+        }
+        
+        if (fileData.thumbnailLink !== undefined) {
+          updateData.thumbnail_link = fileData.thumbnailLink;
+        }
+        
+        if (fileData.modifiedTime !== undefined) {
+          updateData.modified_at = fileData.modifiedTime;
+        }
+        
+        if (fileData.webViewLink !== undefined) {
+          updateData.web_view_link = fileData.webViewLink;
+        }
+        
+        recordsToUpdate.push(updateData);
+      }
+      
+      // Perform batch update if there are records to update
+      if (recordsToUpdate.length > 0) {
+        if (!dryRun) {
+          if (verbose) console.log(`Batch updating ${recordsToUpdate.length} records...`);
           
-          if (fileData.thumbnailLink !== undefined) {
-            updateData.thumbnail_link = fileData.thumbnailLink;
-          }
-          
-          if (fileData.modifiedTime !== undefined) {
-            updateData.modified_at = fileData.modifiedTime;
-          }
-          
-          if (fileData.webViewLink !== undefined) {
-            updateData.web_view_link = fileData.webViewLink;
-          }
-          
-          // Update record in Supabase
-          if (!dryRun) {
+          // Update each record individually (could be optimized further with UPSERT)
+          for (const updateData of recordsToUpdate) {
+            const recordId = updateData.id;
+            delete updateData.id; // Remove ID from update data
+            
             const { error: updateError } = await supabase
               .from('sources_google2')
               .update(updateData)
-              .eq('id', record.id);
+              .eq('id', recordId);
               
-            if (updateError) throw updateError;
-            
-            if (verbose) console.log(`Updated record: ${record.name}`);
-          } else if (verbose) {
-            console.log(`DRY RUN: Would update record: ${record.name}`);
-            console.log('Update data:', updateData);
+            if (updateError) {
+              const errorMessage = `Error updating record ${recordId}: ${updateError.message}`;
+              console.error(errorMessage);
+              result.errors.push(errorMessage);
+              result.skipped++;
+            } else {
+              result.updated++;
+              if (verbose) console.log(`Updated record: ${recordId}`);
+            }
           }
-          
-          result.updated++;
-        } catch (error: any) {
-          const errorMessage = `Error getting file metadata: ${error.message || 'Unknown error'}`;
-          console.error(errorMessage);
-          result.errors.push(errorMessage);
-          result.skipped++;
+        } else {
+          if (verbose) console.log(`DRY RUN: Would update ${recordsToUpdate.length} records`);
+          result.updated += recordsToUpdate.length;
         }
-      } catch (error: any) {
-        const errorMessage = `Error updating record ${record.id}: ${error.message || 'Unknown error'}`;
-        console.error(errorMessage);
-        result.errors.push(errorMessage);
-        result.skipped++;
       }
+      
+      if (verbose) console.log(`Completed batch ${batchIndex + 1}/${batches}`);
     }
   } catch (error: any) {
     const errorMessage = `Error updating metadata: ${error.message || 'Unknown error'}`;
@@ -677,14 +1039,63 @@ async function updateMetadata(
 }
 
 /**
- * Main function
+ * Direct lookup for a specific file in Google Drive
  */
-async function syncAndUpdateMetadata(): Promise<void> {
+async function lookupSpecificFile(drive: any, fileId: string, isDryRun: boolean, isVerbose: boolean): Promise<void> {
+  console.log(`\n=== Direct Lookup for File ID: ${fileId} ===`);
+  
+  try {
+    // First check if file already exists in database
+    const existsCheck = await checkFileExists(fileId);
+    if (existsCheck.exists && existsCheck.data) {
+      console.log(`✅ File already exists in the database: ${existsCheck.data.name} (ID: ${existsCheck.data.id})`);
+      return;
+    }
+    
+    // Look up file in Google Drive
+    try {
+      const fileResponse = await drive.files.get({
+        fileId: fileId,
+        fields: 'id,name,mimeType,parents,modifiedTime'
+      });
+      
+      console.log(`✅ File found in Google Drive: ${fileResponse.data.name} (${fileResponse.data.mimeType})`);
+      
+      // Get parent folder ID
+      const parentFolderId = fileResponse.data.parents?.[0] || DYNAMIC_HEALING_FOLDER_ID;
+      console.log(`Parent folder ID: ${parentFolderId}`);
+      
+      // Insert the file
+      console.log(`Attempting to insert file into database...`);
+      const insertResult = await insertSpecificFile(drive, fileId, parentFolderId, isDryRun, isVerbose);
+      
+      if (insertResult.success) {
+        console.log(`✅ Successfully performed direct lookup and insertion of file ${fileResponse.data.name} (${fileId})`);
+      } else {
+        console.error(`❌ Failed to insert file: ${insertResult.message}`);
+      }
+    } catch (error: any) {
+      console.error(`❌ File not found in Google Drive: ${error.message || error}`);
+    }
+  } catch (error: any) {
+    console.error(`❌ Error during file lookup: ${error.message || error}`);
+  }
+  
+  console.log('=== End Direct File Lookup ===\n');
+}
+
+/**
+ * Main function with additional parameters
+ */
+async function syncAndUpdateMetadata(specificFileId?: string): Promise<void> {
   console.log('=== Dynamic Healing Discussion Group Sync and Update ===');
   console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'ACTUAL SYNC'}`);
   console.log(`Records limit for update: ${limit}`);
   console.log(`Max folder depth: ${maxDepth}`);
   console.log(`Verbose logging: ${isVerbose ? 'ON' : 'OFF'}`);
+  if (specificFileId) {
+    console.log(`Specific file lookup: ${specificFileId}`);
+  }
   console.log('=========================================================');
 
   try {
@@ -693,6 +1104,57 @@ async function syncAndUpdateMetadata(): Promise<void> {
     if (!drive) {
       console.error('❌ Failed to initialize Google Drive client');
       process.exit(1);
+    }
+    
+    // If a specific file ID was provided, do a direct lookup
+    if (specificFileId) {
+      await lookupSpecificFile(drive, specificFileId, isDryRun, isVerbose);
+    }
+    
+    // TEMPORARY: Direct test for specific file
+    if (isVerbose) {
+      console.log('\n=== TESTING DIRECT FILE LOOKUP ===');
+      const testFileId = '1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM';
+      try {
+        const fileResponse = await drive.files.get({
+          fileId: testFileId,
+          fields: 'id,name,mimeType,parents,modifiedTime'
+        });
+        
+        console.log('TEST FILE FOUND:', fileResponse.data);
+        
+        // Check if it's in our target folder
+        const parentFolderId = fileResponse.data.parents?.[0];
+        console.log(`Parent folder ID: ${parentFolderId}`);
+        console.log(`Target folder ID: ${DYNAMIC_HEALING_FOLDER_ID}`);
+        console.log(`Is in target folder: ${parentFolderId === DYNAMIC_HEALING_FOLDER_ID}`);
+        
+        // Also try to list files directly in the root folder
+        console.log('\nDirect file listing in root folder:');
+        const listResponse = await drive.files.list({
+          q: `'${DYNAMIC_HEALING_FOLDER_ID}' in parents and trashed=false`,
+          pageSize: 1000,
+          fields: 'files(id,name,mimeType)'
+        });
+        
+        const files = listResponse.data.files || [];
+        console.log(`Found ${files.length} files directly in root folder`);
+        
+        const testFile = files.find((f: any) => f.id === testFileId);
+        if (testFile) {
+          console.log('TEST FILE found in direct listing:', testFile);
+        } else {
+          console.log('TEST FILE NOT FOUND in direct listing');
+          // Show all files in root
+          console.log('All files in root folder:');
+          files.forEach((f: any, i: number) => {
+            console.log(`${i+1}. ${f.name} (${f.id}) - ${f.mimeType}`);
+          });
+        }
+      } catch (error: any) {
+        console.error('Error looking up test file:', error.message || error);
+      }
+      console.log('=== END TEST FILE LOOKUP ===\n');
     }
     
     // First check if folder exists
@@ -733,6 +1195,49 @@ async function syncAndUpdateMetadata(): Promise<void> {
       });
     }
     
+    // SAFETY: Ensure the root folder is never marked as deleted
+    if (!isDryRun) {
+      console.log('\n=== Ensuring Root Folder Status ===');
+      try {
+        // Check if the root folder exists and is marked as deleted
+        const { data: rootFolderCheck, error: rootCheckError } = await supabase
+          .from('sources_google2')
+          .select('id, is_deleted')
+          .eq('drive_id', DYNAMIC_HEALING_FOLDER_ID)
+          .single();
+          
+        if (rootCheckError) {
+          console.error(`Error checking root folder status: ${rootCheckError.message}`);
+        } else if (rootFolderCheck) {
+          if (rootFolderCheck.is_deleted) {
+            console.log('Root folder was marked as deleted, fixing...');
+            
+            // Update the root folder to ensure it's not marked as deleted
+            const { error: updateError } = await supabase
+              .from('sources_google2')
+              .update({
+                is_deleted: false,
+                updated_at: new Date().toISOString()
+              })
+              .eq('drive_id', DYNAMIC_HEALING_FOLDER_ID);
+              
+            if (updateError) {
+              console.error(`Error fixing root folder deletion status: ${updateError.message}`);
+            } else {
+              console.log('✅ Root folder restoration complete');
+            }
+          } else {
+            console.log('✅ Root folder is correctly marked as not deleted');
+          }
+        } else {
+          console.log('Root folder not found in database');
+        }
+      } catch (error: any) {
+        console.error(`Error ensuring root folder status: ${error.message || error}`);
+      }
+      console.log('=== End Root Folder Check ===\n');
+    }
+    
     // STEP 2: Update metadata for the files
     console.log('\n=== Step 2: Update Metadata ===');
     console.log(`Starting metadata update for ${limit} records...`);
@@ -759,8 +1264,14 @@ async function syncAndUpdateMetadata(): Promise<void> {
   }
 }
 
-// Execute the main function
-syncAndUpdateMetadata().catch(error => {
+// Parse additional parameter for specific file check
+const specificFileIdIndex = args.indexOf('--file-id');
+const specificFileId = specificFileIdIndex !== -1 && args[specificFileIdIndex + 1] 
+  ? args[specificFileIdIndex + 1] 
+  : undefined;
+
+// Execute the main function with optional specificFileId parameter
+syncAndUpdateMetadata(specificFileId).catch(error => {
   console.error('Unexpected error:', error);
   process.exit(1);
 });
