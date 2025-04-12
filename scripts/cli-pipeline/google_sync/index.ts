@@ -3,8 +3,8 @@ import { Command } from 'commander';
 import { Logger } from '../../../packages/shared/utils/logger';
 import * as fs from 'fs';
 import * as path from 'path';
-// Import removed as file doesn't exist
-// import { reportMainVideoIds } from './report-main-video-ids';
+// Import the new report-main-video-ids for sources_google2
+import { reportMainVideoIds } from './report-main-video-ids';
 import { updateSourcesFromJson } from './update-sources-from-json';
 import { insertMissingSources } from './insert-missing-sources';
 import { updateSchemaFromJson } from './update-schema-from-json';
@@ -23,11 +23,16 @@ program
   .option('--verbose', 'Show detailed logs', false)
   .option('--output <path>', 'Path to write markdown output to', '')
   .option('--limit <number>', 'Limit the number of folders to process')
+  .option('--update-db', 'Update main_video_id values in the database', false)
   .action(async (options: any) => {
     try {
-      // Function temporarily removed as it's not available
-      Logger.error('The report-main-video-ids function is not currently available.');
-      process.exit(1);
+      await reportMainVideoIds(
+        options.folderId,
+        options.verbose,
+        options.output,
+        options.limit ? parseInt(options.limit, 10) : 0,
+        options.updateDb
+      );
     } catch (error) {
       Logger.error('Error reporting main video IDs:', error);
       process.exit(1);
@@ -219,6 +224,46 @@ program
     }
   });
 
+// Define update-folder-video-mapping command
+program
+  .command('update-folder-video-mapping')
+  .description('Update main_video_id for folder and subfolders based on folder:video mapping')
+  .requiredOption('--mapping <mapping>', 'Mapping in format: \'folder name\': \'file name.mp4\'')
+  .option('--dry-run', 'Show what would be updated without making changes', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options: any) => {
+    try {
+      // Call the shell script which has more sophisticated argument handling
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'update-folder-video-mapping.sh');
+      
+      // Build command with options
+      let cmd = `bash "${scriptPath}"`;
+      if (options.mapping) cmd += ` --mapping "${options.mapping}"`;
+      if (options.verbose) cmd += ' --verbose';
+      if (options.dryRun) cmd += ' --dry-run';
+      
+      Logger.debug(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          Logger.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          Logger.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      Logger.error('Error updating folder-video mapping:', error);
+      process.exit(1);
+    }
+  });
+
 // Add more commands as needed
 
 // Parse command line arguments
@@ -287,6 +332,13 @@ Available Commands:
       --dry-run            Show what would be updated without making changes (default)
       --execute            Actually execute the schema changes
       --generate-sql       Generate SQL migration file
+      --verbose            Show detailed logs
+
+  update-folder-video-mapping Update main_video_id for folder and subfolders based on folder:video mapping
+                          Connects a folder with an MP4 file and sets main_video_id for related files
+    Options:
+      --mapping <mapping>  Mapping in format: 'folder name': 'file name.mp4' (required)
+      --dry-run            Show what would be updated without making changes
       --verbose            Show detailed logs
 
 For detailed help on a specific command, run:

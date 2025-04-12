@@ -37,6 +37,7 @@ function display_help() {
   echo "  mp4-experts                 Create expert documents for presentations with MP4 files"
   echo "  report-drive-roots          Generate a detailed report about all root folders"
   echo "  report-main-video-ids       Report on video files for folders, prioritizing Presentation folders"
+  echo "  update-folder-video-mapping Update main_video_id for folder and subfolders based on folder:video mapping"
   echo "  sync-and-update-metadata    Sync folder and update metadata in one operation. Use --file-id to insert a specific file"
   echo "  sync-mp4-presentations      Sync MP4 files with presentations table (ensure 1:1 mapping)"
   echo "  update-main-video-ids       Update main_video_id for presentations by recursively searching folders"
@@ -91,6 +92,7 @@ function display_help() {
   echo "  google-drive-cli.sh check-duplicates --by-drive-id --json"
   echo "  google-drive-cli.sh update-file-signatures --dry-run --verbose"
   echo "  google-drive-cli.sh insert-file --file-id 1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM --verbose"
+  echo "  google-drive-cli.sh update-folder-video-mapping --mapping '2022-04-20-Tauben': 'Tauben.Sullivan.4.20.22.mp4' --dry-run"
 }
 
 # No arguments provided
@@ -200,6 +202,9 @@ case "$COMMAND" in
     ;;
   insert-file)
     ts-node "$SCRIPT_DIR/insert-specific-file.ts" "$@"
+    ;;
+  update-folder-video-mapping)
+    "$SCRIPT_DIR/update-folder-video-mapping.sh" "$@"
     ;;
     
   # Help commands
