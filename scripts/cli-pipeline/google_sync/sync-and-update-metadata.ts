@@ -312,7 +312,8 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
     const recordId = uuidv4(); // Generate a UUID for the record
     
     // Generate a file signature based on name and modification time
-    const fileSignature = `${file.name}-${file.modifiedTime}`.replace(/[^a-zA-Z0-9]/g, '');
+    // Include the modified time in the signature to detect when files are renamed
+    const fileSignature = `${file.name.replace(/[^a-zA-Z0-9]/g, '')}${file.modifiedTime ? file.modifiedTime.replace(/[^a-zA-Z0-9]/g, '') : ''}`;
     
     const insertData = {
       id: recordId, // Explicitly set the ID field
@@ -1002,8 +1003,38 @@ async function updateMetadata(
         
         // Generate and update file signature based on name and modification time
         if (fileData.name && fileData.modifiedTime) {
-          const fileSignature = `${fileData.name}-${fileData.modifiedTime}`.replace(/[^a-zA-Z0-9]/g, '');
-          updateData.file_signature = fileSignature;
+          // Create a file signature that captures the name and modified time
+          const newFileSignature = `${fileData.name.replace(/[^a-zA-Z0-9]/g, '')}${fileData.modifiedTime.replace(/[^a-zA-Z0-9]/g, '')}`;
+          
+          // Check if the signature has changed (likely due to a file rename)
+          const currentSignature = record.file_signature;
+          const hasNameChanged = record.name !== fileData.name;
+          const hasModTimeChanged = record.modified_at !== fileData.modifiedTime;
+          
+          if (hasNameChanged) {
+            if (verbose) console.log(`File renamed: "${record.name}" -> "${fileData.name}" (ID: ${record.id})`);
+          }
+          
+          updateData.file_signature = newFileSignature;
+          
+          // Update name if it has changed
+          if (hasNameChanged) {
+            updateData.name = fileData.name;
+            
+            // If name changed, need to update path and path_array as well
+            if (record.path) {
+              const pathParts = record.path.split('/');
+              pathParts[pathParts.length - 1] = fileData.name;
+              updateData.path = pathParts.join('/');
+              
+              // Also update path_array if it exists
+              if (record.path_array && Array.isArray(record.path_array)) {
+                const newPathArray = [...record.path_array];
+                newPathArray[newPathArray.length - 1] = fileData.name;
+                updateData.path_array = newPathArray;
+              }
+            }
+          }
         }
         
         recordsToUpdate.push(updateData);

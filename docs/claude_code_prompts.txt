@@ -1,4 +1,43 @@
    
+Here's the detailed metadata for the file with ID 1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM:
+
+  {
+    "id": "560c6e26-3af2-4b43-af37-4cea09f608dd",
+    "drive_id": "1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM",
+    "name": "test new document",
+    "mime_type": "application/vnd.google-apps.document",
+    "root_drive_id": "1wriOM2j2IglnMcejplqG_XcCxSIfoRMV",
+    "parent_folder_id": "1wriOM2j2IglnMcejplqG_XcCxSIfoRMV",
+    "path": "/Dynamic Healing Discussion Group/test new document",
+    "path_array": [
+      "",
+      "Dynamic Healing Discussion Group",
+      "test new document"
+    ],
+    "path_depth": 0,
+    "is_root": null,
+    "is_deleted": false,
+    "metadata": {
+      "mimeType": "application/vnd.google-apps.document",
+      "lastUpdated": "2025-04-12T05:23:12.857Z",
+      "webViewLink": "https://docs.google.com/document/d/1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM/edit?usp=drivesdk",
+      "modifiedTime": "2025-04-12T04:39:21.671Z",
+      "thumbnailLink": "https://lh3.googleusercontent.com/drive-storage/AJQWtBPbBgnB5A2HioJuANIUfGXhySK9YMxXVaonCWCRhOEsB6J17AimgWT7g6NSL4WH29Jtoq2pUpQ7XzwGdZe
+  _laVwhKQkROk4KRswtev_sbioX9NuGJ7t9Wlx9b77pR4=s220"
+    },
+    "size": 1024,
+    "modified_at": "2025-04-12T04:39:21.671+00:00",
+    "web_view_link": "https://docs.google.com/document/d/1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM/edit?usp=drivesdk",
+    "thumbnail_link": "https://lh3.googleusercontent.com/drive-storage/AJQWtBPbBgnB5A2HioJuANIUfGXhySK9YMxXVaonCWCRhOEsB6J17AimgWT7g6NSL4WH29Jtoq2pUpQ7XzwGdZe_
+  laVwhKQkROk4KRswtev_sbioX9NuGJ7t9Wlx9b77pR4=s220",
+    "document_type_id": null,
+    "expert_id": null,
+    "created_at": "2025-04-12T04:37:01.573+00:00",
+    "updated_at": "2025-04-12T05:23:12.859+00:00",
+    "last_indexed": null,
+    "main_video_id": null,
+    "file_signature": "testnewdocument220250412T043921671Z"
+  }
 
 
    now I need you to lookup each file from file_types/json/google-drive.json which has a depth field for each id - use that id to find the corresponding record in source and check to see if the path_depth field = the depth field - actually write out each filename and the values from the json file compared against the path_depth field in sources_google2 so I can confirm they are all properly set
