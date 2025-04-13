@@ -37,6 +37,7 @@ function display_help() {
   echo "  check-duplicates            Check for duplicate files in sources_google by name or drive_id"
   echo "  check-roots                 Check the status of all registered root folders"
   echo "  classify-missing-docs       Classify files missing document type IDs using Claude AI"
+  echo "  classify-missing-docs-with-service  Classify files using the new PromptService singleton"
   echo "  cli-recursive-search <id>   Search Google Drive folder recursively and save to file_types/json/google-drive.json"
   echo "  count-mp4 [drive_id]        Count MP4 files in a Google Drive folder"
   echo "  disk-status                 Update presentations table with disk status for MP4 files"
@@ -96,6 +97,7 @@ function display_help() {
   echo "  google-drive-cli.sh classify-missing-docs --list-needs-classification --folder-id \"Dynamic Healing Discussion Group\" --limit 50"
   echo "  google-drive-cli.sh classify-missing-docs --list-needs-classification --output ./document-analysis-results --verbose"
   echo "  google-drive-cli.sh classify-missing-docs --list-needs-classification --folder-id \"Dynamic Healing Discussion Group\" --include-pdfs --limit 100"
+  echo "  google-drive-cli.sh classify-missing-docs-with-service --limit 5 --debug --dry-run"
   echo "  google-drive-cli.sh update-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
   echo "  google-drive-cli.sh update-sources-from-json --verbose"
   echo "  google-drive-cli.sh update-sources-from-json file_types/json/google-drive.json --dry-run --drive-id 1XZlq1NQNmcLxgiuPooJ8QH3LP3lJlZB3"
@@ -232,6 +234,9 @@ case "$COMMAND" in
     ;;
   classify-missing-docs)
     ts-node "$SCRIPT_DIR/classify-missing-docs.ts" "$@"
+    ;;
+  classify-missing-docs-with-service)
+    ts-node "$SCRIPT_DIR/classify-missing-docs-with-service.ts" "$@"
     ;;
   update-folder-video-mapping)
     "$SCRIPT_DIR/update-folder-video-mapping.sh" "$@"
