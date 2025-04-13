@@ -109,35 +109,125 @@ program
       }
 
       // Get the script path
-      const scriptPath = path.resolve(__dirname, 'browser-recursive-search.sh');
+      // Instead of using browser-recursive-search.sh, generate the script content directly
+      const browserScriptContent = `
+// Browser-based recursive search for Google Drive folders
+// Run this script in your browser's JavaScript console while logged into Google Drive
+const folderId = '${options.folderId}';
+const maxDepth = 10;
+const exportToJson = true;
+
+// Function to search folders recursively
+async function searchFoldersRecursively(folderId, depth = 0, path = []) {
+  if (depth > maxDepth) return [];
+  
+  console.log(\`Searching folder at depth \${depth}: \${folderId}\`);
+  
+  // Get folder metadata
+  const folderResponse = await gapi.client.drive.files.get({
+    fileId: folderId,
+    fields: 'id,name,mimeType,parents'
+  });
+  
+  const folder = folderResponse.result;
+  const currentPath = [...path, folder.name];
+  console.log(\`Current path: \${currentPath.join('/')}\`);
+  
+  // Add this folder to results
+  const result = [{
+    id: folder.id,
+    name: folder.name,
+    mimeType: folder.mimeType,
+    path: currentPath,
+    depth: depth
+  }];
+  
+  // Get all items in this folder
+  const response = await gapi.client.drive.files.list({
+    q: \`'\${folderId}' in parents and trashed = false\`,
+    fields: 'files(id,name,mimeType,parents,webViewLink,modifiedTime)',
+    pageSize: 1000
+  });
+  
+  const files = response.result.files;
+  console.log(\`Found \${files.length} items in folder\`);
+  
+  // Add all non-folder files to results
+  files.filter(file => file.mimeType !== 'application/vnd.google-apps.folder')
+    .forEach(file => {
+      result.push({
+        id: file.id,
+        name: file.name,
+        mimeType: file.mimeType,
+        path: [...currentPath, file.name],
+        depth: depth + 1
+      });
+    });
+  
+  // Recursively process subfolders
+  const subfolders = files.filter(file => file.mimeType === 'application/vnd.google-apps.folder');
+  
+  for (const subfolder of subfolders) {
+    const subResults = await searchFoldersRecursively(subfolder.id, depth + 1, currentPath);
+    result.push(...subResults);
+  }
+  
+  return result;
+}
+
+// Main function
+async function main() {
+  console.log('Initializing Drive API...');
+  
+  // Initialize the API client
+  await gapi.client.init({
+    apiKey: 'YOUR_API_KEY',  // Replace with your API key
+    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+  });
+  
+  console.log('Starting recursive search...');
+  
+  try {
+    const results = await searchFoldersRecursively(folderId);
+    console.log(\`Completed search. Found \${results.length} total items.\`);
+    
+    if (exportToJson) {
+      const jsonStr = JSON.stringify(results, null, 2);
+      console.log('Results as JSON:');
+      console.log(jsonStr);
       
-      // Execute the script and capture its output
+      // Create downloadable link
+      const blob = new Blob([jsonStr], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'drive-files.json';
+      
+      console.log('Click the link below to download results:');
+      console.log(link);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  } catch (error) {
+    console.error('Error during search:', error);
+  }
+}
+
+// Load the gapi client and execute
+gapi.load('client', main);
+`;
+      
+      // Generate the script directly
       Logger.info(`Generating browser recursive search script for folder ID: ${options.folderId}`);
       Logger.info(`Output will be saved to: ${options.output}`);
       
-      exec(`bash "${scriptPath}"`, (error: Error | null, stdout: string, stderr: string) => {
-        if (error) {
-          Logger.error(`Error: ${error.message}`);
-          return;
-        }
-        if (stderr) {
-          Logger.error(`stderr: ${stderr}`);
-          return;
-        }
-        
-        // Modify the output to use the specified folder ID
-        const modifiedOutput = stdout.replace(
-          /const folderId = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';/,
-          `const folderId = '${options.folderId}';`
-        );
-        
-        // Add a proper markdown header
-        const markdownContent = `# Browser Recursive Search Tool for Google Drive\n\n${modifiedOutput}`;
-        
-        // Write to the output file
-        fs.writeFileSync(options.output, markdownContent);
-        Logger.info(`Successfully saved browser recursive search script to: ${options.output}`);
-      });
+      // Add a proper markdown header
+      const markdownContent = `# Browser Recursive Search Tool for Google Drive\n\n${browserScriptContent}`;
+      
+      // Write to the output file
+      fs.writeFileSync(options.output, markdownContent);
+      Logger.info(`Successfully saved browser recursive search script to: ${options.output}`);
     } catch (error) {
       Logger.error('Error generating browser recursive search script:', error);
       process.exit(1);
@@ -232,45 +322,7 @@ program
     }
   });
 
-// Define update-folder-video-mapping command
-program
-  .command('update-folder-video-mapping')
-  .description('Update main_video_id for folder and subfolders based on folder:video mapping')
-  .requiredOption('--mapping <mapping>', 'Mapping in format: \'folder name\': \'file name.mp4\'')
-  .option('--dry-run', 'Show what would be updated without making changes', false)
-  .option('--verbose', 'Show detailed logs', false)
-  .action(async (options: any) => {
-    try {
-      // Call the shell script which has more sophisticated argument handling
-      const { exec } = require('child_process');
-      const path = require('path');
-      
-      const scriptPath = path.resolve(__dirname, 'update-folder-video-mapping.sh');
-      
-      // Build command with options
-      let cmd = `bash "${scriptPath}"`;
-      if (options.mapping) cmd += ` --mapping "${options.mapping}"`;
-      if (options.verbose) cmd += ' --verbose';
-      if (options.dryRun) cmd += ' --dry-run';
-      
-      Logger.debug(`Executing: ${cmd}`);
-      
-      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
-        if (error) {
-          Logger.error(`Error: ${error.message}`);
-          return;
-        }
-        if (stderr) {
-          Logger.error(`stderr: ${stderr}`);
-          return;
-        }
-        console.log(stdout);
-      });
-    } catch (error) {
-      Logger.error('Error updating folder-video mapping:', error);
-      process.exit(1);
-    }
-  });
+// update-folder-video-mapping command removed
 
 // Add sync-and-update-metadata command
 program
