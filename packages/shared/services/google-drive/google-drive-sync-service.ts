@@ -364,6 +364,7 @@ export class GoogleDriveSyncService {
         // Process files
         const enhancedFiles = result.files.map(file => {
           const filePath = `${parentPath}${file.name}`;
+          // Add fields needed for GoogleDriveFile type
           return {
             drive_id: file.id,
             name: file.name,
@@ -375,7 +376,6 @@ export class GoogleDriveSyncService {
             path_array: filePath.split('/').filter(p => p),
             path_depth: filePath.split('/').filter(p => p).length,
             last_indexed: new Date().toISOString(),
-            size: file.size ? parseInt(file.size, 10) : null,
             modified_at: file.modifiedTime,
             thumbnail_link: file.thumbnailLink,
             metadata: {
@@ -385,11 +385,16 @@ export class GoogleDriveSyncService {
               mimeType: file.mimeType
             },
             is_deleted: false,
-            // Add missing required fields with null values
+            // Required fields for GoogleDriveFile type
+            file_signature: '',  // Will be generated during insert
+            main_video_id: null,
+            root_drive_id: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            // Additional fields with null values
             document_type_id: null,
             sync_status: null,
             sync_error: null,
-            document_type_id: null,
             extraction_error: null,
             extracted_content: null,
             audio_duration_seconds: null,
@@ -400,7 +405,8 @@ export class GoogleDriveSyncService {
             audio_quality_metrics: null,
             sync_id: null,
             parent_id: null,
-            size: null
+            // Force to GoogleDriveFile type
+            size: file.size ? parseInt(file.size, 10) : null
           } as GoogleDriveFile;
         });
         
