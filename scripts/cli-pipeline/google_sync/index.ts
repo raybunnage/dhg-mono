@@ -410,6 +410,8 @@ program
   .option('--summary', 'Show only summary information', false)
   .option('--local', 'Use local filesystem instead of Google Drive', false)
   .option('--verbose', 'Show detailed logs', false)
+  .option('--recursive', 'Search recursively through subfolders (up to max depth)', false)
+  .option('--max-depth <number>', 'Maximum folder depth to recursively search (default: 6)', '6')
   .action(async (driveId, options) => {
     try {
       const result = await countMp4Files({
@@ -417,7 +419,9 @@ program
         list: options.list,
         summary: options.summary,
         local: options.local,
-        verbose: options.verbose
+        verbose: options.verbose,
+        recursive: options.recursive,
+        maxDepth: parseInt(options.maxDepth, 10)
       });
       
       // If summary only, output just the count
