@@ -1,0 +1,22 @@
+{
+  "document_type": "Clinical Trial",
+  "document_type_id": "1",
+  "classification_confidence": 0.85,
+  "classification_reasoning": "The document contains detailed information about clinical trial protocols, patient enrollment procedures, and medical research methodologies.",
+  "document_summary": "This document outlines procedures for conducting clinical trials, including patient enrollment criteria, protocol implementation, and data collection methodologies. It discusses statistical analysis approaches for evaluating trial outcomes.",
+  "key_topics": [
+    "Clinical trials",
+    "Patient enrollment",
+    "Research methodology",
+    "Statistical analysis"
+  ],
+  "target_audience": "Clinical researchers and trial administrators",
+  "unique_insights": [
+    "Emphasizes standardized approaches to patient enrollment",
+    "Discusses integrating multiple data collection modalities"
+  ],
+  "ai_assessment": {
+    "confidence": 8.5,
+    "reasoning": "Strong indicators of clinical trial documentation based on terminology and structure"
+  }
+}

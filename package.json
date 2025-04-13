@@ -76,6 +76,7 @@
     "axios": "^1.8.4",
     "dotenv": "^16.4.7",
     "googleapis": "^148.0.0",
+    "mammoth": "^1.9.0",
     "node-fetch": "^3.3.2",
     "uuid": "^11.1.0"
   }
