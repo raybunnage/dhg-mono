@@ -476,7 +476,7 @@ export class GoogleDriveSyncService {
       
       // Create a Set from the drive_id values
       return new Set(
-        (data || []).map(record => record.drive_id).filter(Boolean)
+        (data || []).map((record: { drive_id: string }) => record.drive_id).filter(Boolean)
       );
     } catch (error) {
       console.error('Unexpected error getting existing drive IDs:', error);
