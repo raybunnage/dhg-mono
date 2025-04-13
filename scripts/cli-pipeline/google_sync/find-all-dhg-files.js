@@ -14,7 +14,7 @@ const crypto = require('crypto');
 
 // Hardcode credentials from .env.development
 const SUPABASE_URL = 'https://jdksnfkupzywjdfefkyj.supabase.co';
-const SUPABASE_KEY = '***REMOVED***';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDE4OTAxMywiZXhwIjoyMDQ5NzY1MDEzfQ.ytwo7scGIQRoyue71Bu6W6P6vgSnLP3S3iaL6BoRP_E';
 
 // Target root folder ID and name
 const DHG_ROOT_ID = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';

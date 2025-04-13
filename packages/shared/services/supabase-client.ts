@@ -98,15 +98,9 @@ export class SupabaseClientService {
       // For debugging
       console.log('Current process.env after loading:', Object.keys(process.env).filter(k => k.includes('SUPABASE')));
       
-      // Hardcoded values as a last resort (just for debugging)
+      // Fail if no credentials are found
       if (!supabaseUrl || !supabaseKey) {
-        console.log('Using hardcoded values from .env.development as a last resort');
-        supabaseUrl = 'https://jdksnfkupzywjdfefkyj.supabase.co';
-        supabaseKey = '***REMOVED***';
-      }
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Missing Supabase URL or key. Please check your environment variables.');
+        throw new Error('Unable to find Supabase credentials in environment variables or config. Please make sure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are defined in your .env file.');
       }
       
       console.log(`Creating Supabase client with URL: ${supabaseUrl.substring(0, 20)}...`);

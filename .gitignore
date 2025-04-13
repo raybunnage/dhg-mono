@@ -98,6 +98,17 @@ patterns.txt
 *.env.local
 *.env.development
 
+# JWT tokens and API keys
+**/supabase-key*.ts
+**/supabase-key*.js
+**/supabase-key*.json
+**/*credentials*.ts
+**/*credentials*.js
+**/*credentials*.json
+**/*-key*.ts
+**/*-key*.js
+**/*-key*.json
+
 # Python
 .venv*
 __pycache__/

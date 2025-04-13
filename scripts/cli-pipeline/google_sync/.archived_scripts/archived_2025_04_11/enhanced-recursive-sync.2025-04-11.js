@@ -33,7 +33,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../../.env.developm
 
 // Hardcode credentials from .env.development
 const SUPABASE_URL = 'https://jdksnfkupzywjdfefkyj.supabase.co';
-const SUPABASE_KEY = '***REMOVED***';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDE4OTAxMywiZXhwIjoyMDQ5NzY1MDEzfQ.ytwo7scGIQRoyue71Bu6W6P6vgSnLP3S3iaL6BoRP_E';
 
 // Default folder ID for Dynamic Healing Discussion Group
 const DYNAMIC_HEALING_FOLDER_ID = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';
