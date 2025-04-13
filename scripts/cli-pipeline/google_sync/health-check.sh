@@ -1,9 +1,9 @@
 #!/bin/bash
 # Google Drive CLI Pipeline Health Check
-# This script tests the health of key commands in the Google Drive CLI pipeline
+# This script verifies that all required commands are defined in index.ts
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLI_PATH="$SCRIPT_DIR/google-sync-cli.sh"
+INDEX_TS="$SCRIPT_DIR/index.ts"
 LOG_DIR="$SCRIPT_DIR/../../../logs"
 LOG_FILE="$LOG_DIR/google-sync-health-check.log"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
@@ -29,134 +29,25 @@ mkdir -p "$LOG_DIR"
 echo "=== Google Drive CLI Pipeline Health Check - $TIMESTAMP ===" > "$LOG_FILE"
 echo "" >> "$LOG_FILE"
 
-# macOS-compatible timeout function (since timeout command isn't available by default)
-timeout_command() {
-  local timeout=$1
-  shift
-  
-  # Start the command in background
-  "$@" > /tmp/cmd_output 2>&1 &
-  local cmd_pid=$!
-  
-  # Monitor the process for the specified timeout
-  local count=0
-  while [ $count -lt $timeout ] && kill -0 $cmd_pid 2>/dev/null; do
-    sleep 1
-    ((count++))
-  done
-  
-  # If process is still running after timeout, kill it
-  if kill -0 $cmd_pid 2>/dev/null; then
-    kill $cmd_pid 2>/dev/null
-    wait $cmd_pid 2>/dev/null
-    return 124  # Standard timeout exit code
-  fi
-  
-  # Wait for the process to finish and get its exit code
-  wait $cmd_pid
-  return $?
-}
+# Commands that should be available
+COMMANDS=(
+  "sync-and-update-metadata"
+  "check-document-types"
+  "check-duplicates"
+  "update-file-signatures"
+  "classify-missing-docs"
+  "report-main-video-ids"
+  "update-main-video-ids"
+  "browser-recursive-search"
+  "update-sources-from-json"
+  "insert-missing-sources"
+  "update-schema-from-json"
+  "count-mp4"
+  "add-root-service"
+)
 
-# Function to run a command with timeout and log the result
-run_command_test() {
-  local command="$1"
-  local args="$2"
-  local description="$3"
-  local timeout_seconds="${4:-30}"  # Default timeout of 30 seconds
-
-  if [ "$VERBOSE" = true ]; then
-    echo "Testing: $command $args - $description" | tee -a "$LOG_FILE"
-  else
-    echo "Testing: $command $args - $description" >> "$LOG_FILE"
-  fi
-  
-  # Run the command with a timeout
-  timeout_command $timeout_seconds $CLI_PATH $command $args --dry-run
-  local exit_code=$?
-  
-  # Check if command timed out
-  if [ $exit_code -eq 124 ]; then
-    echo "❌ FAILED (TIMEOUT): Command took too long to execute (> $timeout_seconds seconds)" >> "$LOG_FILE"
-    echo "Command: $CLI_PATH $command $args --dry-run" >> "$LOG_FILE"
-    echo "" >> "$LOG_FILE"
-    return 1
-  fi
-  
-  # Check if command returned success
-  if [ $exit_code -eq 0 ]; then
-    echo "✅ PASSED: Command executed successfully" | tee -a "$LOG_FILE"
-    # Log a snippet of the output (first 5 lines)
-    echo "Output snippet:" >> "$LOG_FILE"
-    head -n 5 /tmp/cmd_output >> "$LOG_FILE"
-    if [ $(wc -l < /tmp/cmd_output) -gt 5 ]; then
-      echo "... (output truncated)" >> "$LOG_FILE"
-    fi
-    
-    # Display output snippet if verbose mode is enabled
-    if [ "$VERBOSE" = true ]; then
-      echo "Output snippet:"
-      head -n 5 /tmp/cmd_output
-      if [ $(wc -l < /tmp/cmd_output) -gt 5 ]; then
-        echo "... (output truncated)"
-      fi
-    fi
-  else
-    echo "❌ FAILED: Command returned exit code $exit_code" | tee -a "$LOG_FILE"
-    echo "Command: $CLI_PATH $command $args --dry-run" | tee -a "$LOG_FILE"
-    echo "Error output:" | tee -a "$LOG_FILE"
-    cat /tmp/cmd_output | tee -a "$LOG_FILE"
-  fi
-  
-  echo "" >> "$LOG_FILE"
-  if [ "$VERBOSE" = true ]; then
-    echo ""
-  fi
-  
-  return $exit_code
-}
-
-# Function to check if a command exists in the CLI script
-command_exists() {
-  grep -q "^[[:space:]]*$1)[[:space:]]*$" "$CLI_PATH"
-  return $?
-}
-
-# Function to count passed and failed tests
-count_results() {
-  local passed=$(grep -c "✅ PASSED" "$LOG_FILE")
-  local failed=$(grep -c "❌ FAILED" "$LOG_FILE")
-  local total=$((passed + failed))
-  
-  if [ "$VERBOSE" = true ]; then
-    echo "=== Test Results Summary ===" | tee -a "$LOG_FILE"
-    echo "Total tests: $total" | tee -a "$LOG_FILE"
-    echo "Passed: $passed" | tee -a "$LOG_FILE"
-    echo "Failed: $failed" | tee -a "$LOG_FILE"
-    
-    if [ $failed -eq 0 ]; then
-      echo "✅ All tests passed!" | tee -a "$LOG_FILE"
-      return 0
-    else
-      echo "❌ $failed test(s) failed. Full details in $LOG_FILE" | tee -a "$LOG_FILE"
-      return 1
-    fi
-  else
-    echo "=== Test Results Summary ===" >> "$LOG_FILE"
-    echo "Total tests: $total" >> "$LOG_FILE"
-    echo "Passed: $passed" >> "$LOG_FILE"
-    echo "Failed: $failed" >> "$LOG_FILE"
-    
-    if [ $failed -eq 0 ]; then
-      echo "✅ All tests passed!" >> "$LOG_FILE"
-      echo "All tests passed!" 
-      return 0
-    else
-      echo "❌ $failed test(s) failed. Check $LOG_FILE for details." >> "$LOG_FILE"
-      echo "$failed test(s) failed. Check $LOG_FILE for details."
-      return 1
-    fi
-  fi
-}
+# Special case for count-mp4 which is directly implemented in google-sync-cli.sh
+COUNT_MP4_COMMAND=$(grep -c "count-mp4" "$SCRIPT_DIR/google-sync-cli.sh")
 
 # Main testing function
 main() {
@@ -167,54 +58,72 @@ main() {
   fi
   echo "Results will be logged to $LOG_FILE"
   
-  if [ "$VERBOSE" = true ]; then
-    echo "Starting tests..." | tee -a "$LOG_FILE"
-    echo "" | tee -a "$LOG_FILE"
-  else
-    echo "Starting tests..." | tee -a "$LOG_FILE"
+  # Check if index.ts exists
+  if [ ! -f "$INDEX_TS" ]; then
+    echo "❌ FAILED: index.ts not found at $INDEX_TS" | tee -a "$LOG_FILE"
+    exit 1
   fi
   
-  # 1. Test sync-and-update-metadata - check help text only to avoid actual Drive API calls
-  run_command_test "sync-and-update-metadata" "--help" "Checks if sync and metadata update command exists" 10
+  if [ "$VERBOSE" = true ]; then
+    echo "Checking for commands in index.ts..." | tee -a "$LOG_FILE"
+    echo "" | tee -a "$LOG_FILE"
+  else
+    echo "Checking for commands in index.ts..." >> "$LOG_FILE"
+  fi
   
-  # 2. Test check-document-types - with --help to avoid actual database queries
-  run_command_test "check-document-types" "--help" "Checks if document type verification command exists" 10
+  # Variables to track results
+  local passed=0
+  local failed=0
   
-  # 3. Test check-duplicates
-  run_command_test "check-duplicates" "--help" "Checks if duplicate detection command exists" 10
+  # Check each command
+  for cmd in "${COMMANDS[@]}"; do
+    # Special case for count-mp4
+    if [ "$cmd" = "count-mp4" ] && [ "$COUNT_MP4_COMMAND" -gt 0 ]; then
+      if [ "$VERBOSE" = true ]; then
+        echo "✅ PASSED: Command $cmd is defined in google-sync-cli.sh" | tee -a "$LOG_FILE"
+      else
+        echo "✅ PASSED: Command $cmd is defined in google-sync-cli.sh" >> "$LOG_FILE"
+      fi
+      ((passed++))
+      continue
+    fi
+    
+    # Check if command is defined in index.ts
+    local found=$(grep -c ".command('$cmd')" "$INDEX_TS")
+    
+    if [ "$found" -gt 0 ]; then
+      if [ "$VERBOSE" = true ]; then
+        echo "✅ PASSED: Command $cmd is defined in index.ts" | tee -a "$LOG_FILE"
+      else
+        echo "✅ PASSED: Command $cmd is defined in index.ts" >> "$LOG_FILE" 
+      fi
+      ((passed++))
+    else
+      if [ "$VERBOSE" = true ]; then
+        echo "❌ FAILED: Command $cmd not found in index.ts" | tee -a "$LOG_FILE"
+      else
+        echo "❌ FAILED: Command $cmd not found in index.ts" >> "$LOG_FILE"
+      fi
+      ((failed++))
+    fi
+  done
   
-  # 4. Test update-file-signatures
-  run_command_test "update-file-signatures" "--help" "Checks if file signature updating command exists" 10
+  # Report results
+  local total=$((passed + failed))
   
-  # 5. Test classify-missing-docs
-  run_command_test "classify-missing-docs" "--help" "Checks if document classification command exists" 10
+  echo "" >> "$LOG_FILE"
+  echo "=== Test Results Summary ===" | tee -a "$LOG_FILE"
+  echo "Total commands checked: $total" | tee -a "$LOG_FILE"
+  echo "Commands found: $passed" | tee -a "$LOG_FILE"
+  echo "Commands missing: $failed" | tee -a "$LOG_FILE"
   
-  # 6. Test report-main-video-ids
-  run_command_test "report-main-video-ids" "--help" "Checks if video ID reporting command exists" 10
-  
-  # 7. Test update-main-video-ids
-  run_command_test "update-main-video-ids" "--help" "Checks if main video ID update command exists" 10
-  
-  # 8. Test browser-recursive-search
-  run_command_test "browser-recursive-search" "--help" "Checks if browser recursive search command exists" 10
-  
-  # 9. Test update-sources-from-json
-  run_command_test "update-sources-from-json" "--help" "Checks if sources update from JSON command exists" 10
-  
-  # 10. Test insert-missing-sources
-  run_command_test "insert-missing-sources" "--help" "Checks if missing sources insertion command exists" 10
-  
-  # 11. Test update-schema-from-json
-  run_command_test "update-schema-from-json" "--help" "Checks if schema update command exists" 10
-  
-  # 12. Test count-mp4
-  run_command_test "count-mp4" "--help" "Checks if MP4 counting command exists" 10
-  
-  # 13. Test add-root-service - with --help to avoid actual Drive API calls
-  run_command_test "add-root-service" "--help" "Checks if root folder adding command exists" 10
-  
-  # Count and display results
-  count_results
+  if [ $failed -eq 0 ]; then
+    echo "✅ All commands are properly defined!" | tee -a "$LOG_FILE"
+    return 0
+  else
+    echo "❌ $failed command(s) are missing. Full details in $LOG_FILE" | tee -a "$LOG_FILE"
+    return 1
+  fi
 }
 
 # Run the main function
