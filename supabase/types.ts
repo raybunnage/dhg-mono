@@ -1854,6 +1854,7 @@ export type Database = {
           is_in_core_group: boolean
           last_synced_at: string | null
           legacy_expert_id: number | null
+          mnemonic: string | null
           starting_ref_id: number | null
           sync_error: string | null
           sync_status: string | null
@@ -1875,6 +1876,7 @@ export type Database = {
           is_in_core_group?: boolean
           last_synced_at?: string | null
           legacy_expert_id?: number | null
+          mnemonic?: string | null
           starting_ref_id?: number | null
           sync_error?: string | null
           sync_status?: string | null
@@ -1896,6 +1898,7 @@ export type Database = {
           is_in_core_group?: boolean
           last_synced_at?: string | null
           legacy_expert_id?: number | null
+          mnemonic?: string | null
           starting_ref_id?: number | null
           sync_error?: string | null
           sync_status?: string | null
