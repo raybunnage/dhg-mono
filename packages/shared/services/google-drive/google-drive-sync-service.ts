@@ -203,8 +203,8 @@ export class GoogleDriveSyncService {
       allFiles.forEach(file => {
         const type = file.mime_type || 'unknown';
         stats.fileTypes[type] = (stats.fileTypes[type] || 0) + 1;
-        if (file.size_bytes) {
-          stats.totalSize += file.size_bytes;
+        if (file.size) {
+          stats.totalSize += file.size;
         }
         
         // Add files to result
@@ -317,10 +317,11 @@ export class GoogleDriveSyncService {
             parent_folder_id: folderId,
             is_root: currentDepth === 0,
             path: filePath,
-            parent_path: parentPath,
+            path_array: filePath.split('/').filter(p => p),
+            path_depth: filePath.split('/').filter(p => p).length,
             last_indexed: new Date().toISOString(),
-            size_bytes: file.size ? parseInt(file.size, 10) : null,
-            modified_time: file.modifiedTime,
+            size: file.size ? parseInt(file.size, 10) : null,
+            modified_at: file.modifiedTime,
             thumbnail_link: file.thumbnailLink,
             metadata: {
               modifiedTime: file.modifiedTime,
@@ -328,10 +329,9 @@ export class GoogleDriveSyncService {
               thumbnailLink: file.thumbnailLink,
               mimeType: file.mimeType
             },
-            deleted: false,
-            content_extracted: false,
+            is_deleted: false,
             // Add missing required fields with null values
-            expert_id: null,
+            document_type_id: null,
             sync_status: null,
             sync_error: null,
             document_type_id: null,

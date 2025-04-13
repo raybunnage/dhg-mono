@@ -554,16 +554,16 @@ export class PresentationService {
       // Filter by expert_id if requested
       let filteredPresentations = presentations;
       if (options.expertId) {
-        // Get presentations that are associated with the specified expert through sources_google
+        // Get presentations that are associated with the specified expert through sources_google_experts
         const { data: sourcesWithExpert, error: sourcesError } = await this.supabaseClient
-          .from('sources_google')
-          .select('id')
+          .from('sources_google_experts')
+          .select('source_id')
           .eq('expert_id', options.expertId);
         
         if (sourcesError) {
           Logger.error('Error fetching sources for expert:', sourcesError);
         } else if (sourcesWithExpert && sourcesWithExpert.length > 0) {
-          const sourceIds = sourcesWithExpert.map((s: any) => s.id);
+          const sourceIds = sourcesWithExpert.map((s: any) => s.source_id);
           filteredPresentations = presentations.filter((p: any) => 
             p.main_video_id && sourceIds.includes(p.main_video_id)
           );
@@ -579,8 +579,8 @@ export class PresentationService {
         // but whose path indicates they're part of the group
         const { data: dhgSources, error: dhgError } = await this.supabaseClient
           .from('sources_google')
-          .select('id, name, parent_path, drive_id')
-          .or(`parent_path.like.%Dynamic Healing Discussion Group%,drive_id.eq.${options.folderId}`);
+          .select('id, name, path, drive_id')
+          .or(`path.like.%Dynamic Healing Discussion Group%,drive_id.eq.${options.folderId}`);
         
         if (dhgError) {
           Logger.error('Error fetching Dynamic Healing Discussion Group sources:', dhgError);
@@ -643,9 +643,9 @@ export class PresentationService {
           
           if (presentation.main_video_id) {
             const { data: source, error: sourceError } = await this.supabaseClient
-              .from('sources_google')
+              .from('sources_google_experts')
               .select('expert_id')
-              .eq('id', presentation.main_video_id)
+              .eq('source_id', presentation.main_video_id)
               .single();
               
             if (!sourceError && source && source.expert_id) {
@@ -1007,14 +1007,14 @@ export class PresentationService {
         // Try to find sources in the specified folder
         folderQuery = this._supabaseClient
           .from('sources_google')
-          .select('id, name, parent_path, drive_id')
+          .select('id, name, path, drive_id')
           .eq('drive_id', options.folderId);
       } else {
         // Fall back to a broader search if no folder ID provided
         folderQuery = this._supabaseClient
           .from('sources_google')
-          .select('id, name, parent_path, drive_id')
-          .ilike('parent_path', '%Dynamic Healing Discussion Group%');
+          .select('id, name, path, drive_id')
+          .ilike('path', '%Dynamic Healing Discussion Group%');
       }
       
       const { data: folderSources, error: sourcesError } = await folderQuery;
@@ -1030,7 +1030,7 @@ export class PresentationService {
         // Try a broader folder name search as fallback
         const { data: altSources, error: altError } = await this._supabaseClient
           .from('sources_google')
-          .select('id, name, parent_path, drive_id')
+          .select('id, name, path, drive_id')
           .limit(10);
         
         if (altError || !altSources || altSources.length === 0) {
@@ -1057,7 +1057,7 @@ export class PresentationService {
           document_type_id,
           document_types(document_type),
           source_id,
-          sources_google(id, name, parent_id, parent_path, drive_id),
+          sources_google(id, name, parent_id, path, drive_id),
           created_at,
           updated_at
         `)
@@ -1075,8 +1075,8 @@ export class PresentationService {
         // Due to potential query size limitations, use LIKE on parent_path instead of IN on source_id
         // for large source lists
         if (sourceIds.length > 20) {
-          Logger.info(`Using parent_path filter instead of source_id list due to large number of sources (${sourceIds.length})`);
-          query = query.or('sources_google.parent_path.ilike.%Dynamic Healing Discussion Group%');
+          Logger.info(`Using path filter instead of source_id list due to large number of sources (${sourceIds.length})`);
+          query = query.or('sources_google.path.ilike.%Dynamic Healing Discussion Group%');
         } else {
           query = query.in('source_id', sourceIds);
         }
@@ -1134,7 +1134,7 @@ export class PresentationService {
         
         // Get document parent folder
         const parentId = documentSource.parent_id;
-        const parentPath = documentSource.parent_path;
+        const parentPath = documentSource.path;
         
         if (!parentId && !parentPath) {
           continue;
@@ -1143,7 +1143,7 @@ export class PresentationService {
         // Look for other sources in the same folder
         const folderCondition = parentId 
           ? `parent_id.eq.${parentId}` 
-          : `parent_path.eq.${parentPath}`;
+          : `path.eq.${parentPath}`;
         
         const { data: folderSources, error: sourcesError } = await this._supabaseClient
           .from('sources_google')
@@ -1213,7 +1213,7 @@ export class PresentationService {
             confidence,
             reason,
             assetExists,
-            folderPath: documentSource.parent_path || 'Unknown'
+            folderPath: documentSource.path || 'Unknown'
           });
         }
       }
@@ -1295,7 +1295,7 @@ export class PresentationService {
         confidence: 'low',
         reason: 'No presentations found',
         assetExists: false,
-        folderPath: documentSource.parent_path || 'Unknown'
+        folderPath: documentSource.path || 'Unknown'
       };
     }
     
@@ -1314,7 +1314,7 @@ export class PresentationService {
         confidence: 'low',
         reason: 'No video sources found',
         assetExists: false,
-        folderPath: documentSource.parent_path || 'Unknown'
+        folderPath: documentSource.path || 'Unknown'
       };
     }
     
@@ -1333,7 +1333,7 @@ export class PresentationService {
         confidence: 'low',
         reason: 'Error fetching video sources',
         assetExists: false,
-        folderPath: documentSource.parent_path || 'Unknown'
+        folderPath: documentSource.path || 'Unknown'
       };
     }
     
@@ -1367,7 +1367,7 @@ export class PresentationService {
         confidence: 'low',
         reason: 'No name match found',
         assetExists: false,
-        folderPath: documentSource.parent_path || 'Unknown'
+        folderPath: documentSource.path || 'Unknown'
       };
     }
     
@@ -1397,7 +1397,7 @@ export class PresentationService {
       confidence,
       reason: `Name similarity score: ${bestScore.toFixed(2)}`,
       assetExists,
-      folderPath: documentSource.parent_path || 'Unknown'
+      folderPath: documentSource.path || 'Unknown'
     };
   }
   
@@ -1647,7 +1647,7 @@ export class PresentationService {
       const { data: folderSources, error: folderError } = await this._supabaseClient
         .from('sources_google')
         .select('id')
-        .or(`drive_id.eq.1wriOM2j2IglnMcejplqG_XcCxSIfoRMV,parent_path.like.%/1wriOM2j2IglnMcejplqG_XcCxSIfoRMV/%,parent_path.like.%Dynamic Healing Discussion Group%`);
+        .or(`drive_id.eq.1wriOM2j2IglnMcejplqG_XcCxSIfoRMV,path.like.%/1wriOM2j2IglnMcejplqG_XcCxSIfoRMV/%,path.like.%Dynamic Healing Discussion Group%`);
       
       if (folderError) {
         Logger.error(`Error fetching sources:`, folderError);
@@ -1883,16 +1883,16 @@ export class PresentationService {
       // Filter by expert_id if requested
       let filteredPresentations = presentations;
       if (options.expertId) {
-        // Get presentations that are associated with the specified expert through sources_google
+        // Get presentations that are associated with the specified expert through sources_google_experts
         const { data: sourcesWithExpert, error: sourcesError } = await this.supabaseClient
-          .from('sources_google')
-          .select('id')
+          .from('sources_google_experts')
+          .select('source_id')
           .eq('expert_id', options.expertId);
         
         if (sourcesError) {
           Logger.error('Error fetching sources for expert:', sourcesError);
         } else if (sourcesWithExpert && sourcesWithExpert.length > 0) {
-          const sourceIds = sourcesWithExpert.map((s: any) => s.id);
+          const sourceIds = sourcesWithExpert.map((s: any) => s.source_id);
           filteredPresentations = presentations.filter((p: any) => 
             p.main_video_id && sourceIds.includes(p.main_video_id)
           );
@@ -1928,9 +1928,9 @@ export class PresentationService {
           
           if (presentation.main_video_id) {
             const { data: source, error: sourceError } = await this.supabaseClient
-              .from('sources_google')
+              .from('sources_google_experts')
               .select('expert_id')
-              .eq('id', presentation.main_video_id)
+              .eq('source_id', presentation.main_video_id)
               .single();
               
             if (!sourceError && source && source.expert_id) {
