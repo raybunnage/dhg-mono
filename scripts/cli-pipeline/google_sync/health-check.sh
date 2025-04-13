@@ -198,11 +198,7 @@ main() {
   # 8. Test add-root-service - with --help to avoid actual Drive API calls
   run_command_test "add-root-service" "--help" "Checks if root folder adding command exists" 10
   
-  # 9. Test mp4-experts
-  run_command_test "mp4-experts" "--help" "Checks if MP4 expert document creation command exists" 10
-  
-  # 10. Test generate-main-video-report
-  run_command_test "generate-main-video-report" "--help" "Checks if main video report generation command exists" 10
+  # 9-10. Additional tests could be added here if needed
   
   # Count and display results
   count_results

@@ -12,5 +12,11 @@ if [ "$1" = "count-mp4" ]; then
   exit $?
 fi
 
+if [ "$1" = "health-check" ]; then
+  shift
+  "$SCRIPT_DIR/health-check.sh" "$@"
+  exit $?
+fi
+
 # Run the TypeScript file with ts-node
 ts-node "$SCRIPT_DIR/index.ts" "$@"
