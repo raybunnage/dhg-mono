@@ -13,6 +13,7 @@ import { checkDocumentTypes } from './check-document-types';
 import { checkDuplicates, CheckDuplicatesOptions } from './check-duplicates';
 import { updateFileSignatures } from './update-file-signatures';
 import { classifyMissingDocs, ClassifyMissingDocsOptions } from './classify-missing-docs';
+import { countMp4Files, CountMp4Result } from './count-mp4-files';
 // These functions may not exist as TypeScript exports, so we'll use exec for them
 
 // Create the main program
@@ -399,6 +400,38 @@ program
     }
   });
 
+// Add count-mp4 command
+program
+  .command('count-mp4')
+  .description('Count MP4 files in a Google Drive folder')
+  .argument('[drive-id]', 'Google Drive folder ID or name to search in')
+  .option('--list', 'List all files found', false)
+  .option('--summary', 'Show only summary information', false)
+  .option('--local', 'Use local filesystem instead of Google Drive', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (driveId, options) => {
+    try {
+      const result = await countMp4Files({
+        driveId,
+        list: options.list,
+        summary: options.summary,
+        local: options.local,
+        verbose: options.verbose
+      });
+      
+      // If summary only, output just the count
+      if (options.summary) {
+        console.log(`${result.total}`);
+      }
+      
+      // Success exit code
+      process.exit(0);
+    } catch (error) {
+      Logger.error('Error counting MP4 files:', error);
+      process.exit(1);
+    }
+  });
+
 // Add more commands as needed
 
 // Parse command line arguments
@@ -522,6 +555,16 @@ Available Commands:
       --list-needs-classification Only list files needing classification without processing
       --folder-id <id>           Limit to files in a specific folder
       --include-pdfs             Include PDF files in classification (default is only .docx and .txt)
+      
+  count-mp4               Count MP4 files in a Google Drive folder
+                          Finds video files in Google Drive or local filesystem
+    Arguments:
+      [drive-id]                 Google Drive folder ID or name to search in
+    Options:
+      --list                     List all files found
+      --summary                  Show only summary information
+      --local                    Use local filesystem instead of Google Drive
+      --verbose                  Show detailed logs
 
 For detailed help on a specific command, run:
   google-sync-cli [command] --help
