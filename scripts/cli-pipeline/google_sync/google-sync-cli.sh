@@ -18,5 +18,17 @@ if [ "$1" = "health-check" ]; then
   exit $?
 fi
 
+if [ "$1" = "classify-docs-service" ]; then
+  shift
+  ts-node "$SCRIPT_DIR/classify-missing-docs-with-service.ts" "$@"
+  exit $?
+fi
+
+if [ "$1" = "test-prompt-service" ]; then
+  shift
+  ts-node "$SCRIPT_DIR/test-prompt-service.ts" "$@"
+  exit $?
+fi
+
 # Run the TypeScript file with ts-node
 ts-node "$SCRIPT_DIR/index.ts" "$@"

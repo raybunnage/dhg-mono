@@ -9,7 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { config, Logger } from '../../utils';
 import { FileService, FileResult } from '../file-service/file-service';
-import { SupabaseService } from '../supabase-service/supabase-service';
+import { SupabaseClientService } from '../../services/supabase-client';
 import { claudeService } from '../claude-service/claude-service';
 
 /**
@@ -79,7 +79,7 @@ export interface PromptLoadResult {
  */
 export class PromptService {
   private static instance: PromptService;
-  private supabaseService: SupabaseService;
+  private supabaseService: SupabaseClientService;
   private supabaseClient: SupabaseClient;
   private fileService: FileService;
   
@@ -89,7 +89,7 @@ export class PromptService {
    */
   private constructor() {
     // Initialize services
-    this.supabaseService = SupabaseService.getInstance();
+    this.supabaseService = SupabaseClientService.getInstance();
     this.supabaseClient = this.supabaseService.getClient();
     this.fileService = new FileService();
     

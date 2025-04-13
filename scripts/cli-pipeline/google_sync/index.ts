@@ -515,6 +515,92 @@ program
     }
   });
 
+// Add classify-docs-with-service command
+program
+  .command('classify-docs-with-service')
+  .description('Classify files missing document types using the PromptService')
+  .option('-l, --limit <number>', 'Limit the number of files to process', '10')
+  .option('-o, --output <path>', 'Path to write analysis results', './document-analysis-results')
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .option('-d, --debug', 'Show debug information', false)
+  .option('--dry-run', 'Process files but do not update database', false)
+  .option('--folder-id <id>', 'Filter by Google Drive folder ID or name')
+  .option('--include-pdfs', 'Include PDF files in classification (default is only .docx and .txt)', false)
+  .action(async (options) => {
+    try {
+      console.log('Launching the command via ts-node directly...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'classify-missing-docs-with-service.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+      if (options.output) cmd += ` --output "${options.output}"`;
+      if (options.verbose) cmd += ' --verbose';
+      if (options.debug) cmd += ' --debug';
+      if (options.dryRun) cmd += ' --dry-run';
+      if (options.folderId) cmd += ` --folder-id "${options.folderId}"`;
+      if (options.includePdfs) cmd += ' --include-pdfs';
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing classify-docs-with-service:', error);
+      process.exit(1);
+    }
+  });
+
+// Add test-prompt-service command
+program
+  .command('test-prompt-service')
+  .description('Test the new PromptService')
+  .option('-o, --output <path>', 'Path to write output to', 'docs/cli-pipeline/prompt-test-result.md')
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .action(async (options) => {
+    try {
+      console.log('Launching the command via ts-node directly...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'test-prompt-service.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.output) cmd += ` --output "${options.output}"`;
+      if (options.verbose) cmd += ' --verbose';
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing test-prompt-service:', error);
+      process.exit(1);
+    }
+  });
+
 // Add more commands as needed
 
 // Parse command line arguments
@@ -632,6 +718,23 @@ Available Commands:
       --list-needs-classification Only list files needing classification without processing
       --folder-id <id>           Limit to files in a specific folder
       --include-pdfs             Include PDF files in classification (default is only .docx and .txt)
+      
+  classify-docs-with-service  Classify files missing document types using the PromptService
+                          Uses Claude AI with the new PromptService for classification
+    Options:
+      -l, --limit <number>     Limit the number of files to process (default: 10)
+      -o, --output <path>      Path to write analysis results
+      -v, --verbose            Show detailed logs
+      -d, --debug              Show debug information
+      --dry-run                Process files but do not update database
+      --folder-id <id>         Filter by Google Drive folder ID or name
+      --include-pdfs           Include PDF files in classification (default is only .docx and .txt)
+      
+  test-prompt-service      Test the new PromptService
+                          Tests loading prompts and metadata extraction
+    Options:
+      -o, --output <path>      Path to write output to (default: docs/cli-pipeline/prompt-test-result.md)
+      -v, --verbose            Show detailed logs
       
   count-mp4               Count MP4 files in a Google Drive folder
                           Finds video files in Google Drive or local filesystem

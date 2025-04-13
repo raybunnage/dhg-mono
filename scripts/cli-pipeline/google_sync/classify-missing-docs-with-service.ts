@@ -30,20 +30,55 @@ async function processFile(
     }
     
     // Get Google Drive service
-    const googleDriveService = GoogleDriveService.getInstance();
+    const supabase = SupabaseClientService.getInstance().getClient();
+    
+    // Import auth service
+    const { GoogleAuthService } = require('../../../packages/shared/services/google-drive/google-auth-service');
+    const auth = GoogleAuthService.getInstance();
+    
+    // Get Google Drive service instance
+    const googleDriveService = GoogleDriveService.getInstance(auth, supabase);
     
     // 1. Get the file content
     let fileContent = '';
     try {
+      // Use the Google Drive API directly since the service methods aren't implemented
+      const { google } = require('googleapis');
+      const drive = google.drive({ version: 'v3', auth: auth.getAuthClient() });
+      
       if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         // For DOCX files
-        fileContent = await googleDriveService.getDocxContent(fileId);
+        // Get file metadata
+        const file = await googleDriveService.getFile(fileId);
+        if (debug) {
+          console.log(`DOCX file details: ${JSON.stringify(file, null, 2)}`);
+        }
+        
+        // Use Google Drive API directly to get content
+        const response = await drive.files.get({
+          fileId: fileId,
+          alt: 'media',
+        }, { responseType: 'text' });
+        
+        fileContent = response.data;
       } else if (mimeType === 'application/vnd.google-apps.document') {
         // For Google Docs
-        fileContent = await googleDriveService.exportGoogleDoc(fileId, 'text/plain');
+        // Use Google Drive API directly to export as plain text
+        const response = await drive.files.export({
+          fileId: fileId,
+          mimeType: 'text/plain',
+        }, { responseType: 'text' });
+        
+        fileContent = response.data;
       } else {
         // For regular text files
-        fileContent = await googleDriveService.getFileContent(fileId);
+        // Use Google Drive API directly to get content
+        const response = await drive.files.get({
+          fileId: fileId,
+          alt: 'media',
+        }, { responseType: 'text' });
+        
+        fileContent = response.data;
       }
       
       if (debug) {

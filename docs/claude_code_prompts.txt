@@ -1,24 +1,31 @@
-[
-  {
-    "mismatch_type": "Missing in Presentations",
-    "google_name": "Gevirtz.3.19.25.mp4",
-    "source_id": "835a6c30-b043-44f3-8918-4dbc902511db"
-  },
-  {
-    "mismatch_type": "Missing in Presentations",
-    "google_name": "Sommer-Anderson.mp4",
-    "source_id": "5eab1200-c1eb-47ed-91ae-5b2165a25547"
-  },
-  {
-    "mismatch_type": "Missing in Presentations",
-    "google_name": "Stockdale_Seigel_2.19.25.mp4",
-    "source_id": "a29ac5ee-b7a6-4ffc-a072-d6caacd65a70"
-  }
-]
+
+Whis is 
 
 
+I've created a comprehensive PromptService for managing prompts across the
+  application. Here's a summary of what I've done:
 
+  1. Created a new PromptService singleton class in
+  /packages/shared/services/prompt-service/ that:
+    - Manages prompt retrieval from database or filesystem
+    - Handles prompt relationships and related files
+    - Executes database queries defined in prompt metadata
+    - Provides rich formatting options for output
+    - Integrates directly with Claude AI through the existing ClaudeService
+  2. Created an example implementation with classify-missing-docs-with-service.ts that
+  shows:
+    - How to use the PromptService to load prompts with all related data
+    - How to send prompts to Claude AI for document classification
+    - How to handle the classification results
+  3. Updated the CLI script to include the new command with usage examples
 
+  This service follows the singleton pattern like other services in the codebase and
+  provides a foundation for consistent prompt handling across the application. It
+  eliminates duplicated code and simplifies the process of building context-rich
+  prompts.
+
+╭─────────────────────────────────────────────────────────────────────────────────────────╮
+│ > lets start testing out the scripts/cli-pipeline/google_sy  
 
 CREATE TABLE sources_google_experts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
