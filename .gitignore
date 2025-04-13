@@ -173,3 +173,6 @@ docs/technical-specs/.archive_docs/
 docs/technical-specs/.archive_docs/**/*
 docs/technical-specs/.archive-docs/
 docs/technical-specs/.archive-docs/**/*
+
+logs/
+*.log
