@@ -10,9 +10,13 @@ import * as fs from 'fs';
 export class SupabaseClientService {
   private static instance: SupabaseClientService;
   private client: SupabaseClient | null = null;
+  private supabaseUrl: string = '';
+  private supabaseKey: string = '';
 
   private constructor() {
     // Private constructor to enforce singleton pattern
+    // Load credentials directly from .env.development
+    this.loadCredentials();
   }
 
   /**
@@ -24,12 +28,70 @@ export class SupabaseClientService {
     }
     return SupabaseClientService.instance;
   }
+  
+  /**
+   * Load Supabase credentials directly from env file
+   * This approach has been proven to work with the new API keys
+   */
+  private loadCredentials(): void {
+    try {
+      const envPath = path.resolve(process.cwd(), '.env.development');
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, 'utf8');
+        
+        // Extract URL and SERVICE_ROLE key directly
+        const urlMatch = content.match(/SUPABASE_URL=(.+)/);
+        const serviceKeyMatch = content.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/);
+        
+        if (urlMatch && serviceKeyMatch) {
+          this.supabaseUrl = urlMatch[1].trim();
+          this.supabaseKey = serviceKeyMatch[1].trim();
+          console.log(`Loaded Supabase credentials successfully from ${envPath}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading credentials from env file:', err);
+    }
+  }
 
   /**
    * Manually load environment variables
    * This is a fallback if the config doesn't have Supabase credentials
    */
   private loadEnvironmentVariables(): { supabaseUrl: string, supabaseKey: string } {
+    // Try to load directly from .env.development file first
+    try {
+      const envPath = path.resolve(process.cwd(), '.env.development');
+      
+      if (fs.existsSync(envPath)) {
+        console.log(`SupabaseClientService: Reading environment variables directly from ${envPath}`);
+        
+        const content = fs.readFileSync(envPath, 'utf8');
+        
+        // Extract URL and SERVICE_ROLE key directly
+        const urlMatch = content.match(/SUPABASE_URL=(.+)/);
+        const serviceKeyMatch = content.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/);
+        const anonKeyMatch = content.match(/SUPABASE_ANON_KEY=(.+)/);
+        
+        const directUrl = urlMatch ? urlMatch[1].trim() : '';
+        const directServiceKey = serviceKeyMatch ? serviceKeyMatch[1].trim() : '';
+        const directAnonKey = anonKeyMatch ? anonKeyMatch[1].trim() : '';
+        
+        if (directUrl && (directServiceKey || directAnonKey)) {
+          console.log('Found Supabase credentials directly in .env.development file');
+          return { 
+            supabaseUrl: directUrl, 
+            supabaseKey: directServiceKey || directAnonKey 
+          };
+        }
+      }
+    } catch (err) {
+      console.error('Error reading .env.development file directly:', err);
+    }
+    
+    // Fallback to dotenv if direct reading fails
+    console.log('Falling back to dotenv for environment variables');
+    
     // Try to load environment variables from various files
     const envFiles = ['.env', '.env.local', '.env.development'];
     
@@ -38,19 +100,6 @@ export class SupabaseClientService {
       
       if (fs.existsSync(filePath)) {
         console.log(`SupabaseClientService: Loading environment variables from ${filePath}`);
-        
-        // Read the file directly to debug
-        try {
-          const content = fs.readFileSync(filePath, 'utf8');
-          const envLines = content.split('\n');
-          for (const line of envLines) {
-            if (line.includes('SUPABASE_URL') || line.includes('SUPABASE_SERVICE_ROLE_KEY')) {
-              console.log('Found key in env file:', line.split('=')[0]);
-            }
-          }
-        } catch (err) {
-          console.error('Error reading env file:', err);
-        }
         
         const result = dotenv.config({ path: filePath });
         
@@ -84,40 +133,35 @@ export class SupabaseClientService {
    */
   public getClient(): SupabaseClient {
     if (!this.client) {
-      let supabaseUrl = config.supabaseUrl;
-      let supabaseKey = config.supabaseKey;
-      
-      // If config doesn't have the values, try to load them directly
-      if (!supabaseUrl || !supabaseKey) {
-        console.log('Supabase credentials not found in config, trying environment variables directly');
-        const envVars = this.loadEnvironmentVariables();
-        supabaseUrl = envVars.supabaseUrl;
-        supabaseKey = envVars.supabaseKey;
+      // If credentials weren't loaded directly, try fallbacks
+      if (!this.supabaseUrl || !this.supabaseKey) {
+        // Try config if available
+        if (config && config.supabaseUrl && config.supabaseKey) {
+          this.supabaseUrl = config.supabaseUrl;
+          this.supabaseKey = config.supabaseKey;
+        } else {
+          // Last resort - try environment variables
+          console.log('Falling back to environment variables');
+          const envVars = this.loadEnvironmentVariables();
+          this.supabaseUrl = envVars.supabaseUrl;
+          this.supabaseKey = envVars.supabaseKey;
+        }
       }
-      
-      // For debugging
-      console.log('Current process.env after loading:', Object.keys(process.env).filter(k => k.includes('SUPABASE')));
       
       // Fail if no credentials are found
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Unable to find Supabase credentials in environment variables or config. Please make sure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are defined in your .env file.');
+      if (!this.supabaseUrl || !this.supabaseKey) {
+        throw new Error('Unable to find Supabase credentials. Please make sure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are defined in your .env.development file.');
       }
       
-      console.log(`Creating Supabase client with URL: ${supabaseUrl.substring(0, 20)}...`);
+      console.log(`Creating Supabase client with URL: ${this.supabaseUrl.substring(0, 20)}...`);
       
-      // Create with more debugging options
-      this.client = createClient(supabaseUrl, supabaseKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-        global: {
-          fetch: (url, options) => {
-            console.log(`Supabase request to: ${url}`);
-            return fetch(url, options);
-          }
-        }
-      });
+      // Create client with minimal configuration
+      // This approach works with the latest API keys
+      this.client = createClient(this.supabaseUrl, this.supabaseKey);
+      
+      // Log the API key we're using (partially masked)
+      const maskedKey = this.supabaseKey.substring(0, 5) + '...' + this.supabaseKey.substring(this.supabaseKey.length - 5);
+      console.log(`Using API Key: ${maskedKey}`);
     }
 
     return this.client;
@@ -130,63 +174,73 @@ export class SupabaseClientService {
     try {
       const client = this.getClient();
       
-      // Try simple queries to verify connection to different tables
-      // Try scripts table first
+      // Try a simple query to document_types table
       try {
+        console.log('Testing connection with document_types table...');
         const { data, error } = await client
-          .from('scripts')
-          .select('count(*)', { count: 'exact', head: true });
+          .from('document_types')
+          .select('document_type')
+          .limit(1);
         
-        if (!error) {
-          console.log('Successfully connected to scripts table');
+        if (error) {
+          console.error('Error querying document_types:', error);
+          return { 
+            success: false, 
+            error: `Failed to query document_types: ${error.message}`,
+            details: error 
+          };
+        } else {
+          console.log('Successfully connected to document_types table');
           return { success: true };
         }
       } catch (e) {
-        console.log('Failed to query scripts table, trying sources_google table');
+        console.error('Exception querying document_types table:', e);
       }
       
-      // Try sources_google table
+      // Try sources_google table as a fallback
       try {
+        console.log('Testing connection with sources_google table...');
         const { data, error } = await client
           .from('sources_google')
-          .select('count(*)', { count: 'exact', head: true });
+          .select('id')
+          .limit(1);
         
-        if (!error) {
+        if (error) {
+          console.error('Error querying sources_google:', error);
+          return { 
+            success: false, 
+            error: `Failed to query sources_google: ${error.message}`,
+            details: error 
+          };
+        } else {
           console.log('Successfully connected to sources_google table');
           return { success: true };
         }
       } catch (e) {
-        console.log('Failed to query sources_google table, trying documentation_files table');
+        console.error('Exception querying sources_google table:', e);
       }
       
-      // Try documentation_files table
+      // Final fallback - try a simple RPC call
       try {
-        const { data, error } = await client
-          .from('documentation_files')
-          .select('count(*)', { count: 'exact', head: true });
-        
-        if (!error) {
-          console.log('Successfully connected to documentation_files table');
-          return { success: true };
-        }
-      } catch (e) {
-        console.log('Failed to query documentation_files table');
-      }
-      
-      // If we get here, all table queries failed, but the client might still be valid
-      // Try a raw query to check the connection
-      try {
+        console.log('Testing connection with RPC call...');
         const { data, error } = await client.rpc('get_schema_version');
         
-        if (!error) {
+        if (error) {
+          console.error('Error with RPC call:', error);
+          return { 
+            success: false, 
+            error: `Failed to call RPC get_schema_version: ${error.message}`,
+            details: error 
+          };
+        } else {
           console.log('Successfully connected to Supabase using RPC');
           return { success: true };
         }
       } catch (e) {
-        console.log('Failed to connect using RPC');
+        console.error('Exception calling RPC:', e);
       }
       
-      return { success: false, error: 'Failed to connect to any known table' };
+      return { success: false, error: 'Failed to connect to Supabase with all test methods' };
     } catch (error) {
       console.error('Error connecting to Supabase:', error);
       return { success: false, error: 'Error connecting to Supabase', details: error };

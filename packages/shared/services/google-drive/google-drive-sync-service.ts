@@ -332,20 +332,11 @@ export class GoogleDriveSyncService {
             is_deleted: false,
             // Add missing required fields with null values
             document_type_id: null,
-            sync_status: null,
-            sync_error: null,
-            document_type_id: null,
-            extraction_error: null,
-            extracted_content: null,
-            audio_duration_seconds: null,
-            audio_extracted: false,
-            audio_extraction_path: null,
-            audio_channels: null,
-            audio_bitrate: null,
-            audio_quality_metrics: null,
-            sync_id: null,
-            parent_id: null,
-            size: null
+            file_signature: null,
+            main_video_id: null,
+            root_drive_id: null,
+            created_at: null,
+            updated_at: null
           } as GoogleDriveFile;
         });
         

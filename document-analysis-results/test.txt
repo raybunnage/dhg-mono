@@ -1,8 +1,0 @@
-This is a sample DOCX content extracted for testing.
-        
-It contains multiple paragraphs and demonstrates what extracted content might look like.
-
-The document discusses clinical trial protocols and patient enrollment procedures.
-It contains information about medical research methodologies and statistical analysis.
-
-This is just mock data for testing the document classification pipeline functionality.
