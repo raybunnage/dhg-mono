@@ -1713,4 +1713,207 @@ program
     }
   });
 
-program.parse();
+// Export the DocumentClassifier and key functions for use in other files
+export { DocumentClassifier };
+
+// Entry point for module usage
+export interface ClassifyMissingDocsOptions {
+  dryRun?: boolean;
+  debug?: boolean;
+  verbose?: boolean;
+  limit?: string | number;
+  output?: string;
+  listNeedsClassification?: boolean;
+  folderId?: string;
+  includePdfs?: boolean;
+  testPrompt?: boolean;
+  testDb?: boolean;
+  testDocx?: string;
+  testClaude?: boolean;
+}
+
+export async function classifyMissingDocs(options: ClassifyMissingDocsOptions): Promise<void> {
+  // Set debug mode if verbose is enabled
+  const debug = options.debug || options.verbose;
+  const dryRun = options.dryRun;
+  
+  // Initialize classifier
+  const classifier = new DocumentClassifier(debug);
+  
+  // Create output directory if specified
+  const outputDir = options.output;
+  if (outputDir && !fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
+  // Log header to show what mode we're in
+  console.log('='.repeat(50));
+  console.log('DOCUMENT CLASSIFICATION CLI');
+  console.log('='.repeat(50));
+  console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
+  console.log(`Debug: ${debug ? 'ON' : 'OFF'}`);
+  console.log(`Verbose: ${options.verbose ? 'ON' : 'OFF'}`);
+  
+  // Handle test modes
+  if (options.testPrompt) {
+    console.log('\n[TEST MODE] Testing prompt loading...');
+    const prompt = await classifier.getClassificationPrompt();
+    console.log(`✅ Successfully loaded prompt: ${prompt.substring(0, 100)}...`);
+    console.log(`Total length: ${prompt.length} characters`);
+    
+    // Check if prompt contains the metadata section
+    if (prompt.includes('database_query')) {
+      console.log('✅ Prompt includes database query metadata');
+    } else {
+      console.log('⚠️ Warning: Prompt does not include database query metadata');
+    }
+    return;
+  }
+  
+  if (options.testDb) {
+    console.log('\n[TEST MODE] Testing database connections...');
+    // Test document types query
+    console.log('1. Testing document_types query...');
+    const documentTypes = await classifier.getDocumentTypes();
+    console.log(`✅ Retrieved ${documentTypes.length} document types`);
+    
+    // Test missing files query
+    console.log('2. Testing sources_google missing document types query...');
+    const missingFiles = await classifier.getMissingDocumentTypeFiles(5);
+    console.log(`✅ Found ${missingFiles.length} files missing document types`);
+    
+    // Test prompt query
+    console.log('3. Testing prompts table query...');
+    const prompt = await classifier.getClassificationPrompt();
+    console.log(`✅ Successfully retrieved prompt (${prompt.length} characters)`);
+    
+    return;
+  }
+  
+  if (options.testDocx) {
+    console.log('\n[TEST MODE] Testing DOCX extraction...');
+    const driveId = options.testDocx;
+    if (!driveId) {
+      throw new Error('No Drive ID provided for DOCX test');
+    }
+    
+    console.log(`Extracting content from Drive ID: ${driveId}`);
+    const content = await classifier.getDocxContent(driveId);
+    console.log(`✅ Successfully extracted ${content.length} characters`);
+    console.log(`Content preview: ${content.substring(0, 200)}...`);
+    
+    // Write the content to the output directory if specified
+    if (outputDir) {
+      const outputPath = path.join(outputDir, `${driveId}.txt`);
+      fs.writeFileSync(outputPath, content);
+      console.log(`Output written to: ${outputPath}`);
+    }
+    return;
+  }
+  
+  if (options.testClaude) {
+    console.log('\n[TEST MODE] Testing Claude API classification...');
+    // Get document types for the prompt
+    const documentTypes = await classifier.getDocumentTypes();
+    console.log(`Retrieved ${documentTypes.length} document types for prompt`);
+    
+    // Get the prompt
+    const basePrompt = await classifier.getClassificationPrompt();
+    console.log(`Loaded prompt (${basePrompt.length} characters)`);
+    
+    // Build the system prompt
+    const systemPrompt = classifier.buildSystemPrompt(basePrompt, documentTypes);
+    console.log(`Built system prompt with document types (${systemPrompt.length} characters)`);
+    
+    // Sample document content for testing
+    const sampleContent = "This is a test document for classification. It contains information about clinical trials and treatment protocols. The document discusses various medical conditions and potential therapies.";
+    console.log(`Using sample content (${sampleContent.length} characters)`);
+    
+    // Classify the document
+    console.log('Sending to Claude API...');
+    const result = await classifier.classifyDocument(sampleContent, systemPrompt);
+    
+    console.log('✅ Classification successful. Result:');
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+  
+  // List files needing classification mode
+  if (options.listNeedsClassification) {
+    console.log('\n[LIST MODE] Listing files that need classification...');
+    
+    const limit = typeof options.limit === 'string' ? parseInt(options.limit, 10) : (options.limit || 10);
+    const folderId = options.folderId || '';
+    const includePdfs = options.includePdfs || false;
+    let outputPath = undefined;
+    
+    if (outputDir) {
+      outputPath = path.join(outputDir, 'files-needing-classification.json');
+    }
+    
+    if (folderId) {
+      console.log(`Filtering for folder ID/name: ${folderId}`);
+    }
+    
+    console.log(`File types included: ${includePdfs ? '.docx, .txt, and .pdf files' : '.docx and .txt files only (PDFs excluded)'}`);
+    
+    await classifier.listFilesNeedingClassification(limit, folderId, outputPath, includePdfs);
+    return;
+  }
+  
+  // Regular processing mode
+  const limit = typeof options.limit === 'string' ? parseInt(options.limit, 10) : (options.limit || 5);
+  console.log(`Processing up to ${limit} files missing document types...`);
+  console.log('-'.repeat(50));
+  
+  console.log(`Step 1/4: Loading document types...`);
+  const documentTypes = await classifier.getDocumentTypes();
+  console.log(`✅ Loaded ${documentTypes.length} document types`);
+  
+  console.log(`Step 2/4: Finding files missing document types...`);
+  const folderId = options.folderId || '';
+  const missingFiles = await classifier.getMissingDocumentTypeFiles(limit, folderId);
+  console.log(`✅ Found ${missingFiles.length} files missing document types`);
+  
+  if (missingFiles.length === 0) {
+    console.log('No files to process. Exiting.');
+    return;
+  }
+  
+  console.log(`Step 3/4: Loading classification prompt...`);
+  const basePrompt = await classifier.getClassificationPrompt();
+  console.log(`✅ Loaded prompt (${basePrompt.length} characters)`);
+  
+  console.log(`Step 4/4: Processing files${dryRun ? ' (DRY RUN)' : ''}...`);
+  // Modify the classifier's processing to respect dry run mode
+  if (dryRun) {
+    classifier.setDryRun(true);
+  }
+  
+  const includePdfs = options.includePdfs || false;
+  console.log(`File types included: ${includePdfs ? '.docx, .txt, and .pdf files' : '.docx and .txt files only (PDFs excluded)'}`);
+  
+  const results = await classifier.processFiles(limit, outputDir, folderId, includePdfs);
+  const successCount = results.filter(r => r.result).length;
+  
+  console.log('='.repeat(50));
+  console.log(`SUMMARY: Processed ${results.length} files, ${successCount} successfully classified`);
+  
+  // Show table of results
+  console.log('\nResults:');
+  console.log('-'.repeat(80));
+  console.log('| File ID                               | File Name                  | Status    |');
+  console.log('-'.repeat(80));
+  results.forEach(r => {
+    const id = r.file.id.substring(0, 36).padEnd(36);
+    const name = (r.file.name || 'Unknown').substring(0, 25).padEnd(25);
+    const status = r.result ? 'Success' : 'Failed';
+    console.log(`| ${id} | ${name} | ${status.padEnd(9)} |`);
+  });
+  console.log('-'.repeat(80));
+}
+
+// Only execute CLI if this module is run directly
+if (require.main === module) {
+  program.parse();
+}
