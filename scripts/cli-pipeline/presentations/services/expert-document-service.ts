@@ -13,9 +13,9 @@ interface ExpertDocWithSource {
   sources_google: {
     id: string;
     name: string;
-    parent_path?: string;
+    path?: string;
     mime_type: string;
-    modified_time: string;
+    modified_at: string;
   };
 }
 
@@ -78,9 +78,9 @@ export class ExpertDocumentService {
           sources_google:source_id(
             id, 
             name, 
-            parent_path, 
+            path, 
             mime_type, 
-            modified_time
+            modified_at
           )
         `)
         .eq('document_type_id', docTypeInfo.id);
@@ -111,10 +111,10 @@ export class ExpertDocumentService {
         const source = doc.sources_google as any;
         if (!source) return false;
         
-        // Check if parent_path contains the folder name
-        if (source.parent_path && (
-          source.parent_path.includes(folderInfo.name) || 
-          source.parent_path.startsWith(folderInfo.name)
+        // Check if path contains the folder name
+        if (source.path && (
+          source.path.includes(folderInfo.name) || 
+          source.path.startsWith(folderInfo.name)
         )) {
           return true;
         }
@@ -220,7 +220,7 @@ export class ExpertDocumentService {
         const source = doc.sources_google;
         
         // Extract useful metadata for the presentation
-        let folderPath = source.parent_path || '/';
+        let folderPath = source.path || '/';
         
         // Make sure folder path starts with a slash
         if (!folderPath.startsWith('/')) {
@@ -230,7 +230,7 @@ export class ExpertDocumentService {
         // Try to parse a date from the filename or path
         let recordedDate = null;
         const datePattern = /\d{1,2}[-\._]\d{1,2}[-\._]\d{2,4}|\d{4}[-\._]\d{1,2}[-\._]\d{1,2}/;
-        const dateMatch = source.name.match(datePattern) || source.parent_path?.match(datePattern);
+        const dateMatch = source.name.match(datePattern) || source.path?.match(datePattern);
         
         if (dateMatch) {
           // Attempt to parse the date
@@ -239,11 +239,11 @@ export class ExpertDocumentService {
             recordedDate = new Date(dateStr).toISOString();
           } catch (e) {
             // If we can't parse the date, just use the file's modified time
-            recordedDate = source.modified_time;
+            recordedDate = source.modified_at;
           }
         } else {
           // Use modified time as fallback
-          recordedDate = source.modified_time;
+          recordedDate = source.modified_at;
         }
         
         // Try to extract a presenter name from the filename

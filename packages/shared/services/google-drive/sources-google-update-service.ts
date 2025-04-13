@@ -72,11 +72,11 @@ export class SourcesGoogleUpdateService {
       const query = this.supabaseClient
         .from('sources_google')
         .select('*')
-        .eq('deleted', false);
+        .eq('is_deleted', false);
 
       // Apply folder filter
       if (folderId) {
-        query.or(`parent_folder_id.eq.${folderId},drive_id.eq.${folderId}`);
+        query.or(`parent_folder_id.eq.${folderId},drive_id.eq.${folderId},path.like.%${folderId}%`);
       }
 
       // Apply additional filters
@@ -181,7 +181,7 @@ export class SourcesGoogleUpdateService {
           }
           
           if (fileData.modifiedTime !== undefined) {
-            updateData.modified_time = fileData.modifiedTime;
+            updateData.modified_at = fileData.modifiedTime;
           }
 
           // Update record in database (if not dry run)
@@ -313,9 +313,9 @@ export class SourcesGoogleUpdateService {
           updateData = {
             ...updateData,
             parent_folder_id: null,
-            parent_path: null,
-            parent_id: null,
-            path: `/${folder.name}`
+            path: `/${folder.name}`,
+            path_array: [folder.name],
+            path_depth: 1
           };
         }
 
@@ -351,7 +351,7 @@ export class SourcesGoogleUpdateService {
         .from('sources_google')
         .select('*')
         .eq('is_root', true)
-        .eq('deleted', false)
+        .eq('is_deleted', false)
         .order('name');
 
       if (error) {

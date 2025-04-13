@@ -15,29 +15,20 @@ export interface GoogleDriveFile {
   parent_folder_id: string | null;
   is_root: boolean;
   path: string | null;
+  path_array: string[] | null;
+  path_depth: number | null;
   last_indexed: string | null;
   metadata: Record<string, any>;
-  expert_id: string | null;
-  sync_status: string | null;
-  sync_error: string | null;
   document_type_id: string | null;
-  content_extracted: boolean;
-  extraction_error: string | null;
-  extracted_content: string | null;
-  deleted: boolean;
-  parent_path: string | null;
-  size_bytes: number | null;
-  thumbnail_link: string | null;
-  audio_duration_seconds: number | null;
-  audio_extracted: boolean;
-  audio_extraction_path: string | null;
-  audio_channels: number | null;
-  audio_bitrate: number | null;
-  audio_quality_metrics: Record<string, any> | null;
-  sync_id: string | null;
-  parent_id: string | null;
-  modified_time: string | null;
+  file_signature: string | null;
+  is_deleted: boolean | null;
+  main_video_id: string | null;
+  modified_at: string | null;
+  root_drive_id: string | null;
   size: number | null;
+  thumbnail_link: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 // Root folder definition
