@@ -14,6 +14,7 @@ import { checkDuplicates, CheckDuplicatesOptions } from './check-duplicates';
 import { updateFileSignatures } from './update-file-signatures';
 import { classifyMissingDocs, ClassifyMissingDocsOptions } from './classify-missing-docs';
 import { countMp4Files, CountMp4Result } from './count-mp4-files';
+import { addRootFolder } from './add-root-service';
 // These functions may not exist as TypeScript exports, so we'll use exec for them
 
 // Create the main program
@@ -428,6 +429,32 @@ program
       process.exit(0);
     } catch (error) {
       Logger.error('Error counting MP4 files:', error);
+      process.exit(1);
+    }
+  });
+
+// Add add-root-service command
+program
+  .command('add-root-service')
+  .description('Add a new root folder using service account')
+  .argument('<folder-id>', 'Google Drive folder ID or alias (e.g., dynamic-healing)')
+  .option('--name <name>', 'Custom name for the folder')
+  .option('--description <description>', 'Optional description for the folder')
+  .option('--dry-run', 'Show what would be done without making changes', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (folderId, options) => {
+    try {
+      const success = await addRootFolder(
+        folderId,
+        options.name,
+        options.description,
+        options.dryRun,
+        options.verbose
+      );
+      
+      process.exit(success ? 0 : 1);
+    } catch (error) {
+      Logger.error('Error adding root folder:', error);
       process.exit(1);
     }
   });
