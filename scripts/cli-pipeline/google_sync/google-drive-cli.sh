@@ -50,6 +50,7 @@ function display_help() {
   echo "  check-document-types        Check for .docx and .txt files missing document_type_id"
   echo "  check-duplicates            Check for duplicate files in sources_google by name or drive_id"
   echo "  update-file-signatures      Update all file signatures to use the consistent new format"
+  echo "  classify-missing-docs       Classify files missing document type IDs using Claude AI"
   echo "  NOTE: The extracted_content field is deprecated and any size data should only be stored in the size field"
   echo ""
   echo "Options:"
@@ -84,6 +85,7 @@ function display_help() {
   echo "  google-drive-cli.sh report-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --output docs/video-report.md"
   echo "  google-drive-cli.sh generate-main-video-report --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --verbose"
   echo "  google-drive-cli.sh check-document-types --output docs/missing-types.md --verbose"
+  echo "  google-drive-cli.sh classify-missing-docs --limit 5 --output ./document-analysis-results --debug"
   echo "  google-drive-cli.sh update-main-video-ids --folder-id 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run"
   echo "  google-drive-cli.sh update-sources-from-json --verbose"
   echo "  google-drive-cli.sh update-sources-from-json file_types/json/google-drive.json --dry-run --drive-id 1XZlq1NQNmcLxgiuPooJ8QH3LP3lJlZB3"
@@ -212,6 +214,9 @@ case "$COMMAND" in
     ;;
   insert-file)
     ts-node "$SCRIPT_DIR/insert-specific-file.ts" "$@"
+    ;;
+  classify-missing-docs)
+    ts-node "$SCRIPT_DIR/classify-missing-docs.ts" "$@"
     ;;
   update-folder-video-mapping)
     "$SCRIPT_DIR/update-folder-video-mapping.sh" "$@"

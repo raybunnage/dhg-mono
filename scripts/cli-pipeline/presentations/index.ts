@@ -8,6 +8,7 @@ import { ClaudeService } from '../../../packages/shared/services/claude-service'
 import { generateSummaryCommand } from './commands/generate-summary';
 import { presentationAssetBioCommand } from './commands/presentation-asset-bio';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Create the main program
 const program = new Command()
@@ -24,6 +25,7 @@ program
   .option('-s, --status <status>', 'Filter by status (complete, incomplete, missing-transcript, etc.)')
   .option('-l, --limit <number>', 'Limit the number of presentations to review', '1000')
   .option('--folder-id <id>', 'Filter presentations by folder ID', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('--skip-folder-filter', 'Skip filtering by folder ID', false)
   .option('-f, --format <format>', 'Output format (table, json)', 'table')
   .option('-o, --output-file <path>', 'Path to write markdown output to', '/Users/raybunnage/Documents/github/dhg-mono/docs/cli-pipeline/transcribe_status.md')
   .option('-c, --create-assets', 'Create missing presentation_asset records', false)
@@ -38,7 +40,8 @@ program
         status: options.status,
         limit: parseInt(options.limit),
         createAssets: options.createAssets,
-        folderId: options.folderId,
+        folderId: options.skipFolderFilter ? null : options.folderId,
+        skipFolderFilter: options.skipFolderFilter,
       });
       
       if (presentations.length === 0) {
@@ -1163,6 +1166,240 @@ program
       
     } catch (error) {
       Logger.error('Error checking AI summary status:', error);
+      process.exit(1);
+    }
+  });
+
+// Define add-specific-files command
+program
+  .command('add-specific-files')
+  .description('Add specific files from sources_google to presentations, create expert documents and assets')
+  .option('--dry-run', 'Show what would be added without making changes', false)
+  .option('--source-ids <ids>', 'Comma-separated list of source_ids to add')
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options: any) => {
+    try {
+      Logger.info('Adding specific files to presentations...');
+      
+      // Define default source IDs (the 3 files you specified)
+      const defaultSourceIds = [
+        '835a6c30-b043-44f3-8918-4dbc902511db', // Gevirtz.3.19.25.mp4
+        '5eab1200-c1eb-47ed-91ae-5b2165a25547', // Sommer-Anderson.mp4
+        'a29ac5ee-b7a6-4ffc-a072-d6caacd65a70'  // Stockdale_Seigel_2.19.25.mp4
+      ];
+      
+      // Use provided source IDs or defaults
+      const sourceIds = options.sourceIds ? options.sourceIds.split(',') : defaultSourceIds;
+      
+      Logger.info(`Will process ${sourceIds.length} files with IDs: ${sourceIds.join(', ')}`);
+      
+      // Get the sources from database
+      const { data: sources, error: sourcesError } = await SupabaseClientService.getInstance().getClient()
+        .from('sources_google')
+        .select('id, name, mime_type, path, drive_id, modified_at')
+        .in('id', sourceIds);
+      
+      if (sourcesError) {
+        Logger.error('Error fetching sources:', sourcesError);
+        process.exit(1);
+      }
+      
+      if (!sources || sources.length === 0) {
+        Logger.info('No sources found with the specified IDs.');
+        return;
+      }
+      
+      Logger.info(`Found ${sources.length} sources in database:`);
+      sources.forEach((source: any) => {
+        Logger.info(`- ${source.name} (${source.id})`);
+      });
+      
+      // Check if any of these sources already have presentations
+      const { data: existingPresentations, error: presentationsError } = await SupabaseClientService.getInstance().getClient()
+        .from('presentations')
+        .select('id, title, main_video_id')
+        .in('main_video_id', sourceIds);
+      
+      if (presentationsError) {
+        Logger.error('Error checking existing presentations:', presentationsError);
+      } else if (existingPresentations && existingPresentations.length > 0) {
+        Logger.info(`Found ${existingPresentations.length} existing presentations for these sources:`);
+        existingPresentations.forEach((p: any) => {
+          Logger.info(`- ${p.title} (${p.id}), main_video_id: ${p.main_video_id}`);
+        });
+        
+        // Remove sources that already have presentations
+        const existingSourceIds = existingPresentations.map((p: any) => p.main_video_id);
+        const filteredSources = sources.filter((s: any) => !existingSourceIds.includes(s.id));
+        
+        if (filteredSources.length === 0) {
+          Logger.info('All sources already have presentations. Nothing to do.');
+          return;
+        }
+        
+        Logger.info(`Will process ${filteredSources.length} sources that don't have presentations.`);
+        sources.length = 0;
+        sources.push(...filteredSources);
+      }
+      
+      if (options.dryRun) {
+        Logger.info('DRY RUN: Would create presentations for these sources:');
+        sources.forEach((source: any) => {
+          Logger.info(`- ${source.name} (${source.id})`);
+          
+          // Show what would be created
+          const newPresentation = {
+            main_video_id: source.id,
+            filename: source.name,
+            folder_path: source.path || '/',
+            title: source.name.replace(/\.[^.]+$/, ''), // Remove file extension
+            recorded_date: source.modified_at,
+            is_public: false,
+            transcript_status: 'pending'
+          };
+          
+          if (options.verbose) {
+            Logger.info(`  Presentation data: ${JSON.stringify(newPresentation, null, 2)}`);
+          }
+        });
+        
+        Logger.info('Run without --dry-run to actually create the presentations.');
+        return;
+      }
+      
+      // Actually create presentations, expert documents, and assets
+      const createdPresentations = [];
+      let createdExpertDocs = 0;
+      let createdAssets = 0;
+      
+      for (const source of sources) {
+        try {
+          Logger.info(`Processing ${source.name}...`);
+          
+          // Create presentation record
+          const newPresentation = {
+            main_video_id: source.id,
+            filename: source.name,
+            folder_path: source.path || '/',
+            title: source.name.replace(/\.[^.]+$/, ''), // Remove file extension
+            recorded_date: source.modified_at,
+            is_public: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            transcript_status: 'pending'
+          };
+          
+          const { data: presentationData, error: presError } = await SupabaseClientService.getInstance().getClient()
+            .from('presentations')
+            .insert(newPresentation)
+            .select();
+          
+          if (presError) {
+            Logger.error(`Error creating presentation for ${source.name}:`, presError);
+            continue;
+          }
+          
+          if (!presentationData || presentationData.length === 0) {
+            Logger.error(`No presentation data returned for ${source.name}`);
+            continue;
+          }
+          
+          const presentation = presentationData[0];
+          createdPresentations.push(presentation);
+          Logger.info(`Created presentation: ${presentation.title} (${presentation.id})`);
+          
+          // Get document type for Video Summary Transcript
+          const { data: docTypeData, error: docTypeError } = await SupabaseClientService.getInstance().getClient()
+            .from('document_types')
+            .select('id')
+            .eq('document_type', 'Video Summary Transcript')
+            .single();
+            
+          if (docTypeError || !docTypeData) {
+            Logger.error('Error getting document type for Video Summary Transcript:', docTypeError);
+            continue;
+          }
+          
+          // Create expert document (if it doesn't exist)
+          const docTypeId = docTypeData.id;
+          
+          // Check for existing expert document
+          const { data: existingDoc, error: docCheckError } = await SupabaseClientService.getInstance().getClient()
+            .from('expert_documents')
+            .select('id')
+            .eq('source_id', source.id)
+            .eq('document_type_id', docTypeId)
+            .maybeSingle();
+            
+          let expertDocId;
+          
+          if (docCheckError) {
+            Logger.error('Error checking for existing expert document:', docCheckError);
+            continue;
+          }
+          
+          if (existingDoc) {
+            Logger.info(`Found existing expert document: ${existingDoc.id}`);
+            expertDocId = existingDoc.id;
+          } else {
+            // Create expert document
+            const newExpertDoc = {
+              source_id: source.id,
+              document_type_id: docTypeId,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              ai_summary_status: 'pending'
+            };
+            
+            const { data: newDoc, error: newDocError } = await SupabaseClientService.getInstance().getClient()
+              .from('expert_documents')
+              .insert(newExpertDoc)
+              .select();
+            
+            if (newDocError || !newDoc || newDoc.length === 0) {
+              Logger.error('Error creating expert document:', newDocError);
+              continue;
+            }
+            
+            expertDocId = newDoc[0].id;
+            createdExpertDocs++;
+            Logger.info(`Created expert document: ${expertDocId}`);
+          }
+          
+          // Create presentation asset
+          const newAsset = {
+            presentation_id: presentation.id,
+            asset_type: 'transcript',
+            asset_role: 'main',
+            expert_document_id: expertDocId,
+            source_id: source.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          const { data: assetData, error: assetError } = await SupabaseClientService.getInstance().getClient()
+            .from('presentation_assets')
+            .insert(newAsset)
+            .select();
+          
+          if (assetError || !assetData || assetData.length === 0) {
+            Logger.error('Error creating presentation asset:', assetError);
+            continue;
+          }
+          
+          createdAssets++;
+          Logger.info(`Created presentation asset: ${assetData[0].id}`);
+          
+        } catch (error: any) {
+          Logger.error(`Error processing ${source.name}:`, error);
+        }
+      }
+      
+      Logger.info(`Successfully processed ${sources.length} sources.`);
+      Logger.info(`Created ${createdPresentations.length} presentations, ${createdExpertDocs} expert documents, and ${createdAssets} presentation assets.`);
+      
+    } catch (error: any) {
+      Logger.error('Error adding specific files:', error);
       process.exit(1);
     }
   });

@@ -9,6 +9,7 @@ interface PresentationReviewOptions {
   limit?: number;
   createAssets?: boolean;
   folderId?: string;
+  skipFolderFilter?: boolean;
 }
 
 interface ProfessionalDocumentsCheckOptions {
@@ -573,8 +574,8 @@ export class PresentationService {
         }
       }
       
-      // Filter by folder_id if requested
-      if (options.folderId) {
+      // Filter by folder_id if requested and skipFolderFilter is not true
+      if (options.folderId && !options.skipFolderFilter) {
         // Get all sources related to Dynamic Healing Discussion Group, including those not directly in the folder
         // but whose path indicates they're part of the group
         const { data: dhgSources, error: dhgError } = await this.supabaseClient

@@ -1,8 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { FileService, FileResult } from '../../packages/cli/src/services/file-service';
-import { SupabaseService } from '../../packages/cli/src/services/supabase-service';
-import config from '../../packages/cli/src/utils/config';
-import { Logger } from '../../packages/cli/src/utils/logger';
+import { FileService, FileResult } from '../../packages/shared/services/file-service/file-service';
+import { SupabaseService } from '../../packages/shared/services/supabase-service/supabase-service';
+import config from '../../packages/shared/utils/config';
+import { Logger } from '../../packages/shared/utils/logger';
 import path from 'path';
 import fs from 'fs';
 
