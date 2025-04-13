@@ -13,6 +13,7 @@ import mammoth from 'mammoth';
 import { Database } from '../../../supabase/types';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { ClaudeService } from '../../../packages/shared/services/claude-service';
+import { google } from 'googleapis';
 
 // Define types
 type DocumentType = Database['public']['Tables']['document_types']['Row'];
@@ -21,7 +22,7 @@ type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
 
 class DocumentClassifier {
   private supabase: any; // Using any to avoid TypeScript errors
-  private googleDrive: any; // Using any to avoid TypeScript errors
+  private googleDrive: any; // Google Drive API client
   private claudeService: any; // Using any to avoid TypeScript errors
   private promptName = 'document-classification-prompt-new';
   private debug: boolean;
@@ -183,35 +184,90 @@ class DocumentClassifier {
           status: 'error', 
           message: 'Skipped due to Supabase initialization failure' 
         };
+        this.componentStatus['google-auth'] = {
+          status: 'error',
+          message: 'Skipped due to Supabase initialization failure'
+        };
         if (debug) {
           console.log('⚠️ Skipping Google Drive initialization (Supabase not available)');
         }
         return;
       }
       
-      // Use a simpler approach for Google Drive
-      this.googleDrive = {
-        // Stub implementation for token access
-        authService: {
-          getAccessToken: async () => {
-            // Try to get from environment variable
-            const token = process.env.GOOGLE_ACCESS_TOKEN;
-            if (!token) {
-              throw new Error('No Google access token found in environment');
-            }
-            return token;
-          }
-        },
-        // Minimal implementations needed for our use case
-        getTextContent: async (fileId: string) => {
-          throw new Error('Not implemented in test mode');
+      // Initialize Google Drive client with service account
+      try {
+        if (debug) {
+          console.log('Setting up Google Drive client with service account...');
         }
-      };
-      
-      this.componentStatus['google-drive'] = { status: 'ok', message: 'Using minimal implementation' };
-      
-      if (debug) {
-        console.log('✅ Minimal Google Drive service initialized');
+        
+        // Get service account key file path from environment or use default
+        const keyFilePath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH || 
+                            process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+                            path.resolve(process.cwd(), '.service-account.json');
+                            
+        if (debug) {
+          console.log(`Using service account key file: ${keyFilePath}`);
+        }
+        
+        // For dry run mode, don't worry if the key file doesn't exist
+        if (!fs.existsSync(keyFilePath) && !this.dryRun) {
+          throw new Error(`Service account key file not found: ${keyFilePath}`);
+        }
+        
+        if (this.dryRun) {
+          // In dry run mode, create a mock Google Drive client
+          this.googleDrive = {
+            files: {
+              get: async (params: any) => ({
+                data: {
+                  name: `Mock file ${params.fileId}`,
+                  id: params.fileId,
+                  mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                }
+              }),
+              export: async (params: any) => ({
+                data: Buffer.from(`Mock content for ${params.fileId}`)
+              })
+            }
+          };
+          
+          this.componentStatus['google-drive'] = { 
+            status: 'ok', 
+            message: 'Using mock service for dry run' 
+          };
+          
+          if (debug) {
+            console.log('⚠️ Using mock Google Drive client for dry run mode');
+          }
+        } else {
+          // Read and parse the service account key file
+          const keyFileData = fs.readFileSync(keyFilePath, 'utf8');
+          const keyFile = JSON.parse(keyFileData);
+          
+          // Create JWT auth client with the service account
+          const auth = new google.auth.JWT({
+            email: keyFile.client_email,
+            key: keyFile.private_key,
+            scopes: ['https://www.googleapis.com/auth/drive.readonly']
+          });
+          
+          // Initialize the Drive client
+          this.googleDrive = google.drive({ version: 'v3', auth });
+          
+          this.componentStatus['google-drive'] = { status: 'ok' };
+          
+          if (debug) {
+            console.log('✅ Google Drive client initialized successfully with service account');
+          }
+        }
+      } catch (error) {
+        this.componentStatus['google-drive'] = { 
+          status: 'error', 
+          message: (error as Error).message 
+        };
+        if (debug) {
+          console.error('❌ Google Drive service initialization failed:', error);
+        }
       }
     } catch (error) {
       this.componentStatus['google-drive'] = { 
@@ -277,9 +333,9 @@ class DocumentClassifier {
     if (this.componentStatus['supabase'].status !== 'ok') {
       console.log('Using mock document types data (no Supabase connection)');
       return [
-        { id: '1', category: 'Research', document_type: 'Clinical Trial', description: 'Clinical trial documentation' },
-        { id: '2', category: 'Research', document_type: 'Study Protocol', description: 'Study protocol documentation' },
-        { id: '3', category: 'Documentation', document_type: 'Transcript', description: 'Transcript of a video or audio recording' }
+        { id: '123e4567-e89b-12d3-a456-426614174000', category: 'Research', document_type: 'Clinical Trial', description: 'Clinical trial documentation' },
+        { id: '123e4567-e89b-12d3-a456-426614174001', category: 'Research', document_type: 'Study Protocol', description: 'Study protocol documentation' },
+        { id: '123e4567-e89b-12d3-a456-426614174002', category: 'Documentation', document_type: 'Transcript', description: 'Transcript of a video or audio recording' }
       ] as DocumentType[];
     }
     
@@ -306,7 +362,7 @@ class DocumentClassifier {
   /**
    * Get files missing document types
    */
-  async getMissingDocumentTypeFiles(limit: number): Promise<SourcesGoogle[]> {
+  async getMissingDocumentTypeFiles(limit: number, folderId?: string, includePdfs: boolean = true): Promise<SourcesGoogle[]> {
     // For testing, if no Supabase connection, return mock data
     if (this.componentStatus['supabase'].status !== 'ok') {
       console.log('Using mock files data (no Supabase connection)');
@@ -331,12 +387,107 @@ class DocumentClassifier {
     }
     
     try {
-      const { data: files, error } = await this.supabase
+      // Start building the query
+      let query = this.supabase
         .from('sources_google')
         .select('*')
-        .is('document_type_id', null)
-        .order('modified_at', { ascending: false })
-        .limit(limit);
+        .is('document_type_id', null);
+      
+      // Add is_deleted filter to exclude deleted files
+      query = query.is('is_deleted', false);
+      
+      // If folder ID is provided, filter by it
+      if (folderId) {
+        // Check if it's an actual folder ID or a folder name
+        if (folderId.length < 36) {
+          // It's likely a folder name, so let's look it up first
+          if (this.debug) {
+            console.log(`Looking up folder ID for folder name: ${folderId}`);
+          }
+          
+          // Look up the folder in the sources_google table directly instead of sources_google_roots
+          const { data: folders, error: folderError } = await this.supabase
+            .from('sources_google')
+            .select('id, drive_id, name, root_drive_id')
+            .or(`name.ilike.%${folderId}%,path.ilike.%${folderId}%`)
+            .is('is_folder', true)  // Only get folders
+            .limit(1);
+            
+          if (folderError) {
+            console.warn(`Error looking up folder: ${folderError.message}`);
+          } else if (folders && folders.length > 0) {
+            const folder = folders[0];
+            if (this.debug) {
+              console.log(`Found folder: ${folder.name || 'unnamed'} with ID: ${folder.drive_id}`);
+            }
+            
+            // If the folder has a root_drive_id, use that
+            if (folder.root_drive_id) {
+              query = query.eq('root_drive_id', folder.root_drive_id);
+            } else {
+              // Otherwise filter by parent_id
+              query = query.eq('parent_id', folder.drive_id);
+            }
+          } else {
+            // Try to look up the exact ID in case it was provided
+            try {
+              const { data: exactFolder, error: exactError } = await this.supabase
+                .from('sources_google')
+                .select('id, drive_id, name, root_drive_id')
+                .eq('drive_id', folderId)
+                .is('is_folder', true)
+                .single();
+                
+              if (exactError) {
+                console.warn(`Error looking up folder by exact ID: ${exactError.message}`);
+              } else if (exactFolder) {
+                if (this.debug) {
+                  console.log(`Found folder by exact ID: ${exactFolder.name || 'unnamed'} with ID: ${exactFolder.drive_id}`);
+                }
+                
+                // If the folder has a root_drive_id, use that
+                if (exactFolder.root_drive_id) {
+                  query = query.eq('root_drive_id', exactFolder.root_drive_id);
+                } else {
+                  // Otherwise filter by parent_id
+                  query = query.eq('parent_id', exactFolder.drive_id);
+                }
+              } else {
+                console.warn(`No folders found matching '${folderId}'`);
+              }
+            } catch (exactError) {
+              console.warn(`Error looking up folder by exact ID: ${(exactError as Error).message}`);
+            }
+          }
+        } else {
+          // It's a UUID or a Drive ID
+          // Try first as a sources_google.parent_id filter
+          if (this.debug) {
+            console.log(`Filtering by parent_id: ${folderId}`);
+          }
+          
+          // We need to build a recursive query to find all files under this folder
+          // This is a simplified approach that won't go multiple levels deep
+          query = query.eq('parent_id', folderId);
+        }
+      }
+      
+      // Build the mime type filter condition based on includePdfs flag
+      let mimeTypeFilter = 'mime_type.eq.application/vnd.openxmlformats-officedocument.wordprocessingml.document,mime_type.eq.text/plain,mime_type.eq.application/vnd.google-apps.document';
+      
+      // Include PDFs only if explicitly requested
+      if (includePdfs) {
+        mimeTypeFilter += ',mime_type.eq.application/pdf';
+      }
+      
+      // Filter for document files
+      query = query.or(mimeTypeFilter);
+      
+      // Add sort and limit
+      query = query.order('modified_at', { ascending: false }).limit(limit);
+      
+      // Execute the query
+      const { data: files, error } = await query;
   
       if (error) {
         throw new Error(`Failed to fetch files missing document types: ${error.message}`);
@@ -349,6 +500,75 @@ class DocumentClassifier {
       return files;
     } catch (error) {
       console.error(`Error fetching files: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * List files needing classification
+   */
+  async listFilesNeedingClassification(
+    limit: number, 
+    folderId?: string, 
+    outputPath?: string, 
+    includePdfs: boolean = false
+  ): Promise<void> {
+    try {
+      // Get files that need classification
+      const files = await this.getMissingDocumentTypeFiles(limit, folderId, includePdfs);
+      
+      if (files.length === 0) {
+        console.log('No files found needing classification.');
+        return;
+      }
+      
+      // Create a formatted table for display
+      console.log('\nFiles Needing Classification:');
+      console.log('-'.repeat(120));
+      console.log('| ID                                     | File Name                                 | Mime Type                                         | Modified Date       |');
+      console.log('-'.repeat(120));
+      
+      for (const file of files) {
+        const id = (file.id || '').padEnd(36);
+        const name = (file.name || '').slice(0, 40).padEnd(40);
+        const mimeType = (file.mime_type || '').slice(0, 45).padEnd(45);
+        const modifiedDate = file.modified_at ? 
+          new Date(file.modified_at).toLocaleDateString() : 'Unknown';
+          
+        console.log(`| ${id} | ${name} | ${mimeType} | ${modifiedDate.padEnd(18)} |`);
+      }
+      
+      console.log('-'.repeat(120));
+      console.log(`Total files needing classification: ${files.length}`);
+      
+      // If output path is specified, save results to a file
+      if (outputPath) {
+        const outputDir = path.dirname(outputPath);
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+        }
+        
+        // Format as JSON
+        const results = {
+          timestamp: new Date().toISOString(),
+          folder_id: folderId || 'all folders',
+          include_pdfs: includePdfs,
+          total_files: files.length,
+          files: files.map(file => ({
+            id: file.id,
+            drive_id: file.drive_id,
+            name: file.name,
+            mime_type: file.mime_type,
+            modified_at: file.modified_at,
+            web_view_link: file.web_view_link
+          }))
+        };
+        
+        fs.writeFileSync(outputPath, JSON.stringify(results, null, 2));
+        console.log(`\nResults saved to ${outputPath}`);
+      }
+    } catch (error) {
+      console.error(`Error listing files needing classification: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -566,46 +786,103 @@ class DocumentClassifier {
         The document discusses various medical topics, clinical trials, and research methodologies.`;
       }
       
-      // Handle different file types (.docx, .txt, etc.)
-      if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        try {
-          return await this.getDocxContent(fileId);
-        } catch (e: any) {
-          console.log(`Error with custom getDocxContent, falling back to direct method: ${e?.message || 'Unknown error'}`);
-          // Since we can't rely on GoogleDriveService methods, we'll try directly fetching
-          return await this.fetchSimpleTextFile(fileId);
-        }
-      } else if (mimeType.includes('text/') || mimeType.includes('markdown')) {
-        // Text files can be directly fetched
-        return await this.fetchSimpleTextFile(fileId);
-      } else if (mimeType === 'application/vnd.google-apps.document') {
-        // Handle Google Docs
-        if (this.debug) {
-          console.log('Detected Google Doc, using mock text for dry run');
-        }
-        return `This is mock content for a Google Doc with id ${fileId}.
-        In a real implementation, we would export the Google Doc as text or HTML.
-        For testing purposes, this mock content simulates a research document.`;
-      } else if (mimeType === 'application/pdf') {
-        // Handle PDFs
-        if (this.debug) {
-          console.log('Detected PDF, using mock text for dry run');
-        }
-        return `This is mock content for a PDF document with id ${fileId}.
-        In a real implementation, we would extract text from the PDF.
-        For testing purposes, this mock content simulates a clinical study document.`;
-      } else {
-        // For dry run / testing purposes, provide mock content for other types
-        if (this.dryRun) {
-          if (this.debug) {
-            console.log(`Using mock content for unsupported mime type: ${mimeType}`);
-          }
-          return `This is mock content for a document with id ${fileId} and mime type ${mimeType}.
+      // For dry run mode, just return mock content based on file type
+      if (this.dryRun) {
+        let mockContent = '';
+        
+        // Generate different mock content based on file type
+        if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          mockContent = `This is mock content for a DOCX document with id ${fileId}.
+          The document appears to be about clinical research methodologies and medical protocols.
+          It contains sections on trial design, participant enrollment, and data analysis techniques.`;
+        } else if (mimeType.includes('text/') || mimeType.includes('markdown')) {
+          mockContent = `This is mock content for a text file with id ${fileId}.
+          The file contains plain text notes about healthcare research and medical protocols.
+          Various concepts related to clinical trials are mentioned throughout the document.`;
+        } else if (mimeType === 'application/vnd.google-apps.document') {
+          mockContent = `This is mock content for a Google Doc with id ${fileId}.
+          In a real implementation, we would export the Google Doc as text or HTML.
+          For testing purposes, this mock content simulates a research document.`;
+        } else if (mimeType === 'application/pdf') {
+          mockContent = `This is mock content for a PDF document with id ${fileId}.
+          In a real implementation, we would extract text from the PDF.
+          For testing purposes, this mock content simulates a clinical study document.`;
+        } else {
+          mockContent = `This is mock content for a document with id ${fileId} and mime type ${mimeType}.
           In a real implementation, we would need to add proper support for this file type.
           For testing purposes, this mock content allows the classification process to continue.`;
-        } else {
-          throw new Error(`Unsupported mime type: ${mimeType}`);
         }
+        
+        if (this.debug) {
+          console.log(`[DRY RUN] Using mock content for file: ${fileId} (${mimeType})`);
+        }
+        
+        return mockContent;
+      }
+      
+      // Normal execution path for non-dry-run mode
+      if (this.componentStatus['google-drive'].status !== 'ok') {
+        throw new Error('Google Drive service not available');
+      }
+      
+      try {
+        if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          // DOCX files need special handling with mammoth
+          return await this.getDocxContent(fileId);
+        } else if (mimeType === 'application/vnd.google-apps.document') {
+          // Google Docs need to be exported as text
+          if (this.debug) {
+            console.log('Exporting Google Doc as text...');
+          }
+          
+          const response = await this.googleDrive.files.export({
+            fileId: fileId,
+            mimeType: 'text/plain'
+          });
+          
+          if (response && response.data) {
+            const content = response.data.toString('utf8');
+            if (this.debug) {
+              console.log(`Successfully exported Google Doc (${content.length} characters)`);
+            }
+            return content;
+          } else {
+            throw new Error('Empty response when exporting Google Doc');
+          }
+        } else {
+          // For regular text files and other types, download directly
+          const response = await this.googleDrive.files.get({
+            fileId: fileId,
+            alt: 'media'
+          });
+          
+          if (response && response.data) {
+            let content = '';
+            if (typeof response.data === 'string') {
+              content = response.data;
+            } else if (Buffer.isBuffer(response.data)) {
+              content = response.data.toString('utf8');
+            } else {
+              content = JSON.stringify(response.data);
+            }
+            
+            if (this.debug) {
+              console.log(`Successfully downloaded file (${content.length} characters)`);
+            }
+            
+            return content;
+          } else {
+            throw new Error('Empty response when downloading file');
+          }
+        }
+      } catch (error) {
+        if (this.debug) {
+          console.error(`Error getting file content with Google Drive API: ${(error as Error).message}`);
+          console.log('Falling back to direct download method...');
+        }
+        
+        // Fallback to direct download method
+        return await this.fetchSimpleTextFile(fileId);
       }
     } catch (error) {
       throw new Error(`Failed to get file content: ${(error as Error).message}`);
@@ -614,25 +891,63 @@ class DocumentClassifier {
   
   /**
    * Fetch simple text file from Google Drive
+   * This is a fallback method using fetch directly instead of the Google Drive API client
    */
   async fetchSimpleTextFile(fileId: string): Promise<string> {
     try {
       if (this.debug) {
-        console.log(`Fetching text file content for ${fileId}`);
+        console.log(`Fetching text file content for ${fileId} using direct fetch API`);
       }
       
-      // Get access token directly
-      const token = await (this.googleDrive as any).authService?.getAccessToken();
+      // If we're in dry run mode, just return mock content
+      if (this.dryRun) {
+        const mockContent = `This is mock content for file ${fileId} in dry run mode. 
+        It demonstrates what a text file might contain in this document classification context.`;
+        
+        if (this.debug) {
+          console.log(`[DRY RUN] Returning mock content (${mockContent.length} characters)`);
+        }
+        
+        return mockContent;
+      }
       
-      if (!token) {
-        throw new Error('Failed to get access token');
+      // Get access token from auth client credentials
+      let accessToken = '';
+      
+      try {
+        // Get service account key file path from environment or use default
+        const keyFilePath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH || 
+                            process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+                            path.resolve(process.cwd(), '.service-account.json');
+        
+        // Read and parse the service account key file
+        const keyFileData = fs.readFileSync(keyFilePath, 'utf8');
+        const keyFile = JSON.parse(keyFileData);
+        
+        // Create JWT auth client with the service account
+        const auth = new google.auth.JWT({
+          email: keyFile.client_email,
+          key: keyFile.private_key,
+          scopes: ['https://www.googleapis.com/auth/drive.readonly']
+        });
+        
+        // Get access token
+        const credentials = await auth.authorize();
+        accessToken = credentials.access_token || '';
+        
+        if (!accessToken) {
+          throw new Error('Failed to get access token');
+        }
+      } catch (authError) {
+        console.error(`Error getting access token: ${(authError as Error).message}`);
+        throw new Error('Failed to authenticate with Google Drive');
       }
       
       // Download the file content
       const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${accessToken}`
         }
       });
       
@@ -644,7 +959,7 @@ class DocumentClassifier {
       const content = await response.text();
       
       if (this.debug) {
-        console.log(`Fetched ${content.length} characters of text`);
+        console.log(`Fetched ${content.length} characters of text using direct API call`);
       }
       
       return content;
@@ -681,18 +996,131 @@ This is just mock data for testing the document classification pipeline function
         return mockContent;
       }
       
-      // Get access token from Google Auth Service directly
-      const token = await (this.googleDrive as any)?.authService?.getAccessToken();
+      // If we're in dry run mode, return mock content
+      if (this.dryRun) {
+        const mockContent = `This is mock DOCX content for file ${driveId} in dry run mode.
+        
+It demonstrates formatting that might be present in a Microsoft Word document.
+
+The document discusses various medical topics:
+- Clinical trial protocols
+- Patient enrollment procedures 
+- Research methodologies
+
+This is generated mock data for testing purposes only.`;
+
+        if (this.debug) {
+          console.log(`[DRY RUN] Returning mock DOCX content (${mockContent.length} characters)`);
+        }
+        
+        return mockContent;
+      }
       
-      if (!token) {
-        throw new Error('Failed to get access token');
+      // Get the file using the Google Drive client
+      if (this.componentStatus['google-drive'].status === 'ok') {
+        try {
+          if (this.debug) {
+            console.log('Downloading DOCX using Google Drive API...');
+          }
+          
+          // Download the file using the Google Drive API client
+          const response = await this.googleDrive.files.get({
+            fileId: driveId,
+            alt: 'media'
+          });
+          
+          if (!response || !response.data) {
+            throw new Error('Empty response when downloading DOCX file');
+          }
+          
+          // Convert to ArrayBuffer for mammoth
+          let arrayBuffer: ArrayBuffer;
+          
+          if (Buffer.isBuffer(response.data)) {
+            // Create an ArrayBuffer from the Buffer
+            arrayBuffer = response.data.buffer.slice(
+              response.data.byteOffset,
+              response.data.byteOffset + response.data.byteLength
+            );
+          } else if (typeof response.data === 'object') {
+            // If it's an object, convert to string and then to buffer
+            const jsonStr = JSON.stringify(response.data);
+            const buffer = Buffer.from(jsonStr);
+            arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+          } else {
+            // If it's already a string
+            const buffer = Buffer.from(String(response.data));
+            arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+          }
+          
+          // Use mammoth to extract text content
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          
+          // Clean up the content
+          const cleanedContent = result.value
+            .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+            .replace(/\u0000/g, '')  // Remove null bytes
+            .replace(/\n{3,}/g, '\n\n')  // Normalize multiple line breaks
+            .trim();
+          
+          if (this.debug) {
+            console.log(`Extracted ${cleanedContent.length} characters from DOCX file using Google Drive API`);
+            if (result.messages.length > 0) {
+              console.log('Extraction warnings:', result.messages);
+            }
+          }
+          
+          return cleanedContent;
+        } catch (driveError) {
+          if (this.debug) {
+            console.error(`Error with Google Drive API: ${(driveError as Error).message}`);
+            console.log('Falling back to direct download method...');
+          }
+        }
+      }
+      
+      // Fallback to direct fetch method
+      if (this.debug) {
+        console.log('Using direct fetch method to download DOCX...');
+      }
+      
+      // Get access token 
+      let accessToken = '';
+      
+      try {
+        // Get service account key file path from environment or use default
+        const keyFilePath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH || 
+                            process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+                            path.resolve(process.cwd(), '.service-account.json');
+        
+        // Read and parse the service account key file
+        const keyFileData = fs.readFileSync(keyFilePath, 'utf8');
+        const keyFile = JSON.parse(keyFileData);
+        
+        // Create JWT auth client with the service account
+        const auth = new google.auth.JWT({
+          email: keyFile.client_email,
+          key: keyFile.private_key,
+          scopes: ['https://www.googleapis.com/auth/drive.readonly']
+        });
+        
+        // Get access token
+        const credentials = await auth.authorize();
+        accessToken = credentials.access_token || '';
+        
+        if (!accessToken) {
+          throw new Error('Failed to get access token');
+        }
+      } catch (authError) {
+        console.error(`Error getting access token: ${(authError as Error).message}`);
+        throw new Error('Failed to authenticate with Google Drive');
       }
       
       // Download the file content
       const url = `https://www.googleapis.com/drive/v3/files/${driveId}?alt=media`;
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         }
       });
@@ -717,7 +1145,7 @@ This is just mock data for testing the document classification pipeline function
         .trim();
       
       if (this.debug) {
-        console.log(`Extracted ${cleanedContent.length} characters from DOCX file`);
+        console.log(`Extracted ${cleanedContent.length} characters from DOCX file using direct fetch`);
         if (result.messages.length > 0) {
           console.log('Extraction warnings:', result.messages);
         }
@@ -763,7 +1191,7 @@ This is just mock data for testing the document classification pipeline function
         
         return {
           document_type: "Clinical Trial",
-          document_type_id: "1", // Matches mock document type from getDocumentTypes
+          document_type_id: "123e4567-e89b-12d3-a456-426614174000", // UUID format for Supabase
           classification_confidence: 0.85,
           classification_reasoning: "The document contains detailed information about clinical trial protocols, patient enrollment procedures, and medical research methodologies.",
           document_summary: "This document outlines procedures for conducting clinical trials, including patient enrollment criteria, protocol implementation, and data collection methodologies. It discusses statistical analysis approaches for evaluating trial outcomes.",
@@ -813,7 +1241,7 @@ This is just mock data for testing the document classification pipeline function
         
         return {
           document_type: "Clinical Trial",
-          document_type_id: "1",
+          document_type_id: "123e4567-e89b-12d3-a456-426614174000", // Use UUID format
           classification_confidence: 0.85,
           classification_reasoning: "ERROR FALLBACK: The document contains detailed information about clinical trial protocols.",
           document_summary: "ERROR FALLBACK: This document outlines procedures for conducting clinical trials.",
@@ -829,7 +1257,7 @@ This is just mock data for testing the document classification pipeline function
       // Return fallback mock data for severe errors
       return {
         document_type: "ERROR_FALLBACK",
-        document_type_id: "1",
+        document_type_id: "123e4567-e89b-12d3-a456-426614174000", // Use UUID format
         classification_confidence: 0.5,
         classification_reasoning: "Error fallback response",
         document_summary: "This is a fallback response due to Claude API error.",
@@ -1033,13 +1461,13 @@ This is just mock data for testing the document classification pipeline function
   /**
    * Process files missing document types
    */
-  async processFiles(limit: number, outputDir?: string): Promise<any[]> {
+  async processFiles(limit: number, outputDir?: string, folderId?: string, includePdfs: boolean = false): Promise<any[]> {
     try {
       // 1. Get document types
       const documentTypes = await this.getDocumentTypes();
 
       // 2. Get files missing document types
-      const files = await this.getMissingDocumentTypeFiles(limit);
+      const files = await this.getMissingDocumentTypeFiles(limit, folderId, includePdfs);
 
       // 3. Process each file
       const results = [];
@@ -1078,6 +1506,9 @@ program
   .option('--test-docx <driveId>', 'Test DOCX extraction for a specific Google Drive ID')
   .option('--test-claude', 'Test Claude API classification with a sample document', false)
   .option('--dry-run', 'Process files but do not update database', false)
+  .option('--list-needs-classification', 'Only list files that need classification without processing them', false)
+  .option('--include-pdfs', 'Include PDF files in listing and classification (by default only .docx and .txt files are processed)', false)
+  .option('--folder-id <id>', 'Filter by Google Drive folder ID or folder name', '')
   .action(async (options) => {
     try {
       // Set debug mode if verbose is enabled
@@ -1206,6 +1637,34 @@ program
         }
       }
       
+      // List files needing classification mode
+      if (options.listNeedsClassification) {
+        console.log('\n[LIST MODE] Listing files that need classification...');
+        
+        const limit = parseInt(options.limit, 10);
+        const folderId = options.folderId || '';
+        const includePdfs = options.includePdfs || false;
+        let outputPath = undefined;
+        
+        if (outputDir) {
+          outputPath = path.join(outputDir, 'files-needing-classification.json');
+        }
+        
+        try {
+          if (folderId) {
+            console.log(`Filtering for folder ID/name: ${folderId}`);
+          }
+          
+          console.log(`File types included: ${includePdfs ? '.docx, .txt, and .pdf files' : '.docx and .txt files only (PDFs excluded)'}`);
+          
+          await classifier.listFilesNeedingClassification(limit, folderId, outputPath, includePdfs);
+          return;
+        } catch (error) {
+          console.error(`❌ Listing files failed: ${(error as Error).message}`);
+          process.exit(1);
+        }
+      }
+      
       // Regular processing mode
       const limit = parseInt(options.limit, 10);
       console.log(`Processing up to ${limit} files missing document types...`);
@@ -1216,7 +1675,8 @@ program
       console.log(`✅ Loaded ${documentTypes.length} document types`);
       
       console.log(`Step 2/4: Finding files missing document types...`);
-      const missingFiles = await classifier.getMissingDocumentTypeFiles(limit);
+      const folderId = options.folderId || '';
+      const missingFiles = await classifier.getMissingDocumentTypeFiles(limit, folderId);
       console.log(`✅ Found ${missingFiles.length} files missing document types`);
       
       if (missingFiles.length === 0) {
@@ -1234,7 +1694,10 @@ program
         classifier.setDryRun(true);
       }
       
-      const results = await classifier.processFiles(limit, outputDir);
+      const includePdfs = options.includePdfs || false;
+      console.log(`File types included: ${includePdfs ? '.docx, .txt, and .pdf files' : '.docx and .txt files only (PDFs excluded)'}`);
+      
+      const results = await classifier.processFiles(limit, outputDir, folderId, includePdfs);
       const successCount = results.filter(r => r.result).length;
       
       console.log('='.repeat(50));
