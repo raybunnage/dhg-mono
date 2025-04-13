@@ -24,32 +24,29 @@ npm link
 
 ### TypeScript-based Commands
 
-The CLI now includes TypeScript-based commands for improved reliability and type safety. Use the `google-drive-cli.sh` script in the `scripts` directory to access these features:
+The CLI now includes TypeScript-based commands for improved reliability and type safety. Use the `google-sync-cli.sh` script to access these features:
 
 ```bash
 # List all registered root folders
-./scripts/google-drive-cli.sh list-roots
+./google-sync-cli.sh report-main-video-ids
 
-# List potential root folders that aren't registered yet
-./scripts/google-drive-cli.sh list-potential-roots
+# Count MP4 files in a folder
+./google-sync-cli.sh count-mp4 dynamic-healing --recursive
 
-# Add a new root folder
-./scripts/google-drive-cli.sh add-root 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --name "Dynamic Healing Discussion Group"
+# Generate a browser-based recursive search script
+./google-sync-cli.sh browser-recursive-search
 
-# Remove a root folder
-./scripts/google-drive-cli.sh remove-root <id>
+# Update sources from JSON
+./google-sync-cli.sh update-sources-from-json
 
-# Sync a specific folder
-./scripts/google-drive-cli.sh sync-folder 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run
+# Check for document types
+./google-sync-cli.sh check-document-types
 
-# Sync a folder recursively
-./scripts/google-drive-cli.sh sync-folder dynamic-healing --recursive
+# Sync and update metadata
+./google-sync-cli.sh sync-and-update-metadata 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV --dry-run
 
-# Update presentation disk status in dry-run mode
-./scripts/google-drive-cli.sh disk-status --dry-run
-
-# Create expert documents for presentations with MP4 files (dry run)
-./scripts/google-drive-cli.sh mp4-experts --dry-run
+# Get help
+./google-sync-cli.sh --help
 ```
 
 ### Legacy Commands
@@ -178,14 +175,13 @@ This CLI tool integrates both JavaScript and TypeScript implementations:
 ## Directory Structure
 
 - `scripts/cli-pipeline/google_sync/` - Main directory for the Google Drive CLI pipeline
-  - `scripts/` - Scripts directory
-    - `google-drive-cli.sh` - Main entry point wrapper script for TypeScript commands
-    - `ts/` - TypeScript implementation of core commands
-      - `list-drive-roots.ts` - List roots implementation
-      - `google-drive-manager.ts` - Core CLI implementation
-      - `sync-drive-service.ts` - Sync implementation
-      - `utility/` - Additional utility scripts
-        - Various helpers and specialized commands
+  - `google-sync-cli.sh` - Main entry point wrapper script for TypeScript commands
+  - `index.ts` - Command definition and routing
+  - Core implementation files:
+    - `count-mp4-files.ts` - Count MP4 files implementation
+    - `check-document-types.ts` - Check document types implementation
+    - `sync-and-update-metadata.ts` - Sync and metadata update implementation
+    - And other specialized commands
 
 ## Adding New Functionality
 
@@ -204,10 +200,11 @@ The `disk-status` command checks for MP4 files in the `file_types/mp4` directory
 
 ```bash
 # Check disk status in dry-run mode
-./scripts/google-drive-cli.sh disk-status --dry-run
+./google-sync-cli.sh disk-status --dry-run
 
-# Update disk status for all presentations (even already processed ones)
-./scripts/google-drive-cli.sh disk-status --force
+# Update disk status for all presentations (even already processed ones) 
+# Note: This command may need special handling
+./google-sync-cli.sh disk-status --force
 ```
 
 The command adds the following metadata to the presentations table:
@@ -226,13 +223,13 @@ The `mp4-experts` command creates expert documents and presentation assets for p
 
 ```bash
 # Check what would be created in dry-run mode
-./scripts/google-drive-cli.sh mp4-experts --dry-run
+./google-sync-cli.sh mp4-experts --dry-run
 
 # Create expert documents and presentation assets
-./scripts/google-drive-cli.sh mp4-experts
+./google-sync-cli.sh mp4-experts
 
 # Limit the number of presentations to process
-./scripts/google-drive-cli.sh mp4-experts --limit 10
+./google-sync-cli.sh mp4-experts --limit 10
 ```
 
 The command:

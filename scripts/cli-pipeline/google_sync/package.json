@@ -2,13 +2,13 @@
   "name": "google-sync-cli",
   "version": "1.0.0",
   "description": "CLI tool for syncing Google Drive files with Supabase",
-  "main": "google-drive-cli.sh",
+  "main": "google-sync-cli.sh",
   "bin": {
-    "google-sync": "google-drive-cli.sh"
+    "google-sync": "google-sync-cli.sh"
   },
   "scripts": {
-    "start": "bash google-drive-cli.sh",
-    "dev": "bash google-drive-cli.sh",
+    "start": "bash google-sync-cli.sh",
+    "dev": "bash google-sync-cli.sh",
     "build": "tsc --skipLibCheck",
     "link": "npm link",
     "unlink": "npm unlink",

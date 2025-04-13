@@ -192,13 +192,26 @@ main() {
   # 6. Test report-main-video-ids
   run_command_test "report-main-video-ids" "--help" "Checks if video ID reporting command exists" 10
   
-  # 7. Test count-mp4
+  # 7. Test update-main-video-ids
+  run_command_test "update-main-video-ids" "--help" "Checks if main video ID update command exists" 10
+  
+  # 8. Test browser-recursive-search
+  run_command_test "browser-recursive-search" "--help" "Checks if browser recursive search command exists" 10
+  
+  # 9. Test update-sources-from-json
+  run_command_test "update-sources-from-json" "--help" "Checks if sources update from JSON command exists" 10
+  
+  # 10. Test insert-missing-sources
+  run_command_test "insert-missing-sources" "--help" "Checks if missing sources insertion command exists" 10
+  
+  # 11. Test update-schema-from-json
+  run_command_test "update-schema-from-json" "--help" "Checks if schema update command exists" 10
+  
+  # 12. Test count-mp4
   run_command_test "count-mp4" "--help" "Checks if MP4 counting command exists" 10
   
-  # 8. Test add-root-service - with --help to avoid actual Drive API calls
+  # 13. Test add-root-service - with --help to avoid actual Drive API calls
   run_command_test "add-root-service" "--help" "Checks if root folder adding command exists" 10
-  
-  # 9-10. Additional tests could be added here if needed
   
   # Count and display results
   count_results

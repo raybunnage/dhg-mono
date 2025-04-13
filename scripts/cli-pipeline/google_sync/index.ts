@@ -585,12 +585,6 @@ Available Commands:
       --generate-sql       Generate SQL migration file
       --verbose            Show detailed logs
 
-  update-folder-video-mapping Update main_video_id for folder and subfolders based on folder:video mapping
-                          Connects a folder with an MP4 file and sets main_video_id for related files
-    Options:
-      --mapping <mapping>  Mapping in format: 'folder name': 'file name.mp4' (required)
-      --dry-run            Show what would be updated without making changes
-      --verbose            Show detailed logs
 
   sync-and-update-metadata Sync folder and update metadata in one operation
                           Synchronizes files from Google Drive and updates metadata
