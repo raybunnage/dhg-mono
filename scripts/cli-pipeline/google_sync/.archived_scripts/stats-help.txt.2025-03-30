@@ -1,0 +1,20 @@
+Usage: index stats [options] [command]
+
+Get statistics about synced files
+
+Options:
+  -h, --help           display help for command
+
+Commands:
+  sync [options]       Get sync statistics
+  types [options]      Get statistics by file types
+  help [command]       display help for command
+
+For sync command:
+  -f, --folder-id <id> Get stats for a specific folder only
+  -v, --verbose        Enable verbose logging
+  --no-color           Disable color output
+
+For types command:
+  -v, --verbose        Enable verbose logging
+  --no-color           Disable color output

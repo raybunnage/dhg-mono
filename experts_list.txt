@@ -1,0 +1,123 @@
+Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env
+Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env.local
+Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env.development
+2025-04-13T01:00:53.462Z [[32minfo[39m]: Fetching experts...
+Current process.env after loading: [
+  'SUPABASE_KEY',
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'SUPABASE_ANON_KEY',
+  'CLI_SUPABASE_URL',
+  'CLI_SUPABASE_KEY',
+  'SUPABASE_PROJECT_ID',
+  'SUPABASE_DB_PASSWORD',
+  'SUPABASE_DB_URL'
+]
+Creating Supabase client with URL: https://jdksnfkupzyw...
+Supabase request to: https://jdksnfkupzywjdfefkyj.supabase.co/rest/v1/experts?select=id%2Cexpert_name%2Cfull_name&order=expert_name.asc&limit=100
+2025-04-13T01:00:53.673Z [[32minfo[39m]: Found 100 experts:
+2025-04-13T01:00:53.673Z [[32minfo[39m]: ================================================================================
+2025-04-13T01:00:53.674Z [[32minfo[39m]: Mne | Name                  | ID
+2025-04-13T01:00:53.674Z [[32minfo[39m]: --------------------------------------------------------------------------------
+2025-04-13T01:00:53.674Z [[32minfo[39m]: ABC | abcdedfghi           | 826e6b67-0d42-4de8-8428-92b0a33d7a0c
+2025-04-13T01:00:53.674Z [[32minfo[39m]: ABE | Abernathy            | 3f87de6f-e34a-4f73-ab27-739bd995443a
+2025-04-13T01:00:53.674Z [[32minfo[39m]: ABR | Abernethy            | 334468b5-6fc2-4cfb-b82c-dc2b9f0a81f6
+2025-04-13T01:00:53.674Z [[32minfo[39m]: ALL | Allison              | 824ce228-c2db-450e-a0b5-0df3b072e881
+2025-04-13T01:00:53.674Z [[32minfo[39m]: AMS | Amster               | 5f706a8b-0874-4fc2-85b5-5bb119d37bc2
+2025-04-13T01:00:53.674Z [[32minfo[39m]: AND | Anderson             | 620fd537-90d6-42f7-b453-5b5fdab669cb
+2025-04-13T01:00:53.674Z [[32minfo[39m]: ANO | Anonymous            | c13a64db-3bba-4ed0-9507-76695f4111af
+2025-04-13T01:00:53.674Z [[32minfo[39m]: APK | Apkarian             | f14bd20b-611e-4bf7-b7bf-7de7120cfbf4
+2025-04-13T01:00:53.674Z [[32minfo[39m]: ARI | Aria                 | 537dd6e8-5fc0-41aa-b256-a5f8c446921d
+2025-04-13T01:00:53.674Z [[32minfo[39m]: ACP | Aria, Carter, Patterson | d2352365-3403-49af-9dcf-f9c6e287e2df
+2025-04-13T01:00:53.674Z [[32minfo[39m]: ARN | Arndt                | bb475673-801f-4f6e-9f3b-5cd9cedafbd7
+2025-04-13T01:00:53.675Z [[32minfo[39m]: ASH | Ashar                | 9bddb0d8-b3dc-45d2-955c-84116afcfccc
+2025-04-13T01:00:53.675Z [[32minfo[39m]: BAK | Baker                | f4517bec-7bdd-477e-94f8-965d107594cc
+2025-04-13T01:00:53.675Z [[32minfo[39m]: BAR | Barrett              | 298249a1-2d12-4bb8-92ab-4ac69efe41ec
+2025-04-13T01:00:53.675Z [[32minfo[39m]: BAS | Barsalou             | 8bb33f7c-2740-4f22-b545-5bf592ddcaaa
+2025-04-13T01:00:53.675Z [[32minfo[39m]: BEZ | Bezruchka            | 28e3bd7e-4d8b-46e0-a5df-3adc04abb6de
+2025-04-13T01:00:53.675Z [[32minfo[39m]: BUN | Bunnage              | 5e895f4d-f71d-417f-aba2-8dbe1b7d9807
+2025-04-13T01:00:53.675Z [[32minfo[39m]: CAR | Carter               | 16bdcf4b-ad1a-445a-825b-e0f9a76db6af
+2025-04-13T01:00:53.675Z [[32minfo[39m]: CCH | Carter Clawson Hanscom | 89fd1b29-b17c-4c09-938e-931ef0043300
+2025-04-13T01:00:53.675Z [[32minfo[39m]: CCH | Carter,Clawson,Hanscom | 704b4c19-1fdc-4717-b777-0bf5f8d702d7
+2025-04-13T01:00:53.675Z [[32minfo[39m]: CHN | Carter, Horn         | d2b8d726-e05c-40fe-a73d-916b9af9eda9
+2025-04-13T01:00:53.675Z [[32minfo[39m]: CLK | Clark                | e381ee40-12cc-4b9b-87dd-16548c84261d
+2025-04-13T01:00:53.675Z [[32minfo[39m]: CLW | Clauw                | cf75cb0d-b108-4e99-b08c-6bc0f567f016
+2025-04-13T01:00:53.675Z [[32minfo[39m]: CLW | Clawson              | 0e13e831-75de-4a7a-b020-b2c1b1d77502
+2025-04-13T01:00:53.675Z [[32minfo[39m]: COL | Cole                 | 295716b3-ebf9-492e-8ca7-9d05fa9fce17
+2025-04-13T01:00:53.675Z [[32minfo[39m]: CON | Constable            | 57dfa990-fec1-4768-835b-10f724901c12
+2025-04-13T01:00:53.675Z [[32minfo[39m]: COK | Cook                 | 855bfa28-0a92-4ef3-8a58-39074a5469c7
+2025-04-13T01:00:53.675Z [[32minfo[39m]: CCK | Cook Clawson         | 694e4f10-4f5e-4109-8107-c5a1905cd8a4
+2025-04-13T01:00:53.675Z [[32minfo[39m]: DAL | Dale                 | 090d6ec2-07c7-42cf-81b3-33648a5ff297
+2025-04-13T01:00:53.675Z [[32minfo[39m]: DAN | Dantzer              | 13661dae-f480-4d9b-b31c-ad40394f3eb6
+2025-04-13T01:00:53.675Z [[32minfo[39m]: DEH | Dehaene              | f1caf01d-602a-40fc-99e0-a7168c353ec9
+2025-04-13T01:00:53.675Z [[32minfo[39m]: DUN | Duncan               | a655b577-a9ed-4ebd-90ec-53735e2c7e1d
+2025-04-13T01:00:53.675Z [[32minfo[39m]: EAG | Eagle                | 8cf81108-359f-457f-9aae-cbf01c9caf22
+2025-04-13T01:00:53.675Z [[32minfo[39m]: EAR | Eagle Armster        | a25fadde-142a-4374-a6a8-5e0462316efe
+2025-04-13T01:00:53.675Z [[32minfo[39m]: EBN | EBunnage             | 35faae21-ab90-4da6-8185-457b8c687afc
+2025-04-13T01:00:53.675Z [[32minfo[39m]: EIS | Eisenberger          | b019c815-daae-462f-be12-9b38b4ae9514
+2025-04-13T01:00:53.675Z [[32minfo[39m]: ESC | Escalante            | 454262db-39ee-4f5d-bc4b-bbf5b70d9d09
+2025-04-13T01:00:53.675Z [[32minfo[39m]: FRA | Fradkin              | 41808ec2-4085-4f71-8014-5f095347eff5
+2025-04-13T01:00:53.675Z [[32minfo[39m]: FRI | Friston              | 8875a97e-715b-4a0f-a545-7f62452bb84e
+2025-04-13T01:00:53.675Z [[32minfo[39m]: GAR | Garbo                | 8548e672-c45a-4a97-9242-ec47fb9bb300
+2025-04-13T01:00:53.675Z [[32minfo[39m]: GER | Germer               | e837bfcd-f4de-4d31-9d84-234594e84772
+2025-04-13T01:00:53.675Z [[32minfo[39m]: GEV | Gervitz              | 0188ba75-dab0-4dc8-a33e-9e8add3537f6
+2025-04-13T01:00:53.675Z [[32minfo[39m]: GEZ | Gevirtz              | 492ae25d-8704-42b7-aa3c-36c61d19744c
+2025-04-13T01:00:53.675Z [[32minfo[39m]: GRI | Grinevich            | 9b870793-7af7-453e-bb93-bccb6621d543
+2025-04-13T01:00:53.675Z [[32minfo[39m]: HAL | Halaris              | 12aa1261-ee76-4427-993e-26069a374061
+2025-04-13T01:00:53.675Z [[32minfo[39m]: HAN | Hanscom              | e4c360bf-c01f-4391-b674-3f8dd1820ee2
+2025-04-13T01:00:53.675Z [[32minfo[39m]: HCL | Hanscom, Clawson     | 58663fc0-29e0-47da-97a8-b6ca603b9f88
+2025-04-13T01:00:53.675Z [[32minfo[39m]: HAR | Harris               | a6ec706e-1d89-48a7-95b2-1ed593c6bf81
+2025-04-13T01:00:53.675Z [[32minfo[39m]: HRN | Horn                 | ef22d2b7-600b-4a93-bceb-7a69fef9a158
+2025-04-13T01:00:53.675Z [[32minfo[39m]: HCT | Horn, Carter         | b3c35594-671b-4ebf-bcea-024d6a93c8fa
+2025-04-13T01:00:53.675Z [[32minfo[39m]: KJV | Kjaervik             | 4f666f14-d8cf-4275-8485-c916970bace9
+2025-04-13T01:00:53.675Z [[32minfo[39m]: KJR | Kjearvik             | f948c2b9-e183-4119-ab6d-14dde1d8ec4f
+2025-04-13T01:00:53.675Z [[32minfo[39m]: KPG | Kovacic, Porges      | 1b7bb714-8a64-4d92-bd10-1c451de5581f
+2025-04-13T01:00:53.675Z [[32minfo[39m]: LDV | Lane Davis           | 1b2b66e5-c4de-4c3c-b333-2674ae97738a
+2025-04-13T01:00:53.675Z [[32minfo[39m]: LAN | Langenecker          | 2d9d4993-326c-4cd5-a036-3b8718cae499
+2025-04-13T01:00:53.675Z [[32minfo[39m]: LNS | Lanius               | c7eab68e-c613-4bc3-ae3d-d42dd542cfa7
+2025-04-13T01:00:53.675Z [[32minfo[39m]: LDR | Lederman             | 6d9ff3ab-a202-4bc3-a95c-fe5d5418c73a
+2025-04-13T01:00:53.675Z [[32minfo[39m]: LIP | Lipov                | 6ec5a4bb-345f-4e79-b797-79bc92bd84b3
+2025-04-13T01:00:53.675Z [[32minfo[39m]: LPN | Lipton               | e41c3240-9ab5-4111-a448-4cd2329d5bea
+2025-04-13T01:00:53.675Z [[32minfo[39m]: LSK | Luskin               | df64bc8f-532d-4dcb-bcae-b77dd9a51e04
+2025-04-13T01:00:53.675Z [[32minfo[39m]: LST | Lustig               | e7f743d4-b0a8-48c6-8b26-9c9371503b37
+2025-04-13T01:00:53.675Z [[32minfo[39m]: MAN | Mancini              | 445a8d3f-aac7-428f-a280-9e59eb5ef2e3
+2025-04-13T01:00:53.675Z [[32minfo[39m]: MAR | Marano               | e1b7a2f8-cfac-4657-82dc-b0c8c20c8d56
+2025-04-13T01:00:53.675Z [[32minfo[39m]: MER | Meredith             | f917df9b-9ab1-46cc-ada4-99466dd30004
+2025-04-13T01:00:53.675Z [[32minfo[39m]: NAP | Napadow              | 7b999a92-797f-4b00-bde7-ac188f1b59bd
+2025-04-13T01:00:53.675Z [[32minfo[39m]: NAT | Nathan               | 90766b69-9afb-4b62-a000-f96a25198503
+2025-04-13T01:00:53.675Z [[32minfo[39m]: NAV | Naviaux              | 34acaa61-7fb4-4c02-b463-a55128e354f3
+2025-04-13T01:00:53.675Z [[32minfo[39m]: NCL | Naviaux, Clawson     | 7a051328-4e1a-4aa5-ae27-56a0a34de80f
+2025-04-13T01:00:53.675Z [[32minfo[39m]: NEW | Newman               | 214c1b85-1a4e-400f-855d-91c615ab1df0
+2025-04-13T01:00:53.675Z [[32minfo[39m]: OVE | Overman              | 5bc90445-653f-4ca5-91e7-f15139352442
+2025-04-13T01:00:53.675Z [[32minfo[39m]: PAN | Panda                | b412f651-240e-4765-a700-f08819585751
+2025-04-13T01:00:53.675Z [[32minfo[39m]: PND | Pandi                | 19c7c1f3-e9e6-4873-aac3-1a1f28480655
+2025-04-13T01:00:53.675Z [[32minfo[39m]: PCR | Patterson Carter     | 663a97c4-ff88-4606-877e-d66267304a8c
+2025-04-13T01:00:53.675Z [[32minfo[39m]: PEN | Pennebaker           | 894c1778-85ea-441d-a2e4-0dac6e69ec35
+2025-04-13T01:00:53.675Z [[32minfo[39m]: PEP | Peper                | 24b90411-ce2d-49bf-852b-6c467ffd1854
+2025-04-13T01:00:53.675Z [[32minfo[39m]: PPR | Pepper               | 9a62086d-a52b-4af1-8ce7-afbb6318ef1f
+2025-04-13T01:00:53.675Z [[32minfo[39m]: PEZ | Pezzulo              | b98742c9-ccd6-4b75-ba67-b2f13479bb80
+2025-04-13T01:00:53.676Z [[32minfo[39m]: POH | Pohl                 | 4202a32f-20d7-47af-87f4-a09fe692fee5
+2025-04-13T01:00:53.676Z [[32minfo[39m]: POR | Porges               | 3ef9986c-2488-421d-86fa-f3dc61469591
+2025-04-13T01:00:53.676Z [[32minfo[39m]: PCL | Porges, Clawson      | f9eb0dd8-686f-4310-b27c-4ca7e8b089bd
+2025-04-13T01:00:53.676Z [[32minfo[39m]: PLT | Porges, Lederman     | aeb2c561-2036-41a3-b824-91bdffd98096
+2025-04-13T01:00:53.676Z [[32minfo[39m]: RAI | Raichle              | cc3d4259-8c5e-4d54-ba3a-016b207cdbc2
+2025-04-13T01:00:53.676Z [[32minfo[39m]: RED | Redfield             | 5f6b76c6-e371-426c-bb3f-9f038b498d63
+2025-04-13T01:00:53.676Z [[32minfo[39m]: RES | Restauri             | 8bfbf4bb-9e99-4933-9035-e5b6198138f0
+2025-04-13T01:00:53.676Z [[32minfo[39m]: ROG | roger                | ab92f2f4-0afe-4718-9e13-875ae2006480
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SAB | Sabey                | 6540cc40-c709-4152-9a7c-97e081465ef6
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SAN | Sanders              | 06fdd0e5-13a8-4725-9f13-4f9f2119ba40
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SCH | Schubiner            | ee10ebc5-f6cf-41e7-823b-916bc200b9c9
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SEI | Seigel               | 1a47b25e-e991-4873-bf0b-b6248ab3c923
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SHA | Shah                 | 0e7c3828-eaad-42c4-91a0-7c7feb82c94d
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SIG | Siegel               | ded00f85-2c02-4c18-b847-e00c3ca78710
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SIM | Simonsson            | 54ff21ff-1e66-4aec-b00d-eb75d7f43b0f
+2025-04-13T01:00:53.676Z [[32minfo[39m]: STA | Staats               | 8e09e5f9-de01-4767-853f-5645ec01b719
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SCL | Staats, Clawson      | d62ac9a7-8e2c-4177-af5a-6992977ad64e
+2025-04-13T01:00:53.676Z [[32minfo[39m]: STO | Stone                | 723f6d25-9324-4d8c-b214-cde297a29ff7
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SUL | Sullivan             | 75532bb9-c3bd-4a35-873d-667265007a71
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SBL | Sullivan, Ballantyne | 77d7ca39-7ef9-40d4-8b17-cda5d5390e20
+2025-04-13T01:00:53.676Z [[32minfo[39m]: SUT | Sutphin              | 508b3eaa-a19b-4d54-8ea8-f0cbb69fcda3
+2025-04-13T01:00:53.676Z [[32minfo[39m]: TAR | Tarnopolosy          | 0774e9b2-d4ab-49b6-af2b-8811e3d23db0
+2025-04-13T01:00:53.676Z [[32minfo[39m]: TMI | Terry Miller         | f741b3a5-c92b-4f35-8c97-36da59223580
+2025-04-13T01:00:53.676Z [[32minfo[39m]: ================================================================================
+2025-04-13T01:00:53.676Z [[32minfo[39m]: To assign an expert to a folder, use the assign-expert command with the expert ID.

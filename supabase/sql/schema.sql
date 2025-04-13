@@ -1,0 +1,27 @@
+Manage Postgres databases
+
+Usage:
+  supabase db [command]
+
+Available Commands:
+  diff        Diffs the local database for schema changes
+  dump        Dumps data or schemas from the remote database
+  lint        Checks local database for typing error
+  pull        Pull schema from the remote database
+  push        Push new migrations to the remote database
+  reset       Resets the local database to current migrations
+  start       Starts local Postgres database
+
+Flags:
+  -h, --help   help for db
+
+Global Flags:
+      --create-ticket                            create a support ticket for any CLI error
+      --debug                                    output debug logs to stderr
+      --dns-resolver [ native | https ]          lookup domain names using the specified resolver (default native)
+      --experimental                             enable experimental features
+      --network-id string                        use the specified docker network instead of a generated one
+      --output [ pretty | json | toml | yaml ]   output format of status variables (default pretty)
+      --workdir string                           path to a Supabase project directory
+
+Use "supabase db [command] --help" for more information about a command.
