@@ -3,7 +3,8 @@
  * Update File Signatures Script
  * 
  * This script updates all existing file_signature values in the sources_google table
- * to use the new consistent format that properly handles file renames.
+ * to use the new consistent format that properly handles file renames. It uses the
+ * shared FileMetadataService to ensure consistent signature generation across the app.
  * 
  * Usage:
  *   ts-node update-file-signatures.ts [options]
@@ -17,6 +18,7 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import { fileMetadataService } from '../../../packages/shared/services/google-drive';
 
 // Load environment variables
 function loadEnvFiles() {
@@ -59,10 +61,11 @@ interface UpdateStats {
 }
 
 /**
- * Generate file signature using the new format
+ * Generate file signature using the FileMetadataService
+ * This uses the standardized signature format from the shared service
  */
 function generateFileSignature(name: string, modifiedTime: string): string {
-  return `${name.replace(/[^a-zA-Z0-9]/g, '')}${modifiedTime.replace(/[^a-zA-Z0-9]/g, '')}`;
+  return fileMetadataService.generateFileSignature(name, modifiedTime);
 }
 
 /**
