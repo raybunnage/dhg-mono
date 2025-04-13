@@ -168,6 +168,8 @@ scripts/**/.backup_scripts/**/*
 **/*_secrets.*
 script-analysis-results/
 script-analysis-results/**
+document-analysis-results/
+document-analysis-results/**
 
 # Google service account key
 .service-account.json
