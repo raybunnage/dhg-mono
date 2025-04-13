@@ -35,14 +35,14 @@ function loadEnvFiles() {
 
 loadEnvFiles();
 
-// Parse command line arguments
+// Parse command line arguments when run directly
 const args = process.argv.slice(2);
-const isDryRun = args.includes('--dry-run');
-const isVerbose = args.includes('--verbose');
+let isDryRun = args.includes('--dry-run');
+let isVerbose = args.includes('--verbose');
 
 // Parse batch size
 const batchSizeIndex = args.indexOf('--batch-size');
-const BATCH_SIZE = batchSizeIndex !== -1 && args[batchSizeIndex + 1] 
+let BATCH_SIZE = batchSizeIndex !== -1 && args[batchSizeIndex + 1] 
   ? parseInt(args[batchSizeIndex + 1], 10) 
   : 50;
 
@@ -68,7 +68,15 @@ function generateFileSignature(name: string, modifiedTime: string): string {
 /**
  * Update file signatures for all records in the database
  */
-async function updateFileSignatures(): Promise<UpdateStats> {
+export async function updateFileSignatures(
+  dryRun: boolean = false,
+  batchSize: number = 50,
+  verbose: boolean = false
+): Promise<UpdateStats> {
+  // Override global variables with provided parameters
+  isDryRun = dryRun;
+  BATCH_SIZE = batchSize;
+  isVerbose = verbose;
   const result: UpdateStats = {
     processed: 0,
     updated: 0,
@@ -216,7 +224,7 @@ async function updateFileSignatures(): Promise<UpdateStats> {
 
 async function main() {
   try {
-    await updateFileSignatures();
+    await updateFileSignatures(isDryRun, BATCH_SIZE, isVerbose);
     console.log('=== File Signature Update Complete ===');
   } catch (error: any) {
     console.error('Fatal error:', error.message || error);
@@ -224,4 +232,10 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+// Only run if this file is executed directly
+if (require.main === module) {
+  main().catch(error => {
+    console.error('Unhandled error:', error);
+    process.exit(1);
+  });
+}
