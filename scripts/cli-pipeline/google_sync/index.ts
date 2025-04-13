@@ -11,6 +11,7 @@ import { updateSchemaFromJson } from './update-schema-from-json';
 import { syncAndUpdateMetadata } from './sync-and-update-metadata';
 import { checkDocumentTypes } from './check-document-types';
 import { checkDuplicates, CheckDuplicatesOptions } from './check-duplicates';
+import { updateFileSignatures } from './update-file-signatures';
 // These functions may not exist as TypeScript exports, so we'll use exec for them
 
 // Create the main program
@@ -339,6 +340,24 @@ program
     }
   });
 
+// Add update-file-signatures command
+program
+  .command('update-file-signatures')
+  .description('Update all file signatures to use the consistent new format')
+  .option('--dry-run', 'Show what would be updated without making changes', false)
+  .option('--batch-size <number>', 'Process records in batches of n (default: 50)', '50')
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options) => {
+    try {
+      const batchSize = parseInt(options.batchSize, 10);
+      await updateFileSignatures(options.dryRun, batchSize, options.verbose);
+      Logger.info('File signatures update complete');
+    } catch (error) {
+      Logger.error('Error updating file signatures:', error);
+      process.exit(1);
+    }
+  });
+
 // Add more commands as needed
 
 // Parse command line arguments
@@ -443,6 +462,13 @@ Available Commands:
       -d, --by-drive-id    Check duplicates by drive_id
       -a, --all            Check both name and drive_id duplicates
       -v, --verbose        Show detailed information for each duplicate
+      
+  update-file-signatures  Update all file signatures to use the consistent new format
+                          Ensures file_signature values properly handle file renames
+    Options:
+      --dry-run            Show what would be updated without making changes
+      --batch-size <n>     Process records in batches of n (default: 50)
+      --verbose            Show detailed logs
 
 For detailed help on a specific command, run:
   google-sync-cli [command] --help
