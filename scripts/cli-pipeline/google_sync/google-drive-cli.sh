@@ -25,32 +25,36 @@ function display_help() {
   echo "  sync [rootId]               Sync files from a root folder (or all if not specified)"
   echo "  sync-folder [folderId]      Sync a specific folder (doesn't need to be a root)"
   echo "  insert-file                 Insert a specific file from Google Drive into database"
+  echo "  health-check                Run a health check on all critical commands (tests 10 key commands)"
+  echo "                              Verifies: sync-and-update-metadata, check-document-types, check-duplicates,"
+  echo "                              update-file-signatures, classify-missing-docs, report-main-video-ids,"
+  echo "                              count-mp4, add-root-service, mp4-experts, generate-main-video-report"
   echo ""
   echo "Advanced Commands:"
   echo "  add-root-service [folderId] Add a new root folder using service account"
   echo "  browser-recursive-search    Generate browser-based recursive folder search script (saves to markdown)"
-  echo "  cli-recursive-search <id>   Search Google Drive folder recursively and save to file_types/json/google-drive.json"
+  echo "  check-document-types        Check for .docx and .txt files missing document_type_id"
+  echo "  check-duplicates            Check for duplicate files in sources_google by name or drive_id"
   echo "  check-roots                 Check the status of all registered root folders"
+  echo "  classify-missing-docs       Classify files missing document type IDs using Claude AI"
+  echo "  cli-recursive-search <id>   Search Google Drive folder recursively and save to file_types/json/google-drive.json"
   echo "  count-mp4 [drive_id]        Count MP4 files in a Google Drive folder"
   echo "  disk-status                 Update presentations table with disk status for MP4 files"
+  echo "  generate-main-video-report  Generate markdown report of all files and their main_video_id values"
   echo "  list-drive-direct           List files in Drive directly (no DB interaction)"
   echo "  mp4-experts                 Create expert documents for presentations with MP4 files"
   echo "  report-drive-roots          Generate a detailed report about all root folders"
   echo "  report-main-video-ids       Report on video files for folders, prioritizing Presentation folders"
-  echo "  generate-main-video-report  Generate markdown report of all files and their main_video_id values"
-  echo "  update-folder-video-mapping Update main_video_id for folder and subfolders based on folder:video mapping"
   echo "  sync-and-update-metadata    Sync folder and update metadata in one operation. Use --file-id to insert a specific file"
   echo "  sync-mp4-presentations      Sync MP4 files with presentations table (ensure 1:1 mapping)"
+  echo "  update-file-signatures      Update all file signatures to use the consistent new format"
+  echo "  update-folder-video-mapping Update main_video_id for folder and subfolders based on folder:video mapping"
   echo "  update-main-video-ids       Update main_video_id for presentations by recursively searching folders"
   echo "  update-metadata             Update metadata for files in the database"
   echo "  update-root-drive-id        Update root_drive_id field for all records under a specified root folder"
   echo "  update-sources-from-json    Update sources_google records using JSON file data with path and parent information"
   echo "  insert-missing-sources      Insert records from JSON file that do not exist in sources_google"
   echo "  update-schema-from-json     Update the Supabase schema from JSON data"
-  echo "  check-document-types        Check for .docx and .txt files missing document_type_id"
-  echo "  check-duplicates            Check for duplicate files in sources_google by name or drive_id"
-  echo "  update-file-signatures      Update all file signatures to use the consistent new format"
-  echo "  classify-missing-docs       Classify files missing document type IDs using Claude AI"
   echo "  NOTE: The extracted_content field is deprecated and any size data should only be stored in the size field"
   echo ""
   echo "Options:"
@@ -102,6 +106,8 @@ function display_help() {
   echo "  google-drive-cli.sh update-file-signatures --dry-run --verbose"
   echo "  google-drive-cli.sh insert-file --file-id 1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM --verbose"
   echo "  google-drive-cli.sh update-folder-video-mapping --mapping '2022-04-20-Tauben': 'Tauben.Sullivan.4.20.22.mp4' --dry-run"
+  echo "  google-drive-cli.sh health-check                    # Run health check on all key commands"
+  echo "  google-drive-cli.sh health-check --verbose          # Run health check with detailed output"
 }
 
 # No arguments provided
@@ -135,6 +141,9 @@ case "$COMMAND" in
     ;;
   sync-folder)
     ts-node "$SCRIPT_DIR/sync-drive-service.ts" "$@"
+    ;;
+  health-check)
+    "$SCRIPT_DIR/health-check.sh" "$@"
     ;;
     
   # Advanced commands

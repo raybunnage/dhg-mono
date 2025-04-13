@@ -3,11 +3,15 @@ import { Command } from 'commander';
 import { Logger } from '../../../packages/shared/utils/logger';
 import * as fs from 'fs';
 import * as path from 'path';
-// Import the new report-main-video-ids for sources_google
+// Import commands
 import { reportMainVideoIds } from './report-main-video-ids';
 import { updateSourcesFromJson } from './update-sources-from-json';
 import { insertMissingSources } from './insert-missing-sources';
 import { updateSchemaFromJson } from './update-schema-from-json';
+import { syncAndUpdateMetadata } from './sync-and-update-metadata';
+import { checkDocumentTypes } from './check-document-types';
+import { checkDuplicates, CheckDuplicatesOptions } from './check-duplicates';
+// These functions may not exist as TypeScript exports, so we'll use exec for them
 
 // Create the main program
 const program = new Command()
@@ -264,6 +268,77 @@ program
     }
   });
 
+// Add sync-and-update-metadata command
+program
+  .command('sync-and-update-metadata')
+  .description('Sync folder and update metadata in one operation')
+  .argument('[folder-id]', 'Folder ID to sync (default: Dynamic Healing Discussion Group)', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('--file-id <id>', 'Specify a file ID for direct file lookup and insertion')
+  .option('--dry-run', 'Show what would be synced without making changes', false)
+  .option('--limit <number>', 'Limit to updating n records (default: 1000)', '1000')
+  .option('--max-depth <number>', 'Maximum folder depth to traverse (default: 6)', '6')
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (folderId, options) => {
+    try {
+      await syncAndUpdateMetadata(
+        folderId,
+        options.fileId,
+        options.dryRun,
+        parseInt(options.limit, 10),
+        parseInt(options.maxDepth, 10),
+        options.verbose
+      );
+    } catch (error) {
+      Logger.error('Error syncing and updating metadata:', error);
+      process.exit(1);
+    }
+  });
+
+// Add check-document-types command
+program
+  .command('check-document-types')
+  .description('Check for .docx and .txt files missing document_type_id')
+  .option('--output <path>', 'Path to write markdown output to', 'docs/cli-pipeline/missing_document_types.md')
+  .option('--verbose', 'Show detailed logs', false)
+  .option('--limit <number>', 'Limit the number of files to process')
+  .action(async (options) => {
+    try {
+      const limit = options.limit ? parseInt(options.limit, 10) : undefined;
+      await checkDocumentTypes(options.verbose, options.output, limit);
+    } catch (error) {
+      Logger.error('Error checking document types:', error);
+      process.exit(1);
+    }
+  });
+
+// Add check-duplicates command
+program
+  .command('check-duplicates')
+  .description('Check for duplicate files in sources_google by name or drive_id')
+  .option('-l, --limit <number>', 'Limit the number of duplicate groups to display', '10')
+  .option('-j, --json', 'Output in JSON format')
+  .option('-n, --by-name', 'Check duplicates by name (default)', true)
+  .option('-d, --by-drive-id', 'Check duplicates by drive_id')
+  .option('-a, --all', 'Check both name and drive_id duplicates', false)
+  .option('-v, --verbose', 'Show detailed information for each duplicate', false)
+  .action(async (options) => {
+    try {
+      const checkOptions: CheckDuplicatesOptions = {
+        limit: options.limit ? parseInt(options.limit, 10) : 10,
+        json: options.json || false,
+        byName: options.byName !== false, // true by default
+        byDriveId: options.byDriveId || false,
+        all: options.all || false,
+        verbose: options.verbose || false
+      };
+      
+      await checkDuplicates(checkOptions);
+    } catch (error) {
+      Logger.error('Error checking duplicates:', error);
+      process.exit(1);
+    }
+  });
+
 // Add more commands as needed
 
 // Parse command line arguments
@@ -340,6 +415,34 @@ Available Commands:
       --mapping <mapping>  Mapping in format: 'folder name': 'file name.mp4' (required)
       --dry-run            Show what would be updated without making changes
       --verbose            Show detailed logs
+
+  sync-and-update-metadata Sync folder and update metadata in one operation
+                          Synchronizes files from Google Drive and updates metadata
+    Arguments:
+      [folder-id]          Folder ID to sync (default: Dynamic Healing Discussion Group)
+    Options:
+      --file-id <id>       Specify a file ID for direct file lookup and insertion
+      --dry-run            Show what would be synced without making changes
+      --limit <number>     Limit to updating n records (default: 1000)
+      --max-depth <number> Maximum folder depth to traverse (default: 6)
+      --verbose            Show detailed logs
+      
+  check-document-types    Check for .docx and .txt files missing document_type_id
+                          Finds files that should have document types but don't
+    Options:
+      --output <path>      Path to write markdown output to (default: docs/cli-pipeline/missing_document_types.md)
+      --verbose            Show detailed logs
+      --limit <number>     Limit the number of files to process
+      
+  check-duplicates        Check for duplicate files in sources_google by name or drive_id
+                          Identifies files that appear multiple times in the database
+    Options:
+      -l, --limit <n>      Limit the number of duplicate groups to display (default: 10)
+      -j, --json           Output in JSON format
+      -n, --by-name        Check duplicates by name (default)
+      -d, --by-drive-id    Check duplicates by drive_id
+      -a, --all            Check both name and drive_id duplicates
+      -v, --verbose        Show detailed information for each duplicate
 
 For detailed help on a specific command, run:
   google-sync-cli [command] --help

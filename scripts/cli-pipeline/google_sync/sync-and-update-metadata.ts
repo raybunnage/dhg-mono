@@ -57,18 +57,20 @@ loadEnvFiles();
 
 // Process command line arguments
 const args = process.argv.slice(2);
-const isDryRun = args.includes('--dry-run');
-const isVerbose = args.includes('--verbose');
+
+// Declare variables that can be modified when called as a module
+let isDryRun = args.includes('--dry-run');
+let isVerbose = args.includes('--verbose');
 
 // Parse limit
 const limitIndex = args.indexOf('--limit');
-const limit = limitIndex !== -1 && args[limitIndex + 1] 
+let limit = limitIndex !== -1 && args[limitIndex + 1] 
   ? parseInt(args[limitIndex + 1], 10) 
   : 1000; // Increased default from 10 to 1000
 
 // Parse max depth
 const maxDepthIndex = args.indexOf('--max-depth');
-const maxDepth = maxDepthIndex !== -1 && args[maxDepthIndex + 1] 
+let maxDepth = maxDepthIndex !== -1 && args[maxDepthIndex + 1] 
   ? parseInt(args[maxDepthIndex + 1], 10) 
   : 6;
 
@@ -1144,7 +1146,20 @@ async function lookupSpecificFile(drive: any, fileId: string, isDryRun: boolean,
 /**
  * Main function with additional parameters
  */
-async function syncAndUpdateMetadata(specificFileId?: string): Promise<void> {
+export async function syncAndUpdateMetadata(
+  folderId: string = DYNAMIC_HEALING_FOLDER_ID,
+  specificFileId?: string,
+  dryRun: boolean = false,
+  recordLimit: number = 10,
+  folderDepth: number = 3,
+  verbose: boolean = false
+): Promise<void> {
+  // Set global variables based on parameters
+  isDryRun = dryRun;
+  limit = recordLimit;
+  maxDepth = folderDepth;
+  isVerbose = verbose;
+  
   console.log('=== Dynamic Healing Discussion Group Sync and Update ===');
   console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'ACTUAL SYNC'}`);
   console.log(`Records limit for update: ${limit}`);
@@ -1321,14 +1336,24 @@ async function syncAndUpdateMetadata(specificFileId?: string): Promise<void> {
   }
 }
 
-// Parse additional parameter for specific file check
-const specificFileIdIndex = args.indexOf('--file-id');
-const specificFileId = specificFileIdIndex !== -1 && args[specificFileIdIndex + 1] 
-  ? args[specificFileIdIndex + 1] 
-  : undefined;
-
-// Execute the main function with optional specificFileId parameter
-syncAndUpdateMetadata(specificFileId).catch(error => {
-  console.error('Unexpected error:', error);
-  process.exit(1);
-});
+// Only run if this file is executed directly (not imported)
+if (require.main === module) {
+  // Parse additional parameter for specific file check
+  const specificFileIdIndex = args.indexOf('--file-id');
+  const specificFileId = specificFileIdIndex !== -1 && args[specificFileIdIndex + 1] 
+    ? args[specificFileIdIndex + 1] 
+    : undefined;
+  
+  // Execute the main function with optional specificFileId parameter
+  syncAndUpdateMetadata(
+    DYNAMIC_HEALING_FOLDER_ID,
+    specificFileId,
+    isDryRun,
+    limit,
+    maxDepth,
+    isVerbose
+  ).catch(error => {
+    console.error('Unexpected error:', error);
+    process.exit(1);
+  });
+}
