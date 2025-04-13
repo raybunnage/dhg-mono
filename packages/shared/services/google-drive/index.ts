@@ -9,15 +9,24 @@ import GoogleAuthService from './google-auth-service';
 import GoogleDriveService from './google-drive-service';
 import GoogleDriveSyncService from './google-drive-sync-service';
 import SourcesGoogleUpdateService from './sources-google-update-service';
+import fileMetadataService, { FileMetadataService } from './file-metadata-service';
 
 // Export services
-export { GoogleAuthService, GoogleDriveService, GoogleDriveSyncService, SourcesGoogleUpdateService };
+export { 
+  GoogleAuthService, 
+  GoogleDriveService, 
+  GoogleDriveSyncService, 
+  SourcesGoogleUpdateService,
+  FileMetadataService,
+  fileMetadataService
+};
 
 // Export types
 export * from './google-auth-service';
 export * from './google-drive-service';
 export * from './google-drive-sync-service';
 export * from './sources-google-update-service';
+export * from './file-metadata-service';
 
 // Export a preconfigured auth instance for easier use
 export const defaultGoogleAuth = GoogleAuthService.getDefaultInstance();
@@ -43,4 +52,11 @@ export function getGoogleDriveSyncService(supabaseClient: any): GoogleDriveSyncS
 export function getSourcesGoogleUpdateService(supabaseClient: any): SourcesGoogleUpdateService {
   const driveService = getGoogleDriveService(supabaseClient);
   return SourcesGoogleUpdateService.getInstance(driveService, supabaseClient);
+}
+
+/**
+ * Helper function to get the shared FileMetadataService instance
+ */
+export function getFileMetadataService(): typeof fileMetadataService {
+  return fileMetadataService;
 }

@@ -96,13 +96,68 @@ export class GoogleDriveSyncService {
   ): Promise<string> {
     const { includeRoot = true, separator = '/' } = options;
     
+    // If no parent folder, just return the file name
     if (!file.parent_folder_id) {
-      return file.name;
+      return includeRoot ? `${separator}${file.name}` : file.name;
     }
     
-    // This would involve looking up parent folders and building a path
-    // For now, just return the file name
-    return file.name;
+    try {
+      // Keep track of visited folders to prevent infinite loops
+      const visitedFolders = new Set<string>();
+      // Build the path segments starting with the file name
+      const pathSegments: string[] = [file.name];
+      
+      // Start with the parent folder
+      let currentFolderId = file.parent_folder_id;
+      
+      // Traverse up the folder hierarchy
+      while (currentFolderId && !visitedFolders.has(currentFolderId)) {
+        visitedFolders.add(currentFolderId);
+        
+        // Query the database for the parent folder
+        const { data, error } = await this.supabaseClient
+          .from('sources_google')
+          .select('id, name, parent_folder_id, is_root')
+          .eq('drive_id', currentFolderId)
+          .eq('is_deleted', false)
+          .single();
+          
+        if (error) {
+          console.error(`Error resolving path for folder ${currentFolderId}:`, error);
+          break;
+        }
+        
+        if (!data) {
+          console.warn(`Folder ${currentFolderId} not found in database`);
+          break;
+        }
+        
+        // Add folder name to path segments
+        pathSegments.unshift(data.name);
+        
+        // If this is a root folder, we're done
+        if (data.is_root) {
+          break;
+        }
+        
+        // Move up to the parent folder
+        currentFolderId = data.parent_folder_id;
+      }
+      
+      // Combine path segments with separator
+      let path = pathSegments.join(separator);
+      
+      // Add leading separator for absolute paths if needed
+      if (includeRoot && !path.startsWith(separator)) {
+        path = `${separator}${path}`;
+      }
+      
+      return path;
+    } catch (error) {
+      console.error('Error resolving file path:', error);
+      // Fall back to just the file name if path resolution fails
+      return file.name;
+    }
   }
 
   /**
@@ -382,25 +437,112 @@ export class GoogleDriveSyncService {
   
   /**
    * Get existing drive IDs from database
-   * This is implemented by the client using this service
+   * @param rootFolderId Optional root folder ID to filter by
+   * @param includeDeleted Whether to include files marked as deleted
+   * @returns Set of existing drive IDs
    */
-  private async getExistingDriveIds(): Promise<Set<string>> {
-    // This would be implemented by the specific client to query their database
-    // Mock implementation
-    return new Set<string>();
+  private async getExistingDriveIds(
+    rootFolderId?: string,
+    includeDeleted: boolean = false
+  ): Promise<Set<string>> {
+    try {
+      // Build query for sources_google table
+      let query = this.supabaseClient
+        .from('sources_google')
+        .select('drive_id');
+        
+      // Add filters based on parameters
+      if (!includeDeleted) {
+        query = query.eq('is_deleted', false);
+      }
+      
+      if (rootFolderId) {
+        query = query.eq('root_drive_id', rootFolderId);
+      }
+      
+      // Execute query
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching existing drive IDs:', error);
+        return new Set<string>();
+      }
+      
+      // Create a Set from the drive_id values
+      return new Set(
+        (data || []).map(record => record.drive_id).filter(Boolean)
+      );
+    } catch (error) {
+      console.error('Unexpected error getting existing drive IDs:', error);
+      return new Set<string>();
+    }
   }
   
   /**
    * Insert a batch of files into the database
-   * This is implemented by the client using this service
+   * @param files Array of Google Drive files to insert
+   * @returns Result with count of inserted files and any errors
    */
   private async insertBatch(
     files: GoogleDriveFile[]
   ): Promise<{ inserted: number; errors: ErrorsArray }> {
-    // This would be implemented by the specific client to insert records
-    // Mock implementation
-    console.log(`Would insert ${files.length} files`);
-    return { inserted: files.length, errors: [] as ErrorsArray };
+    const result = { inserted: 0, errors: [] as ErrorsArray };
+    
+    if (!files || files.length === 0) {
+      return result;
+    }
+    
+    try {
+      // Prepare files for insertion
+      const filesToInsert = files.map(file => {
+        // Use our file metadata service to generate file signatures and handle paths
+        const fileMetadataService = require('./file-metadata-service').default;
+        
+        // Generate a file signature
+        const fileSignature = fileMetadataService.generateFileSignature(
+          file.name, 
+          file.modified_at
+        );
+        
+        // Prepare metadata object
+        const metadata: Record<string, any> = {
+          ...(file.metadata || {}),
+          modifiedTime: file.modified_at,
+          webViewLink: file.web_view_link,
+          thumbnailLink: file.thumbnail_link,
+          mimeType: file.mime_type
+        };
+        
+        // Create the insert data
+        return {
+          ...file,
+          file_signature: fileSignature,
+          metadata,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_deleted: false
+        };
+      });
+      
+      // Insert the files
+      const { data, error } = await this.supabaseClient
+        .from('sources_google')
+        .insert(filesToInsert);
+        
+      if (error) {
+        console.error('Error inserting batch:', error);
+        result.errors.push(error);
+        return result;
+      }
+      
+      // Update the result
+      result.inserted = filesToInsert.length;
+      return result;
+    } catch (error) {
+      console.error('Error in insertBatch:', error);
+      result.errors.push(error as Error);
+      return result;
+    }
   }
 
   /**

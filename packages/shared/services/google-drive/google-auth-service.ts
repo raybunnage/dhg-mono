@@ -659,6 +659,41 @@ export class GoogleAuthService {
   }
   
   /**
+   * Get a configured Google Drive client
+   * 
+   * @param version Drive API version to use (default: v3)
+   * @returns Google Drive client or null if initialization fails
+   */
+  public async getDriveClient(version: string = 'v3'): Promise<any | null> {
+    try {
+      // Import the googleapis library dynamically to avoid issues in browser environments
+      const { google } = require('googleapis');
+      
+      // If using a service account, use JWT auth
+      if (this.usingServiceAccount && this.serviceAuthClient) {
+        return google.drive({ version, auth: this.serviceAuthClient });
+      }
+      
+      // Otherwise, use OAuth token
+      const accessToken = await this.getAccessToken();
+      if (!accessToken) {
+        console.error('Failed to get access token for Drive client');
+        return null;
+      }
+      
+      // Create auth object with the access token
+      const auth = new google.auth.OAuth2();
+      auth.setCredentials({ access_token: accessToken });
+      
+      // Return configured drive client
+      return google.drive({ version, auth });
+    } catch (error) {
+      console.error('Error creating Google Drive client:', error);
+      return null;
+    }
+  }
+  
+  /**
    * Check if the auth service is ready to use
    */
   public async isReady(): Promise<boolean> {
