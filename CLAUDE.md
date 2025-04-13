@@ -51,6 +51,10 @@
    - you will find it inpackages/shared/services/claude-service.ts
    - if you are not having success with claude there are a number of scripts that successfully work with it in scripts/cli-pipeline
 
+10. **Ignore file_types folder off the root**:
+   - this folder is for temporary file processing and archiving 
+   - you should not be searching or accounting for files in this folder - unless instructed to do so
+   
 
 ## CLI Pipeline Integration Requirements
 

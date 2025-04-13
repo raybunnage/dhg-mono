@@ -195,30 +195,8 @@ main() {
   # 7. Test count-mp4
   run_command_test "count-mp4" "--help" "Checks if MP4 counting command exists" 10
   
-  # 8. Test add-root-service (just verify command exists, don't actually run it)
-  if [ "$VERBOSE" = true ]; then
-    echo "Testing: add-root-service - Command exists check" | tee -a "$LOG_FILE"
-  else
-    echo "Testing: add-root-service - Command exists check" >> "$LOG_FILE"
-  fi
-  
-  if command_exists "add-root-service"; then
-    if [ "$VERBOSE" = true ]; then
-      echo "✅ PASSED: Command exists in the CLI script" | tee -a "$LOG_FILE"
-      echo "" | tee -a "$LOG_FILE"
-    else
-      echo "✅ PASSED: Command exists in the CLI script" >> "$LOG_FILE"
-      echo "" >> "$LOG_FILE"
-    fi
-  else
-    if [ "$VERBOSE" = true ]; then
-      echo "❌ FAILED: Command does not exist in the CLI script" | tee -a "$LOG_FILE"
-      echo "" | tee -a "$LOG_FILE"
-    else
-      echo "❌ FAILED: Command does not exist in the CLI script" >> "$LOG_FILE"
-      echo "" >> "$LOG_FILE"
-    fi
-  fi
+  # 8. Test add-root-service - with --help to avoid actual Drive API calls
+  run_command_test "add-root-service" "--help" "Checks if root folder adding command exists" 10
   
   # 9. Test mp4-experts
   run_command_test "mp4-experts" "--help" "Checks if MP4 expert document creation command exists" 10
