@@ -12,7 +12,7 @@ import fs from 'fs';
 import mammoth from 'mammoth';
 import { Database } from '../../../supabase/types';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
-import { ClaudeService } from '../../../packages/shared/services/claude-service';
+import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
 import { google } from 'googleapis';
 
 // Define types
@@ -77,21 +77,34 @@ class DocumentClassifier {
     }
     
     try {
-      // Initialize a simplified direct Claude API service
+      // Use the pre-configured Claude service singleton from shared package
       console.log('Creating direct Claude API service');
       
-      // Get API key from environment variables
-      const apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '';
-      if (!apiKey) {
-        throw new Error("Missing Claude API key. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY environment variable.");
-      }
-      
-      // Create a minimal Claude service with only what we need
-      this.claudeService = {
-        getJsonResponse: async (content: string, options?: { system?: string; temperature?: number; maxTokens?: number }) => {
-          if (process.env.MOCK_CLAUDE === 'true') {
-            console.log('Using mock Claude response (MOCK_CLAUDE=true)');
-            return {
+      try {
+        // Test that the claudeService is properly initialized
+        const isValid = claudeService.validateApiKey();
+        
+        if (!isValid) {
+          throw new Error("Missing Claude API key. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY environment variable.");
+        }
+        
+        // Store a reference to the service
+        this.claudeService = claudeService;
+        
+        this.componentStatus['claude'] = { status: 'ok' };
+        if (debug) {
+          console.log('✅ Claude service initialized with direct API access');
+        }
+      } catch (error) {
+        this.componentStatus['claude'] = { 
+          status: 'error', 
+          message: (error as Error).message 
+        };
+        
+        // For dry run mode, set up a mock Claude service
+        if (this.dryRun) {
+          this.claudeService = {
+            getJsonResponse: async () => ({
               document_type: "Clinical Trial",
               document_type_id: "1",
               classification_confidence: 0.85,
@@ -112,60 +125,19 @@ class DocumentClassifier {
                 confidence: 8.5,
                 reasoning: "Strong indicators of clinical trial documentation based on terminology and structure"
               }
-            };
-          }
+            }),
+            sendPrompt: async () => "This is a mock response from Claude AI."
+          };
           
-          console.log('Sending direct request to Claude API');
-          const axios = require('axios');
-          const systemPrompt = options?.system || '';
-          const temperature = options?.temperature ?? 0.2;
-          const maxTokens = options?.maxTokens ?? 4000;
+          this.componentStatus['claude'] = { 
+            status: 'ok', 
+            message: 'Using mock service for dry run' 
+          };
           
-          const response = await axios.post(
-            'https://api.anthropic.com/v1/messages',
-            {
-              model: 'claude-3-7-sonnet-20250219',
-              max_tokens: maxTokens,
-              temperature: temperature,
-              system: systemPrompt,
-              messages: [
-                {
-                  role: 'user',
-                  content: content
-                }
-              ],
-              response_format: { type: "json_object" }
-            },
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-              }
-            }
-          );
-          
-          if (response.data && response.data.content && response.data.content.length > 0) {
-            const textContent = response.data.content[0].text;
-            if (this.debug) {
-              console.log(`Received Claude API response: ${textContent.substring(0, 100)}...`);
-            }
-            
-            try {
-              return JSON.parse(textContent);
-            } catch (e) {
-              console.error('Failed to parse JSON from Claude response:', e);
-              throw e;
-            }
-          } else {
-            throw new Error('Invalid response format from Claude API');
+          if (debug) {
+            console.log('⚠️ Using mock Claude service for dry run mode');
           }
         }
-      };
-      
-      this.componentStatus['claude'] = { status: 'ok' };
-      if (debug) {
-        console.log('✅ Claude service initialized with direct API access');
       }
     } catch (error) {
       this.componentStatus['claude'] = { 
@@ -1218,12 +1190,28 @@ This is generated mock data for testing purposes only.`;
           console.log('Calling Claude API for classification...');
         }
         
-        // Use getJsonResponse method from our Claude service
-        const response = await this.claudeService.getJsonResponse(content, {
+        // Use sendPrompt with manual JSON extraction to avoid response_format issues
+        const promptWithJson = `${content}\n\nPlease respond in valid JSON format with the following fields:
+- document_type: The selected document type from the provided options
+- document_type_id: The UUID of the selected document type
+- classification_confidence: A decimal number between 0.0 and 1.0
+- classification_reasoning: A brief explanation of why this document_type was selected
+- document_summary: A detailed summary of the document's content`;
+        
+        const textResponse = await this.claudeService.sendPrompt(promptWithJson, {
           system: systemPrompt,
           temperature: 0.2,
           maxTokens: 4000
         });
+        
+        // Extract JSON from the response
+        const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('No JSON object found in Claude response');
+        }
+        
+        // Parse the JSON
+        const response = JSON.parse(jsonMatch[0]);
         
         if (this.debug) {
           console.log('Successfully received JSON response from Claude API');

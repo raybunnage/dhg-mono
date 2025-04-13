@@ -41,7 +41,16 @@
    - it has a one to many relationship with the sources_google table
    - It has an expert_name field which is a short unique name for each expert
    - It also has a full_name field which is the full name of the expert
-   
+
+8. **Document Types**:
+   - Document types are a special table that contains the document types for the project
+   - it has a field called document_type which is the type of the document - but we use instead of name which seems to confuse you regularly
+
+9. **Using Claude**:
+   - When using Claude, always use the ClaudeService singleton
+   - you will find it inpackages/shared/services/claude-service.ts
+   - if you are not having success with claude there are a number of scripts that successfully work with it in scripts/cli-pipeline
+
 
 ## CLI Pipeline Integration Requirements
 
