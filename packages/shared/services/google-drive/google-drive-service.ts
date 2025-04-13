@@ -168,6 +168,47 @@ export class GoogleDriveService {
     const result = await this.fetchWithAuth(`/files?${params.toString()}`);
     return result;
   }
+  
+  /**
+   * List only folders in a folder
+   * @param folderId Folder ID
+   * @param options Options for listing
+   */
+  public async listFolders(
+    folderId: string,
+    options: {
+      pageSize?: number;
+      pageToken?: string;
+      fields?: string;
+      orderBy?: string;
+    } = {}
+  ): Promise<any[]> {
+    const params = new URLSearchParams({
+      pageSize: (options.pageSize || 100).toString(),
+      fields: options.fields || 'nextPageToken, files(id, name, mimeType, webViewLink, parents)',
+      orderBy: options.orderBy || 'name',
+      q: `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    });
+
+    if (options.pageToken) {
+      params.append('pageToken', options.pageToken);
+    }
+
+    let allFolders: any[] = [];
+    let pageToken: string | undefined;
+    
+    do {
+      if (pageToken) {
+        params.set('pageToken', pageToken);
+      }
+      
+      const result = await this.fetchWithAuth(`/files?${params.toString()}`);
+      allFolders = [...allFolders, ...result.files];
+      pageToken = result.nextPageToken;
+    } while (pageToken);
+    
+    return allFolders;
+  }
 
   /**
    * Get file metadata

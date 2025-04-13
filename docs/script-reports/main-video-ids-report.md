@@ -1,6 +1,6 @@
 # Main Video IDs Report
 
-Report generated on 2025-04-12T07:45:25.130Z
+Report generated on 2025-04-13T17:29:26.700Z
 
 | Folder Name | Main Video Filename | Status |
 |-------------|---------------------|--------|
@@ -26,7 +26,7 @@ Report generated on 2025-04-12T07:45:25.130Z
 | 2020-09-24-Porges-Lederman-Acute Pain-Mobilzation | 9.7.22.Aria.Porges.SSP.mp4 | Already Set |
 | 2020-09-30-Porges-PVT-ChronicPain-Oxytocin | 9.7.22.Aria.Porges.SSP.mp4 | Already Set |
 | 2020-10-15-Social Connection-Pain-Aria-Patterson-Carter | 10.14.20.Aria.Patterson.Carter.Social Connection.mp4 | Already Set |
-| 2020-10-21-Lederman-Relationship Connection  | Lederman.4.4.24.mp4 | Already Set |
+| 2020-10-21-Lederman-Relationship Connection  | Lederman.4.4.24.mp4 | Update |
 | 2020-10-28-Clawson-Cytokines 101 | 10.4.23.Hanscom:Clawson.mp4 | Already Set |
 | 2020-11-04-Cytokines Q&A | Cytokine Q&A.11.4.20.mp4 | Already Set |
 | 2020-11-11-Hanscom-Patient's Responses to the Environment | 10.4.23.Hanscom:Clawson.mp4 | Already Set |
@@ -67,7 +67,7 @@ Report generated on 2025-04-12T07:45:25.130Z
 | 2021-12-01-Rob Lustig-Metabolism and Disease | Lustig.Metabolism.Inflammation.Sugar.mp4 | Already Set |
 | 2021-1-20-Porges-PVT 101 | 9.7.22.Aria.Porges.SSP.mp4 | Already Set |
 | 2021-12-15-Mark Tarnopolosy-Exercise and ageing | Tarnppolsky12.15.21.mp4 | Already Set |
-| 2021-1-27-Garbho-Q&A-f/up ANS monitoring | Akparian.Q&A.7.1.20.mp4 | Already Set |
+| 2021-1-27-Garbho-Q&A-f/up ANS monitoring | Akparian.Q&A.7.1.20.mp4 | Update |
 | 2021-1-6-Constable-A Med student's perspective on Pain | GigiConstable.1.6.21.mp4 | Already Set |
 | 2022-01-09-Otto Simonsson-Psychedelics and Somatic Symptoms | Simonsson.1.9.22.mp4 | Already Set |
 | 2022-01-19-Sue Carter.Alex Horn. Love and Longevity | Horn.Carter.1.19.22.OXY.Love.Longevity.mp4 | Already Set |
@@ -109,7 +109,7 @@ Report generated on 2025-04-12T07:45:25.130Z
 | 2024-03-06-Langenecker-Ruminations | 03.08.24.Landenecker.mp4 | Already Set |
 | 2024-03-20-Lanius - PTSD and the broken sense of self | video1202452101.mp4 | Already Set |
 | 2024-04-03-Lederman-NonViolent Commun/ AI powered | Lederman.4.4.24.mp4 | Already Set |
-| 2024-04-17-Naviaux-Basics of mitochondria/CDR | Naviaux.3.2.22.Mito.metab.mp4 | Already Set |
+| 2024-04-17-Naviaux-Basics of mitochondria/CDR | Naviaux.3.2.22.Mito.metab.mp4 | Update |
 | 2024-05-08 - Kjaervik - Meta analysis on anger | 5.8.24Kjearvik.mp4 | Already Set |
 | 2024-05-22-Cook/Clawson - Mental Health/Teens | None | No MP4 |
 | 2024-09-04 - Clawson - The nature of anger | 10.4.23.Hanscom:Clawson.mp4 | Already Set |
