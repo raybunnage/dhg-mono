@@ -87,39 +87,9 @@ export async function countMp4Files(options: {
   
   try {
     if (local) {
-      // Count local MP4 files
-      const localPath = driveId || './file_types/mp4';
-      
-      if (verbose) {
-        console.log(`Searching for MP4 files in local path: ${localPath}`);
-      }
-      
-      if (fs.existsSync(localPath)) {
-        const isDirectory = fs.statSync(localPath).isDirectory();
-        
-        if (isDirectory) {
-          // Read all files in the directory
-          const files = fs.readdirSync(localPath);
-          mp4Files = files.filter(file => file.toLowerCase().endsWith('.mp4'));
-          
-          if (verbose) {
-            console.log(`Found ${mp4Files.length} MP4 files in ${localPath}`);
-          }
-        } else if (localPath.toLowerCase().endsWith('.mp4')) {
-          // Single file
-          mp4Files = [path.basename(localPath)];
-          
-          if (verbose) {
-            console.log(`Found 1 MP4 file: ${localPath}`);
-          }
-        } else {
-          if (verbose) {
-            console.log(`${localPath} is not a directory or MP4 file`);
-          }
-        }
-      } else {
-        console.error(`Path does not exist: ${localPath}`);
-      }
+      console.warn("⚠️ Local file search is not supported. This command is for Google Drive files only.");
+      console.warn("Please use the command without the --local flag to search in Google Drive.");
+      return { total: 0, files: [] };
     } else {
       // Count MP4 files in Google Drive
       const actualDriveId = driveId || DYNAMIC_HEALING_FOLDER_ID;

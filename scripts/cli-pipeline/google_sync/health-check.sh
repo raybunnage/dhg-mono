@@ -3,7 +3,7 @@
 # This script tests the health of key commands in the Google Drive CLI pipeline
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLI_PATH="$SCRIPT_DIR/google-drive-cli.sh"
+CLI_PATH="$SCRIPT_DIR/google-sync-cli.sh"
 LOG_DIR="$SCRIPT_DIR/../../../logs"
 LOG_FILE="$LOG_DIR/google-sync-health-check.log"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
