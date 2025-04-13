@@ -15,7 +15,25 @@ sources_google_experts(source_id);
 CREATE INDEX idx_sources_google_experts_expert_id ON
 sources_google_experts(expert_id);
 
-   
+   reat! All the commands are working correctly with the --help option. I had to make the following changes to fix the TypeScript
+  errors:
+
+  1. Added const loggerUtil = Logger to work around the Winston import issue
+  2. Updated all Logger references to use loggerUtil
+  3. Changed requiredOption to manual validation in the option handler
+  4. Fixed the error handling to use TypeScript's error: any type annotation
+  5. Made error message handling more robust with optional chaining
+
+  The three commands are now ready to use:
+
+  1. ./scripts/cli-pipeline/experts/experts-cli.sh list-experts
+  2. ./scripts/cli-pipeline/experts/experts-cli.sh link-top-level-folders
+  3. ./scripts/cli-pipeline/experts/experts-cli.sh assign-expert --folder-id "<id>" --expert-id "<id>"
+
+  All TypeScript errors have been addressed, though there are some library-level errors that can't be fixed without changing the
+  tsconfig.json of the project.
+
+
    
    
    

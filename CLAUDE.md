@@ -35,7 +35,13 @@
 6. **Supabase TypeScript Types**:
    - Use the `supabase.types.ts` file to define the types for the Supabase database
    - do not use any other types.ts file for types from supbase - this file is the source of truth
-
+ 
+ 7. **Experts Table**:
+   - The experts table is a special table that contains the experts for the project
+   - it has a one to many relationship with the sources_google table
+   - It has an expert_name field which is a short unique name for each expert
+   - It also has a full_name field which is the full name of the expert
+   
 
 ## CLI Pipeline Integration Requirements
 
