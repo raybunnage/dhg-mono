@@ -30,7 +30,17 @@ interface DuplicateGroup {
   records: SourceRecord[] | Array<{id: string, drive_id?: string, name?: string}>;
 }
 
-// Define program commands
+// Define interface for options
+export interface CheckDuplicatesOptions {
+  limit?: number;
+  json?: boolean;
+  byName?: boolean;
+  byDriveId?: boolean;
+  all?: boolean;
+  verbose?: boolean;
+}
+
+// Define program commands if run directly
 const program = new Command();
 
 program
@@ -41,12 +51,10 @@ program
   .option('-n, --by-name', 'Check duplicates by name (default)', true)
   .option('-d, --by-drive-id', 'Check duplicates by drive_id')
   .option('-a, --all', 'Check both name and drive_id duplicates', false)
-  .option('-v, --verbose', 'Show detailed information for each duplicate', false)
-  .parse(process.argv);
+  .option('-v, --verbose', 'Show detailed information for each duplicate', false);
 
-const options = program.opts();
-
-async function main() {
+// Export the main function for use in index.ts
+export async function checkDuplicates(options: CheckDuplicatesOptions) {
   try {
     console.log('Checking for duplicates in sources_google table...');
     
@@ -104,7 +112,7 @@ async function main() {
         }))
         .sort((a, b) => b.count - a.count);
       
-      const limit = parseInt(options.limit as string);
+      const limit = options.limit || 10;
       const displayDuplicates = duplicateNames.slice(0, limit);
       
       if (options.json) {
@@ -158,7 +166,7 @@ async function main() {
         }))
         .sort((a, b) => b.count - a.count);
       
-      const limit = parseInt(options.limit as string);
+      const limit = options.limit || 10;
       const displayDuplicates = duplicateDriveIds.slice(0, limit);
       
       if (options.json) {
@@ -190,8 +198,31 @@ async function main() {
     
   } catch (error) {
     console.error('Error checking for duplicates:', error);
-    process.exit(1);
+    if (require.main === module) {
+      process.exit(1);
+    } else {
+      throw error;
+    }
   }
 }
 
-main();
+// Only run if this file is executed directly
+if (require.main === module) {
+  program.parse(process.argv);
+  const options = program.opts();
+  
+  // Convert options to CheckDuplicatesOptions interface format
+  const checkOptions: CheckDuplicatesOptions = {
+    limit: options.limit ? parseInt(options.limit, 10) : 10,
+    json: options.json || false,
+    byName: options.byName !== false, // true by default
+    byDriveId: options.byDriveId || false,
+    all: options.all || false,
+    verbose: options.verbose || false
+  };
+  
+  checkDuplicates(checkOptions).catch(error => {
+    console.error('Unhandled error:', error);
+    process.exit(1);
+  });
+}
