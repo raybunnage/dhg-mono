@@ -25,6 +25,18 @@
 
 ## Code Organization Principles
 
+0. **⚠️ CRITICAL: NEVER ADD FILES TO THE ROOT DIRECTORY**: 
+   - ⚠️ **NEVER create any files in the root of the project directory**
+   - This includes markdown files, TypeScript/JavaScript files, JSON files, or any other files
+   - All new files MUST be placed in the appropriate subdirectory according to their purpose:
+     - New services go in `packages/shared/services/`
+     - New CLI commands go in `scripts/cli-pipeline/{domain}/`
+     - New documentation goes in `docs/{appropriate-category}/`
+     - New types go in the appropriate domain-specific types file
+   - Root directory clutter makes the project harder to navigate and maintain
+   - If you're unsure where a file should go, ask for clarification rather than defaulting to the root
+   - When refactoring, move any existing root files to appropriate subdirectories
+   
 1. **Shared Services First**: Always prioritize using and enhancing the shared services in `packages/shared`. Before implementing any functionality, check if an existing service can be used or extended.
    - Check for existing services in `packages/shared/services` that could solve the problem
    - Consider creating new shared services when implementing functionality that could be reused
