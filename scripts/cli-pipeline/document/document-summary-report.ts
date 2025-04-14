@@ -1,10 +1,7 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { config as loadDotEnv } from 'dotenv';
-
-// Initialize environment variables
-loadDotEnv();
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 export interface DocumentSummary {
   id: string;
@@ -32,22 +29,9 @@ export class DocumentSummaryReportService {
   private rootDir: string;
   
   constructor() {
-    // Setup Supabase connection
-    let supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');
-    }
-    
-    // Make sure the URL has proper protocol
-    if (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
-      supabaseUrl = 'https://' + supabaseUrl;
-      console.log(`Adding https:// prefix to Supabase URL: ${supabaseUrl}`);
-    }
-    
-    console.log(`Connecting to Supabase at: ${supabaseUrl}`);
-    this._supabase = createClient(supabaseUrl, supabaseKey);
+    // Use the SupabaseClientService singleton for consistent connection management
+    console.log('Using SupabaseClientService singleton for database connection');
+    this._supabase = SupabaseClientService.getInstance().getClient();
     
     // Set root directory
     this.rootDir = process.cwd();

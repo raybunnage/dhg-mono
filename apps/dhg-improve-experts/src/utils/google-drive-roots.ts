@@ -5,7 +5,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../../../../supabase/types';
 
 /**

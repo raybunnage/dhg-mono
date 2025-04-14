@@ -2,7 +2,6 @@ import { toast } from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '../../../../../supabase/types';
 import { v4 as uuidv4 } from 'uuid';
-import { createClient } from '@supabase/supabase-js';
 
 // Get Google Drive folder ID from environment variables
 const GOOGLE_DRIVE_FOLDER_ID = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
@@ -625,29 +624,12 @@ export async function insertGoogleFiles(files: DriveFile[], timeout = 600000): P
   try {
     console.log(`INSERTING FILES: Starting to insert ${files.length} Google Drive files into the database`);
     
-    // Check if we have valid environment variables for Supabase connection
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    // Using existing supabase client from client.ts which is already SupabaseClientService
+    // This has proper handling for authentication and permissions
+    console.log(`INSERTING FILES: Using existing Supabase client with proper authentication...`);
     
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error('ERROR: Missing Supabase URL or service role key in environment variables');
-      throw new Error('Missing required environment variables for database connection');
-    }
-    
-    console.log(`INSERTING FILES: Connecting to Supabase at ${supabaseUrl.substring(0, 20)}...`);
-    
-    // Create a supabase admin client with service role key to bypass RLS
-    // Use autoRefreshToken: false to avoid multiple GoTrueClient instances warning
-    const supabaseAdmin = createClient<Database>(
-      supabaseUrl,
-      serviceRoleKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false  // Don't persist admin sessions
-        }
-      }
-    );
+    // Use the existing supabase client which already has the service role key
+    const supabaseAdmin = supabase;
 
     // Test the connection first
     try {
@@ -1105,16 +1087,8 @@ export async function insertGoogleFiles(files: DriveFile[], timeout = 600000): P
  */
 export async function getTableStructure(tableName: string) {
   try {
-    const supabaseAdmin = createClient<Database>(
-      import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false  // Don't persist admin sessions
-        }
-      }
-    );
+    // Use existing Supabase client instead of creating a new one
+    const supabaseAdmin = supabase;
     
     // First try with get_table_metadata RPC
     try {
@@ -1321,30 +1295,11 @@ export async function fixPathsInDatabase(rootFolderId?: string): Promise<{
   try {
     console.log('Starting path fixing operation...');
     
-    // Check for Supabase admin credentials
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    // Use existing Supabase client
+    console.log('Using existing Supabase client for path fixing...');
     
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error('Missing Supabase credentials');
-      return {
-        fixed: 0,
-        errors: 0,
-        details: ['Missing Supabase credentials']
-      };
-    }
-    
-    // Create admin client
-    const supabaseAdmin = createClient<any>(
-      supabaseUrl,
-      serviceRoleKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    // Reuse the existing supabase client which already has proper auth
+    const supabaseAdmin = supabase;
     
     // Get all records that need to be fixed
     let query = supabaseAdmin

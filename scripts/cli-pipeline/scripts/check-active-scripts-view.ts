@@ -1,30 +1,12 @@
 /**
  * Simple script to check if active_scripts_view exists in the database
+ * Uses the SupabaseClientService singleton
  */
-import { createClient } from '@supabase/supabase-js';
-import * as fs from 'fs';
-import * as dotenv from 'dotenv';
-
-// Load environment variables
-const envFiles = ['.env', '.env.development', '.env.local'];
-envFiles.forEach(file => {
-  if (fs.existsSync(file)) {
-    console.log(`Loading environment from ${file}`);
-    dotenv.config({ path: file });
-  }
-});
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 async function checkView() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('Missing Supabase URL or key. Please check your environment variables.');
-    process.exit(1);
-  }
-  
-  console.log('Connecting to Supabase...');
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  console.log('Using SupabaseClientService singleton...');
+  const supabase = SupabaseClientService.getInstance().getClient();
   
   try {
     // Check if view exists by querying it

@@ -44,22 +44,8 @@ class DocumentClassifier {
     }
     
     try {
-      // Get the Supabase client instance using SupabaseClientService
-      try {
-        const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
-        const supabaseService = SupabaseClientService.getInstance();
-        this.supabase = supabaseService.getClient();
-      } catch (e) {
-        // Fallback to direct client creation
-        const supabaseUrl = process.env.SUPABASE_URL as string;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
-        
-        if (!supabaseUrl || !supabaseKey) {
-          throw new Error('Missing Supabase environment variables SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-        }
-        
-        this.supabase = createClient(supabaseUrl, supabaseKey);
-      }
+      // Always use the SupabaseClientService singleton
+      this.supabase = SupabaseClientService.getInstance().getClient();
       
       this.componentStatus['supabase'] = { status: 'ok' };
       

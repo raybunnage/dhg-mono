@@ -1,9 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
 import { marked } from 'marked';
 import { createHash } from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import type { Database } from '../../../../../supabase/types';
+import { supabase } from '../integrations/supabase/client';
 
 // Types
 export interface DocumentMetadata {
@@ -39,11 +39,6 @@ export interface DocumentRelation {
   targetId: string;
   relationType: string;
 }
-
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
-const supabase = createClient<Database>(supabaseUrl, supabaseKey);
 
 /**
  * Documentation Service

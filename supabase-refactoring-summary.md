@@ -30,23 +30,40 @@ We have successfully refactored key parts of the codebase to use the SupabaseCli
    - Archived files with timestamp suffixes to maintain history
    - Ensured all original implementations are preserved for reference
 
+## Additional Files Refactored
+
+We have completed refactoring more files to use the SupabaseClientService:
+
+1. **Frontend Services** in `apps/dhg-improve-experts/src/services/`:
+   - `documentationService.ts` - Replaced direct client creation with singleton
+   - `googleDriveService.ts` - Updated multiple methods to use existing singleton client
+
+2. **Utility Scripts** in `apps/dhg-improve-experts/src/utils/`:
+   - `google-drive-roots.ts` - Removed unnecessary direct imports
+
+3. Document-related scripts in `scripts/cli-pipeline/document/`:
+   - `document-summary-report.ts` - Replaced direct client creation
+   - `document-service.ts` - Updated to use SupabaseClientService
+
+4. Additional CLI scripts in `scripts/cli-pipeline/scripts/`:
+   - `check-active-scripts-view.ts` - Now uses SupabaseClientService
+
+5. Google Sync scripts in `scripts/cli-pipeline/google_sync/`:
+   - `classify-missing-docs.ts` - Removed dynamic require and fallback logic
+
 ## Remaining Work
 
-There are still some scripts that could be refactored to use the SupabaseClientService:
+There may still be some scripts that need refactoring to use the SupabaseClientService:
 
 1. Additional CLI scripts in `scripts/cli-pipeline/scripts/`:
    - `classify-script-with-prompt.ts`
-   - `check-active-scripts-view.ts`
    - `direct-db-sync.ts`
 
 2. Document-related scripts in `scripts/cli-pipeline/document/`:
    - `sync-markdown-files.ts`
-   - `document-summary-report.ts`
    - `standalone-document-service.ts`
 
-3. Google Sync scripts in `scripts/cli-pipeline/google_sync/`:
-   - `classify-missing-docs.ts`
-   - Several JS scripts that might need to be converted or archived
+3. Any remaining JS scripts in the codebase that might need to be converted or archived
 
 ## Benefits of This Refactoring
 

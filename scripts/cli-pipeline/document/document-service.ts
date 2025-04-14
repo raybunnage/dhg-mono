@@ -8,17 +8,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
-
-// Load environment variables
-const envPaths = ['.env', '.env.local', '.env.development'];
-for (const envPath of envPaths) {
-  const fullPath = path.resolve(process.cwd(), envPath);
-  if (fs.existsSync(fullPath)) {
-    dotenv.config({ path: fullPath });
-  }
-}
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 /**
  * Log levels for the service
@@ -92,16 +83,9 @@ export class DocumentService {
     // Ensure directories exist
     this.createDirectoriesIfNeeded();
     
-    // Initialize Supabase client
-    const supabaseUrl = options?.supabaseUrl || process.env.SUPABASE_URL;
-    const supabaseKey = options?.supabaseKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase URL or key. Please check your environment variables.');
-    }
-    
-    this.supabase = createClient(supabaseUrl, supabaseKey);
-    this.log(LogLevel.INFO, 'Document Service initialized');
+    // Use SupabaseClientService singleton instead of creating a direct client
+    this.supabase = SupabaseClientService.getInstance().getClient();
+    this.log(LogLevel.INFO, 'Document Service initialized with SupabaseClientService singleton');
   }
   
   /**
