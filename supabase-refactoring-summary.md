@@ -44,26 +44,32 @@ We have completed refactoring more files to use the SupabaseClientService:
 3. Document-related scripts in `scripts/cli-pipeline/document/`:
    - `document-summary-report.ts` - Replaced direct client creation
    - `document-service.ts` - Updated to use SupabaseClientService
+   - `sync-markdown-files.ts` - Already using SupabaseClientService
+   - `standalone-document-service.ts` - Already using SupabaseClientService
 
 4. Additional CLI scripts in `scripts/cli-pipeline/scripts/`:
    - `check-active-scripts-view.ts` - Now uses SupabaseClientService
+   - `classify-script-with-prompt.ts` - Updated to use SupabaseClientService
+   - `direct-db-sync.ts` - Replaced direct client creation with singleton pattern
 
 5. Google Sync scripts in `scripts/cli-pipeline/google_sync/`:
    - `classify-missing-docs.ts` - Removed dynamic require and fallback logic
 
-## Remaining Work
+6. **Test Files**:
+   - Archived `test-fixed-client.ts` which used direct client creation
+   - Kept `test-client-service.ts` as it properly uses the singleton pattern
 
-There may still be some scripts that need refactoring to use the SupabaseClientService:
+## Current Status
 
-1. Additional CLI scripts in `scripts/cli-pipeline/scripts/`:
-   - `classify-script-with-prompt.ts`
-   - `direct-db-sync.ts`
+✅ All identified files have been successfully refactored to use the SupabaseClientService singleton pattern.
 
-2. Document-related scripts in `scripts/cli-pipeline/document/`:
-   - `sync-markdown-files.ts`
-   - `standalone-document-service.ts`
+The refactoring process included:
+1. Identifying all files using direct Supabase client creation
+2. Updating code to use the SupabaseClientService singleton pattern
+3. Archiving test files that purposely used direct client creation
+4. Verifying code functionality throughout
 
-3. Any remaining JS scripts in the codebase that might need to be converted or archived
+Any remaining JS scripts in the codebase that might still be using direct client creation should be identified and refactored as needed, but all main TypeScript files now use the proper singleton pattern.
 
 ## Benefits of This Refactoring
 
