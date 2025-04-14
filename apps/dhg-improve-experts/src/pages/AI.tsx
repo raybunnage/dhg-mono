@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from '@/components/ui/badge';
 import { PromptFile, getPromptFiles, loadPromptContent as fetchPromptContent, savePromptContent, createPromptFile, generatePromptWithContext, applyPromptToFiles as applyPrompt } from '@/utils/prompt-manager';
 import { toast } from 'react-hot-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { SupabaseClientService, getSupabaseClient, initializeSupabase } from '@/integrations/supabase/client';
 
 interface DocumentType {
   id: string;
@@ -155,16 +155,30 @@ const AI: React.FC = () => {
 
   // Listen for online/offline events
   useEffect(() => {
-    const handleOnline = () => {
+    const handleOnline = async () => {
       setIsOnline(true);
       toast.success('Connection restored. Reloading data...');
       
-      // Reload data when connection is restored
-      loadPromptFiles();
-      loadDocumentTypes();
-      loadPromptCategories();
-      loadDatabasePrompts();
-      loadDocumentationFiles();
+      // Initialize auth first
+      try {
+        const authSuccess = await initializeSupabase();
+        if (!authSuccess) {
+          toast.error('Authentication failed. Some features may be unavailable.');
+          return;
+        }
+        
+        // Reload data when connection is restored
+        await Promise.all([
+          loadPromptFiles(),
+          loadDocumentTypes(),
+          loadPromptCategories(),
+          loadDatabasePrompts(),
+          loadDocumentationFiles()
+        ]);
+      } catch (error) {
+        console.error('Error reloading data after reconnect:', error);
+        toast.error('Failed to reload data after reconnection.');
+      }
     };
     
     const handleOffline = () => {
@@ -193,95 +207,146 @@ const AI: React.FC = () => {
       setApiKey(savedApiKey);
     }
     
-    // Check if online before loading data
-    if (navigator.onLine) {
-      loadPromptFiles();
-      loadDocumentTypes();
-      loadPromptCategories();
-      loadDatabasePrompts();
-      loadDocumentationFiles();
-    } else {
-      // If offline, show a message and load fallback data
-      toast.error('You are currently offline. Some features may be unavailable.');
-      loadPromptFiles(); // This might still work if it uses local storage
-      loadDocumentTypes(); // This has fallback data
-      setPromptCategories([]);
-      setDatabasePrompts([]);
-      setDocumentationFiles([]);
+    // Initialize Supabase and load data
+    async function initializeData() {
+      try {
+        // Initialize Supabase auth before loading any data
+        const authSuccess = await initializeSupabase();
+        if (!authSuccess) {
+          toast.error('Authentication failed. Some features may be unavailable.');
+        }
+        
+        // Check if online before loading data
+        if (navigator.onLine) {
+          await Promise.all([
+            loadPromptFiles(),
+            loadDocumentTypes(),
+            loadPromptCategories(),
+            loadDatabasePrompts(),
+            loadDocumentationFiles()
+          ]);
+        } else {
+          // If offline, show a message and load fallback data
+          toast.error('You are currently offline. Some features may be unavailable.');
+          loadPromptFiles(); // This might still work if it uses local storage
+          loadDocumentTypes(); // This has fallback data
+          setPromptCategories([]);
+          setDatabasePrompts([]);
+          setDocumentationFiles([]);
+        }
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        toast.error('Failed to load data. Please try again later.');
+      }
     }
+    
+    initializeData();
   }, []);
   
   // Load documentation files from the database
   const loadDocumentationFiles = async () => {
     setIsLoading(prev => ({ ...prev, loadingDocFiles: true }));
+    
+    // Function to get package.json files
+    const findPackageJsonFiles = async () => {
+      try {
+        // This is a simplification - in a real implementation, you would
+        // scan the filesystem for package.json files or use an API
+        // Using proper UUID format for the ids
+        const packageFiles = [
+          {
+            id: "00000000-0000-4000-a000-000000000001",
+            file_path: "/package.json",
+            title: "Root package.json",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_modified_at: new Date().toISOString(),
+            metadata: { isPackageJson: true }
+          },
+          {
+            id: "00000000-0000-4000-a000-000000000002",
+            file_path: "/apps/dhg-a/package.json",
+            title: "dhg-a package.json",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_modified_at: new Date().toISOString(),
+            metadata: { isPackageJson: true }
+          },
+          {
+            id: "00000000-0000-4000-a000-000000000003",
+            file_path: "/apps/dhg-b/package.json",
+            title: "dhg-b package.json",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_modified_at: new Date().toISOString(),
+            metadata: { isPackageJson: true }
+          },
+          {
+            id: "00000000-0000-4000-a000-000000000004",
+            file_path: "/apps/dhg-hub-lovable/package.json",
+            title: "dhg-hub-lovable package.json",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_modified_at: new Date().toISOString(),
+            metadata: { isPackageJson: true }
+          },
+          {
+            id: "00000000-0000-4000-a000-000000000005",
+            file_path: "/apps/dhg-improve-experts/package.json",
+            title: "dhg-improve-experts package.json",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_modified_at: new Date().toISOString(),
+            metadata: { isPackageJson: true }
+          }
+        ];
+        return packageFiles;
+      } catch (error) {
+        console.error("Error finding package.json files:", error);
+        return [];
+      }
+    };
+    
     try {
+      // Get supabase client from service
+      const supabase = getSupabaseClient();
+      
       // Modified to remove the is_deleted filter which was removed from the table
       const { data, error } = await supabase
         .from('documentation_files')
         .select('*')
         .order('last_modified_at', { ascending: false });
         
-      if (error) throw error;
-      
-      // Load package.json files from the project
-      const findPackageJsonFiles = async () => {
-        try {
-          // This is a simplification - in a real implementation, you would
-          // scan the filesystem for package.json files or use an API
-          // Using proper UUID format for the ids
-          const packageFiles = [
-            {
-              id: "00000000-0000-4000-a000-000000000001",
-              file_path: "/package.json",
-              title: "Root package.json",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              last_modified_at: new Date().toISOString(),
-              metadata: { isPackageJson: true }
-            },
-            {
-              id: "00000000-0000-4000-a000-000000000002",
-              file_path: "/apps/dhg-a/package.json",
-              title: "dhg-a package.json",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              last_modified_at: new Date().toISOString(),
-              metadata: { isPackageJson: true }
-            },
-            {
-              id: "00000000-0000-4000-a000-000000000003",
-              file_path: "/apps/dhg-b/package.json",
-              title: "dhg-b package.json",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              last_modified_at: new Date().toISOString(),
-              metadata: { isPackageJson: true }
-            },
-            {
-              id: "00000000-0000-4000-a000-000000000004",
-              file_path: "/apps/dhg-hub-lovable/package.json",
-              title: "dhg-hub-lovable package.json",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              last_modified_at: new Date().toISOString(),
-              metadata: { isPackageJson: true }
-            },
-            {
-              id: "00000000-0000-4000-a000-000000000005",
-              file_path: "/apps/dhg-improve-experts/package.json",
-              title: "dhg-improve-experts package.json",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              last_modified_at: new Date().toISOString(),
-              metadata: { isPackageJson: true }
-            }
-          ];
-          return packageFiles;
-        } catch (error) {
-          console.error("Error finding package.json files:", error);
-          return [];
+      if (error) {
+        // Handle authentication errors
+        if (error.code === '401' || error.message?.includes('JWT')) {
+          // Try to re-authenticate
+          const authSuccess = await initializeSupabase();
+          if (!authSuccess) {
+            throw new Error('Authentication failed. Please refresh the page and try again.');
+          }
+          
+          // Retry the query after successful authentication
+          const { data: retryData, error: retryError } = await supabase
+            .from('documentation_files')
+            .select('*')
+            .order('last_modified_at', { ascending: false });
+            
+          if (retryError) throw retryError;
+          
+          if (retryData) {
+            // Continue with the retry data
+            const packageFiles = await findPackageJsonFiles();
+            const combinedFiles = [...(retryData || []), ...packageFiles];
+            
+            setDocumentationFiles(combinedFiles);
+            console.log(`Loaded ${retryData?.length || 0} documentation files and ${packageFiles.length} package.json files`);
+            return;
+          }
+        } else {
+          throw error;
         }
-      };
+      }
 
       // Combine database files with package.json files
       const packageFiles = await findPackageJsonFiles();
@@ -296,8 +361,12 @@ const AI: React.FC = () => {
         toast.error('Network connection issue. Please check your internet connection.');
         // Provide fallback data if needed
         setDocumentationFiles([]);
+      } else if (error.message?.includes('401') || error.message?.includes('auth')) {
+        toast.error('Authentication error. Please refresh the page.');
+        setDocumentationFiles([]);
       } else {
         toast.error('Failed to load documentation files');
+        setDocumentationFiles([]);
       }
     } finally {
       setIsLoading(prev => ({ ...prev, loadingDocFiles: false }));
@@ -306,12 +375,37 @@ const AI: React.FC = () => {
   
   const loadDocumentTypes = async () => {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('document_types')
         .select('*')
         .order('document_type', { ascending: true });
         
-      if (error) throw error;
+      if (error) {
+        // Handle authentication errors
+        if (error.code === '401' || error.message?.includes('JWT')) {
+          // Try to re-authenticate
+          const authSuccess = await initializeSupabase();
+          if (!authSuccess) {
+            throw new Error('Authentication failed. Please refresh the page and try again.');
+          }
+          
+          // Retry the query after successful authentication
+          const { data: retryData, error: retryError } = await supabase
+            .from('document_types')
+            .select('*')
+            .order('document_type', { ascending: true });
+            
+          if (retryError) throw retryError;
+          
+          if (retryData) {
+            setDocumentTypes(retryData);
+            return;
+          }
+        } else {
+          throw error;
+        }
+      }
       
       if (data) {
         setDocumentTypes(data);
@@ -321,7 +415,12 @@ const AI: React.FC = () => {
       // Check for network connectivity issues
       if (error.message?.includes('Failed to fetch') || !navigator.onLine) {
         toast.error('Network connection issue. Please check your internet connection.');
+      } else if (error.message?.includes('401') || error.message?.includes('auth')) {
+        toast.error('Authentication error. Please refresh the page.');
+      } else {
+        toast.error('Failed to load document types');
       }
+      
       // Fallback to mock data if database connection fails
       setDocumentTypes([
         { id: '1', document_type: 'PDF Document', description: 'PDF files containing text content', mime_type: 'application/pdf', category: 'Document' },
@@ -334,6 +433,7 @@ const AI: React.FC = () => {
   
   const loadPromptCategories = async () => {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('prompt_categories')
         .select('*')
@@ -360,6 +460,7 @@ const AI: React.FC = () => {
   const loadDatabasePrompts = async () => {
     setIsLoading(prev => ({ ...prev, loadingDbPrompts: true }));
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('prompts')
         .select('*')
@@ -405,6 +506,7 @@ const AI: React.FC = () => {
         if (relatedAssetIds.length > 0) {
           try {
             // Get relationship data from prompt_relationships table
+            const supabase = getSupabaseClient();
             const { data: relationshipData, error } = await supabase
               .from('prompt_relationships')
               .select('asset_id, document_type_id')
@@ -718,6 +820,7 @@ const AI: React.FC = () => {
       const structuredMetadata = buildMetadataObject(metadata, content, file.name);
       
       // Get or create category if specified
+      const supabase = getSupabaseClient();
       let categoryId = null;
       if (metadata.category) {
         // Check if category exists
@@ -821,6 +924,7 @@ const AI: React.FC = () => {
     
     setIsLoading(prev => ({ ...prev, creatingCategory: true }));
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('prompt_categories')
         .insert([{
@@ -852,6 +956,7 @@ const AI: React.FC = () => {
   // Load a database prompt for viewing/editing
   const loadDatabasePrompt = async (promptId: string) => {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('prompts')
         .select('*')
@@ -927,6 +1032,7 @@ const AI: React.FC = () => {
       console.log('Updating prompt with data:', updateData);
       
       // Update prompt
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('prompts')
         .update(updateData)
@@ -996,6 +1102,7 @@ const AI: React.FC = () => {
     if (existingRelationships.length > 0) {
       try {
         // Get relationship data from prompt_relationships table
+        const supabase = getSupabaseClient();
         const { data: relationshipData, error } = await supabase
           .from('prompt_relationships')
           .select('*')
@@ -1122,6 +1229,7 @@ const AI: React.FC = () => {
           } else {
             // Try to load from database if not found in our cache for regular files
             try {
+              const supabase = getSupabaseClient();
               const { data, error } = await supabase
                 .from('prompt_relationships')
                 .select('*')
@@ -1254,6 +1362,7 @@ const AI: React.FC = () => {
           } else {
             // Try to load from database for regular files
             try {
+              const supabase = getSupabaseClient();
               const { data, error } = await supabase
                 .from('prompt_relationships')
                 .select('*')
@@ -1377,6 +1486,7 @@ const AI: React.FC = () => {
       };
       
       // Update the prompt in the database
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('prompts')
         .update({
@@ -1516,6 +1626,7 @@ const AI: React.FC = () => {
     if (relatedAssetIds.length > 0) {
       try {
         // Get relationship data from prompt_relationships table
+        const supabase = getSupabaseClient();
         const { data: relationshipData, error } = await supabase
           .from('prompt_relationships')
           .select('*') // Select all fields to get all relationship data

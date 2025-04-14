@@ -1,6 +1,6 @@
 # Document Type Check Report
 
-Report generated on 2025-04-12T18:34:04.260Z
+Report generated on 2025-04-14T01:44:35.433Z
 
 This report shows .docx and .txt files that are missing document_type_id values.
 

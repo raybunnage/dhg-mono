@@ -21,13 +21,23 @@ export class SupabaseClientService {
    * Private constructor to enforce singleton pattern
    */
   private constructor() {
-    // Read environment variables (from Vite)
-    this.supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    this.supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    // Read environment variables with fallbacks to support both frontend (VITE_) and backend naming
+    this.supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 
+                      (typeof process !== 'undefined' && process.env ? process.env.SUPABASE_URL : null);
+    
+    // Try both ANON_KEY and SERVICE_ROLE_KEY as fallbacks
+    this.supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 
+                      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+                      (typeof process !== 'undefined' && process.env ? 
+                        (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY) : null);
 
     // Validate environment variables
     if (!this.supabaseUrl || !this.supabaseKey) {
-      console.error('Missing Supabase environment variables. Please check your .env file.');
+      console.error('Missing Supabase environment variables. Please check your .env or .env.development file.');
+      console.error('Required: VITE_SUPABASE_URL/SUPABASE_URL and VITE_SUPABASE_ANON_KEY/SUPABASE_ANON_KEY or their SERVICE_ROLE equivalents');
+    } else {
+      console.log(`Supabase URL found: ${this.supabaseUrl.substring(0, 20)}...`);
+      console.log(`Supabase key found: ${this.supabaseKey.substring(0, 5)}...${this.supabaseKey.substring(this.supabaseKey.length - 5)}`);
     }
   }
 

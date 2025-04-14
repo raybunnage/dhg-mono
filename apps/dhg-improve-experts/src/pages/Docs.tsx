@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { getSupabaseClient, initializeSupabase } from '@/integrations/supabase/client';
 import { markdownFileService } from '@/services/markdownFileService';
 import MarkdownViewer from '@/components/MarkdownViewer';
 import toast from 'react-hot-toast';
@@ -42,6 +42,10 @@ function Docs() {
   // Fetch document types from the database
   const fetchDocumentTypes = async () => {
     try {
+      // Make sure we're authenticated
+      await initializeSupabase();
+      const supabase = getSupabaseClient();
+      
       const { data, error } = await supabase
         .from('document_types')
         .select('*')
@@ -62,6 +66,10 @@ function Docs() {
     try {
       // First fetch document types
       const types = await fetchDocumentTypes();
+      
+      // Initialize authentication if needed
+      await initializeSupabase();
+      const supabase = getSupabaseClient();
       
       // Simple query since we no longer have is_deleted column - files in the DB are all valid
       let query = supabase
@@ -342,6 +350,9 @@ function Docs() {
       const types = await fetchDocumentTypes();
       
       // Fetch all documentation files since we'll need to filter client-side for tags
+      await initializeSupabase();
+      const supabase = getSupabaseClient();
+      
       let query = supabase
         .from('documentation_files')
         .select('*');
@@ -466,6 +477,9 @@ function Docs() {
   // Fetch file details by path
   const fetchFileDetailsByPath = async (filePath: string): Promise<DocumentationFile | null> => {
     try {
+      await initializeSupabase();
+      const supabase = getSupabaseClient();
+      
       const { data, error } = await supabase
         .from('documentation_files')
         .select('*')
@@ -576,6 +590,9 @@ function Docs() {
       
       if (result.success) {
         // Update the file path in the database to reflect the new archived location
+        await initializeSupabase();
+        const supabase = getSupabaseClient();
+        
         const { error: updateError } = await supabase
           .from('documentation_files')
           .update({
@@ -642,6 +659,9 @@ function Docs() {
       }
       
       // Then, delete from database regardless of whether the file deletion succeeded
+      await initializeSupabase();
+      const supabase = getSupabaseClient();
+      
       let deleteResult;
       
       // Check if we're deleting by ID or by path
@@ -659,6 +679,7 @@ function Docs() {
         deleteResult = { success: true };
       } else if (byPath && file.file_path) {
         // Delete the file from the database by file_path
+        // No need to get supabase client again, it's already initialized above
         const { error: deleteError, data } = await supabase
           .from('documentation_files')
           .delete()
@@ -710,6 +731,9 @@ function Docs() {
   // Helper to get existing metadata for a file
   const getExistingMetadata = async (fileId: string) => {
     try {
+      await initializeSupabase();
+      const supabase = getSupabaseClient();
+      
       // Fetch the current metadata
       const { data, error } = await supabase
         .from('documentation_files')
@@ -748,6 +772,9 @@ function Docs() {
     try {
       // Try batch update first (faster, but might not work with metadata)
       try {
+        await initializeSupabase();
+        const supabase = getSupabaseClient();
+        
         const { error } = await supabase
           .from('documentation_files')
           .update({ 
@@ -776,6 +803,8 @@ function Docs() {
             const metadata = await getExistingMetadata(fileId);
             
             // Update this file individually
+            // We already have supabase from the try block above
+            // or from getExistingMetadata which initializes it
             const { error } = await supabase
               .from('documentation_files')
               .update({ 
@@ -1113,6 +1142,9 @@ function Docs() {
         console.log(`[DEBUG FILTER] Directly filtering for tag: "${normalizedTag}"`);
         
         // Fetch all documentation files first
+        await initializeSupabase();
+        const supabase = getSupabaseClient();
+        
         const { data, error } = await supabase
           .from('documentation_files')
           .select('*')
