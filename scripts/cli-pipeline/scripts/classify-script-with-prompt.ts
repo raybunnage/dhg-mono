@@ -16,13 +16,14 @@ if (!process.env.ANTHROPIC_API_KEY && process.env.CLAUDE_API_KEY) {
   process.env.CLAUDE_API_KEY = process.env.ANTHROPIC_API_KEY;
 }
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
 import * as http from 'http';
 import { IncomingMessage } from 'http';
 import { FileService } from '../../packages/cli/src/services/file-service';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Add global declaration for TypeScript
 declare global {
@@ -928,18 +929,17 @@ async function main(): Promise<void> {
       }
     }
     
-    // Initialize Supabase client
-    const supabaseUrl: string = process.env.SUPABASE_URL || '';
-    const supabaseKey: string = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    // Initialize Supabase client using SupabaseClientService singleton
+    console.log('🔑 Initializing Supabase client using SupabaseClientService singleton...');
+    const supabaseService = SupabaseClientService.getInstance();
     
-    // Log whether we have the necessary credentials
-    console.log('🔑 Checking credentials:');
-    console.log(`- Supabase URL: ${supabaseUrl ? '✅ Found' : '❌ Missing'}`);
-    console.log(`- Supabase Key: ${supabaseKey ? '✅ Found' : '❌ Missing'}`);
+    // Test connection and get credentials status
+    const connectionResult = await supabaseService.testConnection();
+    console.log(`- Supabase Connection: ${connectionResult.success ? '✅ Connected' : '❌ Failed to connect'}`);
     console.log(`- Claude API Key: ${getClaudeApiKey() ? '✅ Found' : '❌ Missing'}`);
     
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('❌ Missing Supabase credentials');
+    if (!connectionResult.success) {
+      console.error(`❌ Supabase connection failed: ${connectionResult.error}`);
       process.exit(1);
     }
     
@@ -948,8 +948,8 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     
-    // Initialize the Supabase client
-    supabase = createClient(supabaseUrl, supabaseKey);
+    // Get the Supabase client instance
+    supabase = supabaseService.getClient();
     
     if (scriptCount === 1) {
       // Run a single classification

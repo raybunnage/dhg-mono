@@ -2,44 +2,33 @@
  * Direct Database Sync Script
  * 
  * This script directly syncs script files with the database using
- * Supabase client instead of relying on database functions
+ * SupabaseClientService singleton pattern instead of relying on database functions
  */
 import * as path from 'path';
 import * as fs from 'fs';
 import { exec } from 'child_process';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
-// Load environment variables
-function loadEnv() {
-  const rootDir = path.resolve(__dirname, '../../../');
-  
-  // Try loading from multiple env files
-  const envFiles = [
-    path.join(rootDir, '.env'),
-    path.join(rootDir, '.env.local'),
-    path.join(rootDir, '.env.development')
-  ];
-  
-  envFiles.forEach(file => {
-    if (fs.existsSync(file)) {
-      console.log(`Loading environment from ${file}`);
-      dotenv.config({ path: file });
-    }
-  });
-}
-
-// Initialize Supabase
+// Initialize Supabase using SupabaseClientService singleton
 function initSupabase(): SupabaseClient {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+  console.log('Initializing Supabase client using SupabaseClientService singleton');
+  const supabaseService = SupabaseClientService.getInstance();
   
-  if (!url || !key) {
-    throw new Error('Missing Supabase URL or key. Check your environment variables.');
-  }
+  // Test connection
+  supabaseService.testConnection()
+    .then(result => {
+      if (result.success) {
+        console.log('✅ Supabase connection test successful');
+      } else {
+        console.warn(`⚠️ Supabase connection test failed: ${result.error}`);
+      }
+    })
+    .catch(err => {
+      console.warn(`⚠️ Error testing Supabase connection: ${err.message}`);
+    });
   
-  console.log(`Initializing Supabase client for ${url}`);
-  return createClient(url, key);
+  return supabaseService.getClient();
 }
 
 // Find all script files
@@ -189,10 +178,7 @@ async function syncDatabase(supabase: SupabaseClient, scriptFiles: string[]): Pr
 // Main function
 async function main() {
   try {
-    // Load environment variables
-    loadEnv();
-    
-    // Initialize Supabase client
+    // Initialize Supabase client using the singleton pattern
     const supabase = initSupabase();
     
     // Find all script files
