@@ -19,13 +19,14 @@
 
 import path from 'path';
 import crypto from 'crypto';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { FileService } from '../../packages/cli/src/services/file-service';
 import { Logger, LogLevel } from '../../packages/cli/src/utils/logger';
 import { ErrorHandler } from '../../packages/cli/src/utils/error-handler';
-import { SupabaseClientService } from '../../packages/shared/services/supabase-client';
 
 // Environment variables
+const SUPABASE_URL = process.env.CLI_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.CLI_SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const LOG_LEVEL = (process.env.CLI_LOG_LEVEL || 'info').toLowerCase() as string;
 
 // Configure logger
@@ -37,22 +38,14 @@ Logger.setLevel(
   LogLevel.INFO
 );
 
-// Initialize SupabaseClientService and get client
-const supabaseService = SupabaseClientService.getInstance();
-const supabase = supabaseService.getClient();
-
-// Test connection
-async function testConnection() {
-  const connectionResult = await supabaseService.testConnection();
-  if (!connectionResult.success) {
-    Logger.error(`Supabase connection failed: ${connectionResult.error}`);
-    process.exit(1);
-  }
-  Logger.info('Supabase connection successful');
+// Exit if Supabase credentials are missing
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  Logger.error('Missing Supabase credentials. Set CLI_SUPABASE_URL and CLI_SUPABASE_KEY environment variables.');
+  process.exit(1);
 }
 
-// Run the connection test before proceeding
-testConnection();
+// Create Supabase client
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Create file service instance
 const fileService = new FileService();

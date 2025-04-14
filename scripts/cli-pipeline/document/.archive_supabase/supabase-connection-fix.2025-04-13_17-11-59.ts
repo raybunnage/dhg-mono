@@ -2,13 +2,12 @@
  * Supabase Connection Fix
  * 
  * Debug script to check and fix Supabase connection issues.
- * Uses the standard SupabaseClientService singleton.
  */
-import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 import { environmentService } from '../shared/services/environment-service';
 
 async function checkConnection() {
-  // Get config for debugging purposes
+  // Get config
   const config = environmentService.getConfig();
   console.log('Environment configuration loaded:', {
     supabaseUrl: config.supabaseUrl,
@@ -20,35 +19,38 @@ async function checkConnection() {
   });
 
   try {
-    // Use the SupabaseClientService singleton
-    console.log('Using SupabaseClientService singleton...');
-    const supabaseService = SupabaseClientService.getInstance();
-    
-    // Test connection
-    const connectionResult = await supabaseService.testConnection();
-    
-    if (!connectionResult.success) {
-      console.error('Connection test failed:', connectionResult.error);
-      return;
-    }
-    
-    console.log('Connection test successful!');
-    
-    // Do additional queries for more testing
-    const client = supabaseService.getClient();
-    
+    // Create client with specific options for debugging
+    const client = createClient(config.supabaseUrl, config.supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      // Set longer timeout for debugging
+      global: {
+        fetch: (url, options) => {
+          return fetch(url, {
+            ...options,
+            timeout: 30000 // 30 seconds timeout
+          });
+        }
+      }
+    });
+
     console.log('Testing connection to documentation_files table...');
+    
+    // Test connection with simple query that won't return much data
     const { data, error, count } = await client
       .from('documentation_files')
       .select('*', { count: 'exact' })
       .limit(1);
     
     if (error) {
-      console.error('Error querying documentation_files:', error);
-    } else {
-      console.log('Successfully queried documentation_files! Found', count, 'records');
-      console.log('Sample data:', data);
+      console.error('Connection error:', error);
+      return;
     }
+    
+    console.log('Connection successful! Found', count, 'records in documentation_files table');
+    console.log('Sample data:', data);
     
     // Also check for document_types table which is needed for classification
     const { data: typeData, error: typeError } = await client

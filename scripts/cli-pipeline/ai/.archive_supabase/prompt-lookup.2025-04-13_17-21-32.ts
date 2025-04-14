@@ -1,7 +1,7 @@
-import { SupabaseClient } from '@supabase/supabase-js';
-import { FileService } from '../../packages/shared/services/file-service/file-service';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { FileService, FileResult } from '../../packages/shared/services/file-service/file-service';
 import { SupabaseService } from '../../packages/shared/services/supabase-service/supabase-service';
-import { SupabaseClientService } from '../../packages/shared/services/supabase-client';
+import config from '../../packages/shared/utils/config';
 import { Logger } from '../../packages/shared/utils/logger';
 import path from 'path';
 import fs from 'fs';
@@ -55,9 +55,8 @@ interface Relationship {
 class CustomQueryExecutor {
   public client: SupabaseClient;
   
-  constructor() {
-    // Use the SupabaseClientService singleton
-    this.client = SupabaseClientService.getInstance().getClient();
+  constructor(url: string, key: string) {
+    this.client = createClient(url, key);
   }
   
   async executeCustomQuery(queryText: string): Promise<any> {
@@ -238,10 +237,13 @@ async function lookupPrompt(promptName: string, outputToMarkdown: boolean = fals
 
   try {
     // Initialize services
+    const supabaseUrl = process.env.SUPABASE_URL || '';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    
     // Initialize our services - we use SupabaseService for standard operations
     // and CustomQueryExecutor for the custom SQL queries
-    const supabaseService = new SupabaseService();
-    const queryExecutor = new CustomQueryExecutor();
+    const supabaseService = new SupabaseService(supabaseUrl, supabaseKey);
+    const queryExecutor = new CustomQueryExecutor(supabaseUrl, supabaseKey);
     const fileService = new FileService();
 
     // Step 1: Find prompt by name
@@ -575,12 +577,10 @@ ${results.join('\n')}
 }
 
 // Function to load a sample script ID from the database
-async function getSampleScriptId(): Promise<string | null> {
+async function getSampleScriptId(supabaseClient: SupabaseClient): Promise<string | null> {
   try {
-    console.log('Fetching a sample script ID from the database using SupabaseClientService...');
-    const supabase = SupabaseClientService.getInstance().getClient();
-    
-    const { data, error } = await supabase
+    console.log('Fetching a sample script ID from the database...');
+    const { data, error } = await supabaseClient
       .from('scripts')
       .select('id, file_path')
       .limit(1)
@@ -607,20 +607,13 @@ async function getSampleScriptId(): Promise<string | null> {
 // Main execution
 async function main() {
   try {
-    // Initialize the SupabaseClientService
-    const supabaseClientService = SupabaseClientService.getInstance();
-    
-    // Test connection to make sure we can reach Supabase
-    const connectionTest = await supabaseClientService.testConnection();
-    if (!connectionTest.success) {
-      console.error('Failed to connect to Supabase:', connectionTest.error);
-      // Continue anyway - we'll handle failures gracefully
-    } else {
-      console.log('Successfully connected to Supabase');
-    }
+    // Initialize Supabase client for sample script ID
+    const supabaseUrl = process.env.SUPABASE_URL || '';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
     
     // Get a sample script ID first
-    const sampleScriptId = await getSampleScriptId();
+    const sampleScriptId = await getSampleScriptId(supabaseClient);
     
     // Set the sample script ID as a global variable for use in query replacement
     if (sampleScriptId) {

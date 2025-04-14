@@ -3,13 +3,11 @@
  * 
  * Provides database interaction through Supabase, with transaction support,
  * error handling, and query optimization.
- * Uses the SupabaseClientService singleton for database connectivity.
  */
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseConfig } from '../interfaces/types';
 import { environmentService } from './environment-service';
 import { logger } from './logger-service';
-import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 /**
  * Query options for the query method
@@ -30,7 +28,9 @@ interface QueryOptions {
  */
 export class DatabaseService {
   private static instance: DatabaseService;
-  private supabaseService: SupabaseClientService;
+  private client: SupabaseClient | null = null;
+  private url: string;
+  private key: string;
   private connected: boolean = false;
   
   /**
@@ -38,11 +38,26 @@ export class DatabaseService {
    * Private constructor to enforce singleton pattern
    */
   private constructor(config?: DatabaseConfig) {
-    // Use the SupabaseClientService singleton
-    this.supabaseService = SupabaseClientService.getInstance();
+    // First try direct config, then try environment service
+    this.url = config?.url || environmentService.get('supabaseUrl');
     
-    // Log information about the service (connection is established in SupabaseClientService)
-    logger.debug('DatabaseService initialized with SupabaseClientService singleton');
+    // For the key, first try the provided config, then try service role key, then fall back to regular key
+    this.key = config?.key || 
+               process.env.SUPABASE_SERVICE_ROLE_KEY || 
+               environmentService.get('supabaseKey');
+    
+    // Log connection parameters (with sensitive data masked)
+    const maskedKey = this.key ? `${this.key.substring(0, 5)}...${this.key.substring(this.key.length - 4)}` : 'Not set';
+    logger.debug('Database configuration', { 
+      url: this.url,
+      keyPreview: maskedKey,
+      keyLength: this.key?.length || 0
+    });
+    
+    if (!this.url || !this.key) {
+      logger.error('Missing Supabase URL or key. Please check your environment variables.');
+      throw new Error('Missing Supabase URL or key. Please check your environment variables.');
+    }
     
     // Automatically connect if specified
     if (config?.autoConnect !== false) {
@@ -64,17 +79,22 @@ export class DatabaseService {
    * Connect to Supabase
    */
   public connect(): SupabaseClient {
-    logger.debug('Connecting to Supabase using SupabaseClientService');
-    const client = this.supabaseService.getClient();
-    this.connected = true;
-    return client;
+    if (!this.client) {
+      logger.debug('Connecting to Supabase', { url: this.url });
+      this.client = createClient(this.url, this.key);
+      this.connected = true;
+    }
+    return this.client;
   }
   
   /**
    * Get Supabase client
    */
   public getClient(): SupabaseClient {
-    return this.supabaseService.getClient();
+    if (!this.client) {
+      return this.connect();
+    }
+    return this.client;
   }
   
   /**
@@ -94,18 +114,22 @@ export class DatabaseService {
    */
   public async testConnection(): Promise<{ success: boolean; error?: string; details?: any }> {
     try {
-      logger.info('Testing connection to Supabase using SupabaseClientService...');
+      logger.info('Testing connection to Supabase...');
+      const client = this.getClient();
       
-      // Use the existing test connection method from SupabaseClientService
-      const result = await this.supabaseService.testConnection();
-      
-      if (!result.success) {
-        logger.error('Connection test failed', { error: result.error });
-        return result;
+      // First test the auth connection
+      try {
+        const { data: authData, error: authError } = await client.auth.getSession();
+        if (authError) {
+          logger.warn('Auth connection test failed, but continuing with other tests', { authError });
+        } else {
+          logger.debug('Auth connection test successful');
+        }
+      } catch (authErr) {
+        logger.warn('Auth connection threw an exception, but continuing with other tests', { authErr });
       }
       
-      // Additional verification specific to this service - test documentation_files table
-      const client = this.getClient();
+      // Try a simple query to verify connection to documentation_files table
       const { data, error, count } = await client
         .from('documentation_files')
         .select('*', { count: 'exact' })
@@ -345,21 +369,17 @@ export class DatabaseService {
   }
   
   /**
-   * Get Supabase URL (delegates to SupabaseClientService)
+   * Get Supabase URL
    */
   public getUrl(): string {
-    // This doesn't have a direct equivalent in SupabaseClientService
-    // But we can get it from environment service for compatibility
-    return environmentService.get('supabaseUrl');
+    return this.url;
   }
   
   /**
-   * Get Supabase key (delegates to SupabaseClientService)
+   * Get Supabase key
    */
   public getKey(): string {
-    // This doesn't have a direct equivalent in SupabaseClientService
-    // But we can get it from environment service for compatibility
-    return environmentService.get('supabaseKey');
+    return this.key;
   }
 }
 

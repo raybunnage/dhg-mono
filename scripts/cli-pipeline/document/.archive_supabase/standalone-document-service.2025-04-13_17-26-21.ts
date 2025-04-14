@@ -1,14 +1,13 @@
 /**
  * Standalone Document Service
  * 
- * A service for managing documentation files, now using the SupabaseClientService
- * singleton pattern for consistent database access.
+ * This is a simplified version that doesn't rely on shared packages
+ * but demonstrates the concept of using services.
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
-import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Load environment variables
 const envPaths = ['.env', '.env.local', '.env.development'];
@@ -42,40 +41,33 @@ class Logger {
 
 // Config object
 const config = {
+  supabaseUrl: process.env.SUPABASE_URL || '',
+  supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   claudeApiKey: process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '',
 };
 
 // Document Service
 class DocumentService {
-  private supabaseService: SupabaseClientService;
+  private supabase: SupabaseClient;
   private rootDir: string;
   
   constructor() {
     this.rootDir = process.cwd();
     
-    // Initialize Supabase client service
-    this.supabaseService = SupabaseClientService.getInstance();
-    Logger.info('Document Service initialized with SupabaseClientService');
-  }
-  
-  // Get Supabase client
-  private get supabase(): SupabaseClient {
-    return this.supabaseService.getClient();
+    // Initialize Supabase client
+    if (!config.supabaseUrl || !config.supabaseKey) {
+      throw new Error('Missing Supabase URL or key. Please check your environment variables.');
+    }
+    
+    this.supabase = createClient(config.supabaseUrl, config.supabaseKey);
+    Logger.info('Document Service initialized');
   }
   
   // Test connection to Supabase
   public async testConnection(): Promise<boolean> {
     try {
-      // Use the SupabaseClientService's testConnection method
-      Logger.info('Testing connection to Supabase using SupabaseClientService...');
-      const connectionResult = await this.supabaseService.testConnection();
-      
-      if (!connectionResult.success) {
-        Logger.error(`Failed to connect to Supabase: ${connectionResult.error}`, connectionResult.details);
-        return false;
-      }
-      
-      // Also test our specific table access
+      // Try a simple query to verify connection
+      Logger.info('Testing connection to Supabase...');
       const { data, error } = await this.supabase
         .from('documentation_files')
         .select('count(*)', { count: 'exact', head: true });
@@ -85,7 +77,7 @@ class DocumentService {
         return false;
       }
       
-      Logger.info('✅ Successfully connected to Supabase and documentation_files table');
+      Logger.info('✅ Successfully connected to Supabase');
       return true;
     } catch (error) {
       Logger.error('Error connecting to Supabase', error);

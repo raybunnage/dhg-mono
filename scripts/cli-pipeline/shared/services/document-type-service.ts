@@ -2,15 +2,40 @@
  * Document Type Service
  * 
  * A service for managing document types in the Supabase database
+ * Uses the SupabaseClientService singleton
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { logger } from './logger-service';
 
 export class DocumentTypeService {
-  private supabase;
+  private static instance: DocumentTypeService;
+  private supabaseService: SupabaseClientService;
 
-  constructor(supabaseUrl: string, supabaseKey: string) {
-    this.supabase = createClient(supabaseUrl, supabaseKey);
+  /**
+   * Private constructor to enforce singleton pattern
+   */
+  private constructor() {
+    this.supabaseService = SupabaseClientService.getInstance();
+    logger.debug('DocumentTypeService initialized with SupabaseClientService singleton');
+  }
+
+  /**
+   * Get singleton instance
+   */
+  public static getInstance(): DocumentTypeService {
+    if (!DocumentTypeService.instance) {
+      DocumentTypeService.instance = new DocumentTypeService();
+    }
+    return DocumentTypeService.instance;
+  }
+
+  /**
+   * Get Supabase client
+   */
+  private getClient(): SupabaseClient {
+    return this.supabaseService.getClient();
   }
 
   /**
@@ -18,19 +43,19 @@ export class DocumentTypeService {
    */
   async getAllDocumentTypes() {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getClient()
         .from('document_types')
         .select('id, document_type, description')
         .order('document_type');
       
       if (error) {
-        console.error('Error fetching document types:', error);
+        logger.error('Error fetching document types:', error);
         return [];
       }
       
       return data;
     } catch (error) {
-      console.error('Error in getAllDocumentTypes:', error);
+      logger.error('Error in getAllDocumentTypes:', error);
       return [];
     }
   }
@@ -40,20 +65,20 @@ export class DocumentTypeService {
    */
   async getDocumentTypeById(typeId: string) {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getClient()
         .from('document_types')
         .select('id, document_type, description')
         .eq('id', typeId)
         .single();
       
       if (error) {
-        console.error(`Error fetching document type ${typeId}:`, error);
+        logger.error(`Error fetching document type ${typeId}:`, error);
         return null;
       }
       
       return data;
     } catch (error) {
-      console.error(`Error in getDocumentTypeById for ${typeId}:`, error);
+      logger.error(`Error in getDocumentTypeById for ${typeId}:`, error);
       return null;
     }
   }
@@ -63,14 +88,14 @@ export class DocumentTypeService {
    */
   async getDocumentTypeByName(typeName: string) {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getClient()
         .from('document_types')
         .select('id, document_type, description')
         .ilike('document_type', typeName)
         .limit(1);
       
       if (error) {
-        console.error(`Error fetching document type by name ${typeName}:`, error);
+        logger.error(`Error fetching document type by name ${typeName}:`, error);
         return null;
       }
       
@@ -80,13 +105,11 @@ export class DocumentTypeService {
       
       return data[0];
     } catch (error) {
-      console.error(`Error in getDocumentTypeByName for ${typeName}:`, error);
+      logger.error(`Error in getDocumentTypeByName for ${typeName}:`, error);
       return null;
     }
   }
 }
 
-// Export a factory function for easier instantiation
-export function createDocumentTypeService(supabaseUrl: string, supabaseKey: string) {
-  return new DocumentTypeService(supabaseUrl, supabaseKey);
-}
+// Export singleton instance
+export const documentTypeService = DocumentTypeService.getInstance();

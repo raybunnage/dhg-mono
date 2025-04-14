@@ -2,41 +2,18 @@
  * Document Service
  * 
  * A service for managing documentation files in the Supabase database
- * Uses the SupabaseClientService singleton
  */
 
-import { SupabaseClient } from '@supabase/supabase-js';
-import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
-import { documentTypeService } from './document-type-service';
-import { logger } from './logger-service';
+import { createClient } from '@supabase/supabase-js';
+import { DocumentTypeService } from './document-type-service';
 
 export class DocumentService {
-  private static instance: DocumentService;
-  private supabaseService: SupabaseClientService;
+  private supabase;
+  private documentTypeService: DocumentTypeService;
 
-  /**
-   * Private constructor to enforce singleton pattern
-   */
-  private constructor() {
-    this.supabaseService = SupabaseClientService.getInstance();
-    logger.debug('DocumentService initialized with SupabaseClientService singleton');
-  }
-
-  /**
-   * Get singleton instance
-   */
-  public static getInstance(): DocumentService {
-    if (!DocumentService.instance) {
-      DocumentService.instance = new DocumentService();
-    }
-    return DocumentService.instance;
-  }
-
-  /**
-   * Get Supabase client
-   */
-  private getClient(): SupabaseClient {
-    return this.supabaseService.getClient();
+  constructor(supabaseUrl: string, supabaseKey: string) {
+    this.supabase = createClient(supabaseUrl, supabaseKey);
+    this.documentTypeService = new DocumentTypeService(supabaseUrl, supabaseKey);
   }
 
   /**
@@ -45,7 +22,7 @@ export class DocumentService {
   async getRecentDocuments(limit = 20) {
     try {
       // Fetch documents without relying on foreign key relationship
-      const { data, error } = await this.getClient()
+      const { data, error } = await this.supabase
         .from('documentation_files')
         .select(`
           id, 
@@ -60,7 +37,7 @@ export class DocumentService {
         .limit(limit);
       
       if (error) {
-        logger.error('Error fetching recent documents:', error);
+        console.error('Error fetching recent documents:', error);
         return [];
       }
       
@@ -69,7 +46,7 @@ export class DocumentService {
       
       return enhancedDocuments;
     } catch (error) {
-      logger.error('Error in getRecentDocuments:', error);
+      console.error('Error in getRecentDocuments:', error);
       return [];
     }
   }
@@ -79,7 +56,7 @@ export class DocumentService {
    */
   async getUntypedDocuments(limit = 20) {
     try {
-      const { data, error } = await this.getClient()
+      const { data, error } = await this.supabase
         .from('documentation_files')
         .select(`
           id, 
@@ -95,13 +72,13 @@ export class DocumentService {
         .limit(limit);
       
       if (error) {
-        logger.error('Error fetching untyped documents:', error);
+        console.error('Error fetching untyped documents:', error);
         return [];
       }
       
       return data;
     } catch (error) {
-      logger.error('Error in getUntypedDocuments:', error);
+      console.error('Error in getUntypedDocuments:', error);
       return [];
     }
   }
@@ -111,7 +88,7 @@ export class DocumentService {
    */
   async updateDocumentType(documentId: string, documentTypeId: string, metadata: any = {}) {
     try {
-      const { error } = await this.getClient()
+      const { error } = await this.supabase
         .from('documentation_files')
         .update({
           document_type_id: documentTypeId,
@@ -121,13 +98,13 @@ export class DocumentService {
         .eq('id', documentId);
       
       if (error) {
-        logger.error(`Error updating document type for ${documentId}:`, error);
+        console.error(`Error updating document type for ${documentId}:`, error);
         return false;
       }
       
       return true;
     } catch (error) {
-      logger.error(`Error in updateDocumentType for ${documentId}:`, error);
+      console.error(`Error in updateDocumentType for ${documentId}:`, error);
       return false;
     }
   }
@@ -151,7 +128,7 @@ export class DocumentService {
     const documentTypes: Record<string, any> = {};
     
     for (const typeId of typeIds) {
-      const docType = await documentTypeService.getDocumentTypeById(typeId);
+      const docType = await this.documentTypeService.getDocumentTypeById(typeId);
       if (docType) {
         documentTypes[typeId] = docType;
       }
@@ -167,5 +144,7 @@ export class DocumentService {
   }
 }
 
-// Export singleton instance
-export const documentService = DocumentService.getInstance();
+// Export a factory function for easier instantiation
+export function createDocumentService(supabaseUrl: string, supabaseKey: string) {
+  return new DocumentService(supabaseUrl, supabaseKey);
+}

@@ -1,10 +1,9 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
 import * as http from 'http';
 import { IncomingMessage } from 'http';
-import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Get script file path from command line arguments
 const scriptPath: string = process.argv[2];
@@ -82,21 +81,19 @@ function getClaudeApiKey(): string {
 
 async function classifyScript(): Promise<void> {
   try {
-    // Initialize Supabase client using the SupabaseClientService
+    // Initialize Supabase client
+    const supabaseUrl: string = process.env.SUPABASE_URL || '';
+    const supabaseKey: string = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
     const claudeApiKey: string = getClaudeApiKey();
     
     // Log whether we have the necessary credentials
     console.log('🔑 Checking credentials:');
+    console.log(`- Supabase URL: ${supabaseUrl ? '✅ Found' : '❌ Missing'}`);
+    console.log(`- Supabase Key: ${supabaseKey ? '✅ Found' : '❌ Missing'}`);
     console.log(`- Claude API Key: ${claudeApiKey ? '✅ Found' : '❌ Missing'}`);
     
-    // Test Supabase connectivity
-    const supabaseService = SupabaseClientService.getInstance();
-    const connectionResult = await supabaseService.testConnection();
-    
-    console.log(`- Supabase Connection: ${connectionResult.success ? '✅ Connected' : '❌ Failed'}`);
-    
-    if (!connectionResult.success) {
-      console.error(`❌ Supabase connection failed: ${connectionResult.error}`);
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Missing Supabase credentials');
       process.exit(1);
     }
     
@@ -110,8 +107,7 @@ async function classifyScript(): Promise<void> {
       process.exit(1);
     }
     
-    // Get Supabase client from SupabaseClientService
-    const supabase: SupabaseClient = supabaseService.getClient();
+    const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
     
     // Step 1: Get the script-analysis-prompt from database
     const { data: promptData, error: promptError } = await supabase
@@ -227,7 +223,7 @@ async function classifyScript(): Promise<void> {
                 console.log(JSON.stringify(parsedResult, null, 2));
                 
                 // Save the result to database
-                saveClassificationToDatabase(scriptPath, parsedResult);
+                saveClassificationToDatabase(supabase, scriptPath, parsedResult);
               } else {
                 // Try to find any JSON in the response
                 try {
@@ -240,7 +236,7 @@ async function classifyScript(): Promise<void> {
                     console.log(JSON.stringify(parsedResult, null, 2));
                     
                     // Save the result to database
-                    saveClassificationToDatabase(scriptPath, parsedResult);
+                    saveClassificationToDatabase(supabase, scriptPath, parsedResult);
                   } else {
                     console.error('Could not find JSON in Claude response');
                     console.log(responseText);
@@ -286,13 +282,11 @@ interface ExistingScript {
 }
 
 async function saveClassificationToDatabase(
+  supabase: SupabaseClient, 
   scriptPath: string, 
   classification: Classification
 ): Promise<void> {
   try {
-    // Get Supabase client from SupabaseClientService
-    const supabase = SupabaseClientService.getInstance().getClient();
-    
     // Find or create script record in database
     const { data: existingScript, error: queryError } = await supabase
       .from('scripts')

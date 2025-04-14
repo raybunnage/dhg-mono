@@ -1,7 +1,12 @@
-import { SupabaseClientService } from './packages/shared/services/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// Load environment variables
+dotenv.config();
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
 
 async function main() {
   // Print all environment variables for debugging (censoring sensitive values)
@@ -14,24 +19,19 @@ async function main() {
     }
   });
   
-  console.log(`SUPABASE_URL is ${process.env.SUPABASE_URL ? 'defined' : 'undefined'}`);
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
+  
+  console.log(`SUPABASE_URL is ${supabaseUrl ? 'defined' : 'undefined'}`);
   console.log(`SUPABASE_SERVICE_ROLE_KEY is ${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'defined' : 'undefined'}`);
   console.log(`SUPABASE_ANON_KEY is ${process.env.SUPABASE_ANON_KEY ? 'defined' : 'undefined'}`);
   
-  // Use the SupabaseClientService singleton
-  const supabaseService = SupabaseClientService.getInstance();
-  
-  // Test the Supabase connection
-  const connectionTest = await supabaseService.testConnection();
-  if (!connectionTest.success) {
-    console.error('Supabase connection failed:', connectionTest.error);
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing SUPABASE_URL or Supabase API key environment variables');
     process.exit(1);
   }
   
-  console.log('Supabase connection successful!');
-  
-  // Get the Supabase client
-  const supabase = supabaseService.getClient();
+  const supabase = createClient(supabaseUrl, supabaseKey);
   const limit = 5;
   const results = [];
   

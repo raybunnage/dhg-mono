@@ -1,9 +1,8 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { config as loadDotEnv } from 'dotenv';
 import { ClaudeService } from '../../packages/cli/src/services/claude-service';
-import { SupabaseClientService } from '../../packages/shared/services/supabase-client';
 
 // Initialize environment variables
 loadDotEnv();
@@ -66,17 +65,27 @@ interface ClassificationResult {
 }
 
 class DocumentTypeManager {
-  private supabaseService: SupabaseClientService;
+  private _supabase: SupabaseClient;
   private claudeService: ClaudeService;
   private rootDir: string;
 
   constructor() {
-    // Initialize SupabaseClientService
-    this.supabaseService = SupabaseClientService.getInstance();
-    console.log('Using SupabaseClientService for database connectivity');
-    
-    // Test Supabase connection
-    this.testConnection();
+    // Setup Supabase connection
+    let supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');
+    }
+
+    // Make sure the URL has proper protocol
+    if (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
+      supabaseUrl = 'https://' + supabaseUrl;
+      console.log(`Adding https:// prefix to Supabase URL: ${supabaseUrl}`);
+    }
+
+    console.log(`Connecting to Supabase at: ${supabaseUrl}`);
+    this._supabase = createClient(supabaseUrl, supabaseKey);
     
     // Setup Claude service
     // Try different environment variable names for Claude API key
@@ -101,26 +110,9 @@ class DocumentTypeManager {
     this.rootDir = process.cwd();
   }
   
-  /**
-   * Test connection to Supabase
-   */
-  private async testConnection(): Promise<void> {
-    try {
-      const connectionResult = await this.supabaseService.testConnection();
-      if (!connectionResult.success) {
-        console.error(`Supabase connection test failed: ${connectionResult.error}`);
-        throw new Error(`Failed to connect to Supabase: ${connectionResult.error}`);
-      }
-      console.log('Successfully connected to Supabase');
-    } catch (error) {
-      console.error('Error testing Supabase connection:', error instanceof Error ? error.message : 'Unknown error');
-      throw new Error('Failed to connect to Supabase. Check your credentials and connection.');
-    }
-  }
-  
   // Add a public getter for the supabase client
   public get supabase(): SupabaseClient {
-    return this.supabaseService.getClient();
+    return this._supabase;
   }
 
   /**
@@ -130,7 +122,7 @@ class DocumentTypeManager {
     try {
       console.log('\n=== LISTING ALL DOCUMENT TYPES ===');
       
-      const { data: documentTypes, error } = await this.supabase
+      const { data: documentTypes, error } = await this._supabase
         .from('document_types')
         .select('id, document_type, description, category')
         .order('document_type');
@@ -163,7 +155,7 @@ class DocumentTypeManager {
     try {
       console.log('\n=== LISTING ALL FILE PATHS ===');
       
-      const { data: files, error } = await this.supabase
+      const { data: files, error } = await this._supabase
         .from('documentation_files')
         .select('id, file_path, document_type_id, title')
         .order('file_path');
@@ -180,7 +172,7 @@ class DocumentTypeManager {
       console.log(`Found ${files.length} files in the database.`);
       
       // Get document types for reference
-      const { data: documentTypes, error: typeError } = await this.supabase
+      const { data: documentTypes, error: typeError } = await this._supabase
         .from('document_types')
         .select('id, document_type');
         
@@ -251,7 +243,7 @@ class DocumentTypeManager {
       
       // Hard delete files that don't exist on disk
       if (filesToDelete.length > 0) {
-        const { error: deleteError } = await this.supabase
+        const { error: deleteError } = await this._supabase
           .from('documentation_files')
           .delete()
           .in('id', filesToDelete.map(f => f.id));
@@ -285,7 +277,7 @@ class DocumentTypeManager {
       };
       
       // Step 1: Get prompt from database
-      const { data: prompt, error: promptError } = await this.supabase
+      const { data: prompt, error: promptError } = await this._supabase
         .from('prompts')
         .select('*')
         .eq('name', promptName)
@@ -324,7 +316,7 @@ class DocumentTypeManager {
       // Step 2: Get relationships if prompt is from database
       if (result.prompt.id !== 'local-file') {
         // Try with prompt_relationships first (correct table name)
-        const { data: promptRelationships, error: promptRelError } = await this.supabase
+        const { data: promptRelationships, error: promptRelError } = await this._supabase
           .from('prompt_relationships')
           .select('*')
           .eq('prompt_id', result.prompt.id);
@@ -334,7 +326,7 @@ class DocumentTypeManager {
           console.log(`Could not fetch from prompt_relationships: ${promptRelError.message}`);
           console.log('Trying file_relationships table as fallback...');
           
-          const { data: fileRelationships, error: fileRelError } = await this.supabase
+          const { data: fileRelationships, error: fileRelError } = await this._supabase
             .from('file_relationships')
             .select('*')
             .eq('prompt_id', result.prompt.id);
@@ -394,7 +386,7 @@ class DocumentTypeManager {
                 queryText.toLowerCase().includes('category = "documentation"')) {
               console.log('Using direct table access for document_types with Documentation category');
               
-              const { data, error } = await this.supabase
+              const { data, error } = await this._supabase
                 .from('document_types')
                 .select('*')
                 .eq('category', 'Documentation');
@@ -417,7 +409,7 @@ class DocumentTypeManager {
                 if (categories.length > 0) {
                   console.log(`Executing IN query with categories: ${categories.join(', ')}`);
                   
-                  const { data, error } = await this.supabase
+                  const { data, error } = await this._supabase
                     .from('document_types')
                     .select('*')
                     .in('category', categories);
@@ -437,7 +429,7 @@ class DocumentTypeManager {
           if (!documentTypes) {
             try {
               console.log('Trying execute_sql RPC method');
-              const { data, error } = await this.supabase.rpc('execute_sql', { sql: queryText });
+              const { data, error } = await this._supabase.rpc('execute_sql', { sql: queryText });
               
               if (error) {
                 console.error(`Error executing SQL via RPC: ${error.message}`);
@@ -457,7 +449,7 @@ class DocumentTypeManager {
       // If we couldn't get document types from metadata query, fall back to direct table access
       if (!documentTypes) {
         console.log('\nFalling back to direct table access for document types');
-        const { data, error: typeError } = await this.supabase
+        const { data, error: typeError } = await this._supabase
           .from('document_types')
           .select('id, document_type, description, category')
           .eq('category', 'Documentation');
@@ -722,7 +714,7 @@ class DocumentTypeManager {
       // Refresh schema cache to avoid issues with metadata fields
       try {
         console.log('Refreshing schema cache before update...');
-        await this.supabase.rpc('pg_notify', { 
+        await this._supabase.rpc('pg_notify', { 
           channel: 'pgrst',
           payload: 'reload schema'
         }).catch(e => console.log('Schema refresh attempt: ', e?.message || 'Error'));
@@ -731,7 +723,7 @@ class DocumentTypeManager {
       }
       
       // Get the file ID from the database
-      const { data: file, error: fileError } = await this.supabase
+      const { data: file, error: fileError } = await this._supabase
         .from('documentation_files')
         .select('id, metadata')
         .eq('file_path', filePath)
@@ -822,7 +814,7 @@ class DocumentTypeManager {
       }
       
       // Update the document record with all data
-      const { error: updateError } = await this.supabase
+      const { error: updateError } = await this._supabase
         .from('documentation_files')
         .update(updateData)
         .eq('id', file.id);

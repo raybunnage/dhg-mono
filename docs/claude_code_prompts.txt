@@ -60,6 +60,7 @@ SupabaseClientService vs supabaseDirect: Pros and Cons
 
   There's no compelling reason to fix SupabaseClientService if supabaseDirect meets all
    your current needs and works reliably. Pragmatism should win here - use what works.
+   
 
 
 Perfect! These are the documents that need classification. Let's see if we can help

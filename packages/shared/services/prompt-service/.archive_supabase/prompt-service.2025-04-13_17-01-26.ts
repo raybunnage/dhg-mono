@@ -4,13 +4,13 @@
  * A central service for managing AI prompts across the application.
  * Handles prompt retrieval, relationships, metadata extraction, and database queries.
  */
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
-import { Logger } from '../../utils';
-import { FileService } from '../file-service/file-service';
+import { config, Logger } from '../../utils';
+import { FileService, FileResult } from '../file-service/file-service';
+import { supabaseDirect } from '../../services/supabase-direct-service';
 import { claudeService } from '../claude-service/claude-service';
-import { SupabaseClientService } from '../../services/supabase-client';
 
 /**
  * Prompt data structure
@@ -80,18 +80,82 @@ export interface PromptLoadResult {
 export class PromptService {
   private static instance: PromptService;
   private fileService: FileService;
-  private supabaseService: SupabaseClientService;
   
+  // Store Supabase credentials directly
+  private supabaseUrl: string = '';
+  private supabaseKey: string = '';
+
   /**
    * Create a new Prompt service
    * Private constructor to enforce singleton pattern
    */
   private constructor() {
-    // Initialize services
+    // Initialize service
+    this.loadEnvironmentVariables();
     this.fileService = new FileService();
-    this.supabaseService = SupabaseClientService.getInstance();
     
-    Logger.debug('PromptService initialized with SupabaseClientService');
+    Logger.debug('PromptService initialized with direct Supabase access');
+  }
+  
+  /**
+   * Load environment variables directly
+   */
+  private loadEnvironmentVariables(): void {
+    // Load environment variables directly from .env.development
+    try {
+      const envPath = path.resolve(process.cwd(), '.env.development');
+      if (fs.existsSync(envPath)) {
+        Logger.debug(`Loading environment variables from ${envPath}`);
+        
+        // Read the file contents directly
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        
+        // Parse manually to extract Supabase credentials
+        const supabaseUrlMatch = envContent.match(/SUPABASE_URL=(.+)/);
+        if (supabaseUrlMatch && supabaseUrlMatch[1]) {
+          this.supabaseUrl = supabaseUrlMatch[1].trim();
+          Logger.debug(`Found Supabase URL: ${this.supabaseUrl.substring(0, 15)}...`);
+        }
+        
+        // Try service role key first
+        const serviceKeyMatch = envContent.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/);
+        if (serviceKeyMatch && serviceKeyMatch[1]) {
+          this.supabaseKey = serviceKeyMatch[1].trim();
+          Logger.debug(`Found SERVICE ROLE Key: ${this.supabaseKey.substring(0, 5)}...${this.supabaseKey.substring(this.supabaseKey.length - 5)}`);
+        } else {
+          // Fall back to anon key
+          const anonKeyMatch = envContent.match(/SUPABASE_ANON_KEY=(.+)/);
+          if (anonKeyMatch && anonKeyMatch[1]) {
+            this.supabaseKey = anonKeyMatch[1].trim();
+            Logger.debug(`Found ANON Key: ${this.supabaseKey.substring(0, 5)}...${this.supabaseKey.substring(this.supabaseKey.length - 5)}`);
+          }
+        }
+      }
+    } catch (err) {
+      Logger.error(`Error loading environment variables: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+    
+    // Fall back to process.env if direct file reading failed
+    if (!this.supabaseUrl) {
+      this.supabaseUrl = process.env.SUPABASE_URL || '';
+    }
+    
+    if (!this.supabaseKey) {
+      this.supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                          process.env.SUPABASE_ANON_KEY || '';
+    }
+  }
+  
+  /**
+   * Get default headers for Supabase API requests
+   */
+  private getHeaders(contentType: string = 'application/json'): Record<string, string> {
+    return {
+      'apikey': this.supabaseKey,
+      'Authorization': `Bearer ${this.supabaseKey}`,
+      'Content-Type': contentType,
+      'Prefer': 'return=representation'
+    };
   }
   
   /**
@@ -114,22 +178,25 @@ export class PromptService {
       try {
         Logger.debug(`Looking for prompt '${promptName}' in database`);
         
-        // Use SupabaseClientService
-        const supabase = this.supabaseService.getClient();
-        const { data, error } = await supabase
-          .from('prompts')
-          .select('*')
-          .eq('name', promptName)
-          .limit(1)
-          .single();
+        // Use direct fetch approach that worked in test-fetch-direct.ts
+        const response = await fetch(
+          `${this.supabaseUrl}/rest/v1/prompts?name=eq.${encodeURIComponent(promptName)}&limit=1`,
+          {
+            method: 'GET',
+            headers: this.getHeaders()
+          }
+        );
         
-        if (error) {
-          Logger.debug(`Error fetching prompt from database: ${error.message}`);
-        } else if (data) {
-          Logger.debug(`Found prompt '${promptName}' in database`);
-          return data as Prompt;
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.length > 0) {
+            Logger.debug(`Found prompt '${promptName}' in database`);
+            return data[0] as Prompt;
+          } else {
+            Logger.debug(`Prompt '${promptName}' not found in database`);
+          }
         } else {
-          Logger.debug(`Prompt '${promptName}' not found in database`);
+          Logger.debug(`Error fetching prompt from database: ${response.status} ${response.statusText}`);
         }
       } catch (dbError) {
         Logger.debug(`Database error when fetching prompt: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
@@ -231,17 +298,20 @@ export class PromptService {
     try {
       Logger.debug(`Getting relationships for prompt ID: ${promptId}`);
       
-      const supabase = this.supabaseService.getClient();
-      const { data, error } = await supabase
-        .from('prompt_relationships')
-        .select('*')
-        .eq('prompt_id', promptId);
+      const response = await fetch(
+        `${this.supabaseUrl}/rest/v1/prompt_relationships?prompt_id=eq.${encodeURIComponent(promptId)}`,
+        {
+          method: 'GET',
+          headers: this.getHeaders()
+        }
+      );
       
-      if (error) {
-        Logger.error(`Error fetching relationships: ${error.message}`);
+      if (!response.ok) {
+        Logger.error(`Error fetching relationships: ${response.status} ${response.statusText}`);
         return [];
       }
       
+      const data = await response.json();
       Logger.debug(`Found ${data?.length || 0} relationships for prompt ID: ${promptId}`);
       return data as PromptRelationship[];
     } catch (error) {
@@ -271,43 +341,47 @@ export class PromptService {
         Logger.debug(`Query with parameters replaced: ${queryText}`);
       }
       
-      // Use Supabase client to execute RPC
-      const supabase = this.supabaseService.getClient();
-      
+      // Try with RPC execute_sql function
       try {
-        Logger.debug('Executing query via RPC execute_sql function');
-        const { data, error } = await supabase.rpc('execute_sql', { sql: queryText });
+        const response = await fetch(
+          `${this.supabaseUrl}/rest/v1/rpc/execute_sql`,
+          {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ sql: queryText })
+          }
+        );
         
-        if (error) {
-          Logger.warn(`RPC execute_sql failed: ${error.message}`);
-        } else {
-          Logger.debug('Query execution successful via RPC');
+        if (response.ok) {
+          const data = await response.json();
+          Logger.debug(`Query execution successful via RPC`);
           return data;
         }
+        
+        Logger.warn(`RPC execute_sql failed: ${response.status} ${response.statusText}`);
       } catch (rpcError) {
         Logger.warn(`RPC method not available: ${rpcError instanceof Error ? rpcError.message : 'Unknown error'}`);
       }
       
-      // Handle specific table queries as fallback
-      if (queryText.toLowerCase().includes('from document_types')) {
+      // Direct path for specific tables and queries
+      if (queryText.includes('document_types')) {
         // Handle document_types query
-        Logger.debug('Falling back to direct table query for document_types');
-        
-        // Try to determine filters from the SQL query
-        let categoryFilter = null;
-        
-        // Check for Documentation category
         if (queryText.includes("category = 'Documentation'") || queryText.includes('category = "Documentation"')) {
-          const { data, error } = await supabase
-            .from('document_types')
-            .select('*')
-            .eq('category', 'Documentation');
-            
-          if (error) {
-            throw new Error(`Failed to query document_types: ${error.message}`);
+          Logger.debug('Using direct query for document_types with Documentation category');
+          
+          const response = await fetch(
+            `${this.supabaseUrl}/rest/v1/document_types?category=eq.Documentation`,
+            {
+              method: 'GET',
+              headers: this.getHeaders()
+            }
+          );
+          
+          if (!response.ok) {
+            throw new Error(`Failed to query document_types: ${response.status} ${response.statusText}`);
           }
           
-          return data;
+          return await response.json();
         }
         
         // Handle IN queries for multiple categories
@@ -339,34 +413,33 @@ export class PromptService {
           }
           
           if (categoryValues.length > 0) {
-            Logger.debug(`Using IN filter for document_types with categories: ${categoryValues.join(', ')}`);
+            Logger.debug(`Using direct query for document_types with categories: ${categoryValues.join(', ')}`);
             
-            const { data, error } = await supabase
-              .from('document_types')
-              .select('*')
-              .in('category', categoryValues);
+            // For direct API, we need to handle IN clause differently
+            // We'll do a series of requests with eq and combine the results
+            const results = [];
+            
+            for (const category of categoryValues) {
+              const response = await fetch(
+                `${this.supabaseUrl}/rest/v1/document_types?category=eq.${encodeURIComponent(category)}`,
+                {
+                  method: 'GET',
+                  headers: this.getHeaders()
+                }
+              );
               
-            if (error) {
-              throw new Error(`Failed to query document_types with IN clause: ${error.message}`);
+              if (response.ok) {
+                const categoryData = await response.json();
+                results.push(...categoryData);
+              }
             }
             
-            return data;
+            return results;
           }
         }
-        
-        // Fallback to simple select without filters
-        const { data, error } = await supabase
-          .from('document_types')
-          .select('*');
-          
-        if (error) {
-          throw new Error(`Failed to query document_types: ${error.message}`);
-        }
-        
-        return data;
       }
       
-      throw new Error("No method available to execute this query");
+      throw new Error("No method available to execute this query directly");
     } catch (error) {
       Logger.error(`Error executing query: ${error instanceof Error ? error.message : 'Unknown error'}`);
       throw error;
