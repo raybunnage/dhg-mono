@@ -6,4 +6,4 @@
 [ -f .env.development ] && export $(grep -v '^#' .env.development | xargs)
 
 # Run the test script
-npx ts-node test-generate-summary.ts
+npx ts-node scripts/cli-pipeline/presentations/test-generate-summary.ts

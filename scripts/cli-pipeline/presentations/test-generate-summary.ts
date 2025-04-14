@@ -1,4 +1,4 @@
-import { SupabaseClientService } from './packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -260,7 +260,7 @@ TRANSCRIPT:
   }
   
   // Save results to output file
-  const outputPath = path.resolve('test-presentation-summaries.json');
+  const outputPath = path.resolve('scripts/cli-pipeline/presentations/test-data/test-presentation-summaries.json');
   fs.writeFileSync(outputPath, JSON.stringify(results, null, 2));
   console.log(`Results saved to ${outputPath}`);
   
