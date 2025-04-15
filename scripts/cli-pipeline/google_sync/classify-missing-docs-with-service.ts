@@ -18,12 +18,13 @@ import { GoogleDriveService } from '../../../packages/shared/services/google-dri
 const CLASSIFICATION_PROMPT = 'document-classification-prompt-new';
 
 // Process a single file using the prompt service and Claude
+// Returns classification result and raw file content
 async function processFile(
   fileId: string,
   mimeType: string,
   fileName: string,
   debug: boolean = false
-): Promise<any> {
+): Promise<{ classificationResult: any, fileContent: string }> {
   try {
     if (debug) {
       console.log(`Processing file: ${fileName} (ID: ${fileId}, type: ${mimeType})`);
@@ -44,7 +45,26 @@ async function processFile(
     try {
       // Use the Google Drive API directly since the service methods aren't implemented
       const { google } = require('googleapis');
-      const drive = google.drive({ version: 'v3', auth: auth.getAuthClient() });
+      // Create a JWT client using the service account credentials
+      const { JWT } = require('google-auth-library');
+      
+      // Get service account key file path from environment
+      const keyFilePath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH || 
+                        process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+                        path.resolve(process.cwd(), '.service-account.json');
+      
+      // Read and parse the service account key file
+      const keyFileData = fs.readFileSync(keyFilePath, 'utf8');
+      const keyFile = JSON.parse(keyFileData);
+      
+      // Create JWT auth client with the service account
+      const authClient = new JWT({
+        email: keyFile.client_email,
+        key: keyFile.private_key,
+        scopes: ['https://www.googleapis.com/auth/drive.readonly']
+      });
+      
+      const drive = google.drive({ version: 'v3', auth: authClient });
       
       if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         // For DOCX files
@@ -120,7 +140,11 @@ async function processFile(
       console.log('Classification result:', classificationResult);
     }
     
-    return classificationResult;
+    // Return both the classification result and the file content
+    return { 
+      classificationResult, 
+      fileContent 
+    };
   } catch (error) {
     console.error(`Error processing file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     throw error;
@@ -220,7 +244,7 @@ async function classifyMissingDocuments(
         }
         
         // Process the file
-        const classificationResult = await processFile(
+        const { classificationResult, fileContent } = await processFile(
           file.drive_id,
           file.mime_type,
           file.name || '',
@@ -241,13 +265,15 @@ async function classifyMissingDocuments(
             console.log(`Updated document type for ${file.name} to ${classificationResult.document_type_id}`);
           }
           
-          // Create expert document record
+          // Create expert document record - now including raw_content and processed_content
           const expertDoc = {
             id: uuidv4(),
             source_id: file.id,
             document_type_id: classificationResult.document_type_id,
             classification_confidence: classificationResult.classification_confidence || 0.75,
             classification_metadata: classificationResult,
+            raw_content: fileContent,
+            processed_content: classificationResult,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };

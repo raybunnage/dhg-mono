@@ -59,7 +59,8 @@ export class ClaudeService {
   private constructor() {
     this.apiKey = config.claudeApiKey;
     this.baseUrl = config.claudeApiBaseUrl || 'https://api.anthropic.com';
-    this.apiVersion = config.claudeApiVersion || '2023-06-01';
+    // Using latest API version that supports response_format parameter
+    this.apiVersion = config.claudeApiVersion || '2023-12-15';
     this.defaultModel = config.defaultModel || 'claude-3-7-sonnet-20250219';
     
     // Create HTTP client
@@ -68,7 +69,8 @@ export class ClaudeService {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': this.apiKey,
-        'anthropic-version': this.apiVersion
+        'anthropic-version': this.apiVersion,
+        'anthropic-api-version': this.apiVersion // Adding explicit API version header for new API endpoints
       }
     });
     
@@ -82,9 +84,11 @@ export class ClaudeService {
     Logger.debug(`ClaudeService initialized:
     🔑 API Key Present: ${!!this.apiKey} ${this.apiKey ? `(${this.apiKey.substring(0, 5)}...)` : ''}
     🌐 Base URL: ${this.baseUrl}
-    📝 API Version: ${this.apiVersion}
+    📝 API Version: ${this.apiVersion} (response_format requires 2023-12-15 or newer)
+    🤖 Default Model: ${this.defaultModel}
     🔍 Environment variables check:
     - CLAUDE_API_KEY set: ${!!process.env.CLAUDE_API_KEY}
+    - CLAUDE_API_VERSION set: ${!!process.env.CLAUDE_API_VERSION}
     - NODE_ENV: ${process.env.NODE_ENV}`);
   }
   
@@ -146,6 +150,14 @@ export class ClaudeService {
         requestBody.system = system;
       }
       
+      // Log the request for debugging
+      Logger.debug(`Making Claude API request with the following parameters:
+      Model: ${requestBody.model}
+      API Version: ${this.apiVersion}
+      Has response_format: ${requestBody.response_format ? 'yes' : 'no'}
+      System message length: ${requestBody.system ? requestBody.system.length : 0} chars
+      User message length: ${requestBody.messages[0].content.length} chars`);
+      
       // Make request with retries
       const response = await this.makeRequestWithRetries<ClaudeResponse>(
         '/v1/messages',
@@ -198,10 +210,13 @@ export class ClaudeService {
     }
     
     try {
-      // For jsonMode true, add response_format to API request
+      // For jsonMode true, add response_format to API request if model supports it
       if (options.jsonMode) {
+        const model = options.model || this.defaultModel;
+        
+        // Create request body
         const requestBody: any = {
-          model: options.model || this.defaultModel,
+          model: model,
           max_tokens: options.maxTokens ?? 4000,
           temperature: options.temperature,
           system: options.system,
@@ -210,9 +225,28 @@ export class ClaudeService {
               role: 'user',
               content: enhancedPrompt
             }
-          ],
-          response_format: { type: "json_object" }
+          ]
         };
+        
+        // Debug log the model being used
+        Logger.debug(`Using model for JSON response: ${model}`);
+        
+        // Add response_format for JSON responses
+        // This requires API version 2023-12-15 or newer
+        // All Claude 3 models support this parameter
+        const supportsResponseFormat = model.includes('claude-3');
+        
+        Logger.debug(`JSON response request details:
+        - Model: ${model}
+        - API Version: ${this.apiVersion}
+        - Model supports response_format: ${supportsResponseFormat ? 'yes' : 'no'}`);
+        
+        // We have issues with response_format parameter
+        // For now, rely on text-based JSON parsing which works reliably with all Claude models
+        Logger.debug(`Not using response_format parameter due to API compatibility issues`);
+        
+        // Adding more explicit JSON instructions to the prompt
+        enhancedPrompt = `${enhancedPrompt}\n\nYou MUST respond with ONLY a valid JSON object, and nothing else. Do not include explanations, markdown formatting, or any text outside the JSON object. The response should start with '{' and end with '}' with no other text before or after.`;
         
         // Make direct API call with json_object format
         const response = await this.makeRequestWithRetries<ClaudeResponse>(
@@ -225,10 +259,43 @@ export class ClaudeService {
           const content = response.content[0].text;
           
           try {
-            return JSON.parse(content) as T;
+            // First, try to parse directly
+            try {
+              return JSON.parse(content) as T;
+            } catch (initialParseError) {
+              // If direct parsing fails, try cleaning the response
+              
+              // Remove markdown code block formatting if present
+              let cleanedContent = content;
+              if (content.includes('```json') || content.includes('```')) {
+                // Extract content between markdown code blocks
+                const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+                if (codeBlockMatch && codeBlockMatch[1]) {
+                  cleanedContent = codeBlockMatch[1];
+                  Logger.debug('Extracted JSON from markdown code block');
+                }
+              }
+              
+              // Find JSON object pattern (most reliable method)
+              const jsonMatch = cleanedContent.match(/(\{[\s\S]*\})/);
+              if (jsonMatch && jsonMatch[1]) {
+                const jsonText = jsonMatch[1];
+                Logger.debug(`Extracted JSON object pattern (${jsonText.length} chars)`);
+                return JSON.parse(jsonText) as T;
+              }
+              
+              // If we get here, rethrow the original error
+              throw initialParseError;
+            }
           } catch (parseError) {
             Logger.error(`Error parsing JSON from Claude API response: ${parseError}`);
-            Logger.debug(`Response text: ${content}`);
+            Logger.debug(`Response text: ${content.substring(0, 200)}...`);
+            
+            // Provide helpful error information
+            if (content.includes('```')) {
+              Logger.debug('Response contains markdown code blocks that may be causing parsing issues');
+            }
+            
             throw new Error('Invalid JSON response from Claude API');
           }
         } else {
@@ -239,14 +306,43 @@ export class ClaudeService {
         const responseText = await this.sendPrompt(enhancedPrompt, options);
         
         try {
-          // Find and extract JSON from the response if embedded in other text
-          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-          const jsonText = jsonMatch ? jsonMatch[0] : responseText;
-          
-          return JSON.parse(jsonText) as T;
+          // First, try to parse directly
+          try {
+            return JSON.parse(responseText) as T;
+          } catch (initialParseError) {
+            // If direct parsing fails, try cleaning the response
+            
+            // Remove markdown code block formatting if present
+            let cleanedContent = responseText;
+            if (responseText.includes('```json') || responseText.includes('```')) {
+              // Extract content between markdown code blocks
+              const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+              if (codeBlockMatch && codeBlockMatch[1]) {
+                cleanedContent = codeBlockMatch[1];
+                Logger.debug('Extracted JSON from markdown code block');
+              }
+            }
+            
+            // Find JSON object pattern (most reliable method)
+            const jsonMatch = cleanedContent.match(/(\{[\s\S]*\})/);
+            if (jsonMatch && jsonMatch[1]) {
+              const jsonText = jsonMatch[1];
+              Logger.debug(`Extracted JSON object pattern (${jsonText.length} chars)`);
+              return JSON.parse(jsonText) as T;
+            }
+            
+            // If we get here, rethrow the original error
+            throw initialParseError;
+          }
         } catch (parseError) {
           Logger.error(`Error parsing JSON from Claude API response: ${parseError}`);
-          Logger.debug(`Response text: ${responseText}`);
+          Logger.debug(`Response text: ${responseText.substring(0, 200)}...`);
+          
+          // Provide helpful error information
+          if (responseText.includes('```')) {
+            Logger.debug('Response contains markdown code blocks that may be causing parsing issues');
+          }
+          
           throw new Error('Invalid JSON response from Claude API');
         }
       }

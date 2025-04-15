@@ -912,15 +912,15 @@ export class PromptManagementService {
       // Separate "real" database assets and package.json files
       const databaseAssets = selectedAssetIds.filter(assetId => {
         const file = allDocumentationFiles.find(file => file.id === assetId);
-        // Skip files with special isPackageJson flag
-        return file && !(file.metadata?.isPackageJson || false);
+        // Skip files with special isPackageJson flag in metadata
+        return file && !(file.metadata && 'isPackageJson' in file.metadata && file.metadata.isPackageJson);
       });
       
       // Extract package.json files
       const packageJsonFiles = selectedAssetIds
         .filter(assetId => {
           const file = allDocumentationFiles.find(file => file.id === assetId);
-          return file && file.metadata?.isPackageJson;
+          return file && file.metadata && 'isPackageJson' in file.metadata && file.metadata.isPackageJson;
         })
         .map(assetId => {
           const file = allDocumentationFiles.find(file => file.id === assetId);

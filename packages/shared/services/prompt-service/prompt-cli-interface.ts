@@ -488,7 +488,7 @@ export class PromptCliInterface {
             console.log(`     Document Type: ${rel.document_type_id}`);
           }
           
-          if (rel.description) {
+          if ('description' in rel && rel.description) {
             console.log(`     Description: ${rel.description}`);
           }
           
