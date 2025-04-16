@@ -66,7 +66,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Command categories
 const validCategories = [
-  'git', 'pnpm', 'build', 'deploy', 'database', 'system', 'other'
+  'git', 'pnpm', 'build', 'deploy', 'database', 'system', 'other',
+  'media_processing', 'document_pipeline', 'google_sync', 'presentations',
+  'prompt_service', 'script_pipeline', 'experts'
 ];
 
 // Parse arguments
