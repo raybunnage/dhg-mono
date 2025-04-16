@@ -193,7 +193,7 @@ if [[ "$1" == "--help" || "$1" == "-h" || "$#" -eq 0 ]]; then
         -H "Content-Type: application/json" \
         -d "{
           \"pipeline_name\": \"presentations\",
-          \"command_name\": \"help\",
+          \"command_name\": \"--help\",
           \"execution_time\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",
           \"status\": \"success\",
           \"summary\": \"Help command executed successfully\"

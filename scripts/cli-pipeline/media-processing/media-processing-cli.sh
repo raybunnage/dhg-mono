@@ -236,7 +236,7 @@ case "$COMMAND" in
           -H "Content-Type: application/json" \
           -d "{
             \"pipeline_name\": \"media_processing\",
-            \"command_name\": \"help\",
+            \"command_name\": \"--help\",
             \"execution_time\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",
             \"status\": \"success\",
             \"summary\": \"Help command executed successfully\"
