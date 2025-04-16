@@ -928,6 +928,66 @@ class DocumentClassifier {
   }
   
   /**
+   * Extract text from raw DOCX data when mammoth fails
+   * This is a fallback method that tries to extract readable text from the binary DOCX data
+   */
+  private extractTextFromRawDocx(data: Buffer | ArrayBuffer | string): string {
+    try {
+      // Convert input to string if it's not already
+      let textData: string;
+      if (Buffer.isBuffer(data)) {
+        textData = data.toString('utf8');
+      } else if (data instanceof ArrayBuffer) {
+        textData = Buffer.from(data).toString('utf8');
+      } else if (typeof data === 'string') {
+        textData = data;
+      } else {
+        throw new Error('Unsupported data type for text extraction');
+      }
+      
+      // Extract any readable text from the XML components
+      const extractedText: string[] = [];
+      
+      // Look for text in document.xml content
+      const documentMatch = textData.match(/<w:t[^>]*>(.*?)<\/w:t>/g);
+      if (documentMatch) {
+        const cleanedText = documentMatch.map(match => {
+          // Extract the text between the tags
+          const textMatch = match.match(/<w:t[^>]*>(.*?)<\/w:t>/);
+          return textMatch ? textMatch[1] : '';
+        }).join(' ');
+        
+        if (cleanedText.trim().length > 0) {
+          extractedText.push(cleanedText);
+        }
+      }
+      
+      // Look for document properties
+      const propsMatch = textData.match(/<dc:title>(.*?)<\/dc:title>/);
+      if (propsMatch && propsMatch[1]) {
+        extractedText.push(`Title: ${propsMatch[1]}`);
+      }
+      
+      const creatorMatch = textData.match(/<dc:creator>(.*?)<\/dc:creator>/);
+      if (creatorMatch && creatorMatch[1]) {
+        extractedText.push(`Creator: ${creatorMatch[1]}`);
+      }
+      
+      // If we couldn't extract any text, return a placeholder
+      if (extractedText.length === 0) {
+        return '[Document contains no extractable text or is in binary format]';
+      }
+      
+      return extractedText.join('\n\n');
+    } catch (error) {
+      if (this.debug) {
+        console.warn(`Warning: Fallback text extraction failed: ${(error as Error).message}`);
+      }
+      return '[Unable to extract text content from document]';
+    }
+  }
+
+  /**
    * Get DOCX content from Google Drive using mammoth
    */
   async getDocxContent(driveId: string): Promise<string> {
@@ -981,50 +1041,110 @@ This is generated mock data for testing purposes only.`;
             console.log('Downloading DOCX using Google Drive API...');
           }
           
-          // Download the file using the Google Drive API client
+          // Download the file using the Google Drive API client with explicit request for binary data
           const response = await this.googleDrive.files.get({
             fileId: driveId,
-            alt: 'media'
+            alt: 'media',
+            responseType: 'arraybuffer'  // Explicitly request arraybuffer
           });
           
           if (!response || !response.data) {
             throw new Error('Empty response when downloading DOCX file');
           }
           
-          // Convert to ArrayBuffer for mammoth
-          let arrayBuffer: ArrayBuffer;
-          
-          if (Buffer.isBuffer(response.data)) {
-            // Create an ArrayBuffer from the Buffer
-            arrayBuffer = response.data.buffer.slice(
-              response.data.byteOffset,
-              response.data.byteOffset + response.data.byteLength
-            );
-          } else if (typeof response.data === 'object') {
-            // If it's an object, convert to string and then to buffer
-            const jsonStr = JSON.stringify(response.data);
-            const buffer = Buffer.from(jsonStr);
-            arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-          } else {
-            // If it's already a string
-            const buffer = Buffer.from(String(response.data));
-            arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+          if (this.debug) {
+            console.log(`Data type received: ${typeof response.data}`);
+            console.log(`Is Buffer: ${Buffer.isBuffer(response.data)}`);
+            console.log(`Is ArrayBuffer: ${response.data instanceof ArrayBuffer}`);
+            console.log(`Data size: ${Buffer.isBuffer(response.data) ? response.data.length : 'unknown'} bytes`);
           }
           
-          // Use mammoth to extract text content
-          const result = await mammoth.extractRawText({ arrayBuffer });
+          // Convert to ArrayBuffer for mammoth - more robust handling
+          let buffer: Buffer;
           
-          // Clean up the content
-          const cleanedContent = result.value
-            .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
-            .replace(/\u0000/g, '')  // Remove null bytes
-            .replace(/\n{3,}/g, '\n\n')  // Normalize multiple line breaks
-            .trim();
+          if (Buffer.isBuffer(response.data)) {
+            buffer = response.data;
+          } else if (response.data instanceof ArrayBuffer) {
+            buffer = Buffer.from(response.data);
+          } else if (typeof response.data === 'string') {
+            buffer = Buffer.from(response.data);
+          } else if (typeof response.data === 'object' && response.data !== null) {
+            // Last resort - try to stringify the object
+            try {
+              const jsonStr = JSON.stringify(response.data);
+              buffer = Buffer.from(jsonStr);
+              if (this.debug) {
+                console.log('Converted object data to JSON string');
+              }
+            } catch (e) {
+              throw new Error(`Unable to process response data: ${(e as Error).message}`);
+            }
+          } else {
+            throw new Error(`Unexpected data format from Google Drive: ${typeof response.data}`);
+          }
+          
+          // Create ArrayBuffer from Buffer
+          const arrayBuffer = buffer.buffer.slice(
+            buffer.byteOffset,
+            buffer.byteOffset + buffer.byteLength
+          );
           
           if (this.debug) {
-            console.log(`Extracted ${cleanedContent.length} characters from DOCX file using Google Drive API`);
-            if (result.messages.length > 0) {
-              console.log('Extraction warnings:', result.messages);
+            console.log(`Prepared ArrayBuffer of ${arrayBuffer.byteLength} bytes for mammoth`);
+          }
+          
+          // Use mammoth to extract text content with improved options (following the approach in apps/dhg-improve-experts)
+          const options = { 
+            arrayBuffer: arrayBuffer,
+            options: {
+              includeDefaultStyleMap: true,
+              preserveCharacterStyles: true,
+              preserveParagraphs: true,
+              preserveImages: false,
+              styleMap: [
+                "p[style-name='Heading 1'] => h1:fresh",
+                "p[style-name='Heading 2'] => h2:fresh",
+                "p[style-name='Heading 3'] => h3:fresh",
+                "p => p:fresh",
+                "r => span"
+              ]
+            }
+          };
+          
+          let cleanedContent = '';
+          try {
+            if (this.debug) {
+              console.log(`Calling mammoth.extractRawText with ${arrayBuffer.byteLength} byte buffer`);
+            }
+            
+            const result = await mammoth.extractRawText(options);
+            
+            // Clean up the content
+            cleanedContent = result.value
+              .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+              .replace(/\u0000/g, '')  // Remove null bytes
+              .replace(/\n{3,}/g, '\n\n')  // Normalize multiple line breaks
+              .replace(/\s+/g, ' ')  // Normalize whitespace
+              .trim();
+            
+            if (this.debug) {
+              console.log(`Extracted ${cleanedContent.length} characters from DOCX file using mammoth`);
+              if (result.messages.length > 0) {
+                console.log('Extraction warnings:', result.messages);
+              }
+            }
+          } catch (mammothError) {
+            // If mammoth fails, try our custom text extraction method
+            if (this.debug) {
+              console.warn(`Mammoth extraction failed: ${(mammothError as Error).message}`);
+              console.log('Attempting fallback raw text extraction...');
+            }
+            
+            // Use our fallback extraction method
+            cleanedContent = this.extractTextFromRawDocx(buffer);
+            
+            if (this.debug) {
+              console.log(`Extracted ${cleanedContent.length} characters using fallback method`);
             }
           }
           
@@ -1076,6 +1196,11 @@ This is generated mock data for testing purposes only.`;
       
       // Download the file content
       const url = `https://www.googleapis.com/drive/v3/files/${driveId}?alt=media`;
+      
+      if (this.debug) {
+        console.log(`Fetching DOCX from URL: ${url}`);
+      }
+      
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -1090,23 +1215,74 @@ This is generated mock data for testing purposes only.`;
       // Convert to ArrayBuffer for mammoth
       const arrayBuffer = await response.arrayBuffer();
       
-      // Use mammoth to extract text content
-      const result = await mammoth.extractRawText({
-        arrayBuffer
-      });
+      if (this.debug) {
+        console.log(`Received ArrayBuffer of ${arrayBuffer.byteLength} bytes`);
+      }
       
-      // Clean up the content
-      const cleanedContent = result.value
-        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
-        .replace(/\u0000/g, '')  // Remove null bytes
-        .replace(/\n{3,}/g, '\n\n')  // Normalize multiple line breaks
-        .trim();
+      if (arrayBuffer.byteLength === 0) {
+        throw new Error('Received empty ArrayBuffer from Google Drive');
+      }
+      
+      // Create a more robust options object for mammoth with the successful approach from apps/dhg-improve-experts
+      const options = { 
+        arrayBuffer: arrayBuffer,
+        options: {
+          includeDefaultStyleMap: true,
+          preserveCharacterStyles: true,
+          preserveParagraphs: true,
+          preserveImages: false,
+          styleMap: [
+            "p[style-name='Heading 1'] => h1:fresh",
+            "p[style-name='Heading 2'] => h2:fresh",
+            "p[style-name='Heading 3'] => h3:fresh",
+            "p => p:fresh",
+            "r => span"
+          ]
+        }
+      };
+      
+      if (this.debug) {
+        console.log('Extracting text with mammoth...');
+        console.log(`Buffer size: ${arrayBuffer.byteLength} bytes`);
+      }
+      
+      let cleanedContent = '';
+      try {
+        // Use mammoth to extract text content
+        const result = await mammoth.extractRawText(options);
+        
+        // Clean up the content
+        cleanedContent = result.value
+          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+          .replace(/\u0000/g, '')  // Remove null bytes
+          .replace(/\n{3,}/g, '\n\n')  // Normalize multiple line breaks
+          .replace(/\s+/g, ' ')  // Normalize whitespace
+          .trim();
+          
+        if (this.debug) {
+          console.log(`Extracted ${cleanedContent.length} characters with mammoth`);
+          if (result.messages && result.messages.length > 0) {
+            console.log('Extraction warnings:', result.messages);
+          }
+        }
+      } catch (mammothError) {
+        // If mammoth fails, try our custom text extraction method
+        if (this.debug) {
+          console.warn(`Mammoth extraction failed: ${(mammothError as Error).message}`);
+          console.log('Attempting fallback raw text extraction...');
+        }
+        
+        // Use our fallback extraction method - convert ArrayBuffer to Buffer first
+        const buffer = Buffer.from(arrayBuffer);
+        cleanedContent = this.extractTextFromRawDocx(buffer);
+        
+        if (this.debug) {
+          console.log(`Extracted ${cleanedContent.length} characters using fallback method`);
+        }
+      }
       
       if (this.debug) {
         console.log(`Extracted ${cleanedContent.length} characters from DOCX file using direct fetch`);
-        if (result.messages.length > 0) {
-          console.log('Extraction warnings:', result.messages);
-        }
       }
       
       return cleanedContent;
@@ -1425,12 +1601,29 @@ This is generated mock data for testing purposes only.`;
         throw new Error(`Missing drive_id for file ${sourceFile.name} (ID: ${sourceFile.id})`);
       }
       
-      const fileContent = await this.getFileContent(sourceFile.drive_id, sourceFile.mime_type || '');
-      
-      if (this.debug) {
-        console.log(`Successfully extracted content (${fileContent.length} characters)`);
-        // Show first 100 chars of content preview
-        console.log(`Content preview: ${fileContent.substring(0, 100)}...`);
+      let fileContent: string;
+      try {
+        fileContent = await this.getFileContent(sourceFile.drive_id, sourceFile.mime_type || '');
+        
+        if (this.debug) {
+          console.log(`Successfully extracted content (${fileContent.length} characters)`);
+          // Show first 100 chars of content preview
+          console.log(`Content preview: ${fileContent.substring(0, 100)}...`);
+        }
+      } catch (contentError) {
+        // If we can't get the file content, use fallback content based on file metadata
+        console.warn(`Warning: Could not extract content from file ${sourceFile.name}: ${(contentError as Error).message}`);
+        console.log(`Using fallback content based on file metadata`);
+        
+        // Create fallback content from file metadata
+        fileContent = `File Name: ${sourceFile.name || 'Unknown'}
+File Type: ${sourceFile.mime_type || 'Unknown'}
+File ID: ${sourceFile.drive_id || 'Unknown'}
+Modified: ${sourceFile.modified_at || 'Unknown'}
+Path: ${sourceFile.path || 'Unknown path'}
+Web Link: ${sourceFile.web_view_link || 'No link available'}
+
+[Note: The actual file content could not be extracted. This is metadata-only content generated as a fallback.]`;
       }
 
       // 2. Get classification prompt
