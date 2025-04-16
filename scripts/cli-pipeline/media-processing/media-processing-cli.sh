@@ -3,12 +3,30 @@
 # Processes media files through various stages (MP4 → MP3 → Transcript)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+TRACKER_SCRIPT="$ROOT_DIR/scripts/cli-pipeline/core/command-history-tracker.ts"
 
 # Check that ts-node is installed
 if ! command -v ts-node &> /dev/null; then
   echo "❌ ts-node is not installed. Please install it with: npm install -g ts-node typescript"
   exit 1
 fi
+
+# Function to execute a command with tracking
+track_command() {
+  local command_category="media_processing"
+  local command_name="$1"
+  shift
+  local full_command="$@"
+  
+  # Check if tracker exists
+  if [ -f "$TRACKER_SCRIPT" ]; then
+    ts-node "$TRACKER_SCRIPT" "$command_category" "$full_command"
+  else
+    echo "⚠️ Command tracking script not found. Running command without tracking."
+    eval "$full_command"
+  fi
+}
 
 function display_help() {
   echo "Media Processing CLI - Processes media files from MP4 through transcription"
@@ -113,85 +131,85 @@ shift
 case "$COMMAND" in
   # Core commands
   convert)
-    ts-node "$SCRIPT_DIR/commands/convert-mp4.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/convert-mp4.ts $*"
     ;;
   find-processable-videos)
-    ts-node "$SCRIPT_DIR/commands/find-processable-videos.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/find-processable-videos.ts $*"
     ;;
   transcribe)
-    ts-node "$SCRIPT_DIR/commands/transcribe-audio.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/transcribe-audio.ts $*"
     ;;
   transcribe-with-summary)
-    ts-node "$SCRIPT_DIR/commands/transcribe-with-summary.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/transcribe-with-summary.ts $*"
     ;;
   list-transcribable)
-    ts-node "$SCRIPT_DIR/commands/list-transcribable.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/list-transcribable.ts $*"
     ;;
   show-transcription-status)
-    ts-node "$SCRIPT_DIR/commands/show-transcription-status.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/show-transcription-status.ts $*"
     ;;
   process-video)
-    ts-node "$SCRIPT_DIR/commands/process-video.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/process-video.ts $*"
     ;;
   batch-process-media)
-    ts-node "$SCRIPT_DIR/commands/batch-process-media.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/batch-process-media.ts $*"
     ;;
   process-local-mp4-files)
-    ts-node --transpile-only "$SCRIPT_DIR/commands/process-local-mp4-files.ts" "$@"
+    track_command "$COMMAND" "ts-node --transpile-only $SCRIPT_DIR/commands/process-local-mp4-files.ts $*"
     ;;
   list-pending)
-    ts-node "$SCRIPT_DIR/commands/list-pending.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/list-pending.ts $*"
     ;;
   list-ready)
-    ts-node "$SCRIPT_DIR/commands/list-ready.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/list-ready.ts $*"
     ;;
   update-status)
-    ts-node "$SCRIPT_DIR/commands/update-status.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/update-status.ts $*"
     ;;
   mark-skip-processing)
-    ts-node "$SCRIPT_DIR/commands/mark-skip-processing.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/mark-skip-processing.ts $*"
     ;;
   extract-summary)
-    ts-node "$SCRIPT_DIR/commands/extract-summary.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/extract-summary.ts $*"
     ;;
   batch-transcribe)
-    ts-node "$SCRIPT_DIR/commands/batch-transcribe.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/batch-transcribe.ts $*"
     ;;
     
   # File checking commands
   check-media-files)
-    ts-node "$SCRIPT_DIR/commands/check-media-files.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/check-media-files.ts $*"
     ;;
   find-missing-media)
-    ts-node "$SCRIPT_DIR/commands/find-missing-media.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/find-missing-media.ts $*"
     ;;
   find-missing-js-files)
-    ts-node "$SCRIPT_DIR/commands/find-missing-js-files.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/find-missing-js-files.ts $*"
     ;;
   run-shell-check)
-    ts-node "$SCRIPT_DIR/commands/run-shell-check.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/run-shell-check.ts $*"
     ;;
   purge-processed-media)
-    ts-node "$SCRIPT_DIR/commands/purge-processed-media.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/purge-processed-media.ts $*"
     ;;
     
   # File management commands
   rename-mp4-files)
-    ts-node "$SCRIPT_DIR/commands/rename-mp4-files.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/rename-mp4-files.ts $*"
     ;;
   sync-m4a-names)
-    ts-node "$SCRIPT_DIR/commands/sync-m4a-names.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/sync-m4a-names.ts $*"
     ;;
   
   # Database integration commands
   update-disk-status)
-    ts-node "$SCRIPT_DIR/index.ts" update-disk-status "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/index.ts update-disk-status $*"
     ;;
   register-expert-docs)
-    ts-node "$SCRIPT_DIR/index.ts" register-expert-docs "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/index.ts register-expert-docs $*"
     ;;
   register-local-mp4-files)
-    ts-node "$SCRIPT_DIR/commands/register-local-mp4-files.ts" "$@"
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/register-local-mp4-files.ts $*"
     ;;
     
   # Help commands
