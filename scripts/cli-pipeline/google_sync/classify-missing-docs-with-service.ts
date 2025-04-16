@@ -404,6 +404,7 @@ async function classifyMissingDocuments(
                     .from('expert_documents')
                     .update({
                       classification_metadata: classificationResult,
+                      processed_content: classificationResult,  // Also set processed_content to match classification result
                       raw_content: cleanContent
                     })
                     .eq('id', minimalDoc.id);

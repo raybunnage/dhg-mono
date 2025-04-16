@@ -52,6 +52,57 @@ async function checkLatestExpertDocument() {
       console.log('Raw Content: NOT PRESENT (null or empty)');
     }
     
+    // Fetch all columns to check processed_content
+    const { data: fullData, error: fullError } = await supabase
+      .from('expert_documents')
+      .select('*')
+      .eq('id', doc.id)
+      .single();
+    
+    if (fullError) {
+      console.error('Error fetching full document data:', fullError);
+    } else if (fullData) {
+      console.log('\nFull Document Check:');
+      console.log('-'.repeat(50));
+      
+      // Check all JSON fields
+      const jsonFields = ['processed_content', 'classification_metadata', 'ai_analysis', 'processing_stats', 'structure'];
+      
+      for (const field of jsonFields) {
+        if (fullData[field]) {
+          console.log(`${field}: Present (${typeof fullData[field]})`);
+          try {
+            if (typeof fullData[field] === 'object') {
+              console.log(`  Keys: ${Object.keys(fullData[field]).join(', ')}`);
+              
+              // Show a snippet of a few fields for debugging
+              if (field === 'processed_content' || field === 'classification_metadata') {
+                console.log('  Sample properties:');
+                const obj = fullData[field];
+                if (obj.document_type) console.log(`    document_type: ${obj.document_type}`);
+                if (obj.document_type_id) console.log(`    document_type_id: ${obj.document_type_id}`);
+                if (obj.classification_confidence) console.log(`    classification_confidence: ${obj.classification_confidence}`);
+              }
+            } else if (typeof fullData[field] === 'string') {
+              try {
+                // Try to parse it in case it's a JSON string
+                const parsed = JSON.parse(fullData[field]);
+                console.log(`  Parsed JSON string, keys: ${Object.keys(parsed).join(', ')}`);
+              } catch (parseError: any) {
+                // Just a regular string, show preview
+                const preview = fullData[field].substring(0, 50) + (fullData[field].length > 50 ? '...' : '');
+                console.log(`  Content: "${preview}"`);
+              }
+            }
+          } catch (err: any) {
+            console.log(`  Error examining field: ${err.message}`);
+          }
+        } else {
+          console.log(`${field}: NOT PRESENT (null or undefined)`);
+        }
+      }
+    }
+    
     // Get source name in a separate query
     const { data: sourceData } = await supabase
       .from('sources_google')
