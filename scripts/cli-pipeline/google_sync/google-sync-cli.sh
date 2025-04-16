@@ -4,31 +4,51 @@
 
 # Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
+
+# Function to execute a command with tracking
+track_command() {
+  local pipeline_name="google_sync"
+  local command_name="$1"
+  shift
+  local full_command="$@"
+  
+  # Check if we have a TS tracking wrapper
+  if [ -f "$TRACKER_TS" ]; then
+    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+  else
+    # Fallback to direct execution without tracking
+    echo "ℹ️ Tracking not available. Running command directly."
+    eval "$full_command"
+  fi
+}
 
 # Handle specific commands that might need special treatment
 if [ "$1" = "count-mp4" ]; then
   shift
-  ts-node "$SCRIPT_DIR/count-mp4-files.ts" "$@"
+  track_command "count-mp4" "ts-node $SCRIPT_DIR/count-mp4-files.ts $*"
   exit $?
 fi
 
 if [ "$1" = "health-check" ]; then
   shift
-  "$SCRIPT_DIR/health-check.sh" "$@"
+  track_command "health-check" "$SCRIPT_DIR/health-check.sh $*"
   exit $?
 fi
 
 if [ "$1" = "classify-docs-service" ]; then
   shift
-  ts-node "$SCRIPT_DIR/classify-missing-docs-with-service.ts" "$@"
+  track_command "classify-docs-service" "ts-node $SCRIPT_DIR/classify-missing-docs-with-service.ts $*"
   exit $?
 fi
 
 if [ "$1" = "test-prompt-service" ]; then
   shift
-  ts-node "$SCRIPT_DIR/test-prompt-service.ts" "$@"
+  track_command "test-prompt-service" "ts-node $SCRIPT_DIR/test-prompt-service.ts $*"
   exit $?
 fi
 
-# Run the TypeScript file with ts-node
-ts-node "$SCRIPT_DIR/index.ts" "$@"
+# Run the TypeScript file with ts-node - capture command from args
+COMMAND="${1:-main}"
+track_command "$COMMAND" "ts-node $SCRIPT_DIR/index.ts $*"
