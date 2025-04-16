@@ -4,7 +4,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-TRACKER_SCRIPT="$ROOT_DIR/scripts/cli-pipeline/core/command-history-tracker.ts"
+TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
 # Check that ts-node is installed
 if ! command -v ts-node &> /dev/null; then
@@ -14,16 +14,17 @@ fi
 
 # Function to execute a command with tracking
 track_command() {
-  local command_category="media_processing"
+  local pipeline_name="media_processing"
   local command_name="$1"
   shift
   local full_command="$@"
   
-  # Check if tracker exists
-  if [ -f "$TRACKER_SCRIPT" ]; then
-    ts-node "$TRACKER_SCRIPT" "$command_category" "$full_command"
+  # Check if we have a TS tracking wrapper
+  if [ -f "$TRACKER_TS" ]; then
+    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
-    echo "⚠️ Command tracking script not found. Running command without tracking."
+    # Fallback to direct execution without tracking
+    echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"
   fi
 }
