@@ -215,34 +215,15 @@ case "$COMMAND" in
     
   # Help commands
   help|--help|-h)
-    # Display help directly
+    # Display help
     display_help
     
-    # Load environment from .env files
-    if [ -f "$ROOT_DIR/.env.development" ]; then
-      source "$ROOT_DIR/.env.development"
-    fi
-    
-    if [ -f "$ROOT_DIR/.env.local" ]; then
-      source "$ROOT_DIR/.env.local"
-    fi
-    
-    # Log this help command using Supabase directly
-    if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-      # Log command execution directly to database
-      curl -X POST "$SUPABASE_URL/rest/v1/cli_command_tracking" \
-          -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
-          -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"pipeline_name\": \"media_processing\",
-            \"command_name\": \"--help\",
-            \"execution_time\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",
-            \"status\": \"success\",
-            \"summary\": \"Help command executed successfully\"
-          }" \
-          --silent > /dev/null
-    fi
+    # Log command using NodeJS script directly - create a simple tracking entry
+    # This avoids the issues with shell function execution
+    LOG_HELP_CMD="npx ts-node -e 'const { createClient } = require(\"@supabase/supabase-js\"); const supabaseUrl = process.env.SUPABASE_URL; const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; if (!supabaseUrl || !supabaseKey) { console.error(\"Missing Supabase credentials\"); process.exit(1); } const supabase = createClient(supabaseUrl, supabaseKey); (async () => { await supabase.from(\"cli_command_tracking\").insert({ pipeline_name: \"media_processing\", command_name: \"--help\", execution_time: new Date(), status: \"success\", summary: \"Help command executed successfully\" }); console.log(\"Help command tracked\"); })().catch(err => console.error(err));'"
+
+    # Execute the logging command in the background
+    eval $LOG_HELP_CMD &
     ;;
   *)
     echo "❌ Unknown command: $COMMAND"
