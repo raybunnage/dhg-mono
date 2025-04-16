@@ -49,6 +49,12 @@ if [ "$1" = "test-prompt-service" ]; then
   exit $?
 fi
 
+if [ "$1" = "fix-orphaned-docx" ]; then
+  shift
+  track_command "fix-orphaned-docx" "ts-node $SCRIPT_DIR/fix-orphaned-docx.ts $*"
+  exit $?
+fi
+
 # Run the TypeScript file with ts-node - capture command from args
 COMMAND="${1:-main}"
 track_command "$COMMAND" "ts-node $SCRIPT_DIR/index.ts $*"
