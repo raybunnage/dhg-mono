@@ -8,6 +8,7 @@ import { program } from 'commander';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
+import * as mammoth from 'mammoth';
 import { Database } from '../../../supabase/types';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { promptService } from '../../../packages/shared/services/prompt-service';
@@ -74,13 +75,90 @@ async function processFile(
           console.log(`DOCX file details: ${JSON.stringify(file, null, 2)}`);
         }
         
-        // Use Google Drive API directly to get content
+        // Use Google Drive API directly to get DOCX binary content
         const response = await drive.files.get({
           fileId: fileId,
           alt: 'media',
-        }, { responseType: 'text' });
+        }, { responseType: 'arraybuffer' });
         
-        fileContent = response.data;
+        if (debug) {
+          console.log(`Downloaded DOCX, size: ${response.data.byteLength} bytes`);
+        }
+        
+        // Process with mammoth to extract text properly
+        try {
+          // Create a buffer from the response data
+          const buffer = Buffer.from(response.data);
+          
+          // Save the file temporarily to process with mammoth (most reliable method)
+          const tempDir = './document-analysis-results';
+          if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+          }
+          
+          const tempFilePath = path.join(tempDir, `temp-${fileId}.docx`);
+          fs.writeFileSync(tempFilePath, buffer);
+          
+          if (debug) {
+            console.log(`Saved temporary DOCX file to ${tempFilePath}`);
+          }
+          
+          // Extract text using mammoth with file path (most reliable method)
+          const result = await mammoth.extractRawText({
+            path: tempFilePath
+          });
+          
+          // Clean up the file when done
+          try {
+            fs.unlinkSync(tempFilePath);
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+          
+          // Check if we got reasonable content
+          if (result.value && result.value.length > 10) {
+            // Clean up the text content
+            fileContent = result.value
+              .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+              .replace(/\u0000/g, '')  // Remove null bytes
+              .replace(/\n{3,}/g, '\n\n')  // Normalize multiple line breaks
+              .trim();
+              
+            if (debug) {
+              console.log(`Successfully extracted ${fileContent.length} characters with mammoth`);
+              if (result.messages.length > 0) {
+                console.log(`Mammoth messages: ${JSON.stringify(result.messages)}`);
+              }
+            }
+          } else {
+            // Fallback if mammoth extraction failed
+            fileContent = `[Failed to extract content from DOCX file. File ID: ${fileId}, Name: ${file.name || 'unknown'}]`;
+            console.warn(`Warning: Mammoth extraction produced insufficient content (${result.value?.length || 0} chars)`);
+          }
+        } catch (mammothError) {
+          console.error(`Error extracting DOCX content with mammoth: ${mammothError instanceof Error ? mammothError.message : 'Unknown error'}`);
+          
+          // Fallback to raw buffer processing if mammoth fails
+          try {
+            // Create a string from the buffer, cleaning control characters
+            fileContent = Buffer.from(response.data).toString('utf8')
+              .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control chars
+              .replace(/[^\x20-\x7E\n\r\t]/g, '') // Keep only printable ASCII
+              .replace(/\n{3,}/g, '\n\n') // Normalize line breaks
+              .trim();
+              
+            if (fileContent.length < 100) {
+              fileContent = `[Could not extract useful content from DOCX file. File ID: ${fileId}, Name: ${file.name || 'unknown'}]`;
+            }
+            
+            if (debug) {
+              console.log(`Fallback extraction produced ${fileContent.length} characters`);
+            }
+          } catch (fallbackError) {
+            console.error(`Fallback extraction also failed: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
+            fileContent = `[Failed to extract content from DOCX file. File ID: ${fileId}, Name: ${file.name || 'unknown'}]`;
+          }
+        }
       } else if (mimeType === 'application/vnd.google-apps.document') {
         // For Google Docs
         // Use Google Drive API directly to export as plain text
@@ -266,26 +344,88 @@ async function classifyMissingDocuments(
           }
           
           // Create expert document record - now including raw_content and processed_content
-          const expertDoc = {
-            id: uuidv4(),
-            source_id: file.id,
-            document_type_id: classificationResult.document_type_id,
-            classification_confidence: classificationResult.classification_confidence || 0.75,
-            classification_metadata: classificationResult,
-            raw_content: fileContent,
-            processed_content: classificationResult,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          const { error: expertError } = await supabase
-            .from('expert_documents')
-            .insert(expertDoc);
-          
-          if (expertError) {
-            console.error(`Error creating expert document: ${expertError.message}`);
-          } else if (debug) {
-            console.log(`Created expert document for ${file.name}`);
+          try {
+            // First try to sanitize raw_content that might have illegal Unicode escape sequences
+            let sanitizedContent = fileContent;
+            
+            // If debug mode is enabled, log what we're about to insert
+            if (debug) {
+              console.log(`Inserting expert document for ${file.name} with document_type_id: ${classificationResult.document_type_id}`);
+            }
+            
+            // Try to create minimal document first, then extend with content if needed
+            const minimalDoc = {
+              id: uuidv4(),
+              source_id: file.id,
+              document_type_id: classificationResult.document_type_id,
+              classification_confidence: classificationResult.classification_confidence || 0.75,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            
+            // Insert the minimal document first (always works)
+            const { error: minimalError, data: minimalData } = await supabase
+              .from('expert_documents')
+              .insert(minimalDoc)
+              .select();
+              
+            if (minimalError) {
+              console.error(`Error creating minimal expert document: ${minimalError.message}`);
+            } else {
+              if (debug) {
+                console.log(`Created minimal expert document for ${file.name}`);
+              }
+              
+              // Now try to update with full content if minimal insert succeeded
+              try {
+                // Create a clean version of content with all problematic characters removed
+                let cleanContent = '';
+                try {
+                  // Remove ALL non-ASCII printable characters to ensure database compatibility
+                  cleanContent = fileContent
+                    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')  // Control chars
+                    .replace(/\\u[\dA-Fa-f]{4}/g, '')              // Unicode escapes
+                    .replace(/\u0000/g, '')                        // Null bytes
+                    .replace(/\n{3,}/g, '\n\n')                    // Multiple line breaks
+                    .trim();
+                    
+                  // If that fails, try a more aggressive approach
+                  if (!cleanContent || cleanContent.includes('\\u')) {
+                    cleanContent = fileContent.replace(/[^\x20-\x7E\r\n\t]/g, '');
+                  }
+                } catch (sanitizeErr) {
+                  console.warn(`Content sanitization error: ${sanitizeErr instanceof Error ? sanitizeErr.message : 'Unknown error'}`);
+                  cleanContent = '[Content could not be sanitized for database storage]';
+                }
+                
+                // Only attempt content update if there's actual content to add
+                if (cleanContent && minimalData && minimalData.length > 0) {
+                  const { error: contentUpdateError } = await supabase
+                    .from('expert_documents')
+                    .update({
+                      classification_metadata: classificationResult,
+                      raw_content: cleanContent
+                    })
+                    .eq('id', minimalDoc.id);
+                  
+                  if (contentUpdateError) {
+                    if (debug) {
+                      console.log(`Could not add full content data: ${contentUpdateError.message}`);
+                    }
+                    // This is fine, we already have the minimal record
+                  } else if (debug) {
+                    console.log(`Updated expert document with full content for ${file.name}`);
+                  }
+                }
+              } catch (contentErr) {
+                // Just log in debug mode, we already have the minimal document
+                if (debug) {
+                  console.log(`Could not add content: ${contentErr instanceof Error ? contentErr.message : 'Unknown error'}`);
+                }
+              }
+            }
+          } catch (err) {
+            console.error(`Error in expert document creation process: ${err instanceof Error ? err.message : 'Unknown error'}`);
           }
         }
         
