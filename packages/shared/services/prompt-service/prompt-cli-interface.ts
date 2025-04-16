@@ -540,4 +540,4 @@ export class PromptCliInterface {
 export const promptCliInterface = new PromptCliInterface();
 
 // Helper imports for file paths
-import path from 'path';
+import * as path from 'path';

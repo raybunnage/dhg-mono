@@ -4,8 +4,8 @@
  * A specialized service for managing prompts and their relationships in the database.
  * Extends the core PromptService with CRUD operations and relationship management.
  */
-import path from 'path';
-import fs from 'fs';
+import * as path from 'path';
+import * as fs from 'fs';
 import { SupabaseClientService } from '../../services/supabase-client';
 import { Logger } from '../../utils';
 import { PromptService, Prompt, PromptRelationship } from './prompt-service';

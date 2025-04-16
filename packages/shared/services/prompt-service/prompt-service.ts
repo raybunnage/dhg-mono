@@ -5,8 +5,8 @@
  * Handles prompt retrieval, relationships, metadata extraction, and database queries.
  */
 import { SupabaseClient } from '@supabase/supabase-js';
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Logger } from '../../utils';
 import { FileService } from '../file-service/file-service';
 import { claudeService } from '../claude-service/claude-service';

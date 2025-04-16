@@ -216,6 +216,78 @@ cliService.registerCommand({
   }
 });
 
+// Add test-classify-document-types command
+cliService.registerCommand({
+  name: 'test-classify-document-types',
+  description: 'Test document classification with Claude by verifying document types are properly sent and received',
+  action: async () => {
+    // Check for Claude API key
+    if (!environmentService.get('claudeApiKey')) {
+      cliService.error('Missing Claude API key. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY environment variable.');
+      return;
+    }
+    
+    cliService.info('Running document classification test...');
+    cliService.info('This will execute the test in test-classify-document-types.sh');
+    
+    // Execute the test script
+    const { execSync } = require('child_process');
+    try {
+      const scriptPath = `${__dirname}/test-classify-document-types.sh`;
+      
+      // Make sure the script is executable
+      execSync(`chmod +x "${scriptPath}"`);
+      
+      // Run the script
+      execSync(`"${scriptPath}"`, { stdio: 'inherit' });
+      
+      cliService.success('Test completed successfully');
+    } catch (error) {
+      cliService.error('Test failed. See output for details.');
+      logger.error('Error running test:', error);
+    }
+  }
+});
+
+// Add test-google-doc-classification command
+cliService.registerCommand({
+  name: 'test-google-doc-classification',
+  description: 'Test classifying Google Drive files with Claude without updating the database',
+  action: async () => {
+    // Check for Claude API key
+    if (!environmentService.get('claudeApiKey')) {
+      cliService.error('Missing Claude API key. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY environment variable.');
+      return;
+    }
+    
+    // Check for Google Drive credentials
+    if (!environmentService.get('googleCredentialsPath')) {
+      cliService.error('Missing Google Drive credentials. Please set GOOGLE_CREDENTIALS_PATH environment variable.');
+      return;
+    }
+    
+    cliService.info('Running Google document classification test...');
+    cliService.info('This will test classifying 6 Google Drive files without updating the database');
+    
+    // Execute the test script
+    const { execSync } = require('child_process');
+    try {
+      const scriptPath = `${__dirname}/test-google-doc-classification.sh`;
+      
+      // Make sure the script is executable
+      execSync(`chmod +x "${scriptPath}"`);
+      
+      // Run the script
+      execSync(`"${scriptPath}"`, { stdio: 'inherit' });
+      
+      cliService.success('Test completed successfully');
+    } catch (error) {
+      cliService.error('Test failed. See output for details.');
+      logger.error('Error running test:', error);
+    }
+  }
+});
+
 // Main function
 async function main() {
   try {

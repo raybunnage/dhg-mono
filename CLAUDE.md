@@ -51,9 +51,27 @@
    - `scripts/cli-pipeline/scripts/`
    - `scripts/cli-pipeline/media-processing/`
    - `scripts/cli-pipeline/presentations/`
+   - `scripts/cli-pipeline/prompt_service/`
    - Other domain-specific pipelines as they are created
    
    Keep a flat file structure within these folders - no nested subfolders. Don't create new script components in the root `scripts/` directory.
+   
+   **Commander.js Integration Notes**:
+   - There are different approaches to commander.js integration across CLI pipelines:
+     - Most pipelines directly import commander: `import { Command } from 'commander'`
+     - Some pipelines (like document) use a custom `cliService` abstraction
+   - For consistency with commander.js versions:
+     - Some directories (google_sync, prompt_service) have their own package.json with commander v11.0.0
+     - If you encounter commander.js version conflicts, create a local package.json for that pipeline
+     - Example approach from prompt_service:
+       - Create a dedicated package.json for the directory with commander.js v11.0.0
+       - Install dependencies in that directory
+       - If simpler, consider a standalone script approach to avoid integration complexity
+   - CLI Integration Best Practices:
+     - Each cli-pipeline directory should have its own package.json for dependency management
+     - Shell scripts should properly export environment variables
+     - Always check for proper availability of Supabase credentials
+     - For new pipelines, check existing ones for consistent commander.js patterns
 
 4. **Singleton Pattern for Services**: Always use and create singleton patterns for service classes:
    - ⚠️ **CRITICAL: Use existing singletons for external services**:

@@ -1,3 +1,152 @@
+
+fixed: 
+
+{"hash":"JTIzJTIwRG9jdW1lbnQlMjBDbGFzc2lmaWNhdGlv","usage":{"inputSchema":{},"outputSchema":"text"},"source":{"gitInfo":{"branch":"main","commitId":"none"},"fileName":"document-classification-prompt-new.md","createdAt":"2025-04-13T05:02:02.474Z","lastModified":"2025-04-15T23:42:24.345Z"},"aiEngine":{"model":"claude-3-sonnet-20240229","maxTokens":4000,"temperature":0.7},"function":{"purpose":"","dependencies":[],"estimatedCost":"","successCriteria":""},"databaseQuery":"select id, category, document_type, description, mime_type, file_extension from document_types;","relatedAssets":[],"databaseQuery2":"","packageJsonFiles":[]}
+
+
+
+
+
+Example 1) metadata field from prompts where name = 'markdown-document-classification-prompt'
+
+{"hash":"JTIzJTIwRG9jdW1lbnQlMjBDbGFzc2lmaWNhdGlv","usage":{"inputSchema":{},"outputSchema":"text"},"source":{"gitInfo":{"branch":"main","commitId":"none"},"fileName":"markdown-document-classification-prompt.md","createdAt":"2025-03-09T18:45:28.401Z","lastModified":"2025-03-11T15:34:43.423Z"},"aiEngine":{"model":"claude-3-sonnet-20240229","maxTokens":4000,"temperature":0.7},"function":{"purpose":"","dependencies":[],"estimatedCost":"","successCriteria":""},"databaseQuery":"select * from document_types where category = 'Documentation';","relatedAssets":["40f9d0d9-029b-4e42-a37b-d8c1cf0d5a89"],"databaseQuery2":"SELECT metadata FROM documentation_files WHERE id = :script_id;","packageJsonFiles":[]}
+
+
+note that there is:  "databaseQuery":"select * from document_types where category = 'Documentation';
+
+
+Example 2) metadata field from prompts where name = 'document-classification-prompt-new'
+
+{"hash":"JTIzJTIwRG9jdW1lbnQlMjBDbGFzc2lmaWNhdGlv","usage":{"inputSchema":{},"outputSchema":"text"},"source":{"gitInfo":{"branch":"main","commitId":"none"},"fileName":"document-classification-prompt-new.md","createdAt":"2025-04-13T05:02:02.474Z"},"aiEngine":{"model":"claude-3-sonnet-20240229","maxTokens":4000,"temperature":0.7},"function":{"purpose":"","dependencies":[],"estimatedCost":"","successCriteria":""},"databaseQuery":"select id, category, document_type, description, mime_type, file_extension from document_types;","relatedAssets":[],"databaseQuery2":"","packageJsonFiles":[]}
+
+
+3) 
+I need you to add the section below to the metadata field of 'document-classification-prompt-new' as part of prompt-management-service for the prompt-service which is at: scripts/cli-pipeline/prompt_service
+
+
+HEreis the query to add:
+
+"databaseQuery": "select id, category, document_type, description, mime_type, file_extension from document_types;"
+
+
+
+[
+  {
+    "column_name": "id",
+    "data_type": "uuid",
+    "character_maximum_length": null,
+    "column_default": "gen_random_uuid()",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "document_type",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "current_num_of_type",
+    "data_type": "integer",
+    "character_maximum_length": null,
+    "column_default": "0",
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "description",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "mime_type",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "file_extension",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "document_type_counts",
+    "data_type": "integer",
+    "character_maximum_length": null,
+    "column_default": "0",
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "category",
+    "data_type": "text",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": "now()",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "character_maximum_length": null,
+    "column_default": "now()",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "required_fields",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "legacy_document_type_id",
+    "data_type": "bigint",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "is_ai_generated",
+    "data_type": "boolean",
+    "character_maximum_length": null,
+    "column_default": "false",
+    "is_nullable": "NO"
+  },
+  {
+    "column_name": "content_schema",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "ai_processing_rules",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  },
+  {
+    "column_name": "validation_rules",
+    "data_type": "jsonb",
+    "character_maximum_length": null,
+    "column_default": null,
+    "is_nullable": "YES"
+  }
+]
+
+
+
 SupabaseClientService vs supabaseDirect: Pros and Cons
 
   supabaseDirect (Direct Fetch Approach)
@@ -60,7 +209,7 @@ SupabaseClientService vs supabaseDirect: Pros and Cons
 
   There's no compelling reason to fix SupabaseClientService if supabaseDirect meets all
    your current needs and works reliably. Pragmatism should win here - use what works.
-   
+
 
 
 Perfect! These are the documents that need classification. Let's see if we can help
@@ -1544,10 +1693,7 @@ Identify how this service integrates with the broader CLI pipeline architecture.
 
 pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
 
-on the "Scripts" page show the script files from the "scripts" tables in supabase on the left side in cards. For now just display them in alphabetical order and put a search text box above them and add a "Search" button that will just search the text in the script table for the titles and match the text that I type so far to filter on them.  On each card I want the file_path, the size, the created and updated date and the document_type from the document_types table based on the document_type_id on the scripts record (which has yet to be filled in.)    On the right side I want you to do something similar to the "Docs" page - first have a collapsible section on the right side where you display the summmary and status_recommendation field as well as the most important assessment fields - they will be filled in soon.  Below that i need a view window where I dispaly the .sh or .js file.  To do that I need a script that is similar to scripts/cli-pipeline/simple-md-server.js that is a simple viewer of .sh or .js files - hopefully showing the files in dark mode - I expect to run the script for this in its on command window just like I do for simple-md-view.  Finally on the top right above the summary tab can you create the "Copy Content" button and "Delete" button just like you did for me on the "Docs" page.  Thanks.
-
-
-{"hash":"JTIzJTIwU2NyaXB0JTIwQW5hbHlzaXMlMjBhbmQl","usage":{"inputSchema":{},"outputSchema":"text"},"source":{"gitInfo":{"branch":"main","commitId":"none"},"fileName":"script-analysis-prompt.md","createdAt":"2025-03-16T04:27:21.845Z"},"aiEngine":{"model":"claude-3-sonnet-20240229","maxTokens":4000,"temperature":0.7},"function":{"purpose":"","dependencies":[],"estimatedCost":"","successCriteria":""},"databaseQuery":"SELECT * FROM document_types WHERE category IN ('AI', 'Development', 'Integration', 'Operations');","relatedAssets":["2e22fb39-c6fb-4d32-a2c0-86ec2971fac5","pkg-root","pkg-dhg-improve-experts","00000000-0000-4000-a000-000000000001","00000000-0000-4000-a000-000000000005"],"packageJsonFiles":[{"id":"00000000-0000-4000-a000-000000000001","path":"/package.json","title":"Root package.json","context":"abc","settings":{"description":"","document_type_id":"d2480114-93b8-4f8b-8910-6b6d5f68d8a5","relationship_type":"reference","relationship_context":"abc"},"description":"","document_type_id":"d2480114-93b8-4f8b-8910-6b6d5f68d8a5","relationship_type":"reference"},{"id":"00000000-0000-4000-a000-000000000005","path":"/apps/dhg-improve-experts/package.json","title":"dhg-improve-experts package.json","context":"","settings":{"description":"Package.json file relationship","document_type_id":null,"relationship_type":"reference","relationship_context":""},"description":"Package.json file relationship","document_type_id":null,"relationship_type":"reference"}]}
+now "relationship_type":"reference"}]}
 
  },
       "metadata": {

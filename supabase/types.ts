@@ -4878,6 +4878,19 @@ export type Database = {
           tags: string[]
         }[]
       }
+      get_command_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          pipeline_name: string
+          command_name: string
+          total_executions: number
+          successful_executions: number
+          failed_executions: number
+          running_executions: number
+          avg_duration_ms: number
+          last_execution: string
+        }[]
+      }
       get_command_usage_by_category: {
         Args: { time_period?: unknown }
         Returns: {
