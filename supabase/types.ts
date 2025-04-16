@@ -395,6 +395,48 @@ export type Database = {
           },
         ]
       }
+      cli_command_tracking: {
+        Row: {
+          affected_entity: string | null
+          command_name: string
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          execution_time: string
+          id: string
+          pipeline_name: string
+          records_affected: number | null
+          status: string
+          summary: string | null
+        }
+        Insert: {
+          affected_entity?: string | null
+          command_name: string
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_time: string
+          id?: string
+          pipeline_name: string
+          records_affected?: number | null
+          status: string
+          summary?: string | null
+        }
+        Update: {
+          affected_entity?: string | null
+          command_name?: string
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_time?: string
+          id?: string
+          pipeline_name?: string
+          records_affected?: number | null
+          status?: string
+          summary?: string | null
+        }
+        Relationships: []
+      }
       command_categories: {
         Row: {
           color: string | null
@@ -421,53 +463,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
-      }
-      command_history: {
-        Row: {
-          category_id: string | null
-          command_text: string
-          duration_ms: number | null
-          executed_at: string | null
-          exit_code: number | null
-          id: string
-          notes: string | null
-          sanitized_command: string
-          success: boolean | null
-          tags: string[] | null
-        }
-        Insert: {
-          category_id?: string | null
-          command_text: string
-          duration_ms?: number | null
-          executed_at?: string | null
-          exit_code?: number | null
-          id?: string
-          notes?: string | null
-          sanitized_command: string
-          success?: boolean | null
-          tags?: string[] | null
-        }
-        Update: {
-          category_id?: string | null
-          command_text?: string
-          duration_ms?: number | null
-          executed_at?: string | null
-          exit_code?: number | null
-          id?: string
-          notes?: string | null
-          sanitized_command?: string
-          success?: boolean | null
-          tags?: string[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "command_history_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "command_categories"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       command_patterns: {
         Row: {
@@ -4703,17 +4698,6 @@ export type Database = {
         }
         Relationships: []
       }
-      command_suggestions: {
-        Row: {
-          category_name: string | null
-          last_used: string | null
-          recommendation_strength: string | null
-          sanitized_command: string | null
-          success_rate: number | null
-          usage_count: number | null
-        }
-        Relationships: []
-      }
       page_guts_raw_data: {
         Row: {
           ai_prompts: Json | null
@@ -4855,6 +4839,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           create_statement: string
+        }[]
+      }
+      get_cli_command_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          pipeline_name: string
+          command_name: string
+          total_executions: number
+          successful_executions: number
+          failed_executions: number
+          running_executions: number
+          avg_duration_ms: number
+          last_execution: string
         }[]
       }
       get_command_history: {

@@ -5,20 +5,21 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 CLI_FILE="${SCRIPT_DIR}/cli.ts"
-TRACKER_SCRIPT="$ROOT_DIR/scripts/cli-pipeline/core/command-history-tracker.ts"
+TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
-# Function to execute a command with tracking
+# Command tracking function - works with new tracking service
 track_command() {
-  local command_category="document_pipeline"
+  local pipeline_name="document_pipeline"
   local command_name="$1"
   shift
   local full_command="$@"
   
-  # Check if tracker exists
-  if [ -f "$TRACKER_SCRIPT" ]; then
-    ts-node "$TRACKER_SCRIPT" "$command_category" "$full_command"
+  # Check if we have a TS tracking wrapper
+  if [ -f "$TRACKER_TS" ]; then
+    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
-    echo "⚠️ Command tracking script not found. Running command without tracking."
+    # Fallback to direct execution without tracking
+    echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"
   fi
 }
@@ -59,16 +60,12 @@ LOG_FILE="${LOG_DIR}/document-pipeline-$(date +%Y-%m-%d_%H-%M-%S).log"
 # Run the TypeScript CLI, pipe stdout and stderr to the log file while also displaying them
 cd "${ROOT_DIR}"
 
-# Capture the original command
+# Extract command name
+COMMAND_NAME=${1:-"default"}
 ORIG_COMMAND="npx ts-node --transpile-only ${CLI_FILE} $@"
 
-# Use tracking wrapper or direct execution
-if [ -f "$TRACKER_SCRIPT" ]; then
-  ts-node "$TRACKER_SCRIPT" "document_pipeline" "$ORIG_COMMAND" 2>&1 | tee -a "${LOG_FILE}"
-else
-  echo "⚠️ Command tracking script not found. Running command without tracking."
-  eval "$ORIG_COMMAND" 2>&1 | tee -a "${LOG_FILE}"
-fi
+# Use the tracking wrapper for execution with logging
+track_command "$COMMAND_NAME" "$ORIG_COMMAND" 2>&1 | tee -a "${LOG_FILE}"
 
 # Exit with the exit code of the pipeline
 exit ${PIPESTATUS[0]}
