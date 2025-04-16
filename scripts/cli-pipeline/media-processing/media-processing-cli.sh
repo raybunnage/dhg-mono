@@ -215,7 +215,34 @@ case "$COMMAND" in
     
   # Help commands
   help|--help|-h)
+    # Display help directly
     display_help
+    
+    # Load environment from .env files
+    if [ -f "$ROOT_DIR/.env.development" ]; then
+      source "$ROOT_DIR/.env.development"
+    fi
+    
+    if [ -f "$ROOT_DIR/.env.local" ]; then
+      source "$ROOT_DIR/.env.local"
+    fi
+    
+    # Log this help command using Supabase directly
+    if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      # Log command execution directly to database
+      curl -X POST "$SUPABASE_URL/rest/v1/cli_command_tracking" \
+          -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+          -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"pipeline_name\": \"media_processing\",
+            \"command_name\": \"help\",
+            \"execution_time\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",
+            \"status\": \"success\",
+            \"summary\": \"Help command executed successfully\"
+          }" \
+          --silent > /dev/null
+    fi
     ;;
   *)
     echo "❌ Unknown command: $COMMAND"
