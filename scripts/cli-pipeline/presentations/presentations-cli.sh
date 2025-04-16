@@ -3,6 +3,25 @@
 
 # Set script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
+
+# Function to execute a command with tracking
+track_command() {
+  local pipeline_name="presentations"
+  local command_name="$1"
+  shift
+  local full_command="$@"
+  
+  # Check if we have a TS tracking wrapper
+  if [ -f "$TRACKER_TS" ]; then
+    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+  else
+    # Fallback to direct execution without tracking
+    echo "ℹ️ Tracking not available. Running command directly."
+    eval "$full_command"
+  fi
+}
 
 # Function to display help
 function display_help() {
@@ -171,11 +190,13 @@ if [[ "$1" == "generate-summary" ]]; then
       done
       
       # Execute with fixed args
-      ts-node "$SCRIPT_DIR/index.ts" "${fixed_args[@]}"
+      track_command "generate-summary" "ts-node $SCRIPT_DIR/index.ts ${fixed_args[*]}"
       exit $?
     fi
   done
 fi
 
-# Otherwise, execute the presentations CLI normally
-ts-node "$SCRIPT_DIR/index.ts" "$@"
+# Otherwise, execute the presentations CLI normally with tracking
+# Use the first argument as the command name or default to "main"
+COMMAND="${1:-main}"
+track_command "$COMMAND" "ts-node $SCRIPT_DIR/index.ts $*"
