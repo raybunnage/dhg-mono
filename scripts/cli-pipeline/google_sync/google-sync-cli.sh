@@ -67,6 +67,12 @@ if [ "$1" = "list-unclassified-files" ]; then
   exit $?
 fi
 
+if [ "$1" = "show-expert-documents" ]; then
+  shift
+  track_command "show-expert-documents" "ts-node $SCRIPT_DIR/show-expert-documents.ts $*"
+  exit $?
+fi
+
 # Run the TypeScript file with ts-node - capture command from args
 COMMAND="${1:-main}"
 track_command "$COMMAND" "ts-node $SCRIPT_DIR/index.ts $*"
