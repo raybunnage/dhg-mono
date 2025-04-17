@@ -7,6 +7,12 @@ You will receive:
 1. The complete content of a scientific document (DOCUMENT CONTENT)
 2. A list of available document types in JSON format (AVAILABLE DOCUMENT TYPES)
 
+## Database Query for Document Types
+The following query fetches all document types from the database:
+```sql
+select id, category, document_type, description, mime_type, file_extension from document_types;
+```
+
 ## Task Description
 Your task is to:
 1. Analyze the document content thoroughly

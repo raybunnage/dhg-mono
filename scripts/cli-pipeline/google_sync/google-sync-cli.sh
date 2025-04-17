@@ -1,6 +1,15 @@
 #!/bin/bash
 # Script to run the Google Sync CLI
 # Usage: ./google-sync-cli.sh <command> [options]
+#
+# AVAILABLE COMMANDS:
+#   classify-pdfs          Classify PDF files missing document types using Claude AI
+#   reclassify-docs        Re-classify documents with temperature=0 for deterministic results
+#   classify-docs-service  Classify .docx and .txt files missing document types
+#   check-duplicates       Check for duplicate files in sources_google
+#   check-document-types   Check for files missing document types
+#   report-main-video-ids  Report on video files for folders
+#   help                   Show this help message
 
 # Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -41,6 +50,46 @@ if [ "$1" = "classify-docs-service" ]; then
   shift
   track_command "classify-docs-service" "ts-node $SCRIPT_DIR/classify-missing-docs-with-service.ts $*"
   exit $?
+fi
+
+if [ "$1" = "classify-pdfs" ]; then
+  shift
+  track_command "classify-pdfs" "ts-node $SCRIPT_DIR/classify-pdfs-with-service.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "reclassify-docs" ]; then
+  shift
+  track_command "reclassify-docs" "ts-node $SCRIPT_DIR/reclassify-docs-with-service.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+  # Show the help message
+  echo "Google Sync CLI - Manage Google Drive synchronization and document classification"
+  echo ""
+  echo "USAGE:"
+  echo "  ./google-sync-cli.sh <command> [options]"
+  echo ""
+  echo "COMMANDS:"
+  echo "  classify-pdfs            Classify PDF files missing document types using Claude AI"
+  echo "  reclassify-docs          Re-classify documents with temperature=0 for deterministic results"
+  echo "  classify-docs-service    Classify .docx and .txt files missing document types"
+  echo "  check-duplicates         Check for duplicate files in sources_google"
+  echo "  check-document-types     Check for files missing document types"
+  echo "  report-main-video-ids    Report on video files for folders"
+  echo "  help                     Show this help message"
+  echo ""
+  echo "EXAMPLES:"
+  echo "  # Classify PDFs with verbose output"
+  echo "  ./google-sync-cli.sh classify-pdfs --verbose"
+  echo ""
+  echo "  # Re-classify documents created after a specific date"
+  echo "  ./google-sync-cli.sh reclassify-docs --start-date \"2025-04-01\" --limit 20"
+  echo ""
+  echo "  # Run PDF classification in dry-run mode to see what would be updated"
+  echo "  ./google-sync-cli.sh classify-pdfs --dry-run"
+  exit 0
 fi
 
 if [ "$1" = "test-prompt-service" ]; then

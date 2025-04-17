@@ -524,6 +524,103 @@ program
     }
   });
 
+// Add classify-pdfs-with-service command
+program
+  .command('classify-pdfs-with-service')
+  .description('Classify PDF files missing document types using the PromptService')
+  .option('-l, --limit <number>', 'Limit the number of PDF files to process', '10')
+  .option('-o, --output <path>', 'Path to write analysis results', './document-analysis-results/pdf-classification.json')
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .option('-d, --debug', 'Show debug information', false)
+  .option('--dry-run', 'Process files but do not update database', false)
+  .option('--folder-id <id>', 'Filter by Google Drive folder ID or name')
+  .action(async (options) => {
+    try {
+      console.log('Launching the PDF classification command via ts-node...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'classify-pdfs-with-service.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+      if (options.output) cmd += ` --output "${options.output}"`;
+      if (options.verbose) cmd += ' --verbose';
+      if (options.debug) cmd += ' --debug';
+      if (options.dryRun) cmd += ' --dry-run';
+      if (options.folderId) cmd += ` --folder-id "${options.folderId}"`;
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing classify-pdfs-with-service:', error);
+      process.exit(1);
+    }
+  });
+
+// Add reclassify-docs-with-service command
+program
+  .command('reclassify-docs-with-service')
+  .description('Re-classify already classified documents with temperature 0 for deterministic results')
+  .option('-l, --limit <number>', 'Limit the number of files to process', '10')
+  .option('-o, --output <path>', 'Path to write analysis results', './document-analysis-results/reclassification.json')
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .option('-d, --debug', 'Show debug information', false)
+  .option('--dry-run', 'Process files but do not update database', false)
+  .option('--folder-id <id>', 'Filter by Google Drive folder ID or name')
+  .option('--include-pdfs', 'Include PDF files in classification (default: true)', true)
+  .option('--exclude-pdfs', 'Exclude PDF files from classification', false)
+  .option('--start-date <date>', 'Only process files created after this date (YYYY-MM-DD)', '')
+  .action(async (options) => {
+    try {
+      console.log('Launching the reclassification command via ts-node...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'reclassify-docs-with-service.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+      if (options.output) cmd += ` --output "${options.output}"`;
+      if (options.verbose) cmd += ' --verbose';
+      if (options.debug) cmd += ' --debug';
+      if (options.dryRun) cmd += ' --dry-run';
+      if (options.folderId) cmd += ` --folder-id "${options.folderId}"`;
+      if (options.excludePdfs) cmd += ' --exclude-pdfs';
+      if (options.startDate) cmd += ` --start-date "${options.startDate}"`;
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing reclassify-docs-with-service:', error);
+      process.exit(1);
+    }
+  });
+
 // Add test-prompt-service command
 program
   .command('test-prompt-service')
