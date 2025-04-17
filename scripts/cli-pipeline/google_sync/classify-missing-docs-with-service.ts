@@ -299,7 +299,7 @@ async function processFile(
           {
             expectJson: true,
             claudeOptions: {
-              temperature: 0.2,
+              temperature: 0,
               maxTokens: 4000
             }
           }

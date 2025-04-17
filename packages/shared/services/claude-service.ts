@@ -39,7 +39,7 @@ export class ClaudeService {
   public async sendPrompt(
     prompt: string,
     model: string = config.defaultModel,
-    temperature: number = 0.7,
+    temperature: number = 0,
     maxTokens: number = 4000
   ): Promise<string> {
     if (!this.apiKey) {
@@ -99,7 +99,7 @@ export class ClaudeService {
     prompt: string,
     jsonMode: boolean = true,
     model: string = config.defaultModel,
-    temperature: number = 0.2,
+    temperature: number = 0,
     maxTokens: number = 4000
   ): Promise<any> {
     if (!this.apiKey) {

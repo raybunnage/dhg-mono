@@ -128,7 +128,7 @@ export class ClaudeService {
     }
     
     const model = options.model || this.defaultModel;
-    const temperature = options.temperature ?? 0.7;
+    const temperature = options.temperature ?? 0;
     const maxTokens = options.maxTokens ?? 4000;
     const system = options.system;
     
@@ -192,7 +192,7 @@ export class ClaudeService {
     options: ClaudeRequestOptions = {}
   ): Promise<T> {
     // Set JSON specific options
-    options.temperature = options.temperature ?? 0.2;
+    options.temperature = options.temperature ?? 0;
     options.jsonMode = options.jsonMode ?? true;
     
     // Set system message for JSON responses
