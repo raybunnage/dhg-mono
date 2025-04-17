@@ -54,7 +54,36 @@ fi
 
 if [ "$1" = "classify-pdfs" ]; then
   shift
-  track_command "classify-pdfs" "ts-node $SCRIPT_DIR/classify-pdfs-with-service.ts $*"
+  
+  # Check if the user provided a limit parameter
+  LIMIT="10"  # Default value
+  ARGS=""
+  
+  # Parse arguments to find the limit parameter
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --limit|-l)
+        LIMIT="$2"
+        shift 2
+        ;;
+      --limit=*|-l=*)
+        LIMIT="${1#*=}"
+        shift
+        ;;
+      *)
+        # Accumulate other arguments
+        ARGS="$ARGS $1"
+        shift
+        ;;
+    esac
+  done
+  
+  # Ensure limit is explicitly set
+  if [[ "$ARGS" != *"--limit"* && "$ARGS" != *"-l"* ]]; then
+    ARGS="$ARGS --limit $LIMIT"
+  fi
+  
+  track_command "classify-pdfs" "ts-node $SCRIPT_DIR/classify-pdfs-with-service.ts $ARGS"
   exit $?
 fi
 
