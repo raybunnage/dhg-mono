@@ -12,7 +12,6 @@ import { syncAndUpdateMetadata } from './sync-and-update-metadata';
 import { checkDocumentTypes } from './check-document-types';
 import { checkDuplicates, CheckDuplicatesOptions } from './check-duplicates';
 import { updateFileSignatures } from './update-file-signatures';
-import { classifyMissingDocs, ClassifyMissingDocsOptions } from './classify-missing-docs';
 import { countMp4Files, CountMp4Result } from './count-mp4-files';
 import { addRootFolder } from './add-root-service';
 // These functions may not exist as TypeScript exports, so we'll use exec for them
@@ -413,45 +412,7 @@ program
     }
   });
 
-// Add classify-missing-docs command
-program
-  .command('classify-missing-docs')
-  .description('Classify files missing document type IDs using Claude AI')
-  .option('--dry-run', 'Show what would be classified without making changes', false)
-  .option('--debug', 'Show detailed debug information', false)
-  .option('--verbose', 'Show detailed logs', false)
-  .option('--limit <number>', 'Limit the number of files to process', '5')
-  .option('--output <path>', 'Path to write analysis results', './document-analysis-results')
-  .option('--list-needs-classification', 'Only list files needing classification without processing', false)
-  .option('--folder-id <id>', 'Limit to files in a specific folder')
-  .option('--include-pdfs', 'Include PDF files in classification (default is only .docx and .txt)', false)
-  .option('--test-prompt', 'Test loading the classification prompt', false)
-  .option('--test-db', 'Test database connections', false)
-  .option('--test-docx <id>', 'Test DOCX extraction for a specific file ID')
-  .option('--test-claude', 'Test Claude API classification with a sample document', false)
-  .action(async (options) => {
-    try {
-      const classifyOptions: ClassifyMissingDocsOptions = {
-        dryRun: options.dryRun,
-        debug: options.debug,
-        verbose: options.verbose,
-        limit: options.limit,
-        output: options.output,
-        listNeedsClassification: options.listNeedsClassification,
-        folderId: options.folderId,
-        includePdfs: options.includePdfs,
-        testPrompt: options.testPrompt,
-        testDb: options.testDb,
-        testDocx: options.testDocx,
-        testClaude: options.testClaude
-      };
-      
-      await classifyMissingDocs(classifyOptions);
-    } catch (error) {
-      Logger.error('Error classifying missing documents:', error);
-      process.exit(1);
-    }
-  });
+// Classification is now handled solely by the classify-docs-with-service command
 
 // Add count-mp4 command
 program
@@ -707,22 +668,16 @@ Available Commands:
       --batch-size <n>     Process records in batches of n (default: 50)
       --verbose            Show detailed logs
       
-  classify-missing-docs   Classify files missing document type IDs using Claude AI
-                          Uses AI to determine appropriate document types for files
-    Options:
-      --dry-run                  Show what would be classified without making changes
-      --debug                    Show detailed debug information
-      --verbose                  Show detailed logs
-      --limit <number>           Limit the number of files to process (default: 5)
-      --output <path>            Path to write analysis results
-      --list-needs-classification Only list files needing classification without processing
-      --folder-id <id>           Limit to files in a specific folder
-      --include-pdfs             Include PDF files in classification (default is only .docx and .txt)
-      
   classify-docs-with-service  Classify files missing document types using the PromptService
                           Uses Claude AI with the new PromptService for classification
     Options:
       -l, --limit <number>     Limit the number of files to process (default: 10)
+      -o, --output <path>      Path to write analysis results
+      -v, --verbose            Show detailed logs
+      -d, --debug              Show debug information
+      --dry-run                Process files but do not update database
+      --folder-id <id>         Filter by Google Drive folder ID or name
+      --include-pdfs           Include PDF files in classification (default is only .docx and .txt)
       -o, --output <path>      Path to write analysis results
       -v, --verbose            Show detailed logs
       -d, --debug              Show debug information

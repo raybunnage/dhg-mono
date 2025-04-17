@@ -119,7 +119,7 @@ function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): s
 
 async function saveStatsToMarkdown(stats: DocumentStats, samples: ExpertDocument[], allRecords: ExpertDocument[]): Promise<string> {
   try {
-    const markdownPath = './expert-documents-report.md';
+    const markdownPath = './docs/cli-pipeline/expert-documents-report.md';
     let markdown = formatMarkdownTable(stats, allRecords);
     
     // Add sample documents section

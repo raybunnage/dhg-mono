@@ -73,6 +73,12 @@ if [ "$1" = "show-expert-documents" ]; then
   exit $?
 fi
 
+if [ "$1" = "check-expert-doc" ]; then
+  shift
+  track_command "check-expert-doc" "ts-node $SCRIPT_DIR/check-expert-doc.ts $*"
+  exit $?
+fi
+
 # Run the TypeScript file with ts-node - capture command from args
 COMMAND="${1:-main}"
 track_command "$COMMAND" "ts-node $SCRIPT_DIR/index.ts $*"
