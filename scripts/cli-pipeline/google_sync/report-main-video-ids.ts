@@ -112,6 +112,8 @@ interface FolderInfo {
   path_depth: number;
   mp4Files?: Mp4FileInfo[];
   mainVideoId?: string;
+  document_type_id?: string;
+  document_type?: string;
 }
 
 interface Mp4FileInfo {
@@ -428,8 +430,8 @@ export async function reportMainVideoIds(
     Logger.info(`Found ${subFolders.length} subfolders with path_depth=0 under the root folder.\n`);
     
     // Create a markdown table header for the report
-    let reportContent = '| Folder Name | Main Video Filename | Status |\n';
-    reportContent += '|-------------|---------------------|--------|\n';
+    let reportContent = '| Folder Name | Main Video Filename | Document Type | Status |\n';
+    reportContent += '|-------------|---------------------|--------------|--------|\n';
     
     // Apply folder limit if specified
     const foldersToProcess = actualLimit > 0 ? subFolders.slice(0, actualLimit) : subFolders;
@@ -448,13 +450,28 @@ export async function reportMainVideoIds(
       // Check if the folder already has a main_video_id set
       const { data: currentMainVideo, error: mainVideoError } = await supabase
         .from('sources_google')
-        .select('id, name, main_video_id')
+        .select('id, name, main_video_id, document_type_id')
         .eq('id', folder.id)
         .single();
         
       let mainVideoId = null;
       let mainVideoName = "None";
       let status = "No MP4";
+      let documentTypeId = currentMainVideo?.document_type_id || null;
+      let documentType = "None";
+
+      // If document_type_id exists, look up the document type name
+      if (documentTypeId) {
+        const { data: docTypeData, error: docTypeError } = await supabase
+          .from('document_types')
+          .select('document_type')
+          .eq('id', documentTypeId)
+          .single();
+          
+        if (!docTypeError && docTypeData) {
+          documentType = docTypeData.document_type;
+        }
+      }
       
       // Find MP4 files in this folder recursively
       const mp4Files = await findMp4FilesInFolder(supabase, folder.drive_id);
@@ -532,13 +549,15 @@ export async function reportMainVideoIds(
       }
       
       // Add to the report
-      reportContent += `| ${folder.name} | ${mainVideoName} | ${status} |\n`;
+      reportContent += `| ${folder.name} | ${mainVideoName} | ${documentType} | ${status} |\n`;
       
       // Store for later processing
       allFolderInfo.push({
         ...folder,
         mp4Files,
-        mainVideoId: mainVideoId || undefined
+        mainVideoId: mainVideoId || undefined,
+        document_type_id: documentTypeId || undefined,
+        document_type: documentType
       });
     }
     

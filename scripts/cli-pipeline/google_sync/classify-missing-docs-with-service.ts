@@ -6,8 +6,8 @@
 
 import { program } from 'commander';
 import { v4 as uuidv4 } from 'uuid';
-import path from 'path';
-import fs from 'fs';
+import * as path from 'path';
+import * as fs from 'fs';
 import * as mammoth from 'mammoth';
 import { Database } from '../../../supabase/types';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
@@ -17,6 +17,45 @@ import { GoogleDriveService } from '../../../packages/shared/services/google-dri
 
 // Define the prompt name to use for classification
 const CLASSIFICATION_PROMPT = 'document-classification-prompt-new';
+
+// Function to create a fallback classification when Claude API fails
+function createFallbackClassification(file: any): any {
+  const fileName = file.name || 'Unknown Document';
+  const extension = fileName.split('.').pop()?.toLowerCase() || '';
+  
+  // Determine document type based on file extension and name
+  let documentType = 'unknown document type';
+  let documentTypeId = '9dbe32ff-5e82-4586-be63-1445e5bcc548'; // ID for unknown document type
+  
+  // Basic file type detection from extension and name patterns
+  if (extension === 'docx' || extension === 'doc') {
+    documentType = 'word document';
+    documentTypeId = 'bb90f01f-b6c4-4030-a3ea-db9dd8c4b55a';
+  } else if (extension === 'txt') {
+    documentType = 'text document';
+    documentTypeId = '99db0af9-0e09-49a7-8405-899849b8a86c';
+  }
+  
+  // Check if it's a transcript based on filename patterns
+  if (fileName.toLowerCase().includes('transcript')) {
+    documentType = 'presentation transcript';
+    documentTypeId = 'c1a7b78b-c61e-44a4-8b77-a27a38cbba7e';
+  }
+  
+  // Return a basic classification structure
+  return {
+    document_type: documentType,
+    document_type_id: documentTypeId,
+    classification_confidence: 0.6, // Lower confidence for fallback
+    classification_reasoning: `Fallback classification created automatically due to API issues. Determined type based on filename "${fileName}" and extension "${extension}".`,
+    document_summary: `This document could not be analyzed by AI due to service connectivity issues. The classification is based on the file's metadata.`,
+    key_topics: ['File analysis unavailable'],
+    target_audience: 'Unknown (automatic classification)',
+    unique_insights: [
+      'Document was classified automatically based on filename and extension'
+    ]
+  };
+}
 
 // Process a single file using the prompt service and Claude
 // Returns classification result and raw file content
@@ -103,37 +142,83 @@ async function processFile(
             console.log(`Saved temporary DOCX file to ${tempFilePath}`);
           }
           
-          // Extract text using mammoth with file path (most reliable method)
-          const result = await mammoth.extractRawText({
-            path: tempFilePath
-          });
-          
-          // Clean up the file when done
           try {
-            fs.unlinkSync(tempFilePath);
-          } catch (e) {
-            // Ignore cleanup errors
-          }
-          
-          // Check if we got reasonable content
-          if (result.value && result.value.length > 10) {
-            // Clean up the text content
-            fileContent = result.value
-              .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
-              .replace(/\u0000/g, '')  // Remove null bytes
-              .replace(/\n{3,}/g, '\n\n')  // Normalize multiple line breaks
-              .trim();
-              
-            if (debug) {
-              console.log(`Successfully extracted ${fileContent.length} characters with mammoth`);
-              if (result.messages.length > 0) {
-                console.log(`Mammoth messages: ${JSON.stringify(result.messages)}`);
-              }
+            // Extract text using mammoth with file path (most reliable method)
+            const result = await mammoth.extractRawText({
+              path: tempFilePath
+            });
+            
+            // Clean up the file when done
+            try {
+              fs.unlinkSync(tempFilePath);
+            } catch (e) {
+              // Ignore cleanup errors
             }
-          } else {
-            // Fallback if mammoth extraction failed
-            fileContent = `[Failed to extract content from DOCX file. File ID: ${fileId}, Name: ${file.name || 'unknown'}]`;
-            console.warn(`Warning: Mammoth extraction produced insufficient content (${result.value?.length || 0} chars)`);
+            
+            // Check if we got reasonable content
+            if (result.value && result.value.length > 10) {
+              // Clean up the text content
+              fileContent = result.value
+                .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+                .replace(/\u0000/g, '')  // Remove null bytes
+                .replace(/\n{3,}/g, '\n\n')  // Normalize multiple line breaks
+                .trim();
+                
+              if (debug) {
+                console.log(`Successfully extracted ${fileContent.length} characters with mammoth`);
+                if (result.messages.length > 0) {
+                  console.log(`Mammoth messages: ${JSON.stringify(result.messages)}`);
+                }
+              }
+            } else {
+              // Fallback for insufficient content
+              console.warn(`Warning: Mammoth extraction produced insufficient content (${result.value?.length || 0} chars)`);
+              throw new Error("Insufficient content extracted from document");
+            }
+          } catch (mammothInnerError) {
+            // More detailed extraction error - likely invalid DOCX structure
+            console.error(`Mammoth inner extraction error: ${mammothInnerError instanceof Error ? mammothInnerError.message : String(mammothInnerError)}`);
+            
+            // Try an alternative extraction approach using raw XML
+            try {
+              // Read the file as binary
+              const fileData = fs.readFileSync(tempFilePath);
+              
+              // Try to extract XML content directly
+              const xmlContent = fileData.toString('utf8');
+              const textMatches = xmlContent.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || [];
+              
+              if (textMatches.length > 0) {
+                // Extract text from XML tags
+                const extractedText = textMatches
+                  .map(match => {
+                    const contentMatch = match.match(/<w:t[^>]*>([^<]+)<\/w:t>/);
+                    return contentMatch ? contentMatch[1] : '';
+                  })
+                  .join(' ')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                  
+                if (extractedText.length > 10) {
+                  fileContent = extractedText;
+                  if (debug) {
+                    console.log(`Successfully extracted ${fileContent.length} characters with manual XML parsing`);
+                  }
+                } else {
+                  // Fallback if extraction produced too little content
+                  fileContent = `Title: ${file.name || "Unknown Document"}\n\nThis document appears to be a DOCX file that could not be properly parsed. File ID: ${fileId}, Name: ${file.name || 'unknown'}`;
+                  console.warn(`Warning: All extraction methods failed, using metadata-only content`);
+                }
+              } else {
+                // Fallback if extraction failed
+                fileContent = `Title: ${file.name || "Unknown Document"}\n\nThis document appears to be a DOCX file that could not be properly parsed. File ID: ${fileId}, Name: ${file.name || 'unknown'}`;
+                console.warn(`Warning: XML extraction failed, using metadata-only content`);
+              }
+            } catch (alternativeError) {
+              // Fallback if all extraction methods failed
+              fileContent = `Title: ${file.name || "Unknown Document"}\n\nThis document appears to be a DOCX file that could not be properly parsed. File ID: ${fileId}, Name: ${file.name || 'unknown'}`;
+              console.warn(`Warning: All extraction methods failed, using metadata-only content`);
+            }
           }
         } catch (mammothError) {
           console.error(`Error extracting DOCX content with mammoth: ${mammothError instanceof Error ? mammothError.message : 'Unknown error'}`);
@@ -202,17 +287,75 @@ async function processFile(
     // 3. Send the file content for classification
     const userMessage = `Please classify this document:\n\n${fileContent}`;
     
-    const classificationResult = await promptService.usePromptWithClaude(
-      CLASSIFICATION_PROMPT,
-      userMessage,
-      {
-        expectJson: true,
-        claudeOptions: {
-          temperature: 0.2,
-          maxTokens: 4000
+    let classificationResult;
+    let retries = 0;
+    const maxRetries = 3;
+    
+    while (retries < maxRetries) {
+      try {
+        classificationResult = await promptService.usePromptWithClaude(
+          CLASSIFICATION_PROMPT,
+          userMessage,
+          {
+            expectJson: true,
+            claudeOptions: {
+              temperature: 0.2,
+              maxTokens: 4000
+            }
+          }
+        );
+        
+        // If we got here, the API call succeeded
+        break;
+      } catch (claudeError) {
+        retries++;
+        const errorMessage = claudeError instanceof Error ? claudeError.message : 'Unknown error';
+        
+        // Check if this is a connection error (ECONNRESET)
+        const isConnectionError = errorMessage.includes('ECONNRESET') || 
+                                  errorMessage.includes('timeout') ||
+                                  errorMessage.includes('network') ||
+                                  errorMessage.includes('socket');
+        
+        // Check if it's a rate-limiting or overload error
+        const isRateLimitError = errorMessage.includes('429') || 
+                                 errorMessage.includes('too many requests') ||
+                                 errorMessage.includes('rate limit') ||
+                                 errorMessage.includes('Overloaded');
+        
+        if (isConnectionError || isRateLimitError) {
+          // These errors are retryable
+          console.warn(`Claude API connection error (retry ${retries}/${maxRetries}): ${errorMessage}`);
+          
+          if (retries < maxRetries) {
+            // Add exponential backoff between retries (1s, 2s, 4s)
+            const backoffTime = Math.pow(2, retries - 1) * 1000;
+            console.log(`Waiting ${backoffTime}ms before retrying...`);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
+          } else {
+            console.error(`Maximum retries (${maxRetries}) reached. Using fallback classification.`);
+            // Create a fallback classification based on file metadata
+            classificationResult = createFallbackClassification({
+              name: fileName || 'Unknown Document'
+            });
+          }
+        } else {
+          // For other types of errors, don't retry
+          console.error(`Non-retryable Claude API error: ${errorMessage}`);
+          classificationResult = createFallbackClassification({
+            name: fileName || 'Unknown Document'
+          });
+          break;
         }
       }
-    );
+    }
+    
+    if (!classificationResult) {
+      // Just in case we didn't set it in the error handlers
+      classificationResult = createFallbackClassification({
+        name: fileName || 'Unknown Document'
+      });
+    }
     
     if (debug) {
       console.log('Classification result:', classificationResult);

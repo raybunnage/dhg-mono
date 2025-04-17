@@ -55,6 +55,12 @@ if [ "$1" = "fix-orphaned-docx" ]; then
   exit $?
 fi
 
+if [ "$1" = "report-main-video-ids" ]; then
+  shift
+  track_command "report-main-video-ids" "ts-node $SCRIPT_DIR/report-main-video-ids.ts $*"
+  exit $?
+fi
+
 # Run the TypeScript file with ts-node - capture command from args
 COMMAND="${1:-main}"
 track_command "$COMMAND" "ts-node $SCRIPT_DIR/index.ts $*"
