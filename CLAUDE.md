@@ -177,7 +177,62 @@
    - Include examples of usage in the command description
    - Document all available options with clear descriptions
 
-3. **Command Implementation Checklist**:
+3. **Command Tracking Implementation**:
+   - ⚠️ **CRITICAL: ALWAYS implement command tracking for new CLI commands**
+   - After adding any new command to a CLI pipeline, implement command tracking using the CommandTrackingService
+   - Check if the shell script wrapper already has tracking integration via the `track_command()` function
+   - If not, add command tracking using one of these approaches:
+     - For shell scripts: Add tracking using the `shell-command-tracker.ts` utility with the `track_command()` function pattern:
+       ```bash
+       track_command() {
+         local pipeline_name="your_pipeline_name"
+         local command_name="$1"
+         shift
+         local full_command="$@"
+         
+         local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
+         if [ -f "$TRACKER_TS" ]; then
+           npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+         else
+           echo "ℹ️ Tracking not available. Running command directly."
+           eval "$full_command"
+         fi
+       }
+       ```
+     - For TypeScript CLI implementations: Use the CommandTrackingService directly:
+       ```typescript
+       import { commandTrackingService } from '../../../packages/shared/services/tracking-service/command-tracking-service';
+       
+       async function yourCommand() {
+         const startTime = new Date();
+         const trackingId = await commandTrackingService.startTracking('your_pipeline', 'your_command');
+         
+         try {
+           // Command implementation
+           // ...
+           
+           await commandTrackingService.completeTracking(trackingId, {
+             recordsAffected: 123, // optional
+             summary: 'Command completed successfully'
+           });
+         } catch (error) {
+           await commandTrackingService.failTracking(
+             trackingId,
+             `Command failed: ${error instanceof Error ? error.message : String(error)}`
+           );
+           throw error;
+         }
+       }
+       ```
+   - Command tracking helps with:
+     - Audit trails of who ran what command and when
+     - Performance monitoring of command execution time
+     - Identifying frequently used vs. unused commands
+     - Diagnosing issues with failed commands
+   - The `cli_command_tracking` table stores all command execution records
+   - You can view command history using the tracking CLI: `scripts/cli-pipeline/tracking/cli.ts history`
+
+4. **Command Implementation Checklist**:
    - Implement full functionality, not just placeholder or mock-up code
    - Avoid "dummy implementations" unless absolutely necessary for testing
    - Include proper error handling and logging
