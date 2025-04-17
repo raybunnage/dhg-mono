@@ -381,6 +381,47 @@ export async function reportMainVideoIds(
   }
   console.log('===============================================');
 
+  // Initialize Supabase client
+  const supabase = SupabaseClientService.getInstance().getClient();
+
+  // Check if there are any sources_google entries with document_type_id set
+  try {
+    // First check for sources_google entries with document_type_id set
+    const { data: docTypeCounts, error: docTypeError } = await supabase
+      .from('sources_google')
+      .select('document_type_id')
+      .not('document_type_id', 'is', null)
+      .limit(5);
+      
+    if (docTypeError) {
+      Logger.error(`Error checking for document_type_id: ${docTypeError.message}`);
+    } else {
+      Logger.debug(`Found ${docTypeCounts?.length || 0} sources_google entries with document_type_id set`);
+      
+      // Then for each found ID, look up the document type
+      if (docTypeCounts && docTypeCounts.length > 0) {
+        for (const entry of docTypeCounts) {
+          const docTypeId = entry.document_type_id;
+          
+          // Get document type name
+          const { data: docTypeData, error: docTypeError } = await supabase
+            .from('document_types')
+            .select('document_type')
+            .eq('id', docTypeId)
+            .single();
+            
+          if (!docTypeError && docTypeData) {
+            Logger.debug(`Sample document_type_id: ${docTypeId}, document_type: ${docTypeData.document_type}`);
+          } else {
+            Logger.debug(`Sample document_type_id: ${docTypeId}, but couldn't find document_type: ${docTypeError?.message || 'No data found'}`);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    Logger.error(`Error in document type lookup: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
   // Initialize Drive client
   const drive = await initDriveClient();
   if (!drive) {
@@ -388,10 +429,11 @@ export async function reportMainVideoIds(
     process.exit(1);
   }
 
-  // Initialize Supabase client
-  const supabase = SupabaseClientService.getInstance().getClient();
+  // Supabase client is already initialized above
   
   try {
+    // We already have a Supabase client initialized above, use it below
+    
     // Step 1: Verify the root folder exists in sources_google
     const { data: rootFolder, error: rootFolderError } = await supabase
       .from('sources_google')
@@ -430,8 +472,8 @@ export async function reportMainVideoIds(
     Logger.info(`Found ${subFolders.length} subfolders with path_depth=0 under the root folder.\n`);
     
     // Create a markdown table header for the report
-    let reportContent = '| Folder Name | Main Video Filename | Document Type | Status |\n';
-    reportContent += '|-------------|---------------------|--------------|--------|\n';
+    let reportContent = '| Folder Name | Main Video Filename | Document Type ID | Document Type | Status |\n';
+    reportContent += '|-------------|---------------------|-----------------|--------------|--------|\n';
     
     // Apply folder limit if specified
     const foldersToProcess = actualLimit > 0 ? subFolders.slice(0, actualLimit) : subFolders;
@@ -447,7 +489,7 @@ export async function reportMainVideoIds(
       folderCount++;
       Logger.debug(`Processing folder ${folderCount}/${foldersToProcess.length}: ${folder.name}`);
       
-      // Check if the folder already has a main_video_id set
+      // Check if the folder already has a main_video_id and document_type_id set
       const { data: currentMainVideo, error: mainVideoError } = await supabase
         .from('sources_google')
         .select('id, name, main_video_id, document_type_id')
@@ -460,8 +502,9 @@ export async function reportMainVideoIds(
       let documentTypeId = currentMainVideo?.document_type_id || null;
       let documentType = "None";
 
-      // If document_type_id exists, look up the document type name
+      // Look up document type directly for the folder
       if (documentTypeId) {
+        // Direct lookup by ID
         const { data: docTypeData, error: docTypeError } = await supabase
           .from('document_types')
           .select('document_type')
@@ -470,6 +513,9 @@ export async function reportMainVideoIds(
           
         if (!docTypeError && docTypeData) {
           documentType = docTypeData.document_type;
+          Logger.debug(`Found document type: ${documentType} for folder ${folder.name}, document_type_id: ${documentTypeId}`);
+        } else {
+          Logger.debug(`Error looking up document type for folder ${folder.name}, ID ${documentTypeId}: ${docTypeError?.message || 'No data found'}`);
         }
       }
       
@@ -549,7 +595,7 @@ export async function reportMainVideoIds(
       }
       
       // Add to the report
-      reportContent += `| ${folder.name} | ${mainVideoName} | ${documentType} | ${status} |\n`;
+      reportContent += `| ${folder.name} | ${mainVideoName} | ${documentTypeId || 'null'} | ${documentType} | ${status} |\n`;
       
       // Store for later processing
       allFolderInfo.push({
