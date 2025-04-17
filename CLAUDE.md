@@ -57,21 +57,68 @@
    Keep a flat file structure within these folders - no nested subfolders. Don't create new script components in the root `scripts/` directory.
    
    **Commander.js Integration Notes**:
-   - There are different approaches to commander.js integration across CLI pipelines:
-     - Most pipelines directly import commander: `import { Command } from 'commander'`
-     - Some pipelines (like document) use a custom `cliService` abstraction
-   - For consistency with commander.js versions:
-     - Some directories (google_sync, prompt_service) have their own package.json with commander v11.0.0
-     - If you encounter commander.js version conflicts, create a local package.json for that pipeline
-     - Example approach from prompt_service:
-       - Create a dedicated package.json for the directory with commander.js v11.0.0
-       - Install dependencies in that directory
-       - If simpler, consider a standalone script approach to avoid integration complexity
+   - ⚠️ **CRITICAL: STANDARDIZE COMMANDER.JS USAGE**
+   - All CLI pipelines MUST follow these standards:
+     - ALWAYS create a dedicated package.json in each CLI pipeline directory
+     - ALWAYS use commander.js v11.0.0 as a local dependency in that package.json
+     - Include standardized scripts in package.json (build, start, dev)
+   
+   - Two acceptable patterns for commander.js integration:
+     1. Direct import (simpler, preferred for most cases):
+        ```typescript
+        import { Command } from 'commander';
+        const program = new Command();
+        
+        program
+          .command('command-name')
+          .description('Command description')
+          .option('-o, --option', 'Option description')
+          .action(async (options) => {
+            // Command implementation
+          });
+        ```
+     
+     2. cliService abstraction (for complex CLI pipelines with shared utilities):
+        ```typescript
+        import { cliService } from '../../../packages/shared/services/cli-service';
+        
+        cliService.registerCommand({
+          command: 'command-name',
+          description: 'Command description',
+          options: [
+            { flags: '-o, --option', description: 'Option description' }
+          ],
+          action: async (options) => {
+            // Command implementation
+          }
+        });
+        ```
+   
+   - Package.json template for CLI pipeline directories:
+     ```json
+     {
+       "name": "@dhg/cli-pipeline-domain-name",
+       "version": "1.0.0",
+       "private": true,
+       "dependencies": {
+         "commander": "^11.0.0",
+         "dotenv": "^16.0.3",
+         "typescript": "^5.0.4"
+       },
+       "scripts": {
+         "build": "tsc",
+         "start": "ts-node cli.ts",
+         "dev": "ts-node cli.ts"
+       }
+     }
+     ```
+   
    - CLI Integration Best Practices:
-     - Each cli-pipeline directory should have its own package.json for dependency management
-     - Shell scripts should properly export environment variables
-     - Always check for proper availability of Supabase credentials
-     - For new pipelines, check existing ones for consistent commander.js patterns
+     - Each cli-pipeline directory MUST have its own package.json for dependency management
+     - Shell scripts MUST properly export environment variables
+     - ALWAYS implement command tracking (see Command Tracking Implementation section)
+     - ALWAYS check for proper availability of Supabase credentials
+     - For new pipelines, use google_sync or prompt_service as reference implementations
 
 4. **Singleton Pattern for Services**: Always use and create singleton patterns for service classes:
    - ⚠️ **CRITICAL: Use existing singletons for external services**:
@@ -180,9 +227,12 @@
 3. **Command Tracking Implementation**:
    - ⚠️ **CRITICAL: ALWAYS implement command tracking for new CLI commands**
    - After adding any new command to a CLI pipeline, implement command tracking using the CommandTrackingService
-   - Check if the shell script wrapper already has tracking integration via the `track_command()` function
-   - If not, add command tracking using one of these approaches:
-     - For shell scripts: Add tracking using the `shell-command-tracker.ts` utility with the `track_command()` function pattern:
+   - Our standard approach is to implement tracking at the shell script wrapper level
+   - ⚠️ **ALWAYS CHECK the shell script wrapper for tracking integration**
+   
+   - **PREFERRED APPROACH - Shell Script Tracking**:
+     - Add new commands to the existing shell script wrapper (e.g., google-sync-cli.sh)
+     - Ensure the wrapper already has this track_command() function (all existing pipelines should have it):
        ```bash
        track_command() {
          local pipeline_name="your_pipeline_name"
@@ -199,7 +249,24 @@
          fi
        }
        ```
-     - For TypeScript CLI implementations: Use the CommandTrackingService directly:
+     - Call track_command for each new CLI command in the shell script:
+       ```bash
+       # Add a new command handler
+       your_new_command() {
+         track_command "your-new-command" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/your-new-command.ts $@"
+       }
+       
+       # And add it to the case statement
+       case "$1" in
+         "your-new-command")
+           your_new_command "${@:2}"
+           ;;
+       esac
+       ```
+       
+   - **ALTERNATIVE - Direct TypeScript Tracking**:
+     - Use this approach only when implementing standalone TypeScript commands that won't be called through shell wrappers
+     - Import and use the CommandTrackingService directly:
        ```typescript
        import { commandTrackingService } from '../../../packages/shared/services/tracking-service/command-tracking-service';
        
@@ -224,11 +291,19 @@
          }
        }
        ```
-   - Command tracking helps with:
+   
+   - **FOR NEW CLI PIPELINES**:
+     1. Create the shell script wrapper with track_command function
+     2. Copy the structure from an existing pipeline (e.g., google-sync-cli.sh)
+     3. Set the correct pipeline_name in the track_command function
+     4. Implement command handlers for each TypeScript command
+   
+   - Command tracking provides:
      - Audit trails of who ran what command and when
      - Performance monitoring of command execution time
      - Identifying frequently used vs. unused commands
      - Diagnosing issues with failed commands
+   
    - The `cli_command_tracking` table stores all command execution records
    - You can view command history using the tracking CLI: `scripts/cli-pipeline/tracking/cli.ts history`
 

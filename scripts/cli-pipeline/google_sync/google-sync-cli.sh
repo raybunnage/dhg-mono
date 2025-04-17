@@ -61,6 +61,12 @@ if [ "$1" = "report-main-video-ids" ]; then
   exit $?
 fi
 
+if [ "$1" = "list-unclassified-files" ]; then
+  shift
+  track_command "list-unclassified-files" "ts-node $SCRIPT_DIR/list-unclassified-files.ts $*"
+  exit $?
+fi
+
 # Run the TypeScript file with ts-node - capture command from args
 COMMAND="${1:-main}"
 track_command "$COMMAND" "ts-node $SCRIPT_DIR/index.ts $*"
