@@ -77,6 +77,7 @@ export class ClaudeService {
   private apiVersion: string;
   private defaultModel: string;
   private client: AxiosInstance;
+  private pdfEnabledClient: AxiosInstance;  // Special client with PDF beta headers
   private retryCount: number = 3;
   private retryDelay: number = 1000;
   
@@ -91,7 +92,7 @@ export class ClaudeService {
     this.apiVersion = config.claudeApiVersion || '2023-12-15';
     this.defaultModel = config.defaultModel || 'claude-3-7-sonnet-20250219';
     
-    // Create HTTP client
+    // Create standard HTTP client
     this.client = axios.create({
       baseURL: this.baseUrl,
       headers: {
@@ -102,9 +103,27 @@ export class ClaudeService {
       }
     });
     
+    // Create PDF-enabled HTTP client with proper headers
+    this.pdfEnabledClient = axios.create({
+      baseURL: this.baseUrl,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': this.apiKey,
+        'anthropic-version': this.apiVersion,
+        'anthropic-api-version': this.apiVersion
+        // No beta header needed for document type in content array
+      }
+    });
+    
     // Add request logging
     this.client.interceptors.request.use((request: any) => {
       Logger.debug(`Making Claude API request to ${request.url} with method ${request.method}`);
+      return request;
+    });
+    
+    // Add request logging for PDF client
+    this.pdfEnabledClient.interceptors.request.use((request: any) => {
+      Logger.debug(`Making Claude PDF API request to ${request.url} with method ${request.method}`);
       return request;
     });
     
@@ -381,7 +400,7 @@ export class ClaudeService {
   }
   
   /**
-   * Make request with retries
+   * Make request with retries using standard client
    * @param endpoint API endpoint
    * @param data Request body
    * @returns API response
@@ -424,6 +443,63 @@ export class ClaudeService {
       );
     } else {
       throw lastError || new Error('Unknown error calling Claude API');
+    }
+  }
+  
+  /**
+   * Make request with retries using PDF-enabled client
+   * @param endpoint API endpoint
+   * @param data Request body
+   * @returns API response
+   */
+  private async makeRequestWithPdfClient<T>(
+    endpoint: string,
+    data: any
+  ): Promise<T> {
+    let lastError: any;
+    
+    for (let attempt = 1; attempt <= this.retryCount; attempt++) {
+      try {
+        const response = await this.pdfEnabledClient.post(endpoint, data);
+        return response.data as T;
+      } catch (error: any) {
+        lastError = error;
+        
+        // Log retry attempt
+        Logger.warn(`Claude PDF API request failed (attempt ${attempt}/${this.retryCount}): ${error.response?.status} - ${error.response?.data?.error?.message || error.message}`);
+        
+        // Check if we should retry
+        if (
+          attempt < this.retryCount && 
+          (error.response?.status === 429 || error.response?.status === 500)
+        ) {
+          // Calculate delay with exponential backoff
+          const delay = this.retryDelay * Math.pow(2, attempt - 1);
+          Logger.debug(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          break;
+        }
+      }
+    }
+    
+    // If we get here, all retries failed
+    if (axios.isAxiosError(lastError)) {
+      // Provide more detailed error for PDF processing failures
+      const statusCode = lastError.response?.status;
+      const errorMessage = lastError.response?.data?.error?.message || lastError.message;
+      
+      if (statusCode === 413 || errorMessage.includes('exceeds') || errorMessage.includes('too large')) {
+        throw new Error(`PDF file exceeds Claude's size limits: ${errorMessage}`);
+      } else if (statusCode === 415 || errorMessage.includes('media type') || errorMessage.includes('format')) {
+        throw new Error(`PDF format not supported: ${errorMessage}`);
+      } else if (statusCode === 400 && errorMessage.includes('process')) {
+        throw new Error(`Claude couldn't process the PDF: ${errorMessage}`);
+      } else {
+        throw new Error(`Claude API error: ${errorMessage}`);
+      }
+    } else {
+      throw lastError || new Error('Unknown error calling Claude PDF API');
     }
   }
   
@@ -514,73 +590,66 @@ export class ClaudeService {
     }
     
     try {
+      // Check PDF file size - Claude has a 10MB limit for binary attachments
+      const stats = fs.statSync(pdfPath);
+      const fileSizeInMB = stats.size / (1024 * 1024);
+      
+      if (fileSizeInMB > 10) {
+        throw new Error(`PDF file is too large (${fileSizeInMB.toFixed(2)}MB). Claude has a 10MB limit for PDF files.`);
+      }
+      
       // Encode PDF as base64
       const base64Data = await this.fileToBase64(pdfPath);
-      const mediaType = this.getMediaType(pdfPath);
-      
-      Logger.debug(`Encoded PDF at ${pdfPath} to base64 (${base64Data.length} chars)`);
-      
-      // The current Claude API only supports image types, so we attempt to use the
-      // file binary data but present it as an image type.
-      // This won't properly parse the PDF, but it's better than nothing.
       
       // Set up request options
       const model = options.model || this.defaultModel;
       const temperature = options.temperature ?? 0;
       const maxTokens = options.maxTokens ?? 4000;
       
-      try {
-        // Create messages with image and text content
-        // Note: Current Claude API only accepts image formats
-        const messageContent: MessageContent[] = [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: 'image/png', // Force image/png for compatibility
-              data: base64Data
-            }
-          },
-          {
-            type: 'text',
-            text: prompt
+      // Create messages with proper document type and PDF content
+      const messageContent = [
+        {
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: base64Data
           }
-        ];
-        
-        // Create request body with proper type support for system property
-        const requestBody: {
-          model: string;
-          max_tokens: number;
-          temperature: number;
-          messages: {
-            role: string;
-            content: MessageContent[];
-          }[];
-          system?: string;  // Add optional system property to the type
-        } = {
-          model,
-          max_tokens: maxTokens,
-          temperature,
-          messages: [
-            {
-              role: 'user',
-              content: messageContent
-            }
-          ]
-        };
-        
-        // Add system message if provided
-        if (options.system) {
-          requestBody.system = options.system;
+        },
+        {
+          type: 'text',
+          text: prompt
         }
-        
-        Logger.debug(`Making Claude API request with PDF content (as image):
-        Model: ${model}
-        PDF path: ${pdfPath}
-        Content length: ${messageContent.length} items`);
-        
-        // Make request with retries
-        const response = await this.makeRequestWithRetries<ClaudeResponse>(
+      ];
+      
+      // Create request body with proper type support
+      const requestBody = {
+        model,
+        max_tokens: maxTokens,
+        temperature,
+        messages: [
+          {
+            role: 'user',
+            content: messageContent
+          }
+        ]
+      } as any; // Using any to handle system parameter
+      
+      // Add system message if provided
+      if (options.system) {
+        requestBody.system = options.system;
+      }
+      
+      Logger.debug(`Making Claude API request with PDF content:
+      Model: ${model}
+      PDF path: ${pdfPath}
+      PDF size: ${fileSizeInMB.toFixed(2)}MB
+      Content items: ${messageContent.length}`);
+      
+      // Make request with retries using PDF-enabled client
+      try {
+        // Use the PDF-enabled client with the beta header
+        const response = await this.makeRequestWithPdfClient<ClaudeResponse>(
           '/v1/messages',
           requestBody
         );
@@ -591,69 +660,27 @@ export class ClaudeService {
         } else {
           throw new Error('Invalid response format from Claude API');
         }
-      } catch (firstError) {
-        // If sending PDF as image fails, fall back to sending just text about the PDF
-        Logger.warn(`Error sending PDF directly: ${firstError}. Falling back to metadata-based approach.`);
-        
-        // Gather basic metadata about the PDF
-        const stats = fs.statSync(pdfPath);
-        
-        // Create a text-only prompt with PDF metadata
-        const fallbackPrompt = `
-        ${prompt}
-        
-        NOTE: I was unable to view the PDF directly, but here's what I know about it:
-        - PDF File: ${pdfPath.split('/').pop()}
-        - File Size: ${stats.size} bytes
-        - Last Modified: ${stats.mtime.toISOString()}
-        
-        Please provide the best analysis possible based on this limited information.
-        `;
-        
-        // Create text-only message
-        const textOnlyRequestBody = {
-          model,
-          max_tokens: maxTokens,
-          temperature,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: fallbackPrompt
-                }
-              ]
-            }
-          ]
-        };
-        
-        // Add system message if provided (if API supports it)
-        if (options.system && 'system' in textOnlyRequestBody) {
-          (textOnlyRequestBody as any).system = options.system;
-        }
-        
-        Logger.debug(`Making fallback text-only Claude API request:
-        Model: ${model}
-        Prompt length: ${fallbackPrompt.length} chars`);
-        
-        // Make text-only request
-        const response = await this.makeRequestWithRetries<ClaudeResponse>(
-          '/v1/messages',
-          textOnlyRequestBody
-        );
-        
-        // Extract the response content
-        if (response && response.content && response.content.length > 0) {
-          return "⚠️ [PDF ANALYSIS LIMITED - USING FALLBACK METHOD]\n\n" + response.content[0].text;
-        } else {
-          throw new Error('Invalid response format from Claude API');
-        }
+      } catch (pdfError) {
+        // Log the error but throw it up - no fallbacks
+        Logger.error(`Error processing PDF with Claude: ${pdfError}`);
+        throw pdfError;
       }
     } catch (error) {
+      // Log and rethrow - no fallbacks
       if (axios.isAxiosError(error)) {
-        Logger.error(`Error calling Claude API with PDF: ${error.response?.data || error.message}`);
-        throw new Error(`Claude API error with PDF: ${error.response?.data?.error?.message || error.message}`);
+        const statusCode = error.response?.status;
+        const errorMessage = error.response?.data?.error?.message || error.message;
+        
+        // Special handling for common PDF processing errors
+        if (statusCode === 413 || errorMessage.includes('exceeds') || errorMessage.includes('too large')) {
+          throw new Error(`PDF file exceeds Claude's size limits: ${errorMessage}`);
+        } else if (statusCode === 415 || errorMessage.includes('media type') || errorMessage.includes('format')) {
+          throw new Error(`PDF format not supported: ${errorMessage}`);
+        } else if (statusCode === 400 && errorMessage.includes('process')) {
+          throw new Error(`Claude couldn't process the PDF: ${errorMessage}. The PDF may be corrupt, password-protected, or in an unsupported format.`);
+        } else {
+          throw new Error(`Claude API error: ${errorMessage}`);
+        }
       } else {
         Logger.error(`Unknown error calling Claude API with PDF: ${error}`);
         throw error;
@@ -676,7 +703,6 @@ export class ClaudeService {
   ): Promise<T> {
     // Set JSON specific options
     options.temperature = options.temperature ?? 0;
-    options.jsonMode = options.jsonMode ?? true;
     
     // Set JSON-specific system message if not provided
     if (!options.system) {
@@ -686,18 +712,20 @@ export class ClaudeService {
     // Add explicit JSON instructions to the prompt
     let enhancedPrompt = prompt;
     if (!prompt.includes("valid JSON") && !prompt.includes("JSON format")) {
-      enhancedPrompt = `${prompt}\n\nIMPORTANT: Respond with ONLY a JSON object and nothing else. Do not include explanations, markdown formatting, or any text outside the JSON object.`;
+      enhancedPrompt = `${prompt}\n\nIMPORTANT: Respond with ONLY a JSON object and nothing else. Do not include explanations, markdown formatting, or any text outside the JSON object. The response should start with '{' and end with '}' with no other text before or after.`;
     }
     
-    // Get text response from PDF analysis
+    // Get text response from PDF analysis with enhanced prompt
     const textResponse = await this.analyzePdf(pdfPath, enhancedPrompt, options);
     
     try {
       // Try to parse JSON directly
       try {
         return JSON.parse(textResponse) as T;
-      } catch (initialParseError) {
+      } catch (error) {
         // If direct parsing fails, try cleaning the response
+        const initialParseError = error as Error;
+        Logger.warn(`Initial JSON parse failed: ${initialParseError.message}. Attempting to clean response.`);
         
         // Remove markdown code block formatting if present
         let cleanedContent = textResponse;
@@ -710,20 +738,27 @@ export class ClaudeService {
           }
         }
         
-        // Find JSON object pattern (fallback)
+        // Find JSON object pattern (strict matching)
         const jsonMatch = cleanedContent.match(/(\{[\s\S]*\})/);
         if (jsonMatch && jsonMatch[1]) {
           const jsonText = jsonMatch[1];
           Logger.debug(`Extracted JSON object pattern (${jsonText.length} chars)`);
-          return JSON.parse(jsonText) as T;
+          try {
+            return JSON.parse(jsonText) as T;
+          } catch (error) {
+            const jsonError = error as Error;
+            Logger.error(`Failed to parse extracted JSON: ${jsonError.message}`);
+            // Continue to error handling
+          }
         }
         
-        // If we get here, rethrow the original error
-        throw initialParseError;
+        // If we get here, provide a detailed error with context
+        Logger.error(`Failed to parse JSON from response. First 200 chars of response: ${textResponse.substring(0, 200)}...`);
+        throw new Error(`Failed to parse JSON from Claude's response: ${initialParseError.message}`);
       }
     } catch (error) {
-      Logger.error(`Failed to parse JSON response from Claude: ${error}`);
-      throw new Error(`Failed to parse JSON from Claude's response: ${error}`);
+      Logger.error(`Error processing JSON from Claude's PDF analysis: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
     }
   }
   
@@ -739,8 +774,22 @@ export class ClaudeService {
     classificationPrompt: string,
     options: ClaudeRequestOptions = {}
   ): Promise<T> {
-    // Simply call analyzePdfToJson with the classification prompt
-    return this.analyzePdfToJson<T>(pdfPath, classificationPrompt, options);
+    // Set classification-specific options
+    if (!options.system) {
+      options.system = "You are a helpful AI assistant that accurately classifies PDF documents based on their content. You examine the entire document and provide detailed classification results as valid JSON. Your analysis is thorough and considers both the structure and content of the document.";
+    }
+    
+    // Add explicit classification instructions if not already present
+    let enhancedPrompt = classificationPrompt;
+    if (!classificationPrompt.includes("classify") && !classificationPrompt.includes("categorize")) {
+      enhancedPrompt = `Please carefully analyze and classify the attached PDF document. ${classificationPrompt}`;
+    }
+    
+    // Use enhanced analyzePdfToJson with the classification prompt
+    return this.analyzePdfToJson<T>(pdfPath, enhancedPrompt, {
+      ...options,
+      temperature: options.temperature ?? 0 // Ensure deterministic output for classification
+    });
   }
 }
 
