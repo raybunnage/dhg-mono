@@ -66,40 +66,61 @@ function getContentSentences(content: any, sentenceCount = 2): string {
   }
 }
 
-function formatMarkdownTable(stats: DocumentStats): string {
+function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): string {
   let markdown = `# Expert Documents Report\n\n`;
   
-  // Summary table
-  markdown += `## Summary\n\n`;
-  markdown += `| Status | Count |\n`;
-  markdown += `|--------|-------|\n`;
-  markdown += `| Total sources_google records (not deleted) | ${stats.totalSourcesGoogle} |\n`;
-  markdown += `| Total folders | ${stats.totalFolders} |\n`;
-  markdown += `| Total files (not folders) | ${stats.totalSourcesGoogle - stats.totalFolders} |\n`;
-  markdown += `| Sources with Expert Documents | ${stats.totalWithExpertDocs} |\n`;
-  markdown += `| Sources with Document Types but no Expert Documents | ${stats.totalWithoutExpertDocs} |\n`;
-  markdown += `| **Total Sources with Document Types** | **${stats.totalWithExpertDocs + stats.totalWithoutExpertDocs}** |\n\n`;
+  // Sources Google Summary
+  markdown += `## Sources Google Summary\n\n`;
+  markdown += `| Status | Count | Percentage |\n`;
+  markdown += `|--------|-------|------------|\n`;
+  markdown += `| Total sources_google records (not deleted) | ${stats.totalSourcesGoogle} | 100% |\n`;
+  markdown += `| Total folders | ${stats.totalFolders} | ${Math.round(stats.totalFolders / stats.totalSourcesGoogle * 1000) / 10}% |\n`;
+  markdown += `| Total files (not folders) | ${stats.totalFiles} | ${Math.round(stats.totalFiles / stats.totalSourcesGoogle * 1000) / 10}% |\n`;
+  
+  // Document Types Breakdown
+  markdown += `\n## Document Type Status\n\n`;
+  markdown += `| Status | Count | Percentage of Total |\n`;
+  markdown += `|--------|-------|--------------------|\n`;
+  markdown += `| Sources with document type | ${stats.sourcesWithDocType} | ${Math.round(stats.sourcesWithDocType / stats.totalSourcesGoogle * 1000) / 10}% |\n`;
+  markdown += `| Sources without document type | ${stats.sourcesWithNoDocType} | ${Math.round(stats.sourcesWithNoDocType / stats.totalSourcesGoogle * 1000) / 10}% |\n`;
+  
+  // Expert Documents Breakdown
+  markdown += `\n## Expert Documents Status\n\n`;
+  markdown += `| Status | Count | Percentage of Files |\n`;
+  markdown += `|--------|-------|--------------------|\n`;
+  markdown += `| Sources with expert documents | ${stats.sourcesWithExpertDocs} | ${Math.round(stats.sourcesWithExpertDocs / stats.totalFiles * 1000) / 10}% |\n`;
+  markdown += `| Sources with document type but no expert documents | ${stats.sourcesWithDocTypeButNoExpertDocs} | ${Math.round(stats.sourcesWithDocTypeButNoExpertDocs / stats.totalFiles * 1000) / 10}% |\n`;
+  markdown += `| Files with no expert documents | ${stats.filesWithNoExpertDocs} | ${Math.round(stats.filesWithNoExpertDocs / stats.totalFiles * 1000) / 10}% |\n`;
+  
+  // Summary Calculation
+  const total = stats.sourcesWithExpertDocs + stats.sourcesWithDocTypeButNoExpertDocs + (stats.filesWithNoExpertDocs - stats.sourcesWithDocTypeButNoExpertDocs);
+  if (total !== stats.totalFiles) {
+    markdown += `\n> Note: There might be some overlap in the counts above\n\n`;
+  }
   
   // Document types table
-  markdown += `## Expert Documents by Document Type\n\n`;
-  markdown += `| Document Type | Count |\n`;
-  markdown += `|--------------|-------|\n`;
+  markdown += `\n## Expert Documents by Document Type\n\n`;
+  markdown += `| Document Type | Count | Percentage of Expert Docs |\n`;
+  markdown += `|--------------|-------|-------------------------|\n`;
   
   // Sort document types by count (descending)
   const sortedTypes = Object.entries(stats.byDocumentType)
     .sort((a, b) => b[1] - a[1]);
   
+  const totalExpertDocs = records.length; // This should be available in the function scope
+  
   sortedTypes.forEach(([docType, count]) => {
-    markdown += `| ${docType} | ${count} |\n`;
+    const percentage = Math.round((count / totalExpertDocs) * 1000) / 10;
+    markdown += `| ${docType} | ${count} | ${percentage}% |\n`;
   });
   
   return markdown;
 }
 
-async function saveStatsToMarkdown(stats: DocumentStats, samples: ExpertDocument[]): Promise<string> {
+async function saveStatsToMarkdown(stats: DocumentStats, samples: ExpertDocument[], allRecords: ExpertDocument[]): Promise<string> {
   try {
     const markdownPath = './expert-documents-report.md';
-    let markdown = formatMarkdownTable(stats);
+    let markdown = formatMarkdownTable(stats, allRecords);
     
     // Add sample documents section
     markdown += `\n## Sample Expert Documents\n\n`;
@@ -285,10 +306,14 @@ async function showExpertDocuments() {
     
     // Calculate statistics by document type
     const stats: DocumentStats = {
-      totalWithExpertDocs: sourcesGoogle?.length || 0,
-      totalWithoutExpertDocs: withoutExpertDocsCount || 0,
       totalSourcesGoogle: totalSourcesGoogleCount,
       totalFolders: totalFoldersCount,
+      totalFiles: totalFilesCount,
+      sourcesWithDocType: sourcesWithDocTypeCount,
+      sourcesWithExpertDocs: sourcesWithExpertDocsCount,
+      sourcesWithDocTypeButNoExpertDocs: sourcesWithDocTypeButNoExpertDocsCount,
+      sourcesWithNoDocType: sourcesWithNoDocTypeCount,
+      filesWithNoExpertDocs: totalFilesCount - sourcesWithExpertDocsCount,
       byDocumentType: {}
     };
     
@@ -299,12 +324,20 @@ async function showExpertDocuments() {
     });
     
     // Display summary statistics
-    console.log("\nEXPERT DOCUMENTS SUMMARY");
-    console.log("=======================");
+    console.log("\nSOURCES GOOGLE SUMMARY");
+    console.log("=====================");
     console.log(`Total sources_google records (not deleted): ${stats.totalSourcesGoogle}`);
-    console.log(`Total folders: ${stats.totalFolders}`);
-    console.log(`Total sources with expert documents: ${stats.totalWithExpertDocs}`);
-    console.log(`Total sources with document types but no expert documents: ${stats.totalWithoutExpertDocs}`);
+    console.log(`- Total folders: ${stats.totalFolders}`);
+    console.log(`- Total files (not folders): ${stats.totalFiles}`);
+    console.log("\nDOCUMENT TYPE BREAKDOWN");
+    console.log("=====================");
+    console.log(`Sources with document type: ${stats.sourcesWithDocType}`);
+    console.log(`Sources without document type: ${stats.sourcesWithNoDocType}`);
+    console.log("\nEXPERT DOCUMENTS BREAKDOWN");
+    console.log("========================");
+    console.log(`Sources with expert documents: ${stats.sourcesWithExpertDocs}`);
+    console.log(`Sources with document type but no expert documents: ${stats.sourcesWithDocTypeButNoExpertDocs}`);
+    console.log(`Files with no expert documents: ${stats.filesWithNoExpertDocs}`);
     console.log("\nEXPERT DOCUMENTS BY DOCUMENT TYPE");
     console.log("=================================");
     
@@ -346,14 +379,14 @@ async function showExpertDocuments() {
     });
     
     // Save statistics to markdown file
-    const markdownPath = await saveStatsToMarkdown(stats, samples);
+    const markdownPath = await saveStatsToMarkdown(stats, samples, records);
     if (markdownPath) {
       console.log(`\nDetailed report saved to: ${markdownPath}`);
     }
     
     await commandTrackingService.completeTracking(trackingId, {
       recordsAffected: records.length,
-      summary: `Successfully analyzed ${records.length} expert_documents with ${stats.totalWithoutExpertDocs} sources missing expert documents`
+      summary: `Successfully analyzed ${records.length} expert documents from ${stats.sourcesWithExpertDocs} sources. Found ${stats.filesWithNoExpertDocs} files without expert documents.`
     });
   } catch (error) {
     console.error("Error:", error instanceof Error ? error.message : String(error));

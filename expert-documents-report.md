@@ -1,44 +1,56 @@
 # Expert Documents Report
 
-## Summary
+## Sources Google Summary
 
-| Status | Count |
-|--------|-------|
-| Total sources_google records (not deleted) | 837 |
-| Total folders | 180 |
-| Total files (not folders) | 657 |
-| Sources with Expert Documents | 358 |
-| Sources with Document Types but no Expert Documents | 0 |
-| **Total Sources with Document Types** | **358** |
+| Status | Count | Percentage |
+|--------|-------|------------|
+| Total sources_google records (not deleted) | 837 | 100% |
+| Total folders | 180 | 21.5% |
+| Total files (not folders) | 657 | 78.5% |
+
+## Document Type Status
+
+| Status | Count | Percentage of Total |
+|--------|-------|--------------------|
+| Sources with document type | 258 | 30.8% |
+| Sources without document type | 579 | 69.2% |
+
+## Expert Documents Status
+
+| Status | Count | Percentage of Files |
+|--------|-------|--------------------|
+| Sources with expert documents | 388 | 59.1% |
+| Sources with document type but no expert documents | 0 | 0% |
+| Files with no expert documents | 269 | 40.9% |
 
 ## Expert Documents by Document Type
 
-| Document Type | Count |
-|--------------|-------|
-| Unknown | 145 |
-| Presentation Announcement | 93 |
-| Chat Log | 48 |
-| email correspondence | 20 |
-| dicussion transcript | 12 |
-| journal article | 10 |
-| presentation transcript | 8 |
-| web news article | 7 |
-| report | 6 |
-| url blog post | 6 |
-| professional biography | 6 |
-| website | 5 |
-| essay | 4 |
-| curriculum vitae | 3 |
-| letter | 3 |
-| new work summary | 2 |
-| unknown document type | 2 |
-| word document | 2 |
-| research article | 1 |
-| mp4 video | 1 |
-| editorial | 1 |
-| pdf document | 1 |
-| Deployment Script | 1 |
-| science meeting discussion | 1 |
+| Document Type | Count | Percentage of Expert Docs |
+|--------------|-------|-------------------------|
+| Unknown | 145 | 37.4% |
+| Presentation Announcement | 93 | 24% |
+| Chat Log | 48 | 12.4% |
+| email correspondence | 20 | 5.2% |
+| dicussion transcript | 12 | 3.1% |
+| journal article | 10 | 2.6% |
+| presentation transcript | 8 | 2.1% |
+| web news article | 7 | 1.8% |
+| report | 6 | 1.5% |
+| url blog post | 6 | 1.5% |
+| professional biography | 6 | 1.5% |
+| website | 5 | 1.3% |
+| essay | 4 | 1% |
+| curriculum vitae | 3 | 0.8% |
+| letter | 3 | 0.8% |
+| new work summary | 2 | 0.5% |
+| unknown document type | 2 | 0.5% |
+| word document | 2 | 0.5% |
+| research article | 1 | 0.3% |
+| mp4 video | 1 | 0.3% |
+| editorial | 1 | 0.3% |
+| pdf document | 1 | 0.3% |
+| Deployment Script | 1 | 0.3% |
+| science meeting discussion | 1 | 0.3% |
 
 ## Sample Expert Documents
 
