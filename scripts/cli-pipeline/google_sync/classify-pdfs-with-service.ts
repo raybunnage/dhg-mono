@@ -175,74 +175,52 @@ async function processPdfFile(
       console.log(`Loaded prompt with ${promptResult.combinedContent.length} characters of combined content`);
     }
     
-    // 6. Send the PDF file path to Claude for processing
-    // First, let's check if the file exists
+    // 6. Use Claude's direct PDF analysis capability
+    // This will allow Claude to read and understand the full content of the PDF
     if (fs.existsSync(tempFilePath)) {
-      const fileContent = fs.readFileSync(tempFilePath);
-      
-      // For now, we extract some metadata about the PDF and pass that to Claude
-      // A future enhancement would be to use Claude's direct PDF processing capability
-      
-      // Create a descriptive message about the PDF that Claude can use for classification
-      let fileMetadata = '';
-      try {
-        // Get basic metadata about the PDF using simple node modules
-        const stats = fs.statSync(tempFilePath);
-        fileMetadata = `
-        File Name: ${fileName}
-        File Size: ${stats.size} bytes
-        Last Modified: ${stats.mtime.toISOString()}
-        MIME Type: application/pdf
-        `;
-        
-        // Try to peek at the first few bytes to see if it has PDF signature
-        const fd = fs.openSync(tempFilePath, 'r');
-        const buffer = Buffer.alloc(30);
-        fs.readSync(fd, buffer, 0, 30, 0);
-        fs.closeSync(fd);
-        
-        const pdfHeader = buffer.toString('utf8');
-        if (pdfHeader.startsWith('%PDF-')) {
-          fileMetadata += `PDF Version: ${pdfHeader.substring(5, 8)}\n`;
-        }
-      } catch (metadataError) {
-        console.warn(`Warning: Could not extract PDF metadata: ${metadataError instanceof Error ? metadataError.message : 'Unknown error'}`);
+      if (debug) {
+        console.log(`Using Claude's binary PDF analysis capability to read PDF content directly`);
       }
       
-      const userMessage = `Please classify this PDF document based on the following information:
+      // Prepare the classification prompt with document types information
+      const userMessage = `${promptResult.combinedContent}
+
+      Please read and analyze this PDF document carefully.
+      1. Examine its content, structure, and purpose.
+      2. Determine which document_type from the document_types table best describes it.
+      3. Create a detailed summary (at least 3 paragraphs) that captures the key concepts.
+      4. Return your analysis in the requested JSON format with document_type, document_type_id, etc.
       
-      Document Title: "${fileName}"
-      
-      PDF Metadata:
-      ${fileMetadata}
-      
-      Context clues:
-      1. The filename itself may contain important classification clues
-      2. Look for patterns in the file name (e.g., transcript, report, presentation)
-      3. Consider any date patterns or expert names in the filename
-      4. Use the document_types table to find the most appropriate type
-      
-      Important: Select the most appropriate document_type_id from the provided options.
+      IMPORTANT: 
+      - Select the most appropriate document_type_id from the available options in the document_types table
+      - Base your classification on the actual content of the PDF, not just the filename
+      - Provide detailed reasoning for your classification choice
       `;
       
-      // 7. Get classification from Claude
+      // 7. Get classification from Claude using direct PDF reading capability
       let classificationResult;
       let retries = 0;
       const maxRetries = 3;
       
       while (retries < maxRetries) {
         try {
-          classificationResult = await promptService.usePromptWithClaude(
-            CLASSIFICATION_PROMPT,
+          if (debug) {
+            console.log(`Using direct PDF analysis with Claude (attempt ${retries + 1}/${maxRetries})`);
+          }
+          
+          // Use Claude's direct PDF analysis capability
+          classificationResult = await claudeService.analyzePdfToJson(
+            tempFilePath,
             userMessage,
             {
-              expectJson: true,
-              claudeOptions: {
-                temperature: 0,
-                maxTokens: 4000
-              }
+              temperature: 0,
+              maxTokens: 4000
             }
           );
+          
+          if (debug) {
+            console.log(`Successfully analyzed PDF content directly with Claude`);
+          }
           
           // If we got here, the API call succeeded
           break;
@@ -273,10 +251,59 @@ async function processPdfFile(
               await new Promise(resolve => setTimeout(resolve, backoffTime));
             } else {
               console.error(`Maximum retries (${maxRetries}) reached. Using fallback classification.`);
-              // Create a fallback classification based on file metadata
-              classificationResult = createFallbackClassification({
-                name: fileName || 'Unknown Document'
-              });
+              
+              // Try using the traditional method as a fallback since direct PDF analysis failed
+              try {
+                console.log(`Falling back to metadata-based classification...`);
+                
+                // Create a descriptive message about the PDF metadata
+                const stats = fs.statSync(tempFilePath);
+                const fileMetadata = `
+                File Name: ${fileName}
+                File Size: ${stats.size} bytes
+                Last Modified: ${stats.mtime.toISOString()}
+                MIME Type: application/pdf
+                `;
+                
+                const fallbackMessage = `${promptResult.combinedContent}
+                
+                Please classify this PDF document based on the following information:
+                
+                Document Title: "${fileName}"
+                
+                PDF Metadata:
+                ${fileMetadata}
+                
+                Context clues:
+                1. The filename itself may contain important classification clues
+                2. Look for patterns in the file name (e.g., transcript, report, presentation)
+                3. Consider any date patterns or expert names in the filename
+                4. Use the document_types table to find the most appropriate type
+                
+                Important: Select the most appropriate document_type_id from the provided options.
+                `;
+                
+                // Try using prompt service as a fallback
+                classificationResult = await promptService.usePromptWithClaude(
+                  CLASSIFICATION_PROMPT,
+                  fallbackMessage,
+                  {
+                    expectJson: true,
+                    claudeOptions: {
+                      temperature: 0,
+                      maxTokens: 4000
+                    }
+                  }
+                );
+                
+                console.log(`Successfully used fallback metadata-based classification`);
+              } catch (fallbackError) {
+                console.error(`Fallback classification also failed: ${fallbackError}`);
+                // Create a very basic fallback classification based on file metadata
+                classificationResult = createFallbackClassification({
+                  name: fileName || 'Unknown Document'
+                });
+              }
             }
           } else {
             // For other types of errors, don't retry

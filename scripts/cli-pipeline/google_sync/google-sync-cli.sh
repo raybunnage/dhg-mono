@@ -101,13 +101,14 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  ./google-sync-cli.sh <command> [options]"
   echo ""
   echo "COMMANDS:"
-  echo "  classify-pdfs            Classify PDF files missing document types using Claude AI"
-  echo "  reclassify-docs          Re-classify documents with temperature=0 for deterministic results"
-  echo "  classify-docs-service    Classify .docx and .txt files missing document types"
-  echo "  check-duplicates         Check for duplicate files in sources_google"
-  echo "  check-document-types     Check for files missing document types"
-  echo "  report-main-video-ids    Report on video files for folders"
-  echo "  help                     Show this help message"
+  echo "  classify-pdfs                Classify PDF files missing document types using Claude AI"
+  echo "  reclassify-docs              Re-classify documents with temperature=0 for deterministic results"
+  echo "  classify-docs-service        Classify .docx and .txt files missing document types"
+  echo "  validate-pdf-classification  Validate PDF classification results and generate a report"
+  echo "  check-duplicates             Check for duplicate files in sources_google"
+  echo "  check-document-types         Check for files missing document types"
+  echo "  report-main-video-ids        Report on video files for folders"
+  echo "  help                         Show this help message"
   echo ""
   echo "EXAMPLES:"
   echo "  # Classify PDFs with verbose output"
@@ -154,6 +155,12 @@ fi
 if [ "$1" = "check-expert-doc" ]; then
   shift
   track_command "check-expert-doc" "ts-node $SCRIPT_DIR/check-expert-doc.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "validate-pdf-classification" ]; then
+  shift
+  track_command "validate-pdf-classification" "ts-node $SCRIPT_DIR/validate-pdf-classification.ts $*"
   exit $?
 fi
 
