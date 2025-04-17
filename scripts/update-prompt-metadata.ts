@@ -5,7 +5,7 @@ import { promptManagementService, DatabasePrompt } from '../packages/shared/serv
 import { Logger } from '../packages/shared/utils';
 
 // Prompt name to update
-const PROMPT_NAME = 'document-classification-prompt-new';
+const PROMPT_NAME = 'scientific-document-analysis-prompt';
 
 // Database query to add to the metadata
 const DATABASE_QUERY = "select id, category, document_type, description, mime_type, file_extension from document_types;";
@@ -25,9 +25,9 @@ async function updatePromptMetadata() {
     
     Logger.info(`Updating metadata for prompt: ${PROMPT_NAME} (ID: ${prompt.id})`);
     
-    // Create updated metadata with the database query
+    // Create updated metadata with the database query and remove duplicate content
     const updatedMetadata = {
-      ...prompt.metadata,
+      metadata: {}, // Reset the nested metadata
       databaseQuery: DATABASE_QUERY
     };
     
@@ -39,6 +39,7 @@ async function updatePromptMetadata() {
     if (result) {
       Logger.info(`Successfully updated metadata for prompt: ${PROMPT_NAME}`);
       Logger.info(`Added database query: ${DATABASE_QUERY}`);
+      Logger.info(`Removed duplicated content from metadata`);
     } else {
       Logger.error(`Failed to update metadata for prompt: ${PROMPT_NAME}`);
     }
