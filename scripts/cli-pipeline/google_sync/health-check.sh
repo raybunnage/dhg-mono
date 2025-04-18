@@ -35,7 +35,9 @@ COMMANDS=(
   "check-document-types"
   "check-duplicates"
   "update-file-signatures"
-  "classify-missing-docs"
+  "classify-docs-with-service"
+  "classify-pdfs-with-service"
+  "reclassify-docs-with-service"
   "report-main-video-ids"
   "update-main-video-ids"
   "browser-recursive-search"
@@ -44,10 +46,34 @@ COMMANDS=(
   "update-schema-from-json"
   "count-mp4"
   "add-root-service"
+  "show-expert-documents"
+  "list-unclassified-files"
+  "check-expert-doc"
+  "fix-orphaned-docx"
+  "remove-expert-docs-pdf-records"
+  "test-prompt-service"
+  "validate-pdf-classification"
+  "check-recent-updates"
 )
 
-# Special case for count-mp4 which is directly implemented in google-sync-cli.sh
-COUNT_MP4_COMMAND=$(grep -c "count-mp4" "$SCRIPT_DIR/google-sync-cli.sh")
+# Check for commands in google-sync-cli.sh that are directly implemented
+CLI_SH="$SCRIPT_DIR/google-sync-cli.sh"
+
+# Use standard arrays since associative arrays might not be supported in all environments
+declare -a CMD_LIST=()
+declare -a STATUS_LIST=()
+
+for cmd in "${COMMANDS[@]}"; do
+  # Find command implementations in google-sync-cli.sh - directly check tracking  
+  CMD_LIST+=("$cmd")
+  
+  # We'll simplify and just check if track_command exists for this command with proper quoting
+  if grep -q "track_command \"$cmd\"" "$CLI_SH"; then
+    STATUS_LIST+=("tracked")
+  else
+    STATUS_LIST+=("untracked")
+  fi
+done
 
 # Main testing function
 main() {
@@ -108,20 +134,77 @@ main() {
     fi
   done
   
+  # Now check command tracking in google-sync-cli.sh
+  if [ "$VERBOSE" = true ]; then
+    echo "" | tee -a "$LOG_FILE"
+    echo "Checking for command tracking in google-sync-cli.sh..." | tee -a "$LOG_FILE"
+    echo "" | tee -a "$LOG_FILE"
+  else
+    echo "" >> "$LOG_FILE"
+    echo "Checking for command tracking in google-sync-cli.sh..." >> "$LOG_FILE"
+    echo "" >> "$LOG_FILE"
+  fi
+  
+  local tracked=0
+  local untracked=0
+  local missing_in_cli=0  # Unused now that we simplified the approach
+  
+  # Check each command's tracking status
+  for i in "${!CMD_LIST[@]}"; do
+    local cmd="${CMD_LIST[$i]}"
+    local status="${STATUS_LIST[$i]}"
+    
+    if [ "$status" = "tracked" ]; then
+      if [ "$VERBOSE" = true ]; then
+        echo "✅ PASSED: Command $cmd is tracked in google-sync-cli.sh" | tee -a "$LOG_FILE"
+      else
+        echo "✅ PASSED: Command $cmd is tracked in google-sync-cli.sh" >> "$LOG_FILE"
+      fi
+      ((tracked++))
+    else
+      if [ "$VERBOSE" = true ]; then
+        echo "❌ FAILED: Command $cmd is NOT tracked in google-sync-cli.sh" | tee -a "$LOG_FILE"
+      else
+        echo "❌ FAILED: Command $cmd is NOT tracked in google-sync-cli.sh" >> "$LOG_FILE"
+      fi
+      ((untracked++))
+    fi
+  done
+  
   # Report results
-  local total=$((passed + failed))
+  local total_index=$((passed + failed))
+  local total_cli=$((tracked + untracked))
+  
+  # Ensure all variables have valid integer values
+  passed=${passed:-0}
+  failed=${failed:-0}
+  tracked=${tracked:-0}
+  untracked=${untracked:-0}
   
   echo "" >> "$LOG_FILE"
   echo "=== Test Results Summary ===" | tee -a "$LOG_FILE"
-  echo "Total commands checked: $total" | tee -a "$LOG_FILE"
-  echo "Commands found: $passed" | tee -a "$LOG_FILE"
-  echo "Commands missing: $failed" | tee -a "$LOG_FILE"
+  echo "Index.ts Commands:" | tee -a "$LOG_FILE"
+  echo "  Total commands checked: $total_index" | tee -a "$LOG_FILE"
+  echo "  Commands found: $passed" | tee -a "$LOG_FILE"
+  echo "  Commands missing: $failed" | tee -a "$LOG_FILE"
+  echo "" | tee -a "$LOG_FILE"
+  echo "Command Tracking:" | tee -a "$LOG_FILE"
+  echo "  Total commands checked: $total_cli" | tee -a "$LOG_FILE"
+  echo "  Commands with tracking: $tracked" | tee -a "$LOG_FILE"
+  echo "  Commands not tracked: $untracked" | tee -a "$LOG_FILE"
   
-  if [ $failed -eq 0 ]; then
-    echo "✅ All commands are properly defined!" | tee -a "$LOG_FILE"
+  if [ "${failed:-0}" -eq 0 ] && [ "${untracked:-0}" -eq 0 ]; then
+    echo "✅ All commands are properly defined and tracked!" | tee -a "$LOG_FILE"
     return 0
   else
-    echo "❌ $failed command(s) are missing. Full details in $LOG_FILE" | tee -a "$LOG_FILE"
+    echo "" | tee -a "$LOG_FILE"
+    if [ "${failed:-0}" -gt 0 ]; then
+      echo "❌ $failed command(s) are missing from index.ts." | tee -a "$LOG_FILE"
+    fi
+    if [ "${untracked:-0}" -gt 0 ]; then
+      echo "❌ $untracked command(s) are not properly tracked in the CLI shell script." | tee -a "$LOG_FILE"
+    fi
+    echo "Full details in $LOG_FILE" | tee -a "$LOG_FILE"
     return 1
   fi
 }

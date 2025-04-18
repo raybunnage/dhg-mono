@@ -122,6 +122,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  check-expert-doc             Check the most recent expert document for proper content extraction"
   echo "  fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records"
   echo "  remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id"
+  echo "  check-recent-updates         Show recently updated files and their associated expert documents"
   echo "  help                         Show this help message"
   echo ""
   echo "EXAMPLES:"
@@ -145,6 +146,9 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Generate a report of expert documents in the database"
   echo "  ./google-sync-cli.sh show-expert-documents"
+  echo ""
+  echo "  # Show recently updated PDF files and their expert documents"
+  echo "  ./google-sync-cli.sh check-recent-updates --limit 10"
   exit 0
 fi
 
@@ -193,6 +197,12 @@ fi
 if [ "$1" = "remove-expert-docs-pdf-records" ]; then
   shift
   track_command "remove-expert-docs-pdf-records" "ts-node $SCRIPT_DIR/remove-expert-docs-pdf-records.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "check-recent-updates" ]; then
+  shift
+  track_command "check-recent-updates" "ts-node $SCRIPT_DIR/check-recent-updates.ts $*"
   exit $?
 fi
 
