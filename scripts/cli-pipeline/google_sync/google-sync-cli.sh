@@ -3,13 +3,20 @@
 # Usage: ./google-sync-cli.sh <command> [options]
 #
 # AVAILABLE COMMANDS:
-#   classify-pdfs          Classify PDF files missing document types using Claude AI
-#   reclassify-docs        Re-classify documents with temperature=0 for deterministic results
-#   classify-docs-service  Classify .docx and .txt files missing document types
-#   check-duplicates       Check for duplicate files in sources_google
-#   check-document-types   Check for files missing document types
-#   report-main-video-ids  Report on video files for folders
-#   help                   Show this help message
+#   sync                         Sync files from Google Drive to the database (core functionality)
+#   health-check                 Check the health of Google Drive API connection
+#   classify-pdfs                Classify PDF files missing document types using Claude AI
+#   reclassify-docs              Re-classify documents with temperature=0 for deterministic results
+#   classify-docs-service        Classify .docx and .txt files missing document types
+#   check-duplicates             Check for duplicate files in sources_google
+#   check-document-types         Check for files missing document types
+#   report-main-video-ids        Report on video files for folders
+#   show-expert-documents        Generate a report of expert documents in the database
+#   list-unclassified-files      List PDF and PowerPoint files without document types
+#   check-expert-doc             Check the most recent expert document for proper content extraction
+#   fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records
+#   remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id
+#   help                         Show this help message
 
 # Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -101,6 +108,8 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  ./google-sync-cli.sh <command> [options]"
   echo ""
   echo "COMMANDS:"
+  echo "  sync                         Sync files from Google Drive to the database (core functionality)"
+  echo "  health-check                 Check the health of Google Drive API connection"
   echo "  classify-pdfs                Classify PDF files missing document types using Claude AI"
   echo "  reclassify-docs              Re-classify documents with temperature=0 for deterministic results"
   echo "  classify-docs-service        Classify .docx and .txt files missing document types"
@@ -108,9 +117,23 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  check-duplicates             Check for duplicate files in sources_google"
   echo "  check-document-types         Check for files missing document types"
   echo "  report-main-video-ids        Report on video files for folders"
+  echo "  show-expert-documents        Generate a report of expert documents in the database"
+  echo "  list-unclassified-files      List PDF and PowerPoint files without document types"
+  echo "  check-expert-doc             Check the most recent expert document for proper content extraction"
+  echo "  fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records"
+  echo "  remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id"
   echo "  help                         Show this help message"
   echo ""
   echo "EXAMPLES:"
+  echo "  # Sync files from Google Drive (core functionality)"
+  echo "  ./google-sync-cli.sh sync --verbose --limit 100"
+  echo ""
+  echo "  # Run sync in dry-run mode to preview changes"
+  echo "  ./google-sync-cli.sh sync --dry-run --max-depth 3"
+  echo ""
+  echo "  # Check if Google Drive API connection is working"
+  echo "  ./google-sync-cli.sh health-check"
+  echo ""
   echo "  # Classify PDFs with verbose output"
   echo "  ./google-sync-cli.sh classify-pdfs --verbose"
   echo ""
@@ -119,6 +142,9 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Run PDF classification in dry-run mode to see what would be updated"
   echo "  ./google-sync-cli.sh classify-pdfs --dry-run"
+  echo ""
+  echo "  # Generate a report of expert documents in the database"
+  echo "  ./google-sync-cli.sh show-expert-documents"
   exit 0
 fi
 
@@ -161,6 +187,18 @@ fi
 if [ "$1" = "validate-pdf-classification" ]; then
   shift
   track_command "validate-pdf-classification" "ts-node $SCRIPT_DIR/validate-pdf-classification.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "remove-expert-docs-pdf-records" ]; then
+  shift
+  track_command "remove-expert-docs-pdf-records" "ts-node $SCRIPT_DIR/remove-expert-docs-pdf-records.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "sync" ]; then
+  shift
+  track_command "sync" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $*"
   exit $?
 fi
 

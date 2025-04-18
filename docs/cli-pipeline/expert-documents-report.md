@@ -12,25 +12,25 @@
 
 | Status | Count | Percentage of Total |
 |--------|-------|--------------------|
-| Sources with document type | 258 | 30.8% |
-| Sources without document type | 579 | 69.2% |
+| Sources with document type | 259 | 30.9% |
+| Sources without document type | 578 | 69.1% |
 
 ## Expert Documents Status
 
 | Status | Count | Percentage of Files |
 |--------|-------|--------------------|
-| Sources with expert documents | 388 | 59.1% |
+| Sources with expert documents | 389 | 59.2% |
 | Sources with document type but no expert documents | 0 | 0% |
-| Files with no expert documents | 269 | 40.9% |
+| Files with no expert documents | 268 | 40.8% |
 
 ## Expert Documents by Document Type
 
 | Document Type | Count | Percentage of Expert Docs |
 |--------------|-------|-------------------------|
-| Unknown | 145 | 37.4% |
-| Presentation Announcement | 93 | 24% |
-| Chat Log | 48 | 12.4% |
-| email correspondence | 20 | 5.2% |
+| Unknown | 145 | 37.3% |
+| Presentation Announcement | 93 | 23.9% |
+| Chat Log | 48 | 12.3% |
+| email correspondence | 21 | 5.4% |
 | dicussion transcript | 12 | 3.1% |
 | journal article | 10 | 2.6% |
 | presentation transcript | 8 | 2.1% |

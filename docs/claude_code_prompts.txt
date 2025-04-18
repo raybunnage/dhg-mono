@@ -1,3 +1,19 @@
+I've updated the Google Sync CLI help output to include three additional commands
+  that were already implemented but missing from the help documentation:
+
+  1. show-expert-documents - This generates a detailed report about expert_documents
+   in the database and saves it to docs/cli-pipeline/expert-documents-report.md. It
+  provides statistics on document types, files with and without expert documents,
+  and shows a sample of expert document content.
+  2. list-unclassified-files - Lists PDF and PowerPoint files in the database that
+  don't have a document_type_id assigned, which helps identify files that need
+  classification.
+  3. check-expert-doc - Checks the most recent expert document to verify that
+  content extraction worked properly, helpful for troubleshooting.
+
+  These commands were already implemented in the CLI but were missing from the help
+  output, making them harder to discover. Now users will be aware of these useful
+  commands when they run ./scripts/cli-pipeline/google_sync/google-sync-cli.sh help.
 
 The Python module you shared shows how Claude previously handled binary data (especially PDFs) through base64 encoding.
   In the current codebase, the functionality has been implemented in TypeScript through the ClaudeService class.
