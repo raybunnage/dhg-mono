@@ -12,8 +12,8 @@
 
 | Status | Count | Percentage of Total |
 |--------|-------|--------------------|
-| Sources with document type | 410 | 49% |
-| Sources without document type | 427 | 51% |
+| Sources with document type | 526 | 62.8% |
+| Sources without document type | 311 | 37.2% |
 
 ## Expert Documents Status
 
@@ -30,7 +30,7 @@
 | application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 191 | 0 | 100% |
 | application/vnd.google-apps.folder | 180 | 0 | 180 | 0% |
 | application/pdf | 151 | 151 | 0 | 100% |
-| video/mp4 | 116 | 0 | 116 | 0% |
+| video/mp4 | 116 | 116 | 0 | 100% |
 | audio/x-m4a | 92 | 0 | 92 | 0% |
 | text/plain | 64 | 64 | 0 | 100% |
 | application/vnd.openxmlformats-officedocument.presentationml.presentation | 25 | 0 | 25 | 0% |
@@ -48,10 +48,11 @@
 
 | Document Type | Count | Percentage of Expert Docs |
 |--------------|-------|-------------------------|
-| Unknown | 145 | 27.1% |
+| video mpeg | 112 | 20.9% |
 | Presentation Announcement | 94 | 17.5% |
 | research article | 91 | 17% |
 | Chat Log | 50 | 9.3% |
+| Unknown | 33 | 6.2% |
 | review article | 23 | 4.3% |
 | email correspondence | 21 | 3.9% |
 | journal article | 15 | 2.8% |
@@ -83,7 +84,7 @@
 
 ## Sample Expert Documents
 
-### 1. Naviaux.Mitochondria.chronic Disease.mp4 (Unknown)
+### 1. Naviaux.Mitochondria.chronic Disease.mp4 (video mpeg)
 
 - ID: `b94942bd-e6da-49b2-acb4-3d9e001c2f2a`
 - MIME Type: video/mp4
@@ -118,7 +119,7 @@ The presentation opened with epidemiological data showing the rising incidence o
 
 ---
 
-### 3. Wager.7.15.20.mp4 (Unknown)
+### 3. Wager.7.15.20.mp4 (video mpeg)
 
 - ID: `556d8749-f59e-4704-a388-a46a7ee88d07`
 - MIME Type: video/mp4
@@ -249,7 +250,7 @@ This meeting is a major paradigm shift. Exceptional cancer survivors don’t jus
 
 ---
 
-### 9. Lustig.Amygdala.1.8.25.mp4 (Unknown)
+### 9. Lustig.Amygdala.1.8.25.mp4 (video mpeg)
 
 - ID: `846246b7-e992-41ba-80c8-50736bd30b9b`
 - MIME Type: video/mp4
@@ -328,7 +329,7 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 
 ---
 
-### 10. Wager.Intro.Networks.Intro.6.17.20.mp4 (Unknown)
+### 10. Wager.Intro.Networks.Intro.6.17.20.mp4 (video mpeg)
 
 - ID: `2c7e221f-7c59-4cb5-bdea-da3cbaa24f62`
 - MIME Type: video/mp4

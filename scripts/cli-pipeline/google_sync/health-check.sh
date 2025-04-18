@@ -38,6 +38,7 @@ COMMANDS=(
   "check-document-types"
   "check-duplicates"
   "update-file-signatures"
+  "update-media-document-types"
   "classify-docs-with-service"
   "classify-pdfs-with-service"
   "reclassify-docs-with-service"

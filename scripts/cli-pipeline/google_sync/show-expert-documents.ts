@@ -38,6 +38,12 @@ interface DocumentStats {
       withoutDocType: number;
     }
   };
+  sourcesByDocumentType: {
+    [key: string]: number;
+  };
+  unclassifiedMimeTypes: {
+    [key: string]: number;
+  };
 }
 
 /**
@@ -76,8 +82,40 @@ function getContentSentences(content: any, sentenceCount = 2): string {
 function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): string {
   let markdown = `# Expert Documents Report\n\n`;
   
+  // Document Type Distribution by Source
+  markdown += `## Document Type Distribution in sources_google\n\n`;
+  markdown += `| Document Type | Count | Percentage |\n`;
+  markdown += `|--------------|-------|------------|\n`;
+  
+  // Sort document types by count (descending) for sources
+  const sortedSourceTypes = Object.entries(stats.sourcesByDocumentType)
+    .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+  
+  for (const entry of sortedSourceTypes) {
+    const docType = entry[0];
+    const count = entry[1];
+    const percentage = Math.round((count / stats.sourcesWithDocType) * 1000) / 10;
+    markdown += `| ${docType} | ${count} | ${percentage}% |\n`;
+  }
+  
+  // Unclassified MIME Types
+  markdown += `\n## Unclassified MIME Types\n\n`;
+  markdown += `| MIME Type | Count | Percentage of Unclassified |\n`;
+  markdown += `|-----------|-------|-------------------------|\n`;
+  
+  // Sort unclassified mime types by count (descending)
+  const sortedUnclassifiedMimeTypes = Object.entries(stats.unclassifiedMimeTypes)
+    .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+  
+  for (const entry of sortedUnclassifiedMimeTypes) {
+    const mimeType = entry[0];
+    const count = entry[1];
+    const percentage = Math.round((count / stats.sourcesWithNoDocType) * 1000) / 10;
+    markdown += `| ${mimeType} | ${count} | ${percentage}% |\n`;
+  }
+  
   // Sources Google Summary
-  markdown += `## Sources Google Summary\n\n`;
+  markdown += `\n## Sources Google Summary\n\n`;
   markdown += `| Status | Count | Percentage |\n`;
   markdown += `|--------|-------|------------|\n`;
   markdown += `| Total sources_google records (not deleted) | ${stats.totalSourcesGoogle} | 100% |\n`;
@@ -421,7 +459,9 @@ async function showExpertDocuments() {
       sourcesWithNoDocType: sourcesWithNoDocTypeCount,
       filesWithNoExpertDocs: totalFilesCount - sourcesWithExpertDocsCount,
       byDocumentType: {},
-      byMimeType: {}
+      byMimeType: {},
+      sourcesByDocumentType: {},
+      unclassifiedMimeTypes: {}
     };
     
     // Count by document type
@@ -466,8 +506,15 @@ async function showExpertDocuments() {
             
             if (source.document_type_id) {
               stats.byMimeType[mimeType].withDocType++;
+              
+              // Count sources by document type
+              const docTypeName = documentTypeMap.get(source.document_type_id) || 'Unknown';
+              stats.sourcesByDocumentType[docTypeName] = (stats.sourcesByDocumentType[docTypeName] || 0) + 1;
             } else {
               stats.byMimeType[mimeType].withoutDocType++;
+              
+              // Count unclassified mime types
+              stats.unclassifiedMimeTypes[mimeType] = (stats.unclassifiedMimeTypes[mimeType] || 0) + 1;
             }
           });
         }
@@ -478,6 +525,36 @@ async function showExpertDocuments() {
     } catch (error) {
       console.warn("Error analyzing mime_types:", 
         error instanceof Error ? error.message : String(error));
+    }
+    
+    // Display document type distribution
+    console.log("\nDOCUMENT TYPE DISTRIBUTION BY SOURCE");
+    console.log("==================================");
+    
+    // Sort document types by count descending for sources
+    const sortedSourceTypes = Object.entries(stats.sourcesByDocumentType)
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+      
+    for (const entry of sortedSourceTypes) {
+      const docType = entry[0];
+      const count = entry[1];
+      const percentage = Math.round((count / stats.sourcesWithDocType) * 1000) / 10;
+      console.log(`${docType.padEnd(30)} | ${count.toString().padStart(5)} | ${percentage}%`);
+    }
+    
+    // Display unclassified mime types
+    console.log("\nUNCLASSIFIED MIME TYPES");
+    console.log("======================");
+    
+    // Sort unclassified mime types by count descending
+    const sortedUnclassifiedMimeTypes = Object.entries(stats.unclassifiedMimeTypes)
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+      
+    for (const entry of sortedUnclassifiedMimeTypes) {
+      const mimeType = entry[0];
+      const count = entry[1];
+      const percentage = Math.round((count / stats.sourcesWithNoDocType) * 1000) / 10;
+      console.log(`${mimeType.padEnd(30)} | ${count.toString().padStart(5)} | ${percentage}%`);
     }
     
     // Display summary statistics
