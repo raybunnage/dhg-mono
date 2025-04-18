@@ -59,8 +59,11 @@ if [ "$1" = "classify-docs-service" ]; then
   exit $?
 fi
 
-if [ "$1" = "classify-pdfs" ]; then
+if [ "$1" = "classify-pdfs" ] || [ "$1" = "classify-pdfs-with-service" ]; then
   shift
+  
+  # Store the original command name for tracking
+  CMD_NAME="classify-pdfs-with-service"
   
   # Check if the user provided a limit parameter
   LIMIT="10"  # Default value
@@ -90,13 +93,13 @@ if [ "$1" = "classify-pdfs" ]; then
     ARGS="$ARGS --limit $LIMIT"
   fi
   
-  track_command "classify-pdfs" "ts-node $SCRIPT_DIR/classify-pdfs-with-service.ts $ARGS"
+  track_command "$CMD_NAME" "ts-node $SCRIPT_DIR/classify-pdfs-with-service.ts $ARGS"
   exit $?
 fi
 
-if [ "$1" = "reclassify-docs" ]; then
+if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify-docs-with-service" ]; then
   shift
-  track_command "reclassify-docs" "ts-node $SCRIPT_DIR/reclassify-docs-with-service.ts $*"
+  track_command "reclassify-docs-with-service" "ts-node $SCRIPT_DIR/reclassify-docs-with-service.ts $*"
   exit $?
 fi
 
@@ -206,9 +209,76 @@ if [ "$1" = "check-recent-updates" ]; then
   exit $?
 fi
 
+if [ "$1" = "check-document-types" ]; then
+  shift
+  track_command "check-document-types" "ts-node $SCRIPT_DIR/index.ts check-document-types $*"
+  exit $?
+fi
+
+if [ "$1" = "check-duplicates" ]; then
+  shift
+  track_command "check-duplicates" "ts-node $SCRIPT_DIR/index.ts check-duplicates $*"
+  exit $?
+fi
+
+if [ "$1" = "update-file-signatures" ]; then
+  shift
+  track_command "update-file-signatures" "ts-node $SCRIPT_DIR/index.ts update-file-signatures $*"
+  exit $?
+fi
+
+if [ "$1" = "classify-docs-with-service" ]; then
+  shift
+  track_command "classify-docs-with-service" "ts-node $SCRIPT_DIR/index.ts classify-docs-with-service $*"
+  exit $?
+fi
+
+if [ "$1" = "update-main-video-ids" ]; then
+  shift
+  track_command "update-main-video-ids" "ts-node $SCRIPT_DIR/index.ts update-main-video-ids $*"
+  exit $?
+fi
+
+if [ "$1" = "browser-recursive-search" ]; then
+  shift
+  track_command "browser-recursive-search" "ts-node $SCRIPT_DIR/index.ts browser-recursive-search $*"
+  exit $?
+fi
+
+if [ "$1" = "update-sources-from-json" ]; then
+  shift
+  track_command "update-sources-from-json" "ts-node $SCRIPT_DIR/index.ts update-sources-from-json $*"
+  exit $?
+fi
+
+if [ "$1" = "insert-missing-sources" ]; then
+  shift
+  track_command "insert-missing-sources" "ts-node $SCRIPT_DIR/index.ts insert-missing-sources $*"
+  exit $?
+fi
+
+if [ "$1" = "update-schema-from-json" ]; then
+  shift
+  track_command "update-schema-from-json" "ts-node $SCRIPT_DIR/index.ts update-schema-from-json $*"
+  exit $?
+fi
+
+if [ "$1" = "add-root-service" ]; then
+  shift
+  track_command "add-root-service" "ts-node $SCRIPT_DIR/index.ts add-root-service $*"
+  exit $?
+fi
+
 if [ "$1" = "sync" ]; then
   shift
-  track_command "sync" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $*"
+  track_command "sync-and-update-metadata" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $*"
+  exit $?
+fi
+
+# Track commands that directly use index.ts with proper command name
+if [ "$1" = "sync-and-update-metadata" ]; then
+  shift
+  track_command "sync-and-update-metadata" "ts-node $SCRIPT_DIR/index.ts sync-and-update-metadata $*"
   exit $?
 fi
 

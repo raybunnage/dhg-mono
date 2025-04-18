@@ -14,34 +14,84 @@ import { SupabaseClientService } from '../../../packages/shared/services/supabas
 import { promptService } from '../../../packages/shared/services/prompt-service';
 import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
 import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
+import { BatchProcessingService } from '../../../packages/shared/services/batch-processing-service';
 
 // Define the prompt name to use for classification
 const CLASSIFICATION_PROMPT = 'scientific-document-analysis-prompt';
 
 // Function to create a fallback classification when Claude API fails
-function createFallbackClassification(file: any): any {
+async function createFallbackClassification(file: any, supabase: any): Promise<any> {
   const fileName = file.name || 'Unknown Document';
   const extension = fileName.split('.').pop()?.toLowerCase() || '';
-  // Determine document type based on file extension and name
+
+  // Fetch valid document types from the database to ensure we use an existing ID
+  const { data: documentTypes, error } = await supabase
+    .from('document_types')
+    .select('id, document_type')
+    .order('document_type');
+
+  if (error) {
+    console.error(`Error fetching document types: ${error.message}`);
+  }
+
+  // Default to "unknown document type" if we can't determine anything better
   let documentType = 'unknown document type';
-  let documentTypeId = '9dbe32ff-5e82-4586-be63-1445e5bcc548'; // ID for unknown document type
-  
-  // Basic file type detection from extension and name patterns
-  if (extension === 'pdf') {
-    documentType = 'pdf document';
-    documentTypeId = 'e3e10835-61f5-4734-a088-cfe2a9a0b1d7'; // ID for PDF document type
+  let documentTypeId = '';
+
+  // Find the unknown document type ID from the fetched document types
+  const unknownType = documentTypes?.find(dt => 
+    dt.document_type.toLowerCase() === 'unknown document type' ||
+    dt.document_type.toLowerCase() === 'unknown' ||
+    dt.document_type.toLowerCase().includes('unclassified')
+  );
+
+  if (unknownType) {
+    documentTypeId = unknownType.id;
+  } else if (documentTypes && documentTypes.length > 0) {
+    // If no unknown type found, just use the first document type as a fallback
+    documentTypeId = documentTypes[0].id;
+    documentType = documentTypes[0].document_type;
+  }
+
+  // Determine document type based on extension and filename patterns if document types were fetched
+  if (documentTypes && documentTypes.length > 0) {
+    // For PDF files
+    if (extension === 'pdf') {
+      const pdfType = documentTypes.find(dt => 
+        dt.document_type.toLowerCase().includes('pdf') ||
+        dt.document_type.toLowerCase().includes('document')
+      );
+      
+      if (pdfType) {
+        documentType = pdfType.document_type;
+        documentTypeId = pdfType.id;
+      }
+    }
+    
+    // For transcripts
+    if (fileName.toLowerCase().includes('transcript')) {
+      const transcriptType = documentTypes.find(dt => 
+        dt.document_type.toLowerCase().includes('transcript')
+      );
+      
+      if (transcriptType) {
+        documentType = transcriptType.document_type;
+        documentTypeId = transcriptType.id;
+      }
+    }
   }
   
-  // Check if it's a transcript based on filename patterns
-  if (fileName.toLowerCase().includes('transcript')) {
-    documentType = 'presentation transcript';
-    documentTypeId = 'c1a7b78b-c61e-44a4-8b77-a27a38cbba7e';
+  // Check for large PDFs specifically to provide a better error message
+  let reasoningMessage = `Fallback classification created automatically due to API issues. Determined type based on filename "${fileName}" and extension "${extension}".`;
+  let summaryMessage = 'This document could not be analyzed by AI due to service connectivity issues. The classification is based on the file\'s metadata.';
+  
+  // For large PDFs, provide a more specific message
+  if (file.size && file.size > 10 * 1024 * 1024) {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    reasoningMessage = `Document is too large (${sizeMB}MB) for Claude's 10MB PDF limit. Classified based on filename "${fileName}" and extension "${extension}".`;
+    summaryMessage = `This document exceeds Claude's 10MB size limit for PDFs. Consider splitting the PDF into smaller parts for analysis or using a different approach for large documents.`;
   }
-  
-  // Create reasoning message
-  const reasoningMessage = `Fallback classification created automatically due to API issues. Determined type based on filename "${fileName}" and extension "${extension}".`;
-  const summaryMessage = 'This document could not be analyzed by AI due to service connectivity issues. The classification is based on the file\'s metadata.';
-  
+
   // Return a basic classification structure
   return {
     document_type: documentType,
@@ -62,7 +112,8 @@ function createFallbackClassification(file: any): any {
 async function processPdfFile(
   fileId: string,
   fileName: string,
-  debug: boolean = false
+  debug: boolean = false,
+  supabase: any = null
 ): Promise<{ classificationResult: any, tempFilePath: string | null }> {
   let tempFilePath: string | null = null;
   
@@ -71,8 +122,10 @@ async function processPdfFile(
       console.log(`Processing PDF file: ${fileName} (ID: ${fileId})`);
     }
     
-    // Get Supabase client
-    const supabase = SupabaseClientService.getInstance().getClient();
+    // Get Supabase client if not provided
+    if (!supabase) {
+      supabase = SupabaseClientService.getInstance().getClient();
+    }
     
     // Import auth service
     const { GoogleAuthService } = require('../../../packages/shared/services/google-drive/google-auth-service');
@@ -103,10 +156,29 @@ async function processPdfFile(
     
     const drive = google.drive({ version: 'v3', auth: authClient });
     
-    // 1. Get file metadata first to confirm it's a PDF
+    // 1. Get file metadata first to confirm it's a PDF and check size
     const file = await googleDriveService.getFile(fileId);
     if (debug) {
       console.log(`PDF file details: ${JSON.stringify(file, null, 2)}`);
+    }
+    
+    // Check file size before downloading
+    if (file && file.size) {
+      const fileSizeBytes = parseInt(file.size, 10);
+      const fileSizeMB = fileSizeBytes / (1024 * 1024);
+      
+      // Check if the file exceeds Claude's 10MB limit for PDFs
+      if (fileSizeBytes > 10 * 1024 * 1024) {
+        console.warn(`PDF file is too large (${fileSizeMB.toFixed(2)}MB). Claude has a 10MB limit for PDF files.`);
+        // Return a fallback classification for large files
+        return {
+          classificationResult: await createFallbackClassification(
+            { name: fileName, size: fileSizeBytes, drive_id: fileId },
+            supabase
+          ),
+          tempFilePath: null
+        };
+      }
     }
     
     // 2. Download the PDF file
@@ -211,6 +283,9 @@ async function processPdfFile(
             console.log(`Using direct PDF analysis with Claude (attempt ${retries + 1}/${maxRetries})`);
           }
           
+          // Always show that we're sending to Claude, regardless of debug mode
+          console.log(`Sending PDF to Claude API for analysis...`);
+          
           // Use Claude's direct PDF analysis capability
           classificationResult = await claudeService.analyzePdfToJson(
             tempFilePath,
@@ -221,8 +296,11 @@ async function processPdfFile(
             }
           );
           
+          // Always show success message
+          console.log(`✅ Successfully analyzed PDF content with Claude`);
+          
           if (debug) {
-            console.log(`Successfully analyzed PDF content directly with Claude`);
+            console.log(`Document type assigned: ${classificationResult.document_type || 'Unknown'}`);
           }
           
           // If we got here, the API call succeeded
@@ -304,17 +382,19 @@ async function processPdfFile(
               } catch (fallbackError) {
                 console.error(`Fallback classification also failed: ${fallbackError}`);
                 // Create a very basic fallback classification based on file metadata
-                classificationResult = createFallbackClassification({
-                  name: fileName || 'Unknown Document'
-                });
+                classificationResult = await createFallbackClassification(
+                  { name: fileName || 'Unknown Document', drive_id: fileId },
+                  supabase
+                );
               }
             }
           } else {
             // For other types of errors, don't retry
             console.error(`Non-retryable Claude API error: ${errorMessage}`);
-            classificationResult = createFallbackClassification({
-              name: fileName || 'Unknown Document'
-            });
+            classificationResult = await createFallbackClassification(
+              { name: fileName || 'Unknown Document', drive_id: fileId },
+              supabase
+            );
             break;
           }
         }
@@ -322,9 +402,10 @@ async function processPdfFile(
       
       if (!classificationResult) {
         // Just in case we didn't set it in the error handlers
-        classificationResult = createFallbackClassification({
-          name: fileName || 'Unknown Document'
-        });
+        classificationResult = await createFallbackClassification(
+          { name: fileName || 'Unknown Document', drive_id: fileId },
+          supabase
+        );
       }
       
       if (debug) {
@@ -344,9 +425,10 @@ async function processPdfFile(
     
     // If we failed but have a temporary file, return it for cleanup
     return {
-      classificationResult: createFallbackClassification({
-        name: fileName || 'Unknown Document'
-      }),
+      classificationResult: await createFallbackClassification(
+        { name: fileName || 'Unknown Document', drive_id: fileId },
+        supabase
+      ),
       tempFilePath
     };
   }
@@ -365,13 +447,59 @@ function cleanupTempFiles(filePaths: string[]): void {
   }
 }
 
-// Main classification function
+// Simple helper for running promises with concurrency control
+async function processWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  processor: (item: T, index: number) => Promise<R>,
+  progressCallback?: (current: number, total: number) => void
+): Promise<R[]> {
+  const results: R[] = [];
+  let currentIndex = 0;
+  const total = items.length;
+
+  // Process the next item in the queue
+  async function processNext(): Promise<void> {
+    const index = currentIndex++;
+    if (index >= total) return;
+
+    try {
+      const result = await processor(items[index], index);
+      results[index] = result; // Store the result at the correct index
+      
+      if (progressCallback) {
+        progressCallback(index + 1, total);
+      }
+
+      // Process the next item
+      await processNext();
+    } catch (error) {
+      console.error(`Error processing item at index ${index}:`, error);
+      // Even if there's an error, try to process the next item
+      await processNext();
+    }
+  }
+
+  // Start processing up to 'concurrency' items in parallel
+  const workers = [];
+  for (let i = 0; i < Math.min(concurrency, total); i++) {
+    workers.push(processNext());
+  }
+
+  // Wait for all workers to complete
+  await Promise.all(workers);
+  
+  return results;
+}
+
+// Main classification function with batch processing and concurrency
 async function classifyPdfDocuments(
   limit: number,
   folderId?: string,
   outputPath?: string,
   debug: boolean = false,
-  dryRun: boolean = false
+  dryRun: boolean = false,
+  concurrency: number = 3 // Default concurrency of 3
 ): Promise<any[]> {
   const tempFiles: string[] = [];
   
@@ -431,32 +559,45 @@ async function classifyPdfDocuments(
       throw new Error(`Error fetching PDF files: ${error.message}`);
     }
     
-    if (debug) {
-      console.log(`Found ${files?.length || 0} PDF files missing document types`);
-    }
+    console.log(`Found ${files?.length || 0} PDF files missing document types`);
     
     if (!files || files.length === 0) {
       return [];
     }
     
-    // 4. Process each file
-    const results = [];
-    for (const file of files) {
+    // Process files with concurrency
+    console.log(`Processing ${files.length} PDF files with concurrency of ${concurrency}`);
+    
+    // Process a single file
+    const processFile = async (file: any, index: number): Promise<any> => {
+      // Always show progress, regardless of debug mode
+      console.log(`Processing PDF file ${index+1}/${files.length}: ${file.name}`);
+      
       try {
         if (debug) {
-          console.log(`Processing PDF file: ${file.name} (${file.id})`);
+          console.log(`File details: ${file.name} (${file.id}, Drive ID: ${file.drive_id})`);
         }
         
         // Process the file
+        console.log(`[${index+1}/${files.length}] ⏳ Reading PDF content...`);
         const { classificationResult, tempFilePath } = await processPdfFile(
           file.drive_id,
           file.name || '',
-          debug
+          debug,
+          supabase
         );
         
         // Add any temporary files to cleanup list
         if (tempFilePath) {
           tempFiles.push(tempFilePath);
+        }
+        
+        // Show classification result regardless of debug mode
+        if (classificationResult && classificationResult.document_type) {
+          console.log(`[${index+1}/${files.length}] ✅ Classified as: ${classificationResult.document_type}`);
+          console.log(`[${index+1}/${files.length}] 📊 Confidence: ${(classificationResult.classification_confidence * 100).toFixed(1)}%`);
+        } else {
+          console.log(`[${index+1}/${files.length}] ❌ Classification failed`);
         }
         
         // Only update the database if not in dry run mode
@@ -535,13 +676,7 @@ async function classifyPdfDocuments(
           }
         }
         
-        // Add to results
-        results.push({
-          file,
-          result: classificationResult
-        });
-        
-        // Save results to output directory if specified
+        // Save individual result to output directory if specified
         if (outputPath && classificationResult) {
           const outputDir = path.dirname(outputPath);
           if (!fs.existsSync(outputDir)) {
@@ -556,17 +691,38 @@ async function classifyPdfDocuments(
             console.log(`Saved classification result to ${filePath}`);
           }
         }
+        
+        // Return successful result
+        return {
+          file,
+          result: classificationResult,
+          status: 'completed'
+        };
       } catch (error) {
         console.error(`Error processing file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         
-        // Add the error to results
-        results.push({
+        // Return error result
+        return {
           file,
           result: null,
+          status: 'failed',
           error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        };
       }
-    }
+    };
+    
+    // Process all files with concurrency
+    const results = await processWithConcurrency(
+      files,
+      concurrency,
+      processFile,
+      (current, total) => {
+        if (debug) {
+          const percentage = Math.round((current / total) * 100);
+          console.log(`Progress: ${percentage}% (${current}/${total})`);
+        }
+      }
+    );
     
     // Save combined results if output path specified
     if (outputPath && results.length > 0) {
@@ -601,6 +757,8 @@ async function classifyPdfDocuments(
   }
 }
 
+// Function definition removed since it's now integrated into the main classifyPdfDocuments function
+
 // Define CLI program
 program
   .name('classify-pdfs-with-service')
@@ -611,6 +769,7 @@ program
   .option('-v, --verbose', 'Enable verbose logging (includes debug)', false)
   .option('--dry-run', 'Process files but do not update database', false)
   .option('--folder-id <id>', 'Filter by Google Drive folder ID or folder name', '')
+  .option('-c, --concurrency <number>', 'Number of files to process concurrently (default: 3)', '3')
   .action(async (options) => {
     try {
       // Set debug mode if verbose is enabled
@@ -618,24 +777,34 @@ program
       const dryRun = options.dryRun;
       
       // Show header
-      console.log('='.repeat(50));
+      console.log('='.repeat(70));
       console.log('PDF DOCUMENT CLASSIFICATION WITH PROMPT SERVICE');
-      console.log('='.repeat(50));
-      console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
-      console.log(`Debug: ${debug ? 'ON' : 'OFF'}`);
+      console.log('='.repeat(70));
       
-      // Parse limit
+      // Parse limit and concurrency
       const limit = parseInt(options.limit, 10);
+      const concurrency = parseInt(options.concurrency, 10);
       
-      // Process files
-      console.log(`Processing up to ${limit} PDF files missing document types...`);
+      // Show detailed configuration
+      console.log(`Mode:              ${dryRun ? '🔍 DRY RUN (no database changes)' : '💾 LIVE (updating database)'}`);
+      console.log(`Debug logs:        ${debug ? '✅ ON' : '❌ OFF'}`);
+      console.log(`Concurrency:       ${concurrency} files at a time`);
+      console.log(`Max files:         ${limit}`);
+      console.log(`Folder filter:     ${options.folderId ? options.folderId : 'All folders'}`);
+      console.log(`Output file:       ${options.output ? options.output : 'None specified'}`);
+      console.log('-'.repeat(70));
+      console.log(`Using Claude API to analyze PDF content directly`);
+      console.log(`This may take some time, especially for large PDF files`);
+      console.log(`Each PDF will be processed one by one, with progress updates`);
+      console.log('='.repeat(70));
       
       const results = await classifyPdfDocuments(
         limit,
         options.folderId || '',
         options.output,
         debug,
-        dryRun
+        dryRun,
+        concurrency
       );
       
       // Show summary
@@ -673,13 +842,15 @@ export async function classifyPdfsWithService(options: {
   outputPath?: string;
   debug?: boolean;
   dryRun?: boolean;
+  concurrency?: number;
 }): Promise<any[]> {
   const {
     limit = 10,
     folderId = '',
     outputPath,
     debug = false,
-    dryRun = false
+    dryRun = false,
+    concurrency = 3
   } = options;
   
   return classifyPdfDocuments(
@@ -687,7 +858,8 @@ export async function classifyPdfsWithService(options: {
     folderId,
     outputPath,
     debug,
-    dryRun
+    dryRun,
+    concurrency
   );
 }
 

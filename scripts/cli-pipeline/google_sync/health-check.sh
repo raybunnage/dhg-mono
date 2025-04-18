@@ -29,6 +29,9 @@ mkdir -p "$LOG_DIR"
 echo "=== Google Drive CLI Pipeline Health Check - $TIMESTAMP ===" > "$LOG_FILE"
 echo "" >> "$LOG_FILE"
 
+# Initialize special command count variables
+COUNT_MP4_COMMAND=0
+
 # Commands that should be available
 COMMANDS=(
   "sync-and-update-metadata"
@@ -67,8 +70,11 @@ for cmd in "${COMMANDS[@]}"; do
   # Find command implementations in google-sync-cli.sh - directly check tracking  
   CMD_LIST+=("$cmd")
   
-  # We'll simplify and just check if track_command exists for this command with proper quoting
-  if grep -q "track_command \"$cmd\"" "$CLI_SH"; then
+  # Special case for classify-pdfs-with-service since it uses a variable for the command name
+  if [ "$cmd" = "classify-pdfs-with-service" ] && grep -q 'CMD_NAME="classify-pdfs-with-service"' "$CLI_SH"; then
+    STATUS_LIST+=("tracked")
+  # Check if track_command exists for this command with proper quoting
+  elif grep -q "track_command \"$cmd\"" "$CLI_SH"; then
     STATUS_LIST+=("tracked")
   else
     STATUS_LIST+=("untracked")
@@ -104,7 +110,7 @@ main() {
   # Check each command
   for cmd in "${COMMANDS[@]}"; do
     # Special case for count-mp4
-    if [ "$cmd" = "count-mp4" ] && [ "$COUNT_MP4_COMMAND" -gt 0 ]; then
+    if [ "$cmd" = "count-mp4" ] && [ -n "$COUNT_MP4_COMMAND" ] && [ "$COUNT_MP4_COMMAND" -gt 0 ]; then
       if [ "$VERBOSE" = true ]; then
         echo "✅ PASSED: Command $cmd is defined in google-sync-cli.sh" | tee -a "$LOG_FILE"
       else

@@ -534,6 +534,7 @@ program
   .option('-d, --debug', 'Show debug information', false)
   .option('--dry-run', 'Process files but do not update database', false)
   .option('--folder-id <id>', 'Filter by Google Drive folder ID or name')
+  .option('-c, --concurrency <number>', 'Number of files to process concurrently (default: 3)', '3')
   .action(async (options) => {
     try {
       console.log('Launching the PDF classification command via ts-node...');
@@ -550,6 +551,7 @@ program
       if (options.debug) cmd += ' --debug';
       if (options.dryRun) cmd += ' --dry-run';
       if (options.folderId) cmd += ` --folder-id "${options.folderId}"`;
+      if (options.concurrency) cmd += ` --concurrency ${options.concurrency}`;
       
       console.log(`Executing: ${cmd}`);
       
@@ -655,6 +657,288 @@ program
       });
     } catch (error) {
       console.error('Error executing test-prompt-service:', error);
+      process.exit(1);
+    }
+  });
+
+// Add show-expert-documents command
+program
+  .command('show-expert-documents')
+  .description('Generate a report of expert documents in the database')
+  .option('--limit <number>', 'Limit the number of records to show', '100')
+  .option('--output <path>', 'Path to write output to', 'docs/cli-pipeline/expert-documents-report.md')
+  .option('--verbose', 'Show detailed logs', false)
+  .option('--expert <name>', 'Filter by expert name')
+  .action(async (options) => {
+    try {
+      console.log('Launching show-expert-documents command...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'show-expert-documents.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+      if (options.output) cmd += ` --output "${options.output}"`;
+      if (options.verbose) cmd += ' --verbose';
+      if (options.expert) cmd += ` --expert "${options.expert}"`;
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing show-expert-documents:', error);
+      process.exit(1);
+    }
+  });
+
+// Add list-unclassified-files command
+program
+  .command('list-unclassified-files')
+  .description('List PDF and PowerPoint files without document types')
+  .option('--output <path>', 'Path to write output to', 'docs/cli-pipeline/unclassified_files.md')
+  .option('--verbose', 'Show detailed logs', false)
+  .option('--limit <number>', 'Limit the number of files to list', '100')
+  .action(async (options) => {
+    try {
+      console.log('Launching list-unclassified-files command...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'list-unclassified-files.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.output) cmd += ` --output "${options.output}"`;
+      if (options.verbose) cmd += ' --verbose';
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing list-unclassified-files:', error);
+      process.exit(1);
+    }
+  });
+
+// Add check-expert-doc command
+program
+  .command('check-expert-doc')
+  .description('Check the most recent expert document for proper content extraction')
+  .option('--id <id>', 'Specific document ID to check')
+  .option('--expert <name>', 'Filter by expert name')
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options) => {
+    try {
+      console.log('Launching check-expert-doc command...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'check-expert-doc.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.id) cmd += ` --id "${options.id}"`;
+      if (options.expert) cmd += ` --expert "${options.expert}"`;
+      if (options.verbose) cmd += ' --verbose';
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing check-expert-doc:', error);
+      process.exit(1);
+    }
+  });
+
+// Add fix-orphaned-docx command
+program
+  .command('fix-orphaned-docx')
+  .description('Fix DOCX files with document_type_id but no expert_documents records')
+  .option('--dry-run', 'Show what would be fixed without making changes', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .option('--limit <number>', 'Limit the number of files to process', '100')
+  .action(async (options) => {
+    try {
+      console.log('Launching fix-orphaned-docx command...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'fix-orphaned-docx.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.dryRun) cmd += ' --dry-run';
+      if (options.verbose) cmd += ' --verbose';
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing fix-orphaned-docx:', error);
+      process.exit(1);
+    }
+  });
+
+// Add remove-expert-docs-pdf-records command
+program
+  .command('remove-expert-docs-pdf-records')
+  .description('Remove expert_documents for PDF files with null document_type_id (incl. large PDFs)')
+  .option('--dry-run', 'Show what would be removed without making changes', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .option('--limit <number>', 'Limit the number of files to process', '50')
+  .action(async (options) => {
+    try {
+      console.log('Launching remove-expert-docs-pdf-records command...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'remove-expert-docs-pdf-records.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.dryRun) cmd += ' --dry-run';
+      if (options.verbose) cmd += ' --verbose';
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing remove-expert-docs-pdf-records:', error);
+      process.exit(1);
+    }
+  });
+
+// Add validate-pdf-classification command
+program
+  .command('validate-pdf-classification')
+  .description('Validate PDF classification results and generate a report')
+  .option('--limit <number>', 'Limit the number of files to validate', '10')
+  .option('--output <path>', 'Path to write output to', 'docs/cli-pipeline/pdf-validation-10-docs.md')
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options) => {
+    try {
+      console.log('Launching validate-pdf-classification command...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'validate-pdf-classification.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+      if (options.output) cmd += ` --output "${options.output}"`;
+      if (options.verbose) cmd += ' --verbose';
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing validate-pdf-classification:', error);
+      process.exit(1);
+    }
+  });
+
+// Add check-recent-updates command
+program
+  .command('check-recent-updates')
+  .description('Show recently updated files and their associated expert documents')
+  .option('--limit <number>', 'Limit the number of files to check', '10')
+  .option('--days <number>', 'Check files updated in the last n days', '7')
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options) => {
+    try {
+      console.log('Launching check-recent-updates command...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'check-recent-updates.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+      if (options.days) cmd += ` --days ${options.days}`;
+      if (options.verbose) cmd += ' --verbose';
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing check-recent-updates:', error);
       process.exit(1);
     }
   });
