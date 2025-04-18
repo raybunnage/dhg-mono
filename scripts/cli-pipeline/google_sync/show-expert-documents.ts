@@ -28,7 +28,13 @@ interface DocumentStats {
   sourcesWithDocTypeButNoExpertDocs: number;
   sourcesWithNoDocType: number;
   filesWithNoExpertDocs: number;
+  totalExpertDocs: number;
+  expertDocsWithDocType: number;
+  expertDocsWithoutDocType: number;
   byDocumentType: {
+    [key: string]: number;
+  };
+  expertDocsByDocType: {
     [key: string]: number;
   };
   byMimeType: {
@@ -42,6 +48,9 @@ interface DocumentStats {
     [key: string]: number;
   };
   unclassifiedMimeTypes: {
+    [key: string]: number;
+  };
+  expertDocsByMimeType: {
     [key: string]: number;
   };
 }
@@ -161,21 +170,60 @@ function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): s
     markdown += `| ${mimeType} | ${counts.total} | ${counts.withDocType} | ${counts.withoutDocType} | ${percentClassified}% |\n`;
   });
   
-  // Document types table
-  markdown += `\n## Expert Documents by Document Type\n\n`;
-  markdown += `| Document Type | Count | Percentage of Expert Docs |\n`;
-  markdown += `|--------------|-------|-------------------------|\n`;
+  // Expert Documents direct document type analysis
+  markdown += `\n## Expert Documents - Direct Document Type Analysis\n\n`;
+  markdown += `| Status | Count | Percentage |\n`;
+  markdown += `|--------|-------|------------|\n`;
+  markdown += `| Total Expert Documents | ${stats.totalExpertDocs} | 100% |\n`;
+  markdown += `| Expert Documents with Document Type | ${stats.expertDocsWithDocType} | ${Math.round(stats.expertDocsWithDocType / stats.totalExpertDocs * 1000) / 10}% |\n`;
+  markdown += `| Expert Documents without Document Type | ${stats.expertDocsWithoutDocType} | ${Math.round(stats.expertDocsWithoutDocType / stats.totalExpertDocs * 1000) / 10}% |\n`;
+  
+  // Expert Document types by MIME Type
+  markdown += `\n## Expert Documents by MIME Type\n\n`;
+  markdown += `| MIME Type | Count | Percentage |\n`;
+  markdown += `|-----------|-------|------------|\n`;
+  
+  // Sort expert docs by MIME type
+  const sortedExpertMimeTypes = Object.entries(stats.expertDocsByMimeType)
+    .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+  
+  for (const entry of sortedExpertMimeTypes) {
+    const mimeType = entry[0];
+    const count = entry[1];
+    const percentage = Math.round((count / stats.totalExpertDocs) * 1000) / 10;
+    markdown += `| ${mimeType} | ${count} | ${percentage}% |\n`;
+  }
+  
+  // Expert documents by direct document type
+  markdown += `\n## Expert Documents by Direct Document Type\n\n`;
+  markdown += `| Document Type | Count | Percentage |\n`;
+  markdown += `|--------------|-------|------------|\n`;
+  
+  // Sort expert doc types by count (descending)
+  const sortedExpertDocTypes = Object.entries(stats.expertDocsByDocType)
+    .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+  
+  for (const entry of sortedExpertDocTypes) {
+    const docType = entry[0];
+    const count = entry[1];
+    const percentage = Math.round((count / stats.totalExpertDocs) * 1000) / 10;
+    const cleanDocType = docType.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '');
+    markdown += `| ${cleanDocType} | ${count} | ${percentage}% |\n`;
+  }
+  
+  // Expert documents by source's document type (original way)
+  markdown += `\n## Expert Documents by Source's Document Type\n\n`;
+  markdown += `| Document Type | Count | Percentage |\n`;
+  markdown += `|--------------|-------|------------|\n`;
   
   // Sort document types by count (descending)
   const sortedTypes = Object.entries(stats.byDocumentType)
     .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
   
-  const totalExpertDocs = records.length; // This should be available in the function scope
-  
   for (const entry of sortedTypes) {
     const docType = entry[0];
     const count = entry[1];
-    const percentage = Math.round((count / totalExpertDocs) * 1000) / 10;
+    const percentage = Math.round((count / stats.totalExpertDocs) * 1000) / 10;
     // Ensure no UUID contaminates the document type or percentage
     const cleanDocType = docType.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '');
     markdown += `| ${cleanDocType} | ${count} | ${percentage}% |\n`;
@@ -294,7 +342,8 @@ async function showExpertDocuments() {
           raw_content,
           processed_content,
           source_id,
-          content_type
+          content_type,
+          processing_stats
         `)
         .limit(1000), // Add a reasonable limit to avoid timeouts
       'Fetch expert documents'
@@ -462,16 +511,37 @@ async function showExpertDocuments() {
       sourcesWithDocTypeButNoExpertDocs: sourcesWithDocTypeButNoExpertDocsCount,
       sourcesWithNoDocType: sourcesWithNoDocTypeCount,
       filesWithNoExpertDocs: totalFilesCount - sourcesWithExpertDocsCount,
+      totalExpertDocs: records.length,
+      expertDocsWithDocType: 0, // Will calculate shortly
+      expertDocsWithoutDocType: 0, // Will calculate shortly
       byDocumentType: {},
+      expertDocsByDocType: {},
       byMimeType: {},
       sourcesByDocumentType: {},
-      unclassifiedMimeTypes: {}
+      unclassifiedMimeTypes: {},
+      expertDocsByMimeType: {}
     };
     
-    // Count by document type
+    // Count by document type - both source-based and expert docs directly
     records.forEach((record: any) => {
-      const docType = record.sources_google?.document_type_name || 'Unknown';
-      stats.byDocumentType[docType] = (stats.byDocumentType[docType] || 0) + 1;
+      // Count by source document type (using sources_google)
+      const sourceDocType = record.sources_google?.document_type_name || 'Unknown';
+      stats.byDocumentType[sourceDocType] = (stats.byDocumentType[sourceDocType] || 0) + 1;
+      
+      // Count by expert document's own document_type_id (direct)
+      const expertDocType = record.document_type_id ? documentTypeMap.get(record.document_type_id) || 'Unknown Document Type' : 'No Document Type';
+      stats.expertDocsByDocType[expertDocType] = (stats.expertDocsByDocType[expertDocType] || 0) + 1;
+      
+      // Count by mime type
+      const mimeType = record.mime_type || 'Unknown MIME Type';
+      stats.expertDocsByMimeType[mimeType] = (stats.expertDocsByMimeType[mimeType] || 0) + 1;
+      
+      // Count expert docs with/without document type
+      if (record.document_type_id) {
+        stats.expertDocsWithDocType++;
+      } else {
+        stats.expertDocsWithoutDocType++;
+      }
     });
     
     // Get mime_type statistics
@@ -596,8 +666,47 @@ async function showExpertDocuments() {
       console.log(`${mimeType.padEnd(15)} | ${counts.total.toString().padStart(5)} | ${counts.withDocType.toString().padStart(12)} | ${counts.withoutDocType.toString().padStart(15)} | ${percentClassified}%`);
     }
     
-    console.log("\nEXPERT DOCUMENTS BY DOCUMENT TYPE");
-    console.log("=================================");
+    // Display expert document statistics
+    console.log("\nEXPERT DOCUMENTS DIRECT ANALYSIS");
+    console.log("===============================");
+    console.log(`Total Expert Documents: ${stats.totalExpertDocs}`);
+    console.log(`With Document Type: ${stats.expertDocsWithDocType} (${Math.round(stats.expertDocsWithDocType / stats.totalExpertDocs * 100)}%)`);
+    console.log(`Without Document Type: ${stats.expertDocsWithoutDocType} (${Math.round(stats.expertDocsWithoutDocType / stats.totalExpertDocs * 100)}%)`);
+    
+    // Display expert documents by MIME type
+    console.log("\nEXPERT DOCUMENTS BY MIME TYPE");
+    console.log("============================");
+    
+    const sortedExpertMimeTypes = Object.entries(stats.expertDocsByMimeType)
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+      
+    for (const entry of sortedExpertMimeTypes.slice(0, 15)) { // Show top 15
+      const mimeType = entry[0];
+      const count = entry[1];
+      const percentage = Math.round((count / stats.totalExpertDocs) * 100);
+      console.log(`${mimeType.padEnd(40)} | ${count.toString().padStart(5)} | ${percentage}%`);
+    }
+    if (sortedExpertMimeTypes.length > 15) {
+      console.log(`... and ${sortedExpertMimeTypes.length - 15} more MIME types`);
+    }
+    
+    // Display expert documents by direct document type
+    console.log("\nEXPERT DOCUMENTS BY DIRECT DOCUMENT TYPE");
+    console.log("=====================================");
+    
+    const sortedExpertDocTypes = Object.entries(stats.expertDocsByDocType)
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+      
+    for (const entry of sortedExpertDocTypes) {
+      const docType = entry[0];
+      const count = entry[1];
+      const percentage = Math.round((count / stats.totalExpertDocs) * 100);
+      console.log(`${docType.padEnd(40)} | ${count.toString().padStart(5)} | ${percentage}%`);
+    }
+    
+    // Display expert documents by source's document type (original way)
+    console.log("\nEXPERT DOCUMENTS BY SOURCE'S DOCUMENT TYPE");
+    console.log("========================================");
     
     const sortedDocTypes = Object.entries(stats.byDocumentType)
       .sort((a: [string, number], b: [string, number]) => b[1] - a[1]); // Sort by count descending
@@ -605,7 +714,8 @@ async function showExpertDocuments() {
     for (const entry of sortedDocTypes) {
       const docType = entry[0];
       const count = entry[1];
-      console.log(`${docType}: ${count}`);
+      const percentage = Math.round((count / stats.totalExpertDocs) * 100);
+      console.log(`${docType.padEnd(40)} | ${count.toString().padStart(5)} | ${percentage}%`);
     }
     
     // Display a sample of records (first 10)
@@ -621,8 +731,29 @@ async function showExpertDocuments() {
       
       console.log(`\n[${index + 1}] Expert Document Record:`);
       console.log(`  ID: ${record.id}`);
-      console.log(`  Document Type: ${documentTypeMap.get(record.document_type_id) || 'Not specified'}`);
+      // Show both source and direct document types
+      console.log(`  Document Type (direct): ${record.document_type_id ? documentTypeMap.get(record.document_type_id) || 'Unknown Type ID' : 'Not specified'}`);
+      console.log(`  Document Type (source): ${record.sources_google?.document_type_id ? documentTypeMap.get(record.sources_google.document_type_id) || 'Unknown Type ID' : 'Not specified'}`);
       console.log(`  MIME Type: ${record.mime_type || 'Not specified'}`);
+      
+      // Display processing stats - especially for m4a files showing main_video_id
+      if (record.processing_stats) {
+        console.log(`  Processing Stats:`);
+        try {
+          if (typeof record.processing_stats === 'string') {
+            const stats = JSON.parse(record.processing_stats);
+            Object.entries(stats).forEach(([key, value]) => {
+              console.log(`    - ${key}: ${JSON.stringify(value)}`);
+            });
+          } else {
+            Object.entries(record.processing_stats).forEach(([key, value]) => {
+              console.log(`    - ${key}: ${JSON.stringify(value)}`);
+            });
+          }
+        } catch (error) {
+          console.log(`    Error parsing processing_stats: ${record.processing_stats}`);
+        }
+      }
       
       // Display sentences from content
       console.log(`  Raw Content: ${getContentSentences(record.raw_content)}`);

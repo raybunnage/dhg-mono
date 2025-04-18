@@ -120,7 +120,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  check-duplicates             Check for duplicate files in sources_google"
   echo "  check-document-types         Check for files missing document types"
   echo "  report-main-video-ids        Report on video files for folders"
-  echo "  update-media-document-types  Update document_type_id for video/mp4 and audio/mp4 files"
+  echo "  update-media-document-types  Update document_type_id for media files and create expert_documents"
   echo "  show-expert-documents        Generate a report of expert documents in the database"
   echo "  list-unclassified-files      List PDF and PowerPoint files without document types"
   echo "  check-expert-doc             Check the most recent expert document for proper content extraction"
@@ -154,11 +154,14 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Show recently updated PDF files and their expert documents"
   echo "  ./google-sync-cli.sh check-recent-updates --limit 10"
   echo ""
-  echo "  # Update document types for media files"
+  echo "  # Update document types for media files and create expert_documents"
   echo "  ./google-sync-cli.sh update-media-document-types"
   echo ""
   echo "  # Preview media document type updates without making changes"
   echo "  ./google-sync-cli.sh update-media-document-types --dry-run"
+  echo ""
+  echo "  # Update document types but skip creating expert_documents"
+  echo "  ./google-sync-cli.sh update-media-document-types --skip-expert-docs"
   exit 0
 fi
 

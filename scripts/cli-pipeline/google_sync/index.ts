@@ -943,6 +943,46 @@ program
     }
   });
 
+// Add update-media-document-types command
+program
+  .command('update-media-document-types')
+  .description('Update document_type_id for media files and create corresponding expert_documents')
+  .option('--dry-run', 'Show what would be updated without making changes', false)
+  .option('--skip-expert-docs', 'Skip creating expert_documents', false)
+  .option('--batch-size <number>', 'Number of expert_documents to create in each batch', '50')
+  .action(async (options) => {
+    try {
+      console.log('Launching update-media-document-types command...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'update-media-document-types.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.dryRun) cmd += ' --dry-run';
+      if (options.skipExpertDocs) cmd += ' --skip-expert-docs';
+      if (options.batchSize) cmd += ` --batch-size ${options.batchSize}`;
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing update-media-document-types:', error);
+      process.exit(1);
+    }
+  });
+
 // Add more commands as needed
 
 // Parse command line arguments

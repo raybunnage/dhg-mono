@@ -65,9 +65,9 @@
 
 | Status | Count | Percentage of Files |
 |--------|-------|--------------------|
-| Sources with expert documents | 536 | 81.6% |
-| Sources with document type but no expert documents | 301 | 45.8% |
-| Files with no expert documents | 121 | 18.4% |
+| Sources with expert documents | 688 | 104.7% |
+| Sources with document type but no expert documents | 149 | 22.7% |
+| Files with no expert documents | -31 | -4.7% |
 
 ## MIME Type Breakdown
 
@@ -90,45 +90,116 @@
 | application/octet-stream | 1 | 1 | 0 | 100% |
 | video/mpeg | 1 | 1 | 0 | 100% |
 
-## Expert Documents by Document Type
+## Expert Documents - Direct Document Type Analysis
 
-| Document Type | Count | Percentage of Expert Docs |
-|--------------|-------|-------------------------|
-| video mpeg | 112 | 20.9% |
-| Presentation Announcement | 94 | 17.5% |
-| research article | 91 | 17% |
-| Chat Log | 50 | 9.3% |
-| Unknown | 30 | 5.6% |
-| review article | 23 | 4.3% |
-| email correspondence | 21 | 3.9% |
-| journal article | 15 | 2.8% |
-| presentation transcript | 12 | 2.2% |
-| dicussion transcript | 12 | 2.2% |
-| professional biography | 9 | 1.7% |
-| report | 8 | 1.5% |
-| web news article | 7 | 1.3% |
-| curriculum vitae | 6 | 1.1% |
-| url blog post | 6 | 1.1% |
-| website | 5 | 0.9% |
-| Code Documentation Markdown | 4 | 0.7% |
-| essay | 4 | 0.7% |
-| letter | 3 | 0.6% |
-| editorial | 3 | 0.6% |
-| low level folder | 2 | 0.4% |
-| magazine article | 2 | 0.4% |
-| book | 2 | 0.4% |
-| new work summary | 2 | 0.4% |
-| unknown document type | 2 | 0.4% |
-| word document | 2 | 0.4% |
-| preprint | 1 | 0.2% |
-| high level folder | 1 | 0.2% |
-| correction | 1 | 0.2% |
-| powerpoint document | 1 | 0.2% |
-| mp4 video | 1 | 0.2% |
-| letter to the editor | 1 | 0.2% |
-| pdf document | 1 | 0.2% |
-| Deployment Script | 1 | 0.2% |
-| science meeting discussion | 1 | 0.2% |
+| Status | Count | Percentage |
+|--------|-------|------------|
+| Total Expert Documents | 688 | 100% |
+| Expert Documents with Document Type | 682 | 99.1% |
+| Expert Documents without Document Type | 6 | 0.9% |
+
+## Expert Documents by MIME Type
+
+| MIME Type | Count | Percentage |
+|-----------|-------|------------|
+| application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 27.8% |
+| application/pdf | 151 | 21.9% |
+| video/mp4 | 116 | 16.9% |
+| audio/x-m4a | 92 | 13.4% |
+| text/plain | 64 | 9.3% |
+| Unknown MIME Type | 30 | 4.4% |
+| application/vnd.openxmlformats-officedocument.presentationml.presentation | 25 | 3.6% |
+| application/vnd.google-apps.document | 4 | 0.6% |
+| image/jpeg | 3 | 0.4% |
+| application/msword | 2 | 0.3% |
+| text/html | 2 | 0.3% |
+| application/vnd.ms-powerpoint | 2 | 0.3% |
+| audio/x-mpegurl | 2 | 0.3% |
+| audio/mpeg | 1 | 0.1% |
+| application/octet-stream | 1 | 0.1% |
+| application/vnd.google-apps.folder | 1 | 0.1% |
+| video/mpeg | 1 | 0.1% |
+
+## Expert Documents by Direct Document Type
+
+| Document Type | Count | Percentage |
+|--------------|-------|------------|
+| Video Summary Transcript | 143 | 20.8% |
+| low level folder | 128 | 18.6% |
+| Presentation Announcement | 100 | 14.5% |
+| research article | 91 | 13.2% |
+| Chat Log | 50 | 7.3% |
+| dicussion transcript | 27 | 3.9% |
+| review article | 23 | 3.3% |
+| email correspondence | 19 | 2.8% |
+| journal article | 15 | 2.2% |
+| presentation transcript | 11 | 1.6% |
+| report | 8 | 1.2% |
+| professional biography | 8 | 1.2% |
+| web news article | 7 | 1% |
+| No Document Type | 6 | 0.9% |
+| url blog post | 6 | 0.9% |
+| curriculum vitae | 5 | 0.7% |
+| website | 5 | 0.7% |
+| video mpeg | 4 | 0.6% |
+| Code Documentation Markdown | 4 | 0.6% |
+| essay | 4 | 0.6% |
+| letter | 3 | 0.4% |
+| editorial | 3 | 0.4% |
+| magazine article | 2 | 0.3% |
+| book | 2 | 0.3% |
+| unknown document type | 2 | 0.3% |
+| word document | 2 | 0.3% |
+| high level folder | 1 | 0.1% |
+| preprint | 1 | 0.1% |
+| new work summary | 1 | 0.1% |
+| correction | 1 | 0.1% |
+| powerpoint document | 1 | 0.1% |
+| mp4 video | 1 | 0.1% |
+| letter to the editor | 1 | 0.1% |
+| pdf document | 1 | 0.1% |
+| Deployment Script | 1 | 0.1% |
+| science meeting discussion | 1 | 0.1% |
+
+## Expert Documents by Source's Document Type
+
+| Document Type | Count | Percentage |
+|--------------|-------|------------|
+| low level folder | 130 | 18.9% |
+| video mpeg | 116 | 16.9% |
+| Presentation Announcement | 94 | 13.7% |
+| research article | 91 | 13.2% |
+| Chat Log | 50 | 7.3% |
+| Unknown | 34 | 4.9% |
+| dicussion transcript | 27 | 3.9% |
+| review article | 23 | 3.3% |
+| email correspondence | 21 | 3.1% |
+| journal article | 15 | 2.2% |
+| presentation transcript | 12 | 1.7% |
+| professional biography | 9 | 1.3% |
+| report | 8 | 1.2% |
+| web news article | 7 | 1% |
+| curriculum vitae | 6 | 0.9% |
+| url blog post | 6 | 0.9% |
+| website | 5 | 0.7% |
+| Code Documentation Markdown | 4 | 0.6% |
+| essay | 4 | 0.6% |
+| letter | 3 | 0.4% |
+| editorial | 3 | 0.4% |
+| high level folder | 2 | 0.3% |
+| magazine article | 2 | 0.3% |
+| book | 2 | 0.3% |
+| new work summary | 2 | 0.3% |
+| unknown document type | 2 | 0.3% |
+| word document | 2 | 0.3% |
+| preprint | 1 | 0.1% |
+| correction | 1 | 0.1% |
+| powerpoint document | 1 | 0.1% |
+| mp4 video | 1 | 0.1% |
+| letter to the editor | 1 | 0.1% |
+| pdf document | 1 | 0.1% |
+| Deployment Script | 1 | 0.1% |
+| science meeting discussion | 1 | 0.1% |
 
 ## Sample Expert Documents
 
@@ -377,43 +448,19 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 
 ---
 
-### 10. Wager.Intro.Networks.Intro.6.17.20.mp4 (video mpeg)
+### 10. NP.6.24.20.m4a (low level folder)
 
-- ID: `2c7e221f-7c59-4cb5-bdea-da3cbaa24f62`
-- MIME Type: video/mp4
-- Source ID: `f5c33cbb-c49e-4d70-9333-9f6f56ee722a`
+- ID: `83ca23a3-846b-4057-95ea-e0ce5ddada01`
+- MIME Type: audio/x-m4a
+- Source ID: `287e6dc6-aee0-4c37-af21-f9f1e9e2725e`
 
 **Raw Content Preview:**
 
-> last time when they look sort of, you know, from a different direction top down, functional MRI stuff. The play, the story that unfolds for me sort of in front of me in the clinic that I feel like I see in my mind doesn't always add up on functional MRI.
+> Not available
 
 **Processed Content Preview:**
 
-> # Summary: Recent Breakthroughs in Alzheimer's Disease Research
-
-## Introduction
-The presentation highlighted significant advances in understanding the pathophysiology, diagnosis, and treatment of Alzheimer's disease (AD), emphasizing how these developments are reshaping clinical approaches. ## Key Pathophysiological Insights
-- **Amyloid and Tau Relationship**: New evidence confirms the "amyloid cascade hypothesis" with refined understanding of how amyloid-beta accumulation triggers tau pathology through specific molecular pathways
-- **Neuroinflammatory Mechanisms**: Research revealed the critical role of microglial activation in disease progression, identifying TREM2 and CD33 as key regulatory proteins
-- **Vascular Contributions**: Studies demonstrated that cerebrovascular dysfunction accelerates cognitive decline, suggesting integrated treatment approaches
-
-## Diagnostic Advancements
-- **Blood-Based Biomarkers**: Plasma p-tau217 and p-tau181 demonstrated 94% accuracy in detecting AD pathology, potentially reducing reliance on costly PET imaging
-- **Digital Biomarkers**: AI-powered speech and movement analysis tools showed promise for early detection, with 88% sensitivity in identifying pre-symptomatic cases
-- **Enhanced Neuroimaging**: New PET tracers specifically targeting tau tangles enable visualization of disease progression patterns
-
-## Therapeutic Breakthroughs
-- **Anti-Amyloid Monoclonal Antibodies**: Lecanemab and donanemab showed significant amyloid plaque reduction (70-80%) with modest cognitive benefits in early-stage disease
-- **Tau-Targeting Approaches**: Phase II trials of tau aggregation inhibitors demonstrated 28% reduction in disease progression
-- **Combination Therapies**: Multi-target approaches addressing both pathology and symptoms showed superior outcomes compared to monotherapies
-
-## Emerging Research Directions
-- **Gut-Brain Axis**: Microbiome alterations correlate with AD progression, opening avenues for dietary interventions
-- **Lifestyle Interventions**: The FINGER study demonstrated that multi-domain lifestyle modifications reduced cognitive decline by up to 25%
-- **Precision Medicine**: Genetic profiling enables tailored treatment approaches based on individual risk factors
-
-## Clinical Implications
-The presentation concluded that these advances are transforming AD from a hopeless diagnosis to a manageable condition, emphasizing the importance of early intervention and comprehensive care approaches..
+> Not available
 
 ---
 
