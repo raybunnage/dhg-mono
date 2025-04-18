@@ -31,6 +31,13 @@ interface DocumentStats {
   byDocumentType: {
     [key: string]: number;
   };
+  byMimeType: {
+    [key: string]: {
+      total: number;
+      withDocType: number;
+      withoutDocType: number;
+    }
+  };
 }
 
 /**
@@ -97,6 +104,22 @@ function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): s
   if (total !== stats.totalFiles) {
     markdown += `\n> Note: There might be some overlap in the counts above\n\n`;
   }
+  
+  // MIME Type Breakdown
+  markdown += `\n## MIME Type Breakdown\n\n`;
+  markdown += `| MIME Type | Total Files | With Document Type | Without Document Type | % Classified |\n`;
+  markdown += `|-----------|-------------|-------------------|----------------------|-------------|\n`;
+  
+  // Sort mime types by total count (descending)
+  const sortedMimeTypes = Object.entries(stats.byMimeType)
+    .sort((a, b) => b[1].total - a[1].total);
+  
+  sortedMimeTypes.forEach(([mimeType, counts]) => {
+    const percentClassified = counts.total > 0 
+      ? Math.round((counts.withDocType / counts.total) * 100) 
+      : 0;
+    markdown += `| ${mimeType} | ${counts.total} | ${counts.withDocType} | ${counts.withoutDocType} | ${percentClassified}% |\n`;
+  });
   
   // Document types table
   markdown += `\n## Expert Documents by Document Type\n\n`;
@@ -314,7 +337,8 @@ async function showExpertDocuments() {
       sourcesWithDocTypeButNoExpertDocs: sourcesWithDocTypeButNoExpertDocsCount,
       sourcesWithNoDocType: sourcesWithNoDocTypeCount,
       filesWithNoExpertDocs: totalFilesCount - sourcesWithExpertDocsCount,
-      byDocumentType: {}
+      byDocumentType: {},
+      byMimeType: {}
     };
     
     // Count by document type
@@ -322,6 +346,44 @@ async function showExpertDocuments() {
       const docType = record.sources_google?.document_type_name || 'Unknown';
       stats.byDocumentType[docType] = (stats.byDocumentType[docType] || 0) + 1;
     });
+    
+    // Get mime_type statistics
+    try {
+      // Get all sources_google records to analyze mime_types
+      const { data: allSourcesGoogle, error: allSourcesError } = await supabase
+        .from('sources_google')
+        .select('id, mime_type, document_type_id')
+        .eq('is_deleted', false);
+        
+      if (allSourcesError) {
+        console.warn("Error fetching all sources_google for mime_type analysis:", allSourcesError.message);
+      } else if (allSourcesGoogle) {
+        // Process each record to build mime_type statistics
+        allSourcesGoogle.forEach(source => {
+          const mimeType = source.mime_type || 'unknown';
+          
+          // Initialize mime_type entry if it doesn't exist
+          if (!stats.byMimeType[mimeType]) {
+            stats.byMimeType[mimeType] = {
+              total: 0,
+              withDocType: 0,
+              withoutDocType: 0
+            };
+          }
+          
+          // Increment counts
+          stats.byMimeType[mimeType].total++;
+          
+          if (source.document_type_id) {
+            stats.byMimeType[mimeType].withDocType++;
+          } else {
+            stats.byMimeType[mimeType].withoutDocType++;
+          }
+        });
+      }
+    } catch (error) {
+      console.warn("Error analyzing mime_types:", error instanceof Error ? error.message : String(error));
+    }
     
     // Display summary statistics
     console.log("\nSOURCES GOOGLE SUMMARY");
@@ -338,6 +400,23 @@ async function showExpertDocuments() {
     console.log(`Sources with expert documents: ${stats.sourcesWithExpertDocs}`);
     console.log(`Sources with document type but no expert documents: ${stats.sourcesWithDocTypeButNoExpertDocs}`);
     console.log(`Files with no expert documents: ${stats.filesWithNoExpertDocs}`);
+    
+    // Display mime type breakdown
+    console.log("\nMIME TYPE BREAKDOWN");
+    console.log("==================");
+    console.log("MIME Type | Total | With Doc Type | Without Doc Type | % Classified");
+    console.log("---------|-------|--------------|-----------------|------------");
+    
+    // Sort mime types by total count descending
+    Object.entries(stats.byMimeType)
+      .sort((a, b) => b[1].total - a[1].total)
+      .forEach(([mimeType, counts]) => {
+        const percentClassified = counts.total > 0 
+          ? Math.round((counts.withDocType / counts.total) * 100) 
+          : 0;
+        console.log(`${mimeType.padEnd(15)} | ${counts.total.toString().padStart(5)} | ${counts.withDocType.toString().padStart(12)} | ${counts.withoutDocType.toString().padStart(15)} | ${percentClassified}%`);
+      });
+    
     console.log("\nEXPERT DOCUMENTS BY DOCUMENT TYPE");
     console.log("=================================");
     

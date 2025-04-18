@@ -78,6 +78,8 @@
     "googleapis": "^148.0.0",
     "mammoth": "^1.9.0",
     "node-fetch": "^3.3.2",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.1.91",
     "uuid": "^11.1.0"
   }
 }

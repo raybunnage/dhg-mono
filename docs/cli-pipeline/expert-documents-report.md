@@ -12,28 +12,50 @@
 
 | Status | Count | Percentage of Total |
 |--------|-------|--------------------|
-| Sources with document type | 259 | 30.9% |
-| Sources without document type | 578 | 69.1% |
+| Sources with document type | 271 | 32.4% |
+| Sources without document type | 566 | 67.6% |
 
 ## Expert Documents Status
 
 | Status | Count | Percentage of Files |
 |--------|-------|--------------------|
-| Sources with expert documents | 389 | 59.2% |
+| Sources with expert documents | 399 | 60.7% |
 | Sources with document type but no expert documents | 0 | 0% |
-| Files with no expert documents | 268 | 40.8% |
+| Files with no expert documents | 258 | 39.3% |
+
+## MIME Type Breakdown
+
+| MIME Type | Total Files | With Document Type | Without Document Type | % Classified |
+|-----------|-------------|-------------------|----------------------|-------------|
+| application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 191 | 0 | 100% |
+| application/vnd.google-apps.folder | 180 | 0 | 180 | 0% |
+| application/pdf | 151 | 12 | 139 | 8% |
+| video/mp4 | 116 | 0 | 116 | 0% |
+| audio/x-m4a | 92 | 0 | 92 | 0% |
+| text/plain | 64 | 64 | 0 | 100% |
+| application/vnd.openxmlformats-officedocument.presentationml.presentation | 25 | 0 | 25 | 0% |
+| application/vnd.google-apps.document | 4 | 4 | 0 | 100% |
+| image/jpeg | 3 | 0 | 3 | 0% |
+| audio/x-mpegurl | 2 | 0 | 2 | 0% |
+| text/html | 2 | 0 | 2 | 0% |
+| application/msword | 2 | 0 | 2 | 0% |
+| application/vnd.ms-powerpoint | 2 | 0 | 2 | 0% |
+| application/octet-stream | 1 | 0 | 1 | 0% |
+| audio/mpeg | 1 | 0 | 1 | 0% |
+| video/mpeg | 1 | 0 | 1 | 0% |
 
 ## Expert Documents by Document Type
 
 | Document Type | Count | Percentage of Expert Docs |
 |--------------|-------|-------------------------|
-| Unknown | 145 | 37.3% |
-| Presentation Announcement | 93 | 23.9% |
-| Chat Log | 48 | 12.3% |
-| email correspondence | 21 | 5.4% |
-| dicussion transcript | 12 | 3.1% |
-| journal article | 10 | 2.6% |
-| presentation transcript | 8 | 2.1% |
+| Unknown | 145 | 36.3% |
+| Presentation Announcement | 93 | 23.3% |
+| Chat Log | 48 | 12% |
+| email correspondence | 21 | 5.3% |
+| dicussion transcript | 12 | 3% |
+| journal article | 10 | 2.5% |
+| presentation transcript | 9 | 2.3% |
+| research article | 9 | 2.3% |
 | web news article | 7 | 1.8% |
 | report | 6 | 1.5% |
 | url blog post | 6 | 1.5% |
@@ -45,11 +67,11 @@
 | new work summary | 2 | 0.5% |
 | unknown document type | 2 | 0.5% |
 | word document | 2 | 0.5% |
-| research article | 1 | 0.3% |
 | mp4 video | 1 | 0.3% |
 | editorial | 1 | 0.3% |
 | pdf document | 1 | 0.3% |
 | Deployment Script | 1 | 0.3% |
+| review article | 1 | 0.3% |
 | science meeting discussion | 1 | 0.3% |
 
 ## Sample Expert Documents

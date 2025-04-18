@@ -15,7 +15,7 @@
 #   list-unclassified-files      List PDF and PowerPoint files without document types
 #   check-expert-doc             Check the most recent expert document for proper content extraction
 #   fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records
-#   remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id
+#   remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id (incl. large PDFs)
 #   help                         Show this help message
 
 # Get the directory of this script

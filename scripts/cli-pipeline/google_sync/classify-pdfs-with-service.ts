@@ -22,7 +22,6 @@ const CLASSIFICATION_PROMPT = 'scientific-document-analysis-prompt';
 function createFallbackClassification(file: any): any {
   const fileName = file.name || 'Unknown Document';
   const extension = fileName.split('.').pop()?.toLowerCase() || '';
-  
   // Determine document type based on file extension and name
   let documentType = 'unknown document type';
   let documentTypeId = '9dbe32ff-5e82-4586-be63-1445e5bcc548'; // ID for unknown document type
@@ -39,13 +38,17 @@ function createFallbackClassification(file: any): any {
     documentTypeId = 'c1a7b78b-c61e-44a4-8b77-a27a38cbba7e';
   }
   
+  // Create reasoning message
+  const reasoningMessage = `Fallback classification created automatically due to API issues. Determined type based on filename "${fileName}" and extension "${extension}".`;
+  const summaryMessage = 'This document could not be analyzed by AI due to service connectivity issues. The classification is based on the file\'s metadata.';
+  
   // Return a basic classification structure
   return {
     document_type: documentType,
     document_type_id: documentTypeId,
     classification_confidence: 0.6, // Lower confidence for fallback
-    classification_reasoning: `Fallback classification created automatically due to API issues. Determined type based on filename "${fileName}" and extension "${extension}".`,
-    document_summary: `This document could not be analyzed by AI due to service connectivity issues. The classification is based on the file's metadata.`,
+    classification_reasoning: reasoningMessage,
+    document_summary: summaryMessage,
     key_topics: ['File analysis unavailable'],
     target_audience: 'Unknown (automatic classification)',
     unique_insights: [
@@ -239,7 +242,8 @@ async function processPdfFile(
                                  errorMessage.includes('too many requests') ||
                                  errorMessage.includes('rate limit') ||
                                  errorMessage.includes('Overloaded');
-          
+                                 
+          // Check if it's a connection or rate-limiting error
           if (isConnectionError || isRateLimitError) {
             // These errors are retryable
             console.warn(`Claude API connection error (retry ${retries}/${maxRetries}): ${errorMessage}`);

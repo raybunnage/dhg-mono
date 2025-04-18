@@ -4,6 +4,11 @@
  * 
  * This script identifies expert_documents records that reference sources_google entries
  * with mime_type = 'application/pdf' and null document_type_id, then deletes those expert_documents.
+ * 
+ * This is especially useful for cleaning up records after encountering the 100-page limit error
+ * with Claude's PDF processing. When a PDF exceeds 100 pages, Claude will return an error,
+ * but the script may have already created an expert_document record. This script cleans
+ * those up so they can be processed using metadata-based classification methods.
  */
 
 import { Command } from 'commander';
