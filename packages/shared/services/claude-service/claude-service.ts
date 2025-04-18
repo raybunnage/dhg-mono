@@ -8,8 +8,10 @@
 import axios, { AxiosInstance } from 'axios';
 import { config, Logger } from '../../utils';
 import * as fs from 'fs';
-// Skip PDF.js import for now since we're having compatibility issues
-// We'll let Claude API handle PDF content and page limits directly
+import * as path from 'path';
+// Import pdf-lib for PDF manipulation (splitPdfFirstChunk)
+// pdf-lib is compatible with Node.js environments
+import { PDFDocument } from 'pdf-lib';
 
 /**
  * Claude API response structure
@@ -610,16 +612,15 @@ export class ClaudeService {
    */
   public async splitPdfFirstChunk(pdfPath: string, maxPages: number = 99): Promise<string> {
     try {
-      // First check if the PDF actually needs splitting
-      const pageCount = await this.getPdfPageCount(pdfPath);
+      // Estimate page count based on file size
+      const estimatedPages = await this.getPdfPageCount(pdfPath);
       
-      if (pageCount <= maxPages) {
-        Logger.debug(`PDF ${pdfPath} has ${pageCount} pages and does not need splitting`);
+      if (estimatedPages <= maxPages) {
+        Logger.debug(`PDF ${pdfPath} has estimated ${estimatedPages} pages and does not need splitting`);
         return pdfPath; // No need to split
       }
       
-      // We'll use the pdf-lib package for splitting
-      const { PDFDocument } = require('pdf-lib');
+      Logger.info(`PDF ${pdfPath} has estimated ${estimatedPages} pages which exceeds the limit of ${maxPages}. Splitting PDF...`);
       
       // Create output path for the split PDF
       const parsedPath = path.parse(pdfPath);
@@ -628,34 +629,46 @@ export class ClaudeService {
         `${parsedPath.name}_first${maxPages}pages${parsedPath.ext}`
       );
       
-      Logger.debug(`Splitting PDF ${pdfPath} (${pageCount} pages) to first ${maxPages} pages...`);
-      
-      // Load the PDF
+      // Read the PDF file
       const pdfBytes = fs.readFileSync(pdfPath);
+      
+      // Load the PDF document
       const sourcePdf = await PDFDocument.load(pdfBytes);
+      const totalPageCount = sourcePdf.getPageCount();
+      
+      // More accurate page count now that we have the document loaded
+      if (totalPageCount <= maxPages) {
+        Logger.debug(`PDF actually has ${totalPageCount} pages and does not need splitting`);
+        return pdfPath; // No need to split
+      }
       
       // Create a new PDF document
       const newPdf = await PDFDocument.create();
       
       // Copy the first N pages to the new document
-      const pagesToCopy = Math.min(pageCount, maxPages);
-      const copiedPages = await newPdf.copyPages(
-        sourcePdf, 
-        Array.from({ length: pagesToCopy }, (_, i) => i)
-      );
+      const pagesToCopy = Math.min(totalPageCount, maxPages);
       
-      // Add the copied pages to the new document
-      copiedPages.forEach(page => newPdf.addPage(page));
+      // Copy pages one by one
+      for (let i = 0; i < pagesToCopy; i++) {
+        try {
+          const [copiedPage] = await newPdf.copyPages(sourcePdf, [i]);
+          newPdf.addPage(copiedPage);
+        } catch (pageError) {
+          Logger.warn(`Error copying page ${i}: ${pageError}`);
+          // Continue with other pages
+        }
+      }
       
       // Save the new PDF document
       const newPdfBytes = await newPdf.save();
       fs.writeFileSync(outputPath, newPdfBytes);
       
-      Logger.debug(`Successfully split PDF. New file at ${outputPath} with ${pagesToCopy} pages`);
+      Logger.info(`Successfully split PDF. New file at ${outputPath} with ${pagesToCopy} pages`);
       return outputPath;
     } catch (error) {
-      Logger.error(`Error splitting PDF: ${error}`);
-      throw new Error(`Failed to split PDF: ${error instanceof Error ? error.message : String(error)}`);
+      Logger.error(`Error in PDF splitting: ${error instanceof Error ? error.message : String(error)}`);
+      Logger.warn('Falling back to using original PDF file');
+      return pdfPath; // Return original path on error
     }
   }
 
@@ -685,32 +698,31 @@ export class ClaudeService {
     }
     
     try {
-      // First check PDF file size - Claude has a 10MB limit for binary attachments
-      const stats = fs.statSync(pdfPath);
+      // Check if the PDF is too large (by page count) and split if necessary
+      const estimatedPages = await this.getPdfPageCount(pdfPath);
+      let pdfPathToUse = pdfPath;
+      
+      // If the PDF might exceed Claude's page limit, split it to first 99 pages
+      if (estimatedPages > 99) {
+        Logger.warn(`PDF has approximately ${estimatedPages} pages which may exceed Claude's limit. Splitting...`);
+        pdfPathToUse = await this.splitPdfFirstChunk(pdfPath, 99);
+        Logger.info(`Using split PDF: ${pdfPathToUse}`);
+      }
+      
+      // Now check the file size - Claude has a 10MB limit for binary attachments
+      const stats = fs.statSync(pdfPathToUse);
       const fileSizeInMB = stats.size / (1024 * 1024);
       
       if (fileSizeInMB > 10) {
         throw new Error(`PDF file is too large (${fileSizeInMB.toFixed(2)}MB). Claude has a 10MB limit for PDF files.`);
       }
       
-      // Check PDF page count - Claude has a 100-page limit
-      const pageCount = await this.getPdfPageCount(pdfPath);
-      let pathToAnalyze = pdfPath;
+      // We've already handled page count and splitting above
+      let pathToAnalyze = pdfPathToUse;
       
-      // If PDF exceeds page limit, split it and use the first 99 pages
-      if (pageCount > 100) {
-        Logger.info(`PDF has ${pageCount} pages which exceeds Claude's 100-page limit. Splitting to use first 99 pages.`);
-        try {
-          // Split the PDF and get path to the first chunk
-          pathToAnalyze = await this.splitPdfFirstChunk(pdfPath, 99);
-          Logger.info(`Successfully split PDF. Using first 99 pages for analysis.`);
-          
-          // Add a note to the prompt about using only the first 99 pages
-          prompt = `${prompt}\n\nNote: This PDF has ${pageCount} total pages, but due to API limitations, only the first 99 pages are being analyzed.`;
-        } catch (splitError) {
-          Logger.error(`Failed to split large PDF: ${splitError}`);
-          throw new Error(`PDF has ${pageCount} pages which exceeds Claude's 100-page limit, and splitting failed: ${splitError instanceof Error ? splitError.message : String(splitError)}`);
-        }
+      // If we're using a split PDF, add a note to the prompt
+      if (pathToAnalyze !== pdfPath) {
+        prompt = `${prompt}\n\nNote: This PDF has approximately ${estimatedPages} total pages, but due to API limitations, only the first 99 pages are being analyzed.`;
       }
       
       // Encode PDF as base64 - use the potentially split PDF path
