@@ -24,6 +24,12 @@ async function createFallbackClassification(file: any, supabase: any): Promise<a
   const fileName = file.name || 'Unknown Document';
   const extension = fileName.split('.').pop()?.toLowerCase() || '';
 
+  // Define a document type interface to use for typing
+  interface DocumentType {
+    id: string;
+    document_type: string;
+  }
+
   // Fetch valid document types from the database to ensure we use an existing ID
   const { data: documentTypes, error } = await supabase
     .from('document_types')
@@ -39,7 +45,7 @@ async function createFallbackClassification(file: any, supabase: any): Promise<a
   let documentTypeId = '';
 
   // Find the unknown document type ID from the fetched document types
-  const unknownType = documentTypes?.find(dt => 
+  const unknownType = documentTypes?.find((dt: DocumentType) => 
     dt.document_type.toLowerCase() === 'unknown document type' ||
     dt.document_type.toLowerCase() === 'unknown' ||
     dt.document_type.toLowerCase().includes('unclassified')
@@ -57,7 +63,7 @@ async function createFallbackClassification(file: any, supabase: any): Promise<a
   if (documentTypes && documentTypes.length > 0) {
     // For PDF files
     if (extension === 'pdf') {
-      const pdfType = documentTypes.find(dt => 
+      const pdfType = documentTypes.find((dt: DocumentType) => 
         dt.document_type.toLowerCase().includes('pdf') ||
         dt.document_type.toLowerCase().includes('document')
       );
@@ -70,7 +76,7 @@ async function createFallbackClassification(file: any, supabase: any): Promise<a
     
     // For transcripts
     if (fileName.toLowerCase().includes('transcript')) {
-      const transcriptType = documentTypes.find(dt => 
+      const transcriptType = documentTypes.find((dt: DocumentType) => 
         dt.document_type.toLowerCase().includes('transcript')
       );
       
@@ -169,7 +175,15 @@ async function processPdfFile(
       
       // Check if the file exceeds Claude's 10MB limit for PDFs
       if (fileSizeBytes > 10 * 1024 * 1024) {
-        console.warn(`PDF file is too large (${fileSizeMB.toFixed(2)}MB). Claude has a 10MB limit for PDF files.`);
+        // Use a more noticeable warning for large files
+        console.log('');
+        console.log('⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️');
+        console.log(`⚠️  PDF file is too large (${fileSizeMB.toFixed(2)}MB). Claude has a 10MB limit for PDF files.`);
+        console.log('⚠️  Using fallback classification based on filename and metadata.');
+        console.log('⚠️  Consider splitting large PDFs into smaller files for better results.');
+        console.log('⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️');
+        console.log('');
+        
         // Return a fallback classification for large files
         return {
           classificationResult: await createFallbackClassification(
