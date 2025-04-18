@@ -217,7 +217,9 @@ async function processPdfFile(
             userMessage,
             {
               temperature: 0,
-              maxTokens: 4000
+              maxTokens: 4000,
+              // Add a longer timeout for PDF processing
+              timeout: 180000 // 3 minutes timeout for PDF processing
             }
           );
           
@@ -239,9 +241,11 @@ async function processPdfFile(
           
           // Check if it's a rate-limiting or overload error
           const isRateLimitError = errorMessage.includes('429') || 
+                                 errorMessage.includes('529') ||
                                  errorMessage.includes('too many requests') ||
                                  errorMessage.includes('rate limit') ||
-                                 errorMessage.includes('Overloaded');
+                                 errorMessage.includes('Overloaded') ||
+                                 errorMessage.includes('overloaded');
                                  
           // Check if it's a connection or rate-limiting error
           if (isConnectionError || isRateLimitError) {
@@ -249,8 +253,10 @@ async function processPdfFile(
             console.warn(`Claude API connection error (retry ${retries}/${maxRetries}): ${errorMessage}`);
             
             if (retries < maxRetries) {
-              // Add exponential backoff between retries (1s, 2s, 4s)
-              const backoffTime = Math.pow(2, retries - 1) * 1000;
+              // Increase backoff time and add jitter
+              const baseBackoff = Math.pow(2, retries) * 2000; // Start with 4s, then 8s, then 16s
+              const jitter = Math.random() * 0.3 * baseBackoff; // Add up to 30% random jitter
+              const backoffTime = Math.round(baseBackoff + jitter);
               console.log(`Waiting ${backoffTime}ms before retrying...`);
               await new Promise(resolve => setTimeout(resolve, backoffTime));
             } else {

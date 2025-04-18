@@ -82,8 +82,8 @@ export class ClaudeService {
   private defaultModel: string;
   private client: AxiosInstance;
   private pdfEnabledClient: AxiosInstance;  // Special client with PDF beta headers
-  private retryCount: number = 3;
-  private retryDelay: number = 1000;
+  private retryCount: number = 5; // Increased from 3 to 5
+  private retryDelay: number = 2000; // Increased from 1000 to 2000
   
   /**
    * Create a new Claude service
@@ -96,7 +96,7 @@ export class ClaudeService {
     this.apiVersion = config.claudeApiVersion || '2023-12-15';
     this.defaultModel = config.defaultModel || 'claude-3-7-sonnet-20250219';
     
-    // Create standard HTTP client
+    // Create standard HTTP client with increased timeout
     this.client = axios.create({
       baseURL: this.baseUrl,
       headers: {
@@ -104,10 +104,11 @@ export class ClaudeService {
         'x-api-key': this.apiKey,
         'anthropic-version': this.apiVersion,
         'anthropic-api-version': this.apiVersion // Adding explicit API version header for new API endpoints
-      }
+      },
+      timeout: 120000 // Default 2 minute timeout, can be overridden in individual requests
     });
     
-    // Create PDF-enabled HTTP client with proper headers
+    // Create PDF-enabled HTTP client with proper headers and increased timeout for PDFs
     this.pdfEnabledClient = axios.create({
       baseURL: this.baseUrl,
       headers: {
@@ -116,7 +117,8 @@ export class ClaudeService {
         'anthropic-version': this.apiVersion,
         'anthropic-api-version': this.apiVersion
         // No beta header needed for document type in content array
-      }
+      },
+      timeout: 180000 // Longer 3 minute timeout for PDF processing
     });
     
     // Add request logging
@@ -246,9 +248,9 @@ export class ClaudeService {
     options.temperature = options.temperature ?? 0;
     options.jsonMode = options.jsonMode ?? true;
     
-    // Set system message for JSON responses
+    // Set system message for JSON responses - enhanced to be very explicit
     if (!options.system) {
-      options.system = "You are a helpful AI assistant that ONLY provides responses in valid JSON format. Your responses must be structured as valid, parseable JSON with nothing else before or after the JSON object. Do not include markdown code formatting, explanations, or any text outside the JSON object.";
+      options.system = "You are a helpful AI assistant that ONLY provides responses in valid JSON format. Your responses must be structured as valid, parseable JSON with nothing else before or after the JSON object. Do not include markdown code formatting, explanations, or any text outside the JSON object. Never wrap the JSON in ```json or ``` code blocks. The response should start with { and end with } with no other text before or after.";
     }
     
     // Add explicit JSON instructions to the prompt if needed
@@ -256,8 +258,8 @@ export class ClaudeService {
     
     // If not already formatted for JSON specifically
     if (options.jsonMode && !prompt.includes("valid JSON") && !prompt.includes("JSON format")) {
-      // Add a clear instruction for JSON response
-      enhancedPrompt = `${prompt}\n\nIMPORTANT: Respond with ONLY a JSON object and nothing else. Do not include explanations, markdown formatting, or any text outside the JSON object.`;
+      // Add a clear instruction for JSON response with stronger language
+      enhancedPrompt = `${prompt}\n\nIMPORTANT: Respond with ONLY a valid JSON object and nothing else. Do NOT include ```json code blocks, explanations, preamble, or any text outside the JSON object. Your entire response should be valid JSON that can be directly parsed, starting with '{' and ending with '}' with no other text before or after.`;
     }
     
     try {
@@ -297,7 +299,12 @@ export class ClaudeService {
         Logger.debug(`Not using response_format parameter due to API compatibility issues`);
         
         // Adding more explicit JSON instructions to the prompt
-        enhancedPrompt = `${enhancedPrompt}\n\nYou MUST respond with ONLY a valid JSON object, and nothing else. Do not include explanations, markdown formatting, or any text outside the JSON object. The response should start with '{' and end with '}' with no other text before or after.`;
+        enhancedPrompt = `${enhancedPrompt}\n\nYou MUST respond with ONLY a valid JSON object, and nothing else. Do not include explanations, markdown formatting, or any text outside the JSON object. The response should start with '{' and end with '}' with no other text before or after. DO NOT wrap the response in a code block or triple backticks.`;
+        
+        // Add JSON schema if provided
+        if (options.jsonSchema) {
+          enhancedPrompt = `${enhancedPrompt}\n\nYour response MUST follow this exact JSON schema:\n${JSON.stringify(options.jsonSchema, null, 2)}`;
+        }
         
         // Make direct API call with json_object format
         const response = await this.makeRequestWithRetries<ClaudeResponse>(
@@ -428,11 +435,19 @@ export class ClaudeService {
         // Check if we should retry
         if (
           attempt < this.retryCount && 
-          (error.response?.status === 429 || error.response?.status === 500)
+          (error.response?.status === 429 || 
+           error.response?.status === 500 ||
+           error.response?.status === 529 || // Add explicit Overloaded status code
+           error.response?.data?.error?.message?.includes('Overloaded') ||
+           error.message?.includes('Overloaded'))
         ) {
-          // Calculate delay with exponential backoff
-          const delay = this.retryDelay * Math.pow(2, attempt - 1);
-          Logger.debug(`Retrying in ${delay}ms...`);
+          // Calculate delay with exponential backoff and add jitter
+          const baseDelay = this.retryDelay * Math.pow(2, attempt - 1);
+          // Add 0-25% random jitter to avoid thundering herd
+          const jitter = Math.random() * 0.25 * baseDelay;
+          const delay = baseDelay + jitter;
+          
+          Logger.warn(`Claude API overloaded or rate limited. Retrying in ${Math.round(delay)}ms... (attempt ${attempt}/${this.retryCount})`);
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
           break;
@@ -475,11 +490,19 @@ export class ClaudeService {
         // Check if we should retry
         if (
           attempt < this.retryCount && 
-          (error.response?.status === 429 || error.response?.status === 500)
+          (error.response?.status === 429 || 
+           error.response?.status === 500 ||
+           error.response?.status === 529 || // Add explicit Overloaded status code
+           error.response?.data?.error?.message?.includes('Overloaded') ||
+           error.message?.includes('Overloaded'))
         ) {
-          // Calculate delay with exponential backoff
-          const delay = this.retryDelay * Math.pow(2, attempt - 1);
-          Logger.debug(`Retrying in ${delay}ms...`);
+          // Calculate delay with exponential backoff and add jitter
+          const baseDelay = this.retryDelay * Math.pow(2, attempt - 1);
+          // Add 0-25% random jitter to avoid thundering herd
+          const jitter = Math.random() * 0.25 * baseDelay;
+          const delay = baseDelay + jitter;
+          
+          Logger.warn(`Claude API overloaded or rate limited. Retrying in ${Math.round(delay)}ms... (attempt ${attempt}/${this.retryCount})`);
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
           break;
@@ -859,25 +882,45 @@ export class ClaudeService {
         // Remove markdown code block formatting if present
         let cleanedContent = textResponse;
         if (textResponse.includes('```json') || textResponse.includes('```')) {
-          // Extract content between markdown code blocks
+          // Extract content between markdown code blocks - enhanced pattern that finds the first code block
           const codeBlockMatch = textResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
           if (codeBlockMatch && codeBlockMatch[1]) {
-            cleanedContent = codeBlockMatch[1];
+            cleanedContent = codeBlockMatch[1].trim();
             Logger.debug('Extracted JSON from markdown code block');
+          } else {
+            // Try a more aggressive approach to find ANY content within code blocks
+            const allCodeBlocks = textResponse.match(/```([\s\S]*?)```/g);
+            if (allCodeBlocks && allCodeBlocks.length > 0) {
+              // Extract the content from the first code block that looks like JSON
+              for (const block of allCodeBlocks) {
+                const content = block.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '').trim();
+                if (content.startsWith('{') && content.endsWith('}')) {
+                  cleanedContent = content;
+                  Logger.debug('Found JSON-like content in code block');
+                  break;
+                }
+              }
+            }
           }
         }
         
-        // Find JSON object pattern (strict matching)
-        const jsonMatch = cleanedContent.match(/(\{[\s\S]*\})/);
+        // Find JSON object pattern (strict matching) - improved to find complete JSON objects
+        const jsonMatch = cleanedContent.match(/(\{[\s\S]*?\})(?!\s*[\w\d"':,])/);
         if (jsonMatch && jsonMatch[1]) {
-          const jsonText = jsonMatch[1];
+          const jsonText = jsonMatch[1].trim();
           Logger.debug(`Extracted JSON object pattern (${jsonText.length} chars)`);
+          
+          // Additional verification - check if it looks like valid JSON
+          if (!jsonText.includes('```') && jsonText.startsWith('{') && jsonText.endsWith('}')) {
           try {
             return JSON.parse(jsonText) as T;
           } catch (error) {
             const jsonError = error as Error;
             Logger.error(`Failed to parse extracted JSON: ${jsonError.message}`);
             // Continue to error handling
+          }
+          } else {
+            Logger.debug(`Extracted JSON doesn't look valid, will try other methods`);
           }
         }
         
