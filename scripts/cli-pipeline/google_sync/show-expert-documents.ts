@@ -128,14 +128,16 @@ function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): s
   
   // Sort document types by count (descending)
   const sortedTypes = Object.entries(stats.byDocumentType)
-    .sort((a, b) => b[1] - a[1]);
+    .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
   
   const totalExpertDocs = records.length; // This should be available in the function scope
   
-  sortedTypes.forEach(([docType, count]) => {
+  for (const entry of sortedTypes) {
+    const docType = entry[0];
+    const count = entry[1];
     const percentage = Math.round((count / totalExpertDocs) * 1000) / 10;
     markdown += `| ${docType} | ${count} | ${percentage}% |\n`;
-  });
+  }
   
   return markdown;
 }
@@ -148,11 +150,12 @@ async function saveStatsToMarkdown(stats: DocumentStats, samples: ExpertDocument
     // Add sample documents section
     markdown += `\n## Sample Expert Documents\n\n`;
     
-    samples.forEach((doc, index) => {
+    for (let i = 0; i < samples.length; i++) {
+      const doc = samples[i];
       const docType = doc.sources_google?.document_type_name || 'Unknown';
       const fileName = doc.sources_google?.name || 'Unknown file';
       
-      markdown += `### ${index + 1}. ${fileName} (${docType})\n\n`;
+      markdown += `### ${i + 1}. ${fileName} (${docType})\n\n`;
       markdown += `- ID: \`${doc.id}\`\n`;
       markdown += `- MIME Type: ${doc.mime_type || 'Not specified'}\n`;
       markdown += `- Source ID: \`${doc.source_id}\`\n`;
@@ -167,7 +170,7 @@ async function saveStatsToMarkdown(stats: DocumentStats, samples: ExpertDocument
       
       // Separator
       markdown += `---\n\n`;
-    });
+    }
     
     fs.writeFileSync(markdownPath, markdown);
     return markdownPath;
@@ -175,6 +178,42 @@ async function saveStatsToMarkdown(stats: DocumentStats, samples: ExpertDocument
     console.error("Failed to save markdown report:", error);
     return "";
   }
+}
+
+/**
+ * Helper function to safely execute a Supabase query with retry capability
+ */
+async function safeQuery(queryFn: Function, description: string, maxRetries = 3): Promise<any> {
+  let retryCount = 0;
+  while (retryCount < maxRetries) {
+    try {
+      console.log(`Running query: ${description} (attempt ${retryCount + 1}/${maxRetries})...`);
+      const result = await queryFn();
+      
+      if (result.error) {
+        throw result.error;
+      }
+      
+      console.log(`Query successful: ${description}`);
+      return result;
+    } catch (error) {
+      retryCount++;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.warn(`Query attempt ${retryCount}/${maxRetries} failed: ${errorMessage}`);
+      
+      if (retryCount >= maxRetries) {
+        console.error(`All retry attempts failed for: ${description}`);
+        throw error;
+      }
+      
+      // Wait before retrying (exponential backoff: 1s, 2s, 4s)
+      const delay = 1000 * Math.pow(2, retryCount - 1);
+      console.log(`Waiting ${delay}ms before retrying...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw new Error(`Failed to execute query after ${maxRetries} attempts: ${description}`);
 }
 
 async function showExpertDocuments() {
@@ -186,14 +225,14 @@ async function showExpertDocuments() {
     
     console.log("Fetching sources_google with associated expert_documents...");
     
-    // First get all document types in one query to use as lookup
-    const { data: documentTypes, error: docTypeError } = await supabase
-      .from('document_types')
-      .select('id, document_type');
+    // First get all document types in one query to use as lookup with retry
+    const documentTypesResult = await safeQuery(
+      () => supabase.from('document_types').select('id, document_type'),
+      'Fetch document types'
+    );
     
-    if (docTypeError) {
-      throw new Error(`Error fetching document types: ${docTypeError.message}`);
-    }
+    const documentTypes = documentTypesResult.data;
+    console.log(`Successfully fetched ${documentTypes?.length || 0} document types`);
     
     // Create a lookup map for document types
     const documentTypeMap = new Map<string, string>();
@@ -203,21 +242,24 @@ async function showExpertDocuments() {
       });
     }
     
-    // Get all expert documents (no limit)
-    const { data: expertDocs, error: expertsError } = await supabase
-      .from('expert_documents')
-      .select(`
-        id,
-        document_type_id,
-        raw_content,
-        processed_content,
-        source_id,
-        content_type
-      `);
-      
-    if (expertsError) {
-      throw new Error(`Error fetching expert_documents: ${expertsError.message}`);
-    }
+    // Get all expert documents with retry
+    const expertDocsResult = await safeQuery(
+      () => supabase
+        .from('expert_documents')
+        .select(`
+          id,
+          document_type_id,
+          raw_content,
+          processed_content,
+          source_id,
+          content_type
+        `)
+        .limit(1000), // Add a reasonable limit to avoid timeouts
+      'Fetch expert documents'
+    );
+    
+    const expertDocs = expertDocsResult.data;
+    console.log(`Successfully fetched ${expertDocs?.length || 0} expert documents`);
     
     if (!expertDocs || expertDocs.length === 0) {
       console.log("No expert_documents found");
@@ -228,16 +270,47 @@ async function showExpertDocuments() {
     }
     
     // Get the source IDs for lookup
-    const sourceIds = expertDocs.map(doc => doc.source_id).filter(Boolean);
+    const sourceIds = expertDocs.map((doc: any) => doc.source_id).filter(Boolean);
     
-    // Get the associated sources_google records
-    const { data: sourcesGoogle, error: sourcesError } = await supabase
-      .from('sources_google')
-      .select('id, name, document_type_id, mime_type')
-      .in('id', sourceIds);
+    // Get the associated sources_google records with retry
+    console.log(`Fetching ${sourceIds.length} associated sources_google records...`);
+    const sourcesGoogleResult = await safeQuery(
+      () => supabase
+        .from('sources_google')
+        .select('id, name, document_type_id, mime_type')
+        .in('id', sourceIds.slice(0, 100)), // Limit the IN clause to avoid errors with too many values
+      'Fetch initial sources_google batch'
+    );
+    
+    let sourcesGoogle = sourcesGoogleResult.data || [];
+    console.log(`Successfully fetched ${sourcesGoogle.length} sources_google records`);
+    
+    // If we have more source IDs, fetch them in batches
+    if (sourceIds.length > 100) {
+      console.log(`Fetching remaining sources in batches...`);
+      const batches = Math.ceil(sourceIds.length / 100);
       
-    if (sourcesError) {
-      throw new Error(`Error fetching sources_google: ${sourcesError.message}`);
+      for (let i = 1; i < batches; i++) {
+        const batchStart = i * 100;
+        const batchEnd = Math.min((i + 1) * 100, sourceIds.length);
+        const batchIds = sourceIds.slice(batchStart, batchEnd);
+        
+        try {
+          const batchResult = await safeQuery(
+            () => supabase
+              .from('sources_google')
+              .select('id, name, document_type_id, mime_type')
+              .in('id', batchIds),
+            `Fetch sources_google batch ${i+1}/${batches}`
+          );
+          
+          const batchSources = batchResult.data || [];
+          console.log(`Successfully fetched ${batchSources.length} additional sources`);
+          sourcesGoogle = [...sourcesGoogle, ...batchSources];
+        } catch (error) {
+          console.warn(`Error fetching batch ${i+1}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
     }
 
     // Detailed statistics about sources_google records
@@ -250,43 +323,53 @@ async function showExpertDocuments() {
     let sourcesWithNoDocTypeCount = 0;
     
     try {
-      // Get total count of non-deleted sources_google records
-      const { count: totalCount, error: totalCountError } = await supabase
-        .from('sources_google')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_deleted', false);
+      // Get total count of non-deleted sources_google records with retry
+      console.log("Getting sources_google count statistics...");
+      try {
+        const totalCountResult = await safeQuery(
+          () => supabase
+            .from('sources_google')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_deleted', false),
+          'Count total sources_google records'
+        );
       
-      if (totalCountError) {
-        console.warn("Error counting total sources_google:", totalCountError.message);
-      } else if (totalCount !== null) {
-        totalSourcesGoogleCount = totalCount;
+        totalSourcesGoogleCount = totalCountResult.count || 0;
+      } catch (error) {
+        console.warn("Error counting total sources_google:", error instanceof Error ? error.message : String(error));
       }
       
-      // Get count of folders (mime_type = 'application/vnd.google-apps.folder')
-      const { count: foldersCount, error: foldersCountError } = await supabase
-        .from('sources_google')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_deleted', false)
-        .eq('mime_type', 'application/vnd.google-apps.folder');
-      
-      if (foldersCountError) {
-        console.warn("Error counting folders:", foldersCountError.message);
-      } else if (foldersCount !== null) {
-        totalFoldersCount = foldersCount;
+      // Get count of folders (mime_type = 'application/vnd.google-apps.folder') with retry
+      try {
+        const foldersCountResult = await safeQuery(
+          () => supabase
+            .from('sources_google')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_deleted', false)
+            .eq('mime_type', 'application/vnd.google-apps.folder'),
+          'Count folders'
+        );
+        
+        totalFoldersCount = foldersCountResult.count || 0;
         totalFilesCount = totalSourcesGoogleCount - totalFoldersCount;
+      } catch (error) {
+        console.warn("Error counting folders:", error instanceof Error ? error.message : String(error));
       }
       
-      // Get count of sources with document types
-      const { count: withDocTypesCount, error: docTypesError } = await supabase
-        .from('sources_google')
-        .select('*', { count: 'exact', head: true })
-        .not('document_type_id', 'is', null)
-        .eq('is_deleted', false);
-      
-      if (docTypesError) {
-        console.warn("Error counting sources with document types:", docTypesError.message);
-      } else if (withDocTypesCount !== null) {
-        sourcesWithDocTypeCount = withDocTypesCount;
+      // Get count of sources with document types with retry
+      try {
+        const withDocTypesResult = await safeQuery(
+          () => supabase
+            .from('sources_google')
+            .select('*', { count: 'exact', head: true })
+            .not('document_type_id', 'is', null)
+            .eq('is_deleted', false),
+          'Count sources with document types'
+        );
+        
+        sourcesWithDocTypeCount = withDocTypesResult.count || 0;
+      } catch (error) {
+        console.warn("Error counting sources with document types:", error instanceof Error ? error.message : String(error));
       }
       
       // Create a set of unique source IDs with expert documents
@@ -312,7 +395,7 @@ async function showExpertDocuments() {
     // Create a map for quick lookup
     const sourcesMap = new Map();
     if (sourcesGoogle) {
-      sourcesGoogle.forEach(source => {
+      sourcesGoogle.forEach((source: any) => {
         sourcesMap.set(source.id, {
           ...source,
           document_type_name: documentTypeMap.get(source.document_type_id) || 'Unknown'
@@ -321,7 +404,7 @@ async function showExpertDocuments() {
     }
     
     // Combine the data and add mime_type
-    const records = expertDocs.map(doc => ({
+    const records = expertDocs.map((doc: any) => ({
       ...doc,
       mime_type: sourcesMap.get(doc.source_id)?.mime_type || null,
       sources_google: sourcesMap.get(doc.source_id) || null
@@ -342,47 +425,59 @@ async function showExpertDocuments() {
     };
     
     // Count by document type
-    records.forEach(record => {
+    records.forEach((record: any) => {
       const docType = record.sources_google?.document_type_name || 'Unknown';
       stats.byDocumentType[docType] = (stats.byDocumentType[docType] || 0) + 1;
     });
     
     // Get mime_type statistics
     try {
-      // Get all sources_google records to analyze mime_types
-      const { data: allSourcesGoogle, error: allSourcesError } = await supabase
-        .from('sources_google')
-        .select('id, mime_type, document_type_id')
-        .eq('is_deleted', false);
+      // Get all sources_google records to analyze mime_types with retry
+      console.log("Fetching all sources_google for MIME type analysis...");
+      try {
+        const allSourcesGoogleResult = await safeQuery(
+          () => supabase
+            .from('sources_google')
+            .select('id, mime_type, document_type_id')
+            .eq('is_deleted', false)
+            .limit(5000), // Add a reasonable limit to avoid timeout
+          'Fetch all sources_google for MIME type analysis'
+        );
+      
+        const allSourcesGoogle = allSourcesGoogleResult.data;
+        console.log(`Successfully fetched ${allSourcesGoogle?.length || 0} sources_google records for MIME type analysis`);
         
-      if (allSourcesError) {
-        console.warn("Error fetching all sources_google for mime_type analysis:", allSourcesError.message);
-      } else if (allSourcesGoogle) {
-        // Process each record to build mime_type statistics
-        allSourcesGoogle.forEach(source => {
-          const mimeType = source.mime_type || 'unknown';
-          
-          // Initialize mime_type entry if it doesn't exist
-          if (!stats.byMimeType[mimeType]) {
-            stats.byMimeType[mimeType] = {
-              total: 0,
-              withDocType: 0,
-              withoutDocType: 0
-            };
-          }
-          
-          // Increment counts
-          stats.byMimeType[mimeType].total++;
-          
-          if (source.document_type_id) {
-            stats.byMimeType[mimeType].withDocType++;
-          } else {
-            stats.byMimeType[mimeType].withoutDocType++;
-          }
-        });
+        if (allSourcesGoogle) {
+          // Process each record to build mime_type statistics
+          allSourcesGoogle.forEach((source: any) => {
+            const mimeType = source.mime_type || 'unknown';
+            
+            // Initialize mime_type entry if it doesn't exist
+            if (!stats.byMimeType[mimeType]) {
+              stats.byMimeType[mimeType] = {
+                total: 0,
+                withDocType: 0,
+                withoutDocType: 0
+              };
+            }
+            
+            // Increment counts
+            stats.byMimeType[mimeType].total++;
+            
+            if (source.document_type_id) {
+              stats.byMimeType[mimeType].withDocType++;
+            } else {
+              stats.byMimeType[mimeType].withoutDocType++;
+            }
+          });
+        }
+      } catch (innerError) {
+        console.warn("Error fetching sources_google for MIME type analysis:", 
+          innerError instanceof Error ? innerError.message : String(innerError));
       }
     } catch (error) {
-      console.warn("Error analyzing mime_types:", error instanceof Error ? error.message : String(error));
+      console.warn("Error analyzing mime_types:", 
+        error instanceof Error ? error.message : String(error));
     }
     
     // Display summary statistics
@@ -408,23 +503,29 @@ async function showExpertDocuments() {
     console.log("---------|-------|--------------|-----------------|------------");
     
     // Sort mime types by total count descending
-    Object.entries(stats.byMimeType)
-      .sort((a, b) => b[1].total - a[1].total)
-      .forEach(([mimeType, counts]) => {
-        const percentClassified = counts.total > 0 
-          ? Math.round((counts.withDocType / counts.total) * 100) 
-          : 0;
-        console.log(`${mimeType.padEnd(15)} | ${counts.total.toString().padStart(5)} | ${counts.withDocType.toString().padStart(12)} | ${counts.withoutDocType.toString().padStart(15)} | ${percentClassified}%`);
-      });
+    const sortedMimeTypes = Object.entries(stats.byMimeType)
+      .sort((a: [string, any], b: [string, any]) => b[1].total - a[1].total);
+      
+    for (const entry of sortedMimeTypes) {
+      const mimeType = entry[0];
+      const counts = entry[1];
+      const percentClassified = counts.total > 0 
+        ? Math.round((counts.withDocType / counts.total) * 100) 
+        : 0;
+      console.log(`${mimeType.padEnd(15)} | ${counts.total.toString().padStart(5)} | ${counts.withDocType.toString().padStart(12)} | ${counts.withoutDocType.toString().padStart(15)} | ${percentClassified}%`);
+    }
     
     console.log("\nEXPERT DOCUMENTS BY DOCUMENT TYPE");
     console.log("=================================");
     
-    Object.entries(stats.byDocumentType)
-      .sort((a, b) => b[1] - a[1]) // Sort by count descending
-      .forEach(([docType, count]) => {
-        console.log(`${docType}: ${count}`);
-      });
+    const sortedDocTypes = Object.entries(stats.byDocumentType)
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1]); // Sort by count descending
+      
+    for (const entry of sortedDocTypes) {
+      const docType = entry[0];
+      const count = entry[1];
+      console.log(`${docType}: ${count}`);
+    }
     
     // Display a sample of records (first 10)
     const sampleSize = Math.min(10, records.length);
@@ -433,7 +534,8 @@ async function showExpertDocuments() {
     console.log(`\nSHOWING SAMPLE OF ${sampleSize} OUT OF ${records.length} EXPERT DOCUMENTS\n`);
     
     // Display the sample results
-    samples.forEach((record: ExpertDocument, index: number) => {
+    for (let index = 0; index < samples.length; index++) {
+      const record = samples[index];
       const sourceRecord = record.sources_google;
       
       console.log(`\n[${index + 1}] Expert Document Record:`);
@@ -455,7 +557,7 @@ async function showExpertDocuments() {
       }
       
       console.log("\n" + "-".repeat(80));
-    });
+    }
     
     // Save statistics to markdown file
     const markdownPath = await saveStatsToMarkdown(stats, samples, records);

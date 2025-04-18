@@ -12,16 +12,16 @@
 
 | Status | Count | Percentage of Total |
 |--------|-------|--------------------|
-| Sources with document type | 271 | 32.4% |
-| Sources without document type | 566 | 67.6% |
+| Sources with document type | 410 | 49% |
+| Sources without document type | 427 | 51% |
 
 ## Expert Documents Status
 
 | Status | Count | Percentage of Files |
 |--------|-------|--------------------|
-| Sources with expert documents | 399 | 60.7% |
+| Sources with expert documents | 536 | 81.6% |
 | Sources with document type but no expert documents | 0 | 0% |
-| Files with no expert documents | 258 | 39.3% |
+| Files with no expert documents | 121 | 18.4% |
 
 ## MIME Type Breakdown
 
@@ -29,7 +29,7 @@
 |-----------|-------------|-------------------|----------------------|-------------|
 | application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 191 | 0 | 100% |
 | application/vnd.google-apps.folder | 180 | 0 | 180 | 0% |
-| application/pdf | 151 | 12 | 139 | 8% |
+| application/pdf | 151 | 151 | 0 | 100% |
 | video/mp4 | 116 | 0 | 116 | 0% |
 | audio/x-m4a | 92 | 0 | 92 | 0% |
 | text/plain | 64 | 64 | 0 | 100% |
@@ -48,31 +48,38 @@
 
 | Document Type | Count | Percentage of Expert Docs |
 |--------------|-------|-------------------------|
-| Unknown | 145 | 36.3% |
-| Presentation Announcement | 93 | 23.3% |
-| Chat Log | 48 | 12% |
-| email correspondence | 21 | 5.3% |
-| dicussion transcript | 12 | 3% |
-| journal article | 10 | 2.5% |
-| presentation transcript | 9 | 2.3% |
-| research article | 9 | 2.3% |
-| web news article | 7 | 1.8% |
-| report | 6 | 1.5% |
-| url blog post | 6 | 1.5% |
-| professional biography | 6 | 1.5% |
-| website | 5 | 1.3% |
-| essay | 4 | 1% |
-| curriculum vitae | 3 | 0.8% |
-| letter | 3 | 0.8% |
-| new work summary | 2 | 0.5% |
-| unknown document type | 2 | 0.5% |
-| word document | 2 | 0.5% |
-| mp4 video | 1 | 0.3% |
-| editorial | 1 | 0.3% |
-| pdf document | 1 | 0.3% |
-| Deployment Script | 1 | 0.3% |
-| review article | 1 | 0.3% |
-| science meeting discussion | 1 | 0.3% |
+| Unknown | 145 | 27.1% |
+| Presentation Announcement | 94 | 17.5% |
+| research article | 91 | 17% |
+| Chat Log | 50 | 9.3% |
+| review article | 23 | 4.3% |
+| email correspondence | 21 | 3.9% |
+| journal article | 15 | 2.8% |
+| presentation transcript | 12 | 2.2% |
+| dicussion transcript | 12 | 2.2% |
+| professional biography | 9 | 1.7% |
+| report | 8 | 1.5% |
+| web news article | 7 | 1.3% |
+| curriculum vitae | 6 | 1.1% |
+| url blog post | 6 | 1.1% |
+| website | 5 | 0.9% |
+| Code Documentation Markdown | 4 | 0.7% |
+| essay | 4 | 0.7% |
+| letter | 3 | 0.6% |
+| editorial | 3 | 0.6% |
+| magazine article | 2 | 0.4% |
+| book | 2 | 0.4% |
+| new work summary | 2 | 0.4% |
+| unknown document type | 2 | 0.4% |
+| word document | 2 | 0.4% |
+| preprint | 1 | 0.2% |
+| correction | 1 | 0.2% |
+| powerpoint document | 1 | 0.2% |
+| mp4 video | 1 | 0.2% |
+| letter to the editor | 1 | 0.2% |
+| pdf document | 1 | 0.2% |
+| Deployment Script | 1 | 0.2% |
+| science meeting discussion | 1 | 0.2% |
 
 ## Sample Expert Documents
 
@@ -210,7 +217,23 @@ This meeting is a major paradigm shift. Exceptional cancer survivors don’t jus
 
 ---
 
-### 7. Unknown file (Unknown)
+### 7. Global developments in social prescribing_Morse_2022.pdf (research article)
+
+- ID: `d9ace790-346e-4db0-a28d-0f77b584c07d`
+- MIME Type: application/pdf
+- Source ID: `b3fcdb12-25c7-46dc-88c8-f0fddc1dedac`
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> {"key_topics":["Social prescribing implementation across 17 countries","Addressing social determinants of health through healthcare systems","Cross-sector collaboration between health, social, and community services","Workforce models for social prescribing delivery","Financing approaches for sustainable social prescribing programs"],"limitations":"The article acknowledges that evidence for social prescribing effectiveness is still emerging, with limited robust evaluations across different contexts. Implementation approaches vary widely between countries, making standardized assessment challenging.
+
+---
+
+### 8. Unknown file (Unknown)
 
 - ID: `199a8efb-5589-4170-a686-62f34315ed92`
 - MIME Type: Not specified
@@ -226,7 +249,7 @@ This meeting is a major paradigm shift. Exceptional cancer survivors don’t jus
 
 ---
 
-### 8. Lustig.Amygdala.1.8.25.mp4 (Unknown)
+### 9. Lustig.Amygdala.1.8.25.mp4 (Unknown)
 
 - ID: `846246b7-e992-41ba-80c8-50736bd30b9b`
 - MIME Type: video/mp4
@@ -305,7 +328,7 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 
 ---
 
-### 9. Wager.Intro.Networks.Intro.6.17.20.mp4 (Unknown)
+### 10. Wager.Intro.Networks.Intro.6.17.20.mp4 (Unknown)
 
 - ID: `2c7e221f-7c59-4cb5-bdea-da3cbaa24f62`
 - MIME Type: video/mp4
@@ -342,25 +365,6 @@ The presentation highlighted significant advances in understanding the pathophys
 
 ## Clinical Implications
 The presentation concluded that these advances are transforming AD from a hopeless diagnosis to a manageable condition, emphasizing the importance of early intervention and comprehensive care approaches..
-
----
-
-### 10. Hoverman.12.18.24.mp4 (Unknown)
-
-- ID: `cbbe002f-e2af-44d4-a8aa-9e7838b6f2c7`
-- MIME Type: video/mp4
-- Source ID: `35269850-f06a-4ab0-b3f3-b6c9008bb711`
-
-**Raw Content Preview:**
-
-> 10. And we began catalyzing each other's thinking.
-
-**Processed Content Preview:**
-
-> # Summary: Advances in Targeted Immunotherapy for Metastatic Melanoma
-
-## Background
-The presentation reviewed the evolving landscape of melanoma treatment, highlighting how immunotherapeutic approaches have revolutionized management of metastatic disease. Historical 5-year survival rates for metastatic melanoma were approximately 15-20%, but recent advances have pushed this beyond 50% in some patient populations.
 
 ---
 
