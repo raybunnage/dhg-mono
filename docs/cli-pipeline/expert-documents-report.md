@@ -1,5 +1,51 @@
 # Expert Documents Report
 
+## Document Type Distribution in sources_google
+
+| Document Type | Count | Percentage |
+|--------------|-------|------------|
+| low level folder | 184 | 22% |
+| high level folder | 126 | 15.1% |
+| video mpeg | 116 | 13.9% |
+| Presentation Announcement | 94 | 11.2% |
+| research article | 91 | 10.9% |
+| Chat Log | 50 | 6% |
+| dicussion transcript | 27 | 3.2% |
+| review article | 23 | 2.7% |
+| email correspondence | 21 | 2.5% |
+| journal article | 15 | 1.8% |
+| presentation transcript | 12 | 1.4% |
+| professional biography | 9 | 1.1% |
+| report | 8 | 1% |
+| web news article | 7 | 0.8% |
+| curriculum vitae | 6 | 0.7% |
+| url blog post | 6 | 0.7% |
+| website | 5 | 0.6% |
+| Unknown | 4 | 0.5% |
+| essay | 4 | 0.5% |
+| Code Documentation Markdown | 4 | 0.5% |
+| letter | 3 | 0.4% |
+| editorial | 3 | 0.4% |
+| unknown document type | 2 | 0.2% |
+| new work summary | 2 | 0.2% |
+| magazine article | 2 | 0.2% |
+| word document | 2 | 0.2% |
+| book | 2 | 0.2% |
+| mp4 video | 1 | 0.1% |
+| letter to the editor | 1 | 0.1% |
+| correction | 1 | 0.1% |
+| powerpoint document | 1 | 0.1% |
+| root folder | 1 | 0.1% |
+| science meeting discussion | 1 | 0.1% |
+| pdf document | 1 | 0.1% |
+| preprint | 1 | 0.1% |
+| Deployment Script | 1 | 0.1% |
+
+## Unclassified MIME Types
+
+| MIME Type | Count | Percentage of Unclassified |
+|-----------|-------|-------------------------|
+
 ## Sources Google Summary
 
 | Status | Count | Percentage |
@@ -12,15 +58,15 @@
 
 | Status | Count | Percentage of Total |
 |--------|-------|--------------------|
-| Sources with document type | 526 | 62.8% |
-| Sources without document type | 311 | 37.2% |
+| Sources with document type | 837 | 100% |
+| Sources without document type | 0 | 0% |
 
 ## Expert Documents Status
 
 | Status | Count | Percentage of Files |
 |--------|-------|--------------------|
 | Sources with expert documents | 536 | 81.6% |
-| Sources with document type but no expert documents | 0 | 0% |
+| Sources with document type but no expert documents | 301 | 45.8% |
 | Files with no expert documents | 121 | 18.4% |
 
 ## MIME Type Breakdown
@@ -28,21 +74,21 @@
 | MIME Type | Total Files | With Document Type | Without Document Type | % Classified |
 |-----------|-------------|-------------------|----------------------|-------------|
 | application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 191 | 0 | 100% |
-| application/vnd.google-apps.folder | 180 | 0 | 180 | 0% |
+| application/vnd.google-apps.folder | 180 | 180 | 0 | 100% |
 | application/pdf | 151 | 151 | 0 | 100% |
 | video/mp4 | 116 | 116 | 0 | 100% |
-| audio/x-m4a | 92 | 0 | 92 | 0% |
+| audio/x-m4a | 92 | 92 | 0 | 100% |
 | text/plain | 64 | 64 | 0 | 100% |
-| application/vnd.openxmlformats-officedocument.presentationml.presentation | 25 | 0 | 25 | 0% |
+| application/vnd.openxmlformats-officedocument.presentationml.presentation | 25 | 25 | 0 | 100% |
 | application/vnd.google-apps.document | 4 | 4 | 0 | 100% |
-| image/jpeg | 3 | 0 | 3 | 0% |
-| audio/x-mpegurl | 2 | 0 | 2 | 0% |
-| text/html | 2 | 0 | 2 | 0% |
-| application/msword | 2 | 0 | 2 | 0% |
-| application/vnd.ms-powerpoint | 2 | 0 | 2 | 0% |
-| application/octet-stream | 1 | 0 | 1 | 0% |
-| audio/mpeg | 1 | 0 | 1 | 0% |
-| video/mpeg | 1 | 0 | 1 | 0% |
+| image/jpeg | 3 | 3 | 0 | 100% |
+| audio/x-mpegurl | 2 | 2 | 0 | 100% |
+| text/html | 2 | 2 | 0 | 100% |
+| application/msword | 2 | 2 | 0 | 100% |
+| application/vnd.ms-powerpoint | 2 | 2 | 0 | 100% |
+| audio/mpeg | 1 | 1 | 0 | 100% |
+| application/octet-stream | 1 | 1 | 0 | 100% |
+| video/mpeg | 1 | 1 | 0 | 100% |
 
 ## Expert Documents by Document Type
 
@@ -52,7 +98,7 @@
 | Presentation Announcement | 94 | 17.5% |
 | research article | 91 | 17% |
 | Chat Log | 50 | 9.3% |
-| Unknown | 33 | 6.2% |
+| Unknown | 30 | 5.6% |
 | review article | 23 | 4.3% |
 | email correspondence | 21 | 3.9% |
 | journal article | 15 | 2.8% |
@@ -68,12 +114,14 @@
 | essay | 4 | 0.7% |
 | letter | 3 | 0.6% |
 | editorial | 3 | 0.6% |
+| low level folder | 2 | 0.4% |
 | magazine article | 2 | 0.4% |
 | book | 2 | 0.4% |
 | new work summary | 2 | 0.4% |
 | unknown document type | 2 | 0.4% |
 | word document | 2 | 0.4% |
 | preprint | 1 | 0.2% |
+| high level folder | 1 | 0.2% |
 | correction | 1 | 0.2% |
 | powerpoint document | 1 | 0.2% |
 | mp4 video | 1 | 0.2% |

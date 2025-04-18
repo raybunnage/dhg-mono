@@ -95,7 +95,9 @@ function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): s
     const docType = entry[0];
     const count = entry[1];
     const percentage = Math.round((count / stats.sourcesWithDocType) * 1000) / 10;
-    markdown += `| ${docType} | ${count} | ${percentage}% |\n`;
+    // Ensure no UUID contaminates the document type or percentage
+    const cleanDocType = docType.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '');
+    markdown += `| ${cleanDocType} | ${count} | ${percentage}% |\n`;
   }
   
   // Unclassified MIME Types
@@ -174,7 +176,9 @@ function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): s
     const docType = entry[0];
     const count = entry[1];
     const percentage = Math.round((count / totalExpertDocs) * 1000) / 10;
-    markdown += `| ${docType} | ${count} | ${percentage}% |\n`;
+    // Ensure no UUID contaminates the document type or percentage
+    const cleanDocType = docType.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '');
+    markdown += `| ${cleanDocType} | ${count} | ${percentage}% |\n`;
   }
   
   return markdown;
