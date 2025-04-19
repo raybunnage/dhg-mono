@@ -6,6 +6,7 @@
 #   sync                         Sync files from Google Drive to the database (core functionality)
 #   health-check                 Check the health of Google Drive API connection
 #   classify-pdfs                Classify PDF files missing document types using Claude AI
+#   classify-powerpoints         Classify PowerPoint files missing document types using local extraction and Claude AI
 #   reclassify-docs              Re-classify documents with temperature=0 for deterministic results
 #   classify-docs-service        Classify .docx and .txt files missing document types
 #   check-duplicates             Check for duplicate files in sources_google
@@ -97,6 +98,44 @@ if [ "$1" = "classify-pdfs" ] || [ "$1" = "classify-pdfs-with-service" ]; then
   exit $?
 fi
 
+if [ "$1" = "classify-powerpoints" ]; then
+  shift
+  
+  # Store the original command name for tracking
+  CMD_NAME="classify-powerpoints"
+  
+  # Check if the user provided a limit parameter
+  LIMIT="5"  # Default value
+  ARGS=""
+  
+  # Parse arguments to find the limit parameter
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --limit|-l)
+        LIMIT="$2"
+        shift 2
+        ;;
+      --limit=*|-l=*)
+        LIMIT="${1#*=}"
+        shift
+        ;;
+      *)
+        # Accumulate other arguments
+        ARGS="$ARGS $1"
+        shift
+        ;;
+    esac
+  done
+  
+  # Ensure limit is explicitly set
+  if [[ "$ARGS" != *"--limit"* && "$ARGS" != *"-l"* ]]; then
+    ARGS="$ARGS --limit $LIMIT"
+  fi
+  
+  track_command "$CMD_NAME" "ts-node $SCRIPT_DIR/classify-powerpoints.ts $ARGS"
+  exit $?
+fi
+
 if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify-docs-with-service" ]; then
   shift
   track_command "reclassify-docs-with-service" "ts-node $SCRIPT_DIR/reclassify-docs-with-service.ts $*"
@@ -147,6 +186,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Run PDF classification in dry-run mode to see what would be updated"
   echo "  ./google-sync-cli.sh classify-pdfs --dry-run"
+  echo ""
+  echo "  # Classify PowerPoint files and extract their content"
+  echo "  ./google-sync-cli.sh classify-powerpoints --limit 3 --verbose"
+  echo ""
+  echo "  # Run PowerPoint classification in dry-run mode"
+  echo "  ./google-sync-cli.sh classify-powerpoints --dry-run"
   echo ""
   echo "  # Generate a report of expert documents in the database"
   echo "  ./google-sync-cli.sh show-expert-documents"
