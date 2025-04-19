@@ -4,9 +4,8 @@
 
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
-| low level folder | 166 | 19.8% |
-| high level folder | 126 | 15.1% |
 | video mpeg | 116 | 13.9% |
+| low level folder | 112 | 13.4% |
 | Presentation Announcement | 94 | 11.2% |
 | research article | 91 | 10.9% |
 | Chat Log | 50 | 6% |
@@ -34,9 +33,9 @@
 | book | 2 | 0.2% |
 | mp4 video | 1 | 0.1% |
 | letter to the editor | 1 | 0.1% |
+| high level folder | 1 | 0.1% |
 | correction | 1 | 0.1% |
 | powerpoint document | 1 | 0.1% |
-| root folder | 1 | 0.1% |
 | science meeting discussion | 1 | 0.1% |
 | ai presentation transcript | 1 | 0.1% |
 | pdf document | 1 | 0.1% |
@@ -73,10 +72,29 @@
 
 ## MIME Type Breakdown
 
-| MIME Type | Total Files | With Document Type | Without Document Type | % Classified |
-|-----------|-------------|-------------------|----------------------|-------------|
+| MIME Type | Total Files | With Document Type | Without Document Type | With Expert Docs | % Classified |
+|-----------|-------------|-------------------|----------------------|-----------------|-------------|
+| application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 191 | 0 | 191 | 100% |
+| application/pdf | 151 | 151 | 0 | 151 | 100% |
+| video/mp4 | 116 | 116 | 0 | 116 | 100% |
+| audio/x-m4a | 92 | 92 | 0 | 92 | 100% |
+| text/plain | 64 | 64 | 0 | 64 | 100% |
+| application/vnd.openxmlformats-officedocument.presentationml.presentation | 25 | 25 | 0 | 25 | 100% |
+| application/vnd.google-apps.document | 4 | 4 | 0 | 4 | 100% |
+| image/jpeg | 3 | 3 | 0 | 3 | 100% |
+| audio/x-mpegurl | 2 | 2 | 0 | 2 | 100% |
+| text/html | 2 | 2 | 0 | 2 | 100% |
+| application/msword | 2 | 2 | 0 | 2 | 100% |
+| application/vnd.ms-powerpoint | 2 | 2 | 0 | 2 | 100% |
+| audio/mpeg | 1 | 1 | 0 | 1 | 100% |
+| application/octet-stream | 1 | 1 | 0 | 1 | 100% |
+| video/mpeg | 1 | 1 | 0 | 1 | 100% |
+
+## File Type Summary
+
+| MIME Type | Total Files | With Expert Docs | Without Expert Docs | Coverage % |
+|-----------|-------------|-----------------|-------------------|------------|
 | application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 191 | 0 | 100% |
-| application/vnd.google-apps.folder | 180 | 180 | 0 | 100% |
 | application/pdf | 151 | 151 | 0 | 100% |
 | video/mp4 | 116 | 116 | 0 | 100% |
 | audio/x-m4a | 92 | 92 | 0 | 100% |
@@ -99,6 +117,13 @@
 | Total Expert Documents | 723 | 100% |
 | Expert Documents with Document Type | 717 | 99.2% |
 | Expert Documents without Document Type | 6 | 0.8% |
+| Orphaned Expert Documents (no sources_google) | 30 | 4.1% |
+
+## Orphaned Expert Documents by Document Type
+
+| Document Type | Count | Percentage of Orphaned |
+|--------------|-------|------------------------|
+| Video Summary Transcript | 30 | 100% |
 
 ## Expert Documents by MIME Type
 
@@ -469,4 +494,170 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 > Not available
 
 ---
+
+
+## Orphaned Expert Documents (without sources_google records)
+
+### 1. Document Type: Video Summary Transcript
+
+- ID: `199a8efb-5589-4170-a686-62f34315ed92`
+- Source ID (invalid/deleted): `235fd3ac-2727-405d-96a4-809acb927374`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Thank you. Take you to save my life.
+
+**Processed Content Preview:**
+
+> {"transcription":{"model":"base","audio_file":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/Kovacic.Porges.106.21.m4a","word_count":9730,"processing_time_seconds":102.661,"transcription_timestamp":"2025-04-06T22:00:51.698Z"},"audio_metadata":{"file_path":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/Kovacic.Porges.106.21.m4a","source_file":"Kovacic.Porges.106.21.m4a","file_size_bytes":57140343},"processing_stats":{"model_type":"base","processing_date":"2025-04-06T22:00:51.697Z","words_per_minute":5687,"audio_duration_seconds":0,"transcription_time_seconds":102.661},"summary_complete":false,"transcription_complete":true}.
+
+---
+
+### 2. Document Type: Video Summary Transcript
+
+- ID: `2b442035-e56d-4337-be86-91eb30a79da3`
+- Source ID (invalid/deleted): `d302049c-ddd8-4756-a9f6-45cb02ddb4c9`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 3. Document Type: Video Summary Transcript
+
+- ID: `a6c52280-259f-4f97-885c-96d86f33e229`
+- Source ID (invalid/deleted): `8b4bc63e-61f4-47fc-a990-dbe0c2c57673`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 4. Document Type: Video Summary Transcript
+
+- ID: `57bc45a1-cd1f-4a35-a2b0-1d3342ee00f3`
+- Source ID (invalid/deleted): `59b56e70-366d-428c-9fc7-ec1dc646418a`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Okay. Who has started? I like to use Dr.
+
+**Processed Content Preview:**
+
+> {"transcription":{"model":"base","audio_file":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/Sutphin_2024_10_06.m4a","word_count":10816,"processing_time_seconds":105.826,"transcription_timestamp":"2025-04-06T06:16:33.653Z"},"audio_metadata":{"file_path":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/Sutphin_2024_10_06.m4a","source_file":"Sutphin_2024_10_06.m4a","file_size_bytes":37044386},"processing_stats":{"model_type":"base","processing_date":"2025-04-06T06:16:33.653Z","words_per_minute":6132,"audio_duration_seconds":0,"transcription_time_seconds":105.826},"summary_complete":false,"transcription_complete":true}.
+
+---
+
+### 5. Document Type: Video Summary Transcript
+
+- ID: `09cbe55b-35b5-4856-bb84-d0b145e3d42a`
+- Source ID (invalid/deleted): `36372e68-37d0-4786-8648-adb6fd3b0b6c`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 6. Document Type: Video Summary Transcript
+
+- ID: `38c61385-df07-4bb7-a6bc-842ee3291544`
+- Source ID (invalid/deleted): `1c4fe404-7095-41a5-9a03-811f98e422d0`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> accepted a hierarchy within the nervous system. And in fact, so in the sense that we tend within the world we live in, think that it's cortical centric.
+
+**Processed Content Preview:**
+
+> {"transcription":{"model":"base","audio_file":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/9.15.23 (1).m4a","word_count":9141,"processing_time_seconds":118.872,"transcription_timestamp":"2025-04-05T17:13:50.722Z"},"audio_metadata":{"file_path":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/9.15.23 (1).m4a","source_file":"9.15.23 (1).m4a","file_size_bytes":56949464},"processing_stats":{"model_type":"base","processing_date":"2025-04-05T17:13:50.722Z","words_per_minute":4614,"audio_duration_seconds":0,"transcription_time_seconds":118.872},"summary_complete":false,"transcription_complete":true}.
+
+---
+
+### 7. Document Type: Video Summary Transcript
+
+- ID: `d3f14aba-4fb1-431a-957f-790aa7184e1f`
+- Source ID (invalid/deleted): `6f209bb6-1e4c-4ff7-915e-abecc0fe6b22`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 8. Document Type: Video Summary Transcript
+
+- ID: `a7bb5445-604b-4120-b5a8-3722c1d4562f`
+- Source ID (invalid/deleted): `e716dccd-0ffc-4592-9627-22f2a5ef27ad`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> I like to welcome everybody to the group tonight. This is all these meetings have been interesting.
+
+**Processed Content Preview:**
+
+> {"transcription":{"model":"base","audio_file":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/2024-01-24-Naviaux DR -Update chronic fatigue Naviaux.DR.1.24.24.m4a","word_count":8291,"processing_time_seconds":111.212,"transcription_timestamp":"2025-04-06T06:58:56.132Z"},"audio_metadata":{"file_path":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/2024-01-24-Naviaux DR -Update chronic fatigue Naviaux.DR.1.24.24.m4a","source_file":"2024-01-24-Naviaux DR -Update chronic fatigue Naviaux.DR.1.24.24.m4a","file_size_bytes":58150203},"processing_stats":{"model_type":"base","processing_date":"2025-04-06T06:58:56.132Z","words_per_minute":4473,"audio_duration_seconds":0,"transcription_time_seconds":111.212},"summary_complete":false,"transcription_complete":true}.
+
+---
+
+### 9. Document Type: Video Summary Transcript
+
+- ID: `7de323a1-9a65-47a6-a551-67a988717bb4`
+- Source ID (invalid/deleted): `9db8c572-ae95-49c0-81f8-775c23be0476`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 10. Document Type: Video Summary Transcript
+
+- ID: `676f3cbe-9e2c-4627-894a-ba768c295173`
+- Source ID (invalid/deleted): `e4821a30-b9ee-480a-9099-d5c89d660892`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+
+*20 more orphaned expert documents not shown*
 

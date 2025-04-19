@@ -31,6 +31,10 @@ interface DocumentStats {
   totalExpertDocs: number;
   expertDocsWithDocType: number;
   expertDocsWithoutDocType: number;
+  orphanedExpertDocs: number;
+  orphanedExpertDocsByType: {
+    [key: string]: number;
+  };
   byDocumentType: {
     [key: string]: number;
   };
@@ -42,6 +46,7 @@ interface DocumentStats {
       total: number;
       withDocType: number;
       withoutDocType: number;
+      withExpertDocs: number;
     }
   };
   sourcesByDocumentType: {
@@ -52,6 +57,15 @@ interface DocumentStats {
   };
   expertDocsByMimeType: {
     [key: string]: number;
+  };
+  // File type summary
+  fileTypeSummary: {
+    [mimeType: string]: {
+      total: number;
+      withExpertDocs: number;
+      withoutExpertDocs: number;
+      percentageWithExpertDocs: number;
+    }
   };
 }
 
@@ -156,8 +170,8 @@ function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): s
   
   // MIME Type Breakdown
   markdown += `\n## MIME Type Breakdown\n\n`;
-  markdown += `| MIME Type | Total Files | With Document Type | Without Document Type | % Classified |\n`;
-  markdown += `|-----------|-------------|-------------------|----------------------|-------------|\n`;
+  markdown += `| MIME Type | Total Files | With Document Type | Without Document Type | With Expert Docs | % Classified |\n`;
+  markdown += `|-----------|-------------|-------------------|----------------------|-----------------|-------------|\n`;
   
   // Sort mime types by total count (descending)
   const sortedMimeTypes = Object.entries(stats.byMimeType)
@@ -167,8 +181,23 @@ function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): s
     const percentClassified = counts.total > 0 
       ? Math.round((counts.withDocType / counts.total) * 100) 
       : 0;
-    markdown += `| ${mimeType} | ${counts.total} | ${counts.withDocType} | ${counts.withoutDocType} | ${percentClassified}% |\n`;
+    markdown += `| ${mimeType} | ${counts.total} | ${counts.withDocType} | ${counts.withoutDocType} | ${counts.withExpertDocs || 0} | ${percentClassified}% |\n`;
   });
+  
+  // File Type Summary - Shows every file type with expert_document coverage
+  markdown += `\n## File Type Summary\n\n`;
+  markdown += `| MIME Type | Total Files | With Expert Docs | Without Expert Docs | Coverage % |\n`;
+  markdown += `|-----------|-------------|-----------------|-------------------|------------|\n`;
+  
+  // Sort file types by total count (descending)
+  const sortedFileTypes = Object.entries(stats.fileTypeSummary)
+    .sort((a: [string, any], b: [string, any]) => b[1].total - a[1].total);
+    
+  for (const entry of sortedFileTypes) {
+    const mimeType = entry[0];
+    const summary = entry[1];
+    markdown += `| ${mimeType} | ${summary.total} | ${summary.withExpertDocs} | ${summary.withoutExpertDocs} | ${summary.percentageWithExpertDocs}% |\n`;
+  }
   
   // Expert Documents direct document type analysis
   markdown += `\n## Expert Documents - Direct Document Type Analysis\n\n`;
@@ -177,6 +206,25 @@ function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): s
   markdown += `| Total Expert Documents | ${stats.totalExpertDocs} | 100% |\n`;
   markdown += `| Expert Documents with Document Type | ${stats.expertDocsWithDocType} | ${Math.round(stats.expertDocsWithDocType / stats.totalExpertDocs * 1000) / 10}% |\n`;
   markdown += `| Expert Documents without Document Type | ${stats.expertDocsWithoutDocType} | ${Math.round(stats.expertDocsWithoutDocType / stats.totalExpertDocs * 1000) / 10}% |\n`;
+  markdown += `| Orphaned Expert Documents (no sources_google) | ${stats.orphanedExpertDocs} | ${Math.round(stats.orphanedExpertDocs / stats.totalExpertDocs * 1000) / 10}% |\n`;
+  
+  // Orphaned Expert Documents by Document Type
+  if (stats.orphanedExpertDocs > 0) {
+    markdown += `\n## Orphaned Expert Documents by Document Type\n\n`;
+    markdown += `| Document Type | Count | Percentage of Orphaned |\n`;
+    markdown += `|--------------|-------|------------------------|\n`;
+    
+    // Sort orphaned docs by document type count (descending)
+    const sortedOrphanedTypes = Object.entries(stats.orphanedExpertDocsByType)
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+      
+    for (const entry of sortedOrphanedTypes) {
+      const docType = entry[0];
+      const count = entry[1];
+      const percentage = Math.round((count / stats.orphanedExpertDocs) * 1000) / 10;
+      markdown += `| ${docType} | ${count} | ${percentage}% |\n`;
+    }
+  }
   
   // Expert Document types by MIME Type
   markdown += `\n## Expert Documents by MIME Type\n\n`;
@@ -232,7 +280,12 @@ function formatMarkdownTable(stats: DocumentStats, records: ExpertDocument[]): s
   return markdown;
 }
 
-async function saveStatsToMarkdown(stats: DocumentStats, samples: ExpertDocument[], allRecords: ExpertDocument[]): Promise<string> {
+async function saveStatsToMarkdown(
+  stats: DocumentStats, 
+  samples: ExpertDocument[], 
+  allRecords: ExpertDocument[],
+  documentTypesList: DocumentType[]
+): Promise<string> {
   try {
     const markdownPath = './docs/cli-pipeline/expert-documents-report.md';
     let markdown = formatMarkdownTable(stats, allRecords);
@@ -260,6 +313,44 @@ async function saveStatsToMarkdown(stats: DocumentStats, samples: ExpertDocument
       
       // Separator
       markdown += `---\n\n`;
+    }
+    
+    // Add orphaned expert documents section if any exist
+    if (stats.orphanedExpertDocs > 0) {
+      markdown += `\n## Orphaned Expert Documents (without sources_google records)\n\n`;
+      
+      // Find orphaned documents
+      const orphanedDocs = allRecords.filter(doc => !doc.sources_google);
+      
+      // Show samples of orphaned documents (up to 10)
+      const orphanSamples = orphanedDocs.slice(0, 10);
+      
+      for (let i = 0; i < orphanSamples.length; i++) {
+        const doc = orphanSamples[i];
+        const typeId = doc.document_type_id;
+        const typeName = typeId ? (documentTypesList.find((dt: DocumentType) => dt.id === typeId)?.document_type || typeId) : 'No Document Type';
+        const docType = `${i + 1}. Document Type: ${typeName}`;
+        
+        markdown += `### ${docType}\n\n`;
+        markdown += `- ID: \`${doc.id}\`\n`;
+        markdown += `- Source ID (invalid/deleted): \`${doc.source_id}\`\n`;
+        markdown += `- MIME Type: ${doc.mime_type || 'Not specified'}\n`;
+        
+        // Raw content section
+        markdown += `\n**Raw Content Preview:**\n\n`;
+        markdown += `> ${getContentSentences(doc.raw_content, 2)}\n\n`;
+        
+        // Processed content section
+        markdown += `**Processed Content Preview:**\n\n`;
+        markdown += `> ${getContentSentences(doc.processed_content, 2)}\n\n`;
+        
+        // Separator
+        markdown += `---\n\n`;
+      }
+      
+      if (orphanedDocs.length > 10) {
+        markdown += `\n*${orphanedDocs.length - 10} more orphaned expert documents not shown*\n\n`;
+      }
     }
     
     fs.writeFileSync(markdownPath, markdown);
@@ -514,12 +605,15 @@ async function showExpertDocuments() {
       totalExpertDocs: records.length,
       expertDocsWithDocType: 0, // Will calculate shortly
       expertDocsWithoutDocType: 0, // Will calculate shortly
+      orphanedExpertDocs: 0, // Will calculate shortly
+      orphanedExpertDocsByType: {}, // Will calculate shortly
       byDocumentType: {},
       expertDocsByDocType: {},
       byMimeType: {},
       sourcesByDocumentType: {},
       unclassifiedMimeTypes: {},
-      expertDocsByMimeType: {}
+      expertDocsByMimeType: {},
+      fileTypeSummary: {}
     };
     
     // Count by document type - both source-based and expert docs directly
@@ -544,39 +638,96 @@ async function showExpertDocuments() {
       }
     });
     
-    // Get mime_type statistics
+    // Get mime_type statistics and check all sources_google files
     try {
-      // Get all sources_google records to analyze mime_types with retry
-      console.log("Fetching all sources_google for MIME type analysis...");
+      // Identify orphaned expert_documents (those without a sources_google entry)
+      console.log("Identifying orphaned expert_documents...");
+      const validSourceIds = new Set<string>();
+      const orphanedDocs: ExpertDocument[] = [];
+      
+      // Create a map of source_id to expert_documents
+      const expertDocsBySourceId = new Map<string, ExpertDocument[]>();
+      records.forEach((record: ExpertDocument) => {
+        if (record.source_id) {
+          if (!expertDocsBySourceId.has(record.source_id)) {
+            expertDocsBySourceId.set(record.source_id, []);
+          }
+          expertDocsBySourceId.get(record.source_id)?.push(record);
+          
+          // If this record has a valid sources_google entry, add to validSourceIds
+          if (record.sources_google) {
+            validSourceIds.add(record.source_id);
+          } else {
+            orphanedDocs.push(record);
+          }
+        }
+      });
+      
+      // Count orphaned expert_documents
+      stats.orphanedExpertDocs = orphanedDocs.length;
+      console.log(`Found ${orphanedDocs.length} orphaned expert_documents (without sources_google records)`);
+      
+      // Count orphaned expert_documents by document type
+      orphanedDocs.forEach(doc => {
+        const docType = doc.document_type_id ? 
+          (documentTypeMap.get(doc.document_type_id) || 'Unknown Document Type') : 
+          'No Document Type';
+        
+        stats.orphanedExpertDocsByType[docType] = (stats.orphanedExpertDocsByType[docType] || 0) + 1;
+      });
+      
+      // Get all sources_google files (not folders) to check for expert_documents
+      console.log("Fetching all sources_google non-folder records for comprehensive analysis...");
       try {
         const allSourcesGoogleResult = await safeQuery(
           () => supabase
             .from('sources_google')
-            .select('id, mime_type, document_type_id')
+            .select('id, name, mime_type, document_type_id')
             .eq('is_deleted', false)
-            .limit(5000), // Add a reasonable limit to avoid timeout
-          'Fetch all sources_google for MIME type analysis'
+            .not('mime_type', 'eq', 'application/vnd.google-apps.folder')
+            .limit(10000), // Higher limit for more comprehensive analysis
+          'Fetch all sources_google non-folder records'
         );
       
         const allSourcesGoogle = allSourcesGoogleResult.data;
-        console.log(`Successfully fetched ${allSourcesGoogle?.length || 0} sources_google records for MIME type analysis`);
+        console.log(`Successfully fetched ${allSourcesGoogle?.length || 0} sources_google files (not folders)`);
         
         if (allSourcesGoogle) {
-          // Process each record to build mime_type statistics
+          // Process each record to build comprehensive file type statistics
           allSourcesGoogle.forEach((source: any) => {
             const mimeType = source.mime_type || 'unknown';
+            const hasExpertDoc = expertDocsBySourceId.has(source.id);
             
             // Initialize mime_type entry if it doesn't exist
             if (!stats.byMimeType[mimeType]) {
               stats.byMimeType[mimeType] = {
                 total: 0,
                 withDocType: 0,
-                withoutDocType: 0
+                withoutDocType: 0,
+                withExpertDocs: 0
+              };
+            }
+            
+            // Initialize file type summary if it doesn't exist
+            if (!stats.fileTypeSummary[mimeType]) {
+              stats.fileTypeSummary[mimeType] = {
+                total: 0,
+                withExpertDocs: 0,
+                withoutExpertDocs: 0,
+                percentageWithExpertDocs: 0
               };
             }
             
             // Increment counts
             stats.byMimeType[mimeType].total++;
+            stats.fileTypeSummary[mimeType].total++;
+            
+            if (hasExpertDoc) {
+              stats.byMimeType[mimeType].withExpertDocs++;
+              stats.fileTypeSummary[mimeType].withExpertDocs++;
+            } else {
+              stats.fileTypeSummary[mimeType].withoutExpertDocs++;
+            }
             
             if (source.document_type_id) {
               stats.byMimeType[mimeType].withDocType++;
@@ -591,13 +742,20 @@ async function showExpertDocuments() {
               stats.unclassifiedMimeTypes[mimeType] = (stats.unclassifiedMimeTypes[mimeType] || 0) + 1;
             }
           });
+          
+          // Calculate percentages for file type summary
+          Object.keys(stats.fileTypeSummary).forEach(mimeType => {
+            const summary = stats.fileTypeSummary[mimeType];
+            summary.percentageWithExpertDocs = summary.total > 0 ? 
+              Math.round((summary.withExpertDocs / summary.total) * 100) : 0;
+          });
         }
       } catch (innerError) {
-        console.warn("Error fetching sources_google for MIME type analysis:", 
+        console.warn("Error fetching sources_google for comprehensive analysis:", 
           innerError instanceof Error ? innerError.message : String(innerError));
       }
     } catch (error) {
-      console.warn("Error analyzing mime_types:", 
+      console.warn("Error analyzing sources_google and expert_documents:", 
         error instanceof Error ? error.message : String(error));
     }
     
@@ -672,6 +830,61 @@ async function showExpertDocuments() {
     console.log(`Total Expert Documents: ${stats.totalExpertDocs}`);
     console.log(`With Document Type: ${stats.expertDocsWithDocType} (${Math.round(stats.expertDocsWithDocType / stats.totalExpertDocs * 100)}%)`);
     console.log(`Without Document Type: ${stats.expertDocsWithoutDocType} (${Math.round(stats.expertDocsWithoutDocType / stats.totalExpertDocs * 100)}%)`);
+    console.log(`Orphaned Expert Documents (no sources_google): ${stats.orphanedExpertDocs} (${Math.round(stats.orphanedExpertDocs / stats.totalExpertDocs * 100)}%)`);
+    
+    // Display file type summary - statistics for every file by MIME type
+    console.log("\nFILE TYPE SUMMARY");
+    console.log("================");
+    console.log("MIME Type | Total Files | With Expert Docs | Without Expert Docs | Coverage %");
+    console.log("---------|-------------|-----------------|-------------------|------------");
+    
+    // Sort file types by total count (descending)
+    const fileTypeSummary = Object.entries(stats.fileTypeSummary)
+      .sort((a: [string, any], b: [string, any]) => b[1].total - a[1].total);
+    
+    for (const entry of fileTypeSummary) {
+      const mimeType = entry[0];
+      const summary = entry[1];
+      console.log(`${mimeType.padEnd(15)} | ${summary.total.toString().padStart(5)} | ${summary.withExpertDocs.toString().padStart(12)} | ${summary.withoutExpertDocs.toString().padStart(15)} | ${summary.percentageWithExpertDocs}%`);
+    }
+    
+    // Display orphaned expert documents by document type if any exist
+    if (stats.orphanedExpertDocs > 0) {
+      console.log("\nORPHANED EXPERT DOCUMENTS BY DOCUMENT TYPE");
+      console.log("========================================");
+      
+      // Sort orphaned documents by count (descending)
+      const sortedOrphanedTypes = Object.entries(stats.orphanedExpertDocsByType)
+        .sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+      
+      for (const entry of sortedOrphanedTypes) {
+        const docType = entry[0];
+        const count = entry[1];
+        const percentage = Math.round((count / stats.orphanedExpertDocs) * 100);
+        console.log(`${docType.padEnd(40)} | ${count.toString().padStart(5)} | ${percentage}%`);
+      }
+      
+      // Display sample content from orphaned documents
+      console.log("\nSAMPLE CONTENT FROM ORPHANED EXPERT DOCUMENTS");
+      console.log("===========================================");
+      
+      // Find orphaned documents
+      const orphanedDocs = records.filter((doc: ExpertDocument) => !doc.sources_google);
+      const orphanSamples = orphanedDocs.slice(0, 5); // Show just 5 samples
+      
+      for (let i = 0; i < orphanSamples.length; i++) {
+        const doc = orphanSamples[i];
+        const typeId = doc.document_type_id;
+        const typeName = typeId ? (documentTypes?.find((dt: DocumentType) => dt.id === typeId)?.document_type || 'Unknown') : 'None';
+        console.log(`\n[${i+1}] Document Type: ${typeName}`);
+        console.log(`    ID: ${doc.id}`);
+        console.log(`    Content Sample: ${getContentSentences(doc.raw_content || doc.processed_content, 1)}`);
+      }
+      
+      if (orphanedDocs.length > 5) {
+        console.log(`\n...and ${orphanedDocs.length - 5} more orphaned documents not shown`);
+      }
+    }
     
     // Display expert documents by MIME type
     console.log("\nEXPERT DOCUMENTS BY MIME TYPE");
@@ -772,7 +985,7 @@ async function showExpertDocuments() {
     }
     
     // Save statistics to markdown file
-    const markdownPath = await saveStatsToMarkdown(stats, samples, records);
+    const markdownPath = await saveStatsToMarkdown(stats, samples, records, documentTypes);
     if (markdownPath) {
       console.log(`\nDetailed report saved to: ${markdownPath}`);
     }
