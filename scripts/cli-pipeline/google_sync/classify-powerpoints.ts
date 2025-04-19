@@ -17,18 +17,97 @@ import { GoogleDriveService } from '../../../packages/shared/services/google-dri
 import { BatchProcessingService } from '../../../packages/shared/services/batch-processing-service';
 
 // Define the prompt name to use for classification
-const CLASSIFICATION_PROMPT = 'scientific-document-analysis-prompt';
+const CLASSIFICATION_PROMPT = 'scientific-powerpoint';
+
+// Define a document type interface to use for typing
+interface DocumentType {
+  id: string;
+  document_type: string;
+}
+
+// Function to map document_type to document_type_id 
+async function mapDocumentTypeToId(documentTypeStr: string, supabase: any): Promise<string> {
+  // Fetch valid document types from the database
+  const { data: documentTypes, error } = await supabase
+    .from('document_types')
+    .select('id, document_type')
+    .order('document_type');
+
+  if (error) {
+    console.error(`Error fetching document types: ${error.message}`);
+    return '';
+  }
+
+  if (!documentTypes || documentTypes.length === 0) {
+    console.error('No document types found in database');
+    return '';
+  }
+
+  // First try exact match
+  const exactMatch = documentTypes.find((dt: DocumentType) => 
+    dt.document_type.toLowerCase() === documentTypeStr.toLowerCase()
+  );
+
+  if (exactMatch) {
+    return exactMatch.id;
+  }
+
+  // Try partial match if no exact match
+  const partialMatch = documentTypes.find((dt: DocumentType) => 
+    dt.document_type.toLowerCase().includes(documentTypeStr.toLowerCase()) ||
+    documentTypeStr.toLowerCase().includes(dt.document_type.toLowerCase())
+  );
+
+  if (partialMatch) {
+    return partialMatch.id;
+  }
+
+  // For PowerPoint specific matches
+  if (documentTypeStr.toLowerCase().includes('presentation') || 
+      documentTypeStr.toLowerCase().includes('powerpoint') ||
+      documentTypeStr.toLowerCase().includes('slide')) {
+    
+    const presentationType = documentTypes.find((dt: DocumentType) => 
+      dt.document_type.toLowerCase().includes('presentation') ||
+      dt.document_type.toLowerCase().includes('powerpoint') ||
+      dt.document_type.toLowerCase().includes('slide')
+    );
+    
+    if (presentationType) {
+      return presentationType.id;
+    }
+  }
+
+  // If still no match, try to find a scientific document type as fallback
+  const scientificType = documentTypes.find((dt: DocumentType) => 
+    dt.document_type.toLowerCase().includes('scientific') ||
+    dt.document_type.toLowerCase().includes('research') ||
+    dt.document_type.toLowerCase().includes('academic')
+  );
+  
+  if (scientificType) {
+    return scientificType.id;
+  }
+
+  // Last resort - find the unknown document type
+  const unknownType = documentTypes.find((dt: DocumentType) => 
+    dt.document_type.toLowerCase() === 'unknown document type' ||
+    dt.document_type.toLowerCase() === 'unknown' ||
+    dt.document_type.toLowerCase().includes('unclassified')
+  );
+
+  if (unknownType) {
+    return unknownType.id;
+  }
+
+  // If nothing matches, return first document type ID as absolute fallback
+  return documentTypes[0].id;
+}
 
 // Function to create a fallback classification when extraction or Claude API fails
 async function createFallbackClassification(file: any, supabase: any): Promise<any> {
   const fileName = file.name || 'Unknown Document';
   const extension = fileName.split('.').pop()?.toLowerCase() || '';
-
-  // Define a document type interface to use for typing
-  interface DocumentType {
-    id: string;
-    document_type: string;
-  }
 
   // Fetch valid document types from the database to ensure we use an existing ID
   const { data: documentTypes, error } = await supabase
@@ -108,13 +187,13 @@ async function createFallbackClassification(file: any, supabase: any): Promise<a
 }
 
 // Process a single PowerPoint file using the prompt service and Claude
-// Returns classification result
+// Returns classification result and extracted text
 async function processPowerPointFile(
   fileId: string,
   fileName: string,
   debug: boolean = false,
   supabase: any = null
-): Promise<{ classificationResult: any, tempFilePath: string | null }> {
+): Promise<{ classificationResult: any, tempFilePath: string | null, extractedText?: string }> {
   let tempFilePath: string | null = null;
   
   try {
@@ -163,6 +242,7 @@ async function processPowerPointFile(
     }
     
     // 2. Download the PowerPoint file
+    console.log(`📥 Downloading PowerPoint file from Google Drive...`);
     const response = await drive.files.get({
       fileId: fileId,
       alt: 'media',
@@ -170,6 +250,8 @@ async function processPowerPointFile(
     
     if (debug) {
       console.log(`Downloaded PowerPoint, size: ${response.data.byteLength} bytes`);
+    } else {
+      console.log(`Downloaded PowerPoint file: ${(response.data.byteLength / 1024).toFixed(1)} KB`);
     }
     
     // 3. Save the PowerPoint to a temporary location
@@ -189,66 +271,245 @@ async function processPowerPointFile(
       console.log(`Saved temporary PowerPoint file to ${tempFilePath}`);
     }
     
-    // 4. Extract text content from the PowerPoint file
-    // Using pptx-parser library that we installed
-    const pptxParser = require('pptx-parser');
-    
-    // Simulating file content extraction - we'll display a sample of what we extracted
+    // 4. Extract text content from the PowerPoint file using multiple methods
+    console.log(`🔍 Extracting content from PowerPoint file using multiple extraction methods...`);
     let extractedText = '';
-    
-    try {
-      const parsedPptx = await pptxParser.parse(tempFilePath);
-      if (debug) {
-        console.log('PPTX parser result structure:', Object.keys(parsedPptx));
-      }
-      
-      // Extract text from slides
-      if (parsedPptx && parsedPptx.slides) {
-        extractedText = 'PowerPoint Content:\n\n';
+    let extractionSuccess = false;
+
+    // We'll use multiple extraction methods, prioritizing the ones that give better results
+    const extractionMethods = [
+      // Method 1: office-text-extractor - newest library with dedicated PowerPoint support
+      async () => {
+        console.log(`Trying extraction method 1: office-text-extractor`);
+        const officeTextExtractor = require('office-text-extractor');
+        const textExtractor = new officeTextExtractor();
+        const extractedContent = await textExtractor.extract(tempFilePath);
         
-        // Loop through slides
-        parsedPptx.slides.forEach((slide: any, index: number) => {
-          extractedText += `Slide ${index + 1}:\n`;
+        if (extractedContent && extractedContent.length > 50) {
+          console.log(`✅ office-text-extractor successfully extracted ${extractedContent.length} characters`);
+          return `PowerPoint Content (Extracted with office-text-extractor):\n\n${extractedContent}\n\n` +
+                 `File Metadata:\nFilename: ${fileName}\nLast Modified: ${file.modifiedTime || 'Unknown'}\n`;
+        } else {
+          throw new Error("office-text-extractor returned insufficient content");
+        }
+      },
+      
+      // Method 2: pptx-text-parser - specialized for PowerPoint extraction
+      async () => {
+        console.log(`Trying extraction method 2: pptx-text-parser`);
+        const pptxTextParser = require('pptx-text-parser');
+        const extractedContent = await pptxTextParser.parseFile(tempFilePath, { withJson: true });
+        
+        if (extractedContent && (
+            (typeof extractedContent === 'string' && extractedContent.length > 50) ||
+            (typeof extractedContent === 'object' && extractedContent.text && extractedContent.text.length > 50)
+        )) {
+          const textContent = typeof extractedContent === 'string' ? 
+                               extractedContent : 
+                               JSON.stringify(extractedContent, null, 2);
+                               
+          console.log(`✅ pptx-text-parser successfully extracted ${textContent.length} characters`);
+          return `PowerPoint Content (Extracted with pptx-text-parser):\n\n${textContent}\n\n` +
+                 `File Metadata:\nFilename: ${fileName}\nLast Modified: ${file.modifiedTime || 'Unknown'}\n`;
+        } else {
+          throw new Error("pptx-text-parser returned insufficient content");
+        }
+      },
+      
+      // Method 3: pptx-parser - used in the original implementation
+      async () => {
+        console.log(`Trying extraction method 3: pptx-parser`);
+        const pptxParser = require('pptx-parser');
+        const parsedPptx = await pptxParser.parse(tempFilePath);
+        
+        let content = 'PowerPoint Content (Extracted with pptx-parser):\n\n';
+        
+        // Extract text from slides
+        if (parsedPptx && parsedPptx.slides && parsedPptx.slides.length > 0) {
+          // Loop through slides
+          parsedPptx.slides.forEach((slide: any, index: number) => {
+            content += `Slide ${index + 1}:\n`;
+            
+            // Add slide title if available
+            if (slide.title) {
+              content += `Title: ${slide.title}\n`;
+            }
+            
+            // Extract text from slide elements
+            if (slide.elements) {
+              slide.elements.forEach((element: any) => {
+                if (element.type === 'text' && element.text) {
+                  content += `- ${element.text}\n`;
+                }
+              });
+            }
+            
+            content += '\n';
+          });
           
-          // Extract text from slide elements
-          if (slide.elements) {
-            slide.elements.forEach((element: any) => {
-              if (element.type === 'text' && element.text) {
-                extractedText += `- ${element.text}\n`;
+          // If the content is longer than 100 characters, consider it valid
+          if (content.length > 100) {
+            console.log(`✅ pptx-parser successfully extracted ${content.length} characters`);
+            return content;
+          }
+        }
+        
+        throw new Error("pptx-parser returned insufficient content");
+      },
+      
+      // Method 4: officeparser - general Office file parser
+      async () => {
+        console.log(`Trying extraction method 4: officeparser`);
+        const officeParser = require('officeparser');
+        
+        // Parse the PowerPoint file
+        const officeContent = await new Promise((resolve, reject) => {
+          officeParser.parseFile(tempFilePath, (err: any, data: any) => {
+            if (err) reject(err);
+            else resolve(data);
+          });
+        });
+        
+        if (officeContent && typeof officeContent === 'string' && officeContent.length > 50) {
+          console.log(`✅ officeparser successfully extracted ${officeContent.length} characters`);
+          return `PowerPoint Content (Extracted with officeparser):\n\n${officeContent}\n\n` +
+                 `File Metadata:\nFilename: ${fileName}\nLast Modified: ${file.modifiedTime || 'Unknown'}\n`;
+        } else {
+          throw new Error("officeparser returned insufficient content");
+        }
+      },
+      
+      // Method 5: Custom ZIP extraction (PowerPoint files are ZIP archives with XML files)
+      async () => {
+        console.log(`Trying extraction method 5: custom ZIP extraction`);
+        const extractZip = require('extract-zip');
+        const path = require('path');
+        const { v4: uuidv4 } = require('uuid');
+        const { readdir, readFile, rm } = require('fs/promises');
+        
+        // Create a temp directory for extraction
+        const extractDir = path.join(tempDir, `extract-${uuidv4()}`);
+        if (!fs.existsSync(extractDir)) {
+          fs.mkdirSync(extractDir, { recursive: true });
+        }
+        
+        try {
+          // Extract the PPTX (which is a ZIP file) to the temp directory
+          await extractZip(tempFilePath, { dir: extractDir });
+          
+          // Look for slide XML files which contain the text content
+          const slidesDir = path.join(extractDir, 'ppt', 'slides');
+          let slideContent = '';
+          
+          if (fs.existsSync(slidesDir)) {
+            const slideFiles = await readdir(slidesDir);
+            
+            // Sort files to process slides in order
+            slideFiles.sort();
+            
+            // Process each slide XML file
+            for (const slideFile of slideFiles) {
+              if (slideFile.startsWith('slide') && slideFile.endsWith('.xml')) {
+                const slideFilePath = path.join(slidesDir, slideFile);
+                const slideXml = await readFile(slideFilePath, 'utf8');
+                
+                // Extract text from XML using regex (simple but effective for this purpose)
+                const textMatches = slideXml.match(/<a:t>([^<]+)<\/a:t>/g);
+                if (textMatches) {
+                  slideContent += `Slide ${slideFile.replace(/[^0-9]/g, '')}:\n`;
+                  
+                  textMatches.forEach((match: string) => {
+                    // Extract just the text content between the tags
+                    const textContent = match.replace(/<a:t>|<\/a:t>/g, '');
+                    if (textContent.trim().length > 0) {
+                      slideContent += `- ${textContent.trim()}\n`;
+                    }
+                  });
+                  
+                  slideContent += '\n';
+                }
               }
-            });
+            }
           }
           
-          extractedText += '\n';
-        });
+          // Also check for presentation metadata
+          let metadataContent = '';
+          const corePropsPath = path.join(extractDir, 'docProps', 'core.xml');
+          if (fs.existsSync(corePropsPath)) {
+            const coreXml = await readFile(corePropsPath, 'utf8');
+            
+            // Extract presentation title, subject, creator and other metadata
+            const titleMatch = coreXml.match(/<dc:title>([^<]+)<\/dc:title>/);
+            const subjectMatch = coreXml.match(/<dc:subject>([^<]+)<\/dc:subject>/);
+            const creatorMatch = coreXml.match(/<dc:creator>([^<]+)<\/dc:creator>/);
+            const descriptionMatch = coreXml.match(/<dc:description>([^<]+)<\/dc:description>/);
+            
+            metadataContent += 'PowerPoint Metadata:\n';
+            if (titleMatch && titleMatch[1]) metadataContent += `Title: ${titleMatch[1]}\n`;
+            if (subjectMatch && subjectMatch[1]) metadataContent += `Subject: ${subjectMatch[1]}\n`;
+            if (creatorMatch && creatorMatch[1]) metadataContent += `Creator: ${creatorMatch[1]}\n`;
+            if (descriptionMatch && descriptionMatch[1]) metadataContent += `Description: ${descriptionMatch[1]}\n`;
+            metadataContent += '\n';
+          }
+          
+          // Check if we extracted enough content
+          if (slideContent.length > 100 || (slideContent.length > 50 && metadataContent.length > 0)) {
+            console.log(`✅ Custom ZIP extraction successfully extracted ${slideContent.length + metadataContent.length} characters`);
+            
+            // Cleanup temp directory
+            await rm(extractDir, { recursive: true, force: true });
+            
+            return `PowerPoint Content (Extracted with custom XML parser):\n\n${metadataContent}${slideContent}\n` +
+                   `File Metadata:\nFilename: ${fileName}\nLast Modified: ${file.modifiedTime || 'Unknown'}\n`;
+          } else {
+            // Cleanup temp directory
+            await rm(extractDir, { recursive: true, force: true });
+            throw new Error("Custom ZIP extraction returned insufficient content");
+          }
+        } catch (error) {
+          // Cleanup temp directory even if there was an error
+          try {
+            await rm(extractDir, { recursive: true, force: true });
+          } catch (cleanupError) {
+            console.warn('Error cleaning up temp directory:', cleanupError);
+          }
+          throw error;
+        }
       }
-    } catch (extractionError) {
-      console.error('Error extracting PowerPoint content:', extractionError);
-      
-      // Attempt a more primitive extraction method as backup
-      console.log('Attempting backup extraction method...');
-      
-      // Create placeholder extracted content based on the filename
-      // In a real implementation, we'd have a more robust extraction method
-      extractedText = `PowerPoint Presentation: ${fileName}\n\n`;
-      extractedText += `This is a placeholder for content that would be extracted from ${fileName}.\n`;
-      extractedText += `File appears to be a PowerPoint presentation with file ID: ${fileId}.\n`;
-      extractedText += `The content extraction encountered issues and is showing limited information.\n\n`;
-      extractedText += `Filename: ${fileName}\n`;
-      extractedText += `File size: ${file.size || 'Unknown'} bytes\n`;
-      extractedText += `Last modified: ${file.modifiedTime || 'Unknown'}\n`;
+    ];
+    
+    // Try each extraction method in sequence until one succeeds
+    for (const extractionMethod of extractionMethods) {
+      try {
+        extractedText = await extractionMethod();
+        extractionSuccess = true;
+        break; // Exit the loop if extraction succeeded
+      } catch (error) {
+        console.warn(`Extraction method failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Continue to the next method
+      }
     }
     
-    // Display a sample of the extracted content (for demonstration purposes)
-    console.log('\nSample of extracted PowerPoint content:');
+    // If all extraction methods failed, throw an error
+    if (!extractionSuccess) {
+      throw new Error("All PowerPoint extraction methods failed. Unable to extract content from this file.");
+    }
+    
+    // Display a sample of the extracted content
+    console.log('\n📄 Sample of extracted PowerPoint content:');
     console.log('----------------------------------------');
     
     // Show just the first few lines of extracted content
-    const contentSample = extractedText.split('\n').slice(0, 10).join('\n');
+    const contentSample = extractedText.split('\n').slice(0, 20).join('\n');
     console.log(contentSample);
+    console.log('----------------------------------------');
+    
+    // Print the total number of characters extracted
+    console.log(`📊 Total extracted content: ${extractedText.length} characters`);
     console.log('----------------------------------------\n');
     
     // 5. Use the prompt service to load the scientific document analysis prompt
+    console.log(`🧠 Loading scientific PowerPoint classification prompt...`);
     const promptResult = await promptService.loadPrompt(CLASSIFICATION_PROMPT, {
       includeDatabaseQueries: true,  // Include the SQL query to fetch document types
       executeQueries: true,          // Actually execute the query to get document types
@@ -293,15 +554,20 @@ async function processPowerPointFile(
     1. Examine the content, structure, and purpose of this PowerPoint presentation.
     2. Determine which document_type from the document_types table best describes it.
     3. Create a detailed summary that captures the key concepts.
-    4. Return your analysis in the requested JSON format with document_type, document_type_id, etc.
+    4. Suggest a clear PowerPoint slide organization to effectively present this content.
+    5. Return your analysis in the requested JSON format with document_type, document_type_id, etc.
     
     IMPORTANT: 
     - Select the most appropriate document_type_id from the available options in the document_types table
     - Base your classification on the extracted content, not just the filename
-    - Provide detailed reasoning for your classification choice
+    - The document_type should be a string (e.g., "scientific presentation") 
+    - Leave the document_type_id field empty (""), it will be filled by the system
+    - Provide detailed reasoning for your classification choice in the classification_reasoning field
+    - Include clinical implications and unique insights as specified in the output format
     `;
     
     // 7. Get classification from Claude
+    console.log(`🤖 Sending PowerPoint content to Claude API for analysis...`);
     let classificationResult;
     let retries = 0;
     const maxRetries = 3;
@@ -311,9 +577,6 @@ async function processPowerPointFile(
         if (debug) {
           console.log(`Using Claude to classify PowerPoint content (attempt ${retries + 1}/${maxRetries})`);
         }
-        
-        // Always show that we're sending to Claude, regardless of debug mode
-        console.log(`Sending PowerPoint content to Claude API for analysis...`);
         
         // Use Claude to classify the content
         classificationResult = await claudeService.getJsonResponse(
@@ -360,101 +623,48 @@ async function processPowerPointFile(
             console.log(`Waiting ${backoffTime}ms before retrying...`);
             await new Promise(resolve => setTimeout(resolve, backoffTime));
           } else {
-            console.error(`Maximum retries (${maxRetries}) reached. Using fallback classification.`);
-            
-            // Try using the traditional method as a fallback since direct analysis failed
-            try {
-              console.log(`Falling back to metadata-based classification...`);
-              
-              // Create a descriptive message about the PowerPoint metadata
-              const fileMetadata = `
-              File Name: ${fileName}
-              File Size: ${file.size || 'Unknown'} bytes
-              Last Modified: ${file.modifiedTime || 'Unknown'}
-              MIME Type: application/vnd.openxmlformats-officedocument.presentationml.presentation
-              `;
-              
-              const fallbackMessage = `${promptResult.combinedContent}
-              
-              Please classify this PowerPoint document based on the following information:
-              
-              Document Title: "${fileName}"
-              
-              PowerPoint Metadata:
-              ${fileMetadata}
-              
-              Context clues:
-              1. The filename itself may contain important classification clues
-              2. Look for patterns in the file name (e.g., presentation, slides, lecture)
-              3. Consider any date patterns or expert names in the filename
-              4. Use the document_types table to find the most appropriate type
-              
-              Important: Select the most appropriate document_type_id from the provided options.
-              `;
-              
-              // Try using prompt service as a fallback
-              classificationResult = await promptService.usePromptWithClaude(
-                CLASSIFICATION_PROMPT,
-                fallbackMessage,
-                {
-                  expectJson: true,
-                  claudeOptions: {
-                    temperature: 0,
-                    maxTokens: 4000
-                  }
-                }
-              );
-              
-              console.log(`Successfully used fallback metadata-based classification`);
-            } catch (fallbackError) {
-              console.error(`Fallback classification also failed: ${fallbackError}`);
-              // Create a very basic fallback classification based on file metadata
-              classificationResult = await createFallbackClassification(
-                { name: fileName || 'Unknown Document', drive_id: fileId },
-                supabase
-              );
-            }
+            console.error(`Maximum retries (${maxRetries}) reached. Aborting classification.`);
+            throw new Error(`Claude API failed after ${maxRetries} attempts. Please try again later.`);
           }
         } else {
           // For other types of errors, don't retry
           console.error(`Non-retryable Claude API error: ${errorMessage}`);
-          classificationResult = await createFallbackClassification(
-            { name: fileName || 'Unknown Document', drive_id: fileId },
-            supabase
-          );
-          break;
+          throw new Error(`Claude API error: ${errorMessage}`);
         }
       }
     }
     
-    if (!classificationResult) {
-      // Just in case we didn't set it in the error handlers
-      classificationResult = await createFallbackClassification(
-        { name: fileName || 'Unknown Document', drive_id: fileId },
-        supabase
-      );
+    // Validate that we have a usable classification result
+    if (!classificationResult || !classificationResult.document_type) {
+      throw new Error("Failed to get a valid classification result from Claude");
     }
     
     if (debug) {
       console.log('Classification result:', classificationResult);
     }
     
-    // Return both the classification result and the temp file path
+    // Return the classification result, temp file path, and extracted text
     return { 
       classificationResult, 
-      tempFilePath 
+      tempFilePath,
+      extractedText 
     };
   } catch (error) {
-    console.error(`Error processing PowerPoint file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error(`❌ Error processing PowerPoint file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error('This is a critical error. Aborting this file processing.');
     
-    // If we failed but have a temporary file, return it for cleanup
-    return {
-      classificationResult: await createFallbackClassification(
-        { name: fileName || 'Unknown Document', drive_id: fileId },
-        supabase
-      ),
-      tempFilePath
-    };
+    // Clean up any temporary files before re-throwing the error
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      try {
+        fs.unlinkSync(tempFilePath);
+        console.log(`Cleaned up temporary file: ${tempFilePath}`);
+      } catch (cleanupError) {
+        console.warn(`Warning: Failed to clean up temporary file: ${cleanupError}`);
+      }
+    }
+    
+    // Re-throw the error to handle it at a higher level
+    throw new Error(`PowerPoint extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -531,15 +741,19 @@ async function classifyPowerPointDocuments(
     // 1. Get the Supabase client
     const supabase = SupabaseClientService.getInstance().getClient();
     
-    // 2. Build query for unclassified PowerPoint files
+    // 2. Build query for PowerPoint files that need processing
+    // First, get PowerPoint files
     let query = supabase
       .from('sources_google')
       .select('*')
-      .is('document_type_id', null)
       .is('is_deleted', false)
       .eq('mime_type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
       .order('modified_at', { ascending: false })
       .limit(limit);
+      
+    if (debug) {
+      console.log('Querying PowerPoint files from sources_google...');
+    }
     
     // Filter by folder if provided
     if (folderId) {
@@ -583,125 +797,194 @@ async function classifyPowerPointDocuments(
       throw new Error(`Error fetching PowerPoint files: ${error.message}`);
     }
     
-    console.log(`Found ${files?.length || 0} PowerPoint files missing document types`);
-    
     if (!files || files.length === 0) {
+      console.log('No PowerPoint files found in sources_google');
+      return [];
+    }
+    
+    if (debug) {
+      console.log(`Found ${files.length} PowerPoint files in sources_google`);
+    }
+    
+    // For testing purposes, we'll process the first PowerPoint file regardless of its status
+    // when running in dry-run mode with verbose flag
+    let filesToProcess = [];
+    
+    if (dryRun && debug) {
+      console.log(`TESTING MODE: Processing first PowerPoint file regardless of content status`);
+      filesToProcess = files.slice(0, 1);
+    } else {
+      // Normal mode: check which files need processing by looking up their expert documents
+      
+      for (const file of files) {
+        // First check if file has document_type_id
+        if (!file.document_type_id) {
+          if (debug) {
+            console.log(`File ${file.name} (${file.id}) has no document_type_id, needs processing`);
+          }
+          filesToProcess.push(file);
+          continue;
+        }
+        
+        // Check for corresponding expert_documents with content
+        const { data: expertDocs, error: expertError } = await supabase
+          .from('expert_documents')
+          .select('id, raw_content, processed_content')
+          .eq('source_id', file.id);
+          
+        if (expertError) {
+          console.error(`Error fetching expert_documents for file ${file.id}: ${expertError.message}`);
+          // If we can't check, assume it needs processing
+          filesToProcess.push(file);
+          continue;
+        }
+        
+        // No expert documents found - file needs processing
+        if (!expertDocs || expertDocs.length === 0) {
+          if (debug) {
+            console.log(`File ${file.name} (${file.id}) has no expert_documents, needs processing`);
+          }
+          filesToProcess.push(file);
+          continue;
+        }
+        
+        // Check if any expert document has content
+        const hasContent = expertDocs.some((doc: any) => 
+          (doc.raw_content && doc.raw_content !== null) || 
+          (doc.processed_content && doc.processed_content !== null)
+        );
+        
+        // If no content found, file needs processing
+        if (!hasContent) {
+          if (debug) {
+            console.log(`File ${file.name} (${file.id}) has expert_documents but no content, needs processing`);
+          }
+          filesToProcess.push(file);
+        } else if (debug) {
+          console.log(`File ${file.name} (${file.id}) already has expert_documents with content, skipping`);
+        }
+      }
+    }
+    
+    console.log(`Found ${filesToProcess.length || 0} PowerPoint files that need content processing`);
+    
+    if (!filesToProcess || filesToProcess.length === 0) {
       return [];
     }
     
     // Process files with concurrency
-    console.log(`Processing ${files.length} PowerPoint files with concurrency of ${concurrency}`);
+    console.log(`Processing ${filesToProcess.length} PowerPoint files with concurrency of ${concurrency}`);
     
     // Process a single file
     const processFile = async (file: any, index: number): Promise<any> => {
       // Always show progress, regardless of debug mode
-      console.log(`Processing PowerPoint file ${index+1}/${files.length}: ${file.name}`);
+      console.log(`\n===============================================`);
+      console.log(`🔄 Processing file ${index+1}/${filesToProcess.length}: ${file.name}`);
+      console.log(`📋 File ID: ${file.id}, Drive ID: ${file.drive_id}`);
+      
+      // Display file date information
+      console.log(`📅 File created: ${new Date(file.created_at).toLocaleString()}`);
+      console.log(`📅 File modified: ${new Date(file.modified_at).toLocaleString()}`);
+      if (file.size) {
+        console.log(`📊 File size: ${(file.size / 1024).toFixed(2)} KB`);
+      }
+      console.log(`===============================================\n`);
       
       try {
-        if (debug) {
-          console.log(`File details: ${file.name} (${file.id}, Drive ID: ${file.drive_id})`);
-        }
-        
         // Process the file
-        console.log(`[${index+1}/${files.length}] ⏳ Reading PowerPoint content...`);
-        const { classificationResult, tempFilePath } = await processPowerPointFile(
+        console.log(`[${index+1}/${filesToProcess.length}] ⏳ Processing PowerPoint file...`);
+        
+        const result = await processPowerPointFile(
           file.drive_id,
           file.name || '',
           debug,
           supabase
         );
         
+        const { classificationResult, tempFilePath, extractedText } = result;
+        
         // Add any temporary files to cleanup list
         if (tempFilePath) {
           tempFiles.push(tempFilePath);
         }
         
-        // Show classification result regardless of debug mode
-        if (classificationResult && classificationResult.document_type) {
-          console.log(`[${index+1}/${files.length}] ✅ Classified as: ${classificationResult.document_type}`);
-          console.log(`[${index+1}/${files.length}] 📊 Confidence: ${(classificationResult.classification_confidence * 100).toFixed(1)}%`);
-        } else {
-          console.log(`[${index+1}/${files.length}] ❌ Classification failed`);
-        }
+        // Show classification result
+        console.log(`\n[${index+1}/${filesToProcess.length}] ✅ Classification successful:`);
+        console.log(`   Type: ${classificationResult.document_type}`);
+        const confidence = classificationResult.classification_confidence || 0.85;
+        console.log(`   Confidence: ${(confidence * 100).toFixed(1)}%`);
         
         // Only update the database if not in dry run mode
-        if (!dryRun && classificationResult.document_type_id) {
+        if (!dryRun) {
+          console.log(`\n📝 Updating database with classification results...`);
+          
+          // First, map the document_type string to a document_type_id
+          if (!classificationResult.document_type_id && classificationResult.document_type) {
+            console.log(`➡️ Mapping document_type "${classificationResult.document_type}" to a document_type_id...`);
+            classificationResult.document_type_id = await mapDocumentTypeToId(
+              classificationResult.document_type,
+              supabase
+            );
+            console.log(`✅ Mapped to document_type_id: ${classificationResult.document_type_id}`);
+          }
+          
+          if (!classificationResult.document_type_id) {
+            throw new Error(`No valid document_type_id could be determined for ${file.name}`);
+          }
+          
           // Update document type in sources_google
+          console.log(`➡️ Updating document_type_id in sources_google table...`);
           const { error: updateError } = await supabase
             .from('sources_google')
             .update({ document_type_id: classificationResult.document_type_id })
             .eq('id', file.id);
           
           if (updateError) {
-            console.error(`Error updating document type: ${updateError.message}`);
-          } else if (debug) {
-            console.log(`Updated document type for ${file.name} to ${classificationResult.document_type_id}`);
+            throw new Error(`Error updating document type: ${updateError.message}`);
           }
           
+          console.log(`✅ Successfully updated document_type_id in sources_google`);
+          
           // Create expert document record
-          try {
-            // If debug mode is enabled, log what we're about to insert
-            if (debug) {
-              console.log(`Inserting expert document for ${file.name} with document_type_id: ${classificationResult.document_type_id}`);
-            }
-            
-            // Create minimal document
-            const minimalDoc = {
-              id: uuidv4(),
-              source_id: file.id,
-              document_type_id: classificationResult.document_type_id,
-              classification_confidence: classificationResult.classification_confidence || 0.75,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            
-            // Insert the minimal document first (always works)
-            const { error: minimalError, data: minimalData } = await supabase
-              .from('expert_documents')
-              .insert(minimalDoc)
-              .select();
-              
-            if (minimalError) {
-              console.error(`Error creating minimal expert document: ${minimalError.message}`);
-            } else {
-              if (debug) {
-                console.log(`Created minimal expert document for ${file.name}`);
-              }
-              
-              // Now try to update with classification metadata
-              try {
-                if (minimalData && minimalData.length > 0) {
-                  const { error: contentUpdateError } = await supabase
-                    .from('expert_documents')
-                    .update({
-                      classification_metadata: classificationResult,
-                      processed_content: classificationResult  // Also set processed_content to match classification result
-                    })
-                    .eq('id', minimalDoc.id);
-                  
-                  if (contentUpdateError) {
-                    if (debug) {
-                      console.log(`Could not add classification metadata: ${contentUpdateError.message}`);
-                    }
-                    // This is fine, we already have the minimal record
-                  } else if (debug) {
-                    console.log(`Updated expert document with classification metadata for ${file.name}`);
-                  }
-                }
-              } catch (contentErr) {
-                // Just log in debug mode, we already have the minimal document
-                if (debug) {
-                  console.log(`Could not add classification metadata: ${contentErr instanceof Error ? contentErr.message : 'Unknown error'}`);
-                }
-              }
-            }
-          } catch (err) {
-            console.error(`Error in expert document creation process: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          console.log(`➡️ Creating expert_document record with extracted content...`);
+          
+          // Create expert document with extracted content
+          const expertDoc = {
+            id: uuidv4(),
+            source_id: file.id,
+            document_type_id: classificationResult.document_type_id,
+            classification_confidence: classificationResult.classification_confidence || 0.85,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            raw_content: extractedText, // Use the already extracted content
+            processed_content: classificationResult, // Store the full classification result
+            classification_metadata: classificationResult // Also store in classification_metadata
+          };
+          
+          if (debug) {
+            console.log(`Raw content length: ${(expertDoc.raw_content as string).length} characters`);
+            console.log(`Document type ID: ${expertDoc.document_type_id}`);
           }
+          
+          // Insert the expert document
+          const { error: insertError } = await supabase
+            .from('expert_documents')
+            .insert(expertDoc)
+            .select();
+            
+          if (insertError) {
+            throw new Error(`Error creating expert document: ${insertError.message}`);
+          }
+          
+          console.log(`✅ Successfully created expert_document record`);
+        } else {
+          console.log(`\n🔍 DRY RUN: No database updates performed`);
+          console.log(`   Would have updated sources_google.document_type_id`);
+          console.log(`   Would have created an expert_documents record with ${extractedText ? extractedText.length : 0} characters`);
         }
         
         // Save individual result to output directory if specified
-        if (outputPath && classificationResult) {
+        if (outputPath) {
           const outputDir = path.dirname(outputPath);
           if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });
@@ -711,33 +994,42 @@ async function classifyPowerPointDocuments(
           const filePath = path.join(outputDir, `${file.id}.json`);
           fs.writeFileSync(filePath, JSON.stringify(classificationResult, null, 2));
           
-          if (debug) {
-            console.log(`Saved classification result to ${filePath}`);
-          }
+          console.log(`💾 Saved classification result to ${filePath}`);
         }
+        
+        console.log(`\n[${index+1}/${filesToProcess.length}] ✅ Processing complete for ${file.name}`);
         
         // Return successful result
         return {
           file,
           result: classificationResult,
+          extractedTextLength: extractedText ? extractedText.length : 0,
           status: 'completed'
         };
       } catch (error) {
-        console.error(`Error processing file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`\n❌ [${index+1}/${filesToProcess.length}] Error processing file ${file.name}:`);
+        console.error(`   ${errorMessage}`);
+        
+        if (debug && error instanceof Error && error.stack) {
+          console.error(`\nStack trace:\n${error.stack}`);
+        }
+        
+        console.log(`\n[${index+1}/${filesToProcess.length}] ⚠️ Skipping to next file due to error`);
         
         // Return error result
         return {
           file,
           result: null,
           status: 'failed',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: errorMessage
         };
       }
     };
     
     // Process all files with concurrency
     const results = await processWithConcurrency(
-      files,
+      filesToProcess,
       concurrency,
       processFile,
       (current, total) => {
@@ -830,24 +1122,59 @@ program
       );
       
       // Show summary
-      console.log('='.repeat(50));
+      console.log('\n' + '='.repeat(80));
+      console.log('POWERPOINT CLASSIFICATION SUMMARY');
+      console.log('='.repeat(80));
       const successCount = results.filter(r => r.result).length;
-      console.log(`SUMMARY: Processed ${results.length} PowerPoint files, ${successCount} successfully classified`);
+      console.log(`✅ Successfully processed: ${successCount} / ${results.length} PowerPoint files`);
+      
+      if (successCount < results.length) {
+        console.log(`❌ Failed to process: ${results.length - successCount} files`);
+      }
+      
+      // Calculate total extracted text
+      const totalExtractedChars = results.reduce((total, r) => 
+        total + (r.extractedTextLength || 0), 0);
+      
+      console.log(`📊 Total extracted content: ${totalExtractedChars} characters`);
+      console.log(`💾 Average content per file: ${Math.round(totalExtractedChars / successCount)} characters`);
+      
+      if (dryRun) {
+        console.log(`\n🔍 DRY RUN: No database changes were made`);
+      } else {
+        console.log(`\n💾 Database updates: ${successCount} files updated with classifications`);
+        console.log(`📋 Expert documents: ${successCount} expert_documents records created or updated`);
+      }
       
       // Show results table
-      console.log('\nResults:');
-      console.log('-'.repeat(80));
-      console.log('| File ID                               | File Name                  | Status    |');
-      console.log('-'.repeat(80));
+      console.log('\n📋 DETAILED RESULTS:');
+      console.log('-'.repeat(100));
+      console.log('| File ID                               | File Name                  | Status    | Document Type               |');
+      console.log('-'.repeat(100));
       
       results.forEach(r => {
         const id = r.file.id.substring(0, 36).padEnd(36);
         const name = (r.file.name || 'Unknown').substring(0, 25).padEnd(25);
-        const status = r.result ? 'Success' : 'Failed';
-        console.log(`| ${id} | ${name} | ${status.padEnd(9)} |`);
+        const status = r.result ? '✅ Success' : '❌ Failed';
+        const docType = r.result?.document_type ? r.result.document_type.substring(0, 28).padEnd(28) : 'N/A'.padEnd(28);
+        console.log(`| ${id} | ${name} | ${status.padEnd(9)} | ${docType} |`);
       });
       
-      console.log('-'.repeat(80));
+      console.log('-'.repeat(100));
+      
+      // Show error details if any
+      const failedResults = results.filter(r => !r.result);
+      if (failedResults.length > 0) {
+        console.log('\n⚠️ ERROR DETAILS:');
+        failedResults.forEach((r, i) => {
+          console.log(`\n${i+1}. File: ${r.file.name}`);
+          console.log(`   Error: ${r.error || 'Unknown error'}`);
+        });
+      }
+      
+      if (options.output) {
+        console.log(`\n💾 Full results saved to: ${options.output}`);
+      }
     } catch (error) {
       console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       if (options.verbose) {

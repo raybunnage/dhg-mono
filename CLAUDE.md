@@ -122,7 +122,7 @@
 
 4. **Singleton Pattern for Services**: Always use and create singleton patterns for service classes:
    - ⚠️ **CRITICAL: Use existing singletons for external services**:
-     - Supabase: `packages/shared/services/supabase-service`
+     - Supabase: `packages/shared/services/supabase-client.ts`
      - Google Drive: `packages/shared/services/google-drive`
      - Claude AI: `packages/shared/services/claude-service`
    
@@ -204,6 +204,36 @@
    - Avoid committing sensitive files (.env files, credentials, etc.)
    - Double-check all secret handling is done via environment variables
    - Review file paths to ensure no sensitive data is accidentally included
+
+14. **SUPABASE CONNECTIVITY: Standard patterns for database access**:
+   - ⚠️ **CRITICAL: ALWAYS use the SupabaseClientService singleton**
+   - Located at: `packages/shared/services/supabase-client.ts`
+   - Import pattern: `import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';`
+   - Usage pattern: `const supabase = SupabaseClientService.getInstance().getClient();`
+   - NEVER create your own Supabase client instances or implement custom credential loading
+   - Credential loading priority (handled automatically by the service):
+     1. Direct extraction from `.env.development` using regex
+     2. Configuration object if available
+     3. Environment variables loaded via dotenv from multiple files
+     4. Various environment variable naming patterns (SUPABASE_URL, VITE_SUPABASE_URL, etc.)
+   - Required environment variables in `.env.development`:
+     ```
+     SUPABASE_URL=https://your-project-id.supabase.co
+     SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+     ```
+   - When troubleshooting connectivity issues:
+     - Check that `.env.development` exists in the project root
+     - Verify it contains the correct SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
+     - Use `process.cwd()` to verify the current working directory
+     - Run connection test: `await SupabaseClientService.getInstance().testConnection()`
+   - Always handle errors properly:
+     ```typescript
+     const { data, error } = await supabase.from('table_name').select('*');
+     if (error) {
+       console.error('Database error:', error);
+       return;
+     }
+     ```
 
 
 ## CLI Pipeline Integration Requirements
@@ -455,7 +485,7 @@ When implementing solutions, always check this section for known issues and thei
 1. **Issue**: Authentication and credential management for external services
    **Solution**: Always use the existing singleton services for authentication
    **Implementation**: 
-   - For Supabase access issues, use the singleton in `packages/shared/services/supabase-service/supabase-service.ts` instead of implementing custom authentication
+   - For Supabase access issues, use the singleton in `packages/shared/services/supabase-client.ts` instead of implementing custom authentication
    - For Google Drive access issues, use the authentication singleton in `packages/shared/services/google-drive` which handles token management and authentication flows
    - Never implement custom authentication logic or hardcode credentials
    - If encountering authentication errors, look for the established patterns in the shared services first
