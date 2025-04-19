@@ -743,14 +743,15 @@ async function classifyPowerPointDocuments(
     const supabase = SupabaseClientService.getInstance().getClient();
     
     // 2. Build query for PowerPoint files that need processing
-    // First, get PowerPoint files
+    // Find all PowerPoint files in the database
     let query = supabase
       .from('sources_google')
       .select('*')
       .is('is_deleted', false)
       .eq('mime_type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
-      .order('modified_at', { ascending: false })
-      .limit(limit);
+      .order('modified_at', { ascending: false });
+      
+    // No limit here - we'll get all PowerPoint files first, then filter those that need processing
       
     if (debug) {
       console.log('Querying PowerPoint files from sources_google...');
@@ -807,11 +808,11 @@ async function classifyPowerPointDocuments(
       console.log(`Found ${files.length} PowerPoint files in sources_google`);
     }
     
-    // Process files regardless of content status when using --force flag
-    // or when running in dry-run mode with verbose flag
+    // Process PowerPoint files that need classification or are missing expert document content
     let filesToProcess = [];
     
     if ((dryRun && debug) || force) {
+      // Force mode - process all files regardless of their current status
       if (force) {
         console.log(`FORCE MODE: Processing files regardless of existing content`);
       } else {
@@ -820,7 +821,8 @@ async function classifyPowerPointDocuments(
       // Use the specified limit
       filesToProcess = files.slice(0, limit);
     } else {
-      // Normal mode: check which files need processing by looking up their expert documents
+      // Normal mode: check which files need processing
+      console.log(`Checking which PowerPoint files need content extraction and classification...`);
       
       for (const file of files) {
         // First check if file has document_type_id
@@ -835,7 +837,7 @@ async function classifyPowerPointDocuments(
         // Check for corresponding expert_documents with content
         const { data: expertDocs, error: expertError } = await supabase
           .from('expert_documents')
-          .select('id, raw_content, processed_content')
+          .select('id, raw_content, processed_content, classification_confidence')
           .eq('source_id', file.id);
           
         if (expertError) {
@@ -854,20 +856,37 @@ async function classifyPowerPointDocuments(
           continue;
         }
         
-        // Check if any expert document has content
-        const hasContent = expertDocs.some((doc: any) => 
-          (doc.raw_content && doc.raw_content !== null) || 
-          (doc.processed_content && doc.processed_content !== null)
-        );
+        // Check if any expert document has proper content
+        let hasGoodContent = false;
         
-        // If no content found, file needs processing
-        if (!hasContent) {
+        for (const doc of expertDocs) {
+          // Check for meaningful content - not just error messages
+          const hasRawContent = doc.raw_content && 
+                               doc.raw_content.length > 200 && 
+                               !doc.raw_content.includes("Failed to extract content");
+                               
+          const hasProcessedContent = doc.processed_content && 
+                                     typeof doc.processed_content === 'object' &&
+                                     doc.processed_content.document_summary;
+                                     
+          // Check if confidence is high enough (above 0.7)
+          const hasGoodConfidence = doc.classification_confidence && 
+                                   doc.classification_confidence > 0.7;
+                                   
+          if (hasRawContent && hasProcessedContent && hasGoodConfidence) {
+            hasGoodContent = true;
+            break;
+          }
+        }
+        
+        // If no good content found, file needs processing
+        if (!hasGoodContent) {
           if (debug) {
-            console.log(`File ${file.name} (${file.id}) has expert_documents but no content, needs processing`);
+            console.log(`File ${file.name} (${file.id}) has expert_documents but needs better content, will process`);
           }
           filesToProcess.push(file);
         } else if (debug) {
-          console.log(`File ${file.name} (${file.id}) already has expert_documents with content, skipping`);
+          console.log(`File ${file.name} (${file.id}) already has good expert_documents content, skipping`);
         }
       }
     }
@@ -876,6 +895,12 @@ async function classifyPowerPointDocuments(
     
     if (!filesToProcess || filesToProcess.length === 0) {
       return [];
+    }
+    
+    // Apply the limit to the files we'll actually process
+    if (limit > 0 && filesToProcess.length > limit) {
+      console.log(`Limiting processing to the first ${limit} files`);
+      filesToProcess = filesToProcess.slice(0, limit);
     }
     
     // Process files with concurrency
