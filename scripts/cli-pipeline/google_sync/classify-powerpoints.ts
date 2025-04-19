@@ -733,7 +733,8 @@ async function classifyPowerPointDocuments(
   outputPath?: string,
   debug: boolean = false,
   dryRun: boolean = false,
-  concurrency: number = 2 // Default concurrency of 2 (PowerPoint extraction can be resource-intensive)
+  concurrency: number = 2, // Default concurrency of 2 (PowerPoint extraction can be resource-intensive)
+  force: boolean = false // Force reprocessing even if files already have content
 ): Promise<any[]> {
   const tempFiles: string[] = [];
   
@@ -806,13 +807,18 @@ async function classifyPowerPointDocuments(
       console.log(`Found ${files.length} PowerPoint files in sources_google`);
     }
     
-    // For testing purposes, we'll process the first PowerPoint file regardless of its status
-    // when running in dry-run mode with verbose flag
+    // Process files regardless of content status when using --force flag
+    // or when running in dry-run mode with verbose flag
     let filesToProcess = [];
     
-    if (dryRun && debug) {
-      console.log(`TESTING MODE: Processing first PowerPoint file regardless of content status`);
-      filesToProcess = files.slice(0, 1);
+    if ((dryRun && debug) || force) {
+      if (force) {
+        console.log(`FORCE MODE: Processing files regardless of existing content`);
+      } else {
+        console.log(`TESTING MODE: Processing first PowerPoint file regardless of content status`);
+      }
+      // Use the specified limit
+      filesToProcess = files.slice(0, limit);
     } else {
       // Normal mode: check which files need processing by looking up their expert documents
       
@@ -1084,6 +1090,7 @@ program
   .option('--dry-run', 'Process files but do not update database', false)
   .option('--folder-id <id>', 'Filter by Google Drive folder ID or folder name', '')
   .option('-c, --concurrency <number>', 'Number of files to process concurrently (default: 2)', '2')
+  .option('-f, --force', 'Force reprocessing even if files already have content', false)
   .action(async (options) => {
     try {
       // Set debug mode if verbose is enabled
@@ -1102,6 +1109,7 @@ program
       // Show detailed configuration
       console.log(`Mode:              ${dryRun ? '🔍 DRY RUN (no database changes)' : '💾 LIVE (updating database)'}`);
       console.log(`Debug logs:        ${debug ? '✅ ON' : '❌ OFF'}`);
+      console.log(`Force reprocess:   ${options.force ? '✅ ON' : '❌ OFF'}`);
       console.log(`Concurrency:       ${concurrency} files at a time`);
       console.log(`Max files:         ${limit}`);
       console.log(`Folder filter:     ${options.folderId ? options.folderId : 'All folders'}`);
@@ -1118,7 +1126,8 @@ program
         options.output,
         debug,
         dryRun,
-        concurrency
+        concurrency,
+        options.force
       );
       
       // Show summary
@@ -1192,6 +1201,7 @@ export async function classifyPowerpointsWithService(options: {
   debug?: boolean;
   dryRun?: boolean;
   concurrency?: number;
+  force?: boolean;
 }): Promise<any[]> {
   const {
     limit = 5,
@@ -1199,7 +1209,8 @@ export async function classifyPowerpointsWithService(options: {
     outputPath,
     debug = false,
     dryRun = false,
-    concurrency = 2
+    concurrency = 2,
+    force = false
   } = options;
   
   return classifyPowerPointDocuments(
@@ -1208,7 +1219,8 @@ export async function classifyPowerpointsWithService(options: {
     outputPath,
     debug,
     dryRun,
-    concurrency
+    concurrency,
+    force
   );
 }
 
