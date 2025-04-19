@@ -570,12 +570,34 @@ async function processPowerPointFile(
     console.log(`🤖 Sending PowerPoint content to Claude API for analysis...`);
     let classificationResult;
     let retries = 0;
-    const maxRetries = 3;
+    const maxRetries = 5; // Increased from 3 to 5 to handle more retries for rate limiting
+    
+    // Function to add random jitter to backoff time to prevent all concurrent jobs
+    // from retrying at the same time after rate limiting
+    const getBackoffTimeWithJitter = (retryCount: number) => {
+      // Base backoff time with exponential increase: 2^n seconds
+      const baseBackoff = Math.pow(2, retryCount) * 1000;
+      // Add random jitter (±30% of the base time)
+      const jitter = baseBackoff * 0.3 * (Math.random() * 2 - 1);
+      return baseBackoff + jitter;
+    };
     
     while (retries < maxRetries) {
       try {
         if (debug) {
           console.log(`Using Claude to classify PowerPoint content (attempt ${retries + 1}/${maxRetries})`);
+        }
+        
+        // For concurrent jobs, it's good to add a small random delay before making API calls
+        // This helps distribute the calls and reduce likelihood of hitting rate limits
+        if (retries === 0) {
+          const initialDelay = Math.floor(Math.random() * 2000); // Random delay 0-2 seconds
+          if (initialDelay > 100) {
+            if (debug) {
+              console.log(`Adding initial delay of ${initialDelay}ms to stagger API calls`);
+            }
+            await new Promise(resolve => setTimeout(resolve, initialDelay));
+          }
         }
         
         // Use Claude to classify the content
@@ -610,17 +632,24 @@ async function processPowerPointFile(
         const isRateLimitError = errorMessage.includes('429') || 
                                errorMessage.includes('too many requests') ||
                                errorMessage.includes('rate limit') ||
-                               errorMessage.includes('Overloaded');
+                               errorMessage.includes('Overloaded') ||
+                               errorMessage.includes('quota exceeded');
                                
         // Check if it's a connection or rate-limiting error
         if (isConnectionError || isRateLimitError) {
-          // These errors are retryable
-          console.warn(`Claude API connection error (retry ${retries}/${maxRetries}): ${errorMessage}`);
+          // Better error messages for rate limiting specifically
+          if (isRateLimitError) {
+            console.warn(`⚠️ Claude API rate limit reached (retry ${retries}/${maxRetries}): ${errorMessage}`);
+          } else {
+            console.warn(`⚠️ Claude API connection error (retry ${retries}/${maxRetries}): ${errorMessage}`);
+          }
           
           if (retries < maxRetries) {
-            // Add exponential backoff between retries (1s, 2s, 4s)
-            const backoffTime = Math.pow(2, retries - 1) * 1000;
-            console.log(`Waiting ${backoffTime}ms before retrying...`);
+            // Add exponential backoff with jitter between retries
+            // This helps avoid "thundering herd" problem when multiple processes hit rate limits
+            const backoffTime = getBackoffTimeWithJitter(retries);
+            
+            console.log(`Waiting ${Math.round(backoffTime/1000)} seconds before retrying...`);
             await new Promise(resolve => setTimeout(resolve, backoffTime));
           } else {
             console.error(`Maximum retries (${maxRetries}) reached. Aborting classification.`);
@@ -744,9 +773,10 @@ async function classifyPowerPointDocuments(
     
     // 2. Build query for PowerPoint files that need processing
     // Find all PowerPoint files in the database
+    // We're selecting all fields explicitly to avoid TypeScript issues
     let query = supabase
       .from('sources_google')
-      .select('*')
+      .select('id, name, drive_id, document_type_id, created_at, modified_at, size, is_deleted, mime_type')
       .is('is_deleted', false)
       .eq('mime_type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
       .order('modified_at', { ascending: false });
@@ -824,15 +854,20 @@ async function classifyPowerPointDocuments(
       // Normal mode: check which files need processing
       console.log(`Checking which PowerPoint files need content extraction and classification...`);
       
-      for (const file of files) {
-        // First check if file has document_type_id
-        if (!file.document_type_id) {
-          if (debug) {
-            console.log(`File ${file.name} (${file.id}) has no document_type_id, needs processing`);
-          }
-          filesToProcess.push(file);
-          continue;
+      // For simplicity, we'll use a simpler approach that doesn't involve concurrent locking
+    // This is more straightforward and reliable, especially for TS type issues
+      
+    // Get PowerPoint files that need processing
+    for (const file of files) {
+      // Check if file has document_type_id first
+      if (!file.document_type_id) {
+        if (debug) {
+          console.log(`File ${file.name} (${file.id}) has no document_type_id, needs processing`);
         }
+        filesToProcess.push(file);
+        if (filesToProcess.length >= limit) break; // Stop once we have enough files
+        continue;
+      }
         
         // Check for corresponding expert_documents with content
         const { data: expertDocs, error: expertError } = await supabase
@@ -844,6 +879,7 @@ async function classifyPowerPointDocuments(
           console.error(`Error fetching expert_documents for file ${file.id}: ${expertError.message}`);
           // If we can't check, assume it needs processing
           filesToProcess.push(file);
+          if (filesToProcess.length >= limit) break; // Stop once we have enough files
           continue;
         }
         
@@ -853,6 +889,7 @@ async function classifyPowerPointDocuments(
             console.log(`File ${file.name} (${file.id}) has no expert_documents, needs processing`);
           }
           filesToProcess.push(file);
+          if (filesToProcess.length >= limit) break; // Stop once we have enough files
           continue;
         }
         
@@ -885,8 +922,23 @@ async function classifyPowerPointDocuments(
             console.log(`File ${file.name} (${file.id}) has expert_documents but needs better content, will process`);
           }
           filesToProcess.push(file);
+          if (filesToProcess.length >= limit) break; // Stop once we have enough files
         } else if (debug) {
           console.log(`File ${file.name} (${file.id}) already has good expert_documents content, skipping`);
+          
+          // Clear the processing status for files we won't process
+          await supabase
+            .from('sources_google')
+            .update({ processing_status: null, processing_started_at: null })
+            .eq('id', file.id);
+        }
+      }
+      
+      // We'll skip the stuck files check for simplicity
+      // If we need more files, just get more from the standard query
+      if (filesToProcess.length < limit) {
+        if (debug) {
+          console.log(`Need more files to process (have ${filesToProcess.length}, need ${limit})`);
         }
       }
     }
@@ -1071,6 +1123,8 @@ async function classifyPowerPointDocuments(
       }
     );
     
+    // We're not using processing status anymore, so no need to clean up
+    
     // Save combined results if output path specified
     if (outputPath && results.length > 0) {
       const outputDir = path.dirname(outputPath);
@@ -1098,8 +1152,12 @@ async function classifyPowerPointDocuments(
     return results;
   } catch (error) {
     console.error(`Error classifying PowerPoint documents: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    
     // Clean up temporary files even if there was an error
     cleanupTempFiles(tempFiles);
+    
+    // We're not using processing status anymore, so no cleanup needed
+    
     return [];
   }
 }
