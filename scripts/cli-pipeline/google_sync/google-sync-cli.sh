@@ -153,6 +153,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  sync                         Sync files from Google Drive to the database (core functionality)"
   echo "  health-check                 Check the health of Google Drive API connection"
   echo "  classify-pdfs                Classify PDF files missing document types using Claude AI"
+  echo "  classify-powerpoints         Classify PowerPoint files missing document types using local extraction and Claude AI"
   echo "  reclassify-docs              Re-classify documents with temperature=0 for deterministic results"
   echo "  classify-docs-service        Classify .docx and .txt files missing document types"
   echo "  validate-pdf-classification  Validate PDF classification results and generate a report"

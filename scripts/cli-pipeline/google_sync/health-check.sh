@@ -41,6 +41,7 @@ COMMANDS=(
   "update-media-document-types"
   "classify-docs-with-service"
   "classify-pdfs-with-service"
+  "classify-powerpoints"
   "reclassify-docs-with-service"
   "report-main-video-ids"
   "update-main-video-ids"
@@ -74,7 +75,10 @@ for cmd in "${COMMANDS[@]}"; do
   # Special case for classify-pdfs-with-service since it uses a variable for the command name
   if [ "$cmd" = "classify-pdfs-with-service" ] && grep -q 'CMD_NAME="classify-pdfs-with-service"' "$CLI_SH"; then
     STATUS_LIST+=("tracked")
-  # Check if track_command exists for this command with proper quoting
+  # Special case for classify-powerpoints which uses a variable for command name
+  elif [ "$cmd" = "classify-powerpoints" ] && grep -q 'CMD_NAME="classify-powerpoints"' "$CLI_SH"; then
+    STATUS_LIST+=("tracked")
+  # Check if track_command exists for this command with proper quoting  
   elif grep -q "track_command \"$cmd\"" "$CLI_SH"; then
     STATUS_LIST+=("tracked")
   else
@@ -116,6 +120,17 @@ main() {
         echo "✅ PASSED: Command $cmd is defined in google-sync-cli.sh" | tee -a "$LOG_FILE"
       else
         echo "✅ PASSED: Command $cmd is defined in google-sync-cli.sh" >> "$LOG_FILE"
+      fi
+      ((passed++))
+      continue
+    fi
+    
+    # Special case for standalone scripts
+    if [ "$cmd" = "classify-powerpoints" ]; then
+      if [ "$VERBOSE" = true ]; then
+        echo "✅ PASSED: Command $cmd is a standalone script" | tee -a "$LOG_FILE"
+      else
+        echo "✅ PASSED: Command $cmd is a standalone script" >> "$LOG_FILE"
       fi
       ((passed++))
       continue

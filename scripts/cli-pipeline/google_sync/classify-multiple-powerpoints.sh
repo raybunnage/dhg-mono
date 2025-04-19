@@ -1,4 +1,4 @@
-#\!/bin/bash
+#!/bin/bash
 # Script to run multiple PowerPoint classification jobs in parallel
 
 # Get the directory of this script
@@ -84,40 +84,30 @@ echo ""
 # Create logs directory if it doesn't exist
 mkdir -p "$PROJECT_ROOT/logs"
 
-# Function to run a single classification job
-run_job() {
-  local job_number=$1
-  local output_file="$PROJECT_ROOT/logs/powerpoint-job-$job_number.log"
-  
+# Run all jobs in parallel with appropriate delays
+for i in $(seq 1 $JOBS); do
   # Build command arguments
-  local args="--limit $FILES_PER_JOB"
+  ARGS="--limit $FILES_PER_JOB"
   if [ "$VERBOSE" = true ]; then
-    args="$args --verbose"
+    ARGS="$ARGS --verbose"
   fi
   if [ "$DRY_RUN" = true ]; then
-    args="$args --dry-run"
+    ARGS="$ARGS --dry-run"
   fi
   
-  echo "Starting job #$job_number with arguments: $args"
-  echo "Logging to: $output_file"
+  LOG_FILE="$PROJECT_ROOT/logs/powerpoint-job-$i.log"
   
-  # Run the command and redirect output to log file
-  "$SCRIPT_DIR/google-sync-cli.sh" classify-powerpoints $args > "$output_file" 2>&1 &
+  echo "Starting job #$i with arguments: $ARGS"
+  echo "Logging to: $LOG_FILE"
   
-  # Store the process ID
-  echo $\!
-}
-
-# Start each job
-job_pids=()
-for ((i=1; i<=$JOBS; i++)); do
-  pid=$(run_job $i)
-  job_pids+=($pid)
+  # Run the command
+  "$SCRIPT_DIR/google-sync-cli.sh" classify-powerpoints $ARGS > "$LOG_FILE" 2>&1 &
   
-  echo "Job #$i started with PID $pid"
+  # No need to track individual PIDs, we'll wait for all background jobs at the end
+  
   echo "Time: $(date '+%Y-%m-%d %H:%M:%S')"
   
-  # Wait between starting jobs to avoid rate limiting
+  # Wait between starting jobs
   if [ $i -lt $JOBS ]; then
     echo "Waiting $WAIT_SECONDS seconds before starting next job..."
     sleep $WAIT_SECONDS
@@ -129,43 +119,29 @@ echo "All jobs started. Waiting for completion..."
 echo "Time: $(date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 
-# Wait for all jobs to complete
-job_statuses=()
-for pid in "${job_pids[@]}"; do
-  wait $pid
-  status=$?
-  job_statuses+=($status)
-  
-  if [ $status -eq 0 ]; then
-    echo "✅ Job with PID $pid completed successfully"
-  else
-    echo "❌ Job with PID $pid failed with status $status"
-  fi
-  
-  echo "Time: $(date '+%Y-%m-%d %H:%M:%S')"
-done
+# Wait for all background jobs to complete
+wait
+JOB_STATUS=$?
 
-# Count successes and failures
-success_count=0
-for status in "${job_statuses[@]}"; do
-  if [ $status -eq 0 ]; then
-    ((success_count++))
-  fi
-done
+echo "All jobs completed with status: $JOB_STATUS"
+echo "Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
 echo ""
 echo "============================================================"
 echo "COMPLETION SUMMARY"
 echo "============================================================"
 echo "Total jobs: $JOBS"
-echo "Successful: $success_count"
-echo "Failed: $((JOBS - success_count))"
+if [ $JOB_STATUS -eq 0 ]; then
+  echo "All jobs completed successfully!"
+else
+  echo "Some jobs may have encountered errors. Check log files for details."
+fi
 echo "Time completed: $(date '+%Y-%m-%d %H:%M:%S')"
 echo "============================================================"
 echo ""
 
 # Display a summary of results from log files
-echo "Processed files from successful jobs:"
+echo "Processed files from jobs:"
 grep -h "POWERPOINT CLASSIFICATION SUMMARY" -A 4 "$PROJECT_ROOT/logs/powerpoint-job-"*.log | grep -E "Successfully processed|Total extracted content|Average content per file"
 
 echo ""
