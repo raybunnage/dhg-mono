@@ -4,7 +4,7 @@
 
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
-| low level folder | 184 | 22% |
+| low level folder | 166 | 19.8% |
 | high level folder | 126 | 15.1% |
 | video mpeg | 116 | 13.9% |
 | Presentation Announcement | 94 | 11.2% |
@@ -13,6 +13,7 @@
 | dicussion transcript | 27 | 3.2% |
 | review article | 23 | 2.7% |
 | email correspondence | 21 | 2.5% |
+| scientific presentation and discussion | 17 | 2% |
 | journal article | 15 | 1.8% |
 | presentation transcript | 12 | 1.4% |
 | professional biography | 9 | 1.1% |
@@ -37,6 +38,7 @@
 | powerpoint document | 1 | 0.1% |
 | root folder | 1 | 0.1% |
 | science meeting discussion | 1 | 0.1% |
+| ai presentation transcript | 1 | 0.1% |
 | pdf document | 1 | 0.1% |
 | preprint | 1 | 0.1% |
 | Deployment Script | 1 | 0.1% |
@@ -94,21 +96,21 @@
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| Total Expert Documents | 688 | 100% |
-| Expert Documents with Document Type | 682 | 99.1% |
-| Expert Documents without Document Type | 6 | 0.9% |
+| Total Expert Documents | 723 | 100% |
+| Expert Documents with Document Type | 717 | 99.2% |
+| Expert Documents without Document Type | 6 | 0.8% |
 
 ## Expert Documents by MIME Type
 
 | MIME Type | Count | Percentage |
 |-----------|-------|------------|
-| application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 27.8% |
-| application/pdf | 151 | 21.9% |
-| video/mp4 | 116 | 16.9% |
-| audio/x-m4a | 92 | 13.4% |
-| text/plain | 64 | 9.3% |
-| Unknown MIME Type | 30 | 4.4% |
-| application/vnd.openxmlformats-officedocument.presentationml.presentation | 25 | 3.6% |
+| application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 26.4% |
+| application/pdf | 151 | 20.9% |
+| video/mp4 | 116 | 16% |
+| audio/x-m4a | 92 | 12.7% |
+| text/plain | 64 | 8.9% |
+| application/vnd.openxmlformats-officedocument.presentationml.presentation | 60 | 8.3% |
+| Unknown MIME Type | 30 | 4.1% |
 | application/vnd.google-apps.document | 4 | 0.6% |
 | image/jpeg | 3 | 0.4% |
 | application/msword | 2 | 0.3% |
@@ -124,27 +126,29 @@
 
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
-| Video Summary Transcript | 143 | 20.8% |
-| low level folder | 128 | 18.6% |
-| Presentation Announcement | 100 | 14.5% |
-| research article | 91 | 13.2% |
-| Chat Log | 50 | 7.3% |
-| dicussion transcript | 27 | 3.9% |
-| review article | 23 | 3.3% |
-| email correspondence | 19 | 2.8% |
-| journal article | 15 | 2.2% |
-| presentation transcript | 11 | 1.6% |
-| report | 8 | 1.2% |
-| professional biography | 8 | 1.2% |
+| Video Summary Transcript | 144 | 19.9% |
+| low level folder | 127 | 17.6% |
+| Presentation Announcement | 100 | 13.8% |
+| research article | 91 | 12.6% |
+| Chat Log | 50 | 6.9% |
+| scientific presentation and discussion | 33 | 4.6% |
+| dicussion transcript | 27 | 3.7% |
+| review article | 23 | 3.2% |
+| email correspondence | 19 | 2.6% |
+| journal article | 15 | 2.1% |
+| presentation transcript | 11 | 1.5% |
+| report | 8 | 1.1% |
+| professional biography | 8 | 1.1% |
 | web news article | 7 | 1% |
-| No Document Type | 6 | 0.9% |
-| url blog post | 6 | 0.9% |
+| No Document Type | 6 | 0.8% |
+| url blog post | 6 | 0.8% |
 | curriculum vitae | 5 | 0.7% |
 | website | 5 | 0.7% |
-| video mpeg | 4 | 0.6% |
 | Code Documentation Markdown | 4 | 0.6% |
 | essay | 4 | 0.6% |
+| video mpeg | 3 | 0.4% |
 | letter | 3 | 0.4% |
+| ai presentation transcript | 3 | 0.4% |
 | editorial | 3 | 0.4% |
 | magazine article | 2 | 0.3% |
 | book | 2 | 0.3% |
@@ -165,23 +169,25 @@
 
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
-| low level folder | 130 | 18.9% |
-| video mpeg | 116 | 16.9% |
-| Presentation Announcement | 94 | 13.7% |
-| research article | 91 | 13.2% |
-| Chat Log | 50 | 7.3% |
-| Unknown | 34 | 4.9% |
-| dicussion transcript | 27 | 3.9% |
-| review article | 23 | 3.3% |
-| email correspondence | 21 | 3.1% |
-| journal article | 15 | 2.2% |
+| video mpeg | 116 | 16% |
+| low level folder | 112 | 15.5% |
+| Presentation Announcement | 94 | 13% |
+| research article | 91 | 12.6% |
+| Chat Log | 50 | 6.9% |
+| scientific presentation and discussion | 49 | 6.8% |
+| Unknown | 34 | 4.7% |
+| dicussion transcript | 27 | 3.7% |
+| review article | 23 | 3.2% |
+| email correspondence | 21 | 2.9% |
+| journal article | 15 | 2.1% |
 | presentation transcript | 12 | 1.7% |
-| professional biography | 9 | 1.3% |
-| report | 8 | 1.2% |
+| professional biography | 9 | 1.2% |
+| report | 8 | 1.1% |
 | web news article | 7 | 1% |
-| curriculum vitae | 6 | 0.9% |
-| url blog post | 6 | 0.9% |
+| curriculum vitae | 6 | 0.8% |
+| url blog post | 6 | 0.8% |
 | website | 5 | 0.7% |
+| ai presentation transcript | 4 | 0.6% |
 | Code Documentation Markdown | 4 | 0.6% |
 | essay | 4 | 0.6% |
 | letter | 3 | 0.4% |
