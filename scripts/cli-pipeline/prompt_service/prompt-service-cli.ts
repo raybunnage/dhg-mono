@@ -5,6 +5,7 @@ import { Command } from 'commander';
 import { loadPromptCommand } from './commands/load-prompt';
 import { listPromptsCommand } from './commands/list-prompts';
 import { viewPromptCommand } from './commands/view-prompt';
+import { viewPromptMetadataCommand } from './commands/view-prompt-metadata';
 import { addQueryCommand } from './commands/add-query';
 import { updatePromptCommand } from './commands/update-prompt';
 import { cleanPromptMetadataCommand } from './commands/clean-prompt-metadata';
@@ -38,6 +39,12 @@ program.command('view')
   .argument('<n>', 'Name of the prompt to view')
   .option('-f, --format <format>', 'Output format (json, text, markdown)', 'text')
   .action(viewPromptCommand);
+
+// View prompt metadata command
+program.command('view-metadata')
+  .description('View only the metadata of a prompt')
+  .argument('<n>', 'Name of the prompt to view')
+  .action(viewPromptMetadataCommand);
 
 // Add database query command
 program.command('add-query')
