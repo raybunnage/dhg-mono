@@ -39,6 +39,7 @@ COMMANDS=(
   "check-duplicates"
   "update-file-signatures"
   "update-media-document-types"
+  "check-reprocessing-status"
   "classify-docs-with-service"
   "classify-pdfs-with-service"
   "classify-powerpoints"
@@ -126,7 +127,7 @@ main() {
     fi
     
     # Special case for standalone scripts
-    if [ "$cmd" = "classify-powerpoints" ]; then
+    if [ "$cmd" = "classify-powerpoints" ] || [ "$cmd" = "check-reprocessing-status" ]; then
       if [ "$VERBOSE" = true ]; then
         echo "✅ PASSED: Command $cmd is a standalone script" | tee -a "$LOG_FILE"
       else

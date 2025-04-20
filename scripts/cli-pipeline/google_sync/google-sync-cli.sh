@@ -49,6 +49,12 @@ if [ "$1" = "count-mp4" ]; then
   exit $?
 fi
 
+if [ "$1" = "check-reprocessing-status" ]; then
+  shift
+  track_command "check-reprocessing-status" "ts-node $SCRIPT_DIR/check-reprocessing-status.ts $*"
+  exit $?
+fi
+
 if [ "$1" = "health-check" ]; then
   shift
   track_command "health-check" "$SCRIPT_DIR/health-check.sh $*"
@@ -162,6 +168,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  check-document-types         Check for files missing document types"
   echo "  report-main-video-ids        Report on video files for folders"
   echo "  update-media-document-types  Update document_type_id for media files and create expert_documents"
+  echo "  check-reprocessing-status    Check which expert documents need reprocessing based on metadata"
   echo "  show-expert-documents        Generate a report of expert documents in the database"
   echo "  list                         List Google sources with their corresponding expert documents"
   echo "  list-unclassified-files      List PDF and PowerPoint files without document types"
@@ -216,6 +223,15 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Update document types but skip creating expert_documents"
   echo "  ./google-sync-cli.sh update-media-document-types --skip-expert-docs"
+  echo ""
+  echo "  # Check reprocessing status of expert documents"
+  echo "  ./google-sync-cli.sh check-reprocessing-status --limit 200"
+  echo ""
+  echo "  # Check reprocessing status and filter by expert"
+  echo "  ./google-sync-cli.sh check-reprocessing-status --expert \"Porges\" --verbose"
+  echo ""
+  echo "  # Output reprocessing status report to a file"
+  echo "  ./google-sync-cli.sh check-reprocessing-status --output reprocessing-report.csv"
   exit 0
 fi
 

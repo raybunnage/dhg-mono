@@ -16,6 +16,27 @@ add these modifications to the update_media_document_types command in google syn
 12) if the the record in sources_google is of document_type_id = bb90f01f-b6c4-4030-a3ea-db9dd8c4b55a  then set expert_document_id to 1f71f894-d2f8-415e-80c1-a4d6db4d8b18 
 
 
+write a new google sync command that checks each sources_google for the related expert_document and if it finds it checks to see that the status of the metadata field in expert_documents called:  needs_reprocessing and displays the status of that field - whether it exists and whether it was set to true or false
+
+
+Perfect! I've successfully created a new command check-reprocessing-status for the Google Sync CLI pipeline that:
+
+  1. Checks each sources_google for related expert_documents
+  2. Examines the metadata.needs_reprocessing field in each expert document
+  3. Displays statistics about how many documents need reprocessing
+  4. Offers filtering by filename or expert
+  5. Can output a detailed report to a file
+  6. Includes proper command tracking
+  7. Passes all health checks
+
+  The command follows all the standards in CLAUDE.md and integrates well with the existing CLI structure. You can use it with options like:
+
+  ./google-sync-cli.sh check-reprocessing-status --limit 200
+  ./google-sync-cli.sh check-reprocessing-status --expert "Porges" --verbose
+  ./google-sync-cli.sh check-reprocessing-status --output reprocessing-report.csv
+
+  The command is especially useful for monitoring which documents have been marked for reprocessing by the update-media-document-types script we modified
+  earlier.
 
 -- then do the following
 1) if there is json in the related processed_content field in expert_document and the json field starts with {"title" then mark the document_type_id in expert_docuemnt to 5b1f8963-0946-4e89-884d-30517eebb8a5
@@ -26,6 +47,23 @@ add these modifications to the update_media_document_types command in google syn
 6) if the sources_google document_type_id = 9ccdc433-99d8-46fb-8bf7-3ba72cf27c88 then mark the document_type_id in expert_document_type_id = 2f5af574-9053-49b1-908d-c35001ce9680
 7) if the sources_google document_type_id = 5e61bfbc-39ef-4380-80c0-592017b39b71  then mark the document_type_id in expert_document_type_id = 2f5af574-9053-49b1-908d-c35001ce9680
 8) if the sources_google document_type_id = 9dbe32ff-5e82-4586-be63-1445e5bcc548  then do nothing 
+
+
+
+
+
+-- now that there is 3 new columns for document_processing status
+ADD COLUMN IF NOT EXISTS processing_status document_processing_status DEFAULT 'not_set',
+    ADD COLUMN IF NOT EXISTS processing_status_updated_at timestamp with time zone DEFAULT now(),
+    ADD COLUMN IF NOT EXISTS processing_skip_reason text;
+
+
+redo these to use the new processing columns mentioned above
+1) if there is not json in the related processed_content then mark the new columns apporriately fied in expert_documents to set needs_reprocessing
+2) if there is json in the related processed_content field in expert_document and the document_type_id in sources_google is e9d3e473-5315-4837-9f5f-61f150cbd137 and the processed content has  "File analysis unavailable" in it somewhere, then mark the appropriate processing related field in expert_documents to have have  needs_reprocessing
+3) if the mime_type in sources_google is a folder mark appropriate processing new field in expert_documents with needs_reprocessing 
+
+
 
 
 
@@ -57,6 +95,43 @@ If necessary add a specific command to update these - or a command to make a new
 
   3) and add this one to the prompt with the name: 'scientific-powerpoint'
    select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'powerpoint'
+
+
+
+-- Create the enum type for document processing status
+CREATE TYPE document_processing_status AS ENUM (
+    'needs_reprocessing',    -- Document needs to be reprocessed
+    'reprocessing_done',     -- Reprocessing has been completed
+    'skip_processing',       -- Document should be skipped (unsupported type, password protected, etc)
+    'not_set'               -- Initial state
+);
+
+-- Add the new columns to expert_documents
+ALTER TABLE expert_documents 
+    ADD COLUMN IF NOT EXISTS processing_status document_processing_status DEFAULT 'not_set',
+    ADD COLUMN IF NOT EXISTS processing_status_updated_at timestamp with time zone DEFAULT now(),
+    ADD COLUMN IF NOT EXISTS processing_skip_reason text;
+
+-- Create index for efficient querying
+CREATE INDEX IF NOT EXISTS idx_expert_documents_processing_status 
+    ON expert_documents(processing_status);
+
+-- Create function to auto-update timestamp when status changes
+CREATE OR REPLACE FUNCTION update_processing_status_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.processing_status IS DISTINCT FROM NEW.processing_status THEN
+        NEW.processing_status_updated_at = now();
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to call the function
+CREATE TRIGGER trigger_update_processing_status_timestamp
+    BEFORE UPDATE ON expert_documents
+    FOR EACH ROW
+    EXECUTE FUNCTION update_processing_status_timestamp();
 
 
 
