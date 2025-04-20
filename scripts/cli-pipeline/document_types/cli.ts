@@ -86,25 +86,40 @@ program
         // Output as formatted JSON
         console.log(JSON.stringify(documentTypes, null, 2));
       } else {
+        // Sort by category first (alphabetically), then by document_type
+        documentTypes.sort((a, b) => {
+          // First sort by category alphabetically
+          const categoryA = a.category || '';
+          const categoryB = b.category || '';
+          const categoryCompare = categoryA.localeCompare(categoryB);
+          
+          // If categories are the same, sort by document_type
+          if (categoryCompare === 0) {
+            return a.document_type.localeCompare(b.document_type);
+          }
+          
+          return categoryCompare;
+        });
+        
         // Output as table
         console.log('\nDocument Types:');
-        console.log('==============================================================');
-        console.log('ID'.padEnd(8) + ' | ' + 
+        console.log('======================================================================================');
+        console.log('ID'.padEnd(36) + ' | ' + 
                    'Document Type'.padEnd(30) + ' | ' + 
                    'Category'.padEnd(15) + ' | ' + 
                    'AI Generated');
-        console.log('--------------------------------------------------------------');
+        console.log('--------------------------------------------------------------------------------------');
         
         documentTypes.forEach(type => {
           console.log(
-            (type.id.substring(0, 6) + '...').padEnd(8) + ' | ' +
+            type.id.padEnd(36) + ' | ' +
             type.document_type.substring(0, 28).padEnd(30) + ' | ' +
             (type.category || '').substring(0, 13).padEnd(15) + ' | ' +
             (type.is_ai_generated ? 'Yes' : 'No')
           );
         });
         
-        console.log('--------------------------------------------------------------');
+        console.log('--------------------------------------------------------------------------------------');
         console.log(`Total: ${documentTypes.length} document types`);
       }
       

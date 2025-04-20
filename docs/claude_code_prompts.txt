@@ -17,6 +17,18 @@ if it the name ends in pptx set document_type_id to 299ad443-4d84-40d8-98cb-a9df
 if the name is of mime_type video/mp4 set document_type_id to ba1d7662-0168-4756-a2ea-6d964fd02ba8
 
 
+Now on the expert_documents I need you to do the following
+go through each record and test to see if there is formatted json in the processed_content field.
+if this field is not null and has json in it, then find the associated sources_google file and look at the 
+name field in sources_google table 
+
+if it has a .pdf or .pptx associated with it set the document_type_id = 2f5af574-9053-49b1-908d-c35001ce9680
+if it has an mp4 file set document_type_id = c6c3969b-c5cd-4c9a-a0f8-6e508ab68a4c
+if it has a .docx file its trickier - look at the document_type_id of the sources_google - if it has a 554ed67c-35d1-4218-abba-8d1b0ff7156d in the document_type_id or a 03743a23-d2f3-4c73-a282-85afc138fdfd in the sources_google document_type_id or a af194b7e-cbf9-45c3-a1fc-863dbc815f1e  in the sources_google document_type_id then set the expert_document_type_id to 5b1f8963-0946-4e89-884d-30517eebb8a5 
+
+
+
+
 ID:              1f71f894-d2f8-415e-80c1-a4d6db4d8b18
      Name:            Json Expert Summary
      Category:        summary
