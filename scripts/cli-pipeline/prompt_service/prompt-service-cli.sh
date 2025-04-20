@@ -26,13 +26,40 @@ track_command() {
 }
 
 # Load environment variables
+if [ -f "$ROOT_DIR/.env" ]; then
+  echo "Loading environment variables from $ROOT_DIR/.env"
+  source "$ROOT_DIR/.env"
+fi
+
+if [ -f "$ROOT_DIR/.env.local" ]; then
+  echo "Loading environment variables from $ROOT_DIR/.env.local"
+  source "$ROOT_DIR/.env.local" 
+fi
+
 if [ -f "$ROOT_DIR/.env.development" ]; then
+  echo "Loading environment variables from $ROOT_DIR/.env.development"
   source "$ROOT_DIR/.env.development"
+  echo "Loaded Supabase credentials successfully from $ROOT_DIR/.env.development"
   export SUPABASE_URL
   export SUPABASE_SERVICE_ROLE_KEY
   export SUPABASE_ANON_KEY
   # Export other necessary environment variables
 fi
+
+# Fix database queries function
+fix_database_queries() {
+  # Execute the commands directly with proper quoting
+  echo "Updating document-classification-prompt-new..."
+  track_command "add-query" "NODE_PATH=\"$SCRIPT_DIR/node_modules:$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" add-query \"document-classification-prompt-new\" \"select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'docx';\""
+  
+  echo "Updating scientific-document-analysis-prompt..."
+  track_command "add-query" "NODE_PATH=\"$SCRIPT_DIR/node_modules:$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" add-query \"scientific-document-analysis-prompt\" \"select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'pdf';\""
+  
+  echo "Updating scientific-powerpoint..."
+  track_command "add-query" "NODE_PATH=\"$SCRIPT_DIR/node_modules:$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" add-query \"scientific-powerpoint\" \"select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'powerpoint';\""
+  
+  echo "Database queries fixed successfully."
+}
 
 # Make script executable
 chmod +x "$SCRIPT_DIR/prompt-service-cli.sh"
@@ -42,5 +69,12 @@ cd "$ROOT_DIR"
 
 # Use the first argument as the command name or default to "main"
 COMMAND="${1:-main}"
-CMD="NODE_PATH=\"$SCRIPT_DIR/node_modules:$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" $*"
-track_command "$COMMAND" "$CMD"
+
+# Check for special commands
+if [ "$COMMAND" = "fix-database-queries" ]; then
+  fix_database_queries
+else
+  # Default to running the normal CLI
+  CMD="NODE_PATH=\"$SCRIPT_DIR/node_modules:$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" $*"
+  track_command "$COMMAND" "$CMD"
+fi

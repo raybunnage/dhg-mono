@@ -7,7 +7,7 @@ You will receive the complete content of a scientific presentation powerpoint (D
 
 ## Task Description
 Your task is to:
-1. Analyze the document content thoroughly
+1. Analyze the powerpoint content thoroughly
 2. Create a detailed summary (5-7 paragraphs) highlighting the most important concepts, findings, and clinical implications
 3. Format your response according to the specified JSON output structure
 4. Design the summary to be suitable for PowerPoint presentation
@@ -38,7 +38,7 @@ Respond with a JSON object containing the following fields:
     "Topic 4",
     "Topic 5"
   ],
-  "clinical_implications": [
+  "clinical_implicationsprompts/scientific-powerpoint.md": [
     "Specific implication for clinical practice 1",
     "Specific implication for clinical practice 2",
     "Specific implication for clinical practice 3"

@@ -46,8 +46,17 @@ alter the classify-pdfs to set the document_type_id in expert_documents to 2f5af
 alter the classify-powerpoints to set the document_type_id in expert_documents to 2f5af574-9053-49b1-908d-c35001ce9680
 
 
+use the prompt-service commands to fix these databasequery commands in the prompts metadata table.
+If necessary add a specific command to update these - or a command to make a new databasequery if necessary - just get it handled
 
+ 1) prompt name: [document-classification-prompt-new]:
+  select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'docx';
 
+  2) prompt name:  [scientific-document-analysis-prompt]:
+  select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'pdf'
+
+  3) and add this one to the prompt with the name: 'scientific-powerpoint'
+   select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'powerpoint'
 
 
 
