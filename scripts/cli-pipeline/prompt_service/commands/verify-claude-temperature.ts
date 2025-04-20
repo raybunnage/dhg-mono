@@ -40,17 +40,17 @@ export async function verifyClaudeTemperatureCommand() {
       },
       {
         method: 'getJsonResponse',
-        regex: /options\.temperature\s*=\s*options\.temperature\s*\?\?\s*([^;]+);/,
+        regex: /options\.temperature\s*=\s*([^;]+);/,
         found: false
       },
       {
-        method: 'analyzePdfToJson',
-        regex: /temperature:\s*options\.temperature\s*\?\?\s*([^,}]+)/,
+        method: 'analyzePdfToJson', 
+        regex: /options\.temperature\s*=\s*([^;]+);/,
         found: false
       },
       {
         method: 'classifyPdf',
-        regex: /temperature:\s*options\.temperature\s*\?\?\s*([^,}]+)/,
+        regex: /temperature:\s*([^,}]+)/,
         found: false
       }
     ];
