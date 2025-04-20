@@ -69,6 +69,9 @@ export async function verifyClaudeTemperatureCommand() {
       }
     }
     
+    // Check for specific classifyPdf implementation
+    const classifyPdfImplementation = serviceCode.includes('temperature: 0 // Always use temperature 0 for classifications');
+    
     // Report findings
     console.log('\nClaude temperature settings:');
     console.log('---------------------------');
@@ -82,12 +85,17 @@ export async function verifyClaudeTemperatureCommand() {
       }
     }
     
+    // Report special case for classifyPdf which might not be detected by regex
+    if (classifyPdfImplementation) {
+      console.log(`classifyPdf: ✅ ZERO (hardcoded to 0 in implementation)`);
+    }
+    
     // Summary
-    if (allZero) {
-      console.log('\n✅ All found temperature settings are correctly set to 0');
+    if (allZero && classifyPdfImplementation) {
+      console.log('\n✅ All temperature settings are correctly set to 0');
     } else {
-      console.log('\n❌ Some temperature settings are not set to 0');
-      console.log('Consider updating the Claude service implementation');
+      console.log('\n❌ Some temperature settings may not be set to 0');
+      console.log('Consider updating the Claude service implementation to ensure consistency');
     }
     
     // Make a test API call to verify runtime behavior
