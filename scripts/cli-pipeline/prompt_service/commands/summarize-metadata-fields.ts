@@ -1,8 +1,13 @@
-import { promptManagementService } from '../../../../packages/shared/services/prompt-service/prompt-management-service';
+import { promptManagementService, PromptMetadata } from '../../../../packages/shared/services/prompt-service/prompt-management-service';
 
 /**
  * Command to summarize metadata fields across all prompt records
  */
+
+// Define a type for metadata with index signature
+interface IndexableMetadata extends PromptMetadata {
+  [key: string]: any;
+}
 export async function summarizeMetadataFieldsCommand() {
   try {
     console.log('Summarizing metadata fields across all prompt records...');
@@ -23,7 +28,8 @@ export async function summarizeMetadataFieldsCommand() {
     
     // Process each prompt
     for (const prompt of prompts) {
-      const metadata = prompt.metadata || {};
+      // Cast to our indexable type for TypeScript
+      const metadata = prompt.metadata ? (prompt.metadata as IndexableMetadata) : ({} as IndexableMetadata);
       
       // Count top-level fields
       Object.keys(metadata).forEach(field => {
@@ -35,7 +41,7 @@ export async function summarizeMetadataFieldsCommand() {
             fieldNestedCounts[field] = {};
           }
           
-          Object.keys(metadata[field]).forEach(nestedField => {
+          Object.keys(metadata[field] as Record<string, any>).forEach(nestedField => {
             fieldNestedCounts[field][nestedField] = (fieldNestedCounts[field][nestedField] || 0) + 1;
           });
         }
@@ -63,7 +69,8 @@ export async function summarizeMetadataFieldsCommand() {
       const row = [field];
       
       for (const prompt of prompts) {
-        const hasField = prompt.metadata && field in prompt.metadata;
+        const metadata = prompt.metadata as IndexableMetadata | undefined;
+        const hasField = metadata && field in metadata;
         row.push(hasField ? '✓' : ' ');
       }
       
@@ -109,22 +116,27 @@ export async function summarizeMetadataFieldsCommand() {
       
       // Collect unique values
       for (const prompt of prompts) {
-        const metadata = prompt.metadata || {};
+        const metadata = prompt.metadata ? (prompt.metadata as IndexableMetadata) : ({} as IndexableMetadata);
         
         if (childField) {
           // Handle nested fields
-          if (metadata[parentField] && metadata[parentField][childField]) {
-            uniqueValues.add(String(metadata[parentField][childField]));
+          const parentValue = metadata[parentField];
+          if (parentValue && typeof parentValue === 'object') {
+            const nestedObj = parentValue as Record<string, any>;
+            if (childField in nestedObj) {
+              uniqueValues.add(String(nestedObj[childField]));
+            }
           }
         } else {
           // Handle top-level fields
           if (parentField in metadata) {
-            if (typeof metadata[parentField] === 'string') {
-              uniqueValues.add(metadata[parentField].substring(0, 80));
-            } else if (typeof metadata[parentField] === 'object') {
-              uniqueValues.add(JSON.stringify(metadata[parentField]).substring(0, 80));
+            const value = metadata[parentField];
+            if (typeof value === 'string') {
+              uniqueValues.add(value.substring(0, 80));
+            } else if (typeof value === 'object') {
+              uniqueValues.add(JSON.stringify(value).substring(0, 80));
             } else {
-              uniqueValues.add(String(metadata[parentField]));
+              uniqueValues.add(String(value));
             }
           }
         }
