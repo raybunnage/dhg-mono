@@ -1035,7 +1035,7 @@ async function classifyPowerPointDocuments(
           const expertDoc = {
             id: uuidv4(),
             source_id: file.id,
-            document_type_id: "2f5af574-9053-49b1-908d-c35001ce9680", // Fixed document_type_id for Json pdf summary
+            document_type_id: "957d8720-473e-4820-b115-88d6a931a7d8", // Expert document document_type_id
             classification_confidence: classificationResult.classification_confidence || 0.85,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
