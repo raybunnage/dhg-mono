@@ -5,8 +5,8 @@
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
 | mp4 video | 117 | 14% |
-| low level folder | 105 | 12.5% |
 | Presentation Announcement | 94 | 11.2% |
+| m4a audio | 92 | 11% |
 | research article | 91 | 10.9% |
 | Chat Log | 50 | 6% |
 | dicussion transcript | 27 | 3.2% |
@@ -14,6 +14,7 @@
 | review article | 23 | 2.7% |
 | email correspondence | 21 | 2.5% |
 | journal article | 15 | 1.8% |
+| low level folder | 14 | 1.7% |
 | presentation transcript | 12 | 1.4% |
 | professional biography | 9 | 1.1% |
 | report | 8 | 1% |
@@ -33,7 +34,6 @@
 | word document | 2 | 0.2% |
 | book | 2 | 0.2% |
 | letter to the editor | 1 | 0.1% |
-| high level folder | 1 | 0.1% |
 | correction | 1 | 0.1% |
 | science meeting discussion | 1 | 0.1% |
 | preprint | 1 | 0.1% |
@@ -150,7 +150,7 @@
 |--------------|-------|------------|
 | Video Summary Transcript | 144 | 19.9% |
 | low level folder | 127 | 17.6% |
-| Presentation Announcement | 100 | 13.8% |
+| Json Expert Summary | 94 | 13% |
 | research article | 91 | 12.6% |
 | Chat Log | 50 | 6.9% |
 | scientific presentation and discussion | 33 | 4.6% |
@@ -164,6 +164,7 @@
 | web news article | 7 | 1% |
 | No Document Type | 6 | 0.8% |
 | url blog post | 6 | 0.8% |
+| Presentation Announcement | 6 | 0.8% |
 | curriculum vitae | 5 | 0.7% |
 | website | 5 | 0.7% |
 | Code Documentation Markdown | 4 | 0.6% |
@@ -192,8 +193,8 @@
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
 | mp4 video | 117 | 16.2% |
-| low level folder | 105 | 14.5% |
 | Presentation Announcement | 94 | 13% |
+| m4a audio | 92 | 12.7% |
 | research article | 91 | 12.6% |
 | powerpoint document | 60 | 8.3% |
 | Chat Log | 50 | 6.9% |
@@ -202,6 +203,7 @@
 | review article | 23 | 3.2% |
 | email correspondence | 21 | 2.9% |
 | journal article | 15 | 2.1% |
+| low level folder | 14 | 1.9% |
 | presentation transcript | 12 | 1.7% |
 | professional biography | 9 | 1.2% |
 | report | 8 | 1.1% |
@@ -213,7 +215,6 @@
 | essay | 4 | 0.6% |
 | letter | 3 | 0.4% |
 | editorial | 3 | 0.4% |
-| high level folder | 2 | 0.3% |
 | magazine article | 2 | 0.3% |
 | book | 2 | 0.3% |
 | new work summary | 2 | 0.3% |
@@ -221,6 +222,7 @@
 | unknown document type | 2 | 0.3% |
 | word document | 2 | 0.3% |
 | preprint | 1 | 0.1% |
+| high level folder | 1 | 0.1% |
 | correction | 1 | 0.1% |
 | letter to the editor | 1 | 0.1% |
 | Deployment Script | 1 | 0.1% |
@@ -310,23 +312,7 @@ The presentation provided a comprehensive overview of how mitochondrial dysfunct
 
 ---
 
-### 4. Lustig Announcement.docx (Presentation Announcement)
-
-- ID: `9096b8cb-bce0-45b3-8ee5-cddefc313bbf`
-- MIME Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document
-- Source ID: `96e1636d-8c7c-44e8-a2ca-b894fb1b1ba8`
-
-**Raw Content Preview:**
-
-> Lustig Announcement 1.8.25 Hi everyone, The next Dynamic Healing Study Group meeting will be on Wednesday, January 8th, at 5 pm PT. Here is the Zoom link: https://us02web.zoom.us/j/98327644404 Dr.
-
-**Processed Content Preview:**
-
-> {"research_summary":"Dr. Lustig's research focuses on the intersection of neuroscience, metabolism, and public health, with particular emphasis on the role of the amygdala in systemic health disorders.
-
----
-
-### 5. Summary of Brenda Stockdale_Bernie Seigel (presentation transcript)
+### 4. Summary of Brenda Stockdale_Bernie Seigel (presentation transcript)
 
 - ID: `70bf68ef-1975-4f1d-a0e7-798f24313109`
 - MIME Type: application/vnd.google-apps.document
@@ -344,7 +330,7 @@ This meeting is a major paradigm shift. Exceptional cancer survivors don’t jus
 
 ---
 
-### 6. Summary of Brenda Stockdale_Bernie Seigel (presentation transcript)
+### 5. Summary of Brenda Stockdale_Bernie Seigel (presentation transcript)
 
 - ID: `12f40d61-5c7b-45e7-9c79-7fdb180e18c9`
 - MIME Type: application/vnd.google-apps.document
@@ -362,7 +348,7 @@ This meeting is a major paradigm shift. Exceptional cancer survivors don’t jus
 
 ---
 
-### 7. Global developments in social prescribing_Morse_2022.pdf (research article)
+### 6. Global developments in social prescribing_Morse_2022.pdf (research article)
 
 - ID: `d9ace790-346e-4db0-a28d-0f77b584c07d`
 - MIME Type: application/pdf
@@ -378,7 +364,7 @@ This meeting is a major paradigm shift. Exceptional cancer survivors don’t jus
 
 ---
 
-### 8. Unknown file (Unknown)
+### 7. Unknown file (Unknown)
 
 - ID: `199a8efb-5589-4170-a686-62f34315ed92`
 - MIME Type: Not specified
@@ -394,7 +380,7 @@ This meeting is a major paradigm shift. Exceptional cancer survivors don’t jus
 
 ---
 
-### 9. Lustig.Amygdala.1.8.25.mp4 (mp4 video)
+### 8. Lustig.Amygdala.1.8.25.mp4 (mp4 video)
 
 - ID: `846246b7-e992-41ba-80c8-50736bd30b9b`
 - MIME Type: video/mp4
@@ -473,11 +459,27 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 
 ---
 
-### 10. NP.6.24.20.m4a (low level folder)
+### 9. NP.6.24.20.m4a (m4a audio)
 
 - ID: `83ca23a3-846b-4057-95ea-e0ce5ddada01`
 - MIME Type: audio/x-m4a
 - Source ID: `287e6dc6-aee0-4c37-af21-f9f1e9e2725e`
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 10. Solosmon_The Worm at the Core.pdf (Unknown)
+
+- ID: `906166af-5ac2-4d3e-a51a-f8f42b3c8edf`
+- MIME Type: application/pdf
+- Source ID: `a3708433-9c4e-4784-b2a1-f32f5877b5e2`
 
 **Raw Content Preview:**
 

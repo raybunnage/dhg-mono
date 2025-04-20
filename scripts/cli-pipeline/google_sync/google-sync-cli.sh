@@ -13,6 +13,7 @@
 #   check-document-types         Check for files missing document types
 #   report-main-video-ids        Report on video files for folders
 #   show-expert-documents        Generate a report of expert documents in the database
+#   list                         List Google sources with their corresponding expert documents
 #   list-unclassified-files      List PDF and PowerPoint files without document types
 #   check-expert-doc             Check the most recent expert document for proper content extraction
 #   fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records
@@ -162,6 +163,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  report-main-video-ids        Report on video files for folders"
   echo "  update-media-document-types  Update document_type_id for media files and create expert_documents"
   echo "  show-expert-documents        Generate a report of expert documents in the database"
+  echo "  list                         List Google sources with their corresponding expert documents"
   echo "  list-unclassified-files      List PDF and PowerPoint files without document types"
   echo "  check-expert-doc             Check the most recent expert document for proper content extraction"
   echo "  fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records"
@@ -229,6 +231,12 @@ fi
 if [ "$1" = "report-main-video-ids" ]; then
   shift
   track_command "report-main-video-ids" "ts-node $SCRIPT_DIR/report-main-video-ids.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "list" ]; then
+  shift
+  track_command "list" "ts-node $SCRIPT_DIR/list-google-sources.ts $*"
   exit $?
 fi
 
