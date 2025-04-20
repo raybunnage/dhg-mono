@@ -1,0 +1,36 @@
+{
+  "name": "tracking-cli",
+  "version": "1.0.0",
+  "description": "CLI tool for tracking and monitoring command executions",
+  "main": "tracking-cli.sh",
+  "bin": {
+    "tracking": "tracking-cli.sh"
+  },
+  "scripts": {
+    "start": "bash tracking-cli.sh",
+    "dev": "bash tracking-cli.sh",
+    "build": "tsc --skipLibCheck",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "commander": "^11.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "command",
+    "tracking",
+    "monitoring",
+    "cli"
+  ],
+  "license": "MIT",
+  "type": "commonjs"
+}

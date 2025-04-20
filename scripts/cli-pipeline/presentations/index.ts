@@ -1177,6 +1177,40 @@ program
   .option('--dry-run', 'Show what would be added without making changes', false)
   .option('--source-ids <ids>', 'Comma-separated list of source_ids to add')
   .option('--verbose', 'Show detailed logs', false)
+  
+// Health check command
+program
+  .command('health-check')
+  .description('Check the health of presentations pipeline infrastructure')
+  .option('--skip-database', 'Skip database connection check')
+  .option('--skip-presentations', 'Skip presentations table check')
+  .option('--skip-claude', 'Skip Claude service check')
+  .option('-v, --verbose', 'Show verbose output')
+  .action(async (options: any) => {
+    try {
+      // Import the healthCheckCommand function
+      const { healthCheckCommand } = require('./commands/health-check');
+      
+      // Run the health check
+      await healthCheckCommand({
+        skipDatabase: options.skipDatabase,
+        skipPresentations: options.skipPresentations,
+        skipClaude: options.skipClaude,
+        verbose: options.verbose
+      });
+    } catch (error) {
+      Logger.error('Error running health check:', error);
+      process.exit(1);
+    }
+  });
+
+// Define add-specific-files command (moved below health-check)
+program
+  .command('add-specific-files')
+  .description('Add specific files from sources_google to presentations, create expert documents and assets')
+  .option('--dry-run', 'Show what would be added without making changes', false)
+  .option('--source-ids <ids>', 'Comma-separated list of source_ids to add')
+  .option('--verbose', 'Show detailed logs', false)
   .action(async (options: any) => {
     try {
       Logger.info('Adding specific files to presentations...');

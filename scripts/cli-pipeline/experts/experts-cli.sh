@@ -1,6 +1,13 @@
 #!/bin/bash
 # Experts CLI Pipeline
 # Shell script wrapper for the Experts CLI utilities
+#
+# Available commands:
+#   link-top-level-folders  List folders with videos for expert assignment
+#   assign-expert           Assign an expert to a folder (interactive mode with -i)
+#   list-experts            List all experts with their mnemonics
+#   add-expert              Add a new expert to the database
+#   health-check            Check the health of the experts service infrastructure
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

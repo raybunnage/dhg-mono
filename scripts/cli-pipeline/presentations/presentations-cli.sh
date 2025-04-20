@@ -45,6 +45,11 @@ function display_help() {
   echo -e "  show-ai-summary-status     Show AI summary status for expert documents in markdown table"
   echo -e "  presentation-asset-bio     Match non-transcript expert documents with presentations and create assets"
   echo -e "  add-specific-files         Add specific files from sources_google to presentations"
+  echo -e "  health-check               Check the health of presentations pipeline infrastructure"
+  echo -e "    --skip-database          Skip database connection check"
+  echo -e "    --skip-presentations     Skip presentations table check" 
+  echo -e "    --skip-claude            Skip Claude service check"
+  echo -e "    --verbose, -v            Show verbose output"
   echo ""
   echo -e "\033[1mDetailed Command: generate-summary\033[0m"
   echo -e "  Usage: presentations-cli generate-summary [options]"
@@ -202,6 +207,12 @@ if [[ "$1" == "generate-summary" ]]; then
       exit $?
     fi
   done
+fi
+
+# Handle health-check command directly
+if [[ "$1" == "health-check" ]]; then
+  track_command "health-check" "ts-node $SCRIPT_DIR/index.ts health-check ${@:2}"
+  exit $?
 fi
 
 # Otherwise, execute the presentations CLI normally with tracking

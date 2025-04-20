@@ -2,6 +2,13 @@
 
 # Command Tracking CLI
 # Tracks and manages CLI pipeline command executions
+#
+# Available commands:
+#   list                List recent command executions
+#   stats               Show command execution statistics
+#   init                Initialize the command_history table in the database
+#   test                Add a test record to the command_history table
+#   health-check        Check the health of the command tracking service
 
 # Get directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

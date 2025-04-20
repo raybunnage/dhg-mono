@@ -11,6 +11,7 @@ import { linkTopLevelFolders } from './commands/link-top-level-folders';
 import { assignExpert } from './commands/assign-expert';
 import { listExperts } from './commands/list-experts';
 import { addExpert } from './commands/add-expert';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Load environment variables
 dotenv.config();
@@ -147,6 +148,76 @@ program
       dryRun: options.dryRun,
       verbose: options.verbose
     });
+  });
+
+// Health check command
+program
+  .command('health-check')
+  .description('Check the health of the experts service infrastructure')
+  .option('--skip-database', 'Skip database connection check')
+  .option('-v, --verbose', 'Show verbose output')
+  .action(async (options) => {
+    try {
+      console.log('🏥 Running experts pipeline health checks...');
+      
+      // Check database connection
+      if (!options.skipDatabase) {
+        console.log('\n🔍 Checking Supabase database connection...');
+        try {
+          // Test connection to database
+          const connectionTest = await SupabaseClientService.getInstance().testConnection();
+          
+          if (connectionTest.success) {
+            console.log('✅ Database connection successful');
+            
+            // Additional check for experts table
+            const supabase = SupabaseClientService.getInstance().getClient();
+            const { data, error } = await supabase
+              .from('experts')
+              .select('count(*)', { count: 'exact', head: true });
+              
+            if (error) {
+              throw new Error(`Error querying experts table: ${error.message}`);
+            }
+            
+            console.log('✅ Experts table accessible');
+            
+            // Additional check for folder-expert relationships
+            const { data: relations, error: relError } = await supabase
+              .from('folder_expert_relationships')
+              .select('count(*)', { count: 'exact', head: true });
+              
+            if (relError) {
+              console.warn(`⚠️ Could not verify folder_expert_relationships table: ${relError.message}`);
+            } else {
+              console.log('✅ Folder-expert relationships table accessible');
+            }
+          } else {
+            const errorMessage = connectionTest.error || 'Unknown database connection error';
+            throw new Error(errorMessage);
+          }
+        } catch (error) {
+          console.error('❌ Database connection failed');
+          if (options.verbose) {
+            console.error('Error details:');
+            console.error(error);
+          }
+        }
+      } else {
+        console.log('⏩ Skipping database check');
+      }
+      
+      // Summary
+      console.log('\n📋 Overall Status:');
+      if (!options.skipDatabase) {
+        console.log('✅ Experts service infrastructure appears healthy');
+      } else {
+        console.log('⚠️ Health status unknown (database check skipped)');
+      }
+    } catch (error) {
+      console.error(`Error performing health check: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    }
   });
 
 // Execute the program

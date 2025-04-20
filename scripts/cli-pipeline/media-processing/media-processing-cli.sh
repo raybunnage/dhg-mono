@@ -78,6 +78,8 @@ function display_help() {
   echo "  register-expert-docs         Register MP4 files as expert documents in the database"
   echo "  register-local-mp4-files     Add local MP4 files to database that are not already registered"
   echo "                               Options: --dry-run, --force, --specific-files"
+  echo "  health-check                 Check the health of media processing infrastructure"
+  echo "                               Options: --skip-database, --skip-file-system, --skip-ffmpeg, --verbose"
   echo ""
   echo "Options:"
   echo "  --dry-run                    Show what would happen without making changes"
@@ -217,6 +219,11 @@ case "$COMMAND" in
     ;;
   register-local-mp4-files)
     track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/register-local-mp4-files.ts $*"
+    ;;
+    
+  # Health check command
+  health-check)
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/health-check.ts $*"
     ;;
     
   # Help commands
