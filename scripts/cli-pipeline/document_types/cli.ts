@@ -50,6 +50,7 @@ interface UpdateOptions {
   mimeType?: string;
   fileExtension?: string;
   aiGenerated?: boolean;
+  classifier?: 'pdf' | 'powerpoint' | 'docx' | 'expert';
 }
 
 interface DeleteOptions {
@@ -273,6 +274,7 @@ program
   .option('--mime-type <mimeType>', 'Preferred MIME type')
   .option('--file-extension <extension>', 'Preferred file extension')
   .option('--ai-generated <boolean>', 'Mark as AI generated', (val: string) => val === 'true')
+  .option('--classifier <classifier>', 'Set document classifier (pdf, powerpoint, docx, expert)')
   .action(async (options: UpdateOptions) => {
     const trackingId = await commandTrackingService.startTracking('document_types', 'update');
     
@@ -294,6 +296,7 @@ program
       if (options.mimeType !== undefined) updateData.mime_type = options.mimeType;
       if (options.fileExtension !== undefined) updateData.file_extension = options.fileExtension;
       if (options.aiGenerated !== undefined) updateData.is_ai_generated = options.aiGenerated;
+      if (options.classifier !== undefined) updateData.classifier = options.classifier;
       
       if (Object.keys(updateData).length === 0) {
         console.log('No updates specified. Document type remains unchanged.');
@@ -310,6 +313,7 @@ program
       console.log(`Description:     ${documentType.description || 'N/A'}`);
       console.log(`MIME Type:       ${documentType.mime_type || 'N/A'}`);
       console.log(`File Extension:  ${documentType.file_extension || 'N/A'}`);
+      console.log(`Classifier:      ${(documentType as any).classifier || 'Not set'}`);
       console.log(`AI Generated:    ${documentType.is_ai_generated ? 'Yes' : 'No'}`);
       
       await commandTrackingService.completeTracking(trackingId, {

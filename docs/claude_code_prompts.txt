@@ -84,9 +84,9 @@ for steps 2, 3 and 4 only do this if there is json in the process_content field
 
 
 ID:              1f71f894-d2f8-415e-80c1-a4d6db4d8b18
-     Name:            Json Expert Summary
+     Name:            Json Powerpoint Summary
      Category:        summary
-     Description:     AI generated JSON summary for experts showing basic information, detailed research, work summary, notable achievements and professional Links.
+     Description:     AI generated JSON powerpoint for key json details about the powerpoint.
      MIME Type:       application/json
      File Extension:  N/A
      AI Generated:    Yes
