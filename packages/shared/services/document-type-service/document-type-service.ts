@@ -19,6 +19,7 @@ export interface DocumentType {
   mime_type?: string | null;
   file_extension?: string | null;
   is_ai_generated?: boolean;
+  classifier?: 'pdf' | 'powerpoint' | 'docx' | 'expert' | null;
   required_fields?: Record<string, any> | null;
   validation_rules?: Record<string, any> | null;
   ai_processing_rules?: Record<string, any> | null;
@@ -36,6 +37,7 @@ export interface CreateDocumentTypeParams {
   mime_type?: string | null;
   file_extension?: string | null;
   is_ai_generated?: boolean;
+  classifier?: 'pdf' | 'powerpoint' | 'docx' | 'expert' | null;
   required_fields?: Record<string, any> | null;
   validation_rules?: Record<string, any> | null;
   ai_processing_rules?: Record<string, any> | null;
