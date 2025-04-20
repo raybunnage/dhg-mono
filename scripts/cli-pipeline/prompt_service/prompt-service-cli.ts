@@ -10,6 +10,7 @@ import { addQueryCommand } from './commands/add-query';
 import { updatePromptCommand } from './commands/update-prompt';
 import { cleanPromptMetadataCommand } from './commands/clean-prompt-metadata';
 import { verifyClaudeTemperatureCommand } from './commands/verify-claude-temperature';
+import { summarizeMetadataFieldsCommand } from './commands/summarize-metadata-fields';
 
 const program = new Command();
 
@@ -74,6 +75,11 @@ program.command('clean-metadata')
 program.command('verify-claude-temperature')
   .description('Verify that Claude service is using temperature=0')
   .action(verifyClaudeTemperatureCommand);
+
+// Summarize metadata fields command
+program.command('summarize-metadata')
+  .description('Summarize metadata fields across all prompt records')
+  .action(summarizeMetadataFieldsCommand);
 
 // Parse the arguments
 program.parse(process.argv);
