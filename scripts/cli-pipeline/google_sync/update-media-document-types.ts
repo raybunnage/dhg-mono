@@ -8,23 +8,31 @@ const supabaseClient = SupabaseClientService.getInstance().getClient();
 /**
  * Updates document_type_id for sources_google and expert_documents records based on file characteristics
  * 
- * Document type mappings for sources_google:
- * - '6ece37e7-840d-4a0c-864d-9f1f971b1d7e' for files with name ending in m4a or mime_type = audio/mp4
- * - 'bd903d99-64a1-4297-ba76-1094ab235dac' for folders with path_depth = 0 or path_depth = 1 (except is_root = true)
- * - 'dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd' for folders with path_depth > 1
- * - '0d61a685-10e0-4c82-b964-60b88b02ac15' for folders with is_root = true
- * - '299ad443-4d84-40d8-98cb-a9df423ba451' for files with name ending in pptx
- * - 'ba1d7662-0168-4756-a2ea-6d964fd02ba8' for files with mime_type = video/mp4
+ * Document type mappings (based on specified rules):
  * 
- * Document type mappings for expert_documents with json in processed_content:
- * - For sources with folder document_type_id (bd903d99-64a1-4297-ba76-1094ab235dac, dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd, 
- *   or 0d61a685-10e0-4c82-b964-60b88b02ac15), use the exact same document_type_id in expert_documents
- * - '6ece37e7-840d-4a0c-864d-9f1f971b1d7e' for files associated with .m4a or mime_type = audio/mp4
- * - 'c6c3969b-c5cd-4c9a-a0f8-6e508ab68a4c' for files associated with .mp4
- * - '2f5af574-9053-49b1-908d-c35001ce9680' for files associated with .pptx or .pdf
- * - '5b1f8963-0946-4e89-884d-30517eebb8a5' for files with document_type_id 03743a23-d2f3-4c73-a282-85afc138fdfd,
- *   af194b7e-cbf9-45c3-a1fc-863dbc815f1e, or 554ed67c-35d1-4218-abba-8d1b0ff7156d
- * - '1f71f894-d2f8-415e-80c1-a4d6db4d8b18' for .docx or .txt files that don't match the criteria above
+ * 1. If there is JSON in the related processed_content field in expert_document and the 
+ *    document_type_id in sources_google is 46dac359-01e9-4e36-bfb2-531da9c25e3f, make 
+ *    the document_type_id in expert_documents = 1f71f894-d2f8-415e-80c1-a4d6db4d8b18
+ * 
+ * 2. If there is JSON in the related processed_content field in expert_document and the 
+ *    document_type_id in sources_google is 03743a23-d2f3-4c73-a282-85afc138fdfd, make 
+ *    the document_type_id in expert_documents = 5b1f8963-0946-4e89-884d-30517eebb8a5
+ * 
+ * 3. If the name of the file in sources_google ends in .conf, set the document type in 
+ *    sources google to c1a7b78b-c61e-44a4-8b77-a27a38cbba7e and the expert_document_id 
+ *    to 1f71f894-d2f8-415e-80c1-a4d6db4d8b18
+ * 
+ * 4-12. If the record in sources_google is of certain document_type_ids, then set 
+ *       expert_document_id to 1f71f894-d2f8-415e-80c1-a4d6db4d8b18
+ * 
+ * Additional rules:
+ * - If there is JSON in the related processed_content that starts with {"title", mark as 5b1f8963-0946-4e89-884d-30517eebb8a5
+ * - If there is not JSON, mark as needs_reprocessing = true
+ * - If document_type_id is e9d3e473-5315-4837-9f5f-61f150cbd137 and content has "File analysis unavailable", mark as needs_reprocessing = true
+ * - If the mime_type is a folder, mark as needs_reprocessing = true
+ * - If document_type_id is ea74c86e-7f22-4ecf-ae16-0430291995e2, set as 1f71f894-d2f8-415e-80c1-a4d6db4d8b18
+ * - If document_type_id is 9ccdc433-99d8-46fb-8bf7-3ba72cf27c88, set as 2f5af574-9053-49b1-908d-c35001ce9680
+ * - If document_type_id is 5e61bfbc-39ef-4380-80c0-592017b39b71, set as 2f5af574-9053-49b1-908d-c35001ce9680
  */
 async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?: number, debug?: boolean }) {
   const dryRun = options.dryRun || false;
