@@ -25,30 +25,33 @@ export async function verifyClaudeTemperatureCommand() {
     const serviceCode = fs.readFileSync(claudeServicePath, 'utf8');
     
     // Check temperature settings in the service code
-    const temperatureChecks = [
+    interface TemperatureCheck {
+      method: string;
+      regex: RegExp;
+      found: boolean;
+      value?: string;
+    }
+    
+    const temperatureChecks: TemperatureCheck[] = [
       {
         method: 'sendPrompt',
         regex: /const\s+temperature\s*=\s*options\.temperature\s*\?\?\s*([^;]+);/,
-        found: false,
-        value: undefined
+        found: false
       },
       {
         method: 'getJsonResponse',
         regex: /options\.temperature\s*=\s*options\.temperature\s*\?\?\s*([^;]+);/,
-        found: false,
-        value: undefined
+        found: false
       },
       {
         method: 'analyzePdfToJson',
         regex: /temperature:\s*options\.temperature\s*\?\?\s*([^,}]+)/,
-        found: false,
-        value: undefined
+        found: false
       },
       {
         method: 'classifyPdf',
         regex: /temperature:\s*options\.temperature\s*\?\?\s*([^,}]+)/,
-        found: false,
-        value: undefined
+        found: false
       }
     ];
     
