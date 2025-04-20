@@ -197,6 +197,7 @@ export class DocumentTypeService {
         mime_type: params.mime_type || null,
         file_extension: params.file_extension || null,
         is_ai_generated: params.is_ai_generated || false,
+        classifier: params.classifier || null,
         required_fields: params.required_fields || null,
         validation_rules: params.validation_rules || null,
         ai_processing_rules: params.ai_processing_rules || null,
