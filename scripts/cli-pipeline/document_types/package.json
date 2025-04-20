@@ -1,0 +1,15 @@
+{
+  "name": "@dhg/cli-pipeline-document-types",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "commander": "^11.0.0",
+    "dotenv": "^16.0.3",
+    "typescript": "^5.0.4"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node cli.ts",
+    "dev": "ts-node cli.ts"
+  }
+}

@@ -16,10 +16,18 @@ const supabaseClient = SupabaseClientService.getInstance().getClient();
  * - 'bd903d99-64a1-4297-ba76-1094ab235dac' for folders at level = 0
  * - '0d61a685-10e0-4c82-b964-60b88b02ac15' for folders marked as is_root = true
  * - 'dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd' for folders at level > 0
+ * - '299ad443-4d84-40d8-98cb-a9df423ba451' for files with '.pptx' in their name
  */
 async function updateMediaDocumentTypes(options: { dryRun?: boolean, createExpertDocs?: boolean, batchSize?: number, debug?: boolean, forceUpdate?: boolean }) {
   const startTime = new Date();
-  const trackingId = await commandTrackingService.startTracking('google_sync', 'update-media-document-types');
+  let trackingId: string;
+  
+  try {
+    trackingId = await commandTrackingService.startTracking('google_sync', 'update-media-document-types');
+  } catch (trackingError) {
+    console.warn(`Warning: Unable to initialize command tracking. The command will continue but tracking is unavailable. Error: ${trackingError instanceof Error ? trackingError.message : String(trackingError)}`);
+    trackingId = 'tracking-unavailable';
+  }
   
   const dryRun = options.dryRun || false;
   const createExpertDocs = options.createExpertDocs !== undefined ? options.createExpertDocs : true;
@@ -50,6 +58,17 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, createExper
     
     if (audioError) {
       throw new Error(`Error fetching audio files: ${audioError.message}`);
+    }
+    
+    // Get PowerPoint files (.pptx) that need updating - include those with different document_type_id
+    const { data: pptxFiles, error: pptxError } = await supabaseClient
+      .from('sources_google')
+      .select('id, name, mime_type, document_type_id')
+      .ilike('name', '%.pptx%')
+      .not('document_type_id', 'eq', '299ad443-4d84-40d8-98cb-a9df423ba451');
+    
+    if (pptxError) {
+      throw new Error(`Error fetching PowerPoint files: ${pptxError.message}`);
     }
 
     // Get level 0 folders that need updating
@@ -188,14 +207,15 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, createExper
     }
 
     const totalFilesForDocType = (videoFiles?.length || 0) + (audioFiles?.length || 0) + 
-                      (level0Folders?.length || 0) + (rootFolders?.length || 0) + 
-                      (higherLevelFolders?.length || 0);
+                      (pptxFiles?.length || 0) + (level0Folders?.length || 0) + 
+                      (rootFolders?.length || 0) + (higherLevelFolders?.length || 0);
     
     const totalFilesNeedingExpertDocs = filesWithoutExpertDocs?.length || 0;
     
     console.log(`Found: 
     - ${videoFiles?.length || 0} video/mp4 files
     - ${audioFiles?.length || 0} audio/x-m4a files
+    - ${pptxFiles?.length || 0} PowerPoint (.pptx) files 
     - ${level0Folders?.length || 0} level 0 folders
     - ${rootFolders?.length || 0} root folders
     - ${higherLevelFolders?.length || 0} higher level folders
@@ -223,6 +243,12 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, createExper
         console.log(`- ${audioFiles.length} audio files with document_type_id = '6ece37e7-840d-4a0c-864d-9f1f971b1d7e'`);
         audioFiles.slice(0, 5).forEach((file: { name: string }) => console.log(`  - ${file.name}`));
         if (audioFiles.length > 5) console.log(`  - ... and ${audioFiles.length - 5} more`);
+      }
+      
+      if (pptxFiles && pptxFiles.length > 0) {
+        console.log(`- ${pptxFiles.length} PowerPoint files with document_type_id = '299ad443-4d84-40d8-98cb-a9df423ba451'`);
+        pptxFiles.slice(0, 5).forEach((file: { name: string }) => console.log(`  - ${file.name}`));
+        if (pptxFiles.length > 5) console.log(`  - ... and ${pptxFiles.length - 5} more`);
       }
 
       if (level0Folders && level0Folders.length > 0) {
@@ -297,6 +323,20 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, createExper
           throw new Error(`Error updating audio files: ${updateAudioError.message}`);
         }
         console.log(`Updated ${audioFiles.length} audio/x-m4a files with document_type_id`);
+      }
+      
+      // Update PowerPoint files
+      if (pptxFiles && pptxFiles.length > 0) {
+        const { error: updatePptxError } = await supabaseClient
+          .from('sources_google')
+          .update({ document_type_id: '299ad443-4d84-40d8-98cb-a9df423ba451' })
+          .ilike('name', '%.pptx%')
+          .not('document_type_id', 'eq', '299ad443-4d84-40d8-98cb-a9df423ba451');
+        
+        if (updatePptxError) {
+          throw new Error(`Error updating PowerPoint files: ${updatePptxError.message}`);
+        }
+        console.log(`Updated ${pptxFiles.length} PowerPoint (.pptx) files with document_type_id`);
       }
 
       // Update level 0 folders
@@ -505,12 +545,18 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, createExper
 
     const totalUpdated = totalFilesForDocType + (createExpertDocs ? totalFilesNeedingExpertDocs : 0);
     
-    await commandTrackingService.completeTracking(trackingId, {
-      recordsAffected: totalUpdated,
-      summary: dryRun 
-        ? `[DRY RUN] Would update ${totalFilesForDocType} media files with document_type_id and create ${createExpertDocs ? totalFilesNeedingExpertDocs : 0} expert_documents`
-        : `Updated ${totalFilesForDocType} media files with document_type_id and created ${createExpertDocs ? totalFilesNeedingExpertDocs : 0} expert_documents`
-    });
+    if (trackingId !== 'tracking-unavailable') {
+      try {
+        await commandTrackingService.completeTracking(trackingId, {
+          recordsAffected: totalUpdated,
+          summary: dryRun 
+            ? `[DRY RUN] Would update ${totalFilesForDocType} media files with document_type_id and create ${createExpertDocs ? totalFilesNeedingExpertDocs : 0} expert_documents`
+            : `Updated ${totalFilesForDocType} media files with document_type_id and created ${createExpertDocs ? totalFilesNeedingExpertDocs : 0} expert_documents`
+        });
+      } catch (trackingError) {
+        console.warn(`Warning: Unable to complete command tracking. Error: ${trackingError instanceof Error ? trackingError.message : String(trackingError)}`);
+      }
+    }
 
     // Count how many existing expert_documents would be updated with metadata
     let existingDocsCount = 0;
@@ -531,7 +577,15 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, createExper
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`Error updating media document types: ${errorMessage}`);
-    await commandTrackingService.failTracking(trackingId, `Command failed: ${errorMessage}`);
+    
+    if (trackingId !== 'tracking-unavailable') {
+      try {
+        await commandTrackingService.failTracking(trackingId, `Command failed: ${errorMessage}`);
+      } catch (trackingError) {
+        console.warn(`Warning: Unable to record command failure in tracking. Error: ${trackingError instanceof Error ? trackingError.message : String(trackingError)}`);
+      }
+    }
+    
     throw error;
   }
 }

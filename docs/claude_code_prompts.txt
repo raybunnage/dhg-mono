@@ -1,4 +1,97 @@
+
+6ece37e7-840d-4a0c-864d-9f1f971b1d7e   m4a  needs to be set rather than folder
+bd903d99-64a1-4297-ba76-1094ab235dac   high level folder 0 
+0d61a685-10e0-4c82-b964-60b88b02ac15 is root folder
+dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd low level folder
+
+
+I need you to rework the update-media_document_types command
+start all over again
+go through each sources_google file and change any records that match this criteria:
+if the name ends in m4a or it has mime_type = audio/mp4 then set document_type_id = '6ece37e7-840d-4a0c-864d-9f1f971b1d7e'
+if it is of mime_type application/vnd.google-apps.folder  then 
+  if is has a path_depth of 1 set document_type_id = bd903d99-64a1-4297-ba76-1094ab235dac
+    else if has another path depth of 1 or greater then set document_type_id = dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd
+if it has is_root = true then set document_type_id to 0d61a685-10e0-4c82-b964-60b88b02ac15 
+if it the name ends in pptx set document_type_id to 299ad443-4d84-40d8-98cb-a9df423ba451
+if the name is of mime_type video/mp4 set document_type_id to ba1d7662-0168-4756-a2ea-6d964fd02ba8
+
+
+ID:              1f71f894-d2f8-415e-80c1-a4d6db4d8b18
+     Name:            Json Expert Summary
+     Category:        summary
+     Description:     AI generated JSON summary for experts showing basic information, detailed research, work summary, notable achievements and professional Links.
+     MIME Type:       application/json
+     File Extension:  N/A
+     AI Generated:    Yes
+     Created At:      2025-04-20T02:28:23.702+00:00
+     Updated At:      2025-04-20T02:28:23.702+00:00
+     Command exited with code 0
+
+
+
+documentation types
+
+then for presentation types we have ai assisted summarioes
+  they all have in common json formatting made by ai
+
+  video summary
+    Speaker Profile Highlight
+    Presentation Essence
+    Key Takeaways
+    Memorable Quotes
+    Discussion Highlights
+    Why Watch This
+  document summary  
+      key_topics
+      target_audience
+      "unique_insights": 
+  expert document
+    Basic Information
+    Detailed Research/Work Summary
+    Notable Achievements
+    Professional Links
+    Keywords
+scientifice document 
+  clinical_implications
+  target_audience
+  transformative_potential
+  limitations
+  powerpoint_suggestions
+
+
+docx files fall into
+  presetnation announcments
+  bio
+  cv
+  unknown if has a password
+  letter 
+  narrative 
+  report
+
+  new work summary
+  subject classification summary
+
+lots of different kidns of transcripts    we have 
+
+
+pdf files turn into 
+  book
+  research article
+  journal article
+  review article
+  preprint
+  pdf document is fallback if we don't know 
+
+  web news article 
+  email correspondence
+  magazine article 
+
+
 {"key_topics": ["Circadian rhythm biology and its impact on health", "Light exposure effects on melanopsin and brain function", "Time-Restricted Eating (TRE) as a health intervention", "Modern lifestyle disruptions to circadian rhythms", "Practical strategies for optimizing circadian health"], "limitations": "While the presentation provides compelling evidence for circadian interventions, implementation may be challenging in modern society where shift work, artificial lighting, and irregular schedules are prevalent. Additionally, individual variations in circadian biology may affect response to interventions, and more research is needed to develop personalized protocols for specific populations and conditions.", "document_type": "scientific presentation", "target_audience": "Healthcare providers including physicians, nutritionists, psychiatrists, neurologists, sleep specialists, and integrative medicine practitioners, as well as hospital administrators responsible for healthcare environment design", "document_summary": "Dr. Satchin Panda's presentation from the Salk Institute explores the critical role of circadian rhythms in human health and longevity. The presentation begins by addressing why humans struggle to maintain health throughout their lifespan, highlighting how optimized circadian rhythms can prevent disease, solve multiple health issues, and accelerate healing. Dr. Panda explains how our bodies have evolved with internal clocks that regulate numerous physiological processes, including metabolism, cellular functions, and hormone production, creating daily rhythms that affect virtually every aspect of human physiology.\n\nA significant portion of the presentation focuses on light exposure and its profound impact on circadian rhythms. Dr. Panda's research on melanopsin, a blue light-sensing protein in the eye that synchronizes the brain's master clock, demonstrates how modern lighting environments disrupt our natural rhythms. Bright screens and artificial lighting at night suppress melatonin production and disrupt sleep, while insufficient daylight exposure during daytime hours reduces alertness and cognitive function. These disruptions are linked to numerous health conditions, including depression, anxiety, ADHD, dementia, and various metabolic disorders.\n\nThe presentation introduces the concept of Time-Restricted Eating (TRE) as a powerful intervention to restore healthy circadian rhythms. Dr. Panda presents evidence that limiting food consumption to an 8-12 hour window can significantly improve metabolic health, even without changing diet composition. This approach has shown benefits for conditions ranging from obesity and diabetes to fatty liver disease and poor sleep. The myCircadianClock.org research initiative is highlighted as a platform collecting real-world data on eating patterns and their health impacts.\n\nDr. Panda addresses how modern lifestyles—including shift work, jet lag, and social jet lag (inconsistent sleep schedules between workdays and weekends)—disrupt circadian rhythms and contribute to numerous health conditions across the lifespan. The presentation provides practical recommendations for healthy circadian living, including getting sufficient daylight exposure (1000+ lux for at least 30 minutes daily), limiting evening light exposure, maintaining consistent sleep schedules, and practicing time-restricted eating.\n\nThe presentation concludes by introducing the Center of Circadian Health, which aims to understand and leverage circadian rhythm principles to elevate and sustain peak human performance across the lifespan. Dr. Panda emphasizes that optimizing circadian rhythms represents a holistic approach to health that can prevent disease, address multiple health issues simultaneously, accelerate healing, and restore full functionality—potentially transforming healthcare from a disease-treatment model to a prevention-focused paradigm.", "document_type_id": "ba7893d4-8404-4489-b553-b6464cd5cbd8", "clinical_implications": ["Light therapy protocols (10,000 lux for 15-60 minutes) can effectively treat depression, seasonal affective disorders, and ADHD", "Time-Restricted Eating within an 8-12 hour window may improve metabolic conditions including obesity, diabetes, and fatty liver disease without medication", "Optimized lighting in healthcare settings (particularly ICUs and NICUs) can reduce delirium, improve patient outcomes, and potentially reduce hospital stays", "Consistent sleep-wake schedules and light exposure patterns may help prevent or manage numerous neurological and psychiatric conditions", "Circadian rhythm optimization offers a non-pharmacological approach to treating multiple health conditions simultaneously"], "powerpoint_suggestions": ["Slide 1: Title - 'Optimizing Circadian Rhythms for Health and Longevity' with presenter information", "Slide 2-3: Introduction to circadian rhythms and their fundamental role in human physiology", "Slide 4-6: The science of melanopsin and light exposure effects on brain function", "Slide 7-9: Modern lifestyle disruptions to circadian rhythms and their health consequences", "Slide 10-12: Time-Restricted Eating research findings and metabolic benefits", "Slide 13-14: Practical recommendations for light exposure, eating windows, and sleep schedules", "Slide 15-16: Clinical applications in healthcare settings (hospitals, ICUs, NICUs)", "Slide 17-18: The Center for Circadian Health and future research directions", "Slide 19: Summary of key takeaways for healthcare practitioners", "Slide 20: Resources for implementation and patient education (including myCircadianClock.org)"], "classification_reasoning": "This document is clearly a scientific presentation delivered by Dr. Satchin Panda of the Salk Institute. It contains detailed scientific content about circadian rhythm research, presents empirical findings, includes references to published studies, and discusses clinical applications. The structured format with numbered slides, scientific terminology, and research citations is characteristic of an academic or professional scientific presentation rather than other document types.", "transformative_potential": "Dr. Panda's research suggests a paradigm shift in healthcare from treating individual symptoms to addressing underlying circadian disruptions that contribute to multiple conditions simultaneously. By optimizing light exposure, eating patterns, and sleep schedules, practitioners may be able to prevent and treat a wide range of metabolic, neurological, and psychiatric disorders without medication. This approach transforms our understanding of environmental factors in disease development and offers accessible, low-cost interventions that could significantly reduce healthcare burden while improving quality of life across the lifespan."}
+
+
+
 
 PowerPoint Content (Extracted with custom XML parser):
 

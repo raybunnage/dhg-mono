@@ -4,15 +4,15 @@
 
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
-| video mpeg | 116 | 13.9% |
-| low level folder | 112 | 13.4% |
+| mp4 video | 117 | 14% |
+| low level folder | 105 | 12.5% |
 | Presentation Announcement | 94 | 11.2% |
 | research article | 91 | 10.9% |
 | Chat Log | 50 | 6% |
 | dicussion transcript | 27 | 3.2% |
+| powerpoint document | 25 | 3% |
 | review article | 23 | 2.7% |
 | email correspondence | 21 | 2.5% |
-| scientific presentation and discussion | 17 | 2% |
 | journal article | 15 | 1.8% |
 | presentation transcript | 12 | 1.4% |
 | professional biography | 9 | 1.1% |
@@ -27,18 +27,15 @@
 | letter | 3 | 0.4% |
 | editorial | 3 | 0.4% |
 | unknown document type | 2 | 0.2% |
+| pdf document | 2 | 0.2% |
 | new work summary | 2 | 0.2% |
 | magazine article | 2 | 0.2% |
 | word document | 2 | 0.2% |
 | book | 2 | 0.2% |
-| mp4 video | 1 | 0.1% |
 | letter to the editor | 1 | 0.1% |
 | high level folder | 1 | 0.1% |
 | correction | 1 | 0.1% |
-| powerpoint document | 1 | 0.1% |
 | science meeting discussion | 1 | 0.1% |
-| ai presentation transcript | 1 | 0.1% |
-| pdf document | 1 | 0.1% |
 | preprint | 1 | 0.1% |
 | Deployment Script | 1 | 0.1% |
 
@@ -194,12 +191,12 @@
 
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
-| video mpeg | 116 | 16% |
-| low level folder | 112 | 15.5% |
+| mp4 video | 117 | 16.2% |
+| low level folder | 105 | 14.5% |
 | Presentation Announcement | 94 | 13% |
 | research article | 91 | 12.6% |
+| powerpoint document | 60 | 8.3% |
 | Chat Log | 50 | 6.9% |
-| scientific presentation and discussion | 49 | 6.8% |
 | Unknown | 34 | 4.7% |
 | dicussion transcript | 27 | 3.7% |
 | review article | 23 | 3.2% |
@@ -212,7 +209,6 @@
 | curriculum vitae | 6 | 0.8% |
 | url blog post | 6 | 0.8% |
 | website | 5 | 0.7% |
-| ai presentation transcript | 4 | 0.6% |
 | Code Documentation Markdown | 4 | 0.6% |
 | essay | 4 | 0.6% |
 | letter | 3 | 0.4% |
@@ -221,20 +217,18 @@
 | magazine article | 2 | 0.3% |
 | book | 2 | 0.3% |
 | new work summary | 2 | 0.3% |
+| pdf document | 2 | 0.3% |
 | unknown document type | 2 | 0.3% |
 | word document | 2 | 0.3% |
 | preprint | 1 | 0.1% |
 | correction | 1 | 0.1% |
-| powerpoint document | 1 | 0.1% |
-| mp4 video | 1 | 0.1% |
 | letter to the editor | 1 | 0.1% |
-| pdf document | 1 | 0.1% |
 | Deployment Script | 1 | 0.1% |
 | science meeting discussion | 1 | 0.1% |
 
 ## Sample Expert Documents
 
-### 1. Naviaux.Mitochondria.chronic Disease.mp4 (video mpeg)
+### 1. Naviaux.Mitochondria.chronic Disease.mp4 (mp4 video)
 
 - ID: `b94942bd-e6da-49b2-acb4-3d9e001c2f2a`
 - MIME Type: video/mp4
@@ -269,7 +263,7 @@ The presentation opened with epidemiological data showing the rising incidence o
 
 ---
 
-### 3. Wager.7.15.20.mp4 (video mpeg)
+### 3. Wager.7.15.20.mp4 (mp4 video)
 
 - ID: `556d8749-f59e-4704-a388-a46a7ee88d07`
 - MIME Type: video/mp4
@@ -400,7 +394,7 @@ This meeting is a major paradigm shift. Exceptional cancer survivors don’t jus
 
 ---
 
-### 9. Lustig.Amygdala.1.8.25.mp4 (video mpeg)
+### 9. Lustig.Amygdala.1.8.25.mp4 (mp4 video)
 
 - ID: `846246b7-e992-41ba-80c8-50736bd30b9b`
 - MIME Type: video/mp4
