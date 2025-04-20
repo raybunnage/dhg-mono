@@ -9,6 +9,7 @@ import { viewPromptMetadataCommand } from './commands/view-prompt-metadata';
 import { addQueryCommand } from './commands/add-query';
 import { updatePromptCommand } from './commands/update-prompt';
 import { cleanPromptMetadataCommand } from './commands/clean-prompt-metadata';
+import { verifyClaudeTemperatureCommand } from './commands/verify-claude-temperature';
 
 const program = new Command();
 
@@ -65,8 +66,14 @@ program.command('update')
 
 // Clean prompt metadata command
 program.command('clean-metadata')
-  .description('Clean prompt metadata by removing the "content" field')
+  .description('Clean metadata by removing specified fields from prompt records')
+  .option('-f, --fields <fields...>', 'Fields to remove (default: content,temperature)')
   .action(cleanPromptMetadataCommand);
+
+// Verify Claude temperature command
+program.command('verify-claude-temperature')
+  .description('Verify that Claude service is using temperature=0')
+  .action(verifyClaudeTemperatureCommand);
 
 // Parse the arguments
 program.parse(process.argv);
