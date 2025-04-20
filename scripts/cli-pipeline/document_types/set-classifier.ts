@@ -58,11 +58,10 @@ program
       
       // Define the classifier enum options
       const classifierOptions = [
-        'manual',
-        'auto',
-        'ai_assisted',
-        'rule_based',
-        'hybrid'
+        'pdf',
+        'powerpoint',
+        'docx',
+        'expert'
       ];
       
       // If start-from option is specified, find the starting index
@@ -81,7 +80,7 @@ program
       let processedCount = 0;
       const supabase = SupabaseClientService.getInstance().getClient();
       
-      const processDocumentType = async (index) => {
+      const processDocumentType = async (index: number) => {
         if (index >= documentTypes.length) {
           console.log(`\nCompleted processing ${processedCount} document types.`);
           rl.close();
@@ -93,9 +92,12 @@ program
         }
         
         const documentType = documentTypes[index];
+        // Check if classifier exists in the type or as a property
+        const currentClassifier = (documentType as any).classifier || 'Not set';
+        
         console.log(`\n[${index + 1}/${documentTypes.length}] Document Type: ${documentType.document_type}`);
         console.log(`Category: ${documentType.category || 'N/A'}`);
-        console.log(`Current classifier: ${documentType.classifier || 'Not set'}`);
+        console.log(`Current classifier: ${currentClassifier}`);
         console.log('\nClassifier options:');
         classifierOptions.forEach((option, i) => {
           console.log(`${i + 1}. ${option}`);
@@ -135,8 +137,8 @@ program
             
             // Process the next document type
             processDocumentType(index + 1);
-          } catch (error) {
-            console.error(`Error updating document type: ${error.message}`);
+          } catch (error: unknown) {
+            console.error(`Error updating document type: ${error instanceof Error ? error.message : String(error)}`);
             // Continue to the next document type
             processDocumentType(index + 1);
           }

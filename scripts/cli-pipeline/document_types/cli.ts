@@ -103,25 +103,30 @@ program
         
         // Output as table
         console.log('\nDocument Types:');
-        console.log('========================================================================================================================');
+        console.log('=================================================================================================================================');
         console.log('ID'.padEnd(36) + ' | ' + 
                    'Document Type'.padEnd(30) + ' | ' + 
                    'Category'.padEnd(15) + ' | ' + 
-                   'MIME Type'.padEnd(38) + ' | ' +
+                   'MIME Type'.padEnd(35) + ' | ' +
+                   'Classifier'.padEnd(12) + ' | ' +
                    'AI Generated');
-        console.log('------------------------------------------------------------------------------------------------------------------------');
+        console.log('---------------------------------------------------------------------------------------------------------------------------------');
         
         documentTypes.forEach(type => {
+          // Access classifier using type assertion since it might not be in the type definition yet
+          const classifier = (type as any).classifier || '';
+          
           console.log(
             type.id.padEnd(36) + ' | ' +
             type.document_type.substring(0, 28).padEnd(30) + ' | ' +
             (type.category || '').substring(0, 13).padEnd(15) + ' | ' +
-            (type.mime_type || '').substring(0, 36).padEnd(38) + ' | ' +
+            (type.mime_type || '').substring(0, 33).padEnd(35) + ' | ' +
+            classifier.padEnd(12) + ' | ' +
             (type.is_ai_generated ? 'Yes' : 'No')
           );
         });
         
-        console.log('------------------------------------------------------------------------------------------------------------------------');
+        console.log('---------------------------------------------------------------------------------------------------------------------------------');
         console.log(`Total: ${documentTypes.length} document types`);
       }
       
@@ -167,6 +172,7 @@ program
         console.log(`Description:     ${documentType.description || 'N/A'}`);
         console.log(`MIME Type:       ${documentType.mime_type || 'N/A'}`);
         console.log(`File Extension:  ${documentType.file_extension || 'N/A'}`);
+        console.log(`Classifier:      ${(documentType as any).classifier || 'Not set'}`);
         console.log(`AI Generated:    ${documentType.is_ai_generated ? 'Yes' : 'No'}`);
         console.log(`Created At:      ${documentType.created_at || 'N/A'}`);
         console.log(`Updated At:      ${documentType.updated_at || 'N/A'}`);
