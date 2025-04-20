@@ -106,15 +106,14 @@ export async function summarizeMetadataFieldsCommand() {
     console.log('--------------');
     
     // Select interesting fields to show examples for
-    const interestingFields = ['aiEngine.model', 'source.fileName', 'databaseQuery'];
+    const interestingFields = ['aiEngine.model', 'source.fileName', 'databaseQuery', 'databaseQuery2'];
     
     for (const fieldPath of interestingFields) {
       const [parentField, childField] = fieldPath.split('.');
       
       console.log(`\n${fieldPath}:`);
-      const uniqueValues = new Set<string>();
       
-      // Collect unique values
+      // Collect and display full values for each prompt
       for (const prompt of prompts) {
         const metadata = prompt.metadata ? (prompt.metadata as IndexableMetadata) : ({} as IndexableMetadata);
         
@@ -124,31 +123,24 @@ export async function summarizeMetadataFieldsCommand() {
           if (parentValue && typeof parentValue === 'object') {
             const nestedObj = parentValue as Record<string, any>;
             if (childField in nestedObj) {
-              uniqueValues.add(String(nestedObj[childField]));
+              console.log(`\n  [${prompt.name}]:`);
+              console.log(`  ${String(nestedObj[childField])}`);
             }
           }
         } else {
           // Handle top-level fields
           if (parentField in metadata) {
             const value = metadata[parentField];
+            console.log(`\n  [${prompt.name}]:`);
             if (typeof value === 'string') {
-              uniqueValues.add(value.substring(0, 80));
+              console.log(`  ${value}`);
             } else if (typeof value === 'object') {
-              uniqueValues.add(JSON.stringify(value).substring(0, 80));
+              console.log(`  ${JSON.stringify(value, null, 2)}`);
             } else {
-              uniqueValues.add(String(value));
+              console.log(`  ${String(value)}`);
             }
           }
         }
-      }
-      
-      // Display unique values
-      if (uniqueValues.size === 0) {
-        console.log('  No values found');
-      } else {
-        Array.from(uniqueValues).forEach(value => {
-          console.log(`  - ${value}`);
-        });
       }
     }
     
