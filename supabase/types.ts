@@ -519,6 +519,7 @@ export type Database = {
         Row: {
           ai_processing_rules: Json | null
           category: string
+          classifier: Database["public"]["Enums"]["document_classifier"] | null
           content_schema: Json | null
           created_at: string
           current_num_of_type: number | null
@@ -537,6 +538,7 @@ export type Database = {
         Insert: {
           ai_processing_rules?: Json | null
           category: string
+          classifier?: Database["public"]["Enums"]["document_classifier"] | null
           content_schema?: Json | null
           created_at?: string
           current_num_of_type?: number | null
@@ -555,6 +557,7 @@ export type Database = {
         Update: {
           ai_processing_rules?: Json | null
           category?: string
+          classifier?: Database["public"]["Enums"]["document_classifier"] | null
           content_schema?: Json | null
           created_at?: string
           current_num_of_type?: number | null
@@ -5194,6 +5197,7 @@ export type Database = {
         | "transcription"
         | "diarization"
         | "summarization"
+      document_classifier: "pdf" | "powerpoint" | "docx" | "expert"
       processing_stage:
         | "queued"
         | "downloading"
@@ -5378,6 +5382,7 @@ export const Constants = {
         "diarization",
         "summarization",
       ],
+      document_classifier: ["pdf", "powerpoint", "docx", "expert"],
       processing_stage: [
         "queued",
         "downloading",

@@ -102,11 +102,12 @@ program
         classifierOptions.forEach((option, i) => {
           console.log(`${i + 1}. ${option}`);
         });
-        console.log('Type "skip" to skip this document type');
+        console.log(`${classifierOptions.length + 1}. Skip`);
         console.log('Press Ctrl+C to exit');
         
-        rl.question('Enter classifier number or "skip": ', async (answer) => {
-          if (answer.toLowerCase() === 'skip') {
+        rl.question('Enter classifier number: ', async (answer) => {
+          // Check if user entered the skip number option
+          if (answer === String(classifierOptions.length + 1) || answer.toLowerCase() === 'skip') {
             console.log(`Skipping ${documentType.document_type}`);
             processDocumentType(index + 1);
             return;
