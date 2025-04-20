@@ -1,4 +1,4 @@
-import { claudeService } from '../../../../packages/shared/services/claude-service';
+import { ClaudeService } from '../../../../packages/shared/services/claude-service/claude-service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -30,25 +30,25 @@ export async function verifyClaudeTemperatureCommand() {
         method: 'sendPrompt',
         regex: /const\s+temperature\s*=\s*options\.temperature\s*\?\?\s*([^;]+);/,
         found: false,
-        value: null
+        value: undefined
       },
       {
         method: 'getJsonResponse',
         regex: /options\.temperature\s*=\s*options\.temperature\s*\?\?\s*([^;]+);/,
         found: false,
-        value: null
+        value: undefined
       },
       {
         method: 'analyzePdfToJson',
         regex: /temperature:\s*options\.temperature\s*\?\?\s*([^,}]+)/,
         found: false,
-        value: null
+        value: undefined
       },
       {
         method: 'classifyPdf',
         regex: /temperature:\s*options\.temperature\s*\?\?\s*([^,}]+)/,
         found: false,
-        value: null
+        value: undefined
       }
     ];
     
@@ -90,6 +90,9 @@ export async function verifyClaudeTemperatureCommand() {
     // Make a test API call to verify runtime behavior
     console.log('\nMaking a test API call to verify runtime behavior...');
     try {
+      // Get the Claude service instance
+      const claudeService = ClaudeService.getInstance();
+      
       const testResponse = await claudeService.sendPrompt(
         'Please respond with the word "test" and nothing else.',
         { maxTokens: 10 }  // Don't specify temperature to use the default
