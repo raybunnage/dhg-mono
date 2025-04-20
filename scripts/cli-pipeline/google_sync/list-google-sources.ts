@@ -25,7 +25,8 @@ async function listGoogleSources(options: {
   filter?: string,
   expert?: string,
   output?: string, 
-  sortBy?: string
+  sortBy?: string,
+  console?: boolean
 }) {
   // Generate tracking ID
   let trackingId: string;
@@ -40,7 +41,7 @@ async function listGoogleSources(options: {
     console.log(`Generating report of Google sources and their expert documents...`);
     
     // Default options
-    const limit = options.limit || 100;
+    const limit = options.limit || 1000;
     const filter = options.filter || '';
     const sortBy = options.sortBy || 'name'; 
     const outputFilePath = options.output || path.join(process.cwd(), 'docs', 'cli-pipeline', 'google-sources-list.md');
@@ -53,7 +54,8 @@ async function listGoogleSources(options: {
         name,
         document_type_id,
         mime_type,
-        path_depth
+        path_depth,
+        updated_at
       `)
       .limit(limit);
     
@@ -147,16 +149,33 @@ async function listGoogleSources(options: {
     }
     
     // Get all expert documents for the sources
+    // Process in batches to avoid Request Entity Too Large errors
     const sourceIds = sources.map(s => s.id);
-    const { data: expertDocs, error: expertDocsError } = await supabase
-      .from('expert_documents')
-      .select('id, source_id, document_type_id, raw_content, processed_content')
-      .in('source_id', sourceIds);
+    const batchSize = 50; // Process in smaller batches
+    let allExpertDocs: ExpertDocument[] = [];
+    
+    // Process in batches
+    for (let i = 0; i < sourceIds.length; i += batchSize) {
+      const batchIds = sourceIds.slice(i, i + batchSize);
+      console.log(`Fetching expert documents batch ${i/batchSize + 1} of ${Math.ceil(sourceIds.length/batchSize)}...`);
       
-    if (expertDocsError) {
-      console.error(`Error fetching expert documents: ${expertDocsError.message}`);
-      return;
+      const { data: batchExpertDocs, error: batchError } = await supabase
+        .from('expert_documents')
+        .select('id, source_id, document_type_id, raw_content, processed_content')
+        .in('source_id', batchIds);
+      
+      if (batchError) {
+        console.error(`Error fetching expert documents batch ${i/batchSize + 1}: ${batchError.message}`);
+        return;
+      }
+      
+      if (batchExpertDocs) {
+        allExpertDocs = [...allExpertDocs, ...batchExpertDocs];
+      }
     }
+    
+    console.log(`Fetched ${allExpertDocs.length} expert documents in total.`);
+    const expertDocs = allExpertDocs;
     
     // Create a map of source_id to expert_document for quick lookups
     const expertDocsMap = new Map<string, ExpertDocument[]>();
@@ -217,10 +236,10 @@ async function listGoogleSources(options: {
           // Since it's already parsed from the database, we can check if it's an object
           if (typeof expertDoc.processed_content === 'object') {
             hasJson = true;
-            // Convert back to string for preview
+            // Convert back to string for preview - shorter preview to avoid markdown table issues
             const jsonStr = JSON.stringify(expertDoc.processed_content);
-            processedContentPreview = jsonStr.substring(0, 200);
-            if (jsonStr.length > 200) {
+            processedContentPreview = jsonStr.substring(0, 40);
+            if (jsonStr.length > 40) {
               processedContentPreview += '...';
             }
           } else if (typeof expertDoc.processed_content === 'string') {
@@ -228,14 +247,14 @@ async function listGoogleSources(options: {
               // Try to parse it as JSON if it's a string
               JSON.parse(expertDoc.processed_content);
               hasJson = true;
-              processedContentPreview = expertDoc.processed_content.substring(0, 200);
-              if (expertDoc.processed_content.length > 200) {
+              processedContentPreview = expertDoc.processed_content.substring(0, 40);
+              if (expertDoc.processed_content.length > 40) {
                 processedContentPreview += '...';
               }
             } catch (e) {
               // Not valid JSON
-              processedContentPreview = expertDoc.processed_content.substring(0, 200);
-              if (expertDoc.processed_content.length > 200) {
+              processedContentPreview = expertDoc.processed_content.substring(0, 40);
+              if (expertDoc.processed_content.length > 40) {
                 processedContentPreview += '...';
               }
             }
@@ -266,11 +285,110 @@ async function listGoogleSources(options: {
     report += `- Sources with expert documents: ${sourcesWithExpertDocs}\n`;
     report += `- Total expert documents: ${totalExpertDocs}\n`;
     
-    // Write the report to the output file
-    fs.mkdirSync(path.dirname(outputFilePath), { recursive: true });
-    fs.writeFileSync(outputFilePath, report);
-    
-    console.log(`Report generated successfully and saved to: ${outputFilePath}`);
+    // Output the results based on the format option
+    if (options.console) {
+      // Display results in console table format
+      console.log('\nGoogle Drive Sources and Expert Documents:');
+      console.log('====================================================================================================================================');
+      console.log('ID'.padEnd(38) + ' | ' + 
+                 'Source Name'.padEnd(25) + ' | ' + 
+                 'Document Type'.padEnd(16) + ' | ' + 
+                 'Has Expert'.padEnd(10) + ' | ' + 
+                 'Expert Doc Type'.padEnd(16) + ' | ' +
+                 'Raw Content Preview'.padEnd(18) + ' | ' +
+                 'Has JSON'.padEnd(8) + ' | ' +
+                 'Processed Content Preview'.padEnd(50));
+      console.log('------------------------------------------------------------------------------------------------------------------------------------');
+      
+      // Sort sources by document type for console display
+      const sortedSources = [...sources].sort((a, b) => {
+        const docTypeA = a.document_type_id ? documentTypeMap.get(a.document_type_id) || 'Unknown' : 'None';
+        const docTypeB = b.document_type_id ? documentTypeMap.get(b.document_type_id) || 'Unknown' : 'None';
+        return docTypeA.localeCompare(docTypeB);
+      });
+      
+      sortedSources.forEach(source => {
+        const sourceName = source.name || 'Unnamed';
+        const documentType = source.document_type_id ? documentTypeMap.get(source.document_type_id) || 'Unknown' : 'None';
+        
+        // Check for expert document
+        const expertDocsForSource = expertDocsMap.get(source.id) || [];
+        const hasExpertDoc = expertDocsForSource.length > 0;
+        const expertDoc = hasExpertDoc ? expertDocsForSource[0] : null;
+        
+        // Get expert document details
+        const expertDocType = expertDoc?.document_type_id ? documentTypeMap.get(expertDoc.document_type_id) || 'Unknown' : 'N/A';
+        
+        // Preview of raw content (first 18 chars)
+        let rawContentPreview = 'None';
+        if (expertDoc?.raw_content) {
+          rawContentPreview = expertDoc.raw_content.substring(0, 18).replace(/\\n/g, ' ').replace(/\\r/g, '');
+          if (expertDoc.raw_content.length > 18) {
+            rawContentPreview += '...';
+          }
+        }
+        
+        // Check if processed_content is JSON
+        let hasJson = false;
+        let processedContentPreview = 'None';
+        
+        if (expertDoc?.processed_content) {
+          try {
+            // Since it's already parsed from the database, we can check if it's an object
+            if (typeof expertDoc.processed_content === 'object') {
+              hasJson = true;
+              // Convert back to string for preview - show more characters in console mode
+              const jsonStr = JSON.stringify(expertDoc.processed_content);
+              processedContentPreview = jsonStr.substring(0, 47);
+              if (jsonStr.length > 47) {
+                processedContentPreview += '...';
+              }
+            } else if (typeof expertDoc.processed_content === 'string') {
+              try {
+                // Try to parse it as JSON if it's a string
+                JSON.parse(expertDoc.processed_content);
+                hasJson = true;
+                processedContentPreview = expertDoc.processed_content.substring(0, 47);
+                if (expertDoc.processed_content.length > 47) {
+                  processedContentPreview += '...';
+                }
+              } catch (e) {
+                // Not valid JSON
+                processedContentPreview = expertDoc.processed_content.substring(0, 47);
+                if (expertDoc.processed_content.length > 47) {
+                  processedContentPreview += '...';
+                }
+              }
+            }
+          } catch (e) {
+            // Not valid JSON or error in processing
+            processedContentPreview = 'Error processing';
+          }
+        }
+        
+        console.log(
+          source.id.padEnd(38) + ' | ' +
+          sourceName.substring(0, 23).padEnd(25) + ' | ' +
+          documentType.substring(0, 14).padEnd(16) + ' | ' +
+          (hasExpertDoc ? 'Yes' : 'No').padEnd(10) + ' | ' +
+          expertDocType.substring(0, 14).padEnd(16) + ' | ' +
+          rawContentPreview.substring(0, 16).padEnd(18) + ' | ' +
+          (hasJson ? 'Yes' : 'No').padEnd(8) + ' | ' +
+          processedContentPreview.substring(0, 48).padEnd(50)
+        );
+      });
+      
+      console.log('------------------------------------------------------------------------------------------------------------------------------------');
+      console.log(`Total sources: ${sources.length}`);
+      console.log(`Sources with expert documents: ${sourcesWithExpertDocs}`);
+      console.log(`Total expert documents: ${totalExpertDocs}`);
+    } else {
+      // Write the report to the output file
+      fs.mkdirSync(path.dirname(outputFilePath), { recursive: true });
+      fs.writeFileSync(outputFilePath, report);
+      
+      console.log(`Report generated successfully and saved to: ${outputFilePath}`);
+    }
     
     // Complete tracking
     if (trackingId !== 'tracking-unavailable') {
@@ -296,6 +414,7 @@ type GoogleSource = {
   document_type_id: string | null;
   mime_type: string | null;
   path_depth: number | null;
+  updated_at: string | null;
 };
 
 type ExpertDocument = {
@@ -312,18 +431,20 @@ const program = new Command();
 program
   .name('list-google-sources')
   .description('Lists Google Drive sources and their corresponding expert documents with detailed information (excludes MP4 videos, M4A audio files, and folders)')
-  .option('-l, --limit <number>', 'Maximum number of sources to list', '100')
+  .option('-l, --limit <number>', 'Maximum number of sources to list', '1000')
   .option('-f, --filter <string>', 'Filter sources by name')
   .option('-e, --expert <string>', 'Filter sources by expert name')
   .option('-o, --output <path>', 'Output file path for the report')
   .option('-s, --sort-by <field>', 'Sort results by field (name, updated, type)', 'name')
+  .option('-c, --console', 'Display results in console table format instead of generating markdown')
   .action((options) => {
     listGoogleSources({
       limit: parseInt(options.limit),
       filter: options.filter,
       expert: options.expert,
       output: options.output,
-      sortBy: options.sortBy
+      sortBy: options.sortBy,
+      console: options.console
     });
   });
 

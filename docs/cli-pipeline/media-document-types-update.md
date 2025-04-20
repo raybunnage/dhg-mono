@@ -32,20 +32,37 @@ The command usage remains the same:
 ```
 
 Options:
-- `-l, --limit <number>`: Maximum number of sources to list (default: 100)
+- `-l, --limit <number>`: Maximum number of sources to list (default: 1000)
 - `-f, --filter <string>`: Filter sources by name
 - `-e, --expert <string>`: Filter sources by expert name
 - `-o, --output <path>`: Output file path for the report
 - `-s, --sort-by <field>`: Sort results by field (name, updated, type) (default: name)
+- `-c, --console`: Display results in console table format instead of generating markdown
 
 ## Example Output
 
 The output will now only include document files (like .docx, .pdf, etc.) and exclude any media files and folders.
 
+### Markdown Output (Default)
 ```
 | Source Name | Document Type | Has Expert Doc | Expert Doc Type | Raw Content Preview | Has JSON | Processed Content Preview |
 |-------------|---------------|----------------|-----------------|---------------------|----------|---------------------------|
 | example.docx | Meeting Notes | Yes | Meeting Transcript | Title: Project Status Meeting... | Yes | {"key_topics":["Project timeline"... |
+```
+
+### Console Table Output (with --console flag)
+```
+Google Drive Sources and Expert Documents:
+====================================================================================================================================
+Source Name                    | Document Type      | Has Expert | Expert Doc Type    | Raw Content Preview  | Has JSON | Processed Content Preview
+------------------------------------------------------------------------------------------------------------------------------------
+example.docx                   | Meeting Notes      | Yes        | Meeting Transcri   | Title: Project Sta   | Yes      | {"key_topics":["Project 
+planning.docx                  | Business Document  | Yes        | Business Plan      | Business Plan for    | Yes      | {"company":"Acme Corp", 
+proposal.pdf                   | Proposal           | Yes        | Project Proposal   | Project Proposal:    | Yes      | {"project_name":"Alpha  
+------------------------------------------------------------------------------------------------------------------------------------
+Total sources: 3
+Sources with expert documents: 3
+Total expert documents: 3
 ```
 
 ## Benefits
