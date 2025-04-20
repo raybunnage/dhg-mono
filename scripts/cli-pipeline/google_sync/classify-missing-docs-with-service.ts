@@ -500,7 +500,7 @@ async function classifyMissingDocuments(
             const minimalDoc = {
               id: uuidv4(),
               source_id: file.id,
-              document_type_id: classificationResult.document_type_id,
+              document_type_id: "1f71f894-d2f8-415e-80c1-a4d6db4d8b18", // Fixed document_type_id for JSON document summary
               classification_confidence: classificationResult.classification_confidence || 0.75,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()

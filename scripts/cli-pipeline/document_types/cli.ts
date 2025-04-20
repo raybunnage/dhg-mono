@@ -103,23 +103,25 @@ program
         
         // Output as table
         console.log('\nDocument Types:');
-        console.log('======================================================================================');
+        console.log('========================================================================================================================');
         console.log('ID'.padEnd(36) + ' | ' + 
                    'Document Type'.padEnd(30) + ' | ' + 
                    'Category'.padEnd(15) + ' | ' + 
+                   'MIME Type'.padEnd(38) + ' | ' +
                    'AI Generated');
-        console.log('--------------------------------------------------------------------------------------');
+        console.log('------------------------------------------------------------------------------------------------------------------------');
         
         documentTypes.forEach(type => {
           console.log(
             type.id.padEnd(36) + ' | ' +
             type.document_type.substring(0, 28).padEnd(30) + ' | ' +
             (type.category || '').substring(0, 13).padEnd(15) + ' | ' +
+            (type.mime_type || '').substring(0, 36).padEnd(38) + ' | ' +
             (type.is_ai_generated ? 'Yes' : 'No')
           );
         });
         
-        console.log('--------------------------------------------------------------------------------------');
+        console.log('------------------------------------------------------------------------------------------------------------------------');
         console.log(`Total: ${documentTypes.length} document types`);
       }
       
@@ -583,6 +585,17 @@ program
       await commandTrackingService.failTracking(trackingId, `Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       process.exit(1);
     }
+  });
+
+// Command: Set document type classifier
+program
+  .command('set-classifier')
+  .description('Interactively set the document_classifier enum for document types')
+  .option('--start-from <id>', 'Start from a specific document type ID')
+  .option('--filter-category <category>', 'Filter by document type category')
+  .action(async (options) => {
+    // Import and run the set-classifier script
+    require('./set-classifier');
   });
 
 // Parse arguments and execute commands

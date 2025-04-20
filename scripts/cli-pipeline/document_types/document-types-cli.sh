@@ -106,6 +106,12 @@ if [ "$1" = "health-check" ]; then
   exit $?
 fi
 
+if [ "$1" = "set-classifier" ]; then
+  shift
+  track_command "set-classifier" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts set-classifier $*"
+  exit $?
+fi
+
 if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ -z "$1" ]; then
   # Show the help message
   echo "Document Types CLI - Manage document types"
@@ -123,6 +129,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ -z "$1" ]; t
   echo "  generate                     Generate a document type definition using AI"
   echo "  categories                   List all document type categories"
   echo "  health-check                 Check the health of document type services"
+  echo "  set-classifier               Interactively set the document_classifier enum for document types"
   echo "  help                         Show this help message"
   echo ""
   echo "EXAMPLES:"
@@ -146,6 +153,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ -z "$1" ]; t
   echo ""
   echo "  # Check the health of document type services"
   echo "  ./document-types-cli.sh health-check"
+  echo ""
+  echo "  # Set the document_classifier enum for document types"
+  echo "  ./document-types-cli.sh set-classifier"
+  echo ""
+  echo "  # Set the document_classifier enum for a specific category"
+  echo "  ./document-types-cli.sh set-classifier --filter-category \"Research\""
   exit 0
 fi
 

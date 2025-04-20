@@ -639,7 +639,7 @@ async function classifyPdfDocuments(
             const minimalDoc = {
               id: uuidv4(),
               source_id: file.id,
-              document_type_id: classificationResult.document_type_id,
+              document_type_id: "2f5af574-9053-49b1-908d-c35001ce9680", // Fixed document_type_id for Json pdf summary
               classification_confidence: classificationResult.classification_confidence || 0.75,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
