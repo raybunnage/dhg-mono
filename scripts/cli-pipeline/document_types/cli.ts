@@ -274,7 +274,7 @@ program
   .option('--mime-type <mimeType>', 'Preferred MIME type')
   .option('--file-extension <extension>', 'Preferred file extension')
   .option('--ai-generated <boolean>', 'Mark as AI generated', (val: string) => val === 'true')
-  .option('--classifier <classifier>', 'Set document classifier (pdf, powerpoint, docx, expert)')
+  .option('--classifier <classifier>', 'Set document classifier (pdf, powerpoint, docx, expert, none)')
   .action(async (options: UpdateOptions) => {
     const trackingId = await commandTrackingService.startTracking('document_types', 'update');
     
@@ -296,7 +296,13 @@ program
       if (options.mimeType !== undefined) updateData.mime_type = options.mimeType;
       if (options.fileExtension !== undefined) updateData.file_extension = options.fileExtension;
       if (options.aiGenerated !== undefined) updateData.is_ai_generated = options.aiGenerated;
-      if (options.classifier !== undefined) updateData.classifier = options.classifier;
+      if (options.classifier !== undefined) {
+        if (options.classifier.toLowerCase() === 'none') {
+          updateData.classifier = null;
+        } else {
+          updateData.classifier = options.classifier;
+        }
+      }
       
       if (Object.keys(updateData).length === 0) {
         console.log('No updates specified. Document type remains unchanged.');
