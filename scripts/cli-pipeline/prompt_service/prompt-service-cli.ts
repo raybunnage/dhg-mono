@@ -7,6 +7,7 @@ import { listPromptsCommand } from './commands/list-prompts';
 import { viewPromptCommand } from './commands/view-prompt';
 import { addQueryCommand } from './commands/add-query';
 import { updatePromptCommand } from './commands/update-prompt';
+import { cleanPromptMetadataCommand } from './commands/clean-prompt-metadata';
 
 const program = new Command();
 
@@ -54,6 +55,11 @@ program.command('update')
   .argument('<file-path>', 'Path to the updated prompt file')
   .option('--dry-run', 'Show what would be updated without making changes', false)
   .action(updatePromptCommand);
+
+// Clean prompt metadata command
+program.command('clean-metadata')
+  .description('Clean prompt metadata by removing the "content" field')
+  .action(cleanPromptMetadataCommand);
 
 // Parse the arguments
 program.parse(process.argv);
