@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PromptManagementService } from '../../../../packages/shared/services/prompt-service/prompt-management-service';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { trackCommandExecution } from '../../../../packages/shared/services/tracking-service/cli-tracking-wrapper';
 
 interface LoadPromptOptions {
   replace?: boolean;
@@ -15,6 +16,7 @@ interface LoadPromptOptions {
  * @param options Command options
  */
 export async function loadPromptCommand(filePath: string, options: LoadPromptOptions): Promise<void> {
+  await trackCommandExecution('prompt_service', 'load', async () => {
   try {
     // Ensure the file exists
     if (!fs.existsSync(filePath)) {
@@ -50,7 +52,10 @@ export async function loadPromptCommand(filePath: string, options: LoadPromptOpt
     }
     
     // Extract metadata from the content (if available)
-    const metadata = promptService.parseMarkdownFrontmatter?.(content) || null;
+    const { metadata: extractedMetadata, content: cleanContent } = promptService.parseMarkdownFrontmatter(content);
+    
+    // Build properly structured metadata object
+    const metadataObj = promptService.buildMetadataObject(extractedMetadata, cleanContent, path.basename(filePath));
     
     // Determine if updating or creating
     if (existingPrompt && options.replace) {
@@ -59,8 +64,8 @@ export async function loadPromptCommand(filePath: string, options: LoadPromptOpt
       const { data, error } = await supabase
         .from('prompts')
         .update({
-          content,
-          metadata,
+          content: cleanContent,
+          metadata: metadataObj,
           updated_at: new Date().toISOString(),
           file_path: filePath,
         })
@@ -96,10 +101,10 @@ export async function loadPromptCommand(filePath: string, options: LoadPromptOpt
         .from('prompts')
         .insert({
           name: promptName,
-          content,
-          metadata,
+          content: cleanContent,
+          metadata: metadataObj,
           category_id: categoryId,
-          status: 'active',
+          status: extractedMetadata.status || 'active',
           file_path: filePath,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -114,8 +119,24 @@ export async function loadPromptCommand(filePath: string, options: LoadPromptOpt
       console.log(`Successfully created prompt: ${promptName}`);
     }
     
+    // Return tracking info
+    return {
+      promptName,
+      operation: existingPrompt && options.replace ? 'update' : 'create',
+      filePath: path.basename(filePath)
+    };
+    
   } catch (error) {
     console.error(`Error loading prompt: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
+    throw error; // Let tracking wrapper handle the error
   }
+  }, {
+    getResultSummary: (result) => ({
+      recordsAffected: 1,
+      affectedEntity: 'prompts',
+      summary: result.operation === 'update' 
+        ? `Updated prompt "${result.promptName}" from file ${result.filePath}`
+        : `Created new prompt "${result.promptName}" from file ${result.filePath}`
+    })
+  });
 }

@@ -11,6 +11,7 @@ import { updatePromptCommand } from './commands/update-prompt';
 import { cleanPromptMetadataCommand } from './commands/clean-prompt-metadata';
 import { verifyClaudeTemperatureCommand } from './commands/verify-claude-temperature';
 import { summarizeMetadataFieldsCommand } from './commands/summarize-metadata-fields';
+import { healthCheckCommand } from './commands/health-check';
 
 const program = new Command();
 
@@ -80,6 +81,15 @@ program.command('verify-claude-temperature')
 program.command('summarize-metadata')
   .description('Summarize metadata fields across all prompt records')
   .action(summarizeMetadataFieldsCommand);
+
+// Health check command
+program.command('health-check')
+  .description('Check the health of the prompt service infrastructure')
+  .option('--skip-database', 'Skip database connection check')
+  .option('--skip-prompts', 'Skip prompt service check')
+  .option('--skip-claude', 'Skip Claude service check')
+  .option('-v, --verbose', 'Show verbose output')
+  .action(healthCheckCommand);
 
 // Parse the arguments
 program.parse(process.argv);
