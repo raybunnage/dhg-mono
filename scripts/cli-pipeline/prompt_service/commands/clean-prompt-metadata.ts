@@ -38,9 +38,9 @@ export async function cleanPromptMetadataCommand(options: CleanOptions = {}) {
       
       // Check for fields to remove
       for (const field of fieldsToRemove) {
-        // Check if the field exists in metadata
+        // Check if the field exists directly in metadata (using type assertion)
         if (updatedMetadata && field in updatedMetadata) {
-          delete updatedMetadata[field];
+          delete (updatedMetadata as any)[field];
           fieldsRemoved.push(field);
           needsUpdate = true;
         }
