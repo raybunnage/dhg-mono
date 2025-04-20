@@ -1536,9 +1536,11 @@ export type Database = {
           processed_content: Json | null
           processing_completed_at: string | null
           processing_error: string | null
+          processing_skip_reason: string | null
           processing_started_at: string | null
           processing_stats: Json | null
           processing_status: string | null
+          processing_status_updated_at: string | null
           prompt_used: string | null
           queued_at: string | null
           raw_content: string | null
@@ -1584,9 +1586,11 @@ export type Database = {
           processed_content?: Json | null
           processing_completed_at?: string | null
           processing_error?: string | null
+          processing_skip_reason?: string | null
           processing_started_at?: string | null
           processing_stats?: Json | null
           processing_status?: string | null
+          processing_status_updated_at?: string | null
           prompt_used?: string | null
           queued_at?: string | null
           raw_content?: string | null
@@ -1632,9 +1636,11 @@ export type Database = {
           processed_content?: Json | null
           processing_completed_at?: string | null
           processing_error?: string | null
+          processing_skip_reason?: string | null
           processing_started_at?: string | null
           processing_stats?: Json | null
           processing_status?: string | null
+          processing_status_updated_at?: string | null
           prompt_used?: string | null
           queued_at?: string | null
           raw_content?: string | null
@@ -5198,6 +5204,11 @@ export type Database = {
         | "diarization"
         | "summarization"
       document_classifier: "pdf" | "powerpoint" | "docx" | "expert"
+      document_processing_status:
+        | "needs_reprocessing"
+        | "reprocessing_done"
+        | "skip_processing"
+        | "not_set"
       processing_stage:
         | "queued"
         | "downloading"
@@ -5383,6 +5394,12 @@ export const Constants = {
         "summarization",
       ],
       document_classifier: ["pdf", "powerpoint", "docx", "expert"],
+      document_processing_status: [
+        "needs_reprocessing",
+        "reprocessing_done",
+        "skip_processing",
+        "not_set",
+      ],
       processing_stage: [
         "queued",
         "downloading",

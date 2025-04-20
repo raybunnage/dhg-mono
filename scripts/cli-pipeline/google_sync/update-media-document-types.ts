@@ -218,7 +218,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     // 4. Process expert documents with JSON content (rules 1 and 2)
     console.log('\nProcessing expert documents with JSON content for specific source types...');
     
-    // Process documents for rule 1: JSON content + document_type_id 46dac359-01e9-4e36-bfb2-531da9c25e3f
+    // Process documents for rule 1: document_type_id 46dac359-01e9-4e36-bfb2-531da9c25e3f (regardless of content)
     const { data: rule1Sources, error: rule1SourcesError } = await supabaseClient
       .from('sources_google')
       .select('id')
@@ -227,30 +227,30 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     if (rule1SourcesError) {
       console.error('Error fetching sources for rule 1:', rule1SourcesError.message);
     } else if (rule1Sources && rule1Sources.length > 0) {
-      // Find expert documents with JSON content for these sources
-      const rule1Docs = expertDocs.filter(doc => {
-        // Check if source ID matches and if content has valid JSON
-        return rule1Sources.some(source => source.id === doc.source_id) && 
-               typeof doc.processed_content === 'string' && 
-               doc.processed_content.trim().startsWith('{');
-      });
+      // Get all expert documents for these sources (regardless of content)
+      const { data: rule1ExpertDocs, error: rule1ExpertDocsError } = await supabaseClient
+        .from('expert_documents')
+        .select('id')
+        .in('source_id', rule1Sources.map(source => source.id));
 
-      if (rule1Docs.length > 0) {
-        console.log(`Found ${rule1Docs.length} expert documents with JSON content for document_type_id 46dac359-01e9-4e36-bfb2-531da9c25e3f (Document)`);
+      if (rule1ExpertDocsError) {
+        console.error('Error fetching expert documents for rule 1:', rule1ExpertDocsError.message);
+      } else if (rule1ExpertDocs && rule1ExpertDocs.length > 0) {
+        console.log(`Found ${rule1ExpertDocs.length} expert documents for document_type_id 46dac359-01e9-4e36-bfb2-531da9c25e3f`);
 
         if (!dryRun) {
           const { error: updateError } = await supabaseClient
             .from('expert_documents')
             .update({ document_type_id: '1f71f894-d2f8-415e-80c1-a4d6db4d8b18' }) // Document
-            .in('id', rule1Docs.map(doc => doc.id));
+            .in('id', rule1ExpertDocs.map(doc => doc.id));
 
           if (updateError) {
             console.error('Error updating expert documents for rule 1:', updateError.message);
           } else {
-            console.log(`✓ Updated ${rule1Docs.length} expert documents to document_type_id 1f71f894-d2f8-415e-80c1-a4d6db4d8b18 (Document)`);
+            console.log(`✓ Updated ${rule1ExpertDocs.length} expert documents to document_type_id 1f71f894-d2f8-415e-80c1-a4d6db4d8b18 (Document)`);
           }
         } else {
-          console.log(`[DRY RUN] Would update ${rule1Docs.length} expert documents for rule 1`);
+          console.log(`[DRY RUN] Would update ${rule1ExpertDocs.length} expert documents for rule 1`);
         }
       }
     }
@@ -342,7 +342,8 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         for (const doc of batchDocs) {
           updates.push({
             id: doc.id,
-            processing_status: 'needs_reprocessing',
+            source_id: doc.source_id,  // Include source_id to satisfy not-null constraint 
+            processing_status: 'pending',  // Using a valid enum value from the schema
             processing_skip_reason: 'No valid JSON content found'
           });
         }
@@ -392,7 +393,8 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           for (const doc of batchDocs) {
             updates.push({
               id: doc.id,
-              processing_status: 'needs_reprocessing',
+              source_id: doc.source_id,  // Include source_id to satisfy not-null constraint
+              processing_status: 'pending',  // Using a valid enum value from the schema
               processing_skip_reason: 'Contains "File analysis unavailable" message'
             });
           }
@@ -428,7 +430,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       // Get expert documents for these folder sources
       const { data: folderDocs, error: folderDocsError } = await supabaseClient
         .from('expert_documents')
-        .select('id')
+        .select('id, source_id')
         .in('source_id', folderSources.map(source => source.id));
 
       if (folderDocsError) {
@@ -444,8 +446,9 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           for (const doc of batchDocs) {
             updates.push({
               id: doc.id,
-              processing_status: 'skip_processing',
+              source_id: doc.source_id,  // Include source_id to satisfy not-null constraint
               processing_skip_reason: 'Google Drive folder, not a document'
+              // Skip setting processing_status to avoid constraint issues
             });
           }
 
