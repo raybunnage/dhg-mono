@@ -31,28 +31,47 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
       if (!options.skipDatabase) {
         console.log('\n🔍 Checking Supabase database connection...');
         try {
-          const supabase = SupabaseClientService.getInstance().getClient();
-          const { data, error } = await supabase.from('prompts').select('count(*)');
+          // Use the testConnection method instead of a simple query
+          const connectionTest = await SupabaseClientService.getInstance().testConnection();
           
-          if (error) {
-            throw error;
+          if (connectionTest.success) {
+            results.database = { 
+              status: 'success', 
+              message: `Connected to database successfully.` 
+            };
+            
+            console.log('✅ Database connection successful');
+          } else {
+            // Store the details for verbose output
+            const errorDetails = connectionTest.details || {};
+            const errorMessage = connectionTest.error || 'Unknown database connection error';
+            throw new Error(errorMessage);
           }
-          
-          results.database = { 
-            status: 'success', 
-            message: `Connected to database successfully. Prompts table exists.` 
-          };
-          
-          console.log('✅ Database connection successful');
         } catch (error) {
           results.database = { 
             status: 'failure', 
-            message: `Database connection failed: ${error instanceof Error ? error.message : String(error)}` 
+            message: `Database connection failed: ${error instanceof Error ? error.message : String(error)}`
           };
           
           console.error('❌ Database connection failed');
           if (options.verbose) {
-            console.error(results.database.message);
+            console.error('Error details:');
+            // Show the full error details instead of just the message
+            console.error(error);
+            // Check if there's additional error information
+            if (error instanceof Error && (error as any).cause) {
+              console.error('Root cause:');
+              console.error((error as any).cause);
+            }
+            
+            // Additional diagnostic information
+            console.error('\nDiagnostic information:');
+            console.error(`Current working directory: ${process.cwd()}`);
+            console.error(`Environment: ${process.env.NODE_ENV || 'not set'}`);
+            
+            // Check if env file exists
+            const envPath = path.join(process.cwd(), '.env.development');
+            console.error(`Env file (.env.development) exists: ${fs.existsSync(envPath)}`);
           }
         }
       } else {

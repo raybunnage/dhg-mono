@@ -24,6 +24,39 @@ track_command() {
   fi
 }
 
+# Display help information
+show_help() {
+  echo "Document Pipeline Service CLI"
+  echo "=============================="
+  echo "A CLI tool for managing document pipelines and document types"
+  echo ""
+  echo "Usage: $0 COMMAND [OPTIONS]"
+  echo ""
+  echo "Commands:"
+  echo "  test-connection      Test connection to Supabase"
+  echo "  sync                 Synchronize database with files on disk"
+  echo "  find-new             Find and insert new files on disk into the database"
+  echo "  show-untyped [--limit N]  Show all documentation files without a document type"
+  echo "  show-recent [--limit N]   Show the most recent files based on update date"
+  echo "  classify-recent [--count N]  Classify the most recent files"
+  echo "  classify-untyped [--count N] Classify untyped files"
+  echo "  all                  Run the complete pipeline (sync, find-new, classify-recent)"
+  echo "  test-classify-document-types  Test document classification with Claude"
+  echo "  test-google-doc-classification  Test classifying Google Drive files with Claude" 
+  echo "  health-check         Check the health of the document pipeline service"
+  echo "    --skip-database    Skip database connection check"
+  echo "    --skip-files       Skip file system check"
+  echo "    --skip-claude      Skip Claude service check"
+  echo "    --verbose, -v      Show verbose output"
+  echo ""
+  echo "  help                 Show this help information"
+  echo ""
+  echo "Example:"
+  echo "  $0 all               Run the complete document pipeline"
+  echo "  $0 health-check      Check the health of all components"
+  echo "  $0 classify-recent --count 5  Classify the 5 most recent files"
+}
+
 # Load environment variables from .env files
 if [ -f "${ROOT_DIR}/.env.development" ]; then
   echo "Loading environment variables from .env.development..."
@@ -61,11 +94,64 @@ LOG_FILE="${LOG_DIR}/document-pipeline-$(date +%Y-%m-%d_%H-%M-%S).log"
 cd "${ROOT_DIR}"
 
 # Extract command name
-COMMAND_NAME=${1:-"default"}
-ORIG_COMMAND="npx ts-node --transpile-only ${CLI_FILE} $@"
+COMMAND=${1:-"help"}
 
-# Use the tracking wrapper for execution with logging
-track_command "$COMMAND_NAME" "$ORIG_COMMAND" 2>&1 | tee -a "${LOG_FILE}"
+# Process help request
+if [ "$COMMAND" == "help" ] || [ "$COMMAND" == "--help" ] || [ "$COMMAND" == "-h" ]; then
+  show_help
+  exit 0
+fi
 
-# Exit with the exit code of the pipeline
-exit ${PIPESTATUS[0]}
+# Process command based on name
+case "$COMMAND" in
+  # Define specific command handlers
+  "test-connection")
+    track_command "test-connection" "npx ts-node --transpile-only ${CLI_FILE} test-connection ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  "sync")
+    track_command "sync" "npx ts-node --transpile-only ${CLI_FILE} sync ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  "find-new")
+    track_command "find-new" "npx ts-node --transpile-only ${CLI_FILE} find-new ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  "show-untyped")
+    track_command "show-untyped" "npx ts-node --transpile-only ${CLI_FILE} show-untyped ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  "show-recent")
+    track_command "show-recent" "npx ts-node --transpile-only ${CLI_FILE} show-recent ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  "classify-recent")
+    track_command "classify-recent" "npx ts-node --transpile-only ${CLI_FILE} classify-recent ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  "classify-untyped")
+    track_command "classify-untyped" "npx ts-node --transpile-only ${CLI_FILE} classify-untyped ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  "all")
+    track_command "all" "npx ts-node --transpile-only ${CLI_FILE} all ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  "test-classify-document-types")
+    track_command "test-classify-document-types" "npx ts-node --transpile-only ${CLI_FILE} test-classify-document-types ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  "test-google-doc-classification")
+    track_command "test-google-doc-classification" "npx ts-node --transpile-only ${CLI_FILE} test-google-doc-classification ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  "health-check")
+    track_command "health-check" "npx ts-node --transpile-only ${CLI_FILE} health-check ${@:2}" 2>&1 | tee -a "${LOG_FILE}"
+    exit ${PIPESTATUS[0]}
+    ;;
+  *)
+    echo "❌ Unknown command: $COMMAND"
+    echo "Run '$0 help' for usage information"
+    exit 1
+    ;;
+esac
