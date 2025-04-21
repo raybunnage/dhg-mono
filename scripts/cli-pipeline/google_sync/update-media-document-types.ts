@@ -74,7 +74,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     console.log('\nFetching expert documents with processed content...');
     const { data: expertDocs, error: expertDocsError } = await supabaseClient
       .from('expert_documents')
-      .select('id, source_id, document_type_id, processed_content, processing_status, processing_skip_reason')
+      .select('id, source_id, document_type_id, processed_content, document_processing_status, processing_skip_reason')
       .not('processed_content', 'is', null);
 
     if (expertDocsError) {
@@ -181,17 +181,22 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
     // 2. Process specific document types (4-12) - multiple document types to Document
     const documentTypeIdsToDocument = [
-      'c62f92f5-6123-4324-876d-14639841284e', // Publication
-      '83849c95-823e-4f8b-bf47-4318ae014f16', // Calendar
-      '98ac1e77-2cff-474a-836e-4db32a521a16', // Worksheet
-      '5eb89387-854c-4754-baf8-3632ac286d92', // Whitepaper
-      'e886b004-b90c-4130-bfa7-971d084e88ec', // Article
-      'ab90f374-00f6-4220-90e0-91b2054eafad', // News
-      'eca21963-c638-4435-85f5-0da67458995c', // Technical Document
-      'f2fd129e-a0ad-485d-a457-ec49736010a9', // Manual
-      'bb90f01f-b6c4-4030-a3ea-db9dd8c4b55a', // Guide
-      'ea74c86e-7f22-4ecf-ae16-0430291995e2', // Spreadsheet
+      '1e7015f7-43b4-47ed-8a73-b6545c6e0455', // doc file                       | text            | application/msword                  | docx         | No
+      '3946ceb8-fcf8-44b2-826b-8b55fe259132', // google doc                     | text            | gdocapplication/vnd.google-apps.d   | docx         | No
+      '0b99de50-7dfa-4d5c-bfdd-627fcac3e35a', // markdown document              | text            | text/markdown                       | docx         | No
+      '08d25ab0-c3f8-4dfb-b703-3dc420ad50cf', // txt file                       | text            | text/plain                          | docx         | No
+      'bb90f01f-b6c4-4030-a3ea-db9dd8c4b55a', // word document                  | text            | application/vnd.openxmlformats-of   | docx         | No
+      '4ce87d2a-451b-48e4-a72e-1c981e402df6', // ai discussion transcript       | transcript      |                                     | docx         | Yes
+      '5acbbf7a-dcba-46a6-a59c-084fe9dba05a', // ai presentation transcript     | transcript      |                                     | docx         | Yes
+      '79c36eb8-b599-45c8-8690-37568f4453da', // cleaned discussion transcrip   | transcript      |                                     | docx         | No
+      '3aaf624d-7550-4bb7-8c37-d7c4a80fd20f', // cleaned presentation transcr   | transcript      |                                     | docx         | No
+      'c62f92f5-6123-4324-876d-14639841284e', // dicussion transcript           | transcript      |                                     | docx         | No
+      'c1a7b78b-c61e-44a4-8b77-a27a38cbba7e', // presentation transcript   
+      '46dac359-01e9-4e36-bfb2-531da9c25e3f', // Chat Log 
+      '27784498-e35b-4729-a1c4-9e4ec24e6a5a', // science meeting discussion     | presentation    |                                     | docx         | No
+      'ba7893d4-8404-4489-b553-b6464cd5cbd8', // scientific presentation and    | presentation    |                                     | docx         | No
     ];
+
 
     console.log(`\nProcessing sources with specific document types (to Document)...`);
     const { data: specificTypeSources, error: specificTypesError } = await supabaseClient
@@ -216,7 +221,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         if (!dryRun) {
           const { error: updateError } = await supabaseClient
             .from('expert_documents')
-            .update({ document_type_id: '1f71f894-d2f8-415e-80c1-a4d6db4d8b18' }) // Document
+            .update({ document_type_id: '1f71f894-d2f8-415e-80c1-a4d6db4d8b18' }) // json doc summary
             .in('id', specificTypeExpertDocs.map(doc => doc.id));
 
           if (updateError) {
@@ -232,9 +237,34 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
     // 3. Process specific document types to PDF/PPTX
     const documentTypesToPdfPptx = [
-      '9ccdc433-99d8-46fb-8bf7-3ba72cf27c88', // Presentation
-      '5e61bfbc-39ef-4380-80c0-592017b39b71', // Technical Paper
-      'fc07c06a-ab03-4714-baf2-343427d433a3', // New type to be set as PDF/PPTX
+      '9ccdc433-99d8-46fb-8bf7-3ba72cf27c88', // reseaarch article
+      '5e61bfbc-39ef-4380-80c0-592017b39b71', // review article
+      'fc07c06a-ab03-4714-baf2-343427d433a3', // book
+      'cebcbcd0-7662-4d78-b2d8-29eb37b7d26b', // hypothesis 
+      '195b0bee-2a3e-4112-aa3c-83ca95b7cd44', // thesis  
+      'ee563275-2e54-4ac8-b756-839486023c91', // editorial 
+      '98ac1e77-2cff-474a-836e-4db32a521a16', // essay
+      '5eb89387-854c-4754-baf8-3632ac286d92', // journal article
+      '19802f2b-24f5-4b9a-ae7a-50e9f5ddacae', // magazine article 
+
+      '81109bf5-36b5-4075-a8db-5397e0e46fd6', // preprint                    
+      '9ccdc433-99d8-46fb-8bf7-3ba72cf27c88', // research article             
+      '5e61bfbc-39ef-4380-80c0-592017b39b71', // review article                
+      'f2fd129e-a0ad-485d-a457-ec49736010a9', // web news article              
+      '83849c95-823e-4f8b-bf47-4318ae014f16', // email correspondence 
+      'e886b004-b90c-4130-bfa7-971d084e88ec', // letter
+      'ab90f374-00f6-4220-90e0-91b2054eafad', // letter to the editor
+      'eca21963-c638-4435-85f5-0da67458995c', // url blog post
+      'f2fd129e-a0ad-485d-a457-ec49736010a9', // web news article
+      'ea74c86e-7f22-4ecf-ae16-0430291995e2', // report
+      '97a2a12e-1bdf-49c1-ad4c-d2a411199c9c', // correction                    
+      'c7c0f0bb-10c5-4dea-9bc7-25d398f10ee8', // corrigendum                   
+      '6691b7f3-ba21-4118-8bd3-acf372fe675a', // erratum    
+      '2fa04116-04ed-4828-b091-ca6840eb8863', // pdf document                   
+      '5031d315-3960-4d50-b2a8-d621232a6938', // story                         
+      '5f3f9982-3295-4d98-8f52-3db81b5e0ccb', // press release   
+      '8467f8db-7514-46cb-ba5a-4c3278372726', // new work summary  
+      '3b9369c8-73f4-4b5c-ad00-33b9720516f9', // website               
     ];
 
     console.log(`\nProcessing sources with document types to be set as PDF/PPTX...`);
@@ -260,7 +290,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         if (!dryRun) {
           const { error: updateError } = await supabaseClient
             .from('expert_documents')
-            .update({ document_type_id: '2f5af574-9053-49b1-908d-c35001ce9680' }) // PDF/PPTX
+            .update({ document_type_id: '2f5af574-9053-49b1-908d-c35001ce9680' }) // json pdf summary
             .in('id', pdfPptxExpertDocs.map(doc => doc.id));
 
           if (updateError) {
@@ -647,7 +677,6 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       'audio/wav',
       'audio/ogg',
       'video/mp4',
-      'video/mpeg',
       'video/quicktime',
       'video/x-msvideo',
       'image/jpeg',
