@@ -420,32 +420,20 @@ export async function checkReprocessingStatus(options: {
         // This ensures we have documents to process even if the main query doesn't find them
         if (format === 'json') {
           console.log('Using direct query to find documents with needs_reprocessing status for output file...');
-          // Get documents needing reprocessing directly from the database - JOIN with sources_google to filter by file type
+          // Get documents needing reprocessing directly from the database
           console.log('Searching for documents that need reprocessing...');
-          const query = `
-            SELECT ed.id, ed.source_id, ed.document_type_id, ed.document_processing_status
-            FROM expert_documents ed
-            JOIN sources_google sg ON ed.source_id = sg.id
-            WHERE ed.document_processing_status = 'needs_reprocessing'
-            LIMIT ${options.limit || 10}
-          `;
           
-          const { data: directDocs, error: directError } = await supabaseClient.rpc('execute_sql', { query_text: query });
+          const { data: directDocs, error: directError } = await supabaseClient
+            .from('expert_documents')
+            .select('id, source_id, document_type_id, document_processing_status')
+            .eq('document_processing_status', 'needs_reprocessing')
+            .limit(options.limit || 10);
             
           if (directError) {
             console.error('Error in direct reprocessing query:', directError.message);
           } else if (directDocs && directDocs.length > 0) {
-            // Query returned data in a specific format due to RPC call
-            // We need to extract the actual rows
+            // Direct query returns the data directly
             let docs = directDocs;
-            // Check if we're getting rows from an RPC call
-            if (Array.isArray(directDocs) && directDocs.length > 0) {
-              // RPC returns data in a special format with the function name as the key
-              if (directDocs[0] && typeof directDocs[0] === 'object' && directDocs[0].execute_sql) {
-                docs = directDocs[0].execute_sql;
-                console.log(`Extracted ${docs.length} documents from RPC result`);
-              }
-            }
             
             // Debug log all returned documents
             console.log("Documents found:");
