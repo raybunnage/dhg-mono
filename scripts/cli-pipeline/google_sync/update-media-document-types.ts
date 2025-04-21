@@ -344,41 +344,47 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       }
     }
 
-    // Process documents for rule 2: ANY document_type_id 03743a23-d2f3-4c73-a282-85afc138fdfd (not just those with JSON)
-    const { data: rule2Sources, error: rule2SourcesError } = await supabaseClient
-      .from('sources_google')
-      .select('id')
-      .eq('document_type_id', '03743a23-d2f3-4c73-a282-85afc138fdfd');
+    // Process documents for rule 2, 3, 4: specific document_type_ids to be set as JSON Expert Summary
+    const jsonExpertSummarySourceTypes = [
+      '03743a23-d2f3-4c73-a282-85afc138fdfd', // curriculum vitae
+      '554ed67c-35d1-4218-abba-8d1b0ff7156d', // Presentation Announcement
+      'af194b7e-cbf9-45c3-a1fc-863dbc815f1e'  // professional biography
+    ];
 
-    if (rule2SourcesError) {
-      console.error('Error fetching sources for rule 2:', rule2SourcesError.message);
-    } else if (rule2Sources && rule2Sources.length > 0) {
+    const { data: jsonExpertSources, error: jsonExpertSourcesError } = await supabaseClient
+      .from('sources_google')
+      .select('id, document_type_id')
+      .in('document_type_id', jsonExpertSummarySourceTypes);
+
+    if (jsonExpertSourcesError) {
+      console.error('Error fetching sources for JSON Expert Summary:', jsonExpertSourcesError.message);
+    } else if (jsonExpertSources && jsonExpertSources.length > 0) {
       // Get all expert documents for these sources (regardless of content)
-      console.log(`Found ${rule2Sources.length} sources with document_type_id 03743a23-d2f3-4c73-a282-85afc138fdfd (Working Document)`);
+      console.log(`Found ${jsonExpertSources.length} sources with document_type_id in [${jsonExpertSummarySourceTypes.join(', ')}]`);
       
-      const { data: rule2Docs, error: rule2DocsError } = await supabaseClient
+      const { data: jsonExpertDocs, error: jsonExpertDocsError } = await supabaseClient
         .from('expert_documents')
         .select('id')
-        .in('source_id', rule2Sources.map(source => source.id));
+        .in('source_id', jsonExpertSources.map(source => source.id));
         
-      if (rule2DocsError) {
-        console.error('Error fetching expert documents for rule 2:', rule2DocsError.message);
-      } else if (rule2Docs && rule2Docs.length > 0) {
-        console.log(`Found ${rule2Docs.length} expert documents for document_type_id 03743a23-d2f3-4c73-a282-85afc138fdfd sources`);
+      if (jsonExpertDocsError) {
+        console.error('Error fetching expert documents for JSON Expert Summary sources:', jsonExpertDocsError.message);
+      } else if (jsonExpertDocs && jsonExpertDocs.length > 0) {
+        console.log(`Found ${jsonExpertDocs.length} expert documents for JSON Expert Summary source types`);
 
         if (!dryRun) {
           const { error: updateError } = await supabaseClient
             .from('expert_documents')
             .update({ document_type_id: '5b1f8963-0946-4e89-884d-30517eebb8a5' }) // Json Expert Summary
-            .in('id', rule2Docs.map(doc => doc.id));
+            .in('id', jsonExpertDocs.map(doc => doc.id));
 
           if (updateError) {
-            console.error('Error updating expert documents for rule 2:', updateError.message);
+            console.error('Error updating expert documents for JSON Expert Summary:', updateError.message);
           } else {
-            console.log(`✓ Updated ${rule2Docs.length} expert documents to document_type_id 5b1f8963-0946-4e89-884d-30517eebb8a5 (Json Expert Summary)`);
+            console.log(`✓ Updated ${jsonExpertDocs.length} expert documents to document_type_id 5b1f8963-0946-4e89-884d-30517eebb8a5 (Json Expert Summary)`);
           }
         } else {
-          console.log(`[DRY RUN] Would update ${rule2Docs.length} expert documents for rule 2`);
+          console.log(`[DRY RUN] Would update ${jsonExpertDocs.length} expert documents for JSON Expert Summary`);
         }
       }
     }
@@ -676,7 +682,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       'audio/mp3',
       'audio/wav',
       'audio/ogg',
-      'video/mp4',
+      // 'video/mp4' - Removed as requested, this is now supported
       'video/quicktime',
       'video/x-msvideo',
       'image/jpeg',

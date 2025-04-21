@@ -87,7 +87,7 @@ async function listUnsupportedDocumentTypes(options: { format?: string, debug?: 
       'audio/mp3',
       'audio/wav',
       'audio/ogg',
-      'video/mp4',
+      // 'video/mp4' - Removed as requested, this is now supported
       'video/mpeg',
       'video/quicktime',
       'video/x-msvideo',
