@@ -215,8 +215,11 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
     fi
     
     # Only process documents that need reprocessing (needs_reprocessing status)
-    # FIXED: Use string contains check to handle potential whitespace or other issues
-    if [[ "$PROCESSING_STATUS" != *"needs_reprocessing"* ]]; then
+    # ENHANCED FIX: Normalize processing status to handle whitespace/case issues
+    NORMALIZED_STATUS=$(echo "$PROCESSING_STATUS" | xargs | tr '[:upper:]' '[:lower:]')
+    echo "Normalized status: '$NORMALIZED_STATUS'"
+    
+    if [[ "$NORMALIZED_STATUS" != *"needs"*"reprocessing"* ]]; then
       echo "Skipping document with processing status: '$PROCESSING_STATUS'"
       continue
     fi

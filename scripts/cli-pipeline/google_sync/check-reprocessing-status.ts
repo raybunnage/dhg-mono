@@ -416,13 +416,102 @@ export async function checkReprocessingStatus(options: {
       const path = require('path');
       
       try {
-        // Format the output
-        let output: string;
+        // FIXED: For JSON output, directly query for needs_reprocessing documents
+        // This ensures we have documents to process even if the main query doesn't find them
         if (format === 'json') {
-          output = JSON.stringify(results, null, 2);
+          console.log('Using direct query to find documents with needs_reprocessing status for output file...');
+          // Get documents needing reprocessing directly from the database
+          const { data: directDocs, error: directError } = await supabaseClient
+            .from('expert_documents')
+            .select('id, source_id, document_type_id, document_processing_status')
+            .eq('document_processing_status', 'needs_reprocessing')
+            .limit(options.limit || 10);
+            
+          if (directError) {
+            console.error('Error in direct reprocessing query:', directError.message);
+          } else if (directDocs && directDocs.length > 0) {
+            console.log(`Direct query found ${directDocs.length} documents with needs_reprocessing status for output`);
+            
+            // For each document, get the source info
+            const directResults = [];
+            for (const doc of directDocs) {
+              const { data: source } = await supabaseClient
+                .from('sources_google')
+                .select('id, name, document_type_id')
+                .eq('id', doc.source_id)
+                .single();
+                
+              if (source) {
+                // Get document type name if available
+                let documentTypeName: string | null = null;
+                if (doc.document_type_id) {
+                  const { data: docType } = await supabaseClient
+                    .from('document_types')
+                    .select('document_type')
+                    .eq('id', doc.document_type_id)
+                    .maybeSingle();
+                  
+                  if (docType) {
+                    documentTypeName = docType.document_type;
+                  }
+                }
+                
+                // Get source document type name
+                let sourcesGoogleDocumentTypeName: string | null = null;
+                if (source.document_type_id) {
+                  const { data: docType } = await supabaseClient
+                    .from('document_types')
+                    .select('document_type')
+                    .eq('id', source.document_type_id)
+                    .maybeSingle();
+                    
+                  if (docType) {
+                    sourcesGoogleDocumentTypeName = docType.document_type;
+                  }
+                }
+                
+                directResults.push({
+                  sourceId: source.id,
+                  sourceName: source.name,
+                  expertDocId: doc.id,
+                  processingStatus: 'needs_reprocessing', // Hard-code this to ensure consistency
+                  processingReason: null,
+                  expertDocumentType: documentTypeName,
+                  sourcesGoogleDocumentType: sourcesGoogleDocumentTypeName
+                });
+              }
+            }
+            
+            if (directResults.length > 0) {
+              console.log(`Successfully prepared ${directResults.length} documents for output`);
+              const output = JSON.stringify(directResults, null, 2);
+              
+              // Write to file
+              if (!dryRun) {
+                fs.writeFileSync(path.resolve(options.outputPath), output);
+                console.log(`\nDetailed results written to: ${options.outputPath}`);
+              } else {
+                console.log(`\n[DRY RUN] Would write detailed results to: ${options.outputPath}`);
+              }
+              
+              // Success - early return not needed as stats are still returned
+            } else {
+              // Fall back to regular output if no direct results found
+              console.log('No direct results found, falling back to regular output');
+              const output = JSON.stringify(results, null, 2);
+              fs.writeFileSync(path.resolve(options.outputPath), output);
+              console.log(`\nDetailed results written to: ${options.outputPath}`);
+            }
+          } else {
+            // Fall back to regular output if direct query fails
+            console.log('Falling back to regular output since direct query found no documents');
+            const output = JSON.stringify(results, null, 2);
+            fs.writeFileSync(path.resolve(options.outputPath), output);
+            console.log(`\nDetailed results written to: ${options.outputPath}`);
+          }
         } else {
           // Simple table format
-          output = 'Source ID,Source Name,Expert Doc ID,Processing Status,Processing Reason,Expert Document Type,Source Google Document Type\n';
+          let output = 'Source ID,Source Name,Expert Doc ID,Processing Status,Processing Reason,Expert Document Type,Source Google Document Type\n';
           for (const result of results) {
             // Escape commas in fields for proper CSV format
             const escapedSourceName = result.sourceName.replace(/,/g, ' ');
@@ -432,14 +521,14 @@ export async function checkReprocessingStatus(options: {
             
             output += `${result.sourceId},${escapedSourceName},${result.expertDocId || 'N/A'},${result.processingStatus || 'N/A'},${escapedReason},${escapedExpertDocType},${escapedSourceDocType}\n`;
           }
-        }
-        
-        // Write to file
-        if (!dryRun) {
-          fs.writeFileSync(path.resolve(options.outputPath), output);
-          console.log(`\nDetailed results written to: ${options.outputPath}`);
-        } else {
-          console.log(`\n[DRY RUN] Would write detailed results to: ${options.outputPath}`);
+          
+          // Write to file
+          if (!dryRun) {
+            fs.writeFileSync(path.resolve(options.outputPath), output);
+            console.log(`\nDetailed results written to: ${options.outputPath}`);
+          } else {
+            console.log(`\n[DRY RUN] Would write detailed results to: ${options.outputPath}`);
+          }
         }
       } catch (error) {
         console.error(`Error writing output file: ${error instanceof Error ? error.message : String(error)}`);
