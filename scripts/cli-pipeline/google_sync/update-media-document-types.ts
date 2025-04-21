@@ -1061,6 +1061,66 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       console.log('No documents with unsupported types are incorrectly marked as needs_reprocessing');
     }
 
+    // MP4 FILES CHECK: Ensure no MP4 files are marked as needs_reprocessing
+    console.log('\nVerifying that no MP4 files are marked as needs_reprocessing...');
+    
+    // Get all MP4 sources
+    const { data: mp4Sources, error: mp4SourcesError } = await supabaseClient
+      .from('sources_google')
+      .select('id, name')
+      .eq('mime_type', 'video/mp4')
+      .eq('is_deleted', false);
+      
+    if (mp4SourcesError) {
+      console.error('Error fetching MP4 sources:', mp4SourcesError.message);
+    } else if (mp4Sources && mp4Sources.length > 0) {
+      console.log(`Found ${mp4Sources.length} MP4 sources`);
+      
+      // Check which have expert_documents with needs_reprocessing status
+      const { data: mp4DocsNeedingReprocessing, error: mp4DocsError } = await supabaseClient
+        .from('expert_documents')
+        .select('id, source_id')
+        .in('source_id', mp4Sources.map(s => s.id))
+        .eq('document_processing_status', 'needs_reprocessing');
+        
+      if (mp4DocsError) {
+        console.error('Error checking MP4 documents:', mp4DocsError.message);
+      } else if (mp4DocsNeedingReprocessing && mp4DocsNeedingReprocessing.length > 0) {
+        console.log(`⚠️ Found ${mp4DocsNeedingReprocessing.length} MP4 files incorrectly marked as needs_reprocessing`);
+        
+        if (!dryRun) {
+          // Update these documents to skip_processing
+          const updates = mp4DocsNeedingReprocessing.map(doc => ({
+            id: doc.id,
+            source_id: doc.source_id,
+            document_processing_status: 'skip_processing',
+            document_processing_status_updated_at: new Date().toISOString(),
+            processing_status: 'completed',
+            processing_skip_reason: 'Video files should not be processed with text-based AI tools',
+            updated_at: new Date().toISOString()
+          }));
+          
+          // Process in batches
+          for (let i = 0; i < updates.length; i += batchSize) {
+            const batchUpdates = updates.slice(i, i + batchSize);
+            const { error: updateError } = await supabaseClient
+              .from('expert_documents')
+              .upsert(batchUpdates, { onConflict: 'id' });
+              
+            if (updateError) {
+              console.error(`Error updating MP4 documents batch ${i}-${i+batchSize}:`, updateError.message);
+            } else {
+              console.log(`✅ Updated ${batchUpdates.length} MP4 documents to skip_processing`);
+            }
+          }
+        } else {
+          console.log(`[DRY RUN] Would update ${mp4DocsNeedingReprocessing.length} MP4 files to skip_processing`);
+        }
+      } else {
+        console.log('✅ No MP4 files are incorrectly marked as needs_reprocessing');
+      }
+    }
+    
     // FINAL VERIFICATION: Check that every non-folder sources_google file has an expert_document
     console.log('\nFINAL VERIFICATION: Checking all sources_google files have expert_documents...');
     

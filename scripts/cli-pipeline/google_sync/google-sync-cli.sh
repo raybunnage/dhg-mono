@@ -299,15 +299,15 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
       EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
       
       if [ "$DRY_RUN" = false ] && [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
-        # For MP4 files, we just mark them as completed without running classification
-        # since they need different processing
-        echo "Marking MP4 file as reprocessing_done"
-        track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
+        # For MP4 files, mark them as skip_processing instead of processing them
+        # MP4 files should not be classified with text-based AI
+        echo "Marking MP4 file as skip_processing (videos should not be classified with text-based AI)"
+        track_command "mark-skip-processing" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').markSkipProcessing('$EXPERT_DOC_ID', '$SOURCE_ID', 'Video files should not be processed with text-based AI tools')\""
         
         # Count this as an MP4 file
         MP4_COUNT=$((MP4_COUNT + 1))
       else
-        echo "[DRY RUN] Would mark MP4 file $FILENAME as reprocessing_done"
+        echo "[DRY RUN] Would mark MP4 file $FILENAME as skip_processing"
         MP4_COUNT=$((MP4_COUNT + 1))
       fi
     else
@@ -378,8 +378,10 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  check-expert-doc             Check the most recent expert document for proper content extraction"
   echo "  check-document-summary       Check and display the summary for a specific document by ID"
   echo "  fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records"
+  echo "  fix-mp4-status              Fix MP4 files that are incorrectly marked as needs_reprocessing"
   echo "  remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id"
   echo "  check-recent-updates         Show recently updated files and their associated expert documents"
+  echo "  ids-need-reprocessing        Reset document_processing_status to needs_reprocessing for specified sources"
   echo "  help                         Show this help message"
   echo ""
   echo "EXAMPLES:"
@@ -443,6 +445,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Output reprocessing status report to a file"
   echo "  ./google-sync-cli.sh check-reprocessing-status --output reprocessing-report.csv"
   echo ""
+  echo "  # Reset processing status for specific source IDs"
+  echo "  ./google-sync-cli.sh ids-need-reprocessing dd93874c-0fda-4edc-a4a9-d873da8e9421,cf21460f-159d-4992-a3a5-d7d7cbd00a1f"
+  echo ""
+  echo "  # Preview processing status updates without making changes"
+  echo "  ./google-sync-cli.sh ids-need-reprocessing dd93874c-0fda-4edc-a4a9-d873da8e9421 --dry-run --verbose"
+  echo ""
   echo "  # List all unsupported document types"
   echo "  ./google-sync-cli.sh list-unsupported-types"
   echo ""
@@ -451,6 +459,9 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Check and display document summary for a specific document"
   echo "  ./google-sync-cli.sh check-document-summary <document-id>"
+  echo ""
+  echo "  # Fix MP4 files that are incorrectly marked as needs_reprocessing"
+  echo "  ./google-sync-cli.sh fix-mp4-status"
   exit 0
 fi
 
@@ -463,6 +474,35 @@ fi
 if [ "$1" = "fix-orphaned-docx" ]; then
   shift
   track_command "fix-orphaned-docx" "ts-node $SCRIPT_DIR/fix-orphaned-docx.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "fix-mp4-status" ]; then
+  shift
+  track_command "fix-mp4-status" "ts-node $SCRIPT_DIR/fix-mp4-processing-status.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "ids-need-reprocessing" ]; then
+  shift
+  if [ -z "$1" ]; then
+    echo "Error: Comma-separated list of IDs is required"
+    echo "Usage: ./google-sync-cli.sh ids-need-reprocessing <comma-separated-ids> [options]"
+    echo "Example: ./google-sync-cli.sh ids-need-reprocessing dd93874c-0fda-4edc-a4a9-d873da8e9421,cf21460f-159d-4992-a3a5-d7d7cbd00a1f"
+    exit 1
+  fi
+  
+  # Ensure IDs are properly formatted (remove any trailing commas, consolidate spaces)
+  IDS=$(echo "$1" | sed 's/,\s*/,/g' | sed 's/,$//')
+  shift
+  
+  # Form the new command with sanitized IDs and remaining args
+  SANITIZED_COMMAND="ts-node $SCRIPT_DIR/reset-sources-processing-status.ts \"$IDS\""
+  if [ "$#" -gt 0 ]; then
+    SANITIZED_COMMAND="$SANITIZED_COMMAND $*"
+  fi
+  
+  track_command "ids-need-reprocessing" "$SANITIZED_COMMAND"
   exit $?
 fi
 

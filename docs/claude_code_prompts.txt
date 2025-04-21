@@ -16,6 +16,18 @@ pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/
 
 
 
+ now make a new command for google sync that fixes individual sources_google records - it should take a comma separated list of ids that have the wrong 
+  document_type assigned and reset those to have a new document_type_id of a specified document_type_id.  FOr example, a command should look something likst 
+  this:    ids-need-reprocessing  dd93874c-0fda-4edc-a4a9-d873da8e9421, cf21460f-159d-4992-a3a5-d7d7cbd00a1f, 05cb28e0-d1b7-48b5-a89b-ab5c0809e5a4, 
+  d3c47a5c-ec17-41f5-a084-fdd5c78511bf, a3708433-9c4e-4784-b2a1-f32f5877b5e2 - this command should lookup the ids handed off in the command and for each id 
+  found it should mark the  document_processing_status as "needs_reprocessing" and set the document_processing_status_updated_at with the current date and time 
+  - read claude.md and make sure new command is added to health-check, --help and command tracking is applied to it
+
+
+
+ids-need-reprocessing dd93874c-0fda-4edc-a4a9-d873da8e9421, cf21460f-159d-4992-a3a5-d7d7cbd00a1f, 05cb28e0-d1b7-48b5-a89b-ab5c0809e5a4, d3c47a5c-ec17-41f5-a084-fdd5c78511bf, a3708433-9c4e-4784-b2a1-f32f5877b5e2
+
+
 Both issues have been successfully fixed:
 
   1. We fixed the error in the update-media-document-types command by replacing the incorrect SQL query approach with proper nested Supabase queries.

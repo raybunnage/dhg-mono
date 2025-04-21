@@ -60,6 +60,8 @@ COMMANDS=(
   "test-prompt-service"
   "validate-pdf-classification"
   "check-recent-updates"
+  "ids-need-reprocessing"
+  "fix-mp4-status"
 )
 
 # Check for commands in google-sync-cli.sh that are directly implemented

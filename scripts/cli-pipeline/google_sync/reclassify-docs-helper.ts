@@ -1,6 +1,12 @@
 #!/usr/bin/env ts-node
 /**
  * Helper functions for the reclassify-docs command
+ * 
+ * This file contains helper functions used by the reclassify-docs command, including:
+ * - markReprocessingDone: Mark a document as done with reprocessing
+ * - markNeedsReprocessing: Mark a document as needing reprocessing
+ * - markSkipProcessing: Mark a document to skip processing (for unsupported types)
+ * - checkDocumentSummary: Check and display a document's summary
  */
 
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
@@ -110,6 +116,77 @@ export async function markNeedsReprocessing(documentId: string, sourceId: string
     return true;
   } catch (error) {
     console.error(`Failed to mark document ${documentId} as needs_reprocessing: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return false;
+  }
+}
+
+/**
+ * Mark a document to skip processing (for unsupported file types like videos)
+ * 
+ * @param documentId ID of the expert_document to mark
+ * @param sourceId ID of the source
+ * @param skipReason Reason why processing should be skipped
+ * @returns true if successful, false if there was an error
+ */
+export async function markSkipProcessing(
+  documentId: string, 
+  sourceId: string,
+  skipReason: string = "Unsupported file type for content extraction"
+): Promise<boolean> {
+  try {
+    // Get Supabase client 
+    const supabase = SupabaseClientService.getInstance().getClient();
+    
+    // First, check the current status of the document
+    const { data: currentDoc, error: checkError } = await supabase
+      .from('expert_documents')
+      .select('document_processing_status, processing_status')
+      .eq('id', documentId)
+      .single();
+    
+    if (checkError) {
+      console.error(`Error checking current document status for ${documentId}: ${checkError.message}`);
+    } else if (currentDoc) {
+      console.log(`Current status of document ${documentId}:`);
+      console.log(`- document_processing_status: ${currentDoc.document_processing_status}`);
+      console.log(`- processing_status: ${currentDoc.processing_status}`);
+    }
+    
+    // Update the expert_document record with document_processing_status = 'skip_processing'
+    const { error } = await supabase
+      .from('expert_documents')
+      .update({
+        document_processing_status: 'skip_processing',
+        document_processing_status_updated_at: new Date().toISOString(),
+        processing_status: 'completed', // Set processing_status to completed
+        processing_skip_reason: skipReason,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', documentId);
+    
+    if (error) {
+      console.error(`Error updating document_processing_status for document ${documentId}: ${error.message}`);
+      return false;
+    }
+    
+    // Verify the update worked
+    const { data: updatedDoc, error: verifyError } = await supabase
+      .from('expert_documents')
+      .select('document_processing_status, processing_skip_reason')
+      .eq('id', documentId)
+      .single();
+      
+    if (verifyError) {
+      console.error(`Error verifying update for document ${documentId}: ${verifyError.message}`);
+    } else if (updatedDoc) {
+      console.log(`Verified document ${documentId} status is now: ${updatedDoc.document_processing_status}`);
+      console.log(`Skip reason: ${updatedDoc.processing_skip_reason}`);
+    }
+    
+    console.log(`✅ Updated document ${documentId} to skip processing`);
+    return true;
+  } catch (error) {
+    console.error(`Failed to mark document ${documentId} to skip processing: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return false;
   }
 }
