@@ -47,6 +47,18 @@ async function listUnsupportedDocumentTypes(options: { format?: string, debug?: 
       '8ce8fbbc-b397-4061-a80f-81402515503b', // m3u file
       'fe697fc5-933c-41c9-9b11-85e0defa86ed', // wav audio
       
+      // Category: Image
+      'db6518ad-765c-4a02-a684-9c2e49d77cf5', // png image
+      '68b95822-2746-4ce1-ad35-34e5b0297177', // jpg image
+      
+      // Category: Video (except mp4 video)
+      '3e7c880c-d821-4d01-8cc5-3547bdd2e347', // video mpeg
+      'd70a258e-262b-4bb3-95e3-f826ee9b918b', // video quicktime
+      '91fa92a3-d606-493b-832d-9ba1fa83dc9f', // video microsoft avi
+      '28ab55b9-b408-486f-b1c3-8f0f0a174ad4', // m4v
+      '2c1d3bdc-b429-4194-bec2-7e4bbb165dbf', // conf file (in video category)
+      // Not included: 'ba1d7662-0168-4756-a2ea-6d964fd02ba8' (mp4 video) as requested
+      
       // Category: Operations
       '53f42e7d-78bd-4bde-8106-dc12a4835695', // Document Processing Script
       '4fdbd8be-fe5a-4341-934d-2b6bd43be7be', // CI CD Pipeline Script
