@@ -661,6 +661,14 @@ async function reclassifyDocuments(
                 updated_at: new Date().toISOString()
               };
               
+              // If this file needed reprocessing, mark it as "reprocessing_done"
+              if (file.expert_documents && file.expert_documents.length > 0 && 
+                  file.expert_documents[0].document_processing_status === 'needs_reprocessing') {
+                expertDoc['document_processing_status'] = 'reprocessing_done';
+                expertDoc['document_processing_status_updated_at'] = new Date().toISOString();
+                console.log(`Marking new expert document for ${file.name} as "reprocessing_done"`);
+              }
+              
               const { error: insertError } = await supabase
                 .from('expert_documents')
                 .insert(expertDoc);

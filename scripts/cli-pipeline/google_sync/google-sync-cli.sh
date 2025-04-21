@@ -15,6 +15,7 @@
 #   show-expert-documents        Generate a report of expert documents in the database
 #   list                         List Google sources with their corresponding expert documents
 #   list-unclassified-files      List PDF and PowerPoint files without document types
+#   list-unsupported-types       List all unsupported document types in the system
 #   check-expert-doc             Check the most recent expert document for proper content extraction
 #   fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records
 #   remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id (incl. large PDFs)
@@ -345,6 +346,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  show-expert-documents        Generate a report of expert documents in the database"
   echo "  list                         List Google sources with their corresponding expert documents"
   echo "  list-unclassified-files      List PDF and PowerPoint files without document types"
+  echo "  list-unsupported-types       List all unsupported document types in the system"
   echo "  check-expert-doc             Check the most recent expert document for proper content extraction"
   echo "  fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records"
   echo "  remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id"
@@ -411,6 +413,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Output reprocessing status report to a file"
   echo "  ./google-sync-cli.sh check-reprocessing-status --output reprocessing-report.csv"
+  echo ""
+  echo "  # List all unsupported document types"
+  echo "  ./google-sync-cli.sh list-unsupported-types"
+  echo ""
+  echo "  # List unsupported document types in JSON format"
+  echo "  ./google-sync-cli.sh list-unsupported-types --format json"
   exit 0
 fi
 
@@ -423,6 +431,12 @@ fi
 if [ "$1" = "fix-orphaned-docx" ]; then
   shift
   track_command "fix-orphaned-docx" "ts-node $SCRIPT_DIR/fix-orphaned-docx.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "list-unsupported-types" ]; then
+  shift
+  track_command "list-unsupported-types" "ts-node $SCRIPT_DIR/list-unsupported-document-types.ts $*"
   exit $?
 fi
 

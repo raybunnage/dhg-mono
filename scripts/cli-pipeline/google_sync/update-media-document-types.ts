@@ -596,10 +596,28 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // For these specific IDs, we'll mark them as skip_processing
     const unsupportedDocumentTypeIds = [
-      '8ce8fbbc-b397-4061-a80f-81402515503b', // 3D Model
-      '4edfb133-ffeb-4b9c-bfd4-79ee9a9d73af', // Audio Recording
-      'fe697fc5-933c-41c9-9b11-85e0defa86ed', // Video Recording
-      '28ab55b9-b408-486f-b1c3-8f0f0a174ad4', // Image
+      // Specifically requested IDs
+      '6ece37e7-840d-4a0c-864d-9f1f971b1d7e', // m4a audio
+      'e9d3e473-5315-4837-9f5f-61f150cbd137', // Code Documentation Markdown
+      
+      // Category: Audio
+      '4edfb133-ffeb-4b9c-bfd4-79ee9a9d73af', // mp3 audio
+      'd2206940-e4f3-476e-9245-0e1eb12fd195', // aac audio
+      '8ce8fbbc-b397-4061-a80f-81402515503b', // m3u file
+      'fe697fc5-933c-41c9-9b11-85e0defa86ed', // wav audio
+      
+      // Category: Operations
+      '53f42e7d-78bd-4bde-8106-dc12a4835695', // Document Processing Script
+      '4fdbd8be-fe5a-4341-934d-2b6bd43be7be', // CI CD Pipeline Script
+      'a1dddf8e-1264-4ec0-a5af-52eafb536ee3', // Deployment Script
+      '561a86b0-7064-4c20-a40e-2ec6905c4a42', // Database Management Script
+      'f7e83857-8bb8-4b18-9d8f-16d5cb783650', // Environment Setup Script
+      
+      // Category: Spreadsheet
+      'b26a68ed-a0d1-415d-8271-cba875bfe3ce', // xlsx document
+      '920893fc-f0be-4211-85b4-fc29882ade97', // google sheet
+      
+      // Other existing types
       'e29b5194-7ba0-4a3c-a7db-92b0d8adca6a', // Unknown Document Type
       '9dbe32ff-5e82-4586-be63-1445e5bcc548'  // Password Protected Document (already being handled, added for completeness)
     ];
