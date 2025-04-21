@@ -543,11 +543,22 @@ async function classifyMissingDocuments(
                 
                 // Only attempt content update if there's actual content to add
                 if (cleanContent && minimalData && minimalData.length > 0) {
+                  // Prepare proper document summary JSON structure for processed_content
+                  const documentSummary = {
+                    document_summary: classificationResult.document_summary || "",
+                    key_topics: classificationResult.key_topics || [],
+                    target_audience: classificationResult.target_audience || "",
+                    unique_insights: classificationResult.unique_insights || [],
+                    document_type: classificationResult.document_type || "",
+                    classification_confidence: classificationResult.classification_confidence || 0.75,
+                    classification_reasoning: classificationResult.classification_reasoning || ""
+                  };
+                  
                   const { error: contentUpdateError } = await supabase
                     .from('expert_documents')
                     .update({
                       classification_metadata: classificationResult,
-                      processed_content: classificationResult,  // Also set processed_content to match classification result
+                      processed_content: documentSummary,  // Set processed_content with proper document summary structure
                       raw_content: cleanContent
                     })
                     .eq('id', minimalDoc.id);

@@ -522,14 +522,18 @@ async function classifyPdfDocuments(
     const supabase = SupabaseClientService.getInstance().getClient();
     
     // 2. Build query for unclassified PDF files or ones that need reprocessing
+    // We need to be more careful with complex logic expressions
     let query = supabase
       .from('sources_google')
-      .select('*, expert_documents!left(processing_status, document_processing_status)')
-      .or('document_type_id.is.null,expert_documents.document_processing_status.eq.needs_reprocessing')
+      .select('*, expert_documents!left(id, processing_status, document_processing_status)')
       .is('is_deleted', false)
       .eq('mime_type', 'application/pdf')
+      .or('document_type_id.is.null') // First, get unclassified files
       .order('modified_at', { ascending: false })
       .limit(limit);
+      
+    // Note: The complex logic for checking both document_type_id and expert_documents.document_processing_status
+    // is handled in the post-query filtering below
     
     // Filter by folder if provided
     if (folderId) {
@@ -567,15 +571,38 @@ async function classifyPdfDocuments(
     }
     
     // 3. Execute the query
-    const { data: files, error } = await query;
+    const { data: allFiles, error } = await query;
     
     if (error) {
       throw new Error(`Error fetching PDF files: ${error.message}`);
     }
     
-    console.log(`Found ${files?.length || 0} PDF files missing document types`);
+    if (!allFiles || allFiles.length === 0) {
+      console.log('No PDF files found that need processing');
+      return [];
+    }
     
-    if (!files || files.length === 0) {
+    // Now do the additional filtering for files that need reprocessing
+    // This is done in memory since the query syntax for this is complex
+    const files = allFiles.filter(file => {
+      // Include files with no document_type_id
+      if (!file.document_type_id) {
+        return true;
+      }
+      
+      // Include files where at least one expert document has status 'needs_reprocessing'
+      if (file.expert_documents && file.expert_documents.length > 0) {
+        return file.expert_documents.some((doc: { document_processing_status?: string }) => 
+          doc.document_processing_status === 'needs_reprocessing'
+        );
+      }
+      
+      return false;
+    });
+    
+    console.log(`Found ${files.length} PDF files that need processing out of ${allFiles.length} total PDF files`);
+    
+    if (files.length === 0) {
       return [];
     }
     
@@ -635,8 +662,17 @@ async function classifyPdfDocuments(
               console.log(`Inserting expert document for ${file.name} with document_type_id: ${classificationResult.document_type_id}`);
             }
             
-            // Create minimal document
-            const minimalDoc = {
+            // Create minimal document with proper typing
+            const minimalDoc: {
+              id: string;
+              source_id: string;
+              document_type_id: string;
+              classification_confidence: number;
+              created_at: string;
+              updated_at: string;
+              document_processing_status?: string;
+              document_processing_status_updated_at?: string;
+            } = {
               id: uuidv4(),
               source_id: file.id,
               document_type_id: "2f5af574-9053-49b1-908d-c35001ce9680", // Fixed document_type_id for Json pdf summary
@@ -648,8 +684,8 @@ async function classifyPdfDocuments(
             // If this file needed reprocessing, mark it as "reprocessing_done"
             if (file.expert_documents && file.expert_documents.length > 0 && 
                 file.expert_documents[0].document_processing_status === 'needs_reprocessing') {
-              minimalDoc['document_processing_status'] = 'reprocessing_done';
-              minimalDoc['document_processing_status_updated_at'] = new Date().toISOString();
+              minimalDoc.document_processing_status = 'reprocessing_done';
+              minimalDoc.document_processing_status_updated_at = new Date().toISOString();
               console.log(`Marking file ${file.name} as "reprocessing_done"`);
             }
             
@@ -669,11 +705,22 @@ async function classifyPdfDocuments(
               // Now try to update with classification metadata
               try {
                 if (minimalData && minimalData.length > 0) {
+                  // Prepare proper document summary JSON structure for processed_content
+                  const documentSummary = {
+                    document_summary: classificationResult.document_summary || "",
+                    key_topics: classificationResult.key_topics || [],
+                    target_audience: classificationResult.target_audience || "",
+                    unique_insights: classificationResult.unique_insights || [],
+                    document_type: classificationResult.document_type || "",
+                    classification_confidence: classificationResult.classification_confidence || 0.75,
+                    classification_reasoning: classificationResult.classification_reasoning || ""
+                  };
+                  
                   const { error: contentUpdateError } = await supabase
                     .from('expert_documents')
                     .update({
                       classification_metadata: classificationResult,
-                      processed_content: classificationResult  // Also set processed_content to match classification result
+                      processed_content: documentSummary  // Set processed_content with proper document summary structure
                     })
                     .eq('id', minimalDoc.id);
                   
