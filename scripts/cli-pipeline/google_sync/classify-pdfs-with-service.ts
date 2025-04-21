@@ -521,16 +521,15 @@ async function classifyPdfDocuments(
     // 1. Get the Supabase client
     const supabase = SupabaseClientService.getInstance().getClient();
     
-    // 2. Build query for unclassified PDF files or ones that need reprocessing
-    // We need to be more careful with complex logic expressions
+    // 2. Build query for unclassified PDF files without using foreign table syntax
     let query = supabase
       .from('sources_google')
-      .select('*, expert_documents!left(id, processing_status, document_processing_status)')
+      .select('*')
       .is('is_deleted', false)
       .eq('mime_type', 'application/pdf')
       .or('document_type_id.is.null') // First, get unclassified files
       .order('modified_at', { ascending: false })
-      .limit(limit);
+      .limit(limit * 2); // Fetch more than we need, we'll filter after joining with expert documents
       
     // Note: The complex logic for checking both document_type_id and expert_documents.document_processing_status
     // is handled in the post-query filtering below
@@ -575,6 +574,29 @@ async function classifyPdfDocuments(
     
     if (error) {
       throw new Error(`Error fetching PDF files: ${error.message}`);
+    }
+    
+    // 4. Manually fetch expert documents for these files
+    if (allFiles && allFiles.length > 0) {
+      const sourceIds = allFiles.map(file => file.id);
+      const { data: expertDocuments, error: expertError } = await supabase
+        .from('expert_documents')
+        .select('*')
+        .in('source_id', sourceIds);
+        
+      if (expertError) {
+        console.warn(`Warning: Could not fetch expert documents: ${expertError.message}`);
+      } else if (expertDocuments && expertDocuments.length > 0) {
+        // Attach expert documents to their source files
+        for (const file of allFiles) {
+          file.expert_documents = expertDocuments.filter(doc => doc.source_id === file.id);
+        }
+        console.log(`Attached ${expertDocuments.length} expert documents to ${allFiles.length} PDF files`);
+      } else {
+        console.log(`No expert documents found for the ${allFiles.length} PDF files`);
+        // Initialize empty expert_documents array for each file
+        allFiles.forEach(file => { file.expert_documents = []; });
+      }
     }
     
     if (!allFiles || allFiles.length === 0) {

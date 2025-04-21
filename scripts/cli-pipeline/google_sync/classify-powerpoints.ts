@@ -776,7 +776,7 @@ async function classifyPowerPointDocuments(
     // We're selecting all fields explicitly to avoid TypeScript issues
     let query = supabase
       .from('sources_google')
-      .select('id, name, drive_id, document_type_id, created_at, modified_at, size, is_deleted, mime_type, expert_documents!left(processing_status, document_processing_status)')
+      .select('id, name, drive_id, document_type_id, created_at, modified_at, size, is_deleted, mime_type')
       .is('is_deleted', false)
       .eq('mime_type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
       .order('modified_at', { ascending: false });
@@ -827,6 +827,29 @@ async function classifyPowerPointDocuments(
     
     if (error) {
       throw new Error(`Error fetching PowerPoint files: ${error.message}`);
+    }
+    
+    // 4. Manually fetch expert documents for these files
+    if (files && files.length > 0) {
+      const sourceIds = files.map(file => file.id);
+      const { data: expertDocuments, error: expertError } = await supabase
+        .from('expert_documents')
+        .select('*')
+        .in('source_id', sourceIds);
+        
+      if (expertError) {
+        console.warn(`Warning: Could not fetch expert documents: ${expertError.message}`);
+      } else if (expertDocuments && expertDocuments.length > 0) {
+        // Attach expert documents to their source files
+        for (const file of files) {
+          file.expert_documents = expertDocuments.filter(doc => doc.source_id === file.id);
+        }
+        console.log(`Attached ${expertDocuments.length} expert documents to ${files.length} PowerPoint files`);
+      } else {
+        console.log(`No expert documents found for the ${files.length} PowerPoint files`);
+        // Initialize empty expert_documents array for each file
+        files.forEach(file => { file.expert_documents = []; });
+      }
     }
     
     if (!files || files.length === 0) {
