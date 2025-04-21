@@ -114,6 +114,8 @@ interface FolderInfo {
   mainVideoId?: string;
   document_type_id?: string;
   document_type?: string;
+  expert_id?: string;
+  expert_name?: string;
 }
 
 interface Mp4FileInfo {
@@ -372,14 +374,14 @@ export async function reportMainVideoIds(
     Logger.setLevel(LogLevel.DEBUG);
   }
   
-  console.log('=== Report on Main Video IDs (sources_google) ===');
+  console.log('=== Report on Main Video IDs with Experts (sources_google) ===');
   console.log(`Root Folder ID: ${actualFolderId}`);
   if (shouldUpdateDb) {
     console.log('Mode: UPDATE - Will update main_video_id values in the database');
   } else {
     console.log('Mode: REPORT ONLY - Will not modify the database');
   }
-  console.log('===============================================');
+  console.log('============================================================');
 
   // Initialize Supabase client
   const supabase = SupabaseClientService.getInstance().getClient();
@@ -472,8 +474,8 @@ export async function reportMainVideoIds(
     Logger.info(`Found ${subFolders.length} subfolders with path_depth=0 under the root folder.\n`);
     
     // Create a markdown table header for the report
-    let reportContent = '| Folder Name | Main Video Filename | Document Type ID | Document Type | Status |\n';
-    reportContent += '|-------------|---------------------|-----------------|--------------|--------|\n';
+    let reportContent = '| Folder Name | Main Video Filename | Document Type | Expert | Status |\n';
+    reportContent += '|-------------|---------------------|--------------|-------|--------|\n';
     
     // Apply folder limit if specified
     const foldersToProcess = actualLimit > 0 ? subFolders.slice(0, actualLimit) : subFolders;
@@ -501,6 +503,8 @@ export async function reportMainVideoIds(
       let status = "No MP4";
       let documentTypeId = currentMainVideo?.document_type_id || null;
       let documentType = "None";
+      let expertId = null;
+      let expertName = "Unknown";
 
       // Look up document type directly for the folder
       if (documentTypeId) {
@@ -517,6 +521,41 @@ export async function reportMainVideoIds(
         } else {
           Logger.debug(`Error looking up document type for folder ${folder.name}, ID ${documentTypeId}: ${docTypeError?.message || 'No data found'}`);
         }
+      }
+      
+      // Look up expert information for this source (folder)
+      try {
+        // First check sources_google_experts for this source
+        const { data: sourceExperts, error: sourceExpertsError } = await supabase
+          .from('sources_google_experts')
+          .select('expert_id')
+          .eq('source_id', folder.id);
+          
+        if (sourceExpertsError) {
+          Logger.debug(`Error looking up expert for folder ${folder.name}: ${sourceExpertsError.message}`);
+        } else if (sourceExperts && sourceExperts.length > 0) {
+          // We have an expert - get the name from the experts table
+          expertId = sourceExperts[0].expert_id;
+          
+          const { data: expertData, error: expertError } = await supabase
+            .from('experts')
+            .select('expert_name, full_name')
+            .eq('id', expertId)
+            .single();
+            
+          if (expertError) {
+            Logger.debug(`Error looking up expert name for ID ${expertId}: ${expertError.message}`);
+          } else if (expertData) {
+            // Use the expert_name field (short name) as requested
+            expertName = expertData.expert_name;
+            
+            Logger.debug(`Found expert: ${expertName} for folder ${folder.name}, expert_id: ${expertId}`);
+          }
+        } else {
+          Logger.debug(`No expert found for folder ${folder.name}`);
+        }
+      } catch (error) {
+        Logger.debug(`Unexpected error looking up expert for folder ${folder.name}: ${error instanceof Error ? error.message : String(error)}`);
       }
       
       // Find MP4 files in this folder recursively
@@ -595,7 +634,7 @@ export async function reportMainVideoIds(
       }
       
       // Add to the report
-      reportContent += `| ${folder.name} | ${mainVideoName} | ${documentTypeId || 'null'} | ${documentType} | ${status} |\n`;
+      reportContent += `| ${folder.name} | ${mainVideoName} | ${documentType} | ${expertName} | ${status} |\n`;
       
       // Store for later processing
       allFolderInfo.push({
@@ -603,12 +642,18 @@ export async function reportMainVideoIds(
         mp4Files,
         mainVideoId: mainVideoId || undefined,
         document_type_id: documentTypeId || undefined,
-        document_type: documentType
+        document_type: documentType,
+        expert_id: expertId || undefined,
+        expert_name: expertName
       });
     }
     
     // Add summary
     reportContent += `\n_Summary:_ Found ${subFolders.length} folders with path_depth=0 under ${rootFolder.name}\n`;
+    
+    // Count how many folders have experts assigned
+    const foldersWithExperts = allFolderInfo.filter(folder => folder.expert_name && folder.expert_name !== "Unknown").length;
+    reportContent += `\n${foldersWithExperts} out of ${allFolderInfo.length} folders have experts assigned (${Math.round((foldersWithExperts / allFolderInfo.length) * 100)}%).\n`;
     
     if (shouldUpdateDb) {
       reportContent += `\n${updateCount} folders had their main_video_id updated.\n`;
@@ -621,8 +666,9 @@ export async function reportMainVideoIds(
     if (actualOutputFile) {
       try {
         // Create the output content with a proper header
-        let fileContent = '# Main Video IDs Report\n\n';
+        let fileContent = '# Main Video IDs Report with Expert Information\n\n';
         fileContent += `Report generated on ${new Date().toISOString()}\n\n`;
+        fileContent += `This report shows folders with their associated main video files, document types, and experts.\n\n`;
         fileContent += reportContent;
         
         // Write to file

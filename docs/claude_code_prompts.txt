@@ -15,6 +15,83 @@ token_count
 pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
 
 
+  * sync                         Sync files from Google Drive to the database (core functionality)
+  * health-check                 Check the health of Google Drive API connection
+  * classify-pdfs                Classify PDF files missing document types using Claude AI
+  * classify-powerpoints         Classify PowerPoint files missing document types using local extraction and Claude AI
+  * reclassify-docs              Re-classify documents that need reprocessing based on file type
+  * classify-docs-service        Classify .docx and .txt files missing document types
+  validate-pdf-classification  - HAS AN ERROR TAKE A LONG TIME Validate PDF classification results and generate a report
+  * check-duplicates             - MIGHT BE TELLING US SOMETHING IMPORTANT   Check for duplicate files in sources_google
+  check-document-types         - LESS IMPORTANT - BUT MIGHT BE IMPORTANT  Check for files missing document types
+  * report-main-video-ids        Report on video files for folders
+  * update-media-document-types  Update document_type_id for media files and create expert_documents
+  check-reprocessing-status   - less important SHOWS THE M4A FILES that you won't reprocss  Check which expert documents need reprocessing based on metadata
+  show-expert-documents       - NOT ALL THAT ACCURATE -  Generate a report of expert documents in the database
+  * list    --console is VERY USEFUL                  List Google sources with their corresponding expert documents
+  * list-unclassified-files     IS VVERY USEFUL List PDF and PowerPoint files without document types
+  list-unsupported-types       JUST INFORMATIONAL List all unsupported document types in the system
+  check-expert-doc             ONLY IF YOU KNOW THE ID Check the most recent expert document for proper content extraction
+  check-document-summary       ONLY IF YOU KNOW THE ID Check and display the summary for a specific document by ID
+  fix-orphaned-docx            OLD  Fix DOCX files with document_type_id but no expert_documents records
+  fix-mp4-status               RARELY RUN - Fix MP4 files that are incorrectly marked as needs_reprocessing
+  remove-expert-docs-pdf-records OLD   Remove expert_documents for PDF files with null document_type_id
+  check-recent-updates         OF LIMITED USE BECAUSE IT DOESN'T SHOW TYPES VERY WELL Show recently updated files and their associated expert documents
+  * ids-need-reprocessing        ? DON'T KNOW IF WORKED  Reset document_processing_status to needs_reprocessing for specified sources
+  * help                         Show this help message
+
+THIS IS AN EXAMPLE OF FOLDERS - AND THEN FILES THAT ARE DUPLICATE 
+"References" appears 5 times:
+  - ID: be06d400-f02b-4355-82fb-d72b60d43755, Drive ID: 1XMpKRxFF_ksr0VostBRbBrIp80BzdteD
+  - ID: c1392ebf-1d34-4924-be57-06d2b8182593, Drive ID: 18xgVEs1jBhTbAxGJwEwFTbTEzl4hrQWz
+  - ID: dc068f61-43bb-4a9a-8eb7-b7faae9f8dde, Drive ID: 1lJyVTe3g-sHX5qjxjhzPrUfWWqmWYHpU
+  - ID: c7ee0044-f86d-49d8-bab5-30743f708bea, Drive ID: 1UxtOppPsbbbvG5BHP2M89TCPAs6ygAKQ
+  - ID: e8e42e18-0069-4cb8-ad01-6c1e9d539efe, Drive ID: 18MZq26uPhtukKTe0RmwIKT7l4TvWQAto
+
+"Presentation/ Summary" appears 3 times:
+  - ID: 2ea1d344-e45f-4263-ad16-bc4bef0e5c3a, Drive ID: 1pPdza45dEsoJUqP8fz3KTG27zkAzAnWt
+  - ID: ed681f64-c89b-4c1a-8884-e9f8ed0a4fd3, Drive ID: 1v9o3h8szKYHV_ZMKnph2XzAQYhMJmI-h
+  - ID: 22d554b5-3871-48df-8821-a7d690c8fd07, Drive ID: 1XQTfy-p7ITe2laK60blb6lECdNH6ovLX
+
+"Temoshok 2008 Brain Behavior & Immunity (1).pdf" appears 3 times:
+  - ID: 76884bd7-b324-4ba0-b6c9-3d6806e6765d, Drive ID: 1R6xtOfrCH2uv-ck5Pm8zqN95PUk-9iMD
+  - ID: 17fcd345-3907-4fd5-b1f5-ad1219316824, Drive ID: 1fVy0GoKmphnzu06s9JLjTsyKQbZ2sznA
+  - ID: 7ba48b59-faa8-454c-89a3-30cf5e8bd726, Drive ID: 1QqGyhw2G3QV3LnTL7cXe-iHylp8ZAOuP
+
+"12.9.22.PVSteering._The Story_.m4a" appears 2 times:
+  - ID: 0a98f23e-db1b-4a5b-b404-76b2a09160eb, Drive ID: 1NXy03ntRsTI93lucpwQ6v0xoEaR5zA5G
+  - ID: d5ffad98-4abe-46e1-9a49-ce28a4a93516, Drive ID: 19ypQk7GN8CRocr55Ct21HQZLm-qpDSkS
+
+"Alison Escalante.docx" appears 2 times:
+  - ID: 2a5e39b5-5ae5-48ed-9dfd-aef4dde31e24, Drive ID: 1mdI-7cE9-SLtHonR6f2nM7yWkCh9P3Ke
+  - ID: 8d6e10af-a523-456b-b830-578692e99301, Drive ID: 1oIoAjv2v6R1LQFFVib2CRdHtIo6IwvIF
+
+"AutonomicRehabilitation.pdf" appears 2 times:
+  - ID: d414be0f-8a97-4ce2-b635-82790e05c164, Drive ID: 1VXsjwpXK6INYGYw4I9SHiUK7IpLWOgF6
+  - ID: ff733098-b6be-4c56-9454-c18d83395b20, Drive ID: 1glVgBZGh1nZz9jJzNn7K7EQQCmRmbgJ6
+
+"Carter.Stress.SexDiff.May 2021.#2.pdf" appears 2 times:
+  - ID: f73bf868-bbc1-4b3b-9e56-395d2bf8c42f, Drive ID: 1aVcqAZ555htxA3o0x_IgvYCIaNhEO5vr
+  - ID: 08b36fdc-a3b0-4789-942b-2dbb5624c1e4, Drive ID: 1KZ1p8-gLgcJgmSK5B4MMY4AJ81CrRXUh
+
+
+
+YO9U MIGHT WANT TO FIX THIS validate-pdf-classification 
+Checking up to 5 classified PDFs...
+Loaded Supabase credentials successfully from /Users/raybunnage/Documents/github/dhg-mono/.env.development
+Creating Supabase client with URL: https://jdksnfkupzyw...
+Using API Key: eyJhb...cOB-A
+(node:4250) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✅ Service account authentication initialized successfully
+2025-04-21T22:47:44.696Z [warn]: PDF has approximately 100 pages which may exceed Claude's limit. Splitting...
+2025-04-21T22:47:44.697Z [info]: PDF /Users/raybunnage/Documents/github/dhg-mono/file_types/pdf/temp-Solosmon_The_Worm_at_the_Core.pdf-1I49O9fH.pdf has estimated 100 pages which exceeds the limit of 99. Splitting PDF...
+2025-04-21T22:47:45.044Z [info]: Successfully split PDF. New file at /Users/raybunnage/Documents/github/dhg-mono/file_types/pdf/temp-Solosmon_The_Worm_at_the_Core.pdf-1I49O9fH_first99pages.pdf with 99 pages
+2025-04-21T22:47:45.044Z [info]: Using split PDF: /Users/raybunnage/Documents/github/dhg-mono/file_types/pdf/temp-Solosmon_The_Worm_at_the_Core.pdf-1I49O9fH_first99pages.pdf
+2025-04-21T22:47:45.044Z [error]: Unknown error calling Claude API with PDF: Error: PDF file is too large (10.12MB). Claude has a 10MB limit for PDF files.
+
+
+
 
  now make a new command for google sync that fixes individual sources_google records - it should take a comma separated list of ids that have the wrong 
   document_type assigned and reset those to have a new document_type_id of a specified document_type_id.  FOr example, a command should look something likst 

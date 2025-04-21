@@ -341,11 +341,14 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
       modified_at: file.modifiedTime,
       size: file.size ? parseInt(file.size, 10) : null,
       file_signature: fileSignature,
+      document_processing_status: 'needs_reprocessing', // Mark new files for processing
+      document_processing_status_updated_at: now, // Set timestamp for status update
       metadata: {
         modifiedTime: file.modifiedTime,
         webViewLink: file.webViewLink,
         thumbnailLink: file.thumbnailLink,
-        mimeType: file.mimeType
+        mimeType: file.mimeType,
+        isNewFile: true
       }
     };
     
@@ -788,11 +791,14 @@ async function syncFiles(
           modified_at: file.modifiedTime,
           size: file.size ? parseInt(file.size, 10) : null,
           file_signature: fileSignature,
+          document_processing_status: 'needs_reprocessing', // Mark new files for processing
+          document_processing_status_updated_at: new Date().toISOString(), // Set timestamp for status update
           metadata: {
             modifiedTime: file.modifiedTime,
             webViewLink: file.webViewLink,
             thumbnailLink: file.thumbnailLink,
-            mimeType: file.mimeType
+            mimeType: file.mimeType,
+            isNewFile: true
           }
         };
         
@@ -1254,11 +1260,17 @@ export async function syncAndUpdateMetadata(
     
     console.log('\n=== Sync Summary ===');
     console.log(`Files found: ${syncResult.filesFound}`);
-    console.log(`Files inserted: ${syncResult.filesInserted}`);
+    console.log(`Files inserted: ${syncResult.filesInserted} (all marked as needs_reprocessing)`);
     console.log(`Files updated: ${syncResult.filesUpdated}`);
     console.log(`Files marked deleted: ${syncResult.filesMarkedDeleted}`);
     console.log(`Files skipped: ${syncResult.filesSkipped}`);
     console.log(`Errors: ${syncResult.errors.length}`);
+    
+    // Add note about reprocessing if new files were inserted
+    if (syncResult.filesInserted > 0) {
+      console.log('\n📋 NOTE: New files were added and marked as "needs_reprocessing".');
+      console.log('   Details of these files will be shown at the end of the sync process.');
+    }
     
     if (syncResult.errors.length > 0) {
       console.error('\nErrors encountered during sync:');
@@ -1312,10 +1324,13 @@ export async function syncAndUpdateMetadata(
     
     // SUMMARY: Display newly inserted files
     if (syncResult.filesInserted > 0) {
-      console.log('\n=== Newly Added Files Summary ===');
+      console.log('\n=== NEWLY ADDED FILES (All marked as needs_reprocessing) ===');
       
       try {
-        // Fetch the recently inserted files
+        // Fetch the recently inserted files - 
+        // Make sure we get enough records even if there are many, but still limit to a reasonable number
+        const maxNewFilesToShow = Math.min(syncResult.filesInserted, 50); // Show up to 50 new files
+        
         const { data: newFiles, error: newFilesError } = await supabase
           .from('sources_google')
           .select(`
@@ -1327,19 +1342,21 @@ export async function syncAndUpdateMetadata(
             parent_folder_id,
             path_array,
             document_type_id,
+            document_processing_status,
             document_types(document_type)
           `)
           .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+          .eq('document_processing_status', 'needs_reprocessing') // Filter to show only files needing reprocessing
           .order('created_at', { ascending: false })
-          .limit(syncResult.filesInserted);
+          .limit(maxNewFilesToShow);
           
         if (newFilesError) {
           console.error(`Error fetching newly added files: ${newFilesError.message}`);
         } else if (newFiles && newFiles.length > 0) {
-          console.log(`Found ${newFiles.length} recently added files:`);
-          console.log('----------------------------------------------------------------------------------------------------------------------');
-          console.log('| Filename                       | Document Type                 | Created At           | Parent Folder               |');
-          console.log('----------------------------------------------------------------------------------------------------------------------');
+          console.log(`Found ${newFiles.length} recently added files marked for reprocessing:`);
+          console.log('----------------------------------------------------------------------------------------------------------------------------------');
+          console.log('| Filename                       | Document Type                 | Created At           | Processing Status      | Parent Folder          |');
+          console.log('----------------------------------------------------------------------------------------------------------------------------------');
           
           // Get parent folder names for all files
           const parentFolderIds = new Set(newFiles.map(file => file.parent_folder_id).filter(Boolean));
@@ -1384,13 +1401,19 @@ export async function syncAndUpdateMetadata(
               // Try to get folder name from path array
               parentFolder = file.path_array[file.path_array.length - 2] || 'Unknown';
             }
-            parentFolder = parentFolder.substring(0, 28).padEnd(28);
+            parentFolder = parentFolder.substring(0, 22).padEnd(22);
             
-            console.log(`| ${name} | ${documentType} | ${createdAt} | ${parentFolder} |`);
+            // Add processing status
+            let processingStatus = file.document_processing_status || 'not set';
+            processingStatus = processingStatus.substring(0, 20).padEnd(20);
+            
+            console.log(`| ${name} | ${documentType} | ${createdAt} | ${processingStatus} | ${parentFolder} |`);
           }
           
-          console.log('----------------------------------------------------------------------------------------------------------------------');
-          console.log('Review these newly added files and determine if they need reprocessing or special handling.');
+          console.log('----------------------------------------------------------------------------------------------------------------------------------');
+          console.log('➡️  All newly added files have been automatically marked with "needs_reprocessing" status.');
+          console.log('➡️  To process these files, run: ./google-sync-cli.sh reclassify-docs');
+          console.log('----------------------------------------------------------------------------------------------------------------------------------');
         } else {
           console.log('No newly added files found in the database.');
         }

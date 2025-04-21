@@ -4,45 +4,49 @@
 
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
-| mp4 video | 117 | 14% |
-| Presentation Announcement | 94 | 11.2% |
-| m4a audio | 92 | 11% |
-| research article | 91 | 10.9% |
-| Chat Log | 50 | 6% |
-| dicussion transcript | 27 | 3.2% |
-| powerpoint document | 25 | 3% |
-| review article | 23 | 2.7% |
-| email correspondence | 21 | 2.5% |
-| journal article | 15 | 1.8% |
+| mp4 video | 112 | 13.5% |
+| m4a audio | 92 | 11.1% |
+| Presentation Announcement | 82 | 9.9% |
+| research article | 77 | 9.3% |
+| Chat Log | 65 | 7.8% |
+| dicussion transcript | 26 | 3.1% |
+| review article | 21 | 2.5% |
+| markdown document | 20 | 2.4% |
+| email correspondence | 20 | 2.4% |
+| powerpoint document | 15 | 1.8% |
 | low level folder | 14 | 1.7% |
+| journal article | 13 | 1.6% |
 | presentation transcript | 12 | 1.4% |
-| professional biography | 9 | 1.1% |
 | report | 8 | 1% |
+| professional biography | 8 | 1% |
+| scientific presentation and discussion | 7 | 0.8% |
 | web news article | 7 | 0.8% |
-| curriculum vitae | 6 | 0.7% |
+| word document | 7 | 0.8% |
 | url blog post | 6 | 0.7% |
 | website | 5 | 0.6% |
-| Unknown | 4 | 0.5% |
-| essay | 4 | 0.5% |
-| Code Documentation Markdown | 4 | 0.5% |
-| letter | 3 | 0.4% |
+| Code Documentation Markdown | 5 | 0.6% |
+| curriculum vitae | 4 | 0.5% |
+| txt file | 3 | 0.4% |
+| Unknown | 3 | 0.4% |
 | editorial | 3 | 0.4% |
+| letter | 2 | 0.2% |
+| essay | 2 | 0.2% |
 | unknown document type | 2 | 0.2% |
 | pdf document | 2 | 0.2% |
 | new work summary | 2 | 0.2% |
-| magazine article | 2 | 0.2% |
-| word document | 2 | 0.2% |
 | book | 2 | 0.2% |
 | letter to the editor | 1 | 0.1% |
 | correction | 1 | 0.1% |
 | science meeting discussion | 1 | 0.1% |
 | preprint | 1 | 0.1% |
-| Deployment Script | 1 | 0.1% |
+| magazine article | 1 | 0.1% |
 
 ## Unclassified MIME Types
 
 | MIME Type | Count | Percentage of Unclassified |
 |-----------|-------|-------------------------|
+| video/mp4 | 4 | 80% |
+| application/vnd.openxmlformats-officedocument.presentationml.presentation | 1 | 20% |
 
 ## Sources Google Summary
 
@@ -56,15 +60,15 @@
 
 | Status | Count | Percentage of Total |
 |--------|-------|--------------------|
-| Sources with document type | 837 | 100% |
-| Sources without document type | 0 | 0% |
+| Sources with document type | 832 | 99.4% |
+| Sources without document type | 5 | 0.6% |
 
 ## Expert Documents Status
 
 | Status | Count | Percentage of Files |
 |--------|-------|--------------------|
 | Sources with expert documents | 688 | 104.7% |
-| Sources with document type but no expert documents | 149 | 22.7% |
+| Sources with document type but no expert documents | 144 | 21.9% |
 | Files with no expert documents | -31 | -4.7% |
 
 ## MIME Type Breakdown
@@ -73,10 +77,10 @@
 |-----------|-------------|-------------------|----------------------|-----------------|-------------|
 | application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 191 | 0 | 191 | 100% |
 | application/pdf | 151 | 151 | 0 | 151 | 100% |
-| video/mp4 | 116 | 116 | 0 | 116 | 100% |
+| video/mp4 | 116 | 112 | 4 | 116 | 97% |
 | audio/x-m4a | 92 | 92 | 0 | 92 | 100% |
 | text/plain | 64 | 64 | 0 | 64 | 100% |
-| application/vnd.openxmlformats-officedocument.presentationml.presentation | 25 | 25 | 0 | 25 | 100% |
+| application/vnd.openxmlformats-officedocument.presentationml.presentation | 25 | 24 | 1 | 25 | 96% |
 | application/vnd.google-apps.document | 4 | 4 | 0 | 4 | 100% |
 | image/jpeg | 3 | 3 | 0 | 3 | 100% |
 | audio/x-mpegurl | 2 | 2 | 0 | 2 | 100% |
@@ -111,8 +115,8 @@
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| Total Expert Documents | 723 | 100% |
-| Expert Documents with Document Type | 717 | 99.2% |
+| Total Expert Documents | 734 | 100% |
+| Expert Documents with Document Type | 728 | 99.2% |
 | Expert Documents without Document Type | 6 | 0.8% |
 | Orphaned Expert Documents (no sources_google) | 30 | 4.1% |
 
@@ -126,360 +130,269 @@
 
 | MIME Type | Count | Percentage |
 |-----------|-------|------------|
-| application/vnd.openxmlformats-officedocument.wordprocessingml.document | 191 | 26.4% |
-| application/pdf | 151 | 20.9% |
-| video/mp4 | 116 | 16% |
-| audio/x-m4a | 92 | 12.7% |
-| text/plain | 64 | 8.9% |
-| application/vnd.openxmlformats-officedocument.presentationml.presentation | 60 | 8.3% |
+| application/vnd.openxmlformats-officedocument.wordprocessingml.document | 197 | 26.8% |
+| application/pdf | 155 | 21.1% |
+| video/mp4 | 116 | 15.8% |
+| audio/x-m4a | 92 | 12.5% |
+| text/plain | 64 | 8.7% |
+| application/vnd.openxmlformats-officedocument.presentationml.presentation | 61 | 8.3% |
 | Unknown MIME Type | 30 | 4.1% |
-| application/vnd.google-apps.document | 4 | 0.6% |
+| application/vnd.google-apps.document | 4 | 0.5% |
 | image/jpeg | 3 | 0.4% |
 | application/msword | 2 | 0.3% |
+| audio/x-mpegurl | 2 | 0.3% |
 | text/html | 2 | 0.3% |
 | application/vnd.ms-powerpoint | 2 | 0.3% |
-| audio/x-mpegurl | 2 | 0.3% |
-| audio/mpeg | 1 | 0.1% |
-| application/octet-stream | 1 | 0.1% |
 | application/vnd.google-apps.folder | 1 | 0.1% |
+| application/octet-stream | 1 | 0.1% |
 | video/mpeg | 1 | 0.1% |
+| audio/mpeg | 1 | 0.1% |
 
 ## Expert Documents by Direct Document Type
 
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
-| Video Summary Transcript | 144 | 19.9% |
-| low level folder | 127 | 17.6% |
-| Json Expert Summary | 94 | 13% |
-| research article | 91 | 12.6% |
-| Chat Log | 50 | 6.9% |
-| scientific presentation and discussion | 33 | 4.6% |
-| dicussion transcript | 27 | 3.7% |
-| review article | 23 | 3.2% |
-| email correspondence | 19 | 2.6% |
-| journal article | 15 | 2.1% |
-| presentation transcript | 11 | 1.5% |
-| report | 8 | 1.1% |
-| professional biography | 8 | 1.1% |
-| web news article | 7 | 1% |
+| Json pdf summary | 197 | 26.8% |
+| Video Summary Transcript | 144 | 19.6% |
+| Json document summary | 103 | 14% |
+| Json Expert Summary | 94 | 12.8% |
+| m4a audio | 92 | 12.5% |
+| scientific presentation and discussion | 26 | 3.5% |
+| markdown document | 19 | 2.6% |
+| Chat Log | 16 | 2.2% |
+| low level folder | 12 | 1.6% |
 | No Document Type | 6 | 0.8% |
-| url blog post | 6 | 0.8% |
-| Presentation Announcement | 6 | 0.8% |
-| curriculum vitae | 5 | 0.7% |
-| website | 5 | 0.7% |
-| Code Documentation Markdown | 4 | 0.6% |
-| essay | 4 | 0.6% |
+| word document | 5 | 0.7% |
+| Code Documentation Markdown | 4 | 0.5% |
 | video mpeg | 3 | 0.4% |
-| letter | 3 | 0.4% |
+| presentation transcript | 3 | 0.4% |
+| txt file | 3 | 0.4% |
 | ai presentation transcript | 3 | 0.4% |
-| editorial | 3 | 0.4% |
-| magazine article | 2 | 0.3% |
-| book | 2 | 0.3% |
+| dicussion transcript | 2 | 0.3% |
 | unknown document type | 2 | 0.3% |
-| word document | 2 | 0.3% |
-| high level folder | 1 | 0.1% |
-| preprint | 1 | 0.1% |
-| new work summary | 1 | 0.1% |
-| correction | 1 | 0.1% |
-| powerpoint document | 1 | 0.1% |
-| mp4 video | 1 | 0.1% |
-| letter to the editor | 1 | 0.1% |
-| pdf document | 1 | 0.1% |
-| Deployment Script | 1 | 0.1% |
-| science meeting discussion | 1 | 0.1% |
 
 ## Expert Documents by Source's Document Type
 
 | Document Type | Count | Percentage |
 |--------------|-------|------------|
-| mp4 video | 117 | 16.2% |
-| Presentation Announcement | 94 | 13% |
-| m4a audio | 92 | 12.7% |
-| research article | 91 | 12.6% |
-| powerpoint document | 60 | 8.3% |
-| Chat Log | 50 | 6.9% |
-| Unknown | 34 | 4.7% |
-| dicussion transcript | 27 | 3.7% |
-| review article | 23 | 3.2% |
-| email correspondence | 21 | 2.9% |
-| journal article | 15 | 2.1% |
+| mp4 video | 112 | 15.3% |
+| m4a audio | 92 | 12.5% |
+| Presentation Announcement | 82 | 11.2% |
+| research article | 77 | 10.5% |
+| Chat Log | 66 | 9% |
+| Unknown | 38 | 5.2% |
+| powerpoint document | 35 | 4.8% |
+| dicussion transcript | 28 | 3.8% |
+| markdown document | 22 | 3% |
+| review article | 21 | 2.9% |
+| scientific presentation and discussion | 20 | 2.7% |
+| email correspondence | 20 | 2.7% |
+| presentation transcript | 15 | 2% |
 | low level folder | 14 | 1.9% |
-| presentation transcript | 12 | 1.7% |
-| professional biography | 9 | 1.2% |
+| journal article | 13 | 1.8% |
+| word document | 11 | 1.5% |
+| professional biography | 8 | 1.1% |
 | report | 8 | 1.1% |
 | web news article | 7 | 1% |
-| curriculum vitae | 6 | 0.8% |
+| Code Documentation Markdown | 6 | 0.8% |
 | url blog post | 6 | 0.8% |
 | website | 5 | 0.7% |
-| Code Documentation Markdown | 4 | 0.6% |
-| essay | 4 | 0.6% |
-| letter | 3 | 0.4% |
+| curriculum vitae | 4 | 0.5% |
+| txt file | 3 | 0.4% |
 | editorial | 3 | 0.4% |
-| magazine article | 2 | 0.3% |
-| book | 2 | 0.3% |
-| new work summary | 2 | 0.3% |
-| pdf document | 2 | 0.3% |
 | unknown document type | 2 | 0.3% |
-| word document | 2 | 0.3% |
+| book | 2 | 0.3% |
+| essay | 2 | 0.3% |
+| new work summary | 2 | 0.3% |
+| letter | 2 | 0.3% |
+| pdf document | 2 | 0.3% |
+| magazine article | 1 | 0.1% |
+| letter to the editor | 1 | 0.1% |
 | preprint | 1 | 0.1% |
+| science meeting discussion | 1 | 0.1% |
 | high level folder | 1 | 0.1% |
 | correction | 1 | 0.1% |
-| letter to the editor | 1 | 0.1% |
-| Deployment Script | 1 | 0.1% |
-| science meeting discussion | 1 | 0.1% |
 
 ## Sample Expert Documents
 
-### 1. Naviaux.Mitochondria.chronic Disease.mp4 (mp4 video)
+### 1. Poly..Cytokies.oxytocin.5.13.20.docx (dicussion transcript)
 
-- ID: `b94942bd-e6da-49b2-acb4-3d9e001c2f2a`
-- MIME Type: video/mp4
-- Source ID: `d941e474-42bd-4780-91cd-b6a9894c9317`
-
-**Raw Content Preview:**
-
-> you know, anything last more than six months, I consider chronic. Right.
-
-**Processed Content Preview:**
-
-> # Summary: Advances in Targeted Immunotherapy for Metastatic Melanoma
-
-## Background
-The presentation opened with epidemiological data showing the rising incidence of melanoma globally, with approximately 324,000 new cases and 57,000 deaths annually. Despite representing only 5% of skin cancers, melanoma accounts for over 75% of skin cancer-related deaths.
-
----
-
-### 2. Ron Gharbo Summary.1.27.21.docx (report)
-
-- ID: `5c8f8809-c906-4ab3-a2a3-584ace575f9d`
+- ID: `ddb80151-9a6c-44f7-8c6f-020a52a176f1`
 - MIME Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document
-- Source ID: `3e85f3df-b8f2-4cba-9609-cbe43a858fd1`
+- Source ID: `7a987849-a9fb-444c-ac75-0dbba60d9901`
 
 **Raw Content Preview:**
 
-> Ron Gharbo Summary1.27.21A pragmatic biopsychosocial objective starting point for most situations because we are all energy allocating, acquiring, restoration utilization organisms continually adapting to external and internal changes. 1.
+> David Hanscom:... cloud and see how it goes.
 
 **Processed Content Preview:**
 
-> {"title":"Ron Gharbo Summary.1.27.21.docx","source":{"drive_id":"1Rg_QOhBB4gwYTmFgYBGRG0Ust_6dTV_j","mime_type":"application/vnd.openxmlformats-officedocument.wordprocessingml.document"},"content":"Ron Gharbo Summary1.27.21A pragmatic biopsychosocial objective starting point for most situations because we are all energy allocating, acquiring, restoration utilization organisms continually adapting to external and internal changes. 1.
+> {"raw":"David Hanscom:... cloud and see how it goes.
 
 ---
 
-### 3. Wager.7.15.20.mp4 (mp4 video)
+### 2. Sutphinb.10.6.24.mp4 (Unknown)
 
-- ID: `556d8749-f59e-4704-a388-a46a7ee88d07`
+- ID: `e1abb032-e642-4938-a9ef-7049adf67013`
 - MIME Type: video/mp4
-- Source ID: `96bca436-b517-4374-ba55-bed14e6f775f`
+- Source ID: `1138b35e-b7a8-4af1-8973-6f433bb84ba2`
 
 **Raw Content Preview:**
 
-> So that you have done a minute and else looking at the neocortex with the midbrain and just leaking these things together, which is why we're actually here. So do you have your slide deck up by chance? I do, yes.
+> Okay. Who has started? I like to use Dr.
 
 **Processed Content Preview:**
 
-> # Summary: Mitochondrial Dysfunction in Metabolic Disorders
+> # Summary: Blood-Brain Barrier Modulation for Enhanced Drug Delivery
 
-## Key Concepts Presented
-The presentation provided a comprehensive overview of how mitochondrial dysfunction contributes to various metabolic disorders, emphasizing the critical role of mitochondria as cellular powerhouses. ## Pathophysiological Mechanisms
-- Detailed explanation of electron transport chain defects and their consequences on ATP production
-- Analysis of reactive oxygen species (ROS) accumulation causing oxidative stress and cellular damage
-- Discussion of mtDNA mutations that impair mitochondrial protein synthesis and function
-- Exploration of altered calcium homeostasis disrupting cellular signaling pathways
-
-## Clinical Manifestations
-- Multi-system involvement with particular emphasis on high-energy demanding tissues (brain, muscle, heart)
-- Presentation of case studies demonstrating phenotypic variability
-- Age-dependent symptom progression and threshold effects
-- Diagnostic challenges due to overlapping clinical presentations
-
-## Diagnostic Approaches
-- Comprehensive metabolic panels showing characteristic biomarkers (lactate, pyruvate ratios)
-- Muscle biopsy findings including ragged red fibers and COX-negative fibers
-- Advanced imaging techniques revealing metabolic signatures
-- Next-generation sequencing for genetic diagnosis
-
-## Therapeutic Strategies
-- Current mitochondrial-targeted therapies including coenzyme Q10, riboflavin, and L-carnitine
-- Emerging approaches using antioxidants and metabolic modifiers
-- Precision medicine approaches based on specific mitochondrial defects
-- Lifestyle modifications including exercise protocols and dietary interventions
-
-## Research Frontiers
-- Mitochondrial replacement therapies and ethical considerations
-- CRISPR-based approaches for mtDNA editing
-- Metabolic reprogramming strategies
-- Biomarker development for early detection and monitoring.
+## Introduction
+The presentation provided a comprehensive overview of current approaches to modulate the blood-brain barrier (BBB) for improving therapeutic delivery to the central nervous system. The speaker emphasized that while the BBB is crucial for protecting the brain from harmful substances, it also presents a significant challenge for delivering neurotherapeutics, with approximately 98% of small molecule drugs and nearly all biologics unable to cross this barrier effectively.
 
 ---
 
-### 4. Summary of Brenda Stockdale_Bernie Seigel (presentation transcript)
+### 3. Sabey.11.1.23.Positive Programming.mp4 (Unknown)
 
-- ID: `70bf68ef-1975-4f1d-a0e7-798f24313109`
-- MIME Type: application/vnd.google-apps.document
-- Source ID: `a8b4a68f-0d0f-4d87-82e3-7d4f0a181d94`
-
-**Raw Content Preview:**
-
-> Summary of Brenda Stockdale/ Bernie Seigel’s  presentation of what are the traits of people who survive  terminal cancer 
-2.19.25 
-This meeting is a major paradigm shift. Exceptional cancer survivors don’t just magically  heal.
-
-**Processed Content Preview:**
-
-> {"key_topics":["Exceptional cancer survival traits","Self-induced healing","Mind-body connection in recovery","The 3 C's: Control, Commitment, and Challenge","Role of hope and positive narratives","Ethical considerations in treatment approaches","Integrated model of deep healing"],"document_type":"presentation transcript","target_audience":"Healthcare professionals, cancer patients, psychologists, and individuals interested in integrative medicine approaches to healing","unique_insights":["People-pleasing behavior (putting others' needs before one's own) is linked to poorer health outcomes in cancer patients","The concept of 'therapeutic deception' - framing diagnoses to foster hope - can measurably improve health outcomes despite ethical concerns","Specific psychological traits can be intentionally developed to enhance physiological healing processes"],"document_summary":"This document summarizes a presentation by Brenda Stockdale and Bernie Seigel on the traits of exceptional cancer survivors. The presentation, dated February 19, 2025, introduces the concept of 'self-induced healing' and challenges traditional biomedical models by proposing that recovery from cancer is significantly influenced by mindset, emotions, and behavior rather than solely by clinical interventions.\n\nThe summary outlines seven key sections of the presentation, beginning with an introduction to a new healing paradigm that frames stress and illness as opportunities for transformative growth.
-
----
-
-### 5. Summary of Brenda Stockdale_Bernie Seigel (presentation transcript)
-
-- ID: `12f40d61-5c7b-45e7-9c79-7fdb180e18c9`
-- MIME Type: application/vnd.google-apps.document
-- Source ID: `3414c255-6163-4070-950e-c573502047b1`
-
-**Raw Content Preview:**
-
-> Summary of Brenda Stockdale/ Bernie Seigel’s  presentation of what are the traits of people who survive  terminal cancer 
-2.19.25 
-This meeting is a major paradigm shift. Exceptional cancer survivors don’t just magically  heal.
-
-**Processed Content Preview:**
-
-> {"document_type":"presentation transcript","document_summary":"This document summarizes a presentation by Brenda Stockdale and Bernie Seigel focused on the traits and behaviors of exceptional cancer survivors. The presentation challenges traditional medical models by emphasizing how mindset, emotions, and behavior significantly impact recovery and longevity.
-
----
-
-### 6. Global developments in social prescribing_Morse_2022.pdf (research article)
-
-- ID: `d9ace790-346e-4db0-a28d-0f77b584c07d`
-- MIME Type: application/pdf
-- Source ID: `b3fcdb12-25c7-46dc-88c8-f0fddc1dedac`
-
-**Raw Content Preview:**
-
-> Not available
-
-**Processed Content Preview:**
-
-> {"key_topics":["Social prescribing implementation across 17 countries","Addressing social determinants of health through healthcare systems","Cross-sector collaboration between health, social, and community services","Workforce models for social prescribing delivery","Financing approaches for sustainable social prescribing programs"],"limitations":"The article acknowledges that evidence for social prescribing effectiveness is still emerging, with limited robust evaluations across different contexts. Implementation approaches vary widely between countries, making standardized assessment challenging.
-
----
-
-### 7. Unknown file (Unknown)
-
-- ID: `199a8efb-5589-4170-a686-62f34315ed92`
-- MIME Type: Not specified
-- Source ID: `235fd3ac-2727-405d-96a4-809acb927374`
-
-**Raw Content Preview:**
-
-> Thank you. Take you to save my life.
-
-**Processed Content Preview:**
-
-> {"transcription":{"model":"base","audio_file":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/Kovacic.Porges.106.21.m4a","word_count":9730,"processing_time_seconds":102.661,"transcription_timestamp":"2025-04-06T22:00:51.698Z"},"audio_metadata":{"file_path":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/Kovacic.Porges.106.21.m4a","source_file":"Kovacic.Porges.106.21.m4a","file_size_bytes":57140343},"processing_stats":{"model_type":"base","processing_date":"2025-04-06T22:00:51.697Z","words_per_minute":5687,"audio_duration_seconds":0,"transcription_time_seconds":102.661},"summary_complete":false,"transcription_complete":true}.
-
----
-
-### 8. Lustig.Amygdala.1.8.25.mp4 (mp4 video)
-
-- ID: `846246b7-e992-41ba-80c8-50736bd30b9b`
+- ID: `03bfe6ef-3ecc-4e56-8c26-6e29430dd4c1`
 - MIME Type: video/mp4
-- Source ID: `f248b090-3e99-4eef-aa7c-62e7284bd88f`
+- Source ID: `c9c6af4e-163f-4057-a811-5a22be9f0e57`
 
 **Raw Content Preview:**
 
-> For as many zoom meetings as I do, people might, people I work with, make fun of me in my lack of technical skills here. I'm, I think it's a genetic defect.
+> All right, let's go. All right, anyway, David's a friend of mine.
+
+**Processed Content Preview:**
+
+> # Summary: Biomechanical Factors in Osteoarthritis Progression
+
+## Introduction
+The presentation provided a comprehensive analysis of how biomechanical factors contribute to the initiation and progression of osteoarthritis (OA), emphasizing the complex interplay between mechanical forces and biological responses in joint tissues. ## Key Biomechanical Factors Identified
+
+### Joint Loading Abnormalities
+- Excessive or abnormal loading patterns were identified as primary contributors to cartilage degradation
+- Data demonstrated that peak adduction moments during gait correlate with medial compartment OA progression
+- Studies showed 20-40% higher loading forces in patients with progressive OA compared to non-progressors
+
+### Muscle Weakness and Imbalance
+- Quadriceps weakness was highlighted as both a consequence and contributor to knee OA
+- Longitudinal data revealed that 15-20% reduction in muscle strength preceded radiographic OA changes
+- Proprioceptive deficits were linked to altered loading patterns and disease acceleration
+
+### Joint Instability
+- Ligamentous laxity was shown to increase shear forces on cartilage surfaces
+- Microscopy images demonstrated how unstable joints create irregular wear patterns on articular surfaces
+- Neuromuscular control deficits compound mechanical instability issues
+
+## Mechanobiological Pathways
+
+The presentation detailed cellular responses to mechanical stimuli:
+- Chondrocyte mechanoreceptors respond to physiological loading by maintaining tissue homeostasis
+- Abnormal loading triggers inflammatory cytokine release (particularly IL-1β and TNF-α)
+- Mechanical stress alters gene expression profiles for matrix metalloproteinases and aggrecanases
+
+## Therapeutic Implications
+
+Biomechanical interventions discussed included:
+- Targeted exercise therapies showing 30% reduction in pain and improved function
+- Bracing and orthotic interventions that redistribute joint forces
+- Weight management as a primary intervention, with data showing each pound lost reduces knee loading by 4 pounds
+
+## Future Research Directions
+
+The presentation concluded with emerging research areas:
+- Wearable sensor technology for real-time biomechanical monitoring
+- Personalized interventions based on individual biomechanical profiles
+- Integration of biomechanical data with biological markers for comprehensive OA progression models
+
+## Conclusion
+The evidence presented strongly supports a central role for biomechanical factors in OA pathogenesis, suggesting that interventions targeting these mechanical elements may modify disease progression beyond simply addressing symptoms..
+
+---
+
+### 4. Peper.11.21.24.mp4 (mp4 video)
+
+- ID: `44f6c0af-abcd-45e8-8099-7ec50e8c36ef`
+- MIME Type: video/mp4
+- Source ID: `14837a21-bc77-47fe-ae2c-bbe952a31bbc`
+
+**Raw Content Preview:**
+
+> afterwards. But anyway, well, look how you get started on people started joining on as we get going here and so I do start to air pepper.
+
+**Processed Content Preview:**
+
+> # Summary: Circadian Rhythm Disruption and Metabolic Health
+
+## Overview
+This presentation examined the intricate relationship between circadian rhythm disruption and metabolic health outcomes, highlighting recent research findings and potential clinical implications. ## Key Mechanisms Discussed
+- The central circadian clock in the suprachiasmatic nucleus (SCN) coordinates peripheral clocks throughout body tissues
+- Molecular clock components (CLOCK, BMAL1, PER, CRY) regulate transcription of metabolic genes
+- Tissue-specific clock functions in liver, pancreas, adipose tissue, and muscle impact glucose homeostasis
+
+## Evidence from Human Studies
+- Shift workers show 40% increased risk of metabolic syndrome
+- Artificial light exposure at night correlates with increased BMI
+- Social jetlag (weekend/weekday sleep timing discrepancy) associated with increased metabolic risk markers
+- Controlled laboratory studies demonstrate acute insulin resistance after circadian misalignment
+
+## Animal Model Findings
+- Clock gene knockout mice develop obesity, hyperglycemia, and hyperlipidemia
+- Time-restricted feeding in mice prevents metabolic dysfunction despite high-fat diet
+- Liver-specific clock disruption alters glucose production and lipid metabolism
+
+## Therapeutic Implications
+- Timed meal interventions show promise for improving glycemic control
+- Light therapy may help reset circadian rhythms in metabolic disorders
+- Chronopharmacology: medication timing affects efficacy of anti-diabetic drugs
+- Lifestyle modifications targeting sleep timing may complement traditional metabolic interventions
+
+## Research Gaps and Future Directions
+- Need for longer-term human intervention studies
+- Development of personalized chronotherapy approaches
+- Investigation of circadian clock modulating compounds
+- Integration of circadian considerations into metabolic disease management guidelines.
+
+---
+
+### 5. Robert Dantzer.mp4 (mp4 video)
+
+- ID: `f50be8c5-fea5-40de-a5c1-45bc8f4a84a7`
+- MIME Type: video/mp4
+- Source ID: `14b3d302-bad1-4a60-aeb2-0f8a15035689`
+
+**Raw Content Preview:**
+
+> trenches, what would you want me to come away from this with? Well, the main message on my side is when you get an information going on in your body, it doesn't stay there. It invades your brain and it has consequences.
 
 **Processed Content Preview:**
 
 > # Summary: New Approaches to Treating Chronic Lower Back Pain
 
 ## Introduction
-The presentation discussed the evolving understanding of chronic lower back pain (CLBP) as a complex, multifactorial condition requiring individualized, multimodal treatment approaches rather than a one-size-fits-all methodology. ## Epidemiology and Economic Impact
-- CLBP affects approximately 20% of adults globally
-- Leading cause of disability worldwide
-- Annual economic burden exceeds $100 billion in the US alone through direct medical costs and lost productivity
-- Disproportionately affects working-age adults (30-50 years)
-
-## Pathophysiology Updates
-The presentation highlighted recent research revealing:
-- Central sensitization mechanisms in chronic pain maintenance
-- Neuroplastic changes in pain processing pathways
-- Inflammatory mediators' role in perpetuating pain cycles
-- Genetic factors influencing pain perception and chronicity
-
-## Diagnostic Advancements
-- Enhanced MRI techniques including functional MRI to visualize neural pain pathways
-- Quantitative sensory testing to assess pain processing abnormalities
-- Biomarker identification for pain subtypes
-- Machine learning algorithms to predict treatment response
-
-## Multimodal Treatment Framework
-The presentation emphasized an integrated approach including:
-
-### Pharmacological Innovations
-- Targeted anti-cytokine therapies
-- Novel sodium channel blockers
-- Monoclonal antibodies for specific pain pathways
-- Personalized medication protocols based on genetic testing
-
-### Interventional Procedures
-- Ultrasound-guided precision injections
-- Minimally invasive endoscopic techniques
-- Pulsed radiofrequency neuromodulation
-- Advanced spinal cord stimulation with closed-loop systems
-
-### Physical Rehabilitation
-- Motor control retraining protocols
-- Graded exposure therapy for movement-related fear
-- Directional preference-based exercise programs
-- Virtual reality-assisted rehabilitation
-
-### Psychological Approaches
-- Acceptance and Commitment Therapy (ACT) adaptations for pain
-- Pain neuroscience education programs
-- Mindfulness-based stress reduction
-- Cognitive Behavioral Therapy with pain-specific modules
-
-## Emerging Technologies
-- Wearable devices for real-time movement analysis and feedback
-- Smartphone applications for pain self-management
-- Telemedicine platforms for remote monitoring and intervention
-- AI-driven decision support systems for treatment selection
-
-## Clinical Implementation
-The presentation concluded with practical recommendations for:
-- Risk stratification tools to match patients with appropriate treatments
-- Interdisciplinary team structures for comprehensive care
-- Outcome measurement frameworks to track progress
-- Cost-effectiveness considerations in treatment selection
-
-## Conclusion
-The presentation emphasized the shift toward precision medicine in CLBP management, with treatments tailored to specific pain mechanisms and patient characteristics rather than generic approaches based solely on symptom presentation..
+The presentation covered recent advances in the management of chronic lower back pain (CLBP), emphasizing a shift from purely medication-based approaches to multimodal treatment strategies. The speaker highlighted that CLBP affects approximately 20% of adults globally and is a leading cause of disability.
 
 ---
 
-### 9. NP.6.24.20.m4a (m4a audio)
+### 6. CV-Grinevich.pdf (markdown document)
 
-- ID: `83ca23a3-846b-4057-95ea-e0ce5ddada01`
-- MIME Type: audio/x-m4a
-- Source ID: `287e6dc6-aee0-4c37-af21-f9f1e9e2725e`
-
-**Raw Content Preview:**
-
-> Not available
-
-**Processed Content Preview:**
-
-> Not available
-
----
-
-### 10. Solosmon_The Worm at the Core.pdf (Unknown)
-
-- ID: `906166af-5ac2-4d3e-a51a-f8f42b3c8edf`
+- ID: `11c67ae7-5d61-4020-8d57-888c1680945d`
 - MIME Type: application/pdf
-- Source ID: `a3708433-9c4e-4784-b2a1-f32f5877b5e2`
+- Source ID: `e122ef36-d038-4b19-8500-e2b362eee4f1`
+
+**Raw Content Preview:**
+
+> # Professor Valery Grinevich - Academic CV Summary## Personal Information- Full Professor (W3) and Head of Department of Neuropeptide Research in Psychiatry at Central Institute of Mental Health, Medical Faculty Mannheim, University of Heidelberg- Born June 16, 1969- Contact: valery.grinevich@zi-mannheim.de## Education- MD from Kursk State Medical University, Russia (1986-1992)- PhD in Medical Sciences (1992-1996) on hypothalamic nuclei research- Habilitation in Histology and Cell Biology from Moscow State Medical University (1999-2003)- Habilitation in Neurobiology from University of Heidelberg (2015)## Professional Career- Current: Head of Department of Neuropeptide Research in Psychiatry (since 2019)- Previous positions include:  - Group Leader at German Cancer Research Center and University of Heidelberg (2012-2019)  - Group Leader at Max Planck Institute for Medical Research (2008-2012)  - Postdoctoral positions at Northwestern University, Max Planck Institute, NIH, and Laval University  - University Professor at Russian State Medical University (2002-2003)## Research FocusProfessor Grinevich's research primarily focuses on oxytocin systems and their role in:- Pain processing- Social behavior- Fear responses- Neuronal activity- Inflammatory processes## Awards and Funding- Synergy ERC Research Award (2023)- European College of Neuropsychopharmacology Research Award (2021)- Human Frontiers Research Award (2015)- Royal Society Award Edinburgh (2013)- Multiple research grants including ERC, DFG, and Human Frontier Science Program## Editorial Work- Co-editor of multiple books and special issues on neuroendocrinology and neuropeptides- Editorial board member for several journals including Frontiers in Behavioral Neuroscience and Peptides## Key PublicationsHis most important publications focus on:- Oxytocin neurons and their role in pain modulation- Effects of high-calorie diets on hypothalamic oxytocin neurons- Neural pathways for social grooming- Astrocyte-mediated effects of oxytocin on neuronal activity- Social touch and inter-female communication- Fear memory processing in the hypothalamic oxytocin systemProfessor Grinevich has made significant contributions to understanding the neurobiology of oxytocin systems and their role in social behavior, pain processing, and emotional responses..
+
+**Processed Content Preview:**
+
+> {"raw":"# Professor Valery Grinevich - Academic CV Summary## Personal Information- Full Professor (W3) and Head of Department of Neuropeptide Research in Psychiatry at Central Institute of Mental Health, Medical Faculty Mannheim, University of Heidelberg- Born June 16, 1969- Contact: valery.grinevich@zi-mannheim.de## Education- MD from Kursk State Medical University, Russia (1986-1992)- PhD in Medical Sciences (1992-1996) on hypothalamic nuclei research- Habilitation in Histology and Cell Biology from Moscow State Medical University (1999-2003)- Habilitation in Neurobiology from University of Heidelberg (2015)## Professional Career- Current: Head of Department of Neuropeptide Research in Psychiatry (since 2019)- Previous positions include:  - Group Leader at German Cancer Research Center and University of Heidelberg (2012-2019)  - Group Leader at Max Planck Institute for Medical Research (2008-2012)  - Postdoctoral positions at Northwestern University, Max Planck Institute, NIH, and Laval University  - University Professor at Russian State Medical University (2002-2003)## Research FocusProfessor Grinevich's research primarily focuses on oxytocin systems and their role in:- Pain processing- Social behavior- Fear responses- Neuronal activity- Inflammatory processes## Awards and Funding- Synergy ERC Research Award (2023)- European College of Neuropsychopharmacology Research Award (2021)- Human Frontiers Research Award (2015)- Royal Society Award Edinburgh (2013)- Multiple research grants including ERC, DFG, and Human Frontier Science Program## Editorial Work- Co-editor of multiple books and special issues on neuroendocrinology and neuropeptides- Editorial board member for several journals including Frontiers in Behavioral Neuroscience and Peptides## Key PublicationsHis most important publications focus on:- Oxytocin neurons and their role in pain modulation- Effects of high-calorie diets on hypothalamic oxytocin neurons- Neural pathways for social grooming- Astrocyte-mediated effects of oxytocin on neuronal activity- Social touch and inter-female communication- Fear memory processing in the hypothalamic oxytocin systemProfessor Grinevich has made significant contributions to understanding the neurobiology of oxytocin systems and their role in social behavior, pain processing, and emotional responses.","ai_analysis":{"key_topics":["Oxytocin systems neurobiology","Neuropeptide research in psychiatry","Pain processing mechanisms","Social behavior neural pathways","Academic career progression in neuroscience","Neuroendocrinology research achievements"],"document_type":"markdown document","target_audience":"Academic institutions, research collaborators, grant committees, and students in neuroscience and psychiatry","unique_insights":["Professor Grinevich has uniquely bridged research between oxytocin systems and multiple domains including pain, social behavior, and fear responses","His career demonstrates successful scientific mobility across international institutions while maintaining a focused research trajectory","The combination of clinical medical training and basic neuroscience research has enabled distinctive contributions to translational neuroscience"],"document_summary":"This document presents the academic curriculum vitae of Professor Valery Grinevich, a distinguished neuroscientist who currently serves as Full Professor and Head of Department of Neuropeptide Research in Psychiatry at the Central Institute of Mental Health, University of Heidelberg. With extensive education credentials including an MD, PhD, and dual Habilitations, Professor Grinevich has built a remarkable career spanning multiple prestigious institutions including the Max Planck Institute, German Cancer Research Center, and various international research positions.\n\nProfessor Grinevich's research primarily focuses on oxytocin systems and their neurobiological functions, particularly examining how these systems influence pain processing, social behavior, fear responses, and inflammatory processes.
+
+---
+
+### 7. GigiConstable.1.6.21.m4a (m4a audio)
+
+- ID: `e1864a6b-1fa7-4933-b6e2-6233e0b8cc19`
+- MIME Type: audio/x-m4a
+- Source ID: `5aecb147-197a-487f-9a78-aa520c001ce0`
 
 **Raw Content Preview:**
 
@@ -488,6 +401,57 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 **Processed Content Preview:**
 
 > Not available
+
+---
+
+### 8. Oxytocin.8.26.20.m4a (m4a audio)
+
+- ID: `d4cf7273-015b-47dc-8dcd-f26d6f3854f4`
+- MIME Type: audio/x-m4a
+- Source ID: `7ffdeb60-0765-4a5e-b541-f97bbe42764a`
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 9. Porges.PVT.8.19.20.m4a (m4a audio)
+
+- ID: `fae47f5d-a6a9-460e-9272-1334de5d347b`
+- MIME Type: audio/x-m4a
+- Source ID: `acc6dff8-99cc-4707-b0ff-8bfe64c59372`
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 10. Kate Wolovsky.2.3.21.mp4 (Unknown)
+
+- ID: `ee2ba5b5-9658-4aa3-b6fc-3eaf5f62a497`
+- MIME Type: video/mp4
+- Source ID: `1dfeb46b-e759-4ecb-b53d-f576d7e2732c`
+
+**Raw Content Preview:**
+
+> But she's quite an interesting person and I think we're in for a treat. So I think we should turn it over to Kate.
+
+**Processed Content Preview:**
+
+> # Summary: Medical Presentation on Cardiac Regeneration via Stem Cell Therapy
+
+## Introduction
+The presentation opened with an overview of the significant clinical challenge posed by myocardial infarction and heart failure, highlighting that cardiovascular diseases remain the leading cause of mortality worldwide. The speaker emphasized that unlike some organisms such as zebrafish, the human heart has limited regenerative capacity, with cardiomyocyte renewal rates of only 0.5-1% annually.
 
 ---
 
@@ -495,22 +459,6 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 ## Orphaned Expert Documents (without sources_google records)
 
 ### 1. Document Type: Video Summary Transcript
-
-- ID: `199a8efb-5589-4170-a686-62f34315ed92`
-- Source ID (invalid/deleted): `235fd3ac-2727-405d-96a4-809acb927374`
-- MIME Type: Not specified
-
-**Raw Content Preview:**
-
-> Thank you. Take you to save my life.
-
-**Processed Content Preview:**
-
-> {"transcription":{"model":"base","audio_file":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/Kovacic.Porges.106.21.m4a","word_count":9730,"processing_time_seconds":102.661,"transcription_timestamp":"2025-04-06T22:00:51.698Z"},"audio_metadata":{"file_path":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/Kovacic.Porges.106.21.m4a","source_file":"Kovacic.Porges.106.21.m4a","file_size_bytes":57140343},"processing_stats":{"model_type":"base","processing_date":"2025-04-06T22:00:51.697Z","words_per_minute":5687,"audio_duration_seconds":0,"transcription_time_seconds":102.661},"summary_complete":false,"transcription_complete":true}.
-
----
-
-### 2. Document Type: Video Summary Transcript
 
 - ID: `2b442035-e56d-4337-be86-91eb30a79da3`
 - Source ID (invalid/deleted): `d302049c-ddd8-4756-a9f6-45cb02ddb4c9`
@@ -526,7 +474,7 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 
 ---
 
-### 3. Document Type: Video Summary Transcript
+### 2. Document Type: Video Summary Transcript
 
 - ID: `a6c52280-259f-4f97-885c-96d86f33e229`
 - Source ID (invalid/deleted): `8b4bc63e-61f4-47fc-a990-dbe0c2c57673`
@@ -542,71 +490,7 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 
 ---
 
-### 4. Document Type: Video Summary Transcript
-
-- ID: `57bc45a1-cd1f-4a35-a2b0-1d3342ee00f3`
-- Source ID (invalid/deleted): `59b56e70-366d-428c-9fc7-ec1dc646418a`
-- MIME Type: Not specified
-
-**Raw Content Preview:**
-
-> Okay. Who has started? I like to use Dr.
-
-**Processed Content Preview:**
-
-> {"transcription":{"model":"base","audio_file":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/Sutphin_2024_10_06.m4a","word_count":10816,"processing_time_seconds":105.826,"transcription_timestamp":"2025-04-06T06:16:33.653Z"},"audio_metadata":{"file_path":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/Sutphin_2024_10_06.m4a","source_file":"Sutphin_2024_10_06.m4a","file_size_bytes":37044386},"processing_stats":{"model_type":"base","processing_date":"2025-04-06T06:16:33.653Z","words_per_minute":6132,"audio_duration_seconds":0,"transcription_time_seconds":105.826},"summary_complete":false,"transcription_complete":true}.
-
----
-
-### 5. Document Type: Video Summary Transcript
-
-- ID: `09cbe55b-35b5-4856-bb84-d0b145e3d42a`
-- Source ID (invalid/deleted): `36372e68-37d0-4786-8648-adb6fd3b0b6c`
-- MIME Type: Not specified
-
-**Raw Content Preview:**
-
-> Not available
-
-**Processed Content Preview:**
-
-> Not available
-
----
-
-### 6. Document Type: Video Summary Transcript
-
-- ID: `38c61385-df07-4bb7-a6bc-842ee3291544`
-- Source ID (invalid/deleted): `1c4fe404-7095-41a5-9a03-811f98e422d0`
-- MIME Type: Not specified
-
-**Raw Content Preview:**
-
-> accepted a hierarchy within the nervous system. And in fact, so in the sense that we tend within the world we live in, think that it's cortical centric.
-
-**Processed Content Preview:**
-
-> {"transcription":{"model":"base","audio_file":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/9.15.23 (1).m4a","word_count":9141,"processing_time_seconds":118.872,"transcription_timestamp":"2025-04-05T17:13:50.722Z"},"audio_metadata":{"file_path":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/9.15.23 (1).m4a","source_file":"9.15.23 (1).m4a","file_size_bytes":56949464},"processing_stats":{"model_type":"base","processing_date":"2025-04-05T17:13:50.722Z","words_per_minute":4614,"audio_duration_seconds":0,"transcription_time_seconds":118.872},"summary_complete":false,"transcription_complete":true}.
-
----
-
-### 7. Document Type: Video Summary Transcript
-
-- ID: `d3f14aba-4fb1-431a-957f-790aa7184e1f`
-- Source ID (invalid/deleted): `6f209bb6-1e4c-4ff7-915e-abecc0fe6b22`
-- MIME Type: Not specified
-
-**Raw Content Preview:**
-
-> Not available
-
-**Processed Content Preview:**
-
-> Not available
-
----
-
-### 8. Document Type: Video Summary Transcript
+### 3. Document Type: Video Summary Transcript
 
 - ID: `a7bb5445-604b-4120-b5a8-3722c1d4562f`
 - Source ID (invalid/deleted): `e716dccd-0ffc-4592-9627-22f2a5ef27ad`
@@ -622,7 +506,39 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 
 ---
 
-### 9. Document Type: Video Summary Transcript
+### 4. Document Type: Video Summary Transcript
+
+- ID: `09cbe55b-35b5-4856-bb84-d0b145e3d42a`
+- Source ID (invalid/deleted): `36372e68-37d0-4786-8648-adb6fd3b0b6c`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 5. Document Type: Video Summary Transcript
+
+- ID: `d3f14aba-4fb1-431a-957f-790aa7184e1f`
+- Source ID (invalid/deleted): `6f209bb6-1e4c-4ff7-915e-abecc0fe6b22`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 6. Document Type: Video Summary Transcript
 
 - ID: `7de323a1-9a65-47a6-a551-67a988717bb4`
 - Source ID (invalid/deleted): `9db8c572-ae95-49c0-81f8-775c23be0476`
@@ -638,7 +554,7 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 
 ---
 
-### 10. Document Type: Video Summary Transcript
+### 7. Document Type: Video Summary Transcript
 
 - ID: `676f3cbe-9e2c-4627-894a-ba768c295173`
 - Source ID (invalid/deleted): `e4821a30-b9ee-480a-9099-d5c89d660892`
@@ -651,6 +567,54 @@ The presentation emphasized the shift toward precision medicine in CLBP manageme
 **Processed Content Preview:**
 
 > Not available
+
+---
+
+### 8. Document Type: Video Summary Transcript
+
+- ID: `dc7a00bf-3df9-4d02-8188-7704b8705c61`
+- Source ID (invalid/deleted): `00d9ab49-54a4-4ebf-869d-d711668070be`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 9. Document Type: Video Summary Transcript
+
+- ID: `ca4f4e3e-3560-4e33-98cc-cc3fa3013e4a`
+- Source ID (invalid/deleted): `6650b100-56df-469d-881b-2d9643825113`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Not available
+
+**Processed Content Preview:**
+
+> Not available
+
+---
+
+### 10. Document Type: Video Summary Transcript
+
+- ID: `8a1f1ccb-dabe-435a-a56d-3fd701dfaa05`
+- Source ID (invalid/deleted): `833ec518-120b-423e-b868-4fd7299194f8`
+- MIME Type: Not specified
+
+**Raw Content Preview:**
+
+> Good. Okay, well, I like to get that we're gonna get the meeting started.
+
+**Processed Content Preview:**
+
+> {"transcription":{"model":"base","audio_file":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/2024_04_04_Lederman.m4a","word_count":10591,"processing_time_seconds":119.707,"transcription_timestamp":"2025-04-02T10:54:02.931Z"},"audio_metadata":{"file_path":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/2024_04_04_Lederman.m4a","source_file":"2024_04_04_Lederman.m4a","file_size_bytes":62055772},"processing_stats":{"model_type":"base","processing_date":"2025-04-02T10:54:02.931Z","words_per_minute":5308,"audio_duration_seconds":0,"transcription_time_seconds":119.707},"summary_complete":false,"transcription_complete":true}.
 
 ---
 
