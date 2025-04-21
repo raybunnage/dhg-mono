@@ -1,0 +1,29 @@
+[
+  {
+    "sourceId": "7a987849-a9fb-444c-ac75-0dbba60d9901",
+    "sourceName": "Poly..Cytokies.oxytocin.5.13.20.docx",
+    "expertDocId": "1f6af49b-41f1-416e-9518-78093155ffa8",
+    "processingStatus": "pending",
+    "processingReason": "No valid JSON content found",
+    "expertDocumentType": "Json document summary",
+    "sourcesGoogleDocumentType": "dicussion transcript"
+  },
+  {
+    "sourceId": "5716d20f-f624-442e-ad47-45cc858e867d",
+    "sourceName": "2020-08-19-Porges-Polyvagal overview",
+    "expertDocId": null,
+    "processingStatus": null,
+    "processingReason": null,
+    "expertDocumentType": null,
+    "sourcesGoogleDocumentType": "high level folder"
+  },
+  {
+    "sourceId": "17fcd345-3907-4fd5-b1f5-ad1219316824",
+    "sourceName": "Temoshok 2008 Brain Behavior & Immunity (1).pdf",
+    "expertDocId": "1fa3a345-32c4-4432-8e2a-f6b4813270b4",
+    "processingStatus": "pending",
+    "processingReason": "No valid JSON content found",
+    "expertDocumentType": "Json pdf summary",
+    "sourcesGoogleDocumentType": "research article"
+  }
+]

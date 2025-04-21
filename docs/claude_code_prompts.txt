@@ -1,3 +1,20 @@
+i want to get rid of these fields in expert_documents 
+ai_analysis
+ai_processing_details
+error_message
+expert_id
+last_error_at
+last_viewed_at
+model_used
+previous_version_id
+prompt_used
+queued_at
+structure
+token_count
+
+pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+
+
 add these modifications to the update_media_document_types command in google sync cli pipeline
 1) if there is json in the related processed_content field in expert_document and the document_type_id in sources_google is 46dac359-01e9-4e36-bfb2-531da9c25e3f make the document_type_id in expert_documents = 1f71f894-d2f8-415e-80c1-a4d6db4d8b18 
 2) if there is json in the related processed_content field in expert_document and the document_type_id in sources_google is 03743a23-d2f3-4c73-a282-85afc138fdfd make the document_type_id in expert_documents = 5b1f8963-0946-4e89-884d-30517eebb8a5
@@ -3225,7 +3242,6 @@ Identify how this service integrates with the broader CLI pipeline architecture.
 
  on the "AI" page when under the "Database" tab when you click "Set Relatinonships" and a dialog pops up called "Manage Prompt Relationships" down at the bottom where a text window appears under "Database Query" add a second database query text field and a second databasequery2 to the prompts metadata field table.  It turns out I need 2 queries per prompt. And of course save this second query when you save the prompt.
 
-pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
 
 
 {"key_topics":["Unreadable content","Binary format","Non-extractable text"],"document_type":"unknown document type","target_audience":"Unknown due to inability to access document content","unique_insights":["Document requires specialized processing or conversion before content can be analyzed"],"document_summary":"This document appears to be in a binary format or contains no extractable text content. Without readable content, it's not possible to provide a meaningful summary of the document's information, topics, or purpose. The document may be corrupted, password-protected, or in a specialized format that requires specific software to interpret. To properly classify and summarize this document, it would need to be provided in a readable format or converted to a text-extractable format.","document_type_id":"9dbe32ff-5e82-4586-be63-1445e5bcc548","classification_reasoning":"The document contains no extractable text or is in binary format, making it impossible to determine its specific type. The 'unknown document type' classification is specifically designed for cases where content cannot be analyzed or classified into other categories.","classification_confidence":0.95}

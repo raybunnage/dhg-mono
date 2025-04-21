@@ -23,7 +23,8 @@ for (const file of envFiles) {
 }
 
 // Initialize Supabase client
-const supabaseClient = SupabaseClientService.getInstance().getClient();
+const supabaseService = SupabaseClientService.getInstance();
+const supabaseClient = supabaseService.getClient();
 
 /**
  * Checks the reprocessing status of expert documents based on their metadata field
@@ -62,6 +63,15 @@ export async function checkReprocessingStatus(options: {
   }
 
   try {
+    // Test Supabase connection first
+    console.log('Testing Supabase connection...');
+    const connectionTest = await supabaseService.testConnection();
+    
+    if (!connectionTest.success) {
+      throw new Error(`Supabase connection test failed: ${connectionTest.error}`);
+    }
+    
+    console.log('✅ Supabase connection test successful');
     // Initialize summary stats
     const stats = {
       totalSources: 0,
@@ -149,7 +159,7 @@ export async function checkReprocessingStatus(options: {
       
       const { data: expertDocs, error: expertDocsError } = await supabaseClient
         .from('expert_documents')
-        .select('id, source_id, document_type_id, processing_status, processing_skip_reason')
+        .select('id, source_id, document_type_id, document_processing_status, processing_skip_reason')
         .in('source_id', sourceIds);
       
       if (expertDocsError) {
@@ -200,11 +210,11 @@ export async function checkReprocessingStatus(options: {
         if (expertDoc) {
           stats.sourcesWithExpertDocs++;
           
-          // Check processing status
-          const processingStatus = expertDoc.processing_status || 'not_set';
+          // Check document processing status
+          const processingStatus = expertDoc.document_processing_status || 'not_set';
           const processingReason = expertDoc.processing_skip_reason;
           
-          // Update stats based on processing status and reason
+          // Update stats based on document processing status and reason
           if (processingStatus === 'needs_reprocessing') {
             stats.needsReprocessing++;
           } else if (processingStatus === 'reprocessing_done') {
@@ -330,7 +340,9 @@ export async function checkReprocessingStatus(options: {
           'Sources Google Doc Type': r.sourcesGoogleDocumentType || 'None',
           'Expert Doc Type': r.expertDocumentType || 'None',
           'Processing Status': r.processingStatus,
-          'Processing Reason': r.processingReason
+          'Processing Reason': r.processingReason,
+          'Source ID': r.sourceId,
+          'Expert Doc ID': r.expertDocId
         }))
       );
     }

@@ -385,11 +385,11 @@ async function classifyMissingDocuments(
     // 1. Get the Supabase client
     const supabase = SupabaseClientService.getInstance().getClient();
     
-    // 2. Build query for unclassified files
+    // 2. Build query for unclassified files or files that need reprocessing
     let query = supabase
       .from('sources_google')
-      .select('*')
-      .is('document_type_id', null)
+      .select('*, expert_documents!inner(processing_status, document_processing_status)')
+      .or('document_type_id.is.null,expert_documents.document_processing_status.eq.needs_reprocessing')
       .is('is_deleted', false);
     
     // Filter by folder if provided
@@ -505,6 +505,16 @@ async function classifyMissingDocuments(
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             };
+            
+            // If this file needed reprocessing, mark it as "reprocessing_done"
+            if (file.expert_documents && file.expert_documents[0] && 
+                file.expert_documents[0].document_processing_status === 'needs_reprocessing') {
+              minimalDoc['document_processing_status'] = 'reprocessing_done';
+              minimalDoc['document_processing_status_updated_at'] = new Date().toISOString();
+              if (debug) {
+                console.log(`Marking file ${file.name} as "reprocessing_done"`);
+              }
+            }
             
             // Insert the minimal document first (always works)
             const { error: minimalError, data: minimalData } = await supabase

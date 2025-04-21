@@ -25,6 +25,14 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
+# Load environment variables from project root .env.development file if it exists
+ENV_DEV_FILE="${ROOT_DIR}/.env.development"
+if [ -f "$ENV_DEV_FILE" ]; then
+  echo "Loading environment variables from $ENV_DEV_FILE"
+  # Export environment variables for Supabase
+  export $(grep -E "SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY" "$ENV_DEV_FILE" | xargs)
+fi
+
 # Function to execute a command with tracking
 track_command() {
   local pipeline_name="google_sync"
@@ -143,9 +151,9 @@ if [ "$1" = "classify-powerpoints" ]; then
   exit $?
 fi
 
-if [ "$1" = "reclassify_docs" ]; then
+if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
   shift
-  # This is a new command to reclassify documents that need reprocessing
+  # This is the command to reclassify documents that need reprocessing
   # based on their file extension
   
   echo "Reclassifying documents that need reprocessing..."
@@ -170,7 +178,7 @@ if [ "$1" = "reclassify_docs" ]; then
     fi
   done
   
-  track_command "check-reprocessing-status" "ts-node $SCRIPT_DIR/check-reprocessing-status.ts --limit $LIMIT_ARG --output $REPROCESSING_OUTPUT_PATH --format json"
+  track_command "reclassify-docs" "ts-node $SCRIPT_DIR/check-reprocessing-status.ts --limit $LIMIT_ARG --output $REPROCESSING_OUTPUT_PATH --format json"
   
   # Check if we got the data
   if [ ! -f "$REPROCESSING_OUTPUT_PATH" ]; then
@@ -205,8 +213,8 @@ if [ "$1" = "reclassify_docs" ]; then
       continue
     fi
     
-    # Only process documents that need reprocessing (pending status)
-    if [ "$PROCESSING_STATUS" != "pending" ]; then
+    # Only process documents that need reprocessing (needs_reprocessing status)
+    if [ "$PROCESSING_STATUS" != "needs_reprocessing" ]; then
       continue
     fi
     
@@ -218,14 +226,14 @@ if [ "$1" = "reclassify_docs" ]; then
       echo "Processing DOCX file: $FILENAME (ID: $SOURCE_ID)"
       if [ "$DRY_RUN" = false ]; then
         # Run the classification command
-        track_command "classify-docs-service" "ts-node $SCRIPT_DIR/classify-missing-docs-with-service.ts --source-id $SOURCE_ID --force --verbose"
+        track_command "classify-docs-service" "ts-node $SCRIPT_DIR/classify-missing-docs-with-service.ts --limit 1 --verbose"
         
         # If successful, mark as reprocessing_done
         if [ $? -eq 0 ]; then
           EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
           if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
             # Run the helper to update processing_status
-            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify_docs_helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
+            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
           else
             echo "⚠️ No expert document ID found for ${FILENAME}, skipping status update"
           fi
@@ -238,14 +246,14 @@ if [ "$1" = "reclassify_docs" ]; then
       echo "Processing PDF file: $FILENAME (ID: $SOURCE_ID)"
       if [ "$DRY_RUN" = false ]; then
         # Run the classification command
-        track_command "classify-pdfs" "ts-node $SCRIPT_DIR/classify-pdfs-with-service.ts --source-id $SOURCE_ID --force --verbose"
+        track_command "classify-pdfs" "ts-node $SCRIPT_DIR/classify-pdfs-with-service.ts --limit 1 --verbose"
         
         # If successful, mark as reprocessing_done
         if [ $? -eq 0 ]; then
           EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
           if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
             # Run the helper to update processing_status
-            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify_docs_helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
+            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
           else
             echo "⚠️ No expert document ID found for ${FILENAME}, skipping status update"
           fi
@@ -258,14 +266,14 @@ if [ "$1" = "reclassify_docs" ]; then
       echo "Processing PowerPoint file: $FILENAME (ID: $SOURCE_ID)"
       if [ "$DRY_RUN" = false ]; then
         # Run the classification command
-        track_command "classify-powerpoints" "ts-node $SCRIPT_DIR/classify-powerpoints.ts --source-id $SOURCE_ID --force --verbose"
+        track_command "classify-powerpoints" "ts-node $SCRIPT_DIR/classify-powerpoints.ts --limit 1 --verbose"
         
         # If successful, mark as reprocessing_done
         if [ $? -eq 0 ]; then
           EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
           if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
             # Run the helper to update processing_status
-            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify_docs_helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
+            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
           else
             echo "⚠️ No expert document ID found for ${FILENAME}, skipping status update"
           fi
@@ -314,12 +322,6 @@ if [ "$1" = "reclassify_docs" ]; then
   exit $?
 fi
 
-if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify-docs-with-service" ]; then
-  shift
-  track_command "reclassify-docs-with-service" "ts-node $SCRIPT_DIR/reclassify-docs-with-service.ts $*"
-  exit $?
-fi
-
 if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   # Show the help message
   echo "Google Sync CLI - Manage Google Drive synchronization and document classification"
@@ -332,8 +334,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  health-check                 Check the health of Google Drive API connection"
   echo "  classify-pdfs                Classify PDF files missing document types using Claude AI"
   echo "  classify-powerpoints         Classify PowerPoint files missing document types using local extraction and Claude AI"
-  echo "  reclassify-docs              Re-classify documents with temperature=0 for deterministic results"
-  echo "  reclassify_docs              Re-classify documents that need reprocessing based on file type"
+  echo "  reclassify-docs              Re-classify documents that need reprocessing based on file type"
   echo "  classify-docs-service        Classify .docx and .txt files missing document types"
   echo "  validate-pdf-classification  Validate PDF classification results and generate a report"
   echo "  check-duplicates             Check for duplicate files in sources_google"
@@ -363,14 +364,14 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Classify PDFs with verbose output"
   echo "  ./google-sync-cli.sh classify-pdfs --verbose"
   echo ""
-  echo "  # Re-classify documents created after a specific date"
-  echo "  ./google-sync-cli.sh reclassify-docs --start-date \"2025-04-01\" --limit 20"
-  echo ""
   echo "  # Re-classify documents that need reprocessing based on file extension"
-  echo "  ./google-sync-cli.sh reclassify_docs"
+  echo "  ./google-sync-cli.sh reclassify-docs"
   echo ""
   echo "  # Re-classify a specific number of documents that need reprocessing"
-  echo "  ./google-sync-cli.sh reclassify_docs 10"
+  echo "  ./google-sync-cli.sh reclassify-docs 10"
+  echo ""
+  echo "  # Re-classify documents with dry-run mode"
+  echo "  ./google-sync-cli.sh reclassify-docs --dry-run"
   echo ""
   echo "  # Run PDF classification in dry-run mode to see what would be updated"
   echo "  ./google-sync-cli.sh classify-pdfs --dry-run"

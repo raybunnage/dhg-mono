@@ -771,12 +771,12 @@ async function classifyPowerPointDocuments(
     // 1. Get the Supabase client
     const supabase = SupabaseClientService.getInstance().getClient();
     
-    // 2. Build query for PowerPoint files that need processing
+    // 2. Build query for PowerPoint files that need processing or reprocessing
     // Find all PowerPoint files in the database
     // We're selecting all fields explicitly to avoid TypeScript issues
     let query = supabase
       .from('sources_google')
-      .select('id, name, drive_id, document_type_id, created_at, modified_at, size, is_deleted, mime_type')
+      .select('id, name, drive_id, document_type_id, created_at, modified_at, size, is_deleted, mime_type, expert_documents!left(processing_status, document_processing_status)')
       .is('is_deleted', false)
       .eq('mime_type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
       .order('modified_at', { ascending: false });
@@ -859,6 +859,17 @@ async function classifyPowerPointDocuments(
       
     // Get PowerPoint files that need processing
     for (const file of files) {
+      // Check if file has needs_reprocessing status
+      if (file.expert_documents && file.expert_documents.length > 0 && 
+          file.expert_documents[0].document_processing_status === 'needs_reprocessing') {
+        if (debug) {
+          console.log(`File ${file.name} (${file.id}) has needs_reprocessing status, will reprocess`);
+        }
+        filesToProcess.push(file);
+        if (filesToProcess.length >= limit) break; // Stop once we have enough files
+        continue;
+      }
+      
       // Check if file has document_type_id first
       if (!file.document_type_id) {
         if (debug) {
@@ -1043,6 +1054,14 @@ async function classifyPowerPointDocuments(
             processed_content: classificationResult, // Store the full classification result
             classification_metadata: classificationResult // Also store in classification_metadata
           };
+          
+          // If this file needed reprocessing, mark it as "reprocessing_done"
+          if (file.expert_documents && file.expert_documents.length > 0 && 
+              file.expert_documents[0].document_processing_status === 'needs_reprocessing') {
+            expertDoc['document_processing_status'] = 'reprocessing_done';
+            expertDoc['document_processing_status_updated_at'] = new Date().toISOString();
+            console.log(`Marking file ${file.name} as "reprocessing_done"`);
+          }
           
           if (debug) {
             console.log(`Raw content length: ${(expertDoc.raw_content as string).length} characters`);

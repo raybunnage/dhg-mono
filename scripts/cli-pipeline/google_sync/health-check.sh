@@ -43,7 +43,7 @@ COMMANDS=(
   "classify-docs-with-service"
   "classify-pdfs-with-service"
   "classify-powerpoints"
-  "reclassify-docs-with-service"
+  "reclassify-docs"
   "report-main-video-ids"
   "update-main-video-ids"
   "browser-recursive-search"

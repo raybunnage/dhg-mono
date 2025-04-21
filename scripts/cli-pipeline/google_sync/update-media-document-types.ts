@@ -3,7 +3,17 @@ import { Command } from 'commander';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { commandTrackingService } from '../../../packages/shared/services/tracking-service/command-tracking-service';
 
-const supabaseClient = SupabaseClientService.getInstance().getClient();
+// Initialize Supabase client - but we'll test the connection before using it
+const supabaseService = SupabaseClientService.getInstance();
+const supabaseClient = supabaseService.getClient();
+
+// Using the document_processing_status enum for expert_documents:
+//   'needs_reprocessing',    -- Document needs to be reprocessed
+//   'reprocessing_done',     -- Reprocessing has been completed
+//   'skip_processing',       -- Document should be skipped (unsupported type, password protected, etc)
+//   'not_set'                -- Initial state
+//
+// This is a dedicated field separate from the processing_status field
 
 /**
  * Updates document_type_id for sources_google and expert_documents records based on file characteristics
@@ -51,6 +61,15 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
   }
 
   try {
+    // Test Supabase connection first
+    console.log('Testing Supabase connection...');
+    const connectionTest = await supabaseService.testConnection();
+    
+    if (!connectionTest.success) {
+      throw new Error(`Supabase connection test failed: ${connectionTest.error}`);
+    }
+    
+    console.log('✅ Supabase connection test successful');
     // Fetch all expert documents with non-null processed_content
     console.log('\nFetching expert documents with processed content...');
     const { data: expertDocs, error: expertDocsError } = await supabaseClient
@@ -70,8 +89,8 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
     console.log(`Found ${expertDocs.length} expert documents with processed content.`);
     
-    // Set processing_status to skip_reprocessing if processing_skip_reason is not null
-    console.log('\nUpdating processing_status for documents with processing_skip_reason...');
+    // Set document_processing_status to skip_processing if processing_skip_reason is not null
+    console.log('\nUpdating document_processing_status for documents with processing_skip_reason...');
     const docsWithSkipReason = expertDocs.filter(doc => doc.processing_skip_reason !== null);
     
     if (docsWithSkipReason.length > 0) {
@@ -87,8 +106,10 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             updates.push({
               id: doc.id,
               source_id: doc.source_id,  // Include source_id to satisfy not-null constraint 
-              processing_status: 'skip_processing',
-              processing_skip_reason: doc.processing_skip_reason
+              document_processing_status: 'skip_processing',  // Using new dedicated field
+              document_processing_status_updated_at: new Date().toISOString(),
+              processing_status: 'completed',  // Keep the original processing_status field as is
+              processing_skip_reason: doc.processing_skip_reason ? doc.processing_skip_reason + ' - skip processing' : 'Skip processing'
             });
           }
 
@@ -99,11 +120,11 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           if (updateError) {
             console.error(`Error updating batch ${i}-${i+batchSize} for documents with skip reason:`, updateError.message);
           } else {
-            console.log(`✓ Updated batch ${i}-${i+batchSize} of ${docsWithSkipReason.length} documents with processing_status=skip_processing`);
+            console.log(`✓ Updated batch ${i}-${i+batchSize} of ${docsWithSkipReason.length} documents with document_processing_status=skip_processing`);
           }
         }
       } else {
-        console.log(`[DRY RUN] Would update ${docsWithSkipReason.length} documents with processing_status=skip_processing`);
+        console.log(`[DRY RUN] Would update ${docsWithSkipReason.length} documents with document_processing_status=skip_processing`);
       }
     }
 
@@ -383,8 +404,10 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           updates.push({
             id: doc.id,
             source_id: doc.source_id,  // Include source_id to satisfy not-null constraint 
-            processing_status: 'needs_reprocessing',  // Using valid enum value from schema
-            processing_skip_reason: 'No valid JSON content found'
+            document_processing_status: 'needs_reprocessing',  // Using new dedicated field
+            document_processing_status_updated_at: new Date().toISOString(),
+            processing_status: 'pending',  // Keep the original processing_status field as is
+            processing_skip_reason: 'No valid JSON content found - needs reprocessing'
           });
         }
 
@@ -397,10 +420,10 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           if (updateError) {
             console.error(`Error updating batch ${i}-${i+batchSize} for non-JSON documents:`, updateError.message);
           } else {
-            console.log(`✓ Updated batch ${i}-${i+batchSize} of ${nonJsonDocs.length} non-JSON documents with processing_status=needs_reprocessing`);
+            console.log(`✓ Updated batch ${i}-${i+batchSize} of ${nonJsonDocs.length} non-JSON documents with document_processing_status=needs_reprocessing`);
           }
         } else {
-          console.log(`[DRY RUN] Would update batch ${i}-${i+batchSize} of ${nonJsonDocs.length} non-JSON documents with processing_status=needs_reprocessing`);
+          console.log(`[DRY RUN] Would update batch ${i}-${i+batchSize} of ${nonJsonDocs.length} non-JSON documents with document_processing_status=needs_reprocessing`);
         }
       }
     }
@@ -434,8 +457,10 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             updates.push({
               id: doc.id,
               source_id: doc.source_id,  // Include source_id to satisfy not-null constraint
-              processing_status: 'needs_reprocessing',  // Using valid enum value from schema
-              processing_skip_reason: 'Contains "File analysis unavailable" message'
+              document_processing_status: 'needs_reprocessing',  // Using new dedicated field
+              document_processing_status_updated_at: new Date().toISOString(),
+              processing_status: 'pending',  // Keep the original processing_status field as is
+              processing_skip_reason: 'Contains "File analysis unavailable" message - needs reprocessing'
             });
           }
 
@@ -448,10 +473,10 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             if (updateError) {
               console.error(`Error updating batch ${i}-${i+batchSize} for "File analysis unavailable" documents:`, updateError.message);
             } else {
-              console.log(`✓ Updated batch ${i}-${i+batchSize} of ${unavailableDocs.length} "File analysis unavailable" documents with processing_status=needs_reprocessing`);
+              console.log(`✓ Updated batch ${i}-${i+batchSize} of ${unavailableDocs.length} "File analysis unavailable" documents with document_processing_status=needs_reprocessing`);
             }
           } else {
-            console.log(`[DRY RUN] Would update batch ${i}-${i+batchSize} of ${unavailableDocs.length} "File analysis unavailable" documents with processing_status=needs_reprocessing`);
+            console.log(`[DRY RUN] Would update batch ${i}-${i+batchSize} of ${unavailableDocs.length} "File analysis unavailable" documents with document_processing_status=needs_reprocessing`);
           }
         }
       }
@@ -487,8 +512,10 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             updates.push({
               id: doc.id,
               source_id: doc.source_id,  // Include source_id to satisfy not-null constraint
-              processing_status: 'skip_processing',  // Using valid enum value from schema
-              processing_skip_reason: 'Google Drive folder, not a document'
+              document_processing_status: 'skip_processing',  // Using new dedicated field
+              document_processing_status_updated_at: new Date().toISOString(),
+              processing_status: 'completed',  // Keep the original processing_status field as is
+              processing_skip_reason: 'Google Drive folder, not a document - skip processing'
             });
           }
 
@@ -501,10 +528,10 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             if (updateError) {
               console.error(`Error updating batch ${i}-${i+batchSize} for folder documents:`, updateError.message);
             } else {
-              console.log(`✓ Updated batch ${i}-${i+batchSize} of ${folderDocs.length} folder documents with processing_status=skip_processing`);
+              console.log(`✓ Updated batch ${i}-${i+batchSize} of ${folderDocs.length} folder documents with document_processing_status=skip_processing`);
             }
           } else {
-            console.log(`[DRY RUN] Would update batch ${i}-${i+batchSize} of ${folderDocs.length} folder documents with processing_status=skip_processing`);
+            console.log(`[DRY RUN] Would update batch ${i}-${i+batchSize} of ${folderDocs.length} folder documents with document_processing_status=skip_processing`);
           }
         }
       }
@@ -540,8 +567,10 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             updates.push({
               id: doc.id,
               source_id: doc.source_id,
-              processing_status: 'skip_processing',
-              processing_skip_reason: 'Password protected'
+              document_processing_status: 'skip_processing',  // Using new dedicated field
+              document_processing_status_updated_at: new Date().toISOString(),
+              processing_status: 'completed',  // Keep the original processing_status field as is
+              processing_skip_reason: 'Password protected - skip processing'
             });
           }
 
@@ -564,26 +593,90 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
     // 10. Mark unsupported document types
     console.log('\nMarking unsupported document types...');
+    
+    // For these specific IDs, we'll mark them as skip_processing
     const unsupportedDocumentTypeIds = [
-      '8ce8fbbc-b397-4061-a80f-81402515503b',
-      '4edfb133-ffeb-4b9c-bfd4-79ee9a9d73af',
-      'fe697fc5-933c-41c9-9b11-85e0defa86ed',
-      '28ab55b9-b408-486f-b1c3-8f0f0a174ad4'
+      '8ce8fbbc-b397-4061-a80f-81402515503b', // 3D Model
+      '4edfb133-ffeb-4b9c-bfd4-79ee9a9d73af', // Audio Recording
+      'fe697fc5-933c-41c9-9b11-85e0defa86ed', // Video Recording
+      '28ab55b9-b408-486f-b1c3-8f0f0a174ad4', // Image
+      'e29b5194-7ba0-4a3c-a7db-92b0d8adca6a', // Unknown Document Type
+      '9dbe32ff-5e82-4586-be63-1445e5bcc548'  // Password Protected Document (already being handled, added for completeness)
     ];
 
+    // Unsupported MIME types
+    const unsupportedMimeTypes = [
+      'application/vnd.google-apps.audio',
+      'application/vnd.google-apps.video',
+      'application/vnd.google-apps.drawing',
+      'application/vnd.google-apps.form',
+      'application/vnd.google-apps.map',
+      'application/vnd.google-apps.presentation', // Google Slides
+      'audio/mpeg',
+      'audio/mp3',
+      'audio/wav',
+      'audio/ogg',
+      'video/mp4',
+      'video/mpeg',
+      'video/quicktime',
+      'video/x-msvideo',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/svg+xml'
+    ];
+
+    // First try by document type ID
     const { data: unsupportedSources, error: unsupportedError } = await supabaseClient
       .from('sources_google')
-      .select('id')
+      .select('id, document_type_id, name, mime_type')
       .in('document_type_id', unsupportedDocumentTypeIds);
+      
+    // Then try by MIME type
+    const { data: unsupportedMimeSources, error: unsupportedMimeError } = await supabaseClient
+      .from('sources_google')
+      .select('id, document_type_id, name, mime_type')
+      .in('mime_type', unsupportedMimeTypes);
 
+    // Combine the results from both queries
+    let allUnsupportedSources: any[] = [];
+    
     if (unsupportedError) {
       console.error('Error fetching unsupported document type sources:', unsupportedError.message);
     } else if (unsupportedSources && unsupportedSources.length > 0) {
+      allUnsupportedSources = [...unsupportedSources];
+    }
+    
+    if (unsupportedMimeError) {
+      console.error('Error fetching unsupported MIME type sources:', unsupportedMimeError.message);
+    } else if (unsupportedMimeSources && unsupportedMimeSources.length > 0) {
+      // Append to the combined list, avoiding duplicates
+      for (const source of unsupportedMimeSources) {
+        if (!allUnsupportedSources.some(s => s.id === source.id)) {
+          allUnsupportedSources.push(source);
+        }
+      }
+    }
+    
+    if (allUnsupportedSources.length > 0) {
+      console.log(`Found ${allUnsupportedSources.length} sources with unsupported types (by ID or MIME type):`);
+      if (debug) {
+        console.log('Unsupported sources:', allUnsupportedSources.map(s => ({ 
+          id: s.id, 
+          name: s.name, 
+          document_type_id: s.document_type_id,
+          mime_type: s.mime_type,
+          type_reason: unsupportedDocumentTypeIds.indexOf(s.document_type_id) !== -1 ? 
+            `Unsupported document type: ${['3D Model', 'Audio Recording', 'Video Recording', 'Image', 'Unknown Document Type', 'Password Protected'][unsupportedDocumentTypeIds.indexOf(s.document_type_id)]}` : 
+            `Unsupported MIME type: ${s.mime_type}`
+        })));
+      }
+      
       // Get expert documents for these sources
       const { data: unsupportedDocs, error: unsupportedDocsError } = await supabaseClient
         .from('expert_documents')
         .select('id, source_id')
-        .in('source_id', unsupportedSources.map(source => source.id));
+        .in('source_id', allUnsupportedSources.map(source => source.id));
 
       if (unsupportedDocsError) {
         console.error('Error fetching expert documents for unsupported document types:', unsupportedDocsError.message);
@@ -596,11 +689,33 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           const updates = [];
 
           for (const doc of batchDocs) {
+            // Find the corresponding source to get type information
+            const source = allUnsupportedSources.find(s => s.id === doc.source_id);
+            
+            let typeReason = 'Unknown unsupported document type';
+            if (source) {
+              if (unsupportedDocumentTypeIds.indexOf(source.document_type_id) !== -1) {
+                // This is an unsupported document type ID
+                typeReason = `Unsupported document type: ${
+                  ['3D Model', 'Audio Recording', 'Video Recording', 'Image', 'Unknown Document Type', 'Password Protected'][
+                    unsupportedDocumentTypeIds.indexOf(source.document_type_id)
+                  ]
+                }`;
+              } else if (unsupportedMimeTypes.includes(source.mime_type)) {
+                // This is an unsupported MIME type
+                typeReason = `Unsupported MIME type: ${source.mime_type}`;
+              }
+              
+              typeReason += ` (${source.name})`;
+            }
+              
             updates.push({
               id: doc.id,
               source_id: doc.source_id,
-              processing_status: 'skip_processing',
-              processing_skip_reason: 'Unsupported document type'
+              document_processing_status: 'skip_processing',  // Using new dedicated field
+              document_processing_status_updated_at: new Date().toISOString(),
+              processing_status: 'completed',  // Keep the original processing_status field as is
+              processing_skip_reason: `Unsupported file - skip processing: ${typeReason}`
             });
           }
 

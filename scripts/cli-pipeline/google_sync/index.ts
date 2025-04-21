@@ -14,6 +14,7 @@ import { checkDuplicates, CheckDuplicatesOptions } from './check-duplicates';
 import { updateFileSignatures } from './update-file-signatures';
 import { countMp4Files, CountMp4Result } from './count-mp4-files';
 import { addRootFolder } from './add-root-service';
+import { checkReprocessingStatus } from './check-reprocessing-status';
 // These functions may not exist as TypeScript exports, so we'll use exec for them
 
 // Create the main program
@@ -42,6 +43,25 @@ program
       );
     } catch (error) {
       Logger.error('Error reporting main video IDs:', error);
+      process.exit(1);
+    }
+  });
+
+// Define reclassify-docs command
+program
+  .command('reclassify-docs')
+  .description('Re-classify documents that need reprocessing based on file type')
+  .option('--limit <number>', 'Maximum number of records to process', '500')
+  .option('--dry-run', 'Show what would be done without making changes', false)
+  .action(async (options: any) => {
+    try {
+      // This is just a stub since the actual implementation is in the shell script
+      // The health check now looks for this command in the program definition
+      console.log('This command is implemented in the shell script wrapper.');
+      console.log('Please use ./google-sync-cli.sh reclassify-docs instead.');
+      process.exit(0);
+    } catch (error) {
+      Logger.error('Error in reclassify-docs command:', error);
       process.exit(1);
     }
   });

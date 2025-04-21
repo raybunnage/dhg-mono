@@ -1520,6 +1520,10 @@ export type Database = {
           content_type: string | null
           created_at: string
           diarization_complete: boolean | null
+          document_processing_status:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at: string | null
           document_type_id: string | null
           error_message: string | null
           expert_id: string | null
@@ -1570,6 +1574,10 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
           document_type_id?: string | null
           error_message?: string | null
           expert_id?: string | null
@@ -1620,6 +1628,10 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
           document_type_id?: string | null
           error_message?: string | null
           expert_id?: string | null

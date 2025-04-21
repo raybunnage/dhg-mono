@@ -472,7 +472,7 @@ async function reclassifyDocuments(
       .from('sources_google')
       .select(`
         *,
-        expert_documents(id)
+        expert_documents(id, document_processing_status)
       `)
       .not('document_type_id', 'is', null)  // Only include documents that have been classified
       .is('is_deleted', false);
@@ -616,16 +616,30 @@ async function reclassifyDocuments(
             }
             
             if (expertDocId) {
+              // Check if this document needed reprocessing
+              const needsReprocessing = file.expert_documents && 
+                                        file.expert_documents.length > 0 && 
+                                        file.expert_documents[0].document_processing_status === 'needs_reprocessing';
+              
               // Update existing expert document
+              const updateData = {
+                document_type_id: classificationResult.document_type_id,
+                classification_confidence: classificationResult.classification_confidence || 0.75,
+                classification_metadata: classificationResult,
+                processed_content: classificationResult,
+                updated_at: new Date().toISOString()
+              };
+              
+              // If this file needed reprocessing, mark it as "reprocessing_done"
+              if (needsReprocessing) {
+                updateData['document_processing_status'] = 'reprocessing_done';
+                updateData['document_processing_status_updated_at'] = new Date().toISOString();
+                console.log(`Marking file ${file.name} as "reprocessing_done"`);
+              }
+              
               const { error: updateError } = await supabase
                 .from('expert_documents')
-                .update({
-                  document_type_id: classificationResult.document_type_id,
-                  classification_confidence: classificationResult.classification_confidence || 0.75,
-                  classification_metadata: classificationResult,
-                  processed_content: classificationResult,
-                  updated_at: new Date().toISOString()
-                })
+                .update(updateData)
                 .eq('id', expertDocId);
                 
               if (updateError) {
