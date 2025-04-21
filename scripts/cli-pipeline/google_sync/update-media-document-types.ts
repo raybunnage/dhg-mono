@@ -983,13 +983,44 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     // Additional check: Ensure no files with unsupported document types have needs_reprocessing status
     console.log('\nEnsuring unsupported document types are not marked as needs_reprocessing...');
     
+    // First, get sources with unsupported document types
+    console.log('Finding sources with unsupported document types...');
+    const { data: unsupportedTypeSourcesForMismarked, error: unsupportedTypesErrorForMismarked } = await supabaseClient
+      .from('sources_google')
+      .select('id')
+      .in('document_type_id', unsupportedDocumentTypeIds);
+      
+    // Second, get sources with unsupported mime types
+    console.log('Finding sources with unsupported mime types...');
+    const { data: unsupportedMimeSourcesForMismarked, error: unsupportedMimesErrorForMismarked } = await supabaseClient
+      .from('sources_google')
+      .select('id')
+      .in('mime_type', unsupportedMimeTypes);
+    
+    // Combine source IDs from both queries
+    const unsupportedSourceIds: string[] = [];
+    
+    if (unsupportedTypesErrorForMismarked) {
+      console.error('Error fetching sources with unsupported document types:', unsupportedTypesErrorForMismarked.message);
+    } else if (unsupportedTypeSourcesForMismarked && unsupportedTypeSourcesForMismarked.length > 0) {
+      unsupportedSourceIds.push(...unsupportedTypeSourcesForMismarked.map(s => s.id));
+    }
+    
+    if (unsupportedMimesErrorForMismarked) {
+      console.error('Error fetching sources with unsupported mime types:', unsupportedMimesErrorForMismarked.message);
+    } else if (unsupportedMimeSourcesForMismarked && unsupportedMimeSourcesForMismarked.length > 0) {
+      unsupportedSourceIds.push(...unsupportedMimeSourcesForMismarked.map(s => s.id));
+    }
+    
     // Find expert documents with unsupported types but marked as needs_reprocessing
-    const { data: mismarkedDocs, error: mismarkedDocsError } = await supabaseClient
-      .from('expert_documents')
-      .select('id, source_id')
-      .eq('document_processing_status', 'needs_reprocessing')
-      .or(`source_id.in.(${unsupportedDocumentTypeIds.map(id => `select id from sources_google where document_type_id = '${id}'`).join(',')}),` +
-          `source_id.in.(${unsupportedMimeTypes.map(mime => `select id from sources_google where mime_type = '${mime}'`).join(',')})`);
+    const { data: mismarkedDocs, error: mismarkedDocsError } = 
+      unsupportedSourceIds.length > 0 
+        ? await supabaseClient
+            .from('expert_documents')
+            .select('id, source_id')
+            .eq('document_processing_status', 'needs_reprocessing')
+            .in('source_id', unsupportedSourceIds)
+        : { data: [], error: null };
       
     if (mismarkedDocsError) {
       console.error('Error finding mismarked documents:', mismarkedDocsError.message);

@@ -113,3 +113,116 @@ export async function markNeedsReprocessing(documentId: string, sourceId: string
     return false;
   }
 }
+
+/**
+ * Check and display document summary after reprocessing
+ * 
+ * @param documentId ID of the expert_document to check
+ * @returns Promise resolving to void
+ */
+export async function checkDocumentSummary(documentId: string): Promise<void> {
+  try {
+    // Get supabase client
+    const supabase = SupabaseClientService.getInstance().getClient();
+    
+    // Get the document details
+    const { data: document, error } = await supabase
+      .from('expert_documents')
+      .select('id, processed_content')
+      .eq('id', documentId)
+      .single();
+    
+    if (error || !document) {
+      console.error(`Error getting document ${documentId}: ${error?.message || 'Document not found'}`);
+      return;
+    }
+    
+    // Check if processed_content exists and has document_summary
+    if (!document.processed_content) {
+      console.log(`❌ No processed_content found for document ${documentId}`);
+      return;
+    }
+    
+    try {
+      // If processed_content is a string, parse it
+      const content = typeof document.processed_content === 'string' 
+        ? JSON.parse(document.processed_content) 
+        : document.processed_content;
+      
+      // Look for document_summary field
+      if (content.document_summary && typeof content.document_summary === 'string') {
+        console.log(`\n📝 DOCUMENT SUMMARY PREVIEW:`);
+        console.log(`----------------------------------------------------------------------------------`);
+        // Display first 400 chars of summary with ellipsis if longer
+        const summary = content.document_summary.substring(0, 400) + 
+          (content.document_summary.length > 400 ? '...' : '');
+        console.log(summary);
+        console.log(`----------------------------------------------------------------------------------`);
+        
+        // Show classification confidence if available
+        if (content.classification_confidence) {
+          const confidence = typeof content.classification_confidence === 'number' 
+            ? content.classification_confidence 
+            : parseFloat(content.classification_confidence);
+          console.log(`📊 Classification confidence: ${(confidence * 100).toFixed(1)}%`);
+        }
+        
+        // Show document type if available
+        if (content.document_type) {
+          console.log(`📄 Document type: ${content.document_type}`);
+        }
+        
+        console.log(`✅ Summary successfully extracted`);
+        return;
+      }
+      
+      // Check for AI classification analysis (for PDF/DOCX)
+      if (content.ai_analysis && content.ai_analysis.document_summary) {
+        console.log(`\n📝 DOCUMENT SUMMARY PREVIEW:`);
+        console.log(`----------------------------------------------------------------------------------`);
+        const summary = content.ai_analysis.document_summary.substring(0, 400) + 
+          (content.ai_analysis.document_summary.length > 400 ? '...' : '');
+        console.log(summary);
+        console.log(`----------------------------------------------------------------------------------`);
+        
+        // Show classification confidence if available
+        if (content.ai_analysis.classification_confidence) {
+          const confidence = typeof content.ai_analysis.classification_confidence === 'number' 
+            ? content.ai_analysis.classification_confidence 
+            : parseFloat(content.ai_analysis.classification_confidence);
+          console.log(`📊 Classification confidence: ${(confidence * 100).toFixed(1)}%`);
+        }
+        
+        // Show document type if available
+        if (content.ai_analysis.document_type) {
+          console.log(`📄 Document type: ${content.ai_analysis.document_type}`);
+        }
+        
+        console.log(`✅ Summary successfully extracted from AI analysis`);
+        return;
+      }
+      
+      // Check for alternative summary fields
+      const summaryFields = ['summary', 'content_summary', 'executive_summary'];
+      for (const field of summaryFields) {
+        if (content[field] && typeof content[field] === 'string') {
+          console.log(`\n📝 DOCUMENT SUMMARY PREVIEW (${field}):`);
+          console.log(`----------------------------------------------------------------------------------`);
+          const summary = content[field].substring(0, 400) + 
+            (content[field].length > 400 ? '...' : '');
+          console.log(summary);
+          console.log(`----------------------------------------------------------------------------------`);
+          console.log(`✅ Alternative summary (${field}) successfully extracted`);
+          return;
+        }
+      }
+      
+      console.log(`❓ No document_summary found in processed_content. Available fields:`, 
+        Object.keys(content).join(', '));
+    } catch (error) {
+      console.error(`Error extracting summary from processed_content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error(`Error in checkDocumentSummary: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}

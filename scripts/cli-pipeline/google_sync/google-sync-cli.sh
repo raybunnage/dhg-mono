@@ -239,6 +239,10 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
         if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
           # Run the force reclassify command directly
           track_command "force-reclassify-docx" "ts-node -e \"require('$SCRIPT_DIR/force-reclassify').forceReclassifyDocument('$EXPERT_DOC_ID', '$SOURCE_ID', true)\""
+          
+          # Display document summary
+          sleep 1 # Brief pause to ensure the DB has been updated
+          track_command "check-docx-summary" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').checkDocumentSummary('$EXPERT_DOC_ID')\""
         else
           echo "⚠️ No expert document ID found for ${FILENAME}, running standard classification"
           # Fall back to standard classification
@@ -256,6 +260,10 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
         if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
           # Run the force reclassify command directly
           track_command "force-reclassify-pdf" "ts-node -e \"require('$SCRIPT_DIR/force-reclassify').forceReclassifyDocument('$EXPERT_DOC_ID', '$SOURCE_ID', true)\""
+          
+          # Display document summary
+          sleep 1 # Brief pause to ensure the DB has been updated
+          track_command "check-pdf-summary" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').checkDocumentSummary('$EXPERT_DOC_ID')\""
         else
           echo "⚠️ No expert document ID found for ${FILENAME}, running standard classification"
           # Fall back to standard classification
@@ -273,6 +281,10 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
         if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
           # Run the force reclassify command directly
           track_command "force-reclassify-pptx" "ts-node -e \"require('$SCRIPT_DIR/force-reclassify').forceReclassifyDocument('$EXPERT_DOC_ID', '$SOURCE_ID', true)\""
+          
+          # Display document summary
+          sleep 1 # Brief pause to ensure the DB has been updated
+          track_command "check-pptx-summary" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').checkDocumentSummary('$EXPERT_DOC_ID')\""
         else
           echo "⚠️ No expert document ID found for ${FILENAME}, running standard classification"
           # Fall back to standard classification
@@ -364,6 +376,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  list-unclassified-files      List PDF and PowerPoint files without document types"
   echo "  list-unsupported-types       List all unsupported document types in the system"
   echo "  check-expert-doc             Check the most recent expert document for proper content extraction"
+  echo "  check-document-summary       Check and display the summary for a specific document by ID"
   echo "  fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records"
   echo "  remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id"
   echo "  check-recent-updates         Show recently updated files and their associated expert documents"
@@ -435,6 +448,9 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # List unsupported document types in JSON format"
   echo "  ./google-sync-cli.sh list-unsupported-types --format json"
+  echo ""
+  echo "  # Check and display document summary for a specific document"
+  echo "  ./google-sync-cli.sh check-document-summary <document-id>"
   exit 0
 fi
 
@@ -447,6 +463,18 @@ fi
 if [ "$1" = "fix-orphaned-docx" ]; then
   shift
   track_command "fix-orphaned-docx" "ts-node $SCRIPT_DIR/fix-orphaned-docx.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "check-document-summary" ]; then
+  shift
+  if [ -z "$1" ]; then
+    echo "Error: Document ID is required"
+    echo "Usage: ./google-sync-cli.sh check-document-summary <document-id>"
+    exit 1
+  fi
+  DOCUMENT_ID="$1"
+  track_command "check-document-summary" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').checkDocumentSummary('$DOCUMENT_ID')\""
   exit $?
 fi
 
