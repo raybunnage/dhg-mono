@@ -215,9 +215,14 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
     fi
     
     # Only process documents that need reprocessing (needs_reprocessing status)
-    if [ "$PROCESSING_STATUS" != "needs_reprocessing" ]; then
+    # FIXED: Use string contains check to handle potential whitespace or other issues
+    if [[ "$PROCESSING_STATUS" != *"needs_reprocessing"* ]]; then
+      echo "Skipping document with processing status: '$PROCESSING_STATUS'"
       continue
     fi
+    
+    # Debug log for documents we're processing
+    echo "Found document needing reprocessing: $FILENAME"
     
     # Read current counts
     read DOCX_COUNT PDF_COUNT PPTX_COUNT OTHER_COUNT < "$COUNTS_FILE"

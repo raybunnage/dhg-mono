@@ -157,6 +157,30 @@ export async function checkReprocessingStatus(options: {
       const batchSources = sources.slice(i, i + batchSize);
       const sourceIds = batchSources.map(source => source.id);
       
+      // FIXED: Add debugging about the query we're performing
+      console.log(`Looking for expert documents for batch ${i+1}-${Math.min(i+batchSize, sources.length)} of ${sources.length} sources`);
+      
+      // Debugging: For the first batch, also do a direct query to see if any have needs_reprocessing status
+      if (i === 0) {
+        const { data: directCheck, error: directCheckError } = await supabaseClient
+          .from('expert_documents')
+          .select('id, source_id, document_processing_status')
+          .eq('document_processing_status', 'needs_reprocessing')
+          .limit(5);
+          
+        if (directCheckError) {
+          console.error('Error in direct check query:', directCheckError.message);
+        } else {
+          console.log(`Direct query found ${directCheck ? directCheck.length : 0} documents with needs_reprocessing status`);
+          if (directCheck && directCheck.length > 0) {
+            console.log('Sample documents:');
+            directCheck.forEach(doc => {
+              console.log(`- Document ${doc.id}: status=${doc.document_processing_status}`);
+            });
+          }
+        }
+      }
+      
       const { data: expertDocs, error: expertDocsError } = await supabaseClient
         .from('expert_documents')
         .select('id, source_id, document_type_id, document_processing_status, processing_skip_reason')
@@ -210,11 +234,18 @@ export async function checkReprocessingStatus(options: {
         if (expertDoc) {
           stats.sourcesWithExpertDocs++;
           
-          // Check document processing status
+          // FIXED: Explicitly check for the exact string values in document_processing_status
+          // This ensures we properly identify documents that need reprocessing
           const processingStatus = expertDoc.document_processing_status || 'not_set';
           const processingReason = expertDoc.processing_skip_reason;
           
+          // Debug log the actual value to help diagnose issues
+          if (verbose) {
+            console.log(`Document processing status for ${expertDoc.id}: '${processingStatus}' (type: ${typeof processingStatus})`);
+          }
+          
           // Update stats based on document processing status and reason
+          // Using triple equals to ensure exact string comparison
           if (processingStatus === 'needs_reprocessing') {
             stats.needsReprocessing++;
           } else if (processingStatus === 'reprocessing_done') {
@@ -321,12 +352,22 @@ export async function checkReprocessingStatus(options: {
     // Show sources needing reprocessing in a table format
     if (stats.needsReprocessing > 0) {
       console.log('\nSources Needing Reprocessing:');
-      console.table(results.filter(r => r.processingStatus === 'needs_reprocessing')
+      
+      // FIXED: More lenient filtering to handle potential whitespace or case issues
+      const needsReprocessingDocs = results.filter(r => {
+        const status = String(r.processingStatus || '').trim().toLowerCase();
+        return status.includes('needs_reprocessing');
+      });
+      
+      console.log(`Found ${needsReprocessingDocs.length} documents with needs_reprocessing status`);
+      
+      console.table(needsReprocessingDocs
         .map(r => ({
           'Source Name': r.sourceName,
           'Sources Google Doc Type': r.sourcesGoogleDocumentType || 'None',
           'Expert Doc Type': r.expertDocumentType || 'None',
-          'Processing Reason': r.processingReason
+          'Processing Reason': r.processingReason,
+          'Processing Status': r.processingStatus // Added for debugging
         }))
       );
     }
