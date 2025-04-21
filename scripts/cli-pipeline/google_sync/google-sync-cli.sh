@@ -143,6 +143,177 @@ if [ "$1" = "classify-powerpoints" ]; then
   exit $?
 fi
 
+if [ "$1" = "reclassify_docs" ]; then
+  shift
+  # This is a new command to reclassify documents that need reprocessing
+  # based on their file extension
+  
+  echo "Reclassifying documents that need reprocessing..."
+  
+  # First get a list of documents that need reprocessing
+  REPROCESSING_OUTPUT_PATH="./reprocessing-sources-temp.json"
+  
+  # Process arguments
+  LIMIT_ARG="500"
+  DRY_RUN=false
+  
+  # Process all arguments
+  while [ "$#" -gt 0 ]; do
+    if [ "$1" = "--dry-run" ]; then
+      DRY_RUN=true
+      shift
+    elif [[ "$1" =~ ^[0-9]+$ ]]; then
+      LIMIT_ARG="$1"
+      shift
+    else
+      shift
+    fi
+  done
+  
+  track_command "check-reprocessing-status" "ts-node $SCRIPT_DIR/check-reprocessing-status.ts --limit $LIMIT_ARG --output $REPROCESSING_OUTPUT_PATH --format json"
+  
+  # Check if we got the data
+  if [ ! -f "$REPROCESSING_OUTPUT_PATH" ]; then
+    echo "Error: Could not get list of documents that need reprocessing"
+    exit 1
+  fi
+  
+  # Read the file to get documents needing reprocessing
+  echo "Processing documents that need reprocessing..."
+  
+  # We need jq to properly parse the JSON
+  if ! command -v jq &> /dev/null; then
+    echo "Error: 'jq' command is required but not installed. Please install jq to continue."
+    exit 1
+  fi
+  
+  # Get the processed sources as an array
+  SOURCES=$(jq -c '.[]' "$REPROCESSING_OUTPUT_PATH")
+  
+  # Create counters file to track counts outside the subshell
+  COUNTS_FILE=$(mktemp)
+  echo "0 0 0 0" > "$COUNTS_FILE" # DOCX PDF PPTX OTHER counts
+  
+  # Process each document based on file extension
+  echo "$SOURCES" | while read -r SOURCE; do
+    SOURCE_ID=$(echo "$SOURCE" | jq -r '.sourceId')
+    FILENAME=$(echo "$SOURCE" | jq -r '.sourceName')
+    PROCESSING_STATUS=$(echo "$SOURCE" | jq -r '.processingStatus')
+    
+    if [ -z "$FILENAME" ]; then
+      echo "Warning: Could not find filename for source ID $SOURCE_ID, skipping"
+      continue
+    fi
+    
+    # Only process documents that need reprocessing (pending status)
+    if [ "$PROCESSING_STATUS" != "pending" ]; then
+      continue
+    fi
+    
+    # Read current counts
+    read DOCX_COUNT PDF_COUNT PPTX_COUNT OTHER_COUNT < "$COUNTS_FILE"
+    
+    # Process based on file extension
+    if [[ "$FILENAME" == *".docx" ]]; then
+      echo "Processing DOCX file: $FILENAME (ID: $SOURCE_ID)"
+      if [ "$DRY_RUN" = false ]; then
+        # Run the classification command
+        track_command "classify-docs-service" "ts-node $SCRIPT_DIR/classify-missing-docs-with-service.ts --source-id $SOURCE_ID --force --verbose"
+        
+        # If successful, mark as reprocessing_done
+        if [ $? -eq 0 ]; then
+          EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
+          if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
+            # Run the helper to update processing_status
+            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify_docs_helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
+          else
+            echo "⚠️ No expert document ID found for ${FILENAME}, skipping status update"
+          fi
+        fi
+      else
+        echo "[DRY RUN] Would classify $FILENAME with classify-docs-service"
+      fi
+      DOCX_COUNT=$((DOCX_COUNT + 1))
+    elif [[ "$FILENAME" == *".pdf" ]]; then
+      echo "Processing PDF file: $FILENAME (ID: $SOURCE_ID)"
+      if [ "$DRY_RUN" = false ]; then
+        # Run the classification command
+        track_command "classify-pdfs" "ts-node $SCRIPT_DIR/classify-pdfs-with-service.ts --source-id $SOURCE_ID --force --verbose"
+        
+        # If successful, mark as reprocessing_done
+        if [ $? -eq 0 ]; then
+          EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
+          if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
+            # Run the helper to update processing_status
+            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify_docs_helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
+          else
+            echo "⚠️ No expert document ID found for ${FILENAME}, skipping status update"
+          fi
+        fi
+      else
+        echo "[DRY RUN] Would classify $FILENAME with classify-pdfs"
+      fi
+      PDF_COUNT=$((PDF_COUNT + 1))
+    elif [[ "$FILENAME" == *".pptx" ]]; then
+      echo "Processing PowerPoint file: $FILENAME (ID: $SOURCE_ID)"
+      if [ "$DRY_RUN" = false ]; then
+        # Run the classification command
+        track_command "classify-powerpoints" "ts-node $SCRIPT_DIR/classify-powerpoints.ts --source-id $SOURCE_ID --force --verbose"
+        
+        # If successful, mark as reprocessing_done
+        if [ $? -eq 0 ]; then
+          EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
+          if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
+            # Run the helper to update processing_status
+            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify_docs_helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
+          else
+            echo "⚠️ No expert document ID found for ${FILENAME}, skipping status update"
+          fi
+        fi
+      else
+        echo "[DRY RUN] Would classify $FILENAME with classify-powerpoints"
+      fi
+      PPTX_COUNT=$((PPTX_COUNT + 1))
+    else
+      echo "Skipping $FILENAME - unsupported file type"
+      OTHER_COUNT=$((OTHER_COUNT + 1))
+    fi
+    
+    # Write updated counts back to file
+    echo "$DOCX_COUNT $PDF_COUNT $PPTX_COUNT $OTHER_COUNT" > "$COUNTS_FILE"
+    
+    # Add a small pause to prevent overwhelming the API
+    if [ "$DRY_RUN" = false ]; then
+      sleep 1
+    fi
+  done
+  
+  # Read final counts
+  read DOCX_COUNT PDF_COUNT PPTX_COUNT OTHER_COUNT < "$COUNTS_FILE"
+  rm -f "$COUNTS_FILE"
+  
+  # Print summary
+  echo ""
+  echo "Reclassification Summary:"
+  echo "------------------------"
+  echo "DOCX files: $DOCX_COUNT"
+  echo "PDF files: $PDF_COUNT"
+  echo "PowerPoint files: $PPTX_COUNT"
+  echo "Other files: $OTHER_COUNT"
+  echo "------------------------"
+  echo "Total files: $((DOCX_COUNT + PDF_COUNT + PPTX_COUNT + OTHER_COUNT))"
+  
+  # Clean up temporary file if not in dry run mode
+  if [ "$DRY_RUN" = false ]; then
+    rm -f "$REPROCESSING_OUTPUT_PATH"
+  else
+    echo "Dry run mode - keeping temporary file: $REPROCESSING_OUTPUT_PATH"
+  fi
+  
+  echo "Reclassification complete!"
+  exit $?
+fi
+
 if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify-docs-with-service" ]; then
   shift
   track_command "reclassify-docs-with-service" "ts-node $SCRIPT_DIR/reclassify-docs-with-service.ts $*"
@@ -162,6 +333,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  classify-pdfs                Classify PDF files missing document types using Claude AI"
   echo "  classify-powerpoints         Classify PowerPoint files missing document types using local extraction and Claude AI"
   echo "  reclassify-docs              Re-classify documents with temperature=0 for deterministic results"
+  echo "  reclassify_docs              Re-classify documents that need reprocessing based on file type"
   echo "  classify-docs-service        Classify .docx and .txt files missing document types"
   echo "  validate-pdf-classification  Validate PDF classification results and generate a report"
   echo "  check-duplicates             Check for duplicate files in sources_google"
@@ -193,6 +365,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Re-classify documents created after a specific date"
   echo "  ./google-sync-cli.sh reclassify-docs --start-date \"2025-04-01\" --limit 20"
+  echo ""
+  echo "  # Re-classify documents that need reprocessing based on file extension"
+  echo "  ./google-sync-cli.sh reclassify_docs"
+  echo ""
+  echo "  # Re-classify a specific number of documents that need reprocessing"
+  echo "  ./google-sync-cli.sh reclassify_docs 10"
   echo ""
   echo "  # Run PDF classification in dry-run mode to see what would be updated"
   echo "  ./google-sync-cli.sh classify-pdfs --dry-run"

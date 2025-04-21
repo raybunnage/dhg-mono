@@ -69,6 +69,43 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     }
 
     console.log(`Found ${expertDocs.length} expert documents with processed content.`);
+    
+    // Set processing_status to skip_reprocessing if processing_skip_reason is not null
+    console.log('\nUpdating processing_status for documents with processing_skip_reason...');
+    const docsWithSkipReason = expertDocs.filter(doc => doc.processing_skip_reason !== null);
+    
+    if (docsWithSkipReason.length > 0) {
+      console.log(`Found ${docsWithSkipReason.length} documents with processing_skip_reason`);
+      
+      if (!dryRun) {
+        // Process in batches
+        for (let i = 0; i < docsWithSkipReason.length; i += batchSize) {
+          const batchDocs = docsWithSkipReason.slice(i, i + batchSize);
+          const updates = [];
+
+          for (const doc of batchDocs) {
+            updates.push({
+              id: doc.id,
+              source_id: doc.source_id,  // Include source_id to satisfy not-null constraint 
+              processing_status: 'skip_processing',
+              processing_skip_reason: doc.processing_skip_reason
+            });
+          }
+
+          const { error: updateError } = await supabaseClient
+            .from('expert_documents')
+            .upsert(updates, { onConflict: 'id' });
+
+          if (updateError) {
+            console.error(`Error updating batch ${i}-${i+batchSize} for documents with skip reason:`, updateError.message);
+          } else {
+            console.log(`✓ Updated batch ${i}-${i+batchSize} of ${docsWithSkipReason.length} documents with processing_status=skip_processing`);
+          }
+        }
+      } else {
+        console.log(`[DRY RUN] Would update ${docsWithSkipReason.length} documents with processing_status=skip_processing`);
+      }
+    }
 
     // 1. Update .conf files in sources_google and their expert documents
     console.log('\nProcessing .conf files...');
@@ -176,6 +213,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     const documentTypesToPdfPptx = [
       '9ccdc433-99d8-46fb-8bf7-3ba72cf27c88', // Presentation
       '5e61bfbc-39ef-4380-80c0-592017b39b71', // Technical Paper
+      'fc07c06a-ab03-4714-baf2-343427d433a3', // New type to be set as PDF/PPTX
     ];
 
     console.log(`\nProcessing sources with document types to be set as PDF/PPTX...`);
@@ -255,7 +293,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       }
     }
 
-    // Process documents for rule 2: JSON content + document_type_id 03743a23-d2f3-4c73-a282-85afc138fdfd
+    // Process documents for rule 2: ANY document_type_id 03743a23-d2f3-4c73-a282-85afc138fdfd (not just those with JSON)
     const { data: rule2Sources, error: rule2SourcesError } = await supabaseClient
       .from('sources_google')
       .select('id')
@@ -264,16 +302,18 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     if (rule2SourcesError) {
       console.error('Error fetching sources for rule 2:', rule2SourcesError.message);
     } else if (rule2Sources && rule2Sources.length > 0) {
-      // Find expert documents with JSON content for these sources
-      const rule2Docs = expertDocs.filter(doc => {
-        // Check if source ID matches and if content has valid JSON
-        return rule2Sources.some(source => source.id === doc.source_id) && 
-               typeof doc.processed_content === 'string' && 
-               doc.processed_content.trim().startsWith('{');
-      });
-
-      if (rule2Docs.length > 0) {
-        console.log(`Found ${rule2Docs.length} expert documents with JSON content for document_type_id 03743a23-d2f3-4c73-a282-85afc138fdfd (Working Document)`);
+      // Get all expert documents for these sources (regardless of content)
+      console.log(`Found ${rule2Sources.length} sources with document_type_id 03743a23-d2f3-4c73-a282-85afc138fdfd (Working Document)`);
+      
+      const { data: rule2Docs, error: rule2DocsError } = await supabaseClient
+        .from('expert_documents')
+        .select('id')
+        .in('source_id', rule2Sources.map(source => source.id));
+        
+      if (rule2DocsError) {
+        console.error('Error fetching expert documents for rule 2:', rule2DocsError.message);
+      } else if (rule2Docs && rule2Docs.length > 0) {
+        console.log(`Found ${rule2Docs.length} expert documents for document_type_id 03743a23-d2f3-4c73-a282-85afc138fdfd sources`);
 
         if (!dryRun) {
           const { error: updateError } = await supabaseClient
@@ -343,7 +383,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           updates.push({
             id: doc.id,
             source_id: doc.source_id,  // Include source_id to satisfy not-null constraint 
-            processing_status: 'pending',  // Using a valid enum value from the schema
+            processing_status: 'needs_reprocessing',  // Using valid enum value from schema
             processing_skip_reason: 'No valid JSON content found'
           });
         }
@@ -394,7 +434,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             updates.push({
               id: doc.id,
               source_id: doc.source_id,  // Include source_id to satisfy not-null constraint
-              processing_status: 'pending',  // Using a valid enum value from the schema
+              processing_status: 'needs_reprocessing',  // Using valid enum value from schema
               processing_skip_reason: 'Contains "File analysis unavailable" message'
             });
           }
@@ -447,8 +487,8 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             updates.push({
               id: doc.id,
               source_id: doc.source_id,  // Include source_id to satisfy not-null constraint
+              processing_status: 'skip_processing',  // Using valid enum value from schema
               processing_skip_reason: 'Google Drive folder, not a document'
-              // Skip setting processing_status to avoid constraint issues
             });
           }
 
@@ -465,6 +505,117 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             }
           } else {
             console.log(`[DRY RUN] Would update batch ${i}-${i+batchSize} of ${folderDocs.length} folder documents with processing_status=skip_processing`);
+          }
+        }
+      }
+    }
+
+    // 9. Mark password protected documents
+    console.log('\nMarking password protected documents...');
+    const { data: passwordProtectedSources, error: passwordProtectedError } = await supabaseClient
+      .from('sources_google')
+      .select('id')
+      .eq('document_type_id', '9dbe32ff-5e82-4586-be63-1445e5bcc548');
+
+    if (passwordProtectedError) {
+      console.error('Error fetching password protected sources:', passwordProtectedError.message);
+    } else if (passwordProtectedSources && passwordProtectedSources.length > 0) {
+      // Get expert documents for these sources
+      const { data: passwordProtectedDocs, error: passwordProtectedDocsError } = await supabaseClient
+        .from('expert_documents')
+        .select('id, source_id')
+        .in('source_id', passwordProtectedSources.map(source => source.id));
+
+      if (passwordProtectedDocsError) {
+        console.error('Error fetching expert documents for password protected sources:', passwordProtectedDocsError.message);
+      } else if (passwordProtectedDocs && passwordProtectedDocs.length > 0) {
+        console.log(`Found ${passwordProtectedDocs.length} expert documents for password protected sources`);
+
+        // Process in batches
+        for (let i = 0; i < passwordProtectedDocs.length; i += batchSize) {
+          const batchDocs = passwordProtectedDocs.slice(i, i + batchSize);
+          const updates = [];
+
+          for (const doc of batchDocs) {
+            updates.push({
+              id: doc.id,
+              source_id: doc.source_id,
+              processing_status: 'skip_processing',
+              processing_skip_reason: 'Password protected'
+            });
+          }
+
+          if (!dryRun) {
+            const { error: updateError } = await supabaseClient
+              .from('expert_documents')
+              .upsert(updates, { onConflict: 'id' });
+
+            if (updateError) {
+              console.error(`Error updating batch ${i}-${i+batchSize} for password protected documents:`, updateError.message);
+            } else {
+              console.log(`✓ Updated batch ${i}-${i+batchSize} of ${passwordProtectedDocs.length} password protected documents`);
+            }
+          } else {
+            console.log(`[DRY RUN] Would update batch ${i}-${i+batchSize} of ${passwordProtectedDocs.length} password protected documents`);
+          }
+        }
+      }
+    }
+
+    // 10. Mark unsupported document types
+    console.log('\nMarking unsupported document types...');
+    const unsupportedDocumentTypeIds = [
+      '8ce8fbbc-b397-4061-a80f-81402515503b',
+      '4edfb133-ffeb-4b9c-bfd4-79ee9a9d73af',
+      'fe697fc5-933c-41c9-9b11-85e0defa86ed',
+      '28ab55b9-b408-486f-b1c3-8f0f0a174ad4'
+    ];
+
+    const { data: unsupportedSources, error: unsupportedError } = await supabaseClient
+      .from('sources_google')
+      .select('id')
+      .in('document_type_id', unsupportedDocumentTypeIds);
+
+    if (unsupportedError) {
+      console.error('Error fetching unsupported document type sources:', unsupportedError.message);
+    } else if (unsupportedSources && unsupportedSources.length > 0) {
+      // Get expert documents for these sources
+      const { data: unsupportedDocs, error: unsupportedDocsError } = await supabaseClient
+        .from('expert_documents')
+        .select('id, source_id')
+        .in('source_id', unsupportedSources.map(source => source.id));
+
+      if (unsupportedDocsError) {
+        console.error('Error fetching expert documents for unsupported document types:', unsupportedDocsError.message);
+      } else if (unsupportedDocs && unsupportedDocs.length > 0) {
+        console.log(`Found ${unsupportedDocs.length} expert documents with unsupported document types`);
+
+        // Process in batches
+        for (let i = 0; i < unsupportedDocs.length; i += batchSize) {
+          const batchDocs = unsupportedDocs.slice(i, i + batchSize);
+          const updates = [];
+
+          for (const doc of batchDocs) {
+            updates.push({
+              id: doc.id,
+              source_id: doc.source_id,
+              processing_status: 'skip_processing',
+              processing_skip_reason: 'Unsupported document type'
+            });
+          }
+
+          if (!dryRun) {
+            const { error: updateError } = await supabaseClient
+              .from('expert_documents')
+              .upsert(updates, { onConflict: 'id' });
+
+            if (updateError) {
+              console.error(`Error updating batch ${i}-${i+batchSize} for unsupported document types:`, updateError.message);
+            } else {
+              console.log(`✓ Updated batch ${i}-${i+batchSize} of ${unsupportedDocs.length} documents with unsupported types`);
+            }
+          } else {
+            console.log(`[DRY RUN] Would update batch ${i}-${i+batchSize} of ${unsupportedDocs.length} documents with unsupported types`);
           }
         }
       }

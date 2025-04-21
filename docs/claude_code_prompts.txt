@@ -64,18 +64,90 @@ redo these to use the new processing columns mentioned above
 3) if the mime_type in sources_google is a folder mark appropriate processing new field in expert_documents with needs_reprocessing 
 
 
+Sources Needing Reprocessing:
+┌─────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬─────────────────────────────┬────────────────────────────┬───────────────────────────────┐
+│ (index) │ Source Name                                                                                                                                                             │ Sources Google Doc Type     │ Expert Doc Type            │ Processing Reason             │
+├─────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────┼────────────────────────────┼───────────────────────────────┤
+│ 0       │ 'Poly..Cytokies.oxytocin.5.13.20.docx'                                                                                                                                  │ 'dicussion transcript'      │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 1       │ 'Temoshok 2008 Brain Behavior & Immunity (1).pdf'                                                                                                                       │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 2       │ 'Hypnotherapy.Speigel.docx'                                                                                                                                             │ 'mp4 video'                 │ 'mp4 video'                │ 'No valid JSON content found' │
+│ 3       │ 'Ziderman_Prediction based neural mechanisms for shielding the self from existential threat.pdf'                                                                        │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 4       │ '2020-07-01-Refs-comments-Apkarian-Neuroimaging- Pain Circuits - Apkarian discussion.pdf'                                                                               │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 5       │ 'Marjorie Wolcott.docx'                                                                                                                                                 │ 'presentation transcript'   │ 'presentation transcript'  │ 'No valid JSON content found' │
+│ 6       │ 'Temoshok 2008 Brain Behavior & Immunity (1).pdf'                                                                                                                       │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 7       │ 'DHDG.CoreSchedule.2022-23.docx'                                                                                                                                        │ 'Presentation Announcement' │ 'Json Expert Summary'      │ 'No valid JSON content found' │
+│ 8       │ 'chat.txt'                                                                                                                                                              │ 'Chat Log'                  │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 9       │ 'recording.conf'                                                                                                                                                        │ 'presentation transcript'   │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 10      │ 'SC in Therapy pdf -  Germer 7-6-21.pdf'                                                                                                                                │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 11      │ 'meeting_saved_new_chat.txt'                                                                                                                                            │ 'Chat Log'                  │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 12      │ 'What is Needed to Promote the Uptake and Implementation of Social Prescribing_KGC.pdf'                                                                                 │ 'report'                    │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 13      │ 'Marsland.Childhood trauma and hair cortisol response over the year following onset of a chronic life event st.pdf'                                                     │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 14      │ 'Sheldon Solomon.docx'                                                                                                                                                  │ 'website'                   │ 'website'                  │ 'No valid JSON content found' │
+│ 15      │ 'ellingsen duggento et al 2022 trans psych granger concordance.pdf'                                                                                                     │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 16      │ 'Steve Overman Comments.docx'                                                                                                                                           │ 'dicussion transcript'      │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 17      │ 'Porges.Pain.9.17.20.ANS.physiological.platfrom.docx'                                                                                                                   │ 'email correspondence'      │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 18      │ 'Social RX.Stephen Bezrushka.docx'                                                                                                                                      │ 'letter'                    │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 19      │ 'Dynamic Healing_SocialPrescribing_Hoverman_241219.pdf'                                                                                                                 │ 'Presentation Announcement' │ 'Json Expert Summary'      │ 'No valid JSON content found' │
+│ 20      │ 'ellingsen et al 2023 PNAS brain-to-brain patient-clinician empathy hyperscanning.pdf'                                                                                  │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 21      │ 'chat.txt'                                                                                                                                                              │ 'Chat Log'                  │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 22      │ 'meeting_saved_chat.txt'                                                                                                                                                │ 'Chat Log'                  │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 23      │ 'Lane et al Affective Agnosia NBR 2015.pdf'                                                                                                                             │ 'review article'            │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 24      │ 'Benjamin Buemann.oxy.aging.docx'                                                                                                                                       │ 'journal article'           │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 25      │ 'Wednesday PVT group.docx'                                                                                                                                              │ 'Chat Log'                  │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 26      │ 'Social Prescribing.AI summary.pdf'                                                                                                                                     │ 'Chat Log'                  │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 27      │ 'Field_2021_clinicaltrial_qualitative.pdf'                                                                                                                              │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 28      │ 'Florence Williams.PVG.docx'                                                                                                                                            │ 'Presentation Announcement' │ 'Json Expert Summary'      │ 'No valid JSON content found' │
+│ 29      │ 'Field_2021_clinicaltrial.pdf'                                                                                                                                          │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 30      │ 'chat.txt'                                                                                                                                                              │ 'Chat Log'                  │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 31      │ 'chat.txt'                                                                                                                                                              │ 'Chat Log'                  │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 32      │ 'Jake Eagle.Contact.docx'                                                                                                                                               │ 'email correspondence'      │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 33      │ 'David Tauben Narrative Bio-Emeritus.pdf'                                                                                                                               │ 'professional biography'    │ 'professional biography'   │ 'No valid JSON content found' │
+│ 34      │ 'Springer.Trauma of a Divided Nation.docx'                                                                                                                              │ 'web news article'          │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 35      │ 'Andrew Steele.docx'                                                                                                                                                    │ 'professional biography'    │ 'professional biography'   │ 'No valid JSON content found' │
+│ 36      │ 'Lustig Announcement.docx'                                                                                                                                              │ 'Presentation Announcement' │ 'Json Expert Summary'      │ 'No valid JSON content found' │
+│ 37      │ 'Simonsson et al., 2021.pdf'                                                                                                                                            │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 38      │ 'AH-Inﬂammation-Associated Co-morbidity Between Depression and Cardiovascular Disease.pdf'                                                                              │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 39      │ 'Stellate Blocks.Roundtable.docx'                                                                                                                                       │ 'dicussion transcript'      │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 40      │ 'Tang.SCFA.Pain.2024.pdf'                                                                                                                                               │ 'review article'            │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 41      │ '9 FINAL The Role of Forgiveness in Chronic Pain and Fibromyalgia.pdf'                                                                                                  │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 42      │ 'Pandi_Resume.pdf'                                                                                                                                                      │ 'curriculum vitae'          │ 'Json Expert Summary'      │ 'No valid JSON content found' │
+│ 43      │ 'Artikel. SEartikel2020 (1).pdf'                                                                                                                                        │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 44      │ 'Garland.Tall Poppy.mp4'                                                                                                                                                │ 'mp4 video'                 │ 'Video Summary Transcript' │ 'No valid JSON content found' │
+│ 45      │ 'Evidentiary-Basis-for-ILF-Neurofeedback.pdf'                                                                                                                           │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 46      │ 'DR.Cholinergic System.docx'                                                                                                                                            │ 'essay'                     │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 47      │ 'HovermanSocialPrescribing24.pdf'                                                                                                                                       │ 'journal article'           │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 48      │ 'Artikel SE. Proticol 2018. Somatic_experiencing_for_patients.pdf'                                                                                                      │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 49      │ 'WBC references.docx'                                                                                                                                                   │ 'website'                   │ 'website'                  │ 'No valid JSON content found' │
+│ 50      │ 'Jake Eagle.Cytokines.docx'                                                                                                                                             │ 'letter'                    │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 51      │ 'Chronic Disease Discussion Group.Topics.2021.docx'                                                                                                                     │ 'Presentation Announcement' │ 'Json Expert Summary'      │ 'No valid JSON content found' │
+│ 52      │ 'Summary of Brenda Stockdale_Bernie Seigel'                                                                                                                             │ 'presentation transcript'   │ 'presentation transcript'  │ 'No valid JSON content found' │
+│ 53      │ 'Woolf.Bezruchka.docx'                                                                                                                                                  │ 'email correspondence'      │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 54      │ 'Temoshok 2008 Brain Behavior & Immunity (1).pdf'                                                                                                                       │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 55      │ 'meeting_saved_chat.txt'                                                                                                                                                │ 'Chat Log'                  │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 56      │ 'Carter.COVID.OT.2020-03-EPUB.pdf'                                                                                                                                      │ 'letter to the editor'      │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 57      │ 'Artikel. SE. Maj 2017. A-randomized-controlled-trial-of-brief-Somatic-Experiencing-for-chronic-low-back-pain-and-comorbid-post-traumatic-stress-disorder-symptoms.pdf' │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 58      │ 'meeting_saved_chat.txt'                                                                                                                                                │ 'Chat Log'                  │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 59      │ 'Austin Perlutter.docx'                                                                                                                                                 │ 'Presentation Announcement' │ 'Json Expert Summary'      │ 'No valid JSON content found' │
+│ 60      │ 'Transcript - Brenda Stockdale - 2-19-2025.pdf'                                                                                                                         │ 'presentation transcript'   │ 'presentation transcript'  │ 'No valid JSON content found' │
+│ 61      │ 'Rosenberg.Stress.GreyHair.2021.pdf'                                                                                                                                    │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 62      │ 'Jennifer Franklin.docx'                                                                                                                                                │ 'email correspondence'      │ 'Json document summary'    │ 'No valid JSON content found' │
+│ 63      │ 'Lane.APS Presidential Address 2008.pdf'                                                                                                                                │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+│ 64      │ 'White blood cell count as a predictor of mortality: results over 18 years from the Normative Aging S.pdf'                                                              │ 'research article'          │ 'Json pdf summary'         │ 'No valid JSON content found' │
+└─────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴─────────────────────────────┴────────────────────────────┴───────────────────────────────┘
 
 
 
 
+first add this code to the update-media-documents-types command to set the processing_status = skip_reprocessing if the processing_skip_reason is not null
 
 
-add a new reprocessing command in google cli sync that does the following
-1) look at the the metadata field in each of the expert_documents and if it has the new field in the metadata field that says:  needs_reprocessing = true only then follows these rules
+then rework the reclassify_docs in google cli sync pipeline to do the following.
+1) look at records flagged in check-reprocessing_status command and for each of the expert_documents that need reprocessing follow these rules:
 a) if the file name ends with .docx call the google sync classify-docs-service on the file
-b) if the file name ends with .jpg assign the document_type_id as the value 68b95822-2746-4ce1-ad35-34e5b0297177 in sources_google 
-c) if the file name ends with .pdf call the google sync command classify-pdfs on the file
-d) if the file name ends with .pptx call the google sync command classify-powerpoints on the file
+b) if the file name ends with .pdf call the google sync command classify-pdfs on the file
+c) if the file name ends with .pptx call the google sync command classify-powerpoints on the file
+
+test this new command to see that the proper classify command is being called and will work first
 
 
 
@@ -133,6 +205,69 @@ CREATE TRIGGER trigger_update_processing_status_timestamp
     FOR EACH ROW
     EXECUTE FUNCTION update_processing_status_timestamp();
 
+
+
+WITH column_stats AS (
+    SELECT 
+        COUNT(*) as total_rows,
+        GREATEST(COUNT(*), 1) as safe_count -- Prevent division by zero
+    FROM expert_documents
+)
+SELECT 
+    column_name,
+    data_type,
+    -- Count statistics
+    COUNT(*) as total_records,
+    COUNT(*) FILTER (WHERE val IS NULL) as null_count,
+    -- Null percentage with 2 decimal places
+    ROUND((COUNT(*) FILTER (WHERE val IS NULL))::numeric / NULLIF(COUNT(*), 0) * 100, 2) as null_percentage,
+    -- Non-null percentage with 2 decimal places
+    ROUND((COUNT(*) FILTER (WHERE val IS NOT NULL))::numeric / NULLIF(COUNT(*), 0) * 100, 2) as used_percentage,
+    -- Distinct value analysis
+    COUNT(DISTINCT val) as distinct_values,
+    -- For JSON fields
+    CASE 
+        WHEN data_type LIKE '%json%' THEN 
+            ROUND((SUM(CASE WHEN val::text = '{}' OR val::text = '[]' THEN 1 ELSE 0 END))::numeric / 
+                  NULLIF(COUNT(*), 0) * 100, 2)
+    END as empty_json_percentage,
+    -- Last updated
+    MAX(updated_at) FILTER (WHERE val IS NOT NULL) as last_updated,
+    -- Sample values (for non-text/json fields)
+    CASE 
+        WHEN data_type NOT IN ('json', 'jsonb', 'text') AND 
+             COUNT(DISTINCT val) <= 5 THEN 
+            array_to_string(
+                ARRAY(
+                    SELECT DISTINCT val::text 
+                    FROM unnest(array_agg(val)) val 
+                    WHERE val IS NOT NULL 
+                    LIMIT 5
+                ),
+                ', '
+            )
+        ELSE 'Multiple values'
+    END as sample_values
+FROM (
+    SELECT 
+        column_name,
+        data_type,
+        updated_at,
+        (CASE 
+            WHEN data_type = 'jsonb' THEN to_jsonb(fields.value)
+            ELSE fields.value
+        END)::text as val
+    FROM expert_documents
+    CROSS JOIN LATERAL jsonb_each_text(to_jsonb(expert_documents)) AS fields(key, value)
+    JOIN information_schema.columns c ON 
+        c.table_name = 'expert_documents' AND 
+        c.column_name = fields.key AND
+        c.table_schema = 'public'
+) subq
+GROUP BY column_name, data_type
+ORDER BY 
+    null_percentage DESC,
+    column_name ASC;
 
 
 

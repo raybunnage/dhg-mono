@@ -79,7 +79,8 @@ export async function checkReprocessingStatus(options: {
       expertDocId: string | null;
       processingStatus: string | null;
       processingReason: string | null;
-      documentType: string | null;
+      expertDocumentType: string | null;
+      sourcesGoogleDocumentType: string | null;
     }> = [];
 
     // 1. Fetch sources from sources_google with filtering
@@ -161,13 +162,28 @@ export async function checkReprocessingStatus(options: {
         
         // Add results for sources without expert docs
         for (const source of batchSources) {
+          // Get source_google document type name from separate query
+          let sourcesGoogleDocumentTypeName: string | null = null;
+          if (source.document_type_id) {
+            const { data: docType, error: docTypeError } = await supabaseClient
+              .from('document_types')
+              .select('document_type')
+              .eq('id', source.document_type_id)
+              .maybeSingle();
+              
+            if (!docTypeError && docType) {
+              sourcesGoogleDocumentTypeName = docType.document_type;
+            }
+          }
+          
           results.push({
             sourceId: source.id,
             sourceName: source.name,
             expertDocId: null,
             processingStatus: null,
             processingReason: null,
-            documentType: null
+            expertDocumentType: null,
+            sourcesGoogleDocumentType: sourcesGoogleDocumentTypeName
           });
         }
         
@@ -188,14 +204,14 @@ export async function checkReprocessingStatus(options: {
           const processingStatus = expertDoc.processing_status || 'not_set';
           const processingReason = expertDoc.processing_skip_reason;
           
-          // Update stats based on processing status
+          // Update stats based on processing status and reason
           if (processingStatus === 'needs_reprocessing') {
             stats.needsReprocessing++;
           } else if (processingStatus === 'reprocessing_done') {
             stats.reprocessingDone++;
           } else if (processingStatus === 'skip_processing') {
             stats.skipProcessing++;
-          } else if (processingStatus === 'not_set') {
+          } else if (processingStatus === 'not_set' || processingStatus === null) {
             stats.notSet++;
           }
           
@@ -213,6 +229,20 @@ export async function checkReprocessingStatus(options: {
             }
           }
           
+          // Get source_google document type name from separate query
+          let sourcesGoogleDocumentTypeName: string | null = null;
+          if (source.document_type_id) {
+            const { data: docType, error: docTypeError } = await supabaseClient
+              .from('document_types')
+              .select('document_type')
+              .eq('id', source.document_type_id)
+              .maybeSingle();
+              
+            if (!docTypeError && docType) {
+              sourcesGoogleDocumentTypeName = docType.document_type;
+            }
+          }
+
           // Add to results
           results.push({
             sourceId: source.id,
@@ -220,7 +250,8 @@ export async function checkReprocessingStatus(options: {
             expertDocId: expertDoc.id,
             processingStatus,
             processingReason,
-            documentType: documentTypeName
+            expertDocumentType: documentTypeName,
+            sourcesGoogleDocumentType: sourcesGoogleDocumentTypeName
           });
           
           if (verbose) {
@@ -228,12 +259,24 @@ export async function checkReprocessingStatus(options: {
             console.log(`  Expert Document: ${expertDoc.id}`);
             console.log(`  Document Type: ${documentTypeName || 'Unknown'}`);
             console.log(`  Processing Status: ${processingStatus}`);
-            if (processingReason) {
-              console.log(`  Processing Reason: ${processingReason}`);
-            }
+            console.log(`  Processing Reason: ${processingReason || 'None'}`);
             console.log('');
           }
         } else {
+          // Get source_google document type name from separate query
+          let sourcesGoogleDocumentTypeName: string | null = null;
+          if (source.document_type_id) {
+            const { data: docType, error: docTypeError } = await supabaseClient
+              .from('document_types')
+              .select('document_type')
+              .eq('id', source.document_type_id)
+              .maybeSingle();
+              
+            if (!docTypeError && docType) {
+              sourcesGoogleDocumentTypeName = docType.document_type;
+            }
+          }
+
           // Add to results for sources without expert docs
           results.push({
             sourceId: source.id,
@@ -241,7 +284,8 @@ export async function checkReprocessingStatus(options: {
             expertDocId: null,
             processingStatus: null,
             processingReason: null,
-            documentType: null
+            expertDocumentType: null,
+            sourcesGoogleDocumentType: sourcesGoogleDocumentTypeName
           });
           
           if (verbose) {
@@ -264,6 +308,55 @@ export async function checkReprocessingStatus(options: {
     console.log(`Documents with skip processing flag: ${stats.skipProcessing}`);
     console.log(`Documents with no processing status set: ${stats.notSet}`);
     
+    // Show sources needing reprocessing in a table format
+    if (stats.needsReprocessing > 0) {
+      console.log('\nSources Needing Reprocessing:');
+      console.table(results.filter(r => r.processingStatus === 'needs_reprocessing')
+        .map(r => ({
+          'Source Name': r.sourceName,
+          'Sources Google Doc Type': r.sourcesGoogleDocumentType || 'None',
+          'Expert Doc Type': r.expertDocumentType || 'None',
+          'Processing Reason': r.processingReason
+        }))
+      );
+    }
+    
+    // Show sources that will be skipped during processing
+    if (stats.skipProcessing > 0) {
+      console.log('\nSources Skipping Processing:');
+      console.table(results.filter(r => r.processingStatus === 'skip_processing')
+        .map(r => ({
+          'Source Name': r.sourceName,
+          'Sources Google Doc Type': r.sourcesGoogleDocumentType || 'None',
+          'Expert Doc Type': r.expertDocumentType || 'None',
+          'Processing Status': r.processingStatus,
+          'Processing Reason': r.processingReason
+        }))
+      );
+    }
+    
+    // Show breakdown of processing reasons if any documents need processing
+    if (stats.needsReprocessing > 0 || stats.skipProcessing > 0) {
+      console.log('\nProcessing Reasons Breakdown:');
+      
+      // Group by processing reason
+      const reasonCounts = new Map<string, number>();
+      for (const result of results) {
+        if (result.processingReason) {
+          const count = reasonCounts.get(result.processingReason) || 0;
+          reasonCounts.set(result.processingReason, count + 1);
+        }
+      }
+      
+      // Display reasons sorted by count (descending)
+      const sortedReasons = Array.from(reasonCounts.entries())
+        .sort((a, b) => b[1] - a[1]);
+      
+      for (const [reason, count] of sortedReasons) {
+        console.log(`  ${reason}: ${count} documents`);
+      }
+    }
+    
     // Output detailed results if requested
     if (options.outputPath) {
       const fs = require('fs');
@@ -276,9 +369,15 @@ export async function checkReprocessingStatus(options: {
           output = JSON.stringify(results, null, 2);
         } else {
           // Simple table format
-          output = 'Source ID,Source Name,Expert Doc ID,Processing Status,Processing Reason,Document Type\n';
+          output = 'Source ID,Source Name,Expert Doc ID,Processing Status,Processing Reason,Expert Document Type,Source Google Document Type\n';
           for (const result of results) {
-            output += `${result.sourceId},${result.sourceName},${result.expertDocId || 'N/A'},${result.processingStatus || 'N/A'},${result.processingReason || 'N/A'},${result.documentType || 'N/A'}\n`;
+            // Escape commas in fields for proper CSV format
+            const escapedSourceName = result.sourceName.replace(/,/g, ' ');
+            const escapedReason = result.processingReason ? result.processingReason.replace(/,/g, ' ') : 'N/A';
+            const escapedExpertDocType = result.expertDocumentType ? result.expertDocumentType.replace(/,/g, ' ') : 'N/A';
+            const escapedSourceDocType = result.sourcesGoogleDocumentType ? result.sourcesGoogleDocumentType.replace(/,/g, ' ') : 'N/A';
+            
+            output += `${result.sourceId},${escapedSourceName},${result.expertDocId || 'N/A'},${result.processingStatus || 'N/A'},${escapedReason},${escapedExpertDocType},${escapedSourceDocType}\n`;
           }
         }
         
