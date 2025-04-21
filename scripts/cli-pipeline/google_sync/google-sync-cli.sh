@@ -201,7 +201,7 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
   
   # Create counters file to track counts outside the subshell
   COUNTS_FILE=$(mktemp)
-  echo "0 0 0 0" > "$COUNTS_FILE" # DOCX PDF PPTX OTHER counts
+  echo "0 0 0 0 0" > "$COUNTS_FILE" # DOCX PDF PPTX MP4 OTHER counts
   
   # Process each document based on file extension
   echo "$SOURCES" | while read -r SOURCE; do
@@ -228,7 +228,7 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
     echo "Found document needing reprocessing: $FILENAME"
     
     # Read current counts
-    read DOCX_COUNT PDF_COUNT PPTX_COUNT OTHER_COUNT < "$COUNTS_FILE"
+    read DOCX_COUNT PDF_COUNT PPTX_COUNT MP4_COUNT OTHER_COUNT < "$COUNTS_FILE"
     
     # Process based on file extension
     if [[ "$FILENAME" == *".docx" ]]; then
@@ -291,13 +291,29 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
         echo "[DRY RUN] Would classify $FILENAME with classify-powerpoints"
       fi
       PPTX_COUNT=$((PPTX_COUNT + 1))
+    elif [[ "$FILENAME" == *".mp4" || "$FILENAME" == *".MP4" ]]; then
+      echo "Found MP4 file: $FILENAME (ID: $SOURCE_ID)"
+      EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
+      
+      if [ "$DRY_RUN" = false ] && [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
+        # For MP4 files, we just mark them as completed without running classification
+        # since they need different processing
+        echo "Marking MP4 file as reprocessing_done"
+        track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
+        
+        # Count this as an MP4 file
+        MP4_COUNT=$((MP4_COUNT + 1))
+      else
+        echo "[DRY RUN] Would mark MP4 file $FILENAME as reprocessing_done"
+        MP4_COUNT=$((MP4_COUNT + 1))
+      fi
     else
       echo "Skipping $FILENAME - unsupported file type"
       OTHER_COUNT=$((OTHER_COUNT + 1))
     fi
     
     # Write updated counts back to file
-    echo "$DOCX_COUNT $PDF_COUNT $PPTX_COUNT $OTHER_COUNT" > "$COUNTS_FILE"
+    echo "$DOCX_COUNT $PDF_COUNT $PPTX_COUNT $MP4_COUNT $OTHER_COUNT" > "$COUNTS_FILE"
     
     # Add a small pause to prevent overwhelming the API
     if [ "$DRY_RUN" = false ]; then
@@ -306,7 +322,7 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
   done
   
   # Read final counts
-  read DOCX_COUNT PDF_COUNT PPTX_COUNT OTHER_COUNT < "$COUNTS_FILE"
+  read DOCX_COUNT PDF_COUNT PPTX_COUNT MP4_COUNT OTHER_COUNT < "$COUNTS_FILE"
   rm -f "$COUNTS_FILE"
   
   # Print summary
@@ -316,9 +332,10 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
   echo "DOCX files: $DOCX_COUNT"
   echo "PDF files: $PDF_COUNT"
   echo "PowerPoint files: $PPTX_COUNT"
+  echo "MP4 files: $MP4_COUNT"
   echo "Other files: $OTHER_COUNT"
   echo "------------------------"
-  echo "Total files: $((DOCX_COUNT + PDF_COUNT + PPTX_COUNT + OTHER_COUNT))"
+  echo "Total files: $((DOCX_COUNT + PDF_COUNT + PPTX_COUNT + MP4_COUNT + OTHER_COUNT))"
   
   # Clean up temporary file if not in dry run mode
   if [ "$DRY_RUN" = false ]; then

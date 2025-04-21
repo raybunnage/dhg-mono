@@ -11,11 +11,11 @@ async function resetDocuments() {
   
   console.log('Finding documents to reset...');
   
-  // First, get some files of each type (limit to 2 for testing)
+  // Get supported file types, including MP4 files (limit to 2 for testing)
   const { data: sources } = await supabase
     .from('sources_google')
     .select('id, name, mime_type')
-    .or('mime_type.eq.application/pdf,mime_type.eq.application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    .or('mime_type.eq.application/vnd.openxmlformats-officedocument.wordprocessingml.document,mime_type.eq.application/pdf,mime_type.eq.video/mp4')
     .is('is_deleted', false)
     .limit(2);
   
