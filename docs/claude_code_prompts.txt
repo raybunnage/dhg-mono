@@ -15,6 +15,28 @@ token_count
 pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
 
 
+     [
+       {
+         "id": "d2206940-e4f3-476e-9245-0e1eb12fd195",
+         "document_type": "aac audio"
+       },
+         "id": "c6c3969b-c5cd-4c9a-a0f8-6e508ab68a4c",
+         "document_type": "Video Summary Transcript"
+       {
+         "id": "f2fd129e-a0ad-485d-a457-ec49736010a9",
+         "document_type": "web news article"
+       },
+       {
+         "id": "3b9369c8-73f4-4b5c-ad00-33b9720516f9",
+         "document_type": "website"
+       },
+       {
+         "id": "bb90f01f-b6c4-4030-a3ea-db9dd8c4b55a",
+         "document_type": "word document"
+       },
+     ]
+
+
 add these modifications to the update_media_document_types command in google sync cli pipeline
 1) if there is json in the related processed_content field in expert_document and the document_type_id in sources_google is 46dac359-01e9-4e36-bfb2-531da9c25e3f make the document_type_id in expert_documents = 1f71f894-d2f8-415e-80c1-a4d6db4d8b18 
 2) if there is json in the related processed_content field in expert_document and the document_type_id in sources_google is 03743a23-d2f3-4c73-a282-85afc138fdfd make the document_type_id in expert_documents = 5b1f8963-0946-4e89-884d-30517eebb8a5
