@@ -1310,6 +1310,95 @@ export async function syncAndUpdateMetadata(
       console.log('=== End Root Folder Check ===\n');
     }
     
+    // SUMMARY: Display newly inserted files
+    if (syncResult.filesInserted > 0) {
+      console.log('\n=== Newly Added Files Summary ===');
+      
+      try {
+        // Fetch the recently inserted files
+        const { data: newFiles, error: newFilesError } = await supabase
+          .from('sources_google')
+          .select(`
+            id, 
+            name, 
+            drive_id, 
+            mime_type, 
+            created_at, 
+            parent_folder_id,
+            path_array,
+            document_type_id,
+            document_types(document_type)
+          `)
+          .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+          .order('created_at', { ascending: false })
+          .limit(syncResult.filesInserted);
+          
+        if (newFilesError) {
+          console.error(`Error fetching newly added files: ${newFilesError.message}`);
+        } else if (newFiles && newFiles.length > 0) {
+          console.log(`Found ${newFiles.length} recently added files:`);
+          console.log('----------------------------------------------------------------------------------------------------------------------');
+          console.log('| Filename                       | Document Type                 | Created At           | Parent Folder               |');
+          console.log('----------------------------------------------------------------------------------------------------------------------');
+          
+          // Get parent folder names for all files
+          const parentFolderIds = new Set(newFiles.map(file => file.parent_folder_id).filter(Boolean));
+          const parentFolderMap = new Map<string, string>();
+          
+          if (parentFolderIds.size > 0) {
+            const { data: parentFolders, error: parentFoldersError } = await supabase
+              .from('sources_google')
+              .select('id, drive_id, name')
+              .in('drive_id', Array.from(parentFolderIds));
+              
+            if (!parentFoldersError && parentFolders) {
+              parentFolders.forEach(folder => {
+                parentFolderMap.set(folder.drive_id, folder.name);
+              });
+            }
+          }
+          
+          // Display files in a table format
+          for (const file of newFiles) {
+            const name = (file.name || 'Unknown').substring(0, 30).padEnd(30);
+            
+            // Get document type - either from joined document_types or use mime_type as fallback
+            let documentType = 'Unknown';
+            if (file.document_types && file.document_types[0]?.document_type) {
+              documentType = file.document_types[0].document_type;
+            } else if (file.document_type_id) {
+              documentType = `ID: ${file.document_type_id.substring(0, 8)}...`;
+            } else if (file.mime_type) {
+              documentType = file.mime_type.split('/').pop() || file.mime_type;
+            }
+            documentType = documentType.substring(0, 30).padEnd(30);
+            
+            // Format created_at date
+            const createdAt = new Date(file.created_at).toISOString().substring(0, 16).replace('T', ' ').padEnd(20);
+            
+            // Get parent folder name
+            let parentFolder = 'Unknown';
+            if (file.parent_folder_id) {
+              parentFolder = parentFolderMap.get(file.parent_folder_id) || 'Unknown';
+            } else if (file.path_array && file.path_array.length > 1) {
+              // Try to get folder name from path array
+              parentFolder = file.path_array[file.path_array.length - 2] || 'Unknown';
+            }
+            parentFolder = parentFolder.substring(0, 28).padEnd(28);
+            
+            console.log(`| ${name} | ${documentType} | ${createdAt} | ${parentFolder} |`);
+          }
+          
+          console.log('----------------------------------------------------------------------------------------------------------------------');
+          console.log('Review these newly added files and determine if they need reprocessing or special handling.');
+        } else {
+          console.log('No newly added files found in the database.');
+        }
+      } catch (error: any) {
+        console.error(`Error retrieving newly added files: ${error.message || error}`);
+      }
+    }
+
     // STEP 2: Update metadata for the files
     console.log('\n=== Step 2: Update Metadata ===');
     console.log(`Starting metadata update for ${limit} records...`);

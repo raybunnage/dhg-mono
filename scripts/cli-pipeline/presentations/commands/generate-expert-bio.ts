@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { PresentationService } from '../services/presentation-service';
-import { ClaudeService } from '../../../../packages/shared/services/claude-service';
+import { claudeService } from '../../../../packages/shared/services/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
 // Use require for chalk to avoid ESM compatibility issues
 const chalk = require('chalk');
@@ -23,7 +23,6 @@ generateExpertBioCommand
       Logger.info(`Generating expert bio for expert ID: ${options.expertId}`);
       
       const presentationService = PresentationService.getInstance();
-      const claudeService = new ClaudeService();
       
       // Get expert details
       const expert = await presentationService.getExpertDetails(options.expertId);

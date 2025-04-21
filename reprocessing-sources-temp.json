@@ -1,0 +1,47 @@
+[
+  {
+    "sourceId": "109b5c6b-866b-492d-80ca-10ce4291fd54",
+    "sourceName": "meeting_saved_new_chat.txt",
+    "expertDocId": "1c1f61a5-b499-460f-9467-fe14ae679726",
+    "processingStatus": "needs_reprocessing",
+    "processingReason": null,
+    "expertDocumentType": "Json document summary",
+    "sourcesGoogleDocumentType": "Chat Log"
+  },
+  {
+    "sourceId": "e3eb1016-af2c-4440-8e02-8cc150cc3ced",
+    "sourceName": "Children and Pain for Polyvagal Group.pptx",
+    "expertDocId": "2245f106-f9fc-4ff3-804d-05b5cadde930",
+    "processingStatus": "needs_reprocessing",
+    "processingReason": null,
+    "expertDocumentType": "Json document summary",
+    "sourcesGoogleDocumentType": null
+  },
+  {
+    "sourceId": "ebda479a-483f-49b6-af3c-a2691eda16e0",
+    "sourceName": "Inflammation and the Vagus Nerve.pptx",
+    "expertDocId": "5e58f6fb-8914-4216-9101-9600470b10bd",
+    "processingStatus": "needs_reprocessing",
+    "processingReason": null,
+    "expertDocumentType": "Json pdf summary",
+    "sourcesGoogleDocumentType": null
+  },
+  {
+    "sourceId": "382fda3f-9688-4936-b221-809fe9a7fbf8",
+    "sourceName": "Children and Pain for Polyvagal Group.pptx",
+    "expertDocId": "b9c275c8-f95b-4110-8916-81077bc140cd",
+    "processingStatus": "needs_reprocessing",
+    "processingReason": null,
+    "expertDocumentType": "Json pdf summary",
+    "sourcesGoogleDocumentType": null
+  },
+  {
+    "sourceId": "5f73ea78-a9f2-4e2c-8218-09b6ede0391c",
+    "sourceName": "Sapio Cortex, Threat, and Human Physiology.Clawson.docx.pdf",
+    "expertDocId": "dc44df50-c62b-471f-850b-f3e79c6f68c0",
+    "processingStatus": "needs_reprocessing",
+    "processingReason": null,
+    "expertDocumentType": "Json document summary",
+    "sourcesGoogleDocumentType": "presentation transcript"
+  }
+]

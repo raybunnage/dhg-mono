@@ -1,5 +1,6 @@
 #!/usr/bin/env ts-node
 import { Command } from 'commander';
+import * as crypto from 'crypto';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { commandTrackingService } from '../../../packages/shared/services/tracking-service/command-tracking-service';
 
@@ -801,6 +802,287 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       }
     }
 
+    // NEW FEATURE: Find sources_google files without expert_documents entries
+    console.log('\nFinding sources_google files without expert_documents entries...');
+    
+    // Get all sources_google files that are not folders and not deleted
+    const { data: allActiveSources, error: activeSourcesError } = await supabaseClient
+      .from('sources_google')
+      .select('id, name, document_type_id, mime_type')
+      .eq('is_deleted', false)
+      .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
+      
+    if (activeSourcesError) {
+      console.error('Error fetching active sources:', activeSourcesError.message);
+    } else if (allActiveSources && allActiveSources.length > 0) {
+      console.log(`Found ${allActiveSources.length} active non-folder sources in sources_google`);
+      
+      // Get all expert_documents to check which sources already have entries
+      const { data: allExpertDocs, error: allExpertDocsError } = await supabaseClient
+        .from('expert_documents')
+        .select('source_id')
+        .not('source_id', 'is', null);
+        
+      if (allExpertDocsError) {
+        console.error('Error fetching all expert documents:', allExpertDocsError.message);
+      } else if (allExpertDocs) {
+        // Create a set of source_ids that already have expert_documents
+        const existingSourceIds = new Set(allExpertDocs.map(doc => doc.source_id));
+        
+        // Filter for sources that don't have expert_documents
+        const sourcesWithoutDocs = allActiveSources.filter(source => !existingSourceIds.has(source.id));
+        
+        if (sourcesWithoutDocs.length > 0) {
+          console.log(`Found ${sourcesWithoutDocs.length} sources without expert_documents entries`);
+          
+          // Process in batches
+          for (let i = 0; i < sourcesWithoutDocs.length; i += batchSize) {
+            const batchSources = sourcesWithoutDocs.slice(i, i + batchSize);
+            const newDocEntries = [];
+            
+            for (const source of batchSources) {
+              // Check if source has an unsupported document type
+              const isUnsupportedType = unsupportedDocumentTypeIds.includes(source.document_type_id) || 
+                                      unsupportedMimeTypes.includes(source.mime_type);
+              
+              let processingStatus = 'pending';
+              let processingSkipReason = null;
+              let documentProcessingStatus = 'not_set';
+              
+              if (isUnsupportedType) {
+                processingStatus = 'completed';
+                documentProcessingStatus = 'skip_processing';
+                processingSkipReason = "unsupported document_type";
+                
+                // Add more specific information if available
+                if (unsupportedDocumentTypeIds.includes(source.document_type_id)) {
+                  processingSkipReason = `Unsupported document_type: ${source.document_type_id}`;
+                } else if (unsupportedMimeTypes.includes(source.mime_type)) {
+                  processingSkipReason = `Unsupported MIME type: ${source.mime_type}`;
+                }
+              }
+              
+              // Create a new expert_document entry
+              newDocEntries.push({
+                id: crypto.randomUUID(), // Generate a unique ID
+                source_id: source.id,
+                document_type_id: source.document_type_id, // Initially set to same as source
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                processing_status: processingStatus,
+                document_processing_status: documentProcessingStatus,
+                document_processing_status_updated_at: new Date().toISOString(),
+                processing_skip_reason: processingSkipReason
+              });
+            }
+            
+            if (!dryRun && newDocEntries.length > 0) {
+              const { data, error: insertError } = await supabaseClient
+                .from('expert_documents')
+                .insert(newDocEntries)
+                .select('id');
+                
+              if (insertError) {
+                console.error(`Error inserting batch ${i}-${i+batchSize} of new expert_documents:`, insertError.message);
+              } else {
+                console.log(`✓ Created ${newDocEntries.length} new expert_documents entries for batch ${i}-${i+batchSize}`);
+                
+                // Count how many were marked as skip_processing
+                const skippedCount = newDocEntries.filter(doc => doc.document_processing_status === 'skip_processing').length;
+                if (skippedCount > 0) {
+                  console.log(`  - ${skippedCount} were marked as 'skip_processing' due to unsupported document types`);
+                }
+              }
+            } else {
+              console.log(`[DRY RUN] Would create ${newDocEntries.length} new expert_documents entries for batch ${i}-${i+batchSize}`);
+              
+              // Count how many would be marked as skip_processing
+              const skippedCount = newDocEntries.filter(doc => doc.document_processing_status === 'skip_processing').length;
+              if (skippedCount > 0) {
+                console.log(`  - ${skippedCount} would be marked as 'skip_processing' due to unsupported document types`);
+              }
+            }
+          }
+        } else {
+          console.log('All active sources already have expert_documents entries');
+        }
+      }
+    }
+    
+    // NEW FEATURE: Find expert_documents without corresponding sources_google entries
+    console.log('\nFinding expert_documents without corresponding sources_google entries...');
+    
+    // Get all expert documents with their content flags and document types
+    const { data: allExpertDocsWithDetails, error: expertDocsDetailsError } = await supabaseClient
+      .from('expert_documents')
+      .select(`
+        id, 
+        source_id,
+        document_type_id,
+        document_types(document_type),
+        raw_content,
+        processed_content
+      `)
+      .not('source_id', 'is', null);
+    
+    if (expertDocsDetailsError) {
+      console.error('Error fetching expert documents with details:', expertDocsDetailsError.message);
+    } else if (allExpertDocsWithDetails && allExpertDocsWithDetails.length > 0) {
+      console.log(`Found ${allExpertDocsWithDetails.length} expert documents with source_id values`);
+      
+      // Get all active source IDs (not just non-folder sources)
+      const { data: allSourceIds, error: allSourceIdsError } = await supabaseClient
+        .from('sources_google')
+        .select('id')
+        .eq('is_deleted', false);
+        
+      if (allSourceIdsError) {
+        console.error('Error fetching all source IDs:', allSourceIdsError.message);
+      } else if (allSourceIds) {
+        // Create a set of all active source IDs
+        const activeSourceIdSet = new Set(allSourceIds.map(source => source.id));
+        
+        // Find expert documents with missing sources
+        const docsWithoutSources = allExpertDocsWithDetails.filter(doc => !activeSourceIdSet.has(doc.source_id));
+        
+        if (docsWithoutSources.length > 0) {
+          console.log(`⚠️ Found ${docsWithoutSources.length} expert_documents without corresponding sources_google entries:`);
+          console.log('--------------------------------------------------------------------------------------------------------');
+          console.log('| ID                                   | Document Type                     | Content Status             |');
+          console.log('--------------------------------------------------------------------------------------------------------');
+          
+          // Display details about each orphaned document
+          for (const doc of docsWithoutSources) {
+            const docId = doc.id || 'unknown';
+            // Handle the document_types nested object structure
+            const docType = doc.document_types && doc.document_types[0]?.document_type || 
+                           (doc.document_type_id || 'unknown');
+            
+            // Determine content status
+            let contentStatus = 'No content';
+            if (doc.raw_content) contentStatus = 'Has raw_content';
+            if (doc.processed_content) {
+              contentStatus = 'Has processed_content';
+              if (doc.raw_content) contentStatus = 'Has both contents';
+            }
+            
+            // Format for table display
+            const idCol = docId.padEnd(40).substring(0, 38);
+            const typeCol = docType.padEnd(36).substring(0, 34);
+            const contentCol = contentStatus.padEnd(28).substring(0, 26);
+            
+            console.log(`| ${idCol} | ${typeCol} | ${contentCol} |`);
+          }
+          console.log('--------------------------------------------------------------------------------------------------------');
+        } else {
+          console.log('✅ All expert_documents have corresponding sources_google entries');
+        }
+      }
+    }
+    
+    // Additional check: Ensure no files with unsupported document types have needs_reprocessing status
+    console.log('\nEnsuring unsupported document types are not marked as needs_reprocessing...');
+    
+    // Find expert documents with unsupported types but marked as needs_reprocessing
+    const { data: mismarkedDocs, error: mismarkedDocsError } = await supabaseClient
+      .from('expert_documents')
+      .select('id, source_id')
+      .eq('document_processing_status', 'needs_reprocessing')
+      .or(`source_id.in.(${unsupportedDocumentTypeIds.map(id => `select id from sources_google where document_type_id = '${id}'`).join(',')}),` +
+          `source_id.in.(${unsupportedMimeTypes.map(mime => `select id from sources_google where mime_type = '${mime}'`).join(',')})`);
+      
+    if (mismarkedDocsError) {
+      console.error('Error finding mismarked documents:', mismarkedDocsError.message);
+    } else if (mismarkedDocs && mismarkedDocs.length > 0) {
+      console.log(`Found ${mismarkedDocs.length} documents with unsupported types incorrectly marked as 'needs_reprocessing'`);
+      
+      // Process in batches
+      for (let i = 0; i < mismarkedDocs.length; i += batchSize) {
+        const batchDocs = mismarkedDocs.slice(i, i + batchSize);
+        const updates = [];
+        
+        for (const doc of batchDocs) {
+          updates.push({
+            id: doc.id,
+            source_id: doc.source_id,
+            document_processing_status: 'skip_processing',
+            document_processing_status_updated_at: new Date().toISOString(),
+            processing_status: 'completed',
+            processing_skip_reason: 'Unsupported document type - corrected from needs_reprocessing'
+          });
+        }
+        
+        if (!dryRun) {
+          const { error: updateError } = await supabaseClient
+            .from('expert_documents')
+            .upsert(updates, { onConflict: 'id' });
+            
+          if (updateError) {
+            console.error(`Error updating batch ${i}-${i+batchSize} of mismarked documents:`, updateError.message);
+          } else {
+            console.log(`✓ Corrected ${updates.length} documents from 'needs_reprocessing' to 'skip_processing'`);
+          }
+        } else {
+          console.log(`[DRY RUN] Would correct ${updates.length} documents from 'needs_reprocessing' to 'skip_processing'`);
+        }
+      }
+    } else {
+      console.log('No documents with unsupported types are incorrectly marked as needs_reprocessing');
+    }
+
+    // FINAL VERIFICATION: Check that every non-folder sources_google file has an expert_document
+    console.log('\nFINAL VERIFICATION: Checking all sources_google files have expert_documents...');
+    
+    // Get all non-folder, non-deleted sources_google files
+    const { data: finalSourcesCheck, error: finalSourcesError } = await supabaseClient
+      .from('sources_google')
+      .select('id, name')
+      .eq('is_deleted', false)
+      .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
+      
+    if (finalSourcesError) {
+      console.error('Error fetching sources for final verification:', finalSourcesError.message);
+    } else if (finalSourcesCheck && finalSourcesCheck.length > 0) {
+      console.log(`Checking ${finalSourcesCheck.length} active non-folder sources`);
+      
+      // Get all expert_documents with source_id
+      const { data: finalDocsCheck, error: finalDocsError } = await supabaseClient
+        .from('expert_documents')
+        .select('source_id');
+        
+      if (finalDocsError) {
+        console.error('Error fetching expert documents for final verification:', finalDocsError.message);
+      } else if (finalDocsCheck) {
+        // Create a set of source_ids that have expert_documents
+        const finalExistingSourceIds = new Set(finalDocsCheck.map(doc => doc.source_id));
+        
+        // Filter for sources that don't have expert_documents
+        const finalSourcesWithoutDocs = finalSourcesCheck.filter(source => !finalExistingSourceIds.has(source.id));
+        
+        if (finalSourcesWithoutDocs.length > 0) {
+          console.log(`⚠️ VERIFICATION FAILED: Found ${finalSourcesWithoutDocs.length} sources that still don't have expert_documents entries:`);
+          console.log('---------------------------------------------------------------------------');
+          console.log('| ID                                   | Name                             |');
+          console.log('---------------------------------------------------------------------------');
+          
+          for (const source of finalSourcesWithoutDocs.slice(0, 10)) { // Show first 10
+            const idCol = source.id.padEnd(40).substring(0, 38);
+            const nameCol = (source.name || 'unknown').padEnd(34).substring(0, 32);
+            console.log(`| ${idCol} | ${nameCol} |`);
+          }
+          
+          if (finalSourcesWithoutDocs.length > 10) {
+            console.log(`... and ${finalSourcesWithoutDocs.length - 10} more`);
+          }
+          
+          console.log('---------------------------------------------------------------------------');
+          console.log('Run this command again to create missing expert_documents entries');
+        } else {
+          console.log('✅ VERIFICATION PASSED: All active non-folder sources have corresponding expert_documents entries');
+        }
+      }
+    }
+    
     // Complete tracking
     if (trackingId !== 'tracking-unavailable') {
       try {

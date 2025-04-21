@@ -6,7 +6,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { Logger } from '../../../../packages/shared/utils';
-import { ClaudeService } from '../../../../packages/shared/services/claude-service';
+import { claudeService } from '../../../../packages/shared/services/claude-service';
 import { fileService } from '../../../../packages/shared/services/file-service/file-service';
 import { SupabaseService } from '../../../../packages/shared/services/supabase-service/supabase-service';
 
@@ -78,7 +78,6 @@ async function processSummary(options: ProcessSummaryOptions): Promise<SummaryRe
     Logger.info(`📄 Original content has ${wordCount} words`);
 
     // Generate summary using Claude
-    const claudeService = new ClaudeService();
     const prompt = generateSummaryPrompt(originalContent, summaryType);
     const summary = await claudeService.sendPrompt(prompt);
 

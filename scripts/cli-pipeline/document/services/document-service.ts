@@ -15,7 +15,7 @@ import { fileService } from '../../shared/file-service';
 import { databaseService } from '../../shared/services/database-service';
 import { logger } from '../../shared/services/logger-service';
 import { environmentService } from '../../shared/services/environment-service';
-import { claudeService } from '../../shared/services/claude-service';
+import { claudeService } from '../../../../packages/shared/services/claude-service';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 // Import types

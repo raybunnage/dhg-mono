@@ -234,18 +234,15 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
     if [[ "$FILENAME" == *".docx" ]]; then
       echo "Processing DOCX file: $FILENAME (ID: $SOURCE_ID)"
       if [ "$DRY_RUN" = false ]; then
-        # Run the classification command
-        track_command "classify-docs-service" "ts-node $SCRIPT_DIR/classify-missing-docs-with-service.ts --limit 1 --verbose"
-        
-        # If successful, mark as reprocessing_done
-        if [ $? -eq 0 ]; then
-          EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
-          if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
-            # Run the helper to update processing_status
-            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
-          else
-            echo "⚠️ No expert document ID found for ${FILENAME}, skipping status update"
-          fi
+        # Get the expert document ID
+        EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
+        if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
+          # Run the force reclassify command directly
+          track_command "force-reclassify-docx" "ts-node -e \"require('$SCRIPT_DIR/force-reclassify').forceReclassifyDocument('$EXPERT_DOC_ID', '$SOURCE_ID', true)\""
+        else
+          echo "⚠️ No expert document ID found for ${FILENAME}, running standard classification"
+          # Fall back to standard classification
+          track_command "classify-docs-service" "ts-node $SCRIPT_DIR/classify-missing-docs-with-service.ts --limit 1 --verbose"
         fi
       else
         echo "[DRY RUN] Would classify $FILENAME with classify-docs-service"
@@ -254,18 +251,15 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
     elif [[ "$FILENAME" == *".pdf" ]]; then
       echo "Processing PDF file: $FILENAME (ID: $SOURCE_ID)"
       if [ "$DRY_RUN" = false ]; then
-        # Run the classification command
-        track_command "classify-pdfs" "ts-node $SCRIPT_DIR/classify-pdfs-with-service.ts --limit 1 --verbose"
-        
-        # If successful, mark as reprocessing_done
-        if [ $? -eq 0 ]; then
-          EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
-          if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
-            # Run the helper to update processing_status
-            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
-          else
-            echo "⚠️ No expert document ID found for ${FILENAME}, skipping status update"
-          fi
+        # Get the expert document ID
+        EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
+        if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
+          # Run the force reclassify command directly
+          track_command "force-reclassify-pdf" "ts-node -e \"require('$SCRIPT_DIR/force-reclassify').forceReclassifyDocument('$EXPERT_DOC_ID', '$SOURCE_ID', true)\""
+        else
+          echo "⚠️ No expert document ID found for ${FILENAME}, running standard classification"
+          # Fall back to standard classification
+          track_command "classify-pdfs" "ts-node $SCRIPT_DIR/classify-pdfs-with-service.ts --limit 1 --verbose"
         fi
       else
         echo "[DRY RUN] Would classify $FILENAME with classify-pdfs"
@@ -274,18 +268,15 @@ if [ "$1" = "reclassify-docs" ] || [ "$1" = "reclassify_docs" ]; then
     elif [[ "$FILENAME" == *".pptx" ]]; then
       echo "Processing PowerPoint file: $FILENAME (ID: $SOURCE_ID)"
       if [ "$DRY_RUN" = false ]; then
-        # Run the classification command
-        track_command "classify-powerpoints" "ts-node $SCRIPT_DIR/classify-powerpoints.ts --limit 1 --verbose"
-        
-        # If successful, mark as reprocessing_done
-        if [ $? -eq 0 ]; then
-          EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
-          if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
-            # Run the helper to update processing_status
-            track_command "mark-reprocessing-done" "ts-node -e \"require('$SCRIPT_DIR/reclassify-docs-helper').markReprocessingDone('$EXPERT_DOC_ID', '$SOURCE_ID')\""
-          else
-            echo "⚠️ No expert document ID found for ${FILENAME}, skipping status update"
-          fi
+        # Get the expert document ID
+        EXPERT_DOC_ID=$(echo "$SOURCE" | jq -r '.expertDocId')
+        if [ -n "$EXPERT_DOC_ID" ] && [ "$EXPERT_DOC_ID" != "null" ]; then
+          # Run the force reclassify command directly
+          track_command "force-reclassify-pptx" "ts-node -e \"require('$SCRIPT_DIR/force-reclassify').forceReclassifyDocument('$EXPERT_DOC_ID', '$SOURCE_ID', true)\""
+        else
+          echo "⚠️ No expert document ID found for ${FILENAME}, running standard classification"
+          # Fall back to standard classification
+          track_command "classify-powerpoints" "ts-node $SCRIPT_DIR/classify-powerpoints.ts --limit 1 --verbose"
         fi
       else
         echo "[DRY RUN] Would classify $FILENAME with classify-powerpoints"

@@ -4,6 +4,14 @@
  */
 
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import { promptService } from '../../../packages/shared/services/prompt-service';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as mammoth from 'mammoth';
+import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
+
+// The prompt to use for classification
+const CLASSIFICATION_PROMPT = 'document-classification-prompt-new';
 
 /**
  * Updates the document_processing_status field in the expert_documents table

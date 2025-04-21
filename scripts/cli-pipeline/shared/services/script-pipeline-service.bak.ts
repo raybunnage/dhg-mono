@@ -766,7 +766,7 @@ Please analyze this script and provide a full assessment according to the instru
           
           logger.info(`Submitting script for classification: ${script.file_path}`);
           
-          const classificationResult = await claudeService.getJsonResponse<{
+          const classificationResult = await this.claudeService.getJsonResponse<{
             script_type_id: string;
             ai_generated_tags: string[];
             title: string;
@@ -1032,7 +1032,7 @@ Please analyze this script and provide a full assessment according to the instru
           
           logger.info(`Submitting script for classification: ${script.file_path}`);
           
-          const classificationResult = await claudeService.getJsonResponse<{
+          const classificationResult = await this.claudeService.getJsonResponse<{
             script_type_id: string;
             ai_generated_tags: string[];
             title: string;

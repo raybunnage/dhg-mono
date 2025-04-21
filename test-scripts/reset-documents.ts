@@ -11,13 +11,13 @@ async function resetDocuments() {
   
   console.log('Finding documents to reset...');
   
-  // Get supported file types, including MP4 files (limit to 2 for testing)
+  // Focus on PowerPoint files for testing
   const { data: sources } = await supabase
     .from('sources_google')
     .select('id, name, mime_type')
-    .or('mime_type.eq.application/vnd.openxmlformats-officedocument.wordprocessingml.document,mime_type.eq.application/pdf,mime_type.eq.video/mp4')
+    .eq('mime_type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
     .is('is_deleted', false)
-    .limit(2);
+    .limit(5);
   
   if (!sources || sources.length === 0) {
     console.log('No suitable sources found');

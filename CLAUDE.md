@@ -618,3 +618,44 @@ When implementing solutions, always check this section for known issues and thei
    - Ensure all insert operations include `.select()` to return generated IDs
    - Test database operations with real data
    - Check for any hardcoded credentials or connection strings
+# Claude Service Standard Implementation
+
+This repository uses a singleton instance of the Claude service for all Claude AI interactions.
+
+## How to Use Claude Service
+
+1. Import the singleton instance:
+```typescript
+import { claudeService } from '../../../packages/shared/services/claude-service';
+```
+
+2. Use the appropriate methods:
+```typescript
+// For simple text responses
+const textResponse = await claudeService.sendPrompt('Your prompt here');
+
+// For structured JSON responses
+const jsonResponse = await claudeService.getJsonResponse('Your prompt here');
+
+// For PDF processing
+const pdfContent = await claudeService.analyzePdf('/path/to/file.pdf', 'Your prompt here');
+const pdfJson = await claudeService.analyzePdfToJson('/path/to/file.pdf', 'Your prompt here');
+```
+
+3. Never create new instances with 'new ClaudeService()'. Always use the singleton.
+
+## Available Methods
+
+- sendPrompt: Get a text response
+- getJsonResponse: Get a structured JSON response
+- classifyText: Classify text content
+- analyzePdf: Process a PDF file and return text
+- analyzePdfToJson: Process a PDF file and return JSON
+
+## PDF Processing
+
+The Claude service supports processing PDFs and will automatically:
+- Handle large PDFs by splitting them
+- Convert PDFs to Claude's required format
+- Return either text or structured JSON
+
