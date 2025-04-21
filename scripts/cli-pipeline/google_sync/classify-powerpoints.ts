@@ -1042,8 +1042,23 @@ async function classifyPowerPointDocuments(
           // Create expert document record
           console.log(`➡️ Creating expert_document record with extracted content...`);
           
+          // Define an interface for the expert document that includes all fields
+          interface ExpertDocument {
+            id: string;
+            source_id: string;
+            document_type_id: string;
+            classification_confidence: number;
+            created_at: string;
+            updated_at: string;
+            raw_content?: string;
+            processed_content: any;
+            classification_metadata: any;
+            document_processing_status?: string;
+            document_processing_status_updated_at?: string;
+          }
+          
           // Create expert document with extracted content
-          const expertDoc = {
+          const expertDoc: ExpertDocument = {
             id: uuidv4(),
             source_id: file.id,
             document_type_id: "957d8720-473e-4820-b115-88d6a931a7d8", // Expert document document_type_id
@@ -1058,8 +1073,8 @@ async function classifyPowerPointDocuments(
           // If this file needed reprocessing, mark it as "reprocessing_done"
           if (file.expert_documents && file.expert_documents.length > 0 && 
               file.expert_documents[0].document_processing_status === 'needs_reprocessing') {
-            expertDoc['document_processing_status'] = 'reprocessing_done';
-            expertDoc['document_processing_status_updated_at'] = new Date().toISOString();
+            expertDoc.document_processing_status = 'reprocessing_done';
+            expertDoc.document_processing_status_updated_at = new Date().toISOString();
             console.log(`Marking file ${file.name} as "reprocessing_done"`);
           }
           
