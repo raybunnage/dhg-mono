@@ -368,6 +368,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    validate-pdf-classification  Validate PDF classification results and generate a report (slow)"
   echo "  * check-duplicates             Check for duplicate files in sources_google"
   echo "    check-document-types         Check for files missing document types"
+  echo "  * sources-google-integrity     Check for document type consistency issues (files with folder types, etc.)"
   echo "  * report-main-video-ids        Report on video files for folders"
   echo "  * update-media-document-types  Update document_type_id for media files and create expert_documents"
   echo "    check-reprocessing-status    Check which expert documents need reprocessing based on metadata"
@@ -467,6 +468,15 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Fix MP4 files that are incorrectly marked as needs_reprocessing"
   echo "  ./google-sync-cli.sh fix-mp4-status"
+  echo ""
+  echo "  # Check for files marked as folders but are not actually folders"
+  echo "  ./google-sync-cli.sh sources-google-integrity --verbose"
+  echo ""
+  echo "  # Run all integrity checks on sources_google records with fix option"
+  echo "  ./google-sync-cli.sh sources-google-integrity --all-checks --fix"
+  echo ""
+  echo "  # Check file extension vs document type consistency"
+  echo "  ./google-sync-cli.sh sources-google-integrity --extension-check --verbose"
   exit 0
 fi
 
@@ -633,6 +643,12 @@ fi
 if [ "$1" = "check-document-types" ]; then
   shift
   track_command "check-document-types" "ts-node $SCRIPT_DIR/index.ts check-document-types $*"
+  exit $?
+fi
+
+if [ "$1" = "sources-google-integrity" ]; then
+  shift
+  track_command "sources-google-integrity" "ts-node $SCRIPT_DIR/sources-google-integrity.ts $*"
   exit $?
 fi
 
