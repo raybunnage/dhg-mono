@@ -19,10 +19,34 @@ import { BatchProcessingService } from '../../../packages/shared/services/batch-
 // Define the prompt name to use for classification
 const CLASSIFICATION_PROMPT = 'scientific-powerpoint';
 
-// Define a document type interface to use for typing
+// Define interfaces for typing
 interface DocumentType {
   id: string;
   document_type: string;
+}
+
+interface ExpertDocument {
+  id: string;
+  source_id: string;
+  document_processing_status: string;
+  document_type_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any; // Allow for other properties
+}
+
+interface SourceFile {
+  id: string;
+  name: string;
+  drive_id: string;
+  document_type_id?: string;
+  created_at?: string;
+  modified_at?: string;
+  size?: number;
+  is_deleted: boolean;
+  mime_type: string;
+  expert_documents?: ExpertDocument[];
+  [key: string]: any; // Allow for other properties
 }
 
 // Function to map document_type to document_type_id 
@@ -105,7 +129,7 @@ async function mapDocumentTypeToId(documentTypeStr: string, supabase: any): Prom
 }
 
 // Function to create a fallback classification when extraction or Claude API fails
-async function createFallbackClassification(file: any, supabase: any): Promise<any> {
+async function createFallbackClassification(file: SourceFile, supabase: any): Promise<any> {
   const fileName = file.name || 'Unknown Document';
   const extension = fileName.split('.').pop()?.toLowerCase() || '';
 
@@ -764,7 +788,7 @@ async function classifyPowerPointDocuments(
   dryRun: boolean = false,
   concurrency: number = 2, // Default concurrency of 2 (PowerPoint extraction can be resource-intensive)
   force: boolean = false // Force reprocessing even if files already have content
-): Promise<any[]> {
+): Promise<SourceFile[]> {
   const tempFiles: string[] = [];
   
   try {
@@ -829,9 +853,12 @@ async function classifyPowerPointDocuments(
       throw new Error(`Error fetching PowerPoint files: ${error.message}`);
     }
     
+    // Cast the files to our SourceFile type
+    const sourceFiles: SourceFile[] = files || [];
+    
     // 4. Manually fetch expert documents for these files
-    if (files && files.length > 0) {
-      const sourceIds = files.map(file => file.id);
+    if (sourceFiles && sourceFiles.length > 0) {
+      const sourceIds = sourceFiles.map(file => file.id);
       const { data: expertDocuments, error: expertError } = await supabase
         .from('expert_documents')
         .select('*')
@@ -841,28 +868,28 @@ async function classifyPowerPointDocuments(
         console.warn(`Warning: Could not fetch expert documents: ${expertError.message}`);
       } else if (expertDocuments && expertDocuments.length > 0) {
         // Attach expert documents to their source files
-        for (const file of files) {
+        for (const file of sourceFiles) {
           file.expert_documents = expertDocuments.filter(doc => doc.source_id === file.id);
         }
-        console.log(`Attached ${expertDocuments.length} expert documents to ${files.length} PowerPoint files`);
+        console.log(`Attached ${expertDocuments.length} expert documents to ${sourceFiles.length} PowerPoint files`);
       } else {
-        console.log(`No expert documents found for the ${files.length} PowerPoint files`);
+        console.log(`No expert documents found for the ${sourceFiles.length} PowerPoint files`);
         // Initialize empty expert_documents array for each file
-        files.forEach(file => { file.expert_documents = []; });
+        sourceFiles.forEach(file => { file.expert_documents = []; });
       }
     }
     
-    if (!files || files.length === 0) {
+    if (!sourceFiles || sourceFiles.length === 0) {
       console.log('No PowerPoint files found in sources_google');
       return [];
     }
     
     if (debug) {
-      console.log(`Found ${files.length} PowerPoint files in sources_google`);
+      console.log(`Found ${sourceFiles.length} PowerPoint files in sources_google`);
     }
     
     // Process PowerPoint files that need classification or are missing expert document content
-    let filesToProcess = [];
+    let filesToProcess: SourceFile[] = [];
     
     if ((dryRun && debug) || force) {
       // Force mode - process all files regardless of their current status
@@ -872,7 +899,7 @@ async function classifyPowerPointDocuments(
         console.log(`TESTING MODE: Processing first PowerPoint file regardless of content status`);
       }
       // Use the specified limit
-      filesToProcess = files.slice(0, limit);
+      filesToProcess = sourceFiles.slice(0, limit);
     } else {
       // Normal mode: check which files need processing
       console.log(`Checking which PowerPoint files need content extraction and classification...`);
@@ -881,7 +908,7 @@ async function classifyPowerPointDocuments(
     // This is more straightforward and reliable, especially for TS type issues
       
     // Get PowerPoint files that need processing
-    for (const file of files) {
+    for (const file of sourceFiles) {
       // Check if file has needs_reprocessing status
       if (file.expert_documents && file.expert_documents.length > 0 && 
           file.expert_documents[0].document_processing_status === 'needs_reprocessing') {

@@ -164,6 +164,8 @@ async function resetDocumentProcessingStatus(ids: string, options: ResetProcessi
       }
       
       console.log(`✅ Successfully updated ${updatedCount} expert documents to needs_reprocessing status`);
+      console.log(`\nIMPORTANT: The updates are made to the expert_documents table, not the sources_google table.`);
+      console.log(`When checking in Supabase UI, verify the documents in the expert_documents table.`);
       
       await commandTrackingService.completeTracking(trackingId, {
         recordsAffected: updatedCount,

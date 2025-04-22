@@ -1,6 +1,6 @@
 # Main Video IDs Report with Expert Information
 
-Report generated on 2025-04-22T00:49:58.776Z
+Report generated on 2025-04-22T14:18:14.791Z
 
 This report shows folders with their associated main video files, document types, and experts.
 
@@ -128,7 +128,7 @@ This report shows folders with their associated main video files, document types
 | 2025-03-05 - Sommer Anderson - John S... | Sommer-Anderson.mp4                 | high level folder    | Anderson             | Already Set     |
 | 2025-03-19 - Gevirtz - ANS regulation    | Gevirtz.3.10.21.mp4                 | high level folder    | Gevirtz              | Already Set     |
 | 2025-04-02 - Pennebaker - Expressive ... | Pennebaker.10.19.22.mp4             | high level folder    | Pennebaker           | Already Set     |
-| 2025-04-16 - Solomon - Death Denial      | None                                | high level folder    | Solomon              | No MP4          |
+| 2025-04-16 - Solomon - Death Denial      | Solomon.4.16.25.mp4                 | high level folder    | Solomon              | Update          |
 | 2025-05-07 - Raison - Depression a su... | None                                | high level folder    | Raison               | No MP4          |
 | Overview of Dynamic Healing Discussio... | None                                | high level folder    | Hanscom              | No MP4          |
 
