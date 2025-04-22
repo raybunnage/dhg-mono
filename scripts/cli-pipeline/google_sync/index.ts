@@ -347,7 +347,7 @@ program
 // Add sync-and-update-metadata command
 program
   .command('sync-and-update-metadata')
-  .description('Sync folder and update metadata in one operation')
+  .description('Sync files from Google Drive with intelligent file categorization')
   .argument('[folder-id]', 'Folder ID to sync (default: Dynamic Healing Discussion Group)', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
   .option('--file-id <id>', 'Specify a file ID for direct file lookup and insertion')
   .option('--dry-run', 'Show what would be synced without making changes', false)

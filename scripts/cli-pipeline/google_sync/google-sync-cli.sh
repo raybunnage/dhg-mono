@@ -359,7 +359,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  ./google-sync-cli.sh <command> [options]"
   echo ""
   echo "COMMANDS: (* = commonly used)"
-  echo "  * sync                         Sync files from Google Drive to the database (core functionality)"
+  echo "  * sync                         Sync files from Google Drive to the database with intelligent file categorization"
   echo "  * health-check                 Check the health of Google Drive API connection"
   echo "  * classify-pdfs                Classify PDF files missing document types using Claude AI"
   echo "  * classify-powerpoints         Classify PowerPoint files missing document types using local extraction and Claude AI"
@@ -385,11 +385,16 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * help                         Show this help message"
   echo ""
   echo "EXAMPLES:"
-  echo "  # Sync files from Google Drive (core functionality)"
+  echo "  # Sync files from Google Drive (automatically categorizes files based on type)"
   echo "  ./google-sync-cli.sh sync --verbose --limit 100"
   echo ""
   echo "  # Run sync in dry-run mode to preview changes"
   echo "  ./google-sync-cli.sh sync --dry-run --max-depth 3"
+  echo ""
+  echo "  # Sync will intelligently mark files as follows:"
+  echo "  #  - Document files (PDF, DOCX, TXT): marked as 'needs_reprocessing'"
+  echo "  #  - Media files (MP4, JPG, etc.): marked as 'skip_processing'"
+  echo "  #  - Folders: marked as 'skip_processing'"
   echo ""
   echo "  # Check if Google Drive API connection is working"
   echo "  ./google-sync-cli.sh health-check"
@@ -502,8 +507,61 @@ if [ "$1" = "ids-need-reprocessing" ]; then
     SANITIZED_COMMAND="$SANITIZED_COMMAND $*"
   fi
   
+  # Run the command
   track_command "ids-need-reprocessing" "$SANITIZED_COMMAND"
-  exit $?
+  RESULT_CODE=$?
+  
+  # If the command succeeded and was not in dry-run mode, verify the updated records
+  if [ $RESULT_CODE -eq 0 ] && ! echo "$*" | grep -q "\--dry-run"; then
+    echo ""
+    echo "Verifying updates in the database..."
+    VERIFY_COMMAND="ts-node -e \"
+    const { SupabaseClientService } = require('$ROOT_DIR/packages/shared/services/supabase-client');
+    const supabase = SupabaseClientService.getInstance().getClient();
+    
+    async function verifyStatus() {
+      const ids = '$IDS'.split(',').filter(id => id.trim().length > 0);
+      
+      const { data, error } = await supabase
+        .from('expert_documents')
+        .select('id, source_id, document_processing_status, document_processing_status_updated_at')
+        .in('source_id', ids);
+      
+      if (error) {
+        console.error('Error verifying updates:', error);
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('❌ No expert documents found for the provided source IDs.');
+        return;
+      }
+      
+      console.log('✅ VERIFICATION RESULTS:');
+      console.log('-------------------------------------------------------------------------------------------------');
+      console.log('| Expert Document ID                     | Processing Status    | Last Updated                  |');
+      console.log('-------------------------------------------------------------------------------------------------');
+      
+      for (const doc of data) {
+        const status = doc.document_processing_status || 'null';
+        const updated = doc.document_processing_status_updated_at ? 
+          new Date(doc.document_processing_status_updated_at).toLocaleString() : 'never';
+        
+        console.log('| ' + doc.id.padEnd(40) + ' | ' + status.padEnd(20) + ' | ' + updated.padEnd(30) + ' |');
+      }
+      
+      console.log('-------------------------------------------------------------------------------------------------');
+      console.log('NOTE: Updates are made to the expert_documents table, not the sources_google table.');
+      console.log('      When checking in Supabase UI, look for these records in the expert_documents table.');
+    }
+    
+    verifyStatus();
+    \""
+    
+    eval "$VERIFY_COMMAND"
+  fi
+  
+  exit $RESULT_CODE
 fi
 
 if [ "$1" = "check-document-summary" ]; then
