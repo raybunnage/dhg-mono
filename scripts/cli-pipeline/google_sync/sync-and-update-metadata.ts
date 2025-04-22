@@ -341,8 +341,6 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
       modified_at: file.modifiedTime,
       size: file.size ? parseInt(file.size, 10) : null,
       file_signature: fileSignature,
-      document_processing_status: 'needs_reprocessing', // Mark new files for processing
-      document_processing_status_updated_at: now, // Set timestamp for status update
       metadata: {
         modifiedTime: file.modifiedTime,
         webViewLink: file.webViewLink,
@@ -363,10 +361,11 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
       return { success: true, message: 'Dry run successful' };
     }
     
-    // Insert the file
+    // Insert the file and return the inserted record
     const { data, error } = await supabase
       .from('sources_google')
-      .insert(insertData);
+      .insert(insertData)
+      .select();
       
     if (error) {
       console.error(`❌ Error inserting file: ${error.message}`);
@@ -375,6 +374,45 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
     }
     
     console.log(`✅ Successfully inserted file ${file.name} (${file.id})`);
+    
+    // Create a corresponding expert_documents record for this file
+    if (data && data.length > 0 && !isDryRun) {
+      const insertedFile = data[0];
+      const now = new Date().toISOString();
+      
+      // Prepare expert_documents record
+      const expertDocData = {
+        id: uuidv4(), // Generate unique ID for expert_documents record
+        source_id: insertedFile.id, // Link to the sources_google record
+        document_processing_status: 'needs_reprocessing', // Set initial status
+        document_processing_status_updated_at: now,
+        created_at: now,
+        updated_at: now,
+        document_type_id: insertedFile.document_type_id, // Copy document_type_id if set
+        source_type: 'google_drive', // Set source type
+        metadata: {
+          created_from_sync: true,
+          file_name: insertedFile.name,
+          mime_type: insertedFile.mime_type
+        }
+      };
+      
+      if (isVerbose) {
+        console.log(`Creating expert_documents record for specific file:`, JSON.stringify(expertDocData, null, 2));
+      }
+      
+      // Insert the expert_documents record
+      const { error: expertDocError } = await supabase
+        .from('expert_documents')
+        .insert(expertDocData);
+        
+      if (expertDocError) {
+        console.error(`❌ Error creating expert_documents record: ${expertDocError.message}`);
+      } else {
+        console.log(`✅ Successfully created expert_documents record for ${file.name}`);
+      }
+    }
+    
     return { success: true, data };
   } catch (error: any) {
     console.error(`❌ Unexpected error inserting file: ${error.message || error}`);
@@ -791,8 +829,6 @@ async function syncFiles(
           modified_at: file.modifiedTime,
           size: file.size ? parseInt(file.size, 10) : null,
           file_signature: fileSignature,
-          document_processing_status: 'needs_reprocessing', // Mark new files for processing
-          document_processing_status_updated_at: new Date().toISOString(), // Set timestamp for status update
           metadata: {
             modifiedTime: file.modifiedTime,
             webViewLink: file.webViewLink,
@@ -818,9 +854,10 @@ async function syncFiles(
           console.log(`Preparing to insert ${filesToInsert.length} files for batch ${i + 1}/${batches}`);
         }
         
-        const { error } = await supabase
+        const { data: insertedFiles, error } = await supabase
           .from('sources_google')
-          .insert(filesToInsert);
+          .insert(filesToInsert)
+          .select();
         
         if (error) {
           console.error(`Error inserting batch ${i + 1}:`, error);
@@ -854,6 +891,61 @@ async function syncFiles(
         } else {
           result.filesInserted += newFilesInBatch.length;
           console.log(`Successfully inserted ${newFilesInBatch.length} new files in batch ${i + 1}`);
+          
+          // For each inserted file, create a corresponding expert_documents record
+          if (insertedFiles && insertedFiles.length > 0 && !isDryRun) {
+            console.log(`Creating expert_documents records for ${insertedFiles.length} newly inserted files...`);
+            
+            // Create expert_documents records in batches to improve performance
+            const expertDocBatchSize = 20;
+            const expertDocBatches = Math.ceil(insertedFiles.length / expertDocBatchSize);
+            
+            for (let j = 0; j < expertDocBatches; j++) {
+              const start = j * expertDocBatchSize;
+              const end = Math.min(start + expertDocBatchSize, insertedFiles.length);
+              const fileBatch = insertedFiles.slice(start, end);
+              
+              // Prepare expert_documents records
+              const expertDocsToInsert = fileBatch.map(file => {
+                const now = new Date().toISOString();
+                return {
+                  id: uuidv4(), // Generate unique ID for expert_documents record
+                  source_id: file.id, // Link to the sources_google record
+                  document_processing_status: 'needs_reprocessing', // Set initial status
+                  document_processing_status_updated_at: now,
+                  created_at: now,
+                  updated_at: now,
+                  document_type_id: file.document_type_id, // Copy document_type_id if set
+                  source_type: 'google_drive', // Set source type
+                  metadata: {
+                    created_from_sync: true,
+                    file_name: file.name,
+                    mime_type: file.mime_type
+                  }
+                };
+              });
+              
+              if (isVerbose && j === 0) {
+                console.log(`Example expert_documents record to be created:`, JSON.stringify(expertDocsToInsert[0], null, 2));
+              }
+              
+              // Insert the expert_documents records
+              const { error: expertDocError } = await supabase
+                .from('expert_documents')
+                .insert(expertDocsToInsert);
+                
+              if (expertDocError) {
+                console.error(`Error creating expert_documents records for batch ${j + 1}:`, expertDocError);
+                result.errors.push(`Error creating expert_documents records: ${expertDocError.message}`);
+              } else {
+                if (isVerbose) {
+                  console.log(`Successfully created ${expertDocsToInsert.length} expert_documents records for batch ${j + 1}/${expertDocBatches}`);
+                }
+              }
+            }
+            
+            console.log(`✅ Finished creating expert_documents records for newly inserted files`);
+          }
         }
       } catch (error: any) {
         console.error(`Error inserting batch ${i + 1}:`, error);
@@ -1341,12 +1433,9 @@ export async function syncAndUpdateMetadata(
             created_at, 
             parent_folder_id,
             path_array,
-            document_type_id,
-            document_processing_status,
-            document_types(document_type)
+            document_type_id
           `)
           .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
-          .eq('document_processing_status', 'needs_reprocessing') // Filter to show only files needing reprocessing
           .order('created_at', { ascending: false })
           .limit(maxNewFilesToShow);
           
@@ -1375,14 +1464,35 @@ export async function syncAndUpdateMetadata(
             }
           }
           
+          // Get document type names for all files with document_type_id
+          const documentTypeIds = new Set(newFiles.map(file => file.document_type_id).filter(Boolean));
+          const documentTypeMap = new Map<string, string>();
+          
+          if (documentTypeIds.size > 0) {
+            try {
+              const { data: documentTypes, error: documentTypesError } = await supabase
+                .from('document_types')
+                .select('id, document_type')
+                .in('id', Array.from(documentTypeIds));
+                
+              if (!documentTypesError && documentTypes) {
+                documentTypes.forEach(docType => {
+                  documentTypeMap.set(docType.id, docType.document_type);
+                });
+              }
+            } catch (error) {
+              console.warn('Error fetching document types:', error);
+            }
+          }
+          
           // Display files in a table format
           for (const file of newFiles) {
             const name = (file.name || 'Unknown').substring(0, 30).padEnd(30);
             
-            // Get document type - either from joined document_types or use mime_type as fallback
+            // Get document type - use document type map, or mime_type as fallback
             let documentType = 'Unknown';
-            if (file.document_types && file.document_types[0]?.document_type) {
-              documentType = file.document_types[0].document_type;
+            if (file.document_type_id && documentTypeMap.has(file.document_type_id)) {
+              documentType = documentTypeMap.get(file.document_type_id) || 'Unknown';
             } else if (file.document_type_id) {
               documentType = `ID: ${file.document_type_id.substring(0, 8)}...`;
             } else if (file.mime_type) {
@@ -1404,14 +1514,15 @@ export async function syncAndUpdateMetadata(
             parentFolder = parentFolder.substring(0, 22).padEnd(22);
             
             // Add processing status
-            let processingStatus = file.document_processing_status || 'not set';
-            processingStatus = processingStatus.substring(0, 20).padEnd(20);
+            // Since we no longer have document_processing_status on sources_google,
+            // we'll show "needs_reprocessing" for all newly added files
+            const processingStatus = "needs_reprocessing".substring(0, 20).padEnd(20);
             
             console.log(`| ${name} | ${documentType} | ${createdAt} | ${processingStatus} | ${parentFolder} |`);
           }
           
           console.log('----------------------------------------------------------------------------------------------------------------------------------');
-          console.log('➡️  All newly added files have been automatically marked with "needs_reprocessing" status.');
+          console.log('➡️  All newly added files have expert_document records created with "needs_reprocessing" status.');
           console.log('➡️  To process these files, run: ./google-sync-cli.sh reclassify-docs');
           console.log('----------------------------------------------------------------------------------------------------------------------------------');
         } else {

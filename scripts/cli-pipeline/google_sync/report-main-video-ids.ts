@@ -473,9 +473,20 @@ export async function reportMainVideoIds(
     
     Logger.info(`Found ${subFolders.length} subfolders with path_depth=0 under the root folder.\n`);
     
-    // Create a markdown table header for the report
-    let reportContent = '| Folder Name | Main Video Filename | Document Type | Expert | Status |\n';
-    reportContent += '|-------------|---------------------|--------------|-------|--------|\n';
+    // Create a markdown table header for the report with fixed-width columns
+    const colWidths = {
+      folderName: 40,
+      videoName: 35,
+      docType: 20,
+      expert: 20,
+      status: 15
+    };
+    
+    // Create header with fixed widths
+    let reportContent = `| ${'Folder Name'.padEnd(colWidths.folderName)} | ${'Main Video Filename'.padEnd(colWidths.videoName)} | ${'Document Type'.padEnd(colWidths.docType)} | ${'Expert'.padEnd(colWidths.expert)} | ${'Status'.padEnd(colWidths.status)} |\n`;
+    
+    // Create separator line with fixed widths
+    reportContent += `| ${'-'.repeat(colWidths.folderName)} | ${'-'.repeat(colWidths.videoName)} | ${'-'.repeat(colWidths.docType)} | ${'-'.repeat(colWidths.expert)} | ${'-'.repeat(colWidths.status)} |\n`;
     
     // Apply folder limit if specified
     const foldersToProcess = actualLimit > 0 ? subFolders.slice(0, actualLimit) : subFolders;
@@ -633,8 +644,14 @@ export async function reportMainVideoIds(
         }
       }
       
-      // Add to the report
-      reportContent += `| ${folder.name} | ${mainVideoName} | ${documentType} | ${expertName} | ${status} |\n`;
+      // Add to the report with fixed width columns
+      // Truncate values if they're too long to fit in column width and add ellipsis
+      const truncate = (str: string, maxLength: number) => {
+        if (str.length <= maxLength) return str.padEnd(maxLength);
+        return str.substring(0, maxLength - 3) + '...';
+      };
+      
+      reportContent += `| ${truncate(folder.name, colWidths.folderName)} | ${truncate(mainVideoName, colWidths.videoName)} | ${truncate(documentType, colWidths.docType)} | ${truncate(expertName, colWidths.expert)} | ${truncate(status, colWidths.status)} |\n`;
       
       // Store for later processing
       allFolderInfo.push({
