@@ -27,7 +27,7 @@ This file lists the mnemonic codes for experts in the database. These mnemonics 
 | SAN | Sanders | SCH | Schubiner | SEI | Seigel | SHA | Shah | SIG | Siegel |
 | SIM | Simonsson | STA | Staats | SCL | Staats, Clawson | STO | Stone | SBL | Sullivan, Ballantyne |
 | SUL | Sullivan | SUT | Sutphin | TAR | Tarnopolosy | TMI | Terry Miller | WAG | Wager |
-| WLK | Wilkinson | WPG | Whitaker, Porges |
+| WLK | Wilkinson | WPG | Whitaker, Porges | SOL | Solomon | RSN | Raison |
 
 ## Using Mnemonics
 

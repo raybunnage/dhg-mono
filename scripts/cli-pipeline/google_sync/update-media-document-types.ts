@@ -1121,6 +1121,114 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       }
     }
     
+    // Update folders with document_type_id bd903d99-64a1-4297-ba76-1094ab235dac and path_depth > 0
+    console.log('\nUpdating folders with document_type_id bd903d99-64a1-4297-ba76-1094ab235dac and path_depth > 0...');
+    
+    // First, count how many folders have the high-level document_type_id
+    const { data: folderCount, error: folderCountError } = await supabaseClient
+      .from('sources_google')
+      .select('id', { count: 'exact' })
+      .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac')
+      .eq('mime_type', 'application/vnd.google-apps.folder')
+      .eq('is_deleted', false);
+    
+    if (folderCountError) {
+      console.error('Error counting high-level folders:', folderCountError.message);
+    } else {
+      console.log(`Total high-level folders found: ${folderCount?.length || 0}`);
+    }
+    
+    // Count how many have path_depth = 0
+    const { data: depthZeroCount, error: depthZeroError } = await supabaseClient
+      .from('sources_google')
+      .select('id', { count: 'exact' })
+      .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac')
+      .eq('mime_type', 'application/vnd.google-apps.folder')
+      .eq('path_depth', 0)
+      .eq('is_deleted', false);
+    
+    if (depthZeroError) {
+      console.error('Error counting path_depth=0 folders:', depthZeroError.message);
+    } else {
+      console.log(`High-level folders with path_depth=0: ${depthZeroCount?.length || 0}`);
+    }
+    
+    // Find folders matching criteria: document_type_id = bd903d99-64a1-4297-ba76-1094ab235dac and path_depth > 0
+    const { data: specificFolders, error: specificFoldersError } = await supabaseClient
+      .from('sources_google')
+      .select('id, name, path_depth')
+      .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac')
+      .eq('mime_type', 'application/vnd.google-apps.folder')
+      .gt('path_depth', 0)
+      .eq('is_deleted', false);
+    
+    if (specificFoldersError) {
+      console.error('Error fetching specific folders:', specificFoldersError.message);
+    } else if (specificFolders && specificFolders.length > 0) {
+      console.log(`Found ${specificFolders.length} folders with document_type_id bd903d99-64a1-4297-ba76-1094ab235dac and path_depth > 0`);
+      console.log(`These folders will be converted to low-level folders (document_type_id = dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd)`);
+      
+      if (!dryRun) {
+        // Update each folder's document_type_id
+        const { error: updateFoldersError } = await supabaseClient
+          .from('sources_google')
+          .update({ document_type_id: 'dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd' }) // making all high level folders with a depth > 0 become a low level folder
+          .in('id', specificFolders.map(folder => folder.id));
+        
+        if (updateFoldersError) {
+          console.error('Error updating specific folders:', updateFoldersError.message);
+        } else {
+          console.log(`✓ Updated ${specificFolders.length} folders with document_type_id dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd`);
+        }
+        
+        // Get corresponding expert documents
+        const { data: folderExpertDocs, error: folderExpertDocsError } = await supabaseClient
+          .from('expert_documents')
+          .select('id')
+          .in('source_id', specificFolders.map(folder => folder.id));
+        
+        if (folderExpertDocsError) {
+          console.error('Error fetching expert documents for specific folders:', folderExpertDocsError.message);
+        } else if (folderExpertDocs && folderExpertDocs.length > 0) {
+          // Update expert_documents to match the new document type
+          const { error: updateExpertDocsError } = await supabaseClient
+            .from('expert_documents')
+            .update({ document_type_id: 'dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd' })
+            .in('id', folderExpertDocs.map(doc => doc.id));
+          
+          if (updateExpertDocsError) {
+            console.error('Error updating expert documents for specific folders:', updateExpertDocsError.message);
+          } else {
+            console.log(`✓ Updated ${folderExpertDocs.length} expert documents for specific folders`);
+          }
+        }
+        
+        // Verify the changes were successful
+        const { data: verifyFolders, error: verifyError } = await supabaseClient
+          .from('sources_google')
+          .select('id', { count: 'exact' })
+          .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac')
+          .gt('path_depth', 0)
+          .eq('mime_type', 'application/vnd.google-apps.folder')
+          .eq('is_deleted', false);
+        
+        if (verifyError) {
+          console.error('Error verifying folder updates:', verifyError.message);
+        } else {
+          const remainingFolders = verifyFolders?.length || 0;
+          if (remainingFolders === 0) {
+            console.log('✅ Verification successful: All high-level folders with path_depth > 0 were converted to low-level folders');
+          } else {
+            console.log(`⚠️ Verification failed: ${remainingFolders} high-level folders with path_depth > 0 still remain`);
+          }
+        }
+      } else {
+        console.log(`[DRY RUN] Would update ${specificFolders.length} folders and their expert documents to document_type_id dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd`);
+      }
+    } else {
+      console.log('No folders found with document_type_id bd903d99-64a1-4297-ba76-1094ab235dac and path_depth > 0');
+    }
+    
     // FINAL VERIFICATION: Check that every non-folder sources_google file has an expert_document
     console.log('\nFINAL VERIFICATION: Checking all sources_google files have expert_documents...');
     

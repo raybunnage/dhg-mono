@@ -1,0 +1,63 @@
+# Analysis of Folder Discrepancy
+
+## Your Question:
+Why does your SQL query showing 164 folders with document types, but the report-main-video-ids command only shows 125 folders at path_depth=0?
+
+## The Answer:
+
+After analyzing the database structure and queries, here's the explanation for the discrepancy:
+
+1. Your SQL query counts **all folders with document types** regardless of their path_depth:
+   ```sql
+   SELECT dt.document_type, COUNT(*) as count
+   FROM sources_google sg
+   JOIN document_types dt ON sg.document_type_id = dt.id
+   WHERE sg.document_type_id IS NOT NULL and is_deleted = FALSE
+   GROUP BY dt.document_type
+   ORDER BY count DESC;
+   ```
+
+2. The report-main-video-ids command specifically filters to only show folders with path_depth=0:
+   ```sql
+   -- This is the equivalent query used in the report-main-video-ids command
+   SELECT *
+   FROM sources_google 
+   WHERE parent_folder_id = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV'  
+   AND mime_type = 'application/vnd.google-apps.folder'
+   AND is_deleted = FALSE
+   AND path_depth = 0
+   ```
+
+## Breakdown of the 164 Folders:
+
+- **125 folders have path_depth=0**: These are direct subfolders of the root folder and are shown in report-main-video-ids
+- **39 folders have path_depth>0**: These are nested folders inside other folders and are NOT shown in report-main-video-ids
+
+## Examples of Nested Folders (path_depth>0):
+
+1. Presentation folders - These often have path_depth=1 and contain presentation materials
+2. Media folders - Often nested within main folders and have document types assigned
+3. Video folders - Typically subfolders containing MP4 files
+
+## Why This Matters:
+
+- The report-main-video-ids command only shows top-level folders (path_depth=0) because it's focusing on the main presentation folders
+- The SQL query counts all folders with document types, including nested folders
+
+## Recommendation:
+
+When comparing folder counts, make sure to include the path_depth filter in your queries to get comparable results:
+
+```sql
+-- To get the count matching report-main-video-ids
+SELECT dt.document_type, COUNT(*) as count
+FROM sources_google sg
+JOIN document_types dt ON sg.document_type_id = dt.id
+WHERE sg.document_type_id IS NOT NULL 
+  AND sg.is_deleted = FALSE
+  AND sg.path_depth = 0
+GROUP BY dt.document_type
+ORDER BY count DESC;
+```
+
+This should return a count of approximately 125 folders, matching what you see in the report.

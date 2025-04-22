@@ -75,6 +75,16 @@ THIS IS AN EXAMPLE OF FOLDERS - AND THEN FILES THAT ARE DUPLICATE
   - ID: 08b36fdc-a3b0-4789-942b-2dbb5624c1e4, Drive ID: 1KZ1p8-gLgcJgmSK5B4MMY4AJ81CrRXUh
 
 
+Sheldon Solomon   new person 
+CL Raison1,2
+
+  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Solomon" --full-name "Sheldon Solomon"  --mnemonic "SOL"
+  
+  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Raison" --full-name "CL Raison"  --mnemonic "RSN"
+
+
+    # Add expert with custom mnemonic
+    ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager" 
 
 YO9U MIGHT WANT TO FIX THIS validate-pdf-classification 
 Checking up to 5 classified PDFs...
