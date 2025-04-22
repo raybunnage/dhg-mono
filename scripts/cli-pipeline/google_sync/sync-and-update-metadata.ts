@@ -380,20 +380,57 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
       const insertedFile = data[0];
       const now = new Date().toISOString();
       
+      // Determine document processing status based on file type
+      let documentProcessingStatus = 'needs_reprocessing';
+      let processingSkipReason = null;
+      
+      // Check mime type to determine how to handle this file
+      const mimeType = insertedFile.mime_type || '';
+      const fileName = insertedFile.name || '';
+      const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+      
+      // For folders, media files, etc., set to skip_processing
+      if (mimeType === 'application/vnd.google-apps.folder') {
+        documentProcessingStatus = 'skip_processing';
+        processingSkipReason = 'Google Drive folder, not a document';
+      } else if (mimeType.startsWith('image/') || 
+                ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(fileExt)) {
+        documentProcessingStatus = 'skip_processing';
+        processingSkipReason = 'Image file, not suitable for text processing';
+      } else if (mimeType.startsWith('audio/') || 
+                ['mp3', 'm4a', 'wav', 'aac', 'ogg'].includes(fileExt)) {
+        documentProcessingStatus = 'skip_processing';
+        processingSkipReason = 'Audio file, not suitable for text processing';
+      } else if (mimeType.startsWith('video/') || 
+                ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(fileExt)) {
+        documentProcessingStatus = 'skip_processing';
+        processingSkipReason = 'Video file, not suitable for text processing';
+      } else if (mimeType === 'application/pdf' ||
+                 mimeType === 'text/plain' ||
+                 mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                 mimeType === 'application/msword' ||
+                 mimeType === 'application/vnd.google-apps.document' ||
+                 ['pdf', 'txt', 'doc', 'docx', 'md', 'markdown'].includes(fileExt)) {
+        // These are document types that should be processed
+        documentProcessingStatus = 'needs_reprocessing';
+      }
+
       // Prepare expert_documents record
       const expertDocData = {
         id: uuidv4(), // Generate unique ID for expert_documents record
         source_id: insertedFile.id, // Link to the sources_google record
-        document_processing_status: 'needs_reprocessing', // Set initial status
+        document_processing_status: documentProcessingStatus, // Set status based on file type
         document_processing_status_updated_at: now,
         created_at: now,
         updated_at: now,
         document_type_id: insertedFile.document_type_id, // Copy document_type_id if set
         source_type: 'google_drive', // Set source type
+        processing_skip_reason: processingSkipReason,
         metadata: {
           created_from_sync: true,
           file_name: insertedFile.name,
-          mime_type: insertedFile.mime_type
+          mime_type: insertedFile.mime_type,
+          processing_determined_by: 'file_type_analysis'
         }
       };
       
@@ -908,19 +945,57 @@ async function syncFiles(
               // Prepare expert_documents records
               const expertDocsToInsert = fileBatch.map(file => {
                 const now = new Date().toISOString();
+                
+                // Determine document processing status based on file type
+                let documentProcessingStatus = 'needs_reprocessing';
+                let processingSkipReason = null;
+                
+                // Check mime type to determine how to handle this file
+                const mimeType = file.mime_type || '';
+                const fileName = file.name || '';
+                const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+                
+                // For folders, media files, etc., set to skip_processing
+                if (mimeType === 'application/vnd.google-apps.folder') {
+                  documentProcessingStatus = 'skip_processing';
+                  processingSkipReason = 'Google Drive folder, not a document';
+                } else if (mimeType.startsWith('image/') || 
+                          ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(fileExt)) {
+                  documentProcessingStatus = 'skip_processing';
+                  processingSkipReason = 'Image file, not suitable for text processing';
+                } else if (mimeType.startsWith('audio/') || 
+                          ['mp3', 'm4a', 'wav', 'aac', 'ogg'].includes(fileExt)) {
+                  documentProcessingStatus = 'skip_processing';
+                  processingSkipReason = 'Audio file, not suitable for text processing';
+                } else if (mimeType.startsWith('video/') || 
+                          ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(fileExt)) {
+                  documentProcessingStatus = 'skip_processing';
+                  processingSkipReason = 'Video file, not suitable for text processing';
+                } else if (mimeType === 'application/pdf' ||
+                           mimeType === 'text/plain' ||
+                           mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                           mimeType === 'application/msword' ||
+                           mimeType === 'application/vnd.google-apps.document' ||
+                           ['pdf', 'txt', 'doc', 'docx', 'md', 'markdown'].includes(fileExt)) {
+                  // These are document types that should be processed
+                  documentProcessingStatus = 'needs_reprocessing';
+                }
+                
                 return {
                   id: uuidv4(), // Generate unique ID for expert_documents record
                   source_id: file.id, // Link to the sources_google record
-                  document_processing_status: 'needs_reprocessing', // Set initial status
+                  document_processing_status: documentProcessingStatus, // Set status based on file type
                   document_processing_status_updated_at: now,
                   created_at: now,
                   updated_at: now,
                   document_type_id: file.document_type_id, // Copy document_type_id if set
                   source_type: 'google_drive', // Set source type
+                  processing_skip_reason: processingSkipReason,
                   metadata: {
                     created_from_sync: true,
                     file_name: file.name,
-                    mime_type: file.mime_type
+                    mime_type: file.mime_type,
+                    processing_determined_by: 'file_type_analysis'
                   }
                 };
               });

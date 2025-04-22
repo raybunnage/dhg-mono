@@ -468,6 +468,16 @@ async function reclassifyDocuments(
     const supabase = SupabaseClientService.getInstance().getClient();
     
     // 2. Build query for already classified files that need reclassification
+    // Focus only on document types that make sense to process with text analysis
+    const textProcessableMimeTypes = [
+      'application/pdf',
+      'text/plain',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'application/vnd.google-apps.document',
+      'text/markdown'
+    ];
+
     let query = supabase
       .from('sources_google')
       .select(`
@@ -475,7 +485,8 @@ async function reclassifyDocuments(
         expert_documents(id, document_processing_status)
       `)
       .not('document_type_id', 'is', null)  // Only include documents that have been classified
-      .is('is_deleted', false);
+      .is('is_deleted', false)
+      .in('mime_type', textProcessableMimeTypes);  // Focus only on text-based documents
     
     // Filter by folder if provided
     if (folderId) {
@@ -527,6 +538,9 @@ async function reclassifyDocuments(
     if (startDate) {
       query = query.gte('created_at', startDate);
     }
+    
+    // Only process documents that are specifically marked as "needs_reprocessing"
+    query = query.or('expert_documents.document_processing_status.eq.needs_reprocessing,expert_documents.document_processing_status.is.null');
     
     // Apply sort and limit
     query = query
