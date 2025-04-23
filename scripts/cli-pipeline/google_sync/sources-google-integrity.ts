@@ -52,6 +52,37 @@ interface FileExtensionCheckResult {
   pptxCount: number;
 }
 
+// Extend the source_google record with expert_documents data
+interface SourceRecord {
+  id: string;
+  name: string;
+  document_type_id: string;
+  mime_type?: string;
+  expert_documents?: Array<{
+    document_processing_status?: string;
+  }>;
+}
+
+// Interface for mismatched file extension records
+interface MismatchedExtensionFile {
+  id: any;
+  name: any;
+  extension: string;
+  docTypeId: any;
+  docType: string;
+  expectedExtensions: string[];
+}
+
+// Interface for mismatched MIME type records
+interface MismatchedMimeTypeFile {
+  id: any;
+  name: any;
+  mimeType: any;
+  docTypeId: any;
+  docType: string;
+  expectedMimeTypes: string[];
+}
+
 // Type for integrity check results
 interface IntegrityCheckResults {
   filesWithFolderTypes?: number;
@@ -111,19 +142,36 @@ async function checkFilesWithFolderTypes(options: IntegrityCheckOptions = {}) {
   
   if (count > 0 && options.verbose) {
     console.log('\nSample of incorrect records:');
-    console.log('----------------------------------------------------------------------------------------------------------------------');
-    console.log('| ID                                   | Name                                                            | Document Type   |');
-    console.log('----------------------------------------------------------------------------------------------------------------------');
+    console.log('--------------------------------------------------------------------------------------------------------------------------------------');
+    console.log('| ID                                   | Name                                                            | Document Type   | Processing Status  |');
+    console.log('--------------------------------------------------------------------------------------------------------------------------------------');
     
     const showLimit = Math.min(count, 10);
     for (let i = 0; i < showLimit; i++) {
       const record = data![i];
-      const id = record.id.substring(0, 36).padEnd(38);
+      const id = record.id.padEnd(38);
       const name = (record.name || 'Unknown').substring(0, 60).padEnd(60);  // Increased from 55 to 60
       const docType = folderTypeMap.get(record.document_type_id) || 'Unknown folder type';
       const docTypeStr = docType.substring(0, 15).padEnd(15);
       
-      console.log(`| ${id} | ${name} | ${docTypeStr} |`);
+      // Get processing status from expert_documents separately
+      let processingStatus = 'none'.padEnd(18);
+      try {
+        const { data: docStatus } = await supabase
+          .from('expert_documents')
+          .select('document_processing_status')
+          .eq('source_id', record.id)
+          .limit(1);
+        
+        if (docStatus && docStatus.length > 0 && docStatus[0].document_processing_status) {
+          processingStatus = docStatus[0].document_processing_status.substring(0, 18).padEnd(18);
+        }
+      } catch (error) {
+        // If there's an error fetching processing status, just use the default
+        console.log(`Error fetching processing status for ${record.id}: ${error}`);
+      }
+      
+      console.log(`| ${id} | ${name} | ${docTypeStr} | ${processingStatus} |`);
     }
     
     if (count > 10) {
@@ -233,9 +281,9 @@ async function checkFoldersWithNonFolderTypes(options: IntegrityCheckOptions = {
   
   if (count > 0 && options.verbose) {
     console.log('\nSample of incorrect records:');
-    console.log('----------------------------------------------------------------------------------------------------------------------');
-    console.log('| ID                                   | Folder Name                                                      | Document Type   |');
-    console.log('----------------------------------------------------------------------------------------------------------------------');
+    console.log('--------------------------------------------------------------------------------------------------------------------------------------');
+    console.log('| ID                                   | Folder Name                                                      | Document Type   | Processing Status  |');
+    console.log('--------------------------------------------------------------------------------------------------------------------------------------');
     
     const showLimit = Math.min(count, 10);
     for (let i = 0; i < showLimit; i++) {
@@ -245,7 +293,24 @@ async function checkFoldersWithNonFolderTypes(options: IntegrityCheckOptions = {
       const docType = docTypeMap.get(record.document_type_id) || 'Unknown';
       const docTypeStr = docType.substring(0, 15).padEnd(15);
       
-      console.log(`| ${id} | ${name} | ${docTypeStr} |`);
+      // Get processing status from expert_documents separately
+      let processingStatus = 'none'.padEnd(18);
+      try {
+        const { data: docStatus } = await supabase
+          .from('expert_documents')
+          .select('document_processing_status')
+          .eq('source_id', record.id)
+          .limit(1);
+        
+        if (docStatus && docStatus.length > 0 && docStatus[0].document_processing_status) {
+          processingStatus = docStatus[0].document_processing_status.substring(0, 18).padEnd(18);
+        }
+      } catch (error) {
+        // If there's an error fetching processing status, just use the default
+        console.log(`Error fetching processing status for ${record.id}: ${error}`);
+      }
+      
+      console.log(`| ${id} | ${name} | ${docTypeStr} | ${processingStatus} |`);
     }
     
     if (count > 10) {
@@ -405,32 +470,49 @@ async function checkFileExtensionConsistency(options: IntegrityCheckOptions = {}
           docTypeId: file.document_type_id,
           docType: docType.document_type,
           expectedExtensions
-        };
+        } as MismatchedExtensionFile;
       }
       
       return null;
     })
-    .filter(Boolean);
+    .filter(Boolean) as MismatchedExtensionFile[];
   
   const count = mismatchedFiles.length;
   console.log(`Found ${count} files with document types that don't match their file extension.`);
   
   if (count > 0 && options.verbose) {
     console.log('\nSample of files with mismatched extensions:');
-    console.log('------------------------------------------------------------------------------------------------------------------------------');
-    console.log('| ID                             | Name                                                            | Extension | Document Type   | Expected Ext  |');
-    console.log('------------------------------------------------------------------------------------------------------------------------------');
+    console.log('---------------------------------------------------------------------------------------------------------------------------------------------------');
+    console.log('| ID                                   | Name                                                            | Extension | Document Type   | Expected Ext  | Processing Status  |');
+    console.log('---------------------------------------------------------------------------------------------------------------------------------------------------');
     
     const showLimit = Math.min(count, 10);
     for (let i = 0; i < showLimit; i++) {
       const record = mismatchedFiles[i]!;
-      const id = record.id.substring(0, 30).padEnd(32);
+      const id = record.id.padEnd(38);
       const name = (record.name || 'Unknown').substring(0, 60).padEnd(60);
       const extension = (record.extension || '').padEnd(9);
       const docType = record.docType.substring(0, 15).padEnd(15);
       const expected = record.expectedExtensions.join(',').substring(0, 12).padEnd(12);
       
-      console.log(`| ${id} | ${name} | ${extension} | ${docType} | ${expected} |`);
+      // Get processing status from expert_documents separately
+      let processingStatus = 'none'.padEnd(18);
+      try {
+        const { data: docStatus } = await supabase
+          .from('expert_documents')
+          .select('document_processing_status')
+          .eq('source_id', record.id)
+          .limit(1);
+        
+        if (docStatus && docStatus.length > 0 && docStatus[0].document_processing_status) {
+          processingStatus = docStatus[0].document_processing_status.substring(0, 18).padEnd(18);
+        }
+      } catch (error) {
+        // If there's an error fetching processing status, just use the default
+        console.log(`Error fetching processing status for ${record.id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      
+      console.log(`| ${id} | ${name} | ${extension} | ${docType} | ${expected} | ${processingStatus} |`);
     }
     
     if (count > 10) {
@@ -590,32 +672,49 @@ async function checkMimeTypeConsistency(options: IntegrityCheckOptions = {}) {
           docTypeId: file.document_type_id,
           docType: docType.document_type,
           expectedMimeTypes
-        };
+        } as MismatchedMimeTypeFile;
       }
       
       return null;
     })
-    .filter(Boolean);
+    .filter(Boolean) as MismatchedMimeTypeFile[];
   
   const count = mismatchedFiles.length;
   console.log(`Found ${count} files with document types that don't match their MIME type.`);
   
   if (count > 0 && options.verbose) {
     console.log('\nSample of files with mismatched MIME types:');
-    console.log('-----------------------------------------------------------------------------------------------------------------------------------');
-    console.log('| ID                       | Name                                                            | MIME Type              | Document Type   | Expected MIME  |');
-    console.log('-----------------------------------------------------------------------------------------------------------------------------------');
+    console.log('-----------------------------------------------------------------------------------------------------------------------------------------------------------');
+    console.log('| ID                                   | Name                                                            | MIME Type              | Document Type   | Expected MIME  | Processing Status  |');
+    console.log('-----------------------------------------------------------------------------------------------------------------------------------------------------------');
     
     const showLimit = Math.min(count, 10);
     for (let i = 0; i < showLimit; i++) {
       const record = mismatchedFiles[i]!;
-      const id = record.id.substring(0, 24).padEnd(26);
+      const id = record.id.padEnd(38);
       const name = (record.name || 'Unknown').substring(0, 60).padEnd(60);
       const mimeType = (record.mimeType || '').substring(0, 22).padEnd(22);
       const docType = record.docType.substring(0, 15).padEnd(15);
       const expected = record.expectedMimeTypes.join(',').substring(0, 12).padEnd(12);
       
-      console.log(`| ${id} | ${name} | ${mimeType} | ${docType} | ${expected} |`);
+      // Get processing status from expert_documents separately
+      let processingStatus = 'none'.padEnd(18);
+      try {
+        const { data: docStatus } = await supabase
+          .from('expert_documents')
+          .select('document_processing_status')
+          .eq('source_id', record.id)
+          .limit(1);
+        
+        if (docStatus && docStatus.length > 0 && docStatus[0].document_processing_status) {
+          processingStatus = docStatus[0].document_processing_status.substring(0, 18).padEnd(18);
+        }
+      } catch (error) {
+        // If there's an error fetching processing status, just use the default
+        console.log(`Error fetching processing status for ${record.id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      
+      console.log(`| ${id} | ${name} | ${mimeType} | ${docType} | ${expected} | ${processingStatus} |`);
     }
     
     if (count > 10) {
@@ -841,19 +940,38 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
       for (let i = 0; i < fileIds.length; i += batchSize) {
         const batchIds = fileIds.slice(i, i + batchSize);
         
+        // First, find the corresponding expert_documents records for these sources_google entries
+        const { data: expertDocuments, error: expertDocsError } = await supabase
+          .from('expert_documents')
+          .select('id, source_id')
+          .in('source_id', batchIds);
+          
+        if (expertDocsError) {
+          console.error(`Error finding expert_documents: ${expertDocsError.message}`);
+          continue;
+        }
+        
+        if (!expertDocuments || expertDocuments.length === 0) {
+          console.log(`No expert_documents found for these sources - skipping batch`);
+          continue;
+        }
+        
+        const expertDocIds = expertDocuments.map(doc => doc.id);
+        
+        // Update the expert_documents records
         const { error: updateError, count: batchUpdated } = await supabase
-          .from('sources_google')
+          .from('expert_documents')
           .update({ 
             document_processing_status: 'needs_reprocessing',
             document_processing_status_updated_at: now
           })
-          .in('id', batchIds);
+          .in('id', expertDocIds);
           
         if (updateError) {
           console.error(`Error updating batch ${i}-${i + batchIds.length}: ${updateError.message}`);
         } else {
-          updatedCount += batchIds.length;
-          console.log(`Updated ${batchIds.length} files (total: ${updatedCount}/${filesToReprocess.length})`);
+          updatedCount += expertDocIds.length;
+          console.log(`Updated ${expertDocIds.length} expert documents (total: ${updatedCount}/${filesToReprocess.length})`);
         }
       }
       
@@ -874,19 +992,38 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
     
     if (docxMismatches.length > 0) {
       console.log('\nDOCX/TXT files with mismatched document types:');
-      console.log('-----------------------------------------------------------------------------------------------------------------------------');
-      console.log('| ID                             | Name                                                            | Current Doc Type    |');
-      console.log('-----------------------------------------------------------------------------------------------------------------------------');
+      console.log('-----------------------------------------------------------------------------------------------------------------------------------------');
+      console.log('| ID                                   | Name                                                            | Current Doc Type    | Processing Status  |');
+      console.log('-----------------------------------------------------------------------------------------------------------------------------------------');
       
       // Show all records without limit
       for (let i = 0; i < docxMismatches.length; i++) {
         const record = docxMismatches[i];
-        const id = record.id.substring(0, 30).padEnd(32);
+        const id = record.id.padEnd(38);
         const name = (record.name || 'Unknown').substring(0, 60).padEnd(60);
         const docType = docTypeMap.get(record.document_type_id)?.document_type || 'Unknown';
         const currentDocType = docType.substring(0, 20).padEnd(20);
         
-        console.log(`| ${id} | ${name} | ${currentDocType} |`);
+        // Get processing status from expert_documents separately
+        let processingStatus = 'none'.padEnd(18);
+        try {
+          const { data: docStatus } = await supabase
+            .from('expert_documents')
+            .select('document_processing_status')
+            .eq('source_id', record.id)
+            .limit(1);
+          
+          if (docStatus && docStatus.length > 0 && docStatus[0].document_processing_status) {
+            processingStatus = docStatus[0].document_processing_status.substring(0, 18).padEnd(18);
+          }
+        } catch (error) {
+          // If there's an error fetching processing status, just use the default
+          if (options.verbose) {
+            console.log(`Error fetching processing status for ${record.id}: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
+        
+        console.log(`| ${id} | ${name} | ${currentDocType} | ${processingStatus} |`);
       }
       
       console.log('-------------------------------------------------------------------------------------------------------------------');
@@ -902,19 +1039,38 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
     
     if (pdfMismatches.length > 0) {
       console.log('\nPDF files with mismatched document types:');
-      console.log('-----------------------------------------------------------------------------------------------------------------------------');
-      console.log('| ID                             | Name                                                            | Current Doc Type    |');
-      console.log('-----------------------------------------------------------------------------------------------------------------------------');
+      console.log('-----------------------------------------------------------------------------------------------------------------------------------------');
+      console.log('| ID                                   | Name                                                            | Current Doc Type    | Processing Status  |');
+      console.log('-----------------------------------------------------------------------------------------------------------------------------------------');
       
       // Show all records without limit
       for (let i = 0; i < pdfMismatches.length; i++) {
         const record = pdfMismatches[i];
-        const id = record.id.substring(0, 30).padEnd(32);
+        const id = record.id.padEnd(38);
         const name = (record.name || 'Unknown').substring(0, 60).padEnd(60);
         const docType = docTypeMap.get(record.document_type_id)?.document_type || 'Unknown';
         const currentDocType = docType.substring(0, 20).padEnd(20);
         
-        console.log(`| ${id} | ${name} | ${currentDocType} |`);
+        // Get processing status from expert_documents separately
+        let processingStatus = 'none'.padEnd(18);
+        try {
+          const { data: docStatus } = await supabase
+            .from('expert_documents')
+            .select('document_processing_status')
+            .eq('source_id', record.id)
+            .limit(1);
+          
+          if (docStatus && docStatus.length > 0 && docStatus[0].document_processing_status) {
+            processingStatus = docStatus[0].document_processing_status.substring(0, 18).padEnd(18);
+          }
+        } catch (error) {
+          // If there's an error fetching processing status, just use the default
+          if (options.verbose) {
+            console.log(`Error fetching processing status for ${record.id}: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
+        
+        console.log(`| ${id} | ${name} | ${currentDocType} | ${processingStatus} |`);
       }
       
       console.log('-------------------------------------------------------------------------------------------------------------------');
@@ -930,19 +1086,38 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
     
     if (pptxMismatches.length > 0) {
       console.log('\nPowerPoint files with mismatched document types:');
-      console.log('-----------------------------------------------------------------------------------------------------------------------------');
-      console.log('| ID                             | Name                                                            | Current Doc Type    |');
-      console.log('-----------------------------------------------------------------------------------------------------------------------------');
+      console.log('-----------------------------------------------------------------------------------------------------------------------------------------');
+      console.log('| ID                                   | Name                                                            | Current Doc Type    | Processing Status  |');
+      console.log('-----------------------------------------------------------------------------------------------------------------------------------------');
       
       // Show all records without limit
       for (let i = 0; i < pptxMismatches.length; i++) {
         const record = pptxMismatches[i];
-        const id = record.id.substring(0, 30).padEnd(32);
+        const id = record.id.padEnd(38);
         const name = (record.name || 'Unknown').substring(0, 60).padEnd(60);
         const docType = docTypeMap.get(record.document_type_id)?.document_type || 'Unknown';
         const currentDocType = docType.substring(0, 20).padEnd(20);
         
-        console.log(`| ${id} | ${name} | ${currentDocType} |`);
+        // Get processing status from expert_documents separately
+        let processingStatus = 'none'.padEnd(18);
+        try {
+          const { data: docStatus } = await supabase
+            .from('expert_documents')
+            .select('document_processing_status')
+            .eq('source_id', record.id)
+            .limit(1);
+          
+          if (docStatus && docStatus.length > 0 && docStatus[0].document_processing_status) {
+            processingStatus = docStatus[0].document_processing_status.substring(0, 18).padEnd(18);
+          }
+        } catch (error) {
+          // If there's an error fetching processing status, just use the default
+          if (options.verbose) {
+            console.log(`Error fetching processing status for ${record.id}: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
+        
+        console.log(`| ${id} | ${name} | ${currentDocType} | ${processingStatus} |`);
       }
       
       console.log('-------------------------------------------------------------------------------------------------------------------');

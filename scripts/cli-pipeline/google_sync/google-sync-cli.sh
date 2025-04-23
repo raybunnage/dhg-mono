@@ -5,7 +5,7 @@
 # AVAILABLE COMMANDS:
 #   sync                         Sync files from Google Drive to the database (core functionality)
 #   health-check                 Check the health of Google Drive API connection
-#   classify-pdfs                Classify PDF files missing document types using Claude AI
+#   classify-pdfs                Classify PDF files missing document types or marked as needs_reprocessing using Claude AI
 #   classify-powerpoints         Classify PowerPoint files missing document types using local extraction and Claude AI
 #   reclassify-docs              Re-classify documents with temperature=0 for deterministic results
 #   classify-docs-service        Classify .docx and .txt files missing document types
@@ -362,10 +362,14 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "COMMANDS: (* = commonly used)"
   echo "  * sync                         Sync files from Google Drive to the database with intelligent file categorization"
   echo "  * health-check                 Check the health of Google Drive API connection"
-  echo "  * classify-pdfs                Classify PDF files missing document types using Claude AI"
+  echo "  * classify-pdfs                Classify PDF files missing document types or marked as needs_reprocessing using Claude AI"
   echo "  * classify-powerpoints         Classify PowerPoint files missing document types using local extraction and Claude AI"
   echo "  * reclassify-docs              Re-classify documents that need reprocessing based on file type"
+  echo "  * mark-pdfs                    Mark PDF files for reprocessing (creates needs_reprocessing status)"
+  echo "  * direct-classify-pdfs        Process PDF files with needs_reprocessing status directly (more reliable)"
+  echo "  * fix-classify-pdfs           Mark PDF files with needs_reprocessing status as processed (without analyzing)"
   echo "  * classify-docs-service        Classify .docx and .txt files missing document types"
+  echo "  * clear-reprocessing           Clear 'needs_reprocessing' status for documents"
   echo "    validate-pdf-classification  Validate PDF classification results and generate a report (slow)"
   echo "  * check-duplicates             Check for duplicate files in sources_google"
   echo "    check-document-types         Check for files missing document types"
@@ -374,10 +378,14 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * report-main-video-ids        Report on video files for folders"
   echo "  * update-media-document-types  Update document_type_id for media files and create expert_documents"
   echo "    check-reprocessing-status    Check which expert documents need reprocessing based on metadata"
+  echo "  * source-info                  Get detailed information about a sources_google record and related expert_documents"
   echo "    show-expert-documents        Generate a report of expert documents in the database"
   echo "  * list                         List Google sources with their corresponding expert documents"
   echo "  * list-unclassified-files      List PDF, PowerPoint, TXT and DOCX files without document types"
   echo "    list-unsupported-types       List all unsupported document types in the system"
+  echo "  * expert-documents-duplicates  Find and report duplicate expert_documents with same source_id
+  * expert-documents-purge       Purge problematic expert_documents (duplicates or orphaned records)
+  * clean-orphaned-records        Clean up orphaned expert_documents and their presentation_assets references  * purge-orphaned-with-presentations Clean up orphaned expert_documents and related presentation_assets  * check-duplicate-prevention   Check if all functions inserting expert_documents prevent duplicates"
   echo "    check-expert-doc             Check the most recent expert document for proper content extraction"
   echo "    check-document-summary       Check and display the summary for a specific document by ID"
   echo "    fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records"
@@ -385,6 +393,8 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id"
   echo "    check-recent-updates         Show recently updated files and their associated expert documents"
   echo "  * ids-need-reprocessing        Reset document_processing_status to needs_reprocessing for specified sources"
+  echo "  * needs-reprocessing            Find documents marked as needs_reprocessing with unsupported document types"
+  echo "  * find-needs-reprocessing      Find files with incorrect document types and mark them for reprocessing"
   echo "  * help                         Show this help message"
   echo ""
   echo "EXAMPLES:"
@@ -414,8 +424,17 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Re-classify documents with dry-run mode"
   echo "  ./google-sync-cli.sh reclassify-docs --dry-run"
   echo ""
+  echo "  # Clear 'needs_reprocessing' status for documents"
+  echo "  ./google-sync-cli.sh clear-reprocessing"
+  echo ""
+  echo "  # Preview clear-reprocessing changes without making them"
+  echo "  ./google-sync-cli.sh clear-reprocessing --dry-run --verbose"
+  echo ""
   echo "  # Run PDF classification in dry-run mode to see what would be updated"
   echo "  ./google-sync-cli.sh classify-pdfs --dry-run"
+  echo ""
+  echo "  # Classify PDFs with custom concurrency (1-5 recommended)"
+  echo "  ./google-sync-cli.sh classify-pdfs --concurrency 2 --limit 10"
   echo ""
   echo "  # Classify PowerPoint files and extract their content"
   echo "  ./google-sync-cli.sh classify-powerpoints --limit 3 --verbose"
@@ -429,6 +448,40 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Generate a report of expert documents in the database"
   echo "  ./google-sync-cli.sh show-expert-documents"
   echo ""
+  echo "  # Find and report duplicate expert_documents with the same source_id"
+  echo "  ./google-sync-cli.sh expert-documents-duplicates --verbose"
+  echo ""
+  echo "  # Find duplicates and export to a JSON file"
+  echo "  ./google-sync-cli.sh expert-documents-duplicates --output duplicates.json"
+  echo ""
+  echo "  # Purge duplicate expert_documents keeping the newest record (dry run mode)"
+  echo "  ./google-sync-cli.sh expert-documents-purge --dry-run --verbose"
+  echo ""
+  echo "  # Purge duplicates keeping records with a specific status"
+  echo "  ./google-sync-cli.sh expert-documents-purge --strategy specific-status --status reprocessing_done"
+  echo ""
+  echo "  # Purge orphaned expert_documents (null source_id or non-existent sources_google record)"
+  echo "  ./google-sync-cli.sh expert-documents-purge --orphaned --verbose"
+  echo ""
+  echo "  # Purge orphaned expert_documents in dry-run mode with a higher limit"
+  echo "  ./google-sync-cli.sh expert-documents-purge --orphaned --orphaned-limit 200 --dry-run"
+  echo ""
+  echo "  # Purge orphaned expert_documents and their presentation_assets references"
+  echo "  ./google-sync-cli.sh purge-orphaned-with-presentations --verbose"
+  echo ""
+  echo "  # Preview the cleanup in dry-run mode"
+  echo ""
+  echo "  # Clean up orphaned expert_documents with presentation_assets cleanup"
+  echo "  ./google-sync-cli.sh clean-orphaned-records --verbose"
+  echo ""
+  echo "  # Preview the orphaned records cleanup in dry-run mode"
+  echo "  ./google-sync-cli.sh clean-orphaned-records --dry-run --verbose"  echo "  ./google-sync-cli.sh purge-orphaned-with-presentations --dry-run --verbose"  echo ""
+  echo "  # Check if all code properly prevents duplicate expert_documents"
+  echo "  ./google-sync-cli.sh check-duplicate-prevention --verbose"
+  echo ""
+  echo "  # Generate suggested fixes for code missing duplicate prevention"
+  echo "  ./google-sync-cli.sh check-duplicate-prevention --fix"
+  echo "" 
   echo "  # Show recently updated PDF files and their expert documents"
   echo "  ./google-sync-cli.sh check-recent-updates --limit 10"
   echo ""
@@ -471,6 +524,30 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Save needs-reprocessing results to a file in JSON format"
   echo "  ./google-sync-cli.sh needs-reprocessing --format json --output unsupported-docs.json"
   echo ""
+  echo "  # Find files with incorrect document types and mark them for reprocessing"
+  echo "  ./google-sync-cli.sh find-needs-reprocessing"
+  echo ""
+  echo "  # Find specific document types that need reprocessing"
+  echo "  ./google-sync-cli.sh find-needs-reprocessing --doc-type pdf --limit 100"
+  echo ""
+  echo "  # Mark PDF files for reprocessing"
+  echo "  ./google-sync-cli.sh mark-pdfs --limit 40 --create-missing-records"
+  echo ""
+  echo "  # Preview marking PDFs for reprocessing without making changes"
+  echo "  ./google-sync-cli.sh mark-pdfs --dry-run --verbose"
+  echo ""
+  echo "  # Process PDFs directly from the needs_reprocessing status"
+  echo "  ./google-sync-cli.sh direct-classify-pdfs --limit 5 --concurrency 3"
+  echo ""
+  echo "  # Preview direct PDF classification without processing"
+  echo "  ./google-sync-cli.sh direct-classify-pdfs --dry-run --verbose"
+  echo ""
+  echo "  # Mark PDF files as processed without actually analyzing them"
+  echo "  ./google-sync-cli.sh fix-classify-pdfs --limit 10"
+  echo ""
+  echo "  # Preview marking PDFs as processed"
+  echo "  ./google-sync-cli.sh fix-classify-pdfs --dry-run"
+  echo ""
   echo "  # Check and display document summary for a specific document"
   echo "  ./google-sync-cli.sh check-document-summary <document-id>"
   echo ""
@@ -491,6 +568,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Preview changes without making updates"
   echo "  ./google-sync-cli.sh fix-bad-folders --dry-run --verbose"
+  echo ""
+  echo "  # Get detailed information about a sources_google record and its related expert_documents"
+  echo "  ./google-sync-cli.sh source-info 17fcd345"
+  echo ""
+  echo "  # Get information about a specific sources_google record using the full ID"
+  echo "  ./google-sync-cli.sh source-info 17fcd345-3907-4fd5-b1f5-ad1219"
   exit 0
 fi
 
@@ -612,6 +695,12 @@ if [ "$1" = "needs-reprocessing" ]; then
   exit $?
 fi
 
+if [ "$1" = "find-needs-reprocessing" ]; then
+  shift
+  track_command "find-needs-reprocessing" "ts-node $SCRIPT_DIR/sources-google-integrity.ts --mark-for-reprocessing --classifier-check --verbose $*"
+  exit $?
+fi
+
 if [ "$1" = "report-main-video-ids" ]; then
   shift
   track_command "report-main-video-ids" "ts-node $SCRIPT_DIR/report-main-video-ids.ts $*"
@@ -675,6 +764,43 @@ fi
 if [ "$1" = "fix-bad-folders" ]; then
   shift
   track_command "fix-bad-folders" "ts-node $SCRIPT_DIR/fix-bad-folders.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "clear-reprocessing" ]; then
+  shift
+  track_command "clear-reprocessing" "ts-node $SCRIPT_DIR/clear-reprocessing.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "source-info" ]; then
+  shift
+  if [ -z "$1" ]; then
+    echo "Error: Source ID or ID prefix is required"
+    echo "Usage: ./google-sync-cli.sh source-info <source-id-or-prefix>"
+    exit 1
+  fi
+  SOURCE_ID="$1"
+  shift
+  track_command "source-info" "ts-node $SCRIPT_DIR/source-info.ts $SOURCE_ID $*"
+  exit $?
+fi
+
+if [ "$1" = "expert-documents-duplicates" ]; then
+  shift
+  track_command "expert-documents-duplicates" "ts-node $SCRIPT_DIR/expert-documents-duplicates.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "expert-documents-purge" ]; then
+  shift
+  track_command "expert-documents-purge" "ts-node $SCRIPT_DIR/expert-documents-purge.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "check-duplicate-prevention" ]; then
+  shift
+  track_command "check-duplicate-prevention" "ts-node $SCRIPT_DIR/check-duplicate-prevention.ts $*"
   exit $?
 fi
 
@@ -754,3 +880,38 @@ fi
 # Run the TypeScript file with ts-node - capture command from args
 COMMAND="${1:-main}"
 track_command "$COMMAND" "ts-node $SCRIPT_DIR/index.ts $*"
+# Add the purge-orphaned-with-presentations command
+if [ "$1" = "purge-orphaned-with-presentations" ]; then
+  shift
+  track_command "purge-orphaned-with-presentations" "ts-node $SCRIPT_DIR/purge-orphaned-with-presentations.ts $*"
+  exit $?
+fi
+
+# Add the clean-orphaned-records command
+
+# Add the clean-orphaned-records command 
+
+# Add the clean-orphaned-records command
+if [ "$1" = "clean-orphaned-records" ]; then
+  shift
+  track_command "clean-orphaned-records" "$SCRIPT_DIR/clean-orphaned-records.sh $*"
+  exit $?
+fi
+
+if [ "$1" = "mark-pdfs" ] || [ "$1" = "mark-pdfs-for-processing" ]; then
+  shift
+  track_command "mark-pdfs-for-processing" "ts-node $SCRIPT_DIR/reset-and-mark-for-processing.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "direct-classify-pdfs" ]; then
+  shift
+  track_command "direct-classify-pdfs" "ts-node $SCRIPT_DIR/direct-classify-pdfs.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "fix-classify-pdfs" ]; then
+  shift
+  track_command "fix-classify-pdfs" "ts-node $SCRIPT_DIR/fix-classify-pdfs.ts $*"
+  exit $?
+fi

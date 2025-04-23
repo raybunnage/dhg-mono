@@ -416,9 +416,44 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       }
     }
 
-    // 6. Mark documents with non-JSON content as needs_reprocessing
-    console.log('\nMarking documents with non-JSON content as needs_reprocessing...');
+    // 6. Mark documents with non-JSON content as needs_reprocessing, but only for supported file types
+    console.log('\nMarking documents with non-JSON content as needs_reprocessing (only for .txt, .docx, .pdf, and .pptx files)...');
+    
+    // Get all source IDs from expert docs
+    const expertDocSourceIds = expertDocs.map(doc => doc.source_id);
+    
+    // Fetch the corresponding sources_google records to check file extensions
+    const { data: sourcesForJsonCheck, error: sourcesJsonCheckError } = await supabaseClient
+      .from('sources_google')
+      .select('id, name')
+      .in('id', expertDocSourceIds);
+      
+    if (sourcesJsonCheckError) {
+      console.error('Error fetching sources for JSON content check:', sourcesJsonCheckError.message);
+    }
+    
+    // Create a map of source IDs to file names for quick lookup
+    const sourceIdToNameMap = new Map();
+    if (sourcesForJsonCheck) {
+      sourcesForJsonCheck.forEach(source => {
+        sourceIdToNameMap.set(source.id, source.name);
+      });
+    }
+    
+    // Filter only documents that have non-JSON content AND have supported file extensions
     const nonJsonDocs = expertDocs.filter(doc => {
+      // Get the file name from the sources map
+      const fileName = sourceIdToNameMap.get(doc.source_id);
+      
+      // Check if it has one of the supported extensions
+      const hasValidExtension = fileName && 
+        (/\.(txt|docx|pdf|pptx)$/i.test(fileName));
+      
+      // Only check for JSON content if it's a supported file type
+      if (!hasValidExtension) {
+        return false;
+      }
+      
       // Check if the content is not valid JSON
       try {
         return !(typeof doc.processed_content === 'string' && 

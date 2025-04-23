@@ -381,7 +381,7 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
       const now = new Date().toISOString();
       
       // Determine document processing status based on file type
-      let documentProcessingStatus = 'needs_reprocessing';
+      let documentProcessingStatus = null;
       let processingSkipReason = null;
       
       // Check mime type to determine how to handle this file
@@ -411,7 +411,7 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
                  mimeType === 'application/msword' ||
                  mimeType === 'application/vnd.google-apps.document' ||
                  ['pdf', 'txt', 'doc', 'docx', 'md', 'markdown'].includes(fileExt)) {
-        // These are document types that should be processed
+        // For new files, set to needs_reprocessing
         documentProcessingStatus = 'needs_reprocessing';
       }
 
@@ -947,7 +947,7 @@ async function syncFiles(
                 const now = new Date().toISOString();
                 
                 // Determine document processing status based on file type
-                let documentProcessingStatus = 'needs_reprocessing';
+                let documentProcessingStatus = null;
                 let processingSkipReason = null;
                 
                 // Check mime type to determine how to handle this file
@@ -977,7 +977,7 @@ async function syncFiles(
                            mimeType === 'application/msword' ||
                            mimeType === 'application/vnd.google-apps.document' ||
                            ['pdf', 'txt', 'doc', 'docx', 'md', 'markdown'].includes(fileExt)) {
-                  // These are document types that should be processed
+                  // For newly inserted files, set to needs_reprocessing
                   documentProcessingStatus = 'needs_reprocessing';
                 }
                 

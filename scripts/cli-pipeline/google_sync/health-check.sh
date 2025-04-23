@@ -63,7 +63,11 @@ COMMANDS=(
   "ids-need-reprocessing"
   "fix-mp4-status"
   "needs-reprocessing"
+  "find-needs-reprocessing"
   "list-unsupported-types"
+  "expert-documents-duplicates"
+  "expert-documents-purge"
+  "check-duplicate-prevention"
 )
 
 # Check for commands in google-sync-cli.sh that are directly implemented
@@ -131,7 +135,7 @@ main() {
     fi
     
     # Special case for standalone scripts
-    if [ "$cmd" = "classify-powerpoints" ] || [ "$cmd" = "check-reprocessing-status" ] || [ "$cmd" = "needs-reprocessing" ] || [ "$cmd" = "list-unsupported-types" ]; then
+    if [ "$cmd" = "classify-powerpoints" ] || [ "$cmd" = "check-reprocessing-status" ] || [ "$cmd" = "needs-reprocessing" ] || [ "$cmd" = "list-unsupported-types" ] || [ "$cmd" = "find-needs-reprocessing" ]; then
       if [ "$VERBOSE" = true ]; then
         echo "✅ PASSED: Command $cmd is a standalone script" | tee -a "$LOG_FILE"
       else
@@ -237,4 +241,5 @@ main() {
 }
 
 # Run the main function
-main
+main  "purge-orphaned-with-presentations"
+  "clean-orphaned-records"
