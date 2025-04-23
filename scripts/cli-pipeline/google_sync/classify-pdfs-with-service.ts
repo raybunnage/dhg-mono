@@ -122,6 +122,8 @@ async function processPdfFile(
   supabase: any = null
 ): Promise<{ classificationResult: any, tempFilePath: string | null }> {
   let tempFilePath: string | null = null;
+  // Array to collect temporary files for cleanup later
+  const tempFiles: string[] = [];
   
   try {
     if (debug) {
@@ -169,29 +171,28 @@ async function processPdfFile(
     }
     
     // Check file size before downloading
+    let isLargeFile = false;
+    let fileSizeMB = 0;
+    
     if (file && file.size) {
       const fileSizeBytes = parseInt(file.size, 10);
-      const fileSizeMB = fileSizeBytes / (1024 * 1024);
+      fileSizeMB = fileSizeBytes / (1024 * 1024);
       
       // Check if the file exceeds Claude's 10MB limit for PDFs
       if (fileSizeBytes > 10 * 1024 * 1024) {
+        isLargeFile = true;
+        
         // Use a more noticeable warning for large files
         console.log('');
         console.log('⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️');
         console.log(`⚠️  PDF file is too large (${fileSizeMB.toFixed(2)}MB). Claude has a 10MB limit for PDF files.`);
-        console.log('⚠️  Using fallback classification based on filename and metadata.');
-        console.log('⚠️  Consider splitting large PDFs into smaller files for better results.');
+        console.log('⚠️  Will extract and analyze the first 99 pages instead of using metadata.');
+        console.log('⚠️  This partial analysis will provide better results than metadata alone.');
         console.log('⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️');
         console.log('');
         
-        // Return a fallback classification for large files
-        return {
-          classificationResult: await createFallbackClassification(
-            { name: fileName, size: fileSizeBytes, drive_id: fileId },
-            supabase
-          ),
-          tempFilePath: null
-        };
+        // Continue as normal and let the file be downloaded
+        // We'll try to extract pages from it after download
       }
     }
     
@@ -220,6 +221,215 @@ async function processPdfFile(
     
     if (debug) {
       console.log(`Saved temporary PDF file to ${tempFilePath}`);
+    }
+    
+    // Check if this is a large file and we need to extract pages
+    if (isLargeFile && tempFilePath) {
+      console.log(`Processing large PDF (${fileSizeMB.toFixed(2)}MB) - extracting first 50 pages to stay under Claude's size limit...`);
+      
+      try {
+        // Create a path for the extracted PDF
+        const extractedPdfPath = tempFilePath.replace('.pdf', '_first50pages.pdf');
+        
+        // Try to use pdf-lib to extract the first 50 pages
+        try {
+          // Use pdf-lib to extract pages
+          const { PDFDocument } = require('pdf-lib');
+          
+          // Read the PDF bytes
+          const pdfBytes = fs.readFileSync(tempFilePath);
+          
+          // Load the document
+          const pdfDoc = await PDFDocument.load(pdfBytes);
+          
+          // Get page count and calculate how many to extract - limiting to 50 instead of 99
+          // to ensure we stay under Claude's size limit
+          const pageCount = pdfDoc.getPageCount();
+          const pagesToExtract = Math.min(pageCount, 50);
+          
+          console.log(`PDF has ${pageCount} pages. Extracting first ${pagesToExtract} pages...`);
+          
+          // Create a new document for the extracted pages
+          const extractedPdf = await PDFDocument.create();
+          
+          // Copy the first 50 pages (or less if the document has fewer)
+          const copiedPages = await extractedPdf.copyPages(
+            pdfDoc, 
+            Array.from({ length: pagesToExtract }, (_, i) => i)
+          );
+          
+          // Add all copied pages to the new document
+          copiedPages.forEach((page: any) => {
+            extractedPdf.addPage(page);
+          });
+          
+          // Save the new PDF with extracted pages and compression
+          // Using the most compact PDFlib settings to reduce file size
+          const extractedPdfBytes = await extractedPdf.save({
+            useObjectStreams: true,
+            addDefaultPage: false,
+            objectsPerTick: 100,
+            updateFieldAppearances: false
+          });
+          
+          fs.writeFileSync(extractedPdfPath, extractedPdfBytes);
+          
+          // Get file size of the extracted PDF
+          const stats = fs.statSync(extractedPdfPath);
+          const extractedSizeMB = stats.size / (1024 * 1024);
+          
+          console.log(`Successfully extracted ${pagesToExtract} pages to ${extractedPdfPath} (${extractedSizeMB.toFixed(2)}MB)`);
+          
+          // If still too large, reduce to even fewer pages
+          if (extractedSizeMB > 9.5) {
+            console.log(`Extracted PDF is still large (${extractedSizeMB.toFixed(2)}MB), reducing to first 25 pages...`);
+            
+            // Create a further reduced PDF
+            const reducedPdfPath = tempFilePath.replace('.pdf', '_first25pages.pdf');
+            
+            // Load the already extracted PDF
+            const reducedPdfDoc = await PDFDocument.load(extractedPdfBytes);
+            
+            // Create a new document for fewer pages
+            const veryReducedPdf = await PDFDocument.create();
+            
+            // Copy an even smaller number of pages
+            const pagesToKeep = Math.min(reducedPdfDoc.getPageCount(), 25);
+            const furtherReducedPages = await veryReducedPdf.copyPages(
+              reducedPdfDoc,
+              Array.from({ length: pagesToKeep }, (_, i) => i)
+            );
+            
+            // Add the reduced pages
+            furtherReducedPages.forEach((page: any) => {
+              veryReducedPdf.addPage(page);
+            });
+            
+            // Save with maximum compression settings
+            const reducedPdfBytes = await veryReducedPdf.save({
+              useObjectStreams: true,
+              addDefaultPage: false,
+              objectsPerTick: 100,
+              updateFieldAppearances: false
+            });
+            
+            fs.writeFileSync(reducedPdfPath, reducedPdfBytes);
+            
+            // Check size again
+            const reducedStats = fs.statSync(reducedPdfPath);
+            const reducedSizeMB = reducedStats.size / (1024 * 1024);
+            
+            console.log(`Created smaller PDF with ${pagesToKeep} pages: ${reducedPdfPath} (${reducedSizeMB.toFixed(2)}MB)`);
+            
+            // Use the further reduced PDF
+            const originalTempFilePath = tempFilePath;
+            tempFilePath = reducedPdfPath;
+            
+            // Add all files to cleanup
+            tempFiles.push(originalTempFilePath);
+            tempFiles.push(extractedPdfPath);
+            tempFiles.push(reducedPdfPath);
+          } else {
+            // Update the tempFilePath to use our extracted file
+            const originalTempFilePath = tempFilePath;
+            tempFilePath = extractedPdfPath;
+            
+            // Add both files to cleanup list at the end
+            tempFiles.push(originalTempFilePath);
+            tempFiles.push(extractedPdfPath);
+          }
+        } catch (pdfLibError) {
+          console.error(`Error using pdf-lib to extract pages: ${pdfLibError}`);
+          
+          // Try a more aggressive approach - take just the first 10 pages as a last resort
+          try {
+            console.log(`Attempting one last extraction with only 10 pages...`);
+            const lastResortPath = tempFilePath.replace('.pdf', '_first10pages.pdf');
+            
+            const { PDFDocument } = require('pdf-lib');
+            const pdfBytes = fs.readFileSync(tempFilePath);
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            const minimalPdf = await PDFDocument.create();
+            
+            // Only take 10 pages max
+            const pagesToKeep = Math.min(pdfDoc.getPageCount(), 10);
+            const minimalPages = await minimalPdf.copyPages(
+              pdfDoc,
+              Array.from({ length: pagesToKeep }, (_, i) => i)
+            );
+            
+            minimalPages.forEach((page: any) => {
+              minimalPdf.addPage(page);
+            });
+            
+            // Maximum compression
+            const minimalBytes = await minimalPdf.save({
+              useObjectStreams: true,
+              addDefaultPage: false,
+              objectsPerTick: 50,
+              updateFieldAppearances: false
+            });
+            
+            fs.writeFileSync(lastResortPath, minimalBytes);
+            
+            // Update the path and add to cleanup
+            const originalPath = tempFilePath;
+            tempFilePath = lastResortPath;
+            tempFiles.push(originalPath);
+            tempFiles.push(lastResortPath);
+            
+            console.log(`Created minimal 10-page PDF as last resort: ${lastResortPath}`);
+          } catch (minimalError) {
+            console.error(`Final extraction attempt failed: ${minimalError}`);
+            console.log(`Will try to continue with full PDF, but may encounter size issues.`);
+          }
+        }
+      } catch (extractionError) {
+        console.error(`Error during page extraction: ${extractionError}`);
+        
+        // Try a very minimal approach with just 5 pages
+        try {
+          console.log(`Attempting emergency extraction with only 5 pages...`);
+          const emergencyPath = tempFilePath.replace('.pdf', '_first5pages.pdf');
+          
+          const { PDFDocument } = require('pdf-lib');
+          const pdfBytes = fs.readFileSync(tempFilePath);
+          const pdfDoc = await PDFDocument.load(pdfBytes);
+          const emergencyPdf = await PDFDocument.create();
+          
+          // Only take 5 pages max
+          const pagesToKeep = Math.min(pdfDoc.getPageCount(), 5);
+          const emergencyPages = await emergencyPdf.copyPages(
+            pdfDoc,
+            Array.from({ length: pagesToKeep }, (_, i) => i)
+          );
+          
+          emergencyPages.forEach((page: any) => {
+            emergencyPdf.addPage(page);
+          });
+          
+          // Maximum compression
+          const emergencyBytes = await emergencyPdf.save({
+            useObjectStreams: true,
+            addDefaultPage: false,
+            objectsPerTick: 20,
+            updateFieldAppearances: false
+          });
+          
+          fs.writeFileSync(emergencyPath, emergencyBytes);
+          
+          // Update the path and add to cleanup
+          const originalPath = tempFilePath;
+          tempFilePath = emergencyPath;
+          tempFiles.push(originalPath);
+          tempFiles.push(emergencyPath);
+          
+          console.log(`Created emergency 5-page PDF: ${emergencyPath}`);
+        } catch (emergencyError) {
+          console.error(`Emergency extraction failed: ${emergencyError}`);
+          console.log(`All extraction attempts failed. Will try with full PDF but may encounter size issues.`);
+        }
+      }
     }
     
     // 4. Read a few lines of the PDF content to check if it seems valid
@@ -272,9 +482,31 @@ async function processPdfFile(
       }
       
       // Prepare the classification prompt with document types information
+      // Add a note if this is an extracted partial PDF
+      const is50PagesPdf = tempFilePath && tempFilePath.includes('_first50pages.pdf');
+      const is25PagesPdf = tempFilePath && tempFilePath.includes('_first25pages.pdf');
+      const is10PagesPdf = tempFilePath && tempFilePath.includes('_first10pages.pdf');
+      const is5PagesPdf = tempFilePath && tempFilePath.includes('_first5pages.pdf');
+      const isPartialPdf = is50PagesPdf || is25PagesPdf || is10PagesPdf || is5PagesPdf;
+      
+      // Determine how many pages were extracted
+      let pageCount = "partial";
+      if (is5PagesPdf) {
+        pageCount = "first 5";
+      } else if (is10PagesPdf) {
+        pageCount = "first 10";
+      } else if (is25PagesPdf) {
+        pageCount = "first 25";
+      } else if (is50PagesPdf) {
+        pageCount = "first 50";
+      }
+      
       const userMessage = `${promptResult.combinedContent}
 
       Please read and analyze this PDF document carefully.
+      ${isPartialPdf ? `NOTE: This is ONLY the ${pageCount} pages of a larger document that was too large for complete analysis.` : ""}
+      ${isPartialPdf ? "Your classification and summary should be based on this partial content." : ""}
+      
       1. Examine its content, structure, and purpose.
       2. Determine which document_type from the document_types table best describes it.
       3. Create a detailed summary (at least 3 paragraphs) that captures the key concepts.
@@ -284,6 +516,7 @@ async function processPdfFile(
       - Select the most appropriate document_type_id from the available options in the document_types table
       - Base your classification on the actual content of the PDF, not just the filename
       - Provide detailed reasoning for your classification choice
+      ${isPartialPdf ? `- Acknowledge in your summary that you've only analyzed the ${pageCount} pages of the document` : ""}
       `;
       
       // 7. Get classification from Claude using direct PDF reading capability
@@ -436,6 +669,17 @@ async function processPdfFile(
     }
   } catch (error) {
     console.error(`Error processing PDF file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    
+    // Clean up any temporary files we created
+    for (const file of tempFiles) {
+      if (fs.existsSync(file)) {
+        try {
+          fs.unlinkSync(file);
+        } catch (cleanupError) {
+          console.warn(`Could not clean up temporary file ${file}: ${cleanupError}`);
+        }
+      }
+    }
     
     // If we failed but have a temporary file, return it for cleanup
     return {
