@@ -372,6 +372,51 @@ async function processFile(
   }
 }
 
+// Simple helper for running promises with concurrency control
+async function processWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  processor: (item: T, index: number) => Promise<R>,
+  progressCallback?: (current: number, total: number) => void
+): Promise<R[]> {
+  const results: R[] = [];
+  let currentIndex = 0;
+  const total = items.length;
+
+  // Process the next item in the queue
+  async function processNext(): Promise<void> {
+    const index = currentIndex++;
+    if (index >= total) return;
+
+    try {
+      const result = await processor(items[index], index);
+      results[index] = result; // Store the result at the correct index
+      
+      if (progressCallback) {
+        progressCallback(index + 1, total);
+      }
+
+      // Process the next item
+      await processNext();
+    } catch (error) {
+      console.error(`Error processing item at index ${index}:`, error);
+      // Even if there's an error, try to process the next item
+      await processNext();
+    }
+  }
+
+  // Start processing up to 'concurrency' items in parallel
+  const workers = [];
+  for (let i = 0; i < Math.min(concurrency, total); i++) {
+    workers.push(processNext());
+  }
+
+  // Wait for all workers to complete
+  await Promise.all(workers);
+  
+  return results;
+}
+
 // Main classification function
 async function classifyMissingDocuments(
   limit: number,
@@ -379,7 +424,8 @@ async function classifyMissingDocuments(
   outputPath?: string,
   includePdfs: boolean = false,
   debug: boolean = false,
-  dryRun: boolean = false
+  dryRun: boolean = false,
+  concurrency: number = 1
 ): Promise<any[]> {
   try {
     // 1. Get the Supabase client
@@ -456,12 +502,25 @@ async function classifyMissingDocuments(
       return [];
     }
     
-    // 4. Process each file
-    const results = [];
-    for (const file of files) {
+    // 4. Process files with concurrency
+    console.log(`Processing ${files.length} files with concurrency of ${concurrency}`);
+    
+    // Validate concurrency value
+    if (isNaN(concurrency) || concurrency < 1) {
+      console.warn(`Invalid concurrency value: ${concurrency}, defaulting to 1`);
+      concurrency = 1;
+    } else if (concurrency > 5) {
+      console.log(`Note: High concurrency (${concurrency}) may lead to rate limiting with Claude API`);
+    }
+    
+    // Process a single file
+    const processFileWithResult = async (file: any, index: number): Promise<any> => {
+      // Always show progress, regardless of debug mode
+      console.log(`Processing file ${index+1}/${files.length}: ${file.name}`);
+      
       try {
         if (debug) {
-          console.log(`Processing file: ${file.name} (${file.id})`);
+          console.log(`File details: ${file.name} (${file.id})`);
         }
         
         // Process the file
@@ -471,6 +530,14 @@ async function classifyMissingDocuments(
           file.name || '',
           debug
         );
+        
+        // Show classification result regardless of debug mode
+        if (classificationResult && classificationResult.document_type) {
+          console.log(`[${index+1}/${files.length}] ✅ Classified as: ${classificationResult.document_type}`);
+          console.log(`[${index+1}/${files.length}] 📊 Confidence: ${(classificationResult.classification_confidence * 100).toFixed(1)}%`);
+        } else {
+          console.log(`[${index+1}/${files.length}] ❌ Classification failed`);
+        }
         
         // Only update the database if not in dry run mode
         if (!dryRun && classificationResult.document_type_id) {
@@ -584,12 +651,6 @@ async function classifyMissingDocuments(
           }
         }
         
-        // Add to results
-        results.push({
-          file,
-          result: classificationResult
-        });
-        
         // Save results to output directory if specified
         if (outputPath && classificationResult) {
           const outputDir = path.dirname(outputPath);
@@ -605,17 +666,38 @@ async function classifyMissingDocuments(
             console.log(`Saved classification result to ${filePath}`);
           }
         }
+        
+        // Return successful result
+        return {
+          file,
+          result: classificationResult,
+          status: 'completed'
+        };
       } catch (error) {
         console.error(`Error processing file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         
-        // Add the error to results
-        results.push({
+        // Return error result
+        return {
           file,
           result: null,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+          error: error instanceof Error ? error.message : 'Unknown error',
+          status: 'failed'
+        };
       }
-    }
+    };
+    
+    // Process all files with concurrency
+    const results = await processWithConcurrency(
+      files,
+      concurrency,
+      processFileWithResult,
+      (current, total) => {
+        if (debug) {
+          const percentage = Math.round((current / total) * 100);
+          console.log(`Progress: ${percentage}% (${current}/${total})`);
+        }
+      }
+    );
     
     // Save combined results if output path specified
     if (outputPath && results.length > 0) {
@@ -657,6 +739,7 @@ program
   .option('--dry-run', 'Process files but do not update database', false)
   .option('--include-pdfs', 'Include PDF files in classification (by default only .docx and .txt files are processed)', false)
   .option('--folder-id <id>', 'Filter by Google Drive folder ID or folder name', '')
+  .option('-c, --concurrency <number>', 'Number of files to process concurrently (1-5, default: 1)', '1')
   .action(async (options) => {
     try {
       // Set debug mode if verbose is enabled
@@ -670,11 +753,13 @@ program
       console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
       console.log(`Debug: ${debug ? 'ON' : 'OFF'}`);
       
-      // Parse limit
+      // Parse limit and concurrency
       const limit = parseInt(options.limit, 10);
+      const concurrency = parseInt(options.concurrency, 10);
       
       // Process files
       console.log(`Processing up to ${limit} files missing document types...`);
+      console.log(`Concurrency: ${concurrency} (processing up to ${concurrency} files simultaneously)`);
       
       const results = await classifyMissingDocuments(
         limit,
@@ -682,7 +767,8 @@ program
         options.output,
         options.includePdfs,
         debug,
-        dryRun
+        dryRun,
+        concurrency
       );
       
       // Show summary
