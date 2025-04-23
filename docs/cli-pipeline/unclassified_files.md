@@ -1,44 +1,42 @@
 # Unclassified Files Report
 
-Report generated on 2025-04-21T22:42:17.515Z
+Report generated on 2025-04-23T22:53:38.534Z
 
 This report shows PDF, PowerPoint, TXT, and DOCX files that need classification (missing document_type_id values).
 
 ## Summary
 
-- Total document files: 433
-- Files already classified: 432 (100%)
-- Files needing classification: 1 (0%)
+- Total document files: 10
+- Files already classified: 10 (100%)
+- Files needing classification: 0 (0%)
 
 ### PDF Files
-- Total PDF files: 151
-- Classified PDF files: 151 (100%)
+- Total PDF files: 4
+- Classified PDF files: 4 (100%)
 - Unclassified PDF files: 0 (0%)
 
 ### PowerPoint Files
-- Total PowerPoint files: 27
-- Classified PowerPoint files: 26 (96%)
-- Unclassified PowerPoint files: 1 (4%)
+- Total PowerPoint files: 1
+- Classified PowerPoint files: 1 (100%)
+- Unclassified PowerPoint files: 0 (0%)
 
 ### TXT Files
-- Total TXT files: 64
-- Classified TXT files: 64 (100%)
+- Total TXT files: 0
+- Classified TXT files: 0 (0%)
 - Unclassified TXT files: 0 (0%)
 
 ### DOCX Files
-- Total DOCX files: 191
-- Classified DOCX files: 191 (100%)
+- Total DOCX files: 5
+- Classified DOCX files: 5 (100%)
 - Unclassified DOCX files: 0 (0%)
 
 ## Unclassified PDF Files (0)
 
 No unclassified PDF files found.
 
-## Unclassified PowerPoint Files (1)
+## Unclassified PowerPoint Files (0)
 
-| File Name | File Path | Google Drive ID |
-|-----------|-----------|----------------|
-| From Threat to Safety and Beyond-shared version.pptx | /From Threat to Safety and Beyond-shared version.pptx | 1Gmb2VLsgzHmHb_t67kSVN-4q6qHJfzxY |
+No unclassified PowerPoint files found.
 
 ## Unclassified TXT Files (0)
 

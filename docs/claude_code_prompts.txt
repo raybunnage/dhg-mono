@@ -2,6 +2,8 @@ scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --d
 
 ./scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --doc-type powerpoint --mark-for-reprocessing --execute
 
+./scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --doc-type docx --mark-for-reprocessing --execute
+
   1. Added functionality to purge orphaned expert_documents records:
     - Records with null source_id
     - Records with non-existent source_id in sources_google
