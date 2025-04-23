@@ -16,6 +16,7 @@
 #   list                         List Google sources with their corresponding expert documents
 #   list-unclassified-files      List PDF and PowerPoint files without document types
 #   list-unsupported-types       List all unsupported document types in the system
+#   needs-reprocessing           Find documents marked as needs_reprocessing with unsupported document types
 #   check-expert-doc             Check the most recent expert document for proper content extraction
 #   fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records
 #   remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id (incl. large PDFs)
@@ -369,6 +370,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * check-duplicates             Check for duplicate files in sources_google"
   echo "    check-document-types         Check for files missing document types"
   echo "  * sources-google-integrity     Check for document type consistency issues (files with folder types, etc.)"
+  echo "  * fix-bad-folders             Fix files incorrectly marked with folder document types"
   echo "  * report-main-video-ids        Report on video files for folders"
   echo "  * update-media-document-types  Update document_type_id for media files and create expert_documents"
   echo "    check-reprocessing-status    Check which expert documents need reprocessing based on metadata"
@@ -463,6 +465,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # List unsupported document types in JSON format"
   echo "  ./google-sync-cli.sh list-unsupported-types --format json"
   echo ""
+  echo "  # Find documents marked as needs_reprocessing with unsupported document types"
+  echo "  ./google-sync-cli.sh needs-reprocessing --limit 200"
+  echo ""
+  echo "  # Save needs-reprocessing results to a file in JSON format"
+  echo "  ./google-sync-cli.sh needs-reprocessing --format json --output unsupported-docs.json"
+  echo ""
   echo "  # Check and display document summary for a specific document"
   echo "  ./google-sync-cli.sh check-document-summary <document-id>"
   echo ""
@@ -477,6 +485,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Check file extension vs document type consistency"
   echo "  ./google-sync-cli.sh sources-google-integrity --extension-check --verbose"
+  echo ""
+  echo "  # Fix files incorrectly marked with folder document types"
+  echo "  ./google-sync-cli.sh fix-bad-folders --verbose"
+  echo ""
+  echo "  # Preview changes without making updates"
+  echo "  ./google-sync-cli.sh fix-bad-folders --dry-run --verbose"
   exit 0
 fi
 
@@ -592,6 +606,12 @@ if [ "$1" = "list-unsupported-types" ]; then
   exit $?
 fi
 
+if [ "$1" = "needs-reprocessing" ]; then
+  shift
+  track_command "needs-reprocessing" "ts-node $SCRIPT_DIR/needs-reprocessing.ts $*"
+  exit $?
+fi
+
 if [ "$1" = "report-main-video-ids" ]; then
   shift
   track_command "report-main-video-ids" "ts-node $SCRIPT_DIR/report-main-video-ids.ts $*"
@@ -649,6 +669,12 @@ fi
 if [ "$1" = "sources-google-integrity" ]; then
   shift
   track_command "sources-google-integrity" "ts-node $SCRIPT_DIR/sources-google-integrity.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "fix-bad-folders" ]; then
+  shift
+  track_command "fix-bad-folders" "ts-node $SCRIPT_DIR/fix-bad-folders.ts $*"
   exit $?
 fi
 

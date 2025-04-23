@@ -62,6 +62,8 @@ COMMANDS=(
   "check-recent-updates"
   "ids-need-reprocessing"
   "fix-mp4-status"
+  "needs-reprocessing"
+  "list-unsupported-types"
 )
 
 # Check for commands in google-sync-cli.sh that are directly implemented
@@ -129,7 +131,7 @@ main() {
     fi
     
     # Special case for standalone scripts
-    if [ "$cmd" = "classify-powerpoints" ] || [ "$cmd" = "check-reprocessing-status" ]; then
+    if [ "$cmd" = "classify-powerpoints" ] || [ "$cmd" = "check-reprocessing-status" ] || [ "$cmd" = "needs-reprocessing" ] || [ "$cmd" = "list-unsupported-types" ]; then
       if [ "$VERBOSE" = true ]; then
         echo "✅ PASSED: Command $cmd is a standalone script" | tee -a "$LOG_FILE"
       else

@@ -247,13 +247,6 @@ export type Database = {
             foreignKeyName: "audio_processing_stages_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
-            referencedRelation: "batch_processing_status"
-            referencedColumns: ["batch_id"]
-          },
-          {
-            foreignKeyName: "audio_processing_stages_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
             referencedRelation: "processing_batches"
             referencedColumns: ["id"]
           },
@@ -1508,8 +1501,6 @@ export type Database = {
       }
       expert_documents: {
         Row: {
-          ai_analysis: Json | null
-          ai_processing_details: Json | null
           ai_summary_status:
             | Database["public"]["Enums"]["ai_summary_status_type"]
             | null
@@ -1525,9 +1516,155 @@ export type Database = {
             | null
           document_processing_status_updated_at: string | null
           document_type_id: string | null
+          id: string
+          is_latest: boolean | null
+          key_insights: string[] | null
+          language: string | null
+          last_processed_at: string | null
+          processed_at: string | null
+          processed_content: Json | null
+          processing_completed_at: string | null
+          processing_error: string | null
+          processing_skip_reason: string | null
+          processing_started_at: string | null
+          processing_stats: Json | null
+          processing_status: string | null
+          processing_status_updated_at: string | null
+          raw_content: string | null
+          retry_count: number | null
+          source_id: string
+          status: string | null
+          summary_complete: boolean | null
+          topics: string[] | null
+          transcription_complete: boolean | null
+          updated_at: string
+          version: number | null
+          whisper_model_used: string | null
+          word_count: number | null
+        }
+        Insert: {
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          id?: string
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_processed_at?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id: string
+          status?: string | null
+          summary_complete?: boolean | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Update: {
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          id?: string
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_processed_at?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string
+          status?: string | null
+          summary_complete?: boolean | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expert_documents_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "processing_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expert_documents_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expert_documents_backup_20240417: {
+        Row: {
+          ai_analysis: Json | null
+          ai_processing_details: Json | null
+          ai_summary_status:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id: string | null
+          classification_confidence: number | null
+          classification_metadata: Json | null
+          confidence_score: number | null
+          content_type: string | null
+          created_at: string | null
+          diarization_complete: boolean | null
+          document_processing_status:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at: string | null
+          document_type_id: string | null
           error_message: string | null
           expert_id: string | null
-          id: string
+          id: string | null
           is_latest: boolean | null
           key_insights: string[] | null
           language: string | null
@@ -1549,14 +1686,14 @@ export type Database = {
           queued_at: string | null
           raw_content: string | null
           retry_count: number | null
-          source_id: string
+          source_id: string | null
           status: string | null
           structure: Json | null
           summary_complete: boolean | null
           token_count: number | null
           topics: string[] | null
           transcription_complete: boolean | null
-          updated_at: string
+          updated_at: string | null
           version: number | null
           whisper_model_used: string | null
           word_count: number | null
@@ -1572,7 +1709,7 @@ export type Database = {
           classification_metadata?: Json | null
           confidence_score?: number | null
           content_type?: string | null
-          created_at?: string
+          created_at?: string | null
           diarization_complete?: boolean | null
           document_processing_status?:
             | Database["public"]["Enums"]["document_processing_status"]
@@ -1581,7 +1718,7 @@ export type Database = {
           document_type_id?: string | null
           error_message?: string | null
           expert_id?: string | null
-          id?: string
+          id?: string | null
           is_latest?: boolean | null
           key_insights?: string[] | null
           language?: string | null
@@ -1603,14 +1740,14 @@ export type Database = {
           queued_at?: string | null
           raw_content?: string | null
           retry_count?: number | null
-          source_id: string
+          source_id?: string | null
           status?: string | null
           structure?: Json | null
           summary_complete?: boolean | null
           token_count?: number | null
           topics?: string[] | null
           transcription_complete?: boolean | null
-          updated_at?: string
+          updated_at?: string | null
           version?: number | null
           whisper_model_used?: string | null
           word_count?: number | null
@@ -1626,7 +1763,7 @@ export type Database = {
           classification_metadata?: Json | null
           confidence_score?: number | null
           content_type?: string | null
-          created_at?: string
+          created_at?: string | null
           diarization_complete?: boolean | null
           document_processing_status?:
             | Database["public"]["Enums"]["document_processing_status"]
@@ -1635,7 +1772,7 @@ export type Database = {
           document_type_id?: string | null
           error_message?: string | null
           expert_id?: string | null
-          id?: string
+          id?: string | null
           is_latest?: boolean | null
           key_insights?: string[] | null
           language?: string | null
@@ -1657,55 +1794,19 @@ export type Database = {
           queued_at?: string | null
           raw_content?: string | null
           retry_count?: number | null
-          source_id?: string
+          source_id?: string | null
           status?: string | null
           structure?: Json | null
           summary_complete?: boolean | null
           token_count?: number | null
           topics?: string[] | null
           transcription_complete?: boolean | null
-          updated_at?: string
+          updated_at?: string | null
           version?: number | null
           whisper_model_used?: string | null
           word_count?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "expert_documents_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "batch_processing_status"
-            referencedColumns: ["batch_id"]
-          },
-          {
-            foreignKeyName: "expert_documents_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "processing_batches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "expert_documents_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "expert_documents_expert_id_fkey"
-            columns: ["expert_id"]
-            isOneToOne: false
-            referencedRelation: "experts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "expert_documents_previous_version_id_fkey"
-            columns: ["previous_version_id"]
-            isOneToOne: false
-            referencedRelation: "expert_documents"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       expert_documents_backup_2025_02_16: {
         Row: {
@@ -1836,6 +1937,171 @@ export type Database = {
           processing_started_at?: string | null
           processing_stats?: Json | null
           processing_status?: string | null
+          prompt_used?: string | null
+          queued_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          status?: string | null
+          structure?: Json | null
+          summary_complete?: boolean | null
+          token_count?: number | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Relationships: []
+      }
+      expert_documents_backup_20250422: {
+        Row: {
+          ai_analysis: Json | null
+          ai_processing_details: Json | null
+          ai_summary_status:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id: string | null
+          classification_confidence: number | null
+          classification_metadata: Json | null
+          confidence_score: number | null
+          content_type: string | null
+          created_at: string | null
+          diarization_complete: boolean | null
+          document_processing_status:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at: string | null
+          document_type_id: string | null
+          error_message: string | null
+          expert_id: string | null
+          id: string | null
+          is_latest: boolean | null
+          key_insights: string[] | null
+          language: string | null
+          last_error_at: string | null
+          last_processed_at: string | null
+          last_viewed_at: string | null
+          model_used: string | null
+          previous_version_id: string | null
+          processed_at: string | null
+          processed_content: Json | null
+          processing_completed_at: string | null
+          processing_error: string | null
+          processing_skip_reason: string | null
+          processing_started_at: string | null
+          processing_stats: Json | null
+          processing_status: string | null
+          processing_status_updated_at: string | null
+          prompt_used: string | null
+          queued_at: string | null
+          raw_content: string | null
+          retry_count: number | null
+          source_id: string | null
+          status: string | null
+          structure: Json | null
+          summary_complete: boolean | null
+          token_count: number | null
+          topics: string[] | null
+          transcription_complete: boolean | null
+          updated_at: string | null
+          version: number | null
+          whisper_model_used: string | null
+          word_count: number | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_processing_details?: Json | null
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          error_message?: string | null
+          expert_id?: string | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_error_at?: string | null
+          last_processed_at?: string | null
+          last_viewed_at?: string | null
+          model_used?: string | null
+          previous_version_id?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          prompt_used?: string | null
+          queued_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          status?: string | null
+          structure?: Json | null
+          summary_complete?: boolean | null
+          token_count?: number | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_processing_details?: Json | null
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          error_message?: string | null
+          expert_id?: string | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_error_at?: string | null
+          last_processed_at?: string | null
+          last_viewed_at?: string | null
+          model_used?: string | null
+          previous_version_id?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
           prompt_used?: string | null
           queued_at?: string | null
           raw_content?: string | null
@@ -3924,6 +4190,81 @@ export type Database = {
         }
         Relationships: []
       }
+      sources_google_backup_20250422: {
+        Row: {
+          created_at: string | null
+          document_type_id: string | null
+          drive_id: string | null
+          file_signature: string | null
+          id: string | null
+          is_deleted: boolean | null
+          is_root: boolean | null
+          last_indexed: string | null
+          main_video_id: string | null
+          metadata: Json | null
+          mime_type: string | null
+          modified_at: string | null
+          name: string | null
+          parent_folder_id: string | null
+          path: string | null
+          path_array: string[] | null
+          path_depth: number | null
+          root_drive_id: string | null
+          size: number | null
+          thumbnail_link: string | null
+          updated_at: string | null
+          web_view_link: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          file_signature?: string | null
+          id?: string | null
+          is_deleted?: boolean | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
+          root_drive_id?: string | null
+          size?: number | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          file_signature?: string | null
+          id?: string | null
+          is_deleted?: boolean | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
+          root_drive_id?: string | null
+          size?: number | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Relationships: []
+      }
       sources_google_experts: {
         Row: {
           created_at: string | null
@@ -4693,32 +5034,26 @@ export type Database = {
           },
         ]
       }
-    }
-    Views: {
-      batch_processing_status: {
+      view_backups: {
         Row: {
-          batch_completed_at: string | null
-          batch_created_at: string | null
-          batch_id: string | null
-          batch_started_at: string | null
-          batch_status: string | null
-          completed_count: number | null
-          computed_status: string | null
-          error_messages: string | null
-          error_rate_percentage: number | null
-          failed_count: number | null
-          in_progress_count: number | null
-          latest_error_at: string | null
-          max_retries: number | null
-          permanent_failures: number | null
-          processing_hours: number | null
-          queued_count: number | null
-          top_error_types: Json | null
-          total_documents: number | null
-          total_files: number | null
+          definition: string | null
+          schemaname: unknown | null
+          viewname: unknown | null
+        }
+        Insert: {
+          definition?: string | null
+          schemaname?: unknown | null
+          viewname?: unknown | null
+        }
+        Update: {
+          definition?: string | null
+          schemaname?: unknown | null
+          viewname?: unknown | null
         }
         Relationships: []
       }
+    }
+    Views: {
       page_guts_raw_data: {
         Row: {
           ai_prompts: Json | null

@@ -1,0 +1,6 @@
+  return {
+    total: count,
+    docxCount: mismatchedDocxFiles.length,
+    pdfCount: mismatchedPdfFiles.length,
+    pptxCount: mismatchedPptxFiles.length
+  };
