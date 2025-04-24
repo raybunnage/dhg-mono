@@ -2120,6 +2120,135 @@ export type Database = {
         }
         Relationships: []
       }
+      expert_documents_backup_20250423: {
+        Row: {
+          ai_summary_status:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id: string | null
+          classification_confidence: number | null
+          classification_metadata: Json | null
+          confidence_score: number | null
+          content_type: string | null
+          created_at: string | null
+          diarization_complete: boolean | null
+          document_processing_status:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at: string | null
+          document_type_id: string | null
+          id: string | null
+          is_latest: boolean | null
+          key_insights: string[] | null
+          language: string | null
+          last_processed_at: string | null
+          processed_at: string | null
+          processed_content: Json | null
+          processing_completed_at: string | null
+          processing_error: string | null
+          processing_skip_reason: string | null
+          processing_started_at: string | null
+          processing_stats: Json | null
+          processing_status: string | null
+          processing_status_updated_at: string | null
+          raw_content: string | null
+          retry_count: number | null
+          source_id: string | null
+          status: string | null
+          summary_complete: boolean | null
+          topics: string[] | null
+          transcription_complete: boolean | null
+          updated_at: string | null
+          version: number | null
+          whisper_model_used: string | null
+          word_count: number | null
+        }
+        Insert: {
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_processed_at?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          status?: string | null
+          summary_complete?: boolean | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Update: {
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_processed_at?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          status?: string | null
+          summary_complete?: boolean | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Relationships: []
+      }
       experts: {
         Row: {
           bio: string | null
@@ -2899,6 +3028,7 @@ export type Database = {
           metadata: Json | null
           presenter_name: string | null
           recorded_date: string | null
+          root_drive_id: string | null
           title: string | null
           transcript: string | null
           transcript_status: string | null
@@ -2917,6 +3047,7 @@ export type Database = {
           metadata?: Json | null
           presenter_name?: string | null
           recorded_date?: string | null
+          root_drive_id?: string | null
           title?: string | null
           transcript?: string | null
           transcript_status?: string | null
@@ -2935,6 +3066,7 @@ export type Database = {
           metadata?: Json | null
           presenter_name?: string | null
           recorded_date?: string | null
+          root_drive_id?: string | null
           title?: string | null
           transcript?: string | null
           transcript_status?: string | null
@@ -2944,6 +3076,63 @@ export type Database = {
         Relationships: []
       }
       presentations_backup_2024_04_06: {
+        Row: {
+          created_at: string | null
+          duration: unknown | null
+          duration_seconds: number | null
+          filename: string | null
+          folder_path: string | null
+          id: string | null
+          is_public: boolean | null
+          main_video_id: string | null
+          metadata: Json | null
+          presenter_name: string | null
+          recorded_date: string | null
+          title: string | null
+          transcript: string | null
+          transcript_status: string | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration?: unknown | null
+          duration_seconds?: number | null
+          filename?: string | null
+          folder_path?: string | null
+          id?: string | null
+          is_public?: boolean | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          presenter_name?: string | null
+          recorded_date?: string | null
+          title?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          duration?: unknown | null
+          duration_seconds?: number | null
+          filename?: string | null
+          folder_path?: string | null
+          id?: string | null
+          is_public?: boolean | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          presenter_name?: string | null
+          recorded_date?: string | null
+          title?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      presentations_backup_20250423: {
         Row: {
           created_at: string | null
           duration: unknown | null

@@ -1204,6 +1204,28 @@ program
     }
   });
 
+// Define update-root-drive-id command
+program
+  .command('update-root-drive-id')
+  .description('Fill in the root_drive_id for all records with the value of 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('--dry-run', 'Show what would be updated without making changes', false)
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .action(async (options: any) => {
+    try {
+      // Import the updateRootDriveIdCommand function
+      const { updateRootDriveIdCommand } = require('./commands/update-root-drive-id');
+      
+      // Run the command
+      await updateRootDriveIdCommand({
+        dryRun: options.dryRun,
+        verbose: options.verbose
+      });
+    } catch (error) {
+      Logger.error('Error updating root_drive_id:', error);
+      process.exit(1);
+    }
+  });
+
 // Define add-specific-files command (moved below health-check)
 program
   .command('add-specific-files')
@@ -1489,6 +1511,7 @@ Available Commands:
   create-from-expert-docs    Create presentations from expert documents
   show-missing-content       Show presentations without content that need reprocessing
   show-ai-summary-status     Show AI summary status for expert documents in markdown table
+  update-root-drive-id       Fill in the root_drive_id for all records with the specified value
   
 For detailed help on a specific command, run:
   presentations-cli [command] --help

@@ -68,6 +68,10 @@ COMMANDS=(
   "expert-documents-duplicates"
   "expert-documents-purge"
   "check-duplicate-prevention"
+  "purge-orphaned-with-presentations"
+  "clean-orphaned-records"
+  "list-main-video-folders"
+  "list-main-video-folders-tree"
 )
 
 # Check for commands in google-sync-cli.sh that are directly implemented
@@ -135,7 +139,7 @@ main() {
     fi
     
     # Special case for standalone scripts
-    if [ "$cmd" = "classify-powerpoints" ] || [ "$cmd" = "check-reprocessing-status" ] || [ "$cmd" = "needs-reprocessing" ] || [ "$cmd" = "list-unsupported-types" ] || [ "$cmd" = "find-needs-reprocessing" ]; then
+    if [ "$cmd" = "classify-powerpoints" ] || [ "$cmd" = "check-reprocessing-status" ] || [ "$cmd" = "needs-reprocessing" ] || [ "$cmd" = "list-unsupported-types" ] || [ "$cmd" = "find-needs-reprocessing" ] || [ "$cmd" = "purge-orphaned-with-presentations" ] || [ "$cmd" = "clean-orphaned-records" ] || [ "$cmd" = "list-main-video-folders" ] || [ "$cmd" = "list-main-video-folders-tree" ]; then
       if [ "$VERBOSE" = true ]; then
         echo "✅ PASSED: Command $cmd is a standalone script" | tee -a "$LOG_FILE"
       else
@@ -241,5 +245,4 @@ main() {
 }
 
 # Run the main function
-main  "purge-orphaned-with-presentations"
-  "clean-orphaned-records"
+main

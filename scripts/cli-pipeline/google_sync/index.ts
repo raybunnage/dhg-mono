@@ -1186,6 +1186,64 @@ For detailed help on a specific command, run:
   program.outputHelp();
 }
 
+// Add expert-documents-duplicates command
+program
+  .command('expert-documents-duplicates')
+  .description('Find and display duplicate expert_documents for the same source_id')
+  .option('--limit <number>', 'Limit the number of duplicates to show', '100')
+  .option('--dry-run', 'Show duplicates without deleting any records', true)
+  .option('--delete', 'Delete duplicate records (dangerous)', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options) => {
+    try {
+      // This command is implemented in the shell script wrapper
+      console.log('expert-documents-duplicates command is executed through the shell script');
+      console.log('Please run: ./google-sync-cli.sh expert-documents-duplicates [options]');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error executing expert-documents-duplicates:', error);
+      process.exit(1);
+    }
+  });
+
+// Add expert-documents-purge command
+program
+  .command('expert-documents-purge')
+  .description('Purge expert_documents with null document_type_id')
+  .option('--limit <number>', 'Limit the number of records to purge', '100')
+  .option('--dry-run', 'Show what would be purged without making changes', true)
+  .option('--execute', 'Actually execute the purge', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options) => {
+    try {
+      // This command is implemented in the shell script wrapper
+      console.log('expert-documents-purge command is executed through the shell script');
+      console.log('Please run: ./google-sync-cli.sh expert-documents-purge [options]');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error executing expert-documents-purge:', error);
+      process.exit(1);
+    }
+  });
+
+// Add check-duplicate-prevention command
+program
+  .command('check-duplicate-prevention')
+  .description('Check if duplicate prevention is working correctly')
+  .option('--verbose', 'Show detailed logs', false)
+  .option('--test-insert', 'Test insert with duplicate prevention', false)
+  .action(async (options) => {
+    try {
+      // This command is implemented in the shell script wrapper
+      console.log('check-duplicate-prevention command is executed through the shell script');
+      console.log('Please run: ./google-sync-cli.sh check-duplicate-prevention [options]');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error executing check-duplicate-prevention:', error);
+      process.exit(1);
+    }
+  });
+
 // Handle any unhandled exceptions
 process.on('unhandledRejection', (error) => {
   Logger.error('Unhandled rejection:', error);
