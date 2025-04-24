@@ -376,6 +376,8 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * sources-google-integrity     Check for document type consistency issues (files with folder types, etc.)"
   echo "  * fix-bad-folders             Fix files incorrectly marked with folder document types"
   echo "  * report-main-video-ids        Report on video files for folders"
+  echo "  * list-main-video-folders      List folders that have a main_video_id set with details"
+  echo "  * list-main-video-folders-tree List high-level folders with main_video_id and their hierarchical contents"
   echo "  * update-media-document-types  Update document_type_id for media files and create expert_documents"
   echo "    check-reprocessing-status    Check which expert documents need reprocessing based on metadata"
   echo "  * source-info                  Get detailed information about a sources_google record and related expert_documents"
@@ -888,13 +890,23 @@ if [ "$1" = "purge-orphaned-with-presentations" ]; then
 fi
 
 # Add the clean-orphaned-records command
-
-# Add the clean-orphaned-records command 
-
-# Add the clean-orphaned-records command
 if [ "$1" = "clean-orphaned-records" ]; then
   shift
   track_command "clean-orphaned-records" "$SCRIPT_DIR/clean-orphaned-records.sh $*"
+  exit $?
+fi
+
+# Add the list-main-video-folders command
+if [ "$1" = "list-main-video-folders" ]; then
+  shift
+  track_command "list-main-video-folders" "ts-node $SCRIPT_DIR/list-main-video-folders.ts $*"
+  exit $?
+fi
+
+# Add the list-main-video-folders-tree command
+if [ "$1" = "list-main-video-folders-tree" ]; then
+  shift
+  track_command "list-main-video-folders-tree" "ts-node $SCRIPT_DIR/list-main-video-folders-tree.ts $*"
   exit $?
 fi
 
