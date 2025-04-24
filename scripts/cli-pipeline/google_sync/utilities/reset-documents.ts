@@ -4,7 +4,7 @@
  * This will prepare documents for the reclassify-docs command
  */
 
-import { SupabaseClientService } from '../packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 async function resetDocuments() {
   const supabase = SupabaseClientService.getInstance().getClient();

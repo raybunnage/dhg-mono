@@ -5,7 +5,7 @@
  * that have document_processing_status = 'needs_reprocessing'
  */
 
-import { SupabaseClientService } from '../packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { execSync } from 'child_process';
 
 async function directReclassify() {
@@ -62,7 +62,7 @@ async function directReclassify() {
       try {
         // Run the classify-docs-service command
         execSync(
-          `cd /Users/raybunnage/Documents/github/dhg-mono && ./scripts/cli-pipeline/google_sync/google-sync-cli.sh classify-docs-service --limit 1`,
+          `cd ../../../../ && ./scripts/cli-pipeline/google_sync/google-sync-cli.sh classify-docs-service --limit 1`,
           { stdio: 'inherit' }
         );
         docxCount++;

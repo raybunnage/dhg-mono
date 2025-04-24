@@ -3,7 +3,7 @@
  * Script to examine processed_content in expert_documents
  */
 
-import { SupabaseClientService } from '../packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 async function examineProcessedContent() {
   const supabase = SupabaseClientService.getInstance().getClient();

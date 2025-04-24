@@ -3,7 +3,7 @@
  * Script to check if expert documents have processed_content
  */
 
-import { SupabaseClientService } from '../packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 async function checkProcessedContent() {
   const supabase = SupabaseClientService.getInstance().getClient();
