@@ -64,10 +64,10 @@ async function listGoogleSources(options: {
       query = query.ilike('name', `%${filter}%`);
     }
     
-    // Filter out mp4, m4a, and folder files
-    query = query.not('mime_type', 'ilike', '%video/mp4%')
-                 .not('mime_type', 'eq', 'audio/x-m4a')
-                 .not('mime_type', 'ilike', '%application/vnd.google-apps.folder%');
+    // Only include specific file types: .txt, .docx, .pptx, and .pdf
+    query = query.or(
+      'mime_type.eq.text/plain,mime_type.eq.application/vnd.openxmlformats-officedocument.wordprocessingml.document,mime_type.eq.application/vnd.openxmlformats-officedocument.presentationml.presentation,mime_type.eq.application/pdf'
+    );
     
     // Apply expert filter if provided
     if (options.expert) {
@@ -161,7 +161,7 @@ async function listGoogleSources(options: {
       
       const { data: batchExpertDocs, error: batchError } = await supabase
         .from('expert_documents')
-        .select('id, source_id, document_type_id, raw_content, processed_content')
+        .select('id, source_id, document_type_id, raw_content, processed_content, document_processing_status')
         .in('source_id', batchIds);
       
       if (batchError) {
@@ -289,16 +289,17 @@ async function listGoogleSources(options: {
     if (options.console) {
       // Display results in console table format
       console.log('\nGoogle Drive Sources and Expert Documents:');
-      console.log('====================================================================================================================================');
-      console.log('ID'.padEnd(38) + ' | ' + 
-                 'Source Name'.padEnd(25) + ' | ' + 
-                 'Document Type'.padEnd(16) + ' | ' + 
-                 'Has Expert'.padEnd(10) + ' | ' + 
-                 'Expert Doc Type'.padEnd(16) + ' | ' +
-                 'Raw Content Preview'.padEnd(18) + ' | ' +
-                 'Has JSON'.padEnd(8) + ' | ' +
-                 'Processed Content Preview'.padEnd(50));
-      console.log('------------------------------------------------------------------------------------------------------------------------------------');
+      console.log('='.repeat(180));
+      console.log(
+        'ID'.padEnd(38) + ' | ' + 
+        'File Name'.padEnd(60) + ' | ' + 
+        'Sources Type'.padEnd(25) + ' | ' + 
+        'Expert Doc Type'.padEnd(25) + ' | ' +
+        'Raw'.padEnd(7) + ' | ' +
+        'JSON'.padEnd(7) + ' | ' +
+        'Status'.padEnd(15)
+      );
+      console.log('-'.repeat(180));
       
       // Sort sources by document type for console display
       const sortedSources = [...sources].sort((a, b) => {
@@ -366,19 +367,34 @@ async function listGoogleSources(options: {
           }
         }
         
+        // Get simplified processing status
+        let processingStatus = 'N/A';
+        if (expertDoc?.document_processing_status) {
+          if (expertDoc.document_processing_status === 'skip_processing') {
+            processingStatus = 'Skip';
+          } else if (expertDoc.document_processing_status === 'reprocessing_done') {
+            processingStatus = 'Done';
+          } else if (expertDoc.document_processing_status === 'not_set') {
+            processingStatus = 'Not Set';
+          } else if (expertDoc.document_processing_status === 'needs_reprocessing') {
+            processingStatus = 'Need';
+          } else {
+            processingStatus = expertDoc.document_processing_status;
+          }
+        }
+        
         console.log(
           source.id.padEnd(38) + ' | ' +
-          sourceName.substring(0, 23).padEnd(25) + ' | ' +
-          documentType.substring(0, 14).padEnd(16) + ' | ' +
-          (hasExpertDoc ? 'Yes' : 'No').padEnd(10) + ' | ' +
-          expertDocType.substring(0, 14).padEnd(16) + ' | ' +
-          rawContentPreview.substring(0, 16).padEnd(18) + ' | ' +
-          (hasJson ? 'Yes' : 'No').padEnd(8) + ' | ' +
-          processedContentPreview.substring(0, 48).padEnd(50)
+          sourceName.substring(0, 58).padEnd(60) + ' | ' +
+          documentType.substring(0, 23).padEnd(25) + ' | ' +
+          expertDocType.substring(0, 23).padEnd(25) + ' | ' +
+          (expertDoc?.raw_content ? 'Yes' : 'No').padEnd(7) + ' | ' +
+          (hasJson ? 'Yes' : 'No').padEnd(7) + ' | ' +
+          processingStatus.padEnd(15)
         );
       });
       
-      console.log('------------------------------------------------------------------------------------------------------------------------------------');
+      console.log('-'.repeat(180));
       console.log(`Total sources: ${sources.length}`);
       console.log(`Sources with expert documents: ${sourcesWithExpertDocs}`);
       console.log(`Total expert documents: ${totalExpertDocs}`);
@@ -423,6 +439,7 @@ type ExpertDocument = {
   document_type_id: string | null;
   raw_content: string | null;
   processed_content: any;
+  document_processing_status: string | null;
 };
 
 // Set up CLI command

@@ -4,6 +4,501 @@ scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --d
 
 ./scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --doc-type docx --mark-for-reprocessing --execute
 
+  
+  raybunnage@Rays-Laptop dhg-mono % ./scripts/cli-pipeline/google_sync/google-sync-cli.sh list --console
+Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env.development
+Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env
+Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env.local
+Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env.development
+Loaded Supabase credentials successfully from /Users/raybunnage/Documents/github/dhg-mono/.env.development
+Executing command: ts-node /Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/google_sync/list-google-sources.ts --console
+Creating Supabase client with URL: https://jdksnfkupzyw...
+Using API Key: eyJhb...cOB-A
+(node:28542) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env
+Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env.local
+Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env.development
+Loaded Supabase credentials successfully from /Users/raybunnage/Documents/github/dhg-mono/.env.development
+Creating Supabase client with URL: https://jdksnfkupzyw...
+Using API Key: eyJhb...cOB-A
+(node:28545) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Generating report of Google sources and their expert documents...
+Found 435 sources.
+Fetching expert documents batch 1 of 9...
+Fetching expert documents batch 2 of 9...
+Fetching expert documents batch 3 of 9...
+Fetching expert documents batch 4 of 9...
+Fetching expert documents batch 5 of 9...
+Fetching expert documents batch 6 of 9...
+Fetching expert documents batch 7 of 9...
+Fetching expert documents batch 8 of 9...
+Fetching expert documents batch 9 of 9...
+Fetched 484 expert documents in total.
+
+Google Drive Sources and Expert Documents:
+====================================================================================================================================================================================================
+ID                                     | File Name                                                    | Sources Type              | Expert Doc Type           | Raw Content     | Has JSON   | Processing Status   
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+dcaff914-0db1-464b-b614-7ffbac9f9b51   | Summary of Klauw.presentation.1.26.25.docx                   | ai presentation transcr   | ai presentation transcr   | Yes             | Yes        | reprocessing_done   
+4b4b70f6-6d2f-4976-b831-ccc7da53b141   | Benzon, Practical Management of Pain 6e, chapter 12.pdf      | book                      | Json pdf summary          | No              | Yes        | skip_processing     
+2ac9c837-afc0-4795-8afe-91f252850644   | Meredith 2016 Attachment and Pain Chapter copy.pdf           | book                      | Json pdf summary          | No              | Yes        | skip_processing     
+f202afdf-e10f-4b08-961e-ea365e4428ae   | 1.Gevirtz.txt                                                | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+8d6e10af-a523-456b-b830-578692e99301   | Alison Escalante.docx                                        | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+92faea32-d90a-4547-bd7b-d31d8d477d24   | Brain Imaging.PVT.Pain.Cytokines.docx                        | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+bd07b437-6440-43ca-86b7-1dd1a039e00a   | Bruce Perry.docx                                             | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+b9390767-d5a7-49d7-b4a9-67b53362fd3f   | chat (1).txt                                                 | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+be0eb952-f808-43c1-9170-c101d48dea3f   | chat (1).txt                                                 | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+565d0745-9e31-462e-9195-e4647a353e33   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+f2e69637-b758-4381-bcd1-e8c70d8cb2b8   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+69e21c6b-08e3-428d-b212-467dec471c35   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+410af42e-3dff-41b0-b683-e78a48adeab3   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+9f94f53a-ed7a-4105-9ef6-08d012c5bcb3   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+55c3ea6d-2984-4588-b759-fc5e11445878   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+942c4cce-a694-4425-96d9-580b29392ca5   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+e47de546-2907-43ea-8c1c-5b96ee168629   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+fe86ff28-8b72-4e21-9a67-8452413a1b20   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+f2ada984-d4bf-4751-a4cf-48f0d554a0b9   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+ec0c4d3e-82fe-4348-877d-11028cb93059   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+0c8e1c0f-f58e-4efc-bb2a-426f56dd1801   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+8d84563c-73eb-4bad-b56b-8e6ccea31636   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+d849aaa6-8b5a-4318-ae94-28eda8da2cca   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+ce6883f6-5fdf-4671-aecb-1b904e1c0d10   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+8a7b85e3-355f-4de8-bc84-870bbcfb0348   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+14d39ba6-00fc-488d-85f0-4b0e62a14f9d   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+a6913e2c-15fb-49a4-9628-41cbda6068a3   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+d73337a2-e02c-407c-98ac-de29947d2386   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+62027fd5-7e49-48fe-abef-58dc593e3bb3   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+e469a1e1-c696-4b22-9876-8b5a88e1dd78   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+1611f8cf-9eb6-403f-8db1-9da1a04ba37a   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+002f7f9a-d5d7-40a5-924f-82e8d1cd523e   | chat.txt                                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+4ac8e844-0a02-4206-b118-4099c804b182   | Core.Deep Healing.docx                                       | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+0001c10d-ea71-439a-81a3-e747fd87f49f   | Daniel Levitan.PVT.docx                                      | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+d577c279-4955-4d8c-b99a-aed3b2e4604e   | Dan Siegel.docx                                              | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+e0579ae3-4bab-4d29-9888-966a5ef51c06   | David Sinclair.docx                                          | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+68d20f5a-e924-439b-ba0b-7c0f2587ac5c   | Deep Medicine.Injustice.Malkin.docx                          | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+e4667fd1-5e02-42ae-a582-3d583106df3a   | DHDG.Cryan.Diban.docx                                        | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+7001f735-3c96-436b-86ac-c26b31e3c291   | DHDG.f:up.3.19.25.docx                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+6e88be9f-e95a-4da2-a310-272fe9c08744   | Dick Gevirtz 3.24.21.docx                                    | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+31c6d497-33ae-4fd7-b51e-289aaab5b42a   | DR.Dantzer.IL-6.docx                                         | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+543cab41-f8bc-4649-8562-87c955d6f18c   | DR.Naviaux.phenotypes.docx                                   | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+77ca50ef-257e-4b3f-919c-dc45445a23bf   | Dynamic Healing Discussion Group.docx                        | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+de062dd9-c327-4367-a530-8593a0a09d06   | Eagle.Amster Q&A.docx                                        | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+1185d807-4e80-4204-80c5-b21b284e0ea7   | George Sulphin.Nematodes.aging.docx                          | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+1435a6fd-5563-4c7c-9efa-6ac4c6aed02d   | Gevirtz.txt                                                  | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+4b25fb85-e5be-404b-ab96-cdc219d5a322   | Hanscom.Clawson.docx                                         | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+8ab931e5-1bba-4f25-bb6c-5710116f16dd   | Ian Harris References.docx                                   | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+2457a811-5de7-4468-9209-97f3043b5ef7   | Interaction between immune and central nervous system.docx   | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+ea8ae959-254d-4f26-9cea-f10ad6b93987   | Jake Eagle.Contact.docx                                      | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+0761215a-7509-4ea2-a521-c976c54f1120   | Jake Eagle.Cytokines.docx                                    | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+09d78553-0955-4a42-aa13-964a29761b20   | Jennifer Franklin.docx                                       | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+96e1636d-8c7c-44e8-a2ca-b894fb1b1ba8   | Lustig Announcement.docx                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+08ee17c1-c4d5-43c8-971a-514dca9e855a   | Lydia Temoshok Bio.docx                                      | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+8d33df8a-18b0-4e72-a17b-71e1cacd8beb   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+11f4ca0f-6782-400c-b124-9ecfdb0f0f85   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+d9ecf072-0bee-43da-a361-22c0405545c9   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+49ececf7-4a3f-4af5-84d6-89f058f174cd   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+bca979e9-383d-4282-b297-1d987be679ad   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+934f7b5d-d987-4122-9681-9a77b806a35e   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+c4a1195b-ec2d-4f5b-95f4-3aca6068a2a9   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+91f94c76-ff14-465b-a77a-002848e9655b   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+c4ff4c93-f2f5-4be3-af41-7926d14408db   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+493023c7-695c-4fee-bee3-399a1d84f3e3   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+c7b1aad9-3ca5-4a20-9201-5af26181f09e   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+f1ed0ae6-7d6d-4736-aa41-6837c0dc72c0   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+91aa23da-40da-43f3-b130-5a082db010cc   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+b92460fb-eac9-4e5c-ac55-8b498d7b92da   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+b57ba8ed-baac-4ea0-9c8f-b5161e481a4f   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+2cb8c9d6-24d3-4aa5-b43b-ba1906a041f8   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+bf4493e4-c0c4-4f31-a975-13535122e473   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+8996af22-6fda-4e79-8104-ae147be0a37f   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+ef5b3606-6645-43a7-acaa-b751f5c8791e   | meeting_saved_chat.txt                                       | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+109b5c6b-866b-492d-80ca-10ce4291fd54   | meeting_saved_new_chat.txt                                   | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+40e4a2b3-c76f-4eab-991d-beac5ca25459   | Naviaux Announcement.3.2.22.docx                             | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+79e6e819-25b2-48b8-a373-3d05aa68e007   | NPDG.Comments.9.23.20.docx                                   | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+a9df734f-1b13-4c16-94f3-b39483b3ba20   | Open Discussion.5.19.21.docx                                 | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+ef57909f-d9a2-4318-9964-334611bc1a34   | Overman.Phases of Pain.docx                                  | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+29b7b58d-03fd-476f-b80c-1f7198639427   | Porges.Pain.9.17.20.ANS.physiological.platfrom.docx          | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+4ffa6d0c-212b-484c-82d3-68aca5811a23   | Richard Gevirtz.Study.docx                                   | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+14205ba5-59c9-4ba7-a95c-cf63df0d8cc0   | Robert Dantzer.neuroinflammation.docx                        | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+28564d23-c90e-4318-a8d7-c1d2a9a997fa   | Sheldon Solomon Announcement.docx                            | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+711a0bf0-2fb1-4968-b394-9fd94d977a60   | Sullivan.Ballantyne.Announce.docx                            | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+f53f0efb-770c-44fe-9249-34761ab8466f   | Wednesday PVT group.docx                                     | Chat Log                  | Json document summary     | Yes             | Yes        | skip_processing     
+e05191d5-e327-408c-ba5f-b12b69fd35df   | Woolf.Bezruchka.docx                                         | Chat Log                  | Chat Log                  | Yes             | Yes        | reprocessing_done   
+8b2f20e0-081a-4fcb-97db-6702720b9e69   | Naviaux_MECFS_Metabolic_2016.pdf                             | correction                | Json pdf summary          | No              | Yes        | skip_processing     
+5a6e9fe4-bc0e-4ef8-818a-426c8a73b68a   | Aria.Porges.SSP.txt                                          | dicussion transcript      | Json document summary     | No              | No         | not_set             
+ebd46c8d-054f-4090-a244-516d9ad998a6   | Bernie Seigel Discussion Group presentation.docx             | dicussion transcript      | Json document summary     | Yes             | Yes        | skip_processing     
+70e0d282-c521-488e-bfe6-dcb4eec7636a   | Chat Notes.11.4.20.txt                                       | dicussion transcript      | Json document summary     | No              | No         | not_set             
+0e09cd1c-6fbd-4575-80aa-984d685ea542   | chat.txt                                                     | dicussion transcript      | Json document summary     | No              | No         | not_set             
+37ee7725-1ce1-4738-9ec5-5e9847292c4a   | Clawson.Cytokine.Primer.10.28.20.txt                         | dicussion transcript      | Json document summary     | No              | No         | not_set             
+dab3e931-face-4d07-a6be-bfad545bb075   | DHDG 2-21-24 open Discussion.txt                             | dicussion transcript      | Json document summary     | Yes             | Yes        | skip_processing     
+8416389c-42a5-4e3a-81f2-6d0df2e644f6   | From Flight to Faint.11.18.20.txt                            | dicussion transcript      | Json document summary     | No              | No         | not_set             
+fdd3ea19-9fad-4830-a1d9-3a69c5460346   | Gigi Constable.chat.txt                                      | dicussion transcript      | Json document summary     | No              | No         | not_set             
+5f1d48de-d11d-4afb-9dd9-c997b156ff2a   | Hanscom.10.11.20.chat.txt                                    | dicussion transcript      | Json document summary     | No              | No         | not_set             
+74f3812f-17ad-4821-949d-1099c7b46c66   | Hanscom.10.11.20.txt                                         | dicussion transcript      | Json document summary     | No              | No         | not_set             
+cabc32b2-f514-4d3b-8c23-e224268d413d   | Marjorie Wolcott.docx                                        | dicussion transcript      | Json document summary     | Yes             | Yes        | skip_processing     
+58588091-cec7-440a-9f22-a39edc365f2f   | meeting_saved_chat.txt                                       | dicussion transcript      | Json document summary     | No              | No         | not_set             
+7a630c6b-9bd6-4520-9ebd-61027ff5b667   | meeting_saved_chat.txt                                       | dicussion transcript      | Json document summary     | No              | No         | not_set             
+7b131d50-8fe8-40dc-a637-ddb0e5069a74   | Overman.docx                                                 | dicussion transcript      | Json document summary     | Yes             | Yes        | skip_processing     
+7a987849-a9fb-444c-ac75-0dbba60d9901   | Poly..Cytokies.oxytocin.5.13.20.docx                         | dicussion transcript      | Json document summary     | Yes             | Yes        | skip_processing     
+c53072b5-be36-45ba-b7e4-4df1ac23c73e   | Porges.1.20.21.2.txt                                         | dicussion transcript      | Json document summary     | No              | No         | not_set             
+5bcd64e9-759a-4d80-a869-e73ce1e53a90   | Porges.1.20.21.txt                                           | dicussion transcript      | Json document summary     | No              | No         | not_set             
+995c3115-c7fc-451f-bab0-9e11ed350be9   | Porges.PVTCP.Oxy.9.30.20.txt                                 | dicussion transcript      | Json document summary     | No              | No         | not_set             
+6356f2cd-bbb8-418c-b7a4-2f7a7bec205f   | Sapio.Threat.Physiology.transcript.docx                      | dicussion transcript      | Json document summary     | Yes             | Yes        | skip_processing     
+dc4d4cf3-1c5c-4780-8b5f-038a17df0a16   | Schubiner.1.13.21.b.txt                                      | dicussion transcript      | Json document summary     | No              | No         | not_set             
+2ec7e7f6-8774-439b-8bf5-59bf28b41828   | Schubiner.1.13.21.txt                                        | dicussion transcript      | Json document summary     | No              | No         | not_set             
+315c924e-a3b7-49b5-a5ac-6e80f708b99d   | Stellate Blocks.Roundtable.docx                              | dicussion transcript      | Json document summary     | Yes             | Yes        | skip_processing     
+cb92f808-0c3e-4949-ad18-b8be7cc4c9fc   | Steve Cole Transcript and Recording.docx                     | dicussion transcript      | Json document summary     | Yes             | Yes        | skip_processing     
+cd20ec07-daf0-4db8-a6bc-fd703e64c244   | Steve Overman Comments.docx                                  | dicussion transcript      | Json document summary     | Yes             | Yes        | skip_processing     
+04345078-8429-4386-abeb-b4f3d46c7220   | Transcript - Daniel Clauw Talk - Dynamic Healing Group - 1   | dicussion transcript      | Json document summary     | Yes             | Yes        | skip_processing     
+3ba2a85d-9d14-461d-9397-6783295dd131   | AH Psychocardiology moving toward a new subspecialty-pdf.p   | editorial                 | Json pdf summary          | No              | Yes        | skip_processing     
+38e8c3fa-1dda-41d5-95c0-707a13b71c27   | jamapsychiatry_phelps_2022_psychadelics.pdf                  | editorial                 | Json pdf summary          | No              | Yes        | skip_processing     
+b2db8035-4a43-4598-9596-e35fc6eea97a   | HovermanSocialPrescribing24.pdf                              | journal article           | Json pdf summary          | No              | Yes        | skip_processing     
+c7dd11b3-3267-4f3c-b13a-145d96e50fdc   | PTSD-NeurofeedbackRemedy.pdf                                 | journal article           | Json pdf summary          | No              | Yes        | skip_processing     
+64d129c7-6009-4025-bf94-8622371ee104   | The Care of the Patient — NEJM  1947  Kattwinkel.pdf         | journal article           | Json pdf summary          | No              | Yes        | skip_processing     
+a4df4985-f891-4735-a2ff-920c6653eaf1   | Wood.Pain.Purines.Geoff.pdf                                  | journal article           | Json pdf summary          | No              | Yes        | skip_processing     
+7ade190c-6cbd-44dc-874e-90710487f122   | Carter.COVID.OT.2020-03-EPUB.pdf                             | letter to the editor      | Json pdf summary          | No              | Yes        | skip_processing     
+96dc75b0-0344-426b-bdc1-538c5490bdd2   | Optispan.Prevention Live Longer Better (Healthspan) Dec 20   | magazine article          | Json pdf summary          | No              | Yes        | skip_processing     
+96a0c863-951a-4f0d-a558-dd1f64821217   | Circadian Rhythm for Healthy Lifespan.docx                   | markdown document         | Json document summary     | Yes             | Yes        | skip_processing     
+9661ef4e-9f8f-451e-a2be-816145a625df   | Escape from Evil Overview.docx                               | markdown document         | Json document summary     | Yes             | Yes        | skip_processing     
+61924736-66ba-4e0c-95d5-916f36e83e22   | Lessons from Osler.docx                                      | markdown document         | markdown document         | Yes             | Yes        | reprocessing_done   
+31881e12-8c48-4017-9fd5-34230379a226   | Power of No.Peper.Stockdale.docx                             | markdown document         | markdown document         | Yes             | Yes        | reprocessing_done   
+db302231-0356-4e6c-bafd-fcd5b1bdaa22   | Power of No.Peper.Stockdale.docx                             | markdown document         | markdown document         | Yes             | Yes        | reprocessing_done   
+c11c73a1-1657-46fc-baff-8eb8ab468647   | Summary of Brenda Stockdale_Bernie Seigel.pdf                | markdown document         | Json document summary     | Yes             | Yes        | reprocessing_done   
+badac492-d415-4a71-a3fc-56e2ac8b3b7e   | From Threat to Safety and Beyond-shared version.pptx         | None                      | Json pdf summary          | No              | No         | not_set             
+9c51f393-dc4e-4065-829a-2eddd9fab3e9   | 2020-07-01-Refs-comments-Apkarian-Neuroimaging- Pain Circu   | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+05cb28e0-d1b7-48b5-a89b-ab5c0809e5a4   | 2020-07-07-Emotional Awareness and Expression Therapy Disc   | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+cf21460f-159d-4992-a3a5-d7d7cbd00a1f   | 2020_Wager_Slide deck.pdf                                    | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+de0895dc-f14a-443b-bc61-084e1726cd49   | 2025 HRV International Conference Program.pdf                | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+9b61d1ca-3a94-4551-a992-f9eb9f5034e6   | Apkarian&Baliki.pdf                                          | pdf document              | Json document summary     | Yes             | Yes        | reprocessing_done   
+9689c074-ceb0-45db-b696-ee2c5a89fcd3   | Appeasement replacing Stockholm syndrome as a definition o   | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+c6a005eb-c2ca-445a-bd31-10608c091331   | A_Psycho_Educational_Video_Used_in_the_E.pdf                 | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+946e1266-3dd6-4eb6-aaee-b3aa427aab59   | Ashar.Pain Reprocessing Therapy vs Placebo and Usual Care-   | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+ff733098-b6be-4c56-9454-c18d83395b20   | AutonomicRehabilitation.pdf                                  | pdf document              | Json document summary     | Yes             | Yes        | reprocessing_done   
+747123dd-22b8-44ba-b3a8-ca1b80f15b0f   | Biased Competition.......pdf                                 | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+ba68651c-5494-4d45-9cf5-33956fda5f8e   | BowlbyPublished.pdf                                          | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+dd93874c-0fda-4edc-a4a9-d873da8e9421   | Burnstock Big Review 2017.pdf                                | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+08b36fdc-a3b0-4789-942b-2dbb5624c1e4   | Carter.Stress.SexDiff.May 2021.#2.pdf                        | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+e122ef36-d038-4b19-8500-e2b362eee4f1   | CV-Grinevich.pdf                                             | pdf document              | Json document summary     | Yes             | Yes        | reprocessing_done   
+508c4600-d3d7-4eab-8b9e-04a73c041fd0   | David Tauben Narrative Bio-Emeritus.pdf                      | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+cdc6142a-afef-4198-b9d5-022609751d38   | Dynamic Healing_SocialPrescribing_Hoverman_241219.pdf        | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+1d041167-5ba7-478b-bcf3-6fe18980b2c1   | Dynamic healing talk.pdf                                     | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+970a686f-8f54-4d1d-905c-1f48cac3e661   | ellingsen et al 2020 SciAdv hyperscan dynamic concordance.   | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+004328b7-9db7-476a-9a91-54380e3be975   | Envy.pdf                                                     | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+48d26a9c-452a-469c-92ea-adf0f506c1e1   | Evidentiary-Basis-for-ILF-Neurofeedback.pdf                  | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+fbda99f4-4e97-4596-8239-978e6526e4c4   | Field_2021_clinicaltrial_qualitative.pdf                     | pdf document              | Json document summary     | Yes             | Yes        | reprocessing_done   
+1c7c3949-9953-41a7-acc3-157deb928c5d   | From Threat to Safety and Beyond-summary-1.pdf               | pdf document              | Json pdf summary          | No              | Yes        | skip_processing     
+fb7be930-60dc-41c2-b2ee-44b99383bc89   | Meeting Summary.pdf                                          | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+5d6f6227-2a9f-4b8e-9a97-c1f30ec36001   | Myopain_slides.3.19.25.pdf                                   | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+ca396b28-bb8d-47ff-8c0e-8d0e2912a980   | Naviaux Bio Blurb April 2021.pdf                             | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+77e38ef1-22ff-40f7-8aa9-9419f8b213d3   | Pandi_Resume.pdf                                             | pdf document              | Json document summary     | Yes             | Yes        | reprocessing_done   
+6eb23fc5-1524-409a-8871-6e0db8b34ab8   | Phillips-Hine-2019.-Self-compassion-health-meta-analysis.p   | pdf document              | Json document summary     | Yes             | Yes        | reprocessing_done   
+d3c47a5c-ec17-41f5-a084-fdd5c78511bf   | Porges Slides PVT Overview.pdf                               | pdf document              | Code Documentation Mark   | No              | Yes        | reprocessing_done   
+c66bb6ac-0489-4a23-b779-895219f0cadd   | Raison_Depression_Evolution_defense_2012.pdf                 | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+c06794b0-be0b-4051-ad11-e1fe60134982   | RCW_academic_CV_CU.pdf                                       | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+6fb88d13-56db-47fa-8cde-922bc7cdac0b   | Rubin.CPR.Sex.race.JAMA.pdf                                  | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+454fb297-29ac-4bae-9edc-f0171dfe3833   | Sanders chapterPorgesDana.pdf                                | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+5f73ea78-a9f2-4e2c-8218-09b6ede0391c   | Sapio Cortex, Threat, and Human Physiology.Clawson.docx.pd   | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+b0fd4e51-ff4e-44aa-97f8-998d75015503   | Sensory sensitivity and symptom severity represent unique    | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+712652f7-9dbd-45ab-af0d-22f152b29eb1   | SE RCT.pdf                                                   | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+d86efe83-f509-4e54-a6db-1de1a45a8120   | Simonsson.Psychedelics.Cardiometabolic.2021.Nature.pdf       | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+6f3b2e73-ff33-4d55-9c22-d10ecae543ba   | Social Prescribing.AI summary.pdf                            | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+8a795a65-48e1-45e2-92bb-fb9879877fb2   | social-prescribing-around-the-world-2024.pdf                 | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+a3708433-9c4e-4784-b2a1-f32f5877b5e2   | Solosmon_The Worm at the Core.pdf                            | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+39745e53-9235-49fe-918d-53d3fc38cd15   | Summary of Brenda Stockdale_Bernie Seigel.pdf                | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+0629f3ad-b41d-4bb5-b665-82484a67064c   | Tang.SCFA.Pain.2024.pdf                                      | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+7ba48b59-faa8-454c-89a3-30cf5e8bd726   | Temoshok 2008 Brain Behavior & Immunity (1).pdf              | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+76884bd7-b324-4ba0-b6c9-3d6806e6765d   | Temoshok 2008 Brain Behavior & Immunity (1).pdf              | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+17fcd345-3907-4fd5-b1f5-ad1219316824   | Temoshok 2008 Brain Behavior & Immunity (1).pdf              | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+40e84798-0db9-48ad-8826-12a162e9cf6f   | Terror Management Theory.Summary.4.16.25.pdf                 | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+6a5b7148-7624-4ab9-9322-23be488f5daa   | Transcript - Brenda Stockdale - 2-19-2025.pdf                | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+a33b6d66-b25a-4873-9baa-71ed7dd2627c   | Whitaker_RC_narrative_bio_10_2018.pdf                        | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+aa88ca1c-94a0-40ca-9026-331977bb3893   | Whitaker.RelationshipsHeal.2015..pdf                         | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+351ba6f1-f410-4d6a-ade2-2f9fab4e297e   | White blood cell count as a predictor of mortality: result   | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+63c1f49a-406f-4e68-a23b-246082a47268   | Ziderman_DD_meditators_self_dissolution_preprint_21.8.23.p   | pdf document              | Json pdf summary          | No              | Yes        | reprocessing_done   
+b984fd25-bb1f-46a2-b73a-c6b396fe4312   | Ziderman_Prediction based neural mechanisms for shielding    | pdf document              | Json document summary     | Yes             | Yes        | reprocessing_done   
+49202f4a-bb32-467f-9e3f-0a25ba146f3c   | 3 Laws.pptx                                                  | powerpoint document       | Json pdf summary          | No              | No         | not_set             
+5008436e-ab75-4583-a343-8de90f84beab   | ApkarianSlideDeck.pptx                                       | powerpoint document       | Json pdf summary          | No              | No         | not_set             
+12cd3969-898f-4a5e-8ed5-abe554a6da2b   | BezruchkaDynamicHealting230118Sent.pptx                      | powerpoint document       | scientific presentation   | Yes             | Yes        | skip_processing     
+0ba95afe-04da-4296-a6c5-5e63f21f7003   | Clawson.Cytokines. Pain.pptx                                 | powerpoint document       | Json pdf summary          | No              | No         | not_set             
+4f167fff-8a04-4b04-a93e-2189a14df4d2   | DynamicHealingWedGrp (Sept 7th -2022).pptx                   | powerpoint document       | scientific presentation   | Yes             | Yes        | skip_processing     
+1972e0a5-3424-417f-82ef-c131786f2f1a   | Glucocorticosteroids.pptx                                    | powerpoint document       | scientific presentation   | Yes             | Yes        | skip_processing     
+9ba12cc4-4a3e-4f69-a378-c6b7e0edab09   | Group Therapy for Patients in Chronic Pain 11.3.21.pptx      | powerpoint document       | ai presentation transcr   | Yes             | Yes        | skip_processing     
+3a1690b8-52f5-479d-b612-19663db19dd9   | MD.Wellness.RUTS.pptx                                        | powerpoint document       | scientific presentation   | Yes             | Yes        | skip_processing     
+da734ac5-05f5-42e2-a6c5-290420ef710c   | Metabolic and Mental Health Seminar.pptx                     | powerpoint document       | scientific presentation   | Yes             | Yes        | skip_processing     
+e65f2017-586e-4252-89b7-98689a9d1d32   | Naviaux Hanscom Talk #4.pptx                                 | powerpoint document       | scientific presentation   | Yes             | Yes        | skip_processing     
+b945cb1b-0e64-47bd-8edc-34f6399ee3fc   | Porges - EVP- Mind-Body Issues.pptx                          | powerpoint document       | Json pdf summary          | No              | No         | not_set             
+133dd06c-d8ce-41c7-a943-91197f0df3ae   | Post Covid-19 Syndrome.pptx                                  | powerpoint document       | scientific presentation   | Yes             | Yes        | skip_processing     
+5f89c8e4-f93e-4545-86be-f405ca201173   | Seattle with Steve 2024.pptx                                 | powerpoint document       | scientific presentation   | Yes             | Yes        | skip_processing     
+84fc66f5-459c-46e6-bccd-3db95c979acc   | Sept 20 2023 presentation with Dr Lanev2.pptx                | powerpoint document       | scientific presentation   | Yes             | Yes        | skip_processing     
+bf0cbbd8-b85a-422c-9793-a8da138ce637   | Wed PM.10.11.20.pptx                                         | powerpoint document       | Json pdf summary          | No              | No         | not_set             
+8eca757f-fc1b-43f0-a3c8-fbecc0c54a71   | Kjaervik.Anger review.2024.pdf                               | preprint                  | Json pdf summary          | No              | Yes        | skip_processing     
+b302d80a-3d7e-4aee-8774-11b6264e5021   | 10.28.24.Polyvagal Steering.Topics..docx                     | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+4f72751b-0d12-457a-af9e-98e26b26b8ab   | 10.6.21.Katja.Porges.docx                                    | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+6d2ff6f5-be63-4646-8e92-e5e9fd8c5f8f   | 11.25.24.DHDG.Potential Speakers.Full.11.23.24.docx          | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+e6a73923-7a59-49a9-8f65-05d64e9c9f3c   | 2024-11-06-Sutphin.docx                                      | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+95beb4d8-c59f-47b2-9fa8-b36349394f35   | Alia Crum.docx                                               | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+2a5e39b5-5ae5-48ed-9dfd-aef4dde31e24   | Alison Escalante.docx                                        | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+f3d4cb3e-a17d-4c1a-bc7a-86169ba8535c   | Alison Escalante TED Talk.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+60abc558-fbf7-4f50-bbd8-ff169d78a156   | Alzheimer.Speakers.docx                                      | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+958dc615-ecbf-46e3-b834-eaa8872abe1d   | Andra DeVoght.docx                                           | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+0c0ed6e3-f802-4ce4-abd9-58ba72e3c232   | Angelos Halaris Announcement.docx                            | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+a29353cb-3de4-4615-a9a8-c4173762b40e   | Anger.Clawson.Announcement.8.29.24.docx                      | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+536b4d87-ee6e-4d43-812b-c5bc70716494   | Austin Perlutter.docx                                        | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+a1f966db-6275-4d92-a457-7dc7e2e3168f   | Bernie Seigel Announcement.docx                              | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+b8f32629-d636-4776-824e-b498f90aa2aa   | Bharathi Pandi Intro.docx                                    | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+63e382aa-a0c3-4ff5-8735-1d2304ea786e   | Bob Naviaux Announcement 2.docx                              | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+db893c6b-23e3-4e82-aa63-3116f0e8f852   | Brenda Stockdale announcement.docx                           | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+995fe519-2f64-4b79-9d6a-72db946a4885   | Carter Announcemt.9.21.22.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+e7b8ba14-c44c-4a17-85bb-fc1a88bf32da   | Carter.Horn.talk overview.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+52b666e5-e5c9-40b0-9bc8-f7d96513a2e5   | Chronic Disease Discussion Group.Topics.2021.docx            | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+ed7f1a8e-f36c-4f60-9c34-8305a692fed7   | Clauw announcement.docx                                      | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+66f53842-9419-4607-a733-94d875cc2d40   | Clawson Announcment.docx                                     | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+e6b9e6f8-e5b1-4922-8f7b-72b50ee69a75   | Cole Announcement.docx                                       | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+81bbc348-38e1-4a5c-a72f-6d58511aef25   | Cook.DR.docx                                                 | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+f0381ac9-82f0-49be-9c25-950ea6e09d67   | Debora Lee.Compassion based PTSD.docx                        | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+1bd77b89-674b-4d78-b5dd-166220042b5c   | DHDG.24.25.docx                                              | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+affcf6be-25ed-4321-9298-7a4da685d084   | DHDG.Nicole.12.7.22.docx                                     | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+e54153cf-dbac-4d16-b727-293539728a21   | DHDG.Topics.23.24.docx                                       | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+e41f1a38-618c-4524-abed-b5834974131f   | DHDG.Topics.23.24.docx                                       | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+34f5f268-db0d-47d7-be71-144c4ddb0322   | Dick Gervitz Announcement.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+48025850-034b-40ea-9e33-3363953e90d0   | Dr. Chris Palmer.Diet.Metabolism.Psych.docx                  | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+1d80e4f1-293b-4ff1-ac79-37b227587997   | Dr. Gervitz.12-min.video.Whiplash.docx                       | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+a9b30a68-30d4-4c81-8331-9bf0664ea049   | Dynamic Healing Discussion Group Presentation.docx           | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+1dc39f48-696f-4bc9-b42a-8945be233b2c   | EhrlichDynamicHealingProposal250103.docx                     | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+b4ea0119-4966-4cc3-8210-3ce3488a195a   | Emeran Mayer.docx                                            | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+91258434-4198-4e1a-85a3-9a48191fd074   | Erik Pepper announcement.docx                                | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+22373acc-7a30-465b-ae17-ebf759d5b340   | Florence Williams.PVG.docx                                   | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+bad1352b-367d-483c-9a3c-6fb43eb74841   | FSADynamicHealingMarch5.2025Revised.docx                     | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+01e72513-3dc6-48c3-a806-731cc8e6cfd6   | Garland Announcement.docx                                    | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+f29d2196-50b3-4a47-9a03-c483916bf5d1   | Germer.Chronic Disease Discussion Group.docx                 | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+35428b6c-5369-49de-9bd8-5e901731d73f   | Gevirtz Announcement.docx                                    | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+7dbe4128-a687-4b4a-8d36-079f93109769   | Heather Abernathy Announcement.docx                          | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+a1174f46-6f6f-40df-9077-599461642870   | Horn.Carter.10.5.22.docx                                     | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+1167ae09-4f19-418a-b9b7-306e9737edbc   | Hoverman Announcement.docx                                   | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+e12bfc3b-0152-4c80-97ab-725efa9a9963   | Isaac Fradkin Announcement.docx                              | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+fbfe80f8-b083-49c8-840d-2e8033cf631a   | James Pennebaker announcement.docx                           | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+ca6ee03d-5d4e-4c35-9f4b-16853b01a0a1   | John Cryan.docx                                              | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+01f3cd23-0f67-4d5d-99f7-febb3b654c0c   | Katie Guttenberg.Cortisol.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+7ceb88fe-3e9d-47fa-a9d7-bea33b85c64b   | Kevin Tracey Seminar.docx                                    | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+d8df8339-86a2-4cb4-8c4e-241a358fca74   | Lanius Announcement.docx                                     | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+e485675e-4859-4a01-889b-e8a7f39427c0   | Lederman Announcement.docx                                   | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+de2d77d1-5a7e-4d38-94ad-406e22e8bd06   | Les.Steve.9.7.22.docx                                        | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+0b473a27-29d3-4524-963e-0fc4fe7e1412   | Liz Baker Announcement.docx                                  | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+49069257-ae45-4d78-ac57-b4218e7070c5   | Lourdes Dale Announcement.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+d2def717-e6d4-4a73-8eb4-e9cb29dd6705   | Marilyn Sanders Announcement.10.18.21docx.docx               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+385f1449-2274-4e3e-a840-db1736e63a46   | Mark Tarnopolsky Announcement.docx                           | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+62a60dcc-1130-4002-9f06-e376eba87264   | Martin Picard.docx                                           | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+0cf58b04-d783-49c7-94af-7c6a83fce2ed   | Marty Teicher.docx                                           | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+4ede927c-7191-4e7c-aa3c-027d48b74784   | Meghan O'Rourke.docx                                         | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+73479fbe-06c8-4463-9808-ce91ae57f3c6   | Mel Pohl intro.docx                                          | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+87b4aede-1f6f-4685-8ae5-fc712d1fee25   | Monty Lyman.docx                                             | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+489a190d-b468-4c66-b15c-c449fdabed44   | Napadow.Announcement.docx                                    | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+97776462-bcd8-431a-bfe1-86e28d0402f8   | Naviaux.DR.docx                                              | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+d7f3e833-42ef-4d42-ba31-f1231c73e62b   | Pandi.Annonce.Circadian Rhythm for Healthy Lifespan.docx     | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+bda0f6b2-8ca8-42af-ab2c-72635997a574   | Paul Anderson Announcement.docx                              | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+d0f3b97d-3283-4f73-ac55-9e9e222356ae   | Pennebaker Announcement.4.2.25.docx                          | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+1e6c4a98-5a96-43a2-bea7-df1601ec36f2   | Peter Staats Announcement.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+42e7162b-668a-4b21-af3c-00758ef104ca   | Polyvagal Pennebaker f:up.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+e02aff29-2266-4878-929b-34eb9f932583   | Polyvagal Theory and the Developing Child.docx               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+3da0b4ad-4b28-4f1a-9f87-92c49fc417c5   | Polyvagal Wednesday 2020.docx                                | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+256bddbf-b578-4cfd-ac65-4a05941fc45e   | Professor Dr.announcement.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+df01cbf7-3d25-4cfa-b56e-8eeaddf0785d   | PVG.11.18.20.Announcement.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+a5de9953-d199-41e6-bbef-53f08d3f6a5f   | Richard Lane Announcement.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+6341de0c-7652-45c5-b606-d4faeffda0fa   | Richard Wilkinson announcement..docx                         | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+9650a93e-78e9-4055-b027-28b896b84f68   | Robert Naviaux Announcemennt.docx                            | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+9e60628b-c66b-49c0-8a2a-911bf1902e5c   | Rowena Field Announcement.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+67bc4d23-6576-4671-95f3-6018a90168a4   | Scott Langenecker announcement.docx                          | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+f54cc28e-0d2b-4f7e-b011-899800e3a452   | Sheldon Solomon.docx                                         | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+21e8522d-0ac4-438f-a34e-940e43c73f07   | Social RX.Stephen Bezrushka.docx                             | Presentation Announceme   | Presentation Announceme   | Yes             | Yes        | reprocessing_done   
+cb8d07db-30fc-4a4b-b361-2fd4ace1c472   | Sophie Kjaervik Announcement.docx                            | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+7f93a33c-c840-4607-8985-f8c71841d832   | Staats.Clawson.Announcement.docx                             | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+a172a58a-7f65-46c9-9cdd-e0ef02f04583   | Stephen Bezruchka announcement.docx                          | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+ab29e079-b8cc-49ae-9200-c3531e6be72d   | Sue Carter Announcement.5.5.21.docx                          | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+f80de090-326b-4a5b-bde7-8d1c7d2cd79e   | Sue Carter Announcement.5.5.21.docx                          | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+3a48a9ce-4d66-452a-9d3a-67f70f06c906   | SurvivingTerminalCancer_Stockdale_Siegel.docx                | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+7d07b679-f7b1-46a0-a932-8c6b86acdfd1   | Tamara Turner Announcement.docx                              | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+15382516-1c10-4455-8388-9fe4c23603f8   | Tauben.Sullivan.docx                                         | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+27f853c0-a0a0-4351-b5d2-ba35e76e85a4   | Terry Miller Announcement.docx                               | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+33610bcc-bcdf-4b7a-8933-da2027ebc2ad   | Topics.Chronic Disease Discussion Group.2022.docx            | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+aedc886b-ca51-4c82-a3f1-c9c329bf0ec0   | Topics.DHDG.WorkingDraft.2022-2023.docx                      | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+c2432705-f30c-4426-b7ba-925b50a5b368   | Wager Announcement.docx                                      | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+61499258-aa32-492e-9eae-7691149fc42c   | Yoni Asher announcement.docx                                 | Presentation Announceme   | Json Expert Summary       | Yes             | Yes        | skip_processing     
+e268346f-fc8f-42ae-b875-bda5300aa51e   | Abstract-Grinevch.docx                                       | presentation transcript   | presentation transcript   | Yes             | Yes        | reprocessing_done   
+badf4793-b241-4d2f-ab59-eab6df602e5f   | Carter Notes.Cole.5.17.23.23 talk on eudaemonics.docx        | presentation transcript   | Json document summary     | Yes             | Yes        | skip_processing     
+a849ad26-c346-4139-89e5-13d1a77b3994   | Chronic Disease Discussion Group -AH August 4, 2021.pptx     | presentation transcript   | Json document summary     | Yes             | Yes        | reprocessing_done   
+ee62a94d-c196-496b-be9d-4754fe4fb400   | Copy of Sapio Cortex, Threat, and Human Physiology.Clawson   | presentation transcript   | Json document summary     | Yes             | Yes        | skip_processing     
+6482212c-f3af-44ef-ae41-ef2cd02382fc   | Gevirtz.ANS_regualation_myofascial pain.docx                 | presentation transcript   | Json document summary     | Yes             | Yes        | skip_processing     
+e95bcca9-0a67-45a2-8824-d2f2facf42a5   | Pennebaker.4.2.25.Expressive Writing and Language Analysis   | presentation transcript   | Json document summary     | Yes             | Yes        | skip_processing     
+8e0733f4-4b7a-4b0d-b2bf-191eaaa9e51f   | recording.conf                                               | presentation transcript   | Json document summary     | Yes             | Yes        | skip_processing     
+cec41b35-8c3b-46fb-9940-e07dd669bc0e   | Valery Oxytocin Feb 2024.docx                                | presentation transcript   | Json document summary     | Yes             | No         | not_set             
+48ce42c0-2b03-4d99-93de-39781f6ed4f6   | surgeon-general-social-connection-advisory.pdf               | report                    | Json pdf summary          | No              | Yes        | skip_processing     
+bdc9200d-6a1f-4295-97f1-9f12f4b65935   | What is Needed to Promote the Uptake and Implementation of   | report                    | Json pdf summary          | No              | Yes        | skip_processing     
+7fae493a-3f29-4e8f-80a1-3858293d02d7   | 9 FINAL The Role of Forgiveness in Chronic Pain and Fibrom   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+9c0b50bc-6ea1-41bf-835b-d6aba37d0bba   | AH-Inﬂammation-Associated Co-morbidity Between Depression    | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+658ec299-4a4f-40ad-bb60-e006e25600e0   | AH Modulation of the inflammatory response benefits treatm   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+b808da2a-797b-42c7-a9ba-e9069ad5f2b1   | AH-Neuroinflammation and neurotoxicity contribute to neuro   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+8db22050-0de0-4e3e-84bf-4f6ccdd8544f   | AH Pro-inflammatory biomarkers in depression-venlafaxine.p   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+943ec33e-32ed-44b6-95fb-3cf1b8f5d65a   | Artikel. SEartikel2020 (1).pdf                               | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+2931b7ff-4558-442a-bc1c-c6512ef4226b   | Artikel. SE. Maj 2017. A-randomized-controlled-trial-of-br   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+cbb3074f-0b84-4cd2-9c8b-2f9c9946a70d   | Artikel SE. Proticol 2018. Somatic_experiencing_for_patien   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+d414be0f-8a97-4ce2-b635-82790e05c164   | AutonomicRehabilitation.pdf                                  | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+1aca986d-f657-46ab-80ad-5f2011465ff2   | Belanoff.Preterm births.neighborhood.JAMA.2024.pdf           | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+56edbc3f-7770-472b-ab2f-ea11c7c9f034   | Carter.Nature's Med.Oxy Review.2020.pdf                      | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+f73bf868-bbc1-4b3b-9e56-395d2bf8c42f   | Carter.Stress.SexDiff.May 2021.#2.pdf                        | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+a524a7f5-edc0-4f45-89bf-13f8f5042197   | CFT summary 2009 Gilbert.pdf                                 | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+31bffe1f-f96f-4e0a-ab42-286c758e5a2e   | Cole.CTRA.BehSci2019.pdf                                     | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+30ddac2a-1620-455b-8fa0-4a272b9c0c4c   | Dale.Moral Injury Health Care.2021.pdf                       | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+f64193c3-f088-4cd9-a4e5-50fcd17bec98   | Dantzer.Resilience and immunity.2018.pdf                     | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+0a8659cd-4fc5-43e5-878c-b14fa428d805   | Ego Dissolution.pdf                                          | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+e2af5ce7-50d0-4cf8-9e96-c8f0a5a352be   | ellingsen duggento et al 2022 trans psych granger concorda   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+0cd5abfd-a0cc-402a-ab83-ae5ba38f6042   | ellingsen et al 2023 PNAS brain-to-brain patient-clinician   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+d0f7a522-a1bf-450b-9531-e1c65a58fb3e   | Etienne_personality.pdf                                      | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+1d81af97-2eb6-4cf7-919f-4670ffe03555   | Evolution of a Trauma Protocol Quarter Century 11 22 20 .p   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+a73459f4-5c1e-4ed5-9b6d-40b82db0c6f6   | Field_2020_SR.pdf                                            | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+3f0c2622-f5c4-4ce9-81c1-27242e8f7e7f   | Field_2020_survey.pdf                                        | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+35a10adb-8194-4dbb-b290-f6a5155a30c1   | Field_2021_animal_scope.pdf                                  | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+a2ccc414-4752-4c2c-b3b9-b45294cc2706   | Field_2021_clinicaltrial.pdf                                 | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+03b988a6-d998-4324-87e5-b946a957d9ba   | Fradkin.Preimpting thoujghts.PLOS.2022.pdf                   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+f25c4330-b732-4187-9ca4-19bc5de43f7f   | GervitzSlides.MyofascialPain.3.1.20.pdf                      | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+2e691f1b-1add-46ed-911c-46d358bf8631   | Gilbert 2014 The origins & nature of CFT.pdf                 | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+b3fcdb12-25c7-46dc-88c8-f0fddc1dedac   | Global developments in social prescribing_Morse_2022.pdf     | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+36a99dc9-85ba-4b4c-9def-0118236c83d6   | Grosman-Rimon.MyoPainBiomarkers.Medicine..pdf                | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+47e6a4b9-5fca-4106-8bac-1079673f07b1   | Group Psychotherapy as a Neural Exercise Bridging Polyvaga   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+72fdf3bb-2501-4574-96d6-577b3c0d4ebc   | HornCarter.Love&Longevity.cPNEC2021.pdf                      | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+20fd2070-103f-4d01-9bde-59dfe62ac1fb   | Horn.OXY.VSP.PTSD.2024.pdf                                   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+91bcadb7-754e-4aa9-a13f-b89ad265385f   | HubbardD.Muscletensionandchronicmusclepainsummmaryoftheory   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+a9bf192a-29bc-4a41-a5f6-1dc00593f104   | Hyperkatifeia and Despair 2021.pdf                           | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+9efe6fae-0ee6-4538-9359-2df586c52e21   | Kolacz, Kovacic, and Porges 2019 ANS brain-gut .pdf          | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+49dab18d-4991-46d7-85c8-d6c8506a33b1   | Lane.APS Presidential Address 2008.pdf                       | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+d929934f-2ac6-4034-8955-6ac849677c69   | Lane Biased Competition PM 2018.pdf                          | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+2e0ae84a-943b-4b9e-b347-4da34f2ca7d2   | Langenecker.Rumination.CBT.fMRI.2023.pdf                     | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+23e04e98-5471-4682-8f93-16edb2bad90a   | LaniusetalSelf.PTSD.2020.pdf                                 | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+e9b9f03b-a2d7-44b0-a364-de62fd401628   | LongCOVID.Frontiers.final.PDF                                | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+aa245529-0943-404e-915b-b486f7374e07   | Marsland.Childhood trauma and hair cortisol response over    | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+c65a853a-dbf1-495e-9c2f-165154fc43f8   | Meehan.Somatic Practices Review.CP.2021.pdf                  | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+bf603f71-e52e-4778-844a-551c0d51b15e   | Meredith.Attach.CP.coldpressor.2006.pdf                      | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+c77ad78b-814f-4029-a103-d94d1241ca04   | Meredith.Sensory attachment.CP.2021.pdf                      | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+c1893e7a-60c0-4fb3-b3f5-31d56365d0ee   | Naviaux.CDR.stress.chronic disease.2020.pdf                  | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+1152e539-a21b-4db1-a591-991cb05554f5   | Naviaux Mito Environmental Toxicology_2020.pdf               | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+64e83b62-0220-43d4-bef2-bc4ab069f307   | Neff 2020 SCHC.pdf                                           | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+543cac2f-617a-478a-be9b-c7a7cbddc15d   | Nocebo-Pain Killer effects.pdf                               | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+10295d28-f818-4df5-87dc-27f70d49296f   | Ottaviani.Perseverative Cog and ANS.2025.pdf                 | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+9ab15ce6-4ab3-436b-b0e0-af01d66e1f32   | Oxytocin-enhanced group therapy for methamphetamine use di   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+6441bdfe-dea3-4474-8fee-de6ec5beecf5   | Psychological Insight.pdf                                    | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+b2b3bc3a-79e3-44c5-9af1-2b7ebd1c6654   | s41591-019-0675-0.pdf                                        | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+f100e0c4-1719-4bae-8783-ba3fad7c5838   | Sanders_et_al-2017-Journal_of_Perinatology.pdf               | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+d02aba6b-65e6-4e2e-bd34-44c3856b9c06   | SC in Therapy pdf -  Germer 7-6-21.pdf                       | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+83546847-2bf8-4eea-b324-613ae9a90434   | Simonsson et al., 2021.pdf                                   | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+e33c60ef-2542-440f-9b06-2eca10ad52b1   | Simonsson.Psychs.meditation.2022.pdf                         | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+8617bb17-5562-4ecf-b4f3-4b5984d51d1d   | Smigielski et al., 2019.pdf                                  | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+2f0ae2d2-f12b-4fa6-a9f4-abceaf599929   | Social Engagement and Attachment(red).pdf                    | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+ab9826ba-25b6-4626-9dde-924066a47f2d   | Somatic Meta 2020 .pdf                                       | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+515ed6bd-c316-4fe2-87b9-1ca24e66cb55   | Stange.rMDD.CCN.cognition.pdf                                | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+85869b44-b4a0-4072-b377-76071322e97f   | STPP Somatic All.pdf                                         | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+f69ef768-a950-4efc-a53d-badac865ec93   | Tao.Depression uncouples hate.pdf                            | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+5297e08b-a67a-4f84-b3f0-c4831d0af5ac   | Turner.Affective.Musical.Haunting.Algeria.2021.pdf           | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+1f49b6d4-1ab6-41a8-b03d-0cc1ea7cb31e   | Turner, Ethos.pdf                                            | research article          | Json pdf summary          | No              | Yes        | skip_processing     
+7818a777-4a22-4dc8-9236-142f9981e5e3   | AH Inflammation and depression but where does the inflamma   | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+4c0f18b4-c9a3-457a-887a-9912b02ef2e2   | AH-NEUROLOGICAL DISORDERS DEPRESSION AND INFLAMMATION.pdf    | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+1bbc6b2b-2930-4f0b-9a67-db776723a043   | Buemann.OT.AD.Sexual.2023.pdf                                | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+e5916f49-f0d7-4f61-80b4-71abe9d4dbee   | Clauw.fibrositis_to_fibromyalgia_to_nociplastic_pai.pdf      | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+74405504-f679-4493-94eb-aec7d360972b   | Earlyadversityfibromyalgia 2.pdf                             | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+f9db0ac6-a324-4169-9033-d3a48c90c465   | Earlylifepain2016Expneur.pdf                                 | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+d1aecee9-b60e-4ca7-805b-7e449881fb29   | Field_2022_human_scope.pdf                                   | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+9033ab43-9ea7-4daa-a87d-6e45bc925ea1   | FND ISTDP review 2022.pdf                                    | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+3536ace6-5b67-4924-b8f2-851b8f5c5c4e   | Francis Peabody's the_care_of_the_patient_commentary  1984   | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+053921a4-4d28-46c8-9cfd-7daadc7f1453   | Fuentes.Frontiers.ACE's.visceral Pain.2018.pdf               | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+d7e9b761-f78f-4c81-a5df-31d68eb0a8c3   | HEADACHEPUBLISHED.pdf                                        | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+e0994760-5fd7-406e-a441-99334e84c4b3   | KearneyLanius2022.p.Brain.Body disconnect.df.pdf             | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+03cd0e65-0e8b-4cc5-99f6-8ec98041ab39   | Lane et al Affective Agnosia NBR 2015.pdf                    | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+14643ec9-df8f-4951-9dd7-4c57707ba1ea   | Naviaux Aging & Incomplete Healing 2019.pdf                  | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+0d2ff24c-2ffb-4209-91f3-ca791f958a59   | Nociplastic Pain.Summary.Clauw.docx.pdf                      | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+fd5f9edd-1aab-424f-b6f2-ad9cca850c3e   | Smith EA_EVO_2020.pdf                                        | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+e9294f84-8251-4b58-b661-d6656d7f7e3f   | Surgery_for_chronic_musculoskeletal_pain__the.10.pdf         | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+c335009b-5d6f-4855-929f-7d2864958d28   | Teicher_ACE:BrainStructure.pdf                               | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+9c32c4d5-db19-41ca-ae3f-8471751bfad3   | Teixeira et al., 2021.pdf                                    | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+a7f4bd9e-13d7-401e-86c7-89de5abfcb14   | TVST - OCD and mitos.pdf                                     | review article            | Json pdf summary          | No              | Yes        | skip_processing     
+531ddb8f-4e20-4f98-aacd-59b9728aabea   | Youtube LInks for Tamara's talk.docx                         | science meeting discuss   | Json document summary     | Yes             | Yes        | skip_processing     
+c50ae9d9-3da0-491a-8707-890c4b4aa2ec   | 20211101_Chronic Pain Prevention-A Rheum with a View_Steve   | scientific presentation   | Json document summary     | Yes             | Yes        | reprocessing_done   
+e3eb1016-af2c-4440-8e02-8cc150cc3ced   | Children and Pain for Polyvagal Group.pptx                   | scientific presentation   | Json document summary     | Yes             | Yes        | reprocessing_done   
+48da4f70-00a5-4353-ac35-efc87d437ef4   | Hanscom Pain 092023.pptx                                     | scientific presentation   | Json document summary     | Yes             | Yes        | reprocessing_done   
+2f244831-b923-44d8-8c38-d1338a1926d9   | Hypnotherapy.Speigel.docx                                    | scientific presentation   | Json document summary     | Yes             | Yes        | skip_processing     
+ebda479a-483f-49b6-af3c-a2691eda16e0   | Inflammation and the Vagus Nerve.pptx                        | scientific presentation   | Json document summary     | Yes             | Yes        | reprocessing_done   
+960c9984-adb4-4e2d-8dee-5b347f569f7b   | Satchin_Panda_CircadianHealth_20241016.pptx                  | scientific presentation   | Json document summary     | Yes             | Yes        | reprocessing_done   
+3a00abfb-ac94-4b94-bb4b-998d35b79127   | Adam Goldstein blog.docx                                     | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+b471931d-c9d4-414d-8d99-a730145550b6   | AI_Teicher_ACES_brain_Stucture.docx                          | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+8863456f-6931-494f-84ab-476f1aacc141   | Andrew Steele.docx                                           | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+8a016398-6784-4de8-a725-718067b54114   | Christopher D Gardner.docx                                   | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+565b2213-5a86-4024-adf6-19552dcf76ab   | DHDG.CoreSchedule.2022-23.docx                               | txt file                  | Json document summary     | Yes             | Yes        | skip_processing     
+62b6937d-81f7-4e2e-8e9f-b516bada5104   | DR.Cholinergic System.docx                                   | txt file                  | Json document summary     | Yes             | Yes        | skip_processing     
+2cdc89f9-faef-4529-a30f-e0a9d78bb299   | fMRI.pain.Empathy.Medscape.2023.docx                         | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+62890183-6670-4e66-8098-a57295fb68b1   | Gharbo.Placebo Questions and comments.docx                   | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+4a1491ed-f696-45d1-b2bc-2296fac1cfb1   | Ions_Spontaneous_Remissions.docx                             | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+302d4042-1315-4124-8cb6-5702eccd1b8a   | kateWolovsky Links.docx                                      | txt file                  | Json document summary     | Yes             | Yes        | skip_processing     
+a324b2a5-b3ae-4f0e-ba08-6a2b4dca3eea   | Mark Andrew Tarnopolsky mini CV.docx                         | txt file                  | Json document summary     | Yes             | Yes        | skip_processing     
+c7a1cec9-97cf-4239-af14-b6b9aa17439b   | Naviaux.Nematodes.Dauer.docx                                 | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+4cfdab55-9a6b-4897-a556-f66fcde44b75   | Naviauz.CDR.Review.AI.docx                                   | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+ef64c587-a608-4646-bda3-b8b046aa0ac4   | Nixon.Human.Function.Curve.to.Chronic.Pain.Gharbo.2013.doc   | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+3e85f3df-b8f2-4cba-9609-cbe43a858fd1   | Ron Gharbo Summary.1.27.21.docx                              | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+9b0ec8ae-bd79-4048-98e1-fd67610d5818   | Springer.Trauma of a Divided Nation.docx                     | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+b12b4322-a286-4c5a-ab11-a2143c4a9762   | Three questions.Clauw.docx                                   | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+4cc2bc08-c285-45f7-808c-2b1a5432896e   | Veronique.Trauma informed Rx.docx                            | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+e20c225b-5d38-4795-a98a-315173b32b0f   | WBC references.docx                                          | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+808f96c9-92bd-4b13-96ab-0a9c4a6571ee   | Why Americans Feel More Pain.NYT.5.3.23.docx                 | txt file                  | txt file                  | Yes             | Yes        | reprocessing_done   
+7b627770-3d07-4789-ad4e-da13e7166f13   | ~$DG.Topics.23.24.docx                                       | word document             | word document             | Yes             | Yes        | reprocessing_done   
+b8659487-a676-49d1-9274-d4eb23720c16   | ~$eldon Solomon.docx                                         | word document             | word document             | Yes             | Yes        | reprocessing_done   
+c63145f3-6015-4ec5-b3d6-c00f8871836b   | 2201 Biosketch no photo.docx                                 | word document             | word document             | Yes             | Yes        | reprocessing_done   
+16862bdf-5137-422f-8060-ea899217cbe0   | 4.Plan A.docx                                                | word document             | word document             | Yes             | Yes        | reprocessing_done   
+ed0f5213-da17-450b-be9d-5c78e57947a7   | AI analysis of Clauw sensitivity paper.docx                  | word document             | word document             | Yes             | Yes        | reprocessing_done   
+df15d36e-36db-4ca3-88ca-d78673c07cbd   | AI.Lane.Biased compteition.Summary.docx                      | word document             | word document             | Yes             | Yes        | reprocessing_done   
+906654bd-4742-4ac5-a420-4f7ec11dd19c   | Anger.nociplastic pain. Clauw.steering group.11.14.24.docx   | word document             | word document             | Yes             | Yes        | reprocessing_done   
+09b73e1a-4aed-40d4-b8df-8ef1d49627d1   | Anger.pptx                                                   | word document             | Json document summary     | Yes             | Yes        | reprocessing_done   
+86c892c1-f5d1-437b-8e96-672868ed0774   | Benjamin Buemann.oxy.aging.docx                              | word document             | word document             | Yes             | Yes        | reprocessing_done   
+0623b0da-75b0-4a41-bb6a-50fed4dcd80e   | Boston Globe op-ed.docx                                      | word document             | word document             | Yes             | Yes        | reprocessing_done   
+cc15eb65-5d0e-43fa-b0d0-ab6c691227d3   | Carter.Sex.Love.Oxytocin.2022.docx                           | word document             | word document             | Yes             | Yes        | reprocessing_done   
+96d8a2fd-cecb-4ed2-90d7-344200b8fa39   | Carter.Sociostasis.2023.docx                                 | word document             | Json document summary     | Yes             | Yes        | skip_processing     
+382fda3f-9688-4936-b221-809fe9a7fbf8   | Children and Pain for Polyvagal Group.pptx                   | word document             | Json document summary     | Yes             | Yes        | reprocessing_done   
+49d0238f-4cbc-44d7-8c36-d2bb99515ba1   | Dor-Ziderman_AI_Neural Mechanisms of Death Denial.docx       | word document             | word document             | Yes             | Yes        | reprocessing_done   
+5dde2774-390e-4c9c-b8c5-d3d9e03a1d15   | Forgotten negative emotional memories increase pain unplea   | word document             | word document             | Yes             | Yes        | reprocessing_done   
+d0090932-ccfd-44f1-a86b-5e1852881097   | Fred Luskin.docx                                             | word document             | word document             | Yes             | Yes        | reprocessing_done   
+5e5537f1-a730-4b7d-9c41-bc3f76d389ab   | Grinevich AI Summary.docx                                    | word document             | word document             | Yes             | Yes        | reprocessing_done   
+0fc9c696-d868-48c2-a76e-bfbe09c8627d   | Harris.CV.docx                                               | word document             | word document             | Yes             | Yes        | reprocessing_done   
+7f893061-16ec-4b98-88a1-5395631e94fd   | Impact activites.docx                                        | word document             | Json document summary     | Yes             | Yes        | skip_processing     
+d6f1ee22-c063-4976-87e6-8cf56ad70c2f   | Lane.Neural Substrates of Implicit and Explicit Emotional    | word document             | word document             | Yes             | Yes        | reprocessing_done   
+f86ee2b0-1024-448b-9ece-c11a0c00a5c0   | On the Role of Death in Life.pptx                            | word document             | Json document summary     | Yes             | Yes        | reprocessing_done   
+b46a98e7-362a-4e37-8e9d-b5ba0a03835b   | Oxytocin and the ANS- Abstracted from Pharm Rev.docx         | word document             | Json document summary     | Yes             | Yes        | skip_processing     
+609a2e7d-0a12-4cb5-ae6c-283ea8144931   | Protein Animations.docx                                      | word document             | Json document summary     | Yes             | Yes        | skip_processing     
+100bd864-ac90-4bcd-a8f2-19cd85e172ed   | Rosenberg.Stress.GreyHair.2021.pdf                           | word document             | Json document summary     | Yes             | Yes        | reprocessing_done   
+5b6f96d5-4913-4bc4-a468-72740c30c755   | Sanders.Bio.2021.docx                                        | word document             | word document             | Yes             | Yes        | reprocessing_done   
+92e7fc11-fa7b-42c0-b687-b2ab83506078   | Self-Compassion and Shame Hanscom Sept 2021.pptx             | word document             | Json document summary     | Yes             | Yes        | reprocessing_done   
+7bf3283a-27e1-4d32-9609-017f7c1b3ad2   | Sophia Hayes.docx                                            | word document             | word document             | Yes             | Yes        | reprocessing_done   
+b8495a03-b105-42f3-9a6f-d6ceb0d97fb3   | Sullivan_biosketch doctor 4-12-22.docx                       | word document             | word document             | Yes             | Yes        | reprocessing_done   
+636b6f8c-a237-410a-a8cf-7b52f6374872   | Type C Coping.docx                                           | word document             | word document             | Yes             | Yes        | reprocessing_done   
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Total sources: 435
+Sources with expert documents: 435
+Total expert documents: 484
+Command exited with code 0
+raybunnage@Rays-Laptop dhg-mono % 
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   1. Added functionality to purge orphaned expert_documents records:
     - Records with null source_id
     - Records with non-existent source_id in sources_google

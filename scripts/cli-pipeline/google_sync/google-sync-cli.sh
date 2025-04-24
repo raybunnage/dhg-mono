@@ -697,7 +697,7 @@ fi
 
 if [ "$1" = "find-needs-reprocessing" ]; then
   shift
-  track_command "find-needs-reprocessing" "ts-node $SCRIPT_DIR/sources-google-integrity.ts --mark-for-reprocessing --classifier-check --verbose $*"
+  track_command "find-needs-reprocessing" "ts-node $SCRIPT_DIR/needs-reprocessing.ts $*"
   exit $?
 fi
 
