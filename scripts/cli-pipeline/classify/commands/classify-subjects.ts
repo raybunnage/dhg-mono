@@ -254,39 +254,38 @@ async function processDocument(
     Logger.info(`Classification successful: "${classificationResult.title}"`);
     Logger.info(`Subject IDs: ${classificationResult.subject_ids.join(', ')}`);
     
-    // Store classifications in the database
-    // First check if classifications already exist for this entity
-    const { data: existingClassifications, error: checkError } = await supabase
+    // IMPORTANT: First check if this document already has ANY classifications
+    // This is critical because our list of classified IDs may be stale - other processes might have classified this doc
+    const { data: anyExistingClassifications, error: checkAnyError } = await supabase
       .from('table_classifications')
-      .select('subject_classification_id')
+      .select('id')
       .eq('entity_id', doc.id)
-      .eq('entity_type', entityType);
+      .eq('entity_type', entityType)
+      .limit(1);
       
-    if (checkError) {
-      Logger.error(`Error checking existing classifications: ${checkError.message}`);
+    if (checkAnyError) {
+      Logger.error(`Error checking existing classifications: ${checkAnyError.message}`);
       return {
         documentId: doc.id,
         success: false,
-        error: `Error checking existing classifications: ${checkError.message}`
+        error: `Error checking existing classifications: ${checkAnyError.message}`
       };
     }
     
-    // Create a set of existing subject IDs for quick lookup
-    const existingSubjectIds = new Set(
-      (existingClassifications || []).map(item => item.subject_classification_id)
-    );
+    // If this document already has ANY classifications at all, skip it completely
+    if (anyExistingClassifications && anyExistingClassifications.length > 0) {
+      Logger.info(`Document ${doc.id} already has classifications - skipping completely.`);
+      return {
+        documentId: doc.id,
+        success: true,
+        title: 'Already classified',
+        subjectIds: []
+      };
+    }
     
-    // Only insert classifications that don't already exist for this entity
+    // This document has no classifications yet - add all the new ones
     let insertedCount = 0;
     for (const subjectId of classificationResult.subject_ids) {
-      // Skip if this classification already exists
-      if (existingSubjectIds.has(subjectId)) {
-        if (verbose) {
-          Logger.info(`Skipping existing classification ${subjectId} for document ${doc.id}`);
-        }
-        continue;
-      }
-      
       // Create a record in the table_classifications table
       const { error: insertError } = await supabase
         .from('table_classifications')
@@ -308,10 +307,8 @@ async function processDocument(
     // Log summary of inserted classifications
     if (insertedCount > 0) {
       Logger.info(`Added ${insertedCount} new classifications for document: ${doc.id}`);
-    } else if (existingSubjectIds.size > 0) {
-      Logger.info(`Document ${doc.id} already had classifications, nothing new to add`);
     } else {
-      Logger.info(`Successfully stored all classifications for document: ${doc.id}`);
+      Logger.info(`No classifications added for document: ${doc.id}`);
     }
     
     return {
@@ -327,6 +324,228 @@ async function processDocument(
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
     };
+  }
+}
+
+/**
+ * Helper function to process documents with their content
+ */
+async function processDocsWithContent(
+  expertDocs: any[],
+  entityType: string,
+  limit: number,
+  verbose: boolean,
+  dryRun: boolean,
+  fileExtensions?: string[],
+  expertName?: string,
+  concurrency: number = 3,
+  maxRetries: number = 3,
+  retryDelayMs: number = 1000
+): Promise<void> {
+  const supabase = SupabaseClientService.getInstance().getClient();
+  
+  // Now we need to verify which ones have processed_content (we didn't fetch it earlier to save bandwidth)
+  if (expertDocs.length > 0) {
+    // Get details for these specific documents with processed_content
+    // Process in smaller batches to avoid "fetch failed" errors with large IN clauses
+    const BATCH_SIZE = 50;
+    let allDocsWithContent: any[] = [];
+    
+    // Process documents in batches
+    for (let i = 0; i < Math.min(expertDocs.length, limit * 3); i += BATCH_SIZE) {
+      const batchIds = expertDocs.map(doc => doc.id).slice(i, i + BATCH_SIZE);
+      Logger.info(`Fetching batch ${i/BATCH_SIZE + 1} of documents with content (${batchIds.length} docs)...`);
+      
+      try {
+        const { data: batchDocsWithContent, error: contentError } = await supabase
+          .from(entityType)
+          .select('id, source_id, processed_content, title')
+          .in('id', batchIds)
+          .not('processed_content', 'is', null);
+        
+        if (contentError) {
+          Logger.error(`Error fetching batch of documents with content: ${contentError.message}`);
+          continue; // Try the next batch instead of failing completely
+        }
+        
+        if (batchDocsWithContent && batchDocsWithContent.length > 0) {
+          allDocsWithContent = [...allDocsWithContent, ...batchDocsWithContent];
+        }
+        
+        // If we've collected enough documents, we can stop
+        if (allDocsWithContent.length >= limit) {
+          break;
+        }
+      } catch (error) {
+        Logger.error(`Exception fetching documents batch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+    
+    expertDocs = allDocsWithContent;
+    Logger.info(`After checking for processed content: ${expertDocs.length} documents with content`);
+  }
+  
+  // Now apply the limit - after we've filtered out already classified docs
+  // This ensures we get the requested number of unclassified docs
+  if (expertDocs.length > limit) {
+    Logger.info(`Found ${expertDocs.length} documents, limiting to ${limit} for processing`);
+    expertDocs = expertDocs.slice(0, limit);
+  }
+  
+  Logger.info(`Found ${expertDocs.length} expert documents with processed content.`);
+  
+  // Need to fetch sources separately since we can't join directly
+  Logger.info(`Found ${expertDocs.length} expert documents with processed content.`);
+  
+  // Get source IDs for the filtered documents
+  const sourceIds = expertDocs.map(doc => doc.source_id);
+  
+  Logger.info(`Fetching sources for ${sourceIds.length} expert documents...`);
+  const { data: sources, error: sourcesError } = await supabase
+    .from('sources_google')
+    .select('id, name, mime_type')
+    .in('id', sourceIds);
+  
+  if (sourcesError) {
+    Logger.error(`Error fetching sources: ${sourcesError.message}`);
+    return;
+  }
+  
+  // Create a lookup map for sources
+  const sourcesMap: Record<string, any> = {};
+  sources?.forEach(source => {
+    sourcesMap[source.id] = source;
+  });
+  
+  // Combine the data
+  let documents = expertDocs.map(doc => ({
+    ...doc,
+    sources_google: sourcesMap[doc.source_id] || null
+  }));
+  
+  // Filter by extensions if provided
+  if (fileExtensions && fileExtensions.length > 0) {
+    Logger.info(`Filtering by file extensions: ${fileExtensions.join(', ')}`);
+    
+    // Convert extensions to lowercase for case-insensitive matching
+    const lowerExtensions = fileExtensions.map(ext => 
+      (ext.startsWith('.') ? ext : `.${ext}`).toLowerCase()
+    );
+    
+    // Filter documents by extension
+    documents = documents.filter(doc => {
+      // Handle sources_google which could be an array or object
+      const sourceInfo = Array.isArray(doc.sources_google) 
+        ? (doc.sources_google.length > 0 ? doc.sources_google[0] : null) 
+        : doc.sources_google;
+      
+      const filename = sourceInfo?.name || '';
+      const extension = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+      return lowerExtensions.includes(extension);
+    });
+    
+    Logger.info(`After extension filtering: ${documents.length} documents remaining.`);
+  }
+  
+  // Filter by expert name if provided
+  if (expertName) {
+    Logger.info(`Filtering by expert name: ${expertName}`);
+    
+    // First, get the expert ID for the given name
+    const { data: expertData, error: expertError } = await supabase
+      .from('experts')
+      .select('id')
+      .eq('expert_name', expertName)
+      .single();
+    
+    if (expertError || !expertData) {
+      Logger.error(`Expert not found with name: ${expertName}`);
+      return;
+    }
+    
+    // Get sources for this expert
+    const { data: expertSources, error: sourcesError } = await supabase
+      .from('sources_google_experts')
+      .select('source_id')
+      .eq('expert_id', expertData.id);
+    
+    if (sourcesError) {
+      Logger.error(`Error getting sources for expert: ${sourcesError.message}`);
+      return;
+    }
+    
+    const expertSourceIds = expertSources?.map(source => source.source_id) || [];
+    if (expertSourceIds.length === 0) {
+      Logger.error(`No sources found for expert: ${expertName}`);
+      return;
+    }
+    
+    // Filter documents by these source IDs
+    documents = documents.filter(doc => 
+      expertSourceIds.includes(doc.source_id)
+    );
+    
+    Logger.info(`After expert filtering: ${documents.length} documents remaining.`);
+  }
+  
+  if (documents.length === 0) {
+    Logger.info('No expert documents found with matching criteria.');
+    return;
+  }
+  
+  Logger.info(`Found ${documents.length} expert documents to process.`);
+  
+  // Load the subject classification prompt
+  const promptResult = await promptService.loadPrompt('subject-classification-prompt');
+  
+  if (!promptResult || !promptResult.prompt) {
+    Logger.error('Failed to load subject-classification-prompt.');
+    return;
+  }
+  
+  Logger.info('Successfully loaded subject-classification-prompt.');
+  
+  // Process documents concurrently
+  if (concurrency > 1) {
+    Logger.info(`Processing documents with concurrency of ${concurrency}`);
+  }
+  
+  // Set up processing options
+  const processingOptions = {
+    entityType,
+    dryRun,
+    verbose,
+    maxRetries,
+    retryDelayMs
+  };
+  
+  const startTime = Date.now();
+  
+  // Process documents with concurrency
+  const results = await processWithConcurrency(
+    documents,
+    async (doc) => processDocument(doc, promptResult.combinedContent, processingOptions),
+    concurrency
+  );
+  
+  const endTime = Date.now();
+  const duration = (endTime - startTime) / 1000;
+  
+  // Summarize results
+  const successCount = results.filter(r => r.success).length;
+  const failureCount = results.filter(r => !r.success).length;
+  
+  Logger.info(`Subject classification completed in ${duration.toFixed(2)} seconds.`);
+  Logger.info(`Results: ${successCount} successes, ${failureCount} failures`);
+  
+  // If there were failures, list them
+  if (failureCount > 0) {
+    Logger.warn('Failed documents:');
+    results
+      .filter(r => !r.success)
+      .forEach(result => {
+        Logger.warn(`- Document ${result.documentId}: ${result.error}`);
+      });
   }
 }
 
@@ -372,16 +591,115 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
       }
     }
     
-    // Just get raw documents from expert_documents table
+    // Just get raw documents from expert_documents table first
     // We've tried complex filtering at the DB level and it's not working
-    // Instead, we'll get all docs and filter in code
+    // Instead, we'll get docs and filter in code
+    
+    // If we're skipping classified docs, let's be more efficient and find only unclassified docs
+    if (skipClassified && classifiedIds.length > 0) {
+      Logger.info(`Looking specifically for unclassified documents with processed content...`);
+      
+      // We need a more direct approach to find unclassified documents
+      // Find docs with processed_content that do NOT appear in the classified IDs list
+      // First, fetch the document IDs for docs with processed content
+      Logger.info(`Fetching documents with processed content that are NOT yet classified...`);
+      
+      // Directly query for unclassified documents with processed content
+      // Instead of using RPC, we'll use a more direct approach
+      
+      // Create a query to get a list of ALL document IDs that have processed content
+      const allDocsQuery = supabase
+        .from(entityType)
+        .select('id')
+        .not('processed_content', 'is', null)
+        .not('source_id', 'is', null);
+        
+      const { data: allDocsWithContent, error: allDocsError } = await allDocsQuery;
+      
+      if (allDocsError) {
+        Logger.error(`Error fetching documents with content: ${allDocsError.message}`);
+        return;
+      }
+      
+      if (!allDocsWithContent || allDocsWithContent.length === 0) {
+        Logger.info('No documents found with processed content.');
+        return;
+      }
+      
+      Logger.info(`Found ${allDocsWithContent.length} total documents with processed content.`);
+      
+      // Create a set of all IDs that have processed content
+      const allDocIds = new Set(allDocsWithContent.map(doc => doc.id));
+      
+      // Create a set of all IDs that have already been classified
+      const classifiedIdsSet = new Set(classifiedIds);
+      
+      // Find IDs that are in allDocIds but NOT in classifiedIdsSet
+      const unclassifiedIds = Array.from(allDocIds).filter(id => !classifiedIdsSet.has(id));
+      
+      Logger.info(`Found ${unclassifiedIds.length} unclassified documents with processed content.`);
+      
+      if (unclassifiedIds.length === 0) {
+        Logger.info('No unclassified documents found to process.');
+        return;
+      }
+      
+      // Get the first batch of unclassified documents to process
+      const idsToProcess = unclassifiedIds.slice(0, Math.min(unclassifiedIds.length, limit * 2));
+      
+      // Now fetch detailed info for just these unclassified documents
+      const query = supabase
+        .from(entityType)
+        .select('id, source_id, title')
+        .in('id', idsToProcess)
+        .not('processed_content', 'is', null)
+        .order('updated_at', { ascending: false });
+      
+      Logger.info(`Executing optimized query for unclassified documents...`);
+      const { data: expertDocsRaw, error: docsError } = await query;
+      
+      if (docsError) {
+        Logger.error(`Error fetching expert documents: ${docsError.message}`);
+        return;
+      }
+      
+      if (!expertDocsRaw || expertDocsRaw.length === 0) {
+        Logger.info('No unclassified expert documents found with processed content.');
+        return;
+      }
+      
+      Logger.info(`Found ${expertDocsRaw.length} potentially unclassified documents.`);
+      
+      // Filter in code if we had to skip the not.in filter due to large classifiedIds
+      let expertDocs = expertDocsRaw;
+      if (classifiedIds.length > 100) {
+        const classifiedIdsSet = new Set(classifiedIds);
+        expertDocs = expertDocsRaw.filter((doc: {id: string}) => !classifiedIdsSet.has(doc.id));
+        Logger.info(`After filtering out classified docs: ${expertDocs.length} documents remaining to process`);
+      }
+      
+      // Now we go straight to fetching the content for these documents
+      if (expertDocs.length === 0) {
+        Logger.info('No unclassified documents found after filtering.');
+        return;
+      }
+      
+      // Now proceed directly to verifying processed_content for these docs
+      const docsToProcess = Math.min(expertDocs.length, limit);
+      Logger.info(`Processing the first ${docsToProcess} unclassified documents.`);
+      
+      // Get full content for these documents
+      return await processDocsWithContent(expertDocs.slice(0, docsToProcess), entityType, limit, verbose, dryRun, fileExtensions, expertName, concurrency, maxRetries, retryDelayMs);
+    }
+    
+    // If not skipping or no classified IDs, fall back to the regular approach
     let query = supabase
       .from(entityType)
       .select('id, source_id, title')  // Don't select processed_content to keep response smaller
-      .limit(1000);  // Get a large batch we can filter through
-      
-    // Remove all limits here - we'll apply limit AFTER filtering out already classified docs
-    // This ensures we get enough documents that need classification
+      .not('processed_content', 'is', null)  // Must have processed content
+      .not('source_id', 'is', null)  // Must have a source reference
+      .order('updated_at', { ascending: false })  // Get newest first
+      .limit(limit * 5);  // Get enough docs to work with after filtering
     
     // Skip already classified documents if requested
     if (skipClassified && classifiedIds.length > 0) {
@@ -438,19 +756,41 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
     // Now we need to verify which ones have processed_content (we didn't fetch it earlier to save bandwidth)
     if (expertDocs.length > 0) {
       // Get details for these specific documents with processed_content
-      const docIds = expertDocs.map(doc => doc.id).slice(0, Math.min(expertDocs.length, limit * 3));
-      const { data: docsWithContent, error: contentError } = await supabase
-        .from(entityType)
-        .select('id, source_id, processed_content, title')
-        .in('id', docIds)
-        .not('processed_content', 'is', null);
+      // Process in smaller batches to avoid "fetch failed" errors with large IN clauses
+      const BATCH_SIZE = 50;
+      let allDocsWithContent: any[] = [];
       
-      if (contentError) {
-        Logger.error(`Error fetching documents with content: ${contentError.message}`);
-        return;
+      // Process documents in batches
+      for (let i = 0; i < Math.min(expertDocs.length, limit * 3); i += BATCH_SIZE) {
+        const batchIds = expertDocs.map(doc => doc.id).slice(i, i + BATCH_SIZE);
+        Logger.info(`Fetching batch ${i/BATCH_SIZE + 1} of documents with content (${batchIds.length} docs)...`);
+        
+        try {
+          const { data: batchDocsWithContent, error: contentError } = await supabase
+            .from(entityType)
+            .select('id, source_id, processed_content, title')
+            .in('id', batchIds)
+            .not('processed_content', 'is', null);
+          
+          if (contentError) {
+            Logger.error(`Error fetching batch of documents with content: ${contentError.message}`);
+            continue; // Try the next batch instead of failing completely
+          }
+          
+          if (batchDocsWithContent && batchDocsWithContent.length > 0) {
+            allDocsWithContent = [...allDocsWithContent, ...batchDocsWithContent];
+          }
+          
+          // If we've collected enough documents, we can stop
+          if (allDocsWithContent.length >= limit) {
+            break;
+          }
+        } catch (error) {
+          Logger.error(`Exception fetching documents batch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
       }
       
-      expertDocs = docsWithContent || [];
+      expertDocs = allDocsWithContent;
       Logger.info(`After checking for processed content: ${expertDocs.length} documents with content`);
     }
     
