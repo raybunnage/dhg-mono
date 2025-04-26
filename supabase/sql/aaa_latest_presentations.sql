@@ -174,8 +174,6 @@ CREATE TRIGGER update_presentation_assets_updated_at
   );
 
 
-
-
   -- Create the table_classifications junction table
   CREATE TABLE table_classifications (
     id uuid default gen_random_uuid() primary key NOT NULL,
@@ -230,3 +228,50 @@ LEFT JOIN
   sources_google sg ON ed.source_id = sg.id
 ORDER BY 
   sg.filename;
+
+
+  Here are all the objects involved.
+
+  I need you to fill in the presentations records
+  first go through each sources_google file that is an mp4 file and create a presentation record for it.
+
+
+
+
+
+
+
+CREATE TABLE "presentations" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT,
+    high_level_folder_source_id UUID REFERENCES sources_google(id),  -- Assuming this references a sources_google table
+    video_source_id UUID REFERENCES sources_google(id),              -- Assuming this references a sources_google table
+    web_view_link TEXT,
+    root_drive_id TEXT,
+    expert_document_id UUID REFERENCES expert_documents(id),
+    expert_id UUID REFERENCES experts(id),
+    view_count INTEGER DEFAULT 0,
+    duration_seconds INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    -- Add indexes for frequently queried fields and foreign keys
+    CONSTRAINT view_count_non_negative CHECK (view_count >= 0),
+    CONSTRAINT duration_seconds_non_negative CHECK (duration_seconds >= 0)
+);
+
+     presentations: {
+        Row: {
+          created_at: string | null
+          duration_seconds: number | null
+          expert_document_id: string | null
+          expert_id: string | null
+          high_level_folder_source_id: string | null
+          id: string
+          root_drive_id: string | null
+          title: string | null
+          updated_at: string | null
+          video_source_id: string | null
+          view_count: number | null
+          web_view_link: string | null
+        }

@@ -73,8 +73,21 @@ function display_help() {
   echo -e "    -x, --expert <name>        Filter by expert name"
   echo -e "    -t, --table <tableName>    Target table to classify (default: \"expert_documents\")"
   echo -e "    -s, --skip-classified      Skip documents that already have classifications"
+  echo -e "    --concurrency <number>     Number of documents to process concurrently (default: 3)"
+  echo -e "    --max-retries <number>     Maximum number of retries for failed API calls (default: 3)"
+  echo -e "    --retry-delay <number>     Initial delay in milliseconds between retries (default: 1000)"
   echo -e "    --verbose                  Show detailed output"
   echo -e "    --dry-run                  Show what would be classified without making changes"
+  echo ""
+  echo -e "  extract-titles             Extract titles from MP4 files and update expert_documents"
+  echo -e "    -l, --limit <number>       Maximum number of documents to process (default: 50)"
+  echo -e "    -x, --expert <n>        Filter by expert name"
+  echo -e "    --include-existing         Include documents that already have titles"
+  echo -e "    --concurrency <number>     Number of documents to process concurrently (default: 3)"
+  echo -e "    --max-retries <number>     Maximum number of retries for failed API calls (default: 3)"
+  echo -e "    --retry-delay <number>     Initial delay in milliseconds between retries (default: 1000)"
+  echo -e "    --verbose                  Show detailed output"
+  echo -e "    --dry-run                  Show what would be extracted without making changes"
   echo ""
   echo -e "\033[1mExamples:\033[0m"
   echo -e "  $ classify-cli list"
@@ -85,6 +98,9 @@ function display_help() {
   echo -e "  $ classify-cli health-check --verbose"
   echo -e "  $ classify-cli classify-subjects -l 5 -e mp4,pdf,docx,txt,pptx -s"
   echo -e "  $ classify-cli classify-subjects -l 100 -t expert_documents -s --verbose"
+  echo -e "  $ classify-cli classify-subjects --concurrency 3 --max-retries 5 --retry-delay 2000 -l 30"
+  echo -e "  $ classify-cli extract-titles -l 50 --verbose"
+  echo -e "  $ classify-cli extract-titles -x \"Navieux\" --concurrency 3 --verbose"
 }
 
 # Handle list command
@@ -132,6 +148,11 @@ classify_subjects_command() {
   track_command "classify-subjects" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts classify-subjects $@"
 }
 
+# Handle extract-titles command
+extract_titles_command() {
+  track_command "extract-titles" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts extract-titles $@"
+}
+
 # Direct handling of health-check command for better error output
 if [[ "$1" == "health-check" ]]; then
   health_check_command "${@:2}"
@@ -166,6 +187,9 @@ case "$1" in
     ;;
   "classify-subjects")
     classify_subjects_command "${@:2}"
+    ;;
+  "extract-titles")
+    extract_titles_command "${@:2}"
     ;;
   "help"|"--help"|"-h"|"")
     display_help

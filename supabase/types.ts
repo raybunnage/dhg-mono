@@ -1463,6 +1463,7 @@ export type Database = {
           source_id: string
           status: string | null
           summary_complete: boolean | null
+          title: string | null
           topics: string[] | null
           transcription_complete: boolean | null
           updated_at: string
@@ -1505,6 +1506,7 @@ export type Database = {
           source_id: string
           status?: string | null
           summary_complete?: boolean | null
+          title?: string | null
           topics?: string[] | null
           transcription_complete?: boolean | null
           updated_at?: string
@@ -1547,6 +1549,7 @@ export type Database = {
           source_id?: string
           status?: string | null
           summary_complete?: boolean | null
+          title?: string | null
           topics?: string[] | null
           transcription_complete?: boolean | null
           updated_at?: string
@@ -5115,6 +5118,15 @@ export type Database = {
       }
     }
     Views: {
+      document_classifications_view: {
+        Row: {
+          document_type: string | null
+          file_name: string | null
+          processed_content: Json | null
+          subject_classification: string | null
+        }
+        Relationships: []
+      }
       page_guts_raw_data: {
         Row: {
           ai_prompts: Json | null

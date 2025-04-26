@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { Logger } from '../../../packages/shared/utils/logger';
 import { healthCheckCommand } from './commands/health-check';
 import { classifySubjectsCommand } from './commands/classify-subjects';
+import { extractTitlesCommand } from './commands/extract-titles';
 import { classifyService } from '../../../packages/shared/services/classify-service';
 
 // Create the main program
@@ -396,6 +397,9 @@ program
   .option('-x, --expert <name>', 'Filter by expert name')
   .option('-t, --table <tableName>', 'Target table to classify (default: "expert_documents")')
   .option('-s, --skip-classified', 'Skip documents that already have classifications', false)
+  .option('--concurrency <number>', 'Number of documents to process concurrently (default: 3)', '3')
+  .option('--max-retries <number>', 'Maximum number of retries for failed API calls (default: 3)', '3')
+  .option('--retry-delay <number>', 'Initial delay in milliseconds between retries (default: 1000)', '1000')
   .option('--verbose', 'Show detailed output', false)
   .option('--dry-run', 'Show what would be classified without making changes', false)
   .action(async (options: any) => {
@@ -405,6 +409,11 @@ program
     // Parse file extensions if provided
     const fileExtensions = options.extensions ? options.extensions.split(',').map((ext: string) => ext.trim()) : undefined;
     
+    // Parse concurrency and retry options
+    const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : 3;
+    const maxRetries = options.maxRetries ? parseInt(options.maxRetries, 10) : 3;
+    const retryDelayMs = options.retryDelay ? parseInt(options.retryDelay, 10) : 1000;
+    
     await classifySubjectsCommand({
       limit,
       fileExtensions,
@@ -412,7 +421,43 @@ program
       verbose: options.verbose,
       dryRun: options.dryRun,
       skipClassified: options.skipClassified,
-      entityType: options.table || 'expert_documents'
+      entityType: options.table || 'expert_documents',
+      concurrency,
+      maxRetries,
+      retryDelayMs
+    });
+  });
+
+// Add extract-titles command
+program
+  .command('extract-titles')
+  .description('Extract titles from MP4 files and update the corresponding expert_documents')
+  .option('-l, --limit <number>', 'Maximum number of documents to process', '50')
+  .option('-x, --expert <n>', 'Filter by expert name')
+  .option('--include-existing', 'Include documents that already have titles', false)
+  .option('--concurrency <number>', 'Number of documents to process concurrently (default: 3)', '3')
+  .option('--max-retries <number>', 'Maximum number of retries for failed API calls (default: 3)', '3')
+  .option('--retry-delay <number>', 'Initial delay in milliseconds between retries (default: 1000)', '1000')
+  .option('--verbose', 'Show detailed output', false)
+  .option('--dry-run', 'Show what would be extracted without making changes', false)
+  .action(async (options: any) => {
+    // Parse limit as integer
+    const limit = options.limit ? parseInt(options.limit, 10) : 50;
+    
+    // Parse concurrency and retry options
+    const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : 3;
+    const maxRetries = options.maxRetries ? parseInt(options.maxRetries, 10) : 3;
+    const retryDelayMs = options.retryDelay ? parseInt(options.retryDelay, 10) : 1000;
+    
+    await extractTitlesCommand({
+      limit,
+      expertName: options.expert,
+      verbose: options.verbose,
+      dryRun: options.dryRun,
+      skipExisting: !options.includeExisting,
+      concurrency,
+      maxRetries,
+      retryDelayMs
     });
   });
 

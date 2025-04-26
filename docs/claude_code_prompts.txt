@@ -895,7 +895,7 @@ queued_at
 structure
 token_count
 
-pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+exp
 
 
   * sync                         Sync files from Google Drive to the database (core functionality)
