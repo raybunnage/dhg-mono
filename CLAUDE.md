@@ -173,10 +173,24 @@
    - Document types are a special table that contains the document types for the project
    - it has a field called document_type which is the type of the document - but we use instead of name which seems to confuse you regularly
 
-9. **Using Claude**:
-   - When using Claude, always use the ClaudeService singleton
-   - you will find it inpackages/shared/services/claude-service.ts
-   - if you are not having success with claude there are a number of scripts that successfully work with it in scripts/cli-pipeline
+9. **Using Claude Service - CRITICAL IMPLEMENTATION GUIDELINES**:
+   - ⚠️ **DO NOT CREATE NEW INSTANCES** - NEVER use `new ClaudeService()`
+   - ⚠️ **ALWAYS USE THE SINGLETON PATTERN** to access Claude:
+     ```typescript
+     // CORRECT IMPORT - Use this exact path and import
+     import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+     
+     // CORRECT USAGE - Use the imported singleton directly
+     const response = await claudeService.sendPrompt('Your prompt');
+     ```
+   - When searching for examples, look at these correct implementations:
+     - `scripts/cli-pipeline/examples/claude-service-example.ts`
+     - `scripts/cli-pipeline/media-processing/commands/process-summary.ts`
+     - `scripts/cli-pipeline/presentations/commands/generate-summary.ts`
+   - ⚠️ **ERROR HANDLING REQUIREMENTS**:
+     - ALWAYS handle errors properly when working with Claude
+     - Use try/catch blocks to catch and log errors properly 
+     - Provide meaningful error messages that will help users understand what went wrong
 
 10. **Ignore file_types folder off the root**:
    - this folder is for temporary file processing and archiving 
@@ -412,6 +426,18 @@
 ## Continuous Improvement
 ⚠️ **PRE-IMPLEMENTATION AND POST-IMPLEMENTATION VERIFICATION**
 
+⚠️ **CRITICAL: ERROR HANDLING AND COMMUNICATION**
+- When encountering errors or issues, DO NOT implement workarounds without explaining the underlying problem
+- NEVER create "dummy" implementations or partial solutions to try to make the user happy
+- ALWAYS clearly explain what's going wrong, why it's happening, and what options exist
+- Let the USER decide how to proceed when there are roadblocks - don't try to hide issues
+- When faced with a complex problem:
+  1. STOP and think through the problem carefully
+  2. Clearly communicate the exact issue you're encountering
+  3. Present options for how to proceed (when possible)
+  4. Let the user make an informed decision
+  5. Implement the chosen solution thoroughly and correctly
+
 When implementing solutions, always check this section for known issues and their solutions. Run through this checklist before and after writing code:
 
 7. **Issue**: Missing ID fields in database records
@@ -542,11 +568,26 @@ When implementing solutions, always check this section for known issues and thei
 6. **Issue**: Multiple implementations of the Claude AI service
    **Solution**: Use the consolidated Claude service
    **Implementation**:
-   - Always use `packages/shared/services/claude-service` for all Claude AI interactions
-   - Import the singleton instance: `import { claudeService } from '../../packages/shared/services/claude-service'`
-   - Never create new implementations or instances of the Claude service
-   - Leverage the existing methods for text generation, JSON responses, and classification
-   - Refer to the README.md in the claude-service folder for usage examples
+   - ⚠️ **CRITICAL: ALWAYS use the correct singleton import path and pattern:**
+     ```typescript
+     import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+     ```
+   - ⚠️ **CRITICAL: NEVER create new instances with `new ClaudeService()`**
+   - ⚠️ **CRITICAL: ALWAYS use the imported singleton directly:**
+     ```typescript
+     // CORRECT
+     const response = await claudeService.sendPrompt('Your prompt');
+     
+     // WRONG - Do not create new instances!
+     const claudeInstance = new ClaudeService(); // WRONG!
+     const response = await claudeInstance.sendPrompt('Your prompt'); // WRONG!
+     ```
+   - When implementing new Claude integrations, first examine working examples:
+     - `scripts/cli-pipeline/examples/claude-service-example.ts`
+     - `scripts/cli-pipeline/media-processing/commands/process-summary.ts`
+   - Handle errors properly with try/catch blocks and meaningful error messages
+   - Use explicit TypeScript types for Claude method parameters and return values
+   - Test your Claude integration with small inputs before processing large content
 
 ## TypeScript Best Practices
 ⚠️ **TYPESCRIPT VERIFICATION WORKFLOW**

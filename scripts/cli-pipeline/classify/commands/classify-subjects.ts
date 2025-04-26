@@ -6,7 +6,7 @@
  */
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { promptService } from '../../../../packages/shared/services/prompt-service';
-import { ClaudeService } from '../../../../packages/shared/services/claude-service';
+import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -205,7 +205,6 @@ async function processDocument(
         const combinedPrompt = `${systemPrompt}\n\n${userMessage}`;
         
         // Use Claude service (singleton pattern)
-        const claudeService = new ClaudeService();
         const response = await claudeService.sendPrompt(combinedPrompt);
         
         // Parse the JSON response, handling potential markdown formatting
@@ -252,7 +251,38 @@ async function processDocument(
     Logger.info(`Subject IDs: ${classificationResult.subject_ids.join(', ')}`);
     
     // Store classifications in the database
+    // First check if classifications already exist for this entity
+    const { data: existingClassifications, error: checkError } = await supabase
+      .from('table_classifications')
+      .select('subject_classification_id')
+      .eq('entity_id', doc.id)
+      .eq('entity_type', entityType);
+      
+    if (checkError) {
+      Logger.error(`Error checking existing classifications: ${checkError.message}`);
+      return {
+        documentId: doc.id,
+        success: false,
+        error: `Error checking existing classifications: ${checkError.message}`
+      };
+    }
+    
+    // Create a set of existing subject IDs for quick lookup
+    const existingSubjectIds = new Set(
+      (existingClassifications || []).map(item => item.subject_classification_id)
+    );
+    
+    // Only insert classifications that don't already exist for this entity
+    let insertedCount = 0;
     for (const subjectId of classificationResult.subject_ids) {
+      // Skip if this classification already exists
+      if (existingSubjectIds.has(subjectId)) {
+        if (verbose) {
+          Logger.info(`Skipping existing classification ${subjectId} for document ${doc.id}`);
+        }
+        continue;
+      }
+      
       // Create a record in the table_classifications table
       const { error: insertError } = await supabase
         .from('table_classifications')
@@ -266,11 +296,19 @@ async function processDocument(
       
       if (insertError) {
         Logger.error(`Error storing classification: ${insertError.message}`);
+      } else {
+        insertedCount++;
       }
     }
     
-    
-    Logger.info(`Successfully stored classifications for document: ${doc.id}`);
+    // Log summary of inserted classifications
+    if (insertedCount > 0) {
+      Logger.info(`Added ${insertedCount} new classifications for document: ${doc.id}`);
+    } else if (existingSubjectIds.size > 0) {
+      Logger.info(`Document ${doc.id} already had classifications, nothing new to add`);
+    } else {
+      Logger.info(`Successfully stored all classifications for document: ${doc.id}`);
+    }
     
     return {
       documentId: doc.id,
@@ -340,22 +378,49 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
     
     // Skip already classified documents if requested
     if (skipClassified && classifiedIds.length > 0) {
-      query = query.not('id', 'in', `(${classifiedIds.join(',')})`);
+      Logger.info(`Found ${classifiedIds.length} already classified documents to skip`);
+      
+      // Handle large ID lists by batching the not-in filter
+      // Supabase might have limits on how many IDs can be in a single 'not in' clause
+      if (classifiedIds.length > 100) {
+        Logger.info(`Large number of classified IDs (${classifiedIds.length}), using filter instead`);
+        // Instead of using "not in", we'll get more documents than needed and filter them after
+        query = query.limit(limit * 2); // Get more documents and filter later
+      } else {
+        query = query.not('id', 'in', classifiedIds);
+      }
     }
     
     // No longer filtering for missing titles
     
     // Execute the query
-    const { data: expertDocs, error: docsError } = await query;
+    const { data: expertDocsRaw, error: docsError } = await query;
     
     if (docsError) {
       Logger.error(`Error fetching expert documents: ${docsError.message}`);
       return;
     }
     
-    if (!expertDocs || expertDocs.length === 0) {
+    if (!expertDocsRaw || expertDocsRaw.length === 0) {
       Logger.info('No expert documents found with processed content.');
       return;
+    }
+    
+    // If we're skipping classified documents and have many classified IDs,
+    // filter the results manually to exclude already classified documents
+    let expertDocs = expertDocsRaw;
+    
+    if (skipClassified && classifiedIds.length > 100) {
+      // Convert classified IDs to a Set for faster lookups
+      const classifiedIdsSet = new Set(classifiedIds);
+      
+      // Filter out documents that are already classified
+      expertDocs = expertDocsRaw.filter(doc => !classifiedIdsSet.has(doc.id));
+      
+      // Limit to the requested number
+      expertDocs = expertDocs.slice(0, limit);
+      
+      Logger.info(`After filtering: ${expertDocs.length} documents remaining to process`);
     }
     
     Logger.info(`Found ${expertDocs.length} expert documents with processed content.`);

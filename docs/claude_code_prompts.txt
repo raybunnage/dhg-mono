@@ -8,6 +8,18 @@ scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --d
 │ > I have the presentations table and its most important fields come from both the sources_google table and the expert_documents table.   
 
 
+Perfect! We have successfully extracted titles for all MP4 files. Here's a summary of what we did:
+
+  1. First, we fixed a bug in the extract-titles command that was causing it to not use the Claude service properly. The issue was that it was creating a new
+  instance of ClaudeService instead of using the singleton pattern as required in the codebase.
+  2. Once we fixed that bug, we ran the extract-titles command with the --include-existing flag to handle documents that already had processed_content.
+  3. For the file with a non-standard format (Stockdale_Seigel_2.19.25.mp4), we created a custom script to set a specific title.
+  4. For the remaining files that had no processed_content, we created a script to generate titles based on their filenames.
+
+  Now all MP4 files in the system have titles, which will improve the usability and searchability of the video content in the application.
+
+
+
   presentations: 
           title: string | null
           high_level_folder_source_id   uuid    -- get folder name, and look up the expertid from sources_google_experts
