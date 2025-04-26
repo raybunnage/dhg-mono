@@ -63,7 +63,231 @@ scripts/cli-pipeline/classify
 
 
 
-
+{
+  "system_prompt": "You are an AI assistant tasked with analyzing document content and classifying it according to predefined subject categories. Your output must be in JSON format containing a title and relevant subject classification IDs.",
+  
+  "instructions": "Analyze the provided content and perform two tasks:\n1. Create an appropriate title for the content\n2. Identify all relevant subject classifications by examining the content for keywords and concepts that match the predefined subject categories\n\nReturn your analysis as a JSON object with two fields:\n- 'title': A concise, descriptive title for the content\n- 'subject_ids': An array of subject IDs from the subject_classifications table that are relevant to the content",
+  
+  "subject_classifications": [
+    {
+      "id": "f765ff4f-27e6-4cb7-81c7-451c3af030ba",
+      "subject": "Book Of Medicine 1",
+      "subject_character": "1",
+      "associated_concepts": ["Pathogenesis", "Health care", "Medical Education", "injury", "imaging", "complication", "Symptom"]
+    },
+    {
+      "id": "43b60f9c-9c0a-42a1-8ea6-8aa1940d3bc0",
+      "subject": "Book Of Medicine 2",
+      "subject_character": "2",
+      "associated_concepts": ["Salugenesis", "Metabolomics", "Exposomics", "Toxic", "The cause of chronic disease", "metabolism", "signaling", "mitochondria", "ATP", "Purine", "Ecology", "biological complexity", "clean", "climate", "ecosystem", "environment", "extracellular", "biomarker", "cell danger response", "critical development", "dose", "exposure", "hormesis", "integrated stress response", "lipid", "suramin", "mitotic", "proteomics", "pulsatile"]
+    },
+    {
+      "id": "bc8bc04a-aa27-4fad-aa92-cbbaebceb0ac",
+      "subject": "acute Disease",
+      "subject_character": "3",
+      "associated_concepts": ["Acute Disease", "bacterial Infection"]
+    },
+    {
+      "id": "e607d2bf-6c8e-4f16-a08c-0fdf19f0860f",
+      "subject": "Addiction",
+      "subject_character": "A",
+      "associated_concepts": ["Alcohol", "stimulant", "Drugs"]
+    },
+    {
+      "id": "1a6d6f17-0314-42bf-a8ce-7394fe1a66f4",
+      "subject": "microBiome_Gut",
+      "subject_character": "B",
+      "associated_concepts": ["Gut", "Microbiome"]
+    },
+    {
+      "id": "bbd7fa5a-72e2-40ac-8c10-892cf6a20a65",
+      "subject": "Cell",
+      "subject_character": "C",
+      "associated_concepts": ["Cell", "Cellular component", "cellular"]
+    },
+    {
+      "id": "294e2eba-25e8-4744-862d-4305f262cf21",
+      "subject": "chronic Disease",
+      "subject_character": "4",
+      "associated_concepts": ["Chronic Disease", "autism", "cardiovascular disease", "insulin", "glucose", "glycemic", "lyme", "mast cell", "cancer"]
+    },
+    {
+      "id": "cec42591-5525-4680-badf-237c9a92ad3f",
+      "subject": "Emotion",
+      "subject_character": "E",
+      "associated_concepts": ["Brain Regions", "Emotion", "Thoughts", "Obsessive thoughts", "RUTS", "A topic in neuroscience", "brain cells", "axonal", "cerebral", "glial", "glutamate", "cognitive"]
+    },
+    {
+      "id": "e66a6f72-058d-4bf9-9480-d09f9b9e0bff",
+      "subject": "environmental Factors",
+      "subject_character": "F",
+      "associated_concepts": ["Environmental Factor"]
+    },
+    {
+      "id": "413c85e7-9399-4b9c-95b0-2b83b3d7baf5",
+      "subject": "Genetics",
+      "subject_character": "G",
+      "associated_concepts": ["Genetics"]
+    },
+    {
+      "id": "f0908a9d-6967-4bde-ac41-6a2bfcb312ce",
+      "subject": "Healing",
+      "subject_character": "H",
+      "associated_concepts": ["Therapy", "therapeutics", "Healing", "diet", "food", "fasting", "nutrition", "meditation", "health"]
+    },
+    {
+      "id": "b3a78a1e-249d-4933-86f9-7967e0f43a11",
+      "subject": "Immunity",
+      "subject_character": "I",
+      "associated_concepts": ["Immunity", "antiviral", "neutrophil"]
+    },
+    {
+      "id": "dcaf6a7b-2d98-406c-a3cd-6f8a37b8d128",
+      "subject": "biomarKers_assessment",
+      "subject_character": "K",
+      "associated_concepts": ["biomarker", "assessment"]
+    },
+    {
+      "id": "cd10183b-10a6-48ed-8f09-f2763ddefe4e",
+      "subject": "evoLution",
+      "subject_character": "L",
+      "associated_concepts": ["Evolution", "History", "fructose"]
+    },
+    {
+      "id": "13e044dd-0390-4def-bc31-0041ec9e34a2",
+      "subject": "Misery pain",
+      "subject_character": "M",
+      "associated_concepts": ["Pain", "Acute", "Opioid or other related substance", "Acute Pain", "Chronic Pain"]
+    },
+    {
+      "id": "c81abf0f-641a-41e7-a453-60d2fb68e886",
+      "subject": "Neuropeptides",
+      "subject_character": "N",
+      "associated_concepts": ["Peptide", "Neuropeptide", "Oxytocin", "Vasopressin", "birth", "lactation", "sex", "child raising", "endocrine", "empathy", "lifespan", "hormone", "reproduction", "sex differences"]
+    },
+    {
+      "id": "65ce5793-7c56-4aaa-b89d-402f37093c1c",
+      "subject": "collabOration",
+      "subject_character": "O",
+      "associated_concepts": ["Team", "Collaboration Tool"]
+    },
+    {
+      "id": "46fddce7-ca2b-4805-bd17-07abc813fdb9",
+      "subject": "Polyvagal TVST",
+      "subject_character": "P",
+      "associated_concepts": ["Vagal", "Polyvagal", "threat", "Adverse", "Safety", "Phenotype", "Homeostasis", "vagus", "Nervous System", "cytokine", "eukaryote", "harm", "chemokine", "stress", "dysregulation", "physiology", "brainstem", "psychological stress", "psychosocial"]
+    },
+    {
+      "id": "eba07d84-adf8-4847-b5b5-9179309583d0",
+      "subject": "critiQues",
+      "subject_character": "Q",
+      "associated_concepts": ["Criticism", "Critique", "Feedback", "Correction"]
+    },
+    {
+      "id": "7fb5d739-85a8-4157-ad10-766e9f0504d1",
+      "subject": "Research Design",
+      "subject_character": "R",
+      "associated_concepts": ["Research", "Science Research", "RCT", "studies", "Journal articles"]
+    },
+    {
+      "id": "ab8ce657-cca9-445a-8b95-f58b5cfa41be",
+      "subject": "Sociostasis",
+      "subject_character": "S",
+      "associated_concepts": ["social", "bias", "sociostasis", "resilience", "coregulation"]
+    },
+    {
+      "id": "e5e51cf5-1fa6-4792-8893-0e925cb3304f",
+      "subject": "data",
+      "subject_character": "T",
+      "associated_concepts": ["data", "artificial intelligence", "informatics", "computation"]
+    },
+    {
+      "id": "ded04795-5d79-4b72-8526-4d16b3d7ae3f",
+      "subject": "edUcation",
+      "subject_character": "U",
+      "associated_concepts": ["education", "learning", "teaching", "experiential"]
+    },
+    {
+      "id": "2f34dd32-e94a-40a8-8913-131354b4c071",
+      "subject": "science_Vocabulary",
+      "subject_character": "V",
+      "associated_concepts": ["education", "Scientific Terminology", "Biochemistry terms", "Science Research", "research organism", "controls", "rat", "mouse"]
+    },
+    {
+      "id": "cfa8e3e9-95b1-4bfd-9219-c3f4c10d0805",
+      "subject": "Writing",
+      "subject_character": "W",
+      "associated_concepts": ["writing", "research writing", "bibliography"]
+    },
+    {
+      "id": "0ee50ffe-0c4d-4676-ab0f-929483731b44",
+      "subject": "eXercise",
+      "subject_character": "X",
+      "associated_concepts": ["Exercise", "Physical activity"]
+    },
+    {
+      "id": "8f950f13-9fd7-4144-8af3-d1fb98ee8af3",
+      "subject": "long_covid",
+      "subject_character": "J",
+      "associated_concepts": ["Covid", "Long Covid"]
+    },
+    {
+      "id": "bfa7d504-bc46-4666-ae60-f8db5bf1f7ae",
+      "subject": "cancer",
+      "subject_character": "7",
+      "associated_concepts": ["cancer"]
+    },
+    {
+      "id": "3629dc93-3c57-4163-ae10-fec4a7c20576",
+      "subject": "pharmaceutical",
+      "subject_character": "8",
+      "associated_concepts": ["pharmaceutical"]
+    },
+    {
+      "id": "2a28fda5-b9fd-4e3f-85a2-ecedd069bc66",
+      "subject": "ai",
+      "subject_character": "9",
+      "associated_concepts": ["ai", "artificial intelligence", "Sam Altman"]
+    },
+    {
+      "id": "9b0c89c3-be2f-45ce-9185-7d14a416bd9f",
+      "subject": "psychiatric_Disorder",
+      "subject_character": "D",
+      "associated_concepts": ["psychiatric disorder"]
+    },
+    {
+      "id": "c9ccf869-06ec-45de-a803-c37bc153128b",
+      "subject": "Parkinsons",
+      "subject_character": "M",
+      "associated_concepts": ["Parkinson's Disease"]
+    },
+    {
+      "id": "7c79669c-9159-4de3-beab-d195d1e5fcb9",
+      "subject": "RUTS",
+      "subject_character": "J",
+      "associated_concepts": ["Repetitive uncontrolled thoughts", "Intrusive thoughts"]
+    }
+  ],
+  
+  "classification_rules": "For each subject in the subject_classifications list, examine the content for the presence of associated concepts. Include the subject ID in the 'subject_ids' array if any of the associated concepts are found in the content. The matching should be contextually relevant, not just keyword matching. Multiple subject IDs can be included if the content relates to multiple subjects.",
+  
+  "output_format": {
+    "title": "A concise, descriptive title for the content",
+    "subject_ids": ["id1", "id2", "..."]
+  },
+  
+  "example": {
+    "content": "Recent studies have shown that gut microbiome imbalances may contribute to chronic inflammatory conditions. Researchers discovered connections between certain bacterial strains and increased cytokine production, potentially triggering systemic inflammation responses.",
+    "output": {
+      "title": "Gut Microbiome Imbalances and Systemic Inflammation",
+      "subject_ids": [
+        "1a6d6f17-0314-42bf-a8ce-7394fe1a66f4",
+        "43b60f9c-9c0a-42a1-8ea6-8aa1940d3bc0",
+        "46fddce7-ca2b-4805-bd17-07abc813fdb9"
+      ]
+    }
+  }
+}
 
 
 

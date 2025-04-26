@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { Logger } from '../../../packages/shared/utils/logger';
 import { healthCheckCommand } from './commands/health-check';
+import { classifySubjectsCommand } from './commands/classify-subjects';
 import { classifyService } from '../../../packages/shared/services/classify-service';
 
 // Create the main program
@@ -384,6 +385,35 @@ program
   .option('--verbose', 'Show detailed output', false)
   .action(async (options: any) => {
     await healthCheckCommand(options);
+  });
+
+// Add classify-subjects command
+program
+  .command('classify-subjects')
+  .description('Apply subject classification to expert documents with processed content')
+  .option('-l, --limit <number>', 'Maximum number of documents to process', '10')
+  .option('-e, --extensions <extensions>', 'Filter by file extension(s), separated by commas (e.g., "mp4,pdf,docx")')
+  .option('-x, --expert <name>', 'Filter by expert name')
+  .option('-t, --table <tableName>', 'Target table to classify (default: "expert_documents")')
+  .option('-s, --skip-classified', 'Skip documents that already have classifications', false)
+  .option('--verbose', 'Show detailed output', false)
+  .option('--dry-run', 'Show what would be classified without making changes', false)
+  .action(async (options: any) => {
+    // Parse limit as integer
+    const limit = options.limit ? parseInt(options.limit, 10) : 10;
+    
+    // Parse file extensions if provided
+    const fileExtensions = options.extensions ? options.extensions.split(',').map((ext: string) => ext.trim()) : undefined;
+    
+    await classifySubjectsCommand({
+      limit,
+      fileExtensions,
+      expertName: options.expert,
+      verbose: options.verbose,
+      dryRun: options.dryRun,
+      skipClassified: options.skipClassified,
+      entityType: options.table || 'expert_documents'
+    });
   });
 
 // Helper function to display hierarchy

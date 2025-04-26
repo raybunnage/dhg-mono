@@ -67,6 +67,15 @@ function display_help() {
   echo -e "  health-check               Check the health of the classify service"
   echo -e "    --verbose                  Show detailed output"
   echo ""
+  echo -e "  classify-subjects          Apply subject classification to documents with processed content"
+  echo -e "    -l, --limit <number>       Maximum number of documents to process (default: 10)"
+  echo -e "    -e, --extensions <ext>     Filter by file extension(s), comma-separated (e.g., mp4,pdf,docx)"
+  echo -e "    -x, --expert <name>        Filter by expert name"
+  echo -e "    -t, --table <tableName>    Target table to classify (default: \"expert_documents\")"
+  echo -e "    -s, --skip-classified      Skip documents that already have classifications"
+  echo -e "    --verbose                  Show detailed output"
+  echo -e "    --dry-run                  Show what would be classified without making changes"
+  echo ""
   echo -e "\033[1mExamples:\033[0m"
   echo -e "  $ classify-cli list"
   echo -e "  $ classify-cli get 12345678-1234-5678-1234-567812345678"
@@ -74,6 +83,8 @@ function display_help() {
   echo -e "  $ classify-cli update 12345678-1234-5678-1234-567812345678 --name \"Medicine\""
   echo -e "  $ classify-cli hierarchy -f json -o hierarchy.json"
   echo -e "  $ classify-cli health-check --verbose"
+  echo -e "  $ classify-cli classify-subjects -l 5 -e mp4,pdf,docx,txt,pptx -s"
+  echo -e "  $ classify-cli classify-subjects -l 100 -t expert_documents -s --verbose"
 }
 
 # Handle list command
@@ -116,6 +127,11 @@ health_check_command() {
   track_command "health-check" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts health-check $@"
 }
 
+# Handle classify-subjects command
+classify_subjects_command() {
+  track_command "classify-subjects" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts classify-subjects $@"
+}
+
 # Direct handling of health-check command for better error output
 if [[ "$1" == "health-check" ]]; then
   health_check_command "${@:2}"
@@ -147,6 +163,9 @@ case "$1" in
     ;;
   "health-check")
     health_check_command "${@:2}"
+    ;;
+  "classify-subjects")
+    classify_subjects_command "${@:2}"
     ;;
   "help"|"--help"|"-h"|"")
     display_help
