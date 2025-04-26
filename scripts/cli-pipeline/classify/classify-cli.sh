@@ -165,6 +165,16 @@ check_mp4_titles_command() {
   track_command "check-mp4-titles" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts check-mp4-titles $@"
 }
 
+# Handle debug-classification-status command
+debug_classification_status_command() {
+  track_command "debug-classification-status" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts debug-classification-status $@"
+}
+
+# Handle examine-document command
+examine_document_command() {
+  track_command "examine-document" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts examine-document $@"
+}
+
 # Direct handling of health-check command for better error output
 if [[ "$1" == "health-check" ]]; then
   health_check_command "${@:2}"
@@ -205,6 +215,12 @@ case "$1" in
     ;;
   "check-mp4-titles")
     check_mp4_titles_command "${@:2}"
+    ;;
+  "debug-classification-status")
+    debug_classification_status_command "${@:2}"
+    ;;
+  "examine-document")
+    examine_document_command "${@:2}"
     ;;
   "help"|"--help"|"-h"|"")
     display_help

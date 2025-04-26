@@ -6,6 +6,7 @@ import { classifySubjectsCommand } from './commands/classify-subjects';
 import { extractTitlesCommand } from './commands/extract-titles';
 import { checkMp4TitlesCommand } from './commands/check-mp4-titles';
 import { classifyService } from '../../../packages/shared/services/classify-service';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Create the main program
 const program = new Command()
@@ -478,6 +479,243 @@ program
       expertName: options.expert,
       verbose: options.verbose
     });
+  });
+
+// Add debug command to check classification status
+program
+  .command('debug-classification-status')
+  .description('Check the status of subject classifications across all documents')
+  .option('--show-documents <number>', 'Show the specified number of unclassified documents', '10')
+  
+// Add command to examine one document for debugging
+program
+  .command('examine-document')
+  .description('Examine a specific document in detail')
+  .option('-i, --id <id>', 'Document ID to examine')
+  .option('-s, --source-id <id>', 'Source ID to examine')
+  .action(async (options) => {
+    try {
+      const supabase = SupabaseClientService.getInstance().getClient();
+      
+      if (!options.id && !options.sourceId) {
+        Logger.error('You must specify either a document ID or source ID');
+        return;
+      }
+      
+      // Fetch document by ID
+      if (options.id) {
+        const { data: doc, error: docError } = await supabase
+          .from('expert_documents')
+          .select('*')
+          .eq('id', options.id)
+          .single();
+          
+        if (docError) {
+          Logger.error(`Error fetching document: ${docError.message}`);
+          return;
+        }
+        
+        if (!doc) {
+          Logger.error(`Document not found with ID: ${options.id}`);
+          return;
+        }
+        
+        Logger.info(`Document details for ID ${options.id}:`);
+        console.log(JSON.stringify(doc, null, 2));
+        
+        // Check for classifications
+        const { data: classifications, error: classErr } = await supabase
+          .from('table_classifications')
+          .select('*')
+          .eq('entity_id', options.id)
+          .eq('entity_type', 'expert_documents');
+          
+        if (classErr) {
+          Logger.error(`Error fetching classifications: ${classErr.message}`);
+        } else {
+          Logger.info(`Classifications for document (${classifications?.length || 0} found):`);
+          if (classifications && classifications.length > 0) {
+            console.log(JSON.stringify(classifications, null, 2));
+          } else {
+            Logger.info('No classifications found for this document');
+          }
+        }
+        
+        // Check source if available
+        if (doc.source_id) {
+          const { data: source, error: sourceErr } = await supabase
+            .from('sources_google')
+            .select('*')
+            .eq('id', doc.source_id)
+            .single();
+            
+          if (sourceErr) {
+            Logger.error(`Error fetching source: ${sourceErr.message}`);
+          } else if (source) {
+            Logger.info(`Source details for document:`);
+            console.log(JSON.stringify(source, null, 2));
+          } else {
+            Logger.info(`No source found with ID: ${doc.source_id}`);
+          }
+        }
+      }
+      
+      // Fetch document by source ID
+      if (options.sourceId) {
+        const { data: docs, error: docsError } = await supabase
+          .from('expert_documents')
+          .select('id')
+          .eq('source_id', options.sourceId);
+          
+        if (docsError) {
+          Logger.error(`Error fetching documents by source ID: ${docsError.message}`);
+          return;
+        }
+        
+        Logger.info(`Found ${docs?.length || 0} documents with source ID ${options.sourceId}`);
+        
+        const { data: source, error: sourceErr } = await supabase
+          .from('sources_google')
+          .select('*')
+          .eq('id', options.sourceId)
+          .single();
+          
+        if (sourceErr) {
+          Logger.error(`Error fetching source: ${sourceErr.message}`);
+        } else if (source) {
+          Logger.info(`Source details:`);
+          console.log(JSON.stringify(source, null, 2));
+        } else {
+          Logger.info(`No source found with ID: ${options.sourceId}`);
+        }
+      }
+    } catch (error) {
+      Logger.error(`Error in examine command: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+  
+// Debug classification status action
+program.commands.find((cmd: any) => cmd.name() === 'debug-classification-status')?.action(async (options: any) => {
+  const showDocuments = options.showDocuments ? parseInt(options.showDocuments) : 10;
+  try {
+    Logger.info('Starting classification status check...');
+    const supabase = SupabaseClientService.getInstance().getClient();
+    
+    // 1. Check how many expert_documents exist with processed content
+    const { data: processedDocs, error: processedError } = await supabase
+      .from('expert_documents')
+      .select('id')
+        .neq('processed_content', null);
+        
+      if (processedError) {
+        Logger.error(`Error checking processed documents: ${processedError.message}`);
+        return;
+      }
+      
+      Logger.info(`Total expert_documents with processed content: ${processedDocs?.length || 0}`);
+      
+      // 2. Check how many files are in sources_google by extension
+      const fileTypes = ['mp4', 'pdf', 'docx', 'pptx', 'txt'];
+      for (const ext of fileTypes) {
+        const { data: files, error: filesError } = await supabase
+          .from('sources_google')
+          .select('id')
+          .ilike('name', `%.${ext}`);
+          
+        if (filesError) {
+          Logger.error(`Error checking .${ext} files: ${filesError.message}`);
+          continue;
+        }
+        
+        Logger.info(`Total .${ext} files in sources_google: ${files?.length || 0}`);
+      }
+      
+      // 3. Check how many documents have been classified
+      const { data: classifiedDocs, error: classifiedError } = await supabase
+        .from('table_classifications')
+        .select('entity_id')
+        .eq('entity_type', 'expert_documents');
+        
+      if (classifiedError) {
+        Logger.error(`Error checking classified documents: ${classifiedError.message}`);
+        return;
+      }
+      
+      // Count unique entity_ids
+      const uniqueEntityIds = new Set((classifiedDocs || []).map((doc: {entity_id: string}) => doc.entity_id));
+      Logger.info(`Total unique expert_documents with classifications: ${uniqueEntityIds.size}`);
+      Logger.info(`Total classification entries in table_classifications: ${classifiedDocs?.length || 0}`);
+      
+      // 4. Check how many expert_documents have a source_id
+      const { data: docsWithSource, error: sourceError } = await supabase
+        .from('expert_documents')
+        .select('id, source_id')
+        .not('source_id', 'is', null);
+        
+      if (sourceError) {
+        Logger.error(`Error checking documents with source: ${sourceError.message}`);
+        return;
+      }
+      
+      Logger.info(`Total expert_documents with source_id: ${docsWithSource?.length || 0}`);
+      
+      // 5. Check how many of these are not classified yet
+      const classifiedIdsSet = new Set(uniqueEntityIds);
+      const unclassifiedDocs = (docsWithSource || []).filter((doc: {id: string}) => !classifiedIdsSet.has(doc.id));
+      
+      Logger.info(`Total expert_documents with source_id but no classification: ${unclassifiedDocs.length}`);
+      
+      // 6. Check how many have processed content but no classification
+      const unclassifiedWithContent = (processedDocs || []).filter((doc: {id: string}) => !classifiedIdsSet.has(doc.id));
+      Logger.info(`Total expert_documents with processed content but no classification: ${unclassifiedWithContent.length}`);
+      
+      // 7. Show some example unclassified documents for debugging
+      if (unclassifiedWithContent.length > 0 && showDocuments > 0) {
+        // Get detailed information about a few unclassified documents
+        const sampleIds = unclassifiedWithContent.slice(0, showDocuments).map((doc: {id: string}) => doc.id);
+        
+        // Fetch more details about these documents
+        const { data: sampleDocs, error: sampleError } = await supabase
+          .from('expert_documents')
+          .select('id, source_id')
+          .in('id', sampleIds);
+          
+        if (sampleError) {
+          Logger.error(`Error fetching sample documents: ${sampleError.message}`);
+        } else if (sampleDocs && sampleDocs.length > 0) {
+          // Fetch source information for these documents
+          const sourceIds = sampleDocs.map(doc => doc.source_id).filter(id => id);
+          const { data: sources, error: sourceError } = await supabase
+            .from('sources_google')
+            .select('id, name, mime_type')
+            .in('id', sourceIds);
+            
+          if (sourceError) {
+            Logger.error(`Error fetching sample sources: ${sourceError.message}`);
+          } else {
+            // Create a lookup table
+            const sourcesById: Record<string, any> = {};
+            sources?.forEach(source => {
+              sourcesById[source.id] = source;
+            });
+            
+            // Show the documents
+            Logger.info(`Sample unclassified documents with processed content:`);
+            sampleDocs.forEach(doc => {
+              const source = sourcesById[doc.source_id];
+              if (source) {
+                Logger.info(`- Document ID: ${doc.id.substring(0, 8)}..., Source: ${source.name}, MIME: ${source.mime_type}`);
+              } else {
+                Logger.info(`- Document ID: ${doc.id.substring(0, 8)}..., Source ID: ${doc.source_id?.substring(0, 8) || 'None'}`);
+              }
+            });
+          }
+        }
+      }
+      
+    } catch (error) {
+      Logger.error(`Error in debug command: ${error instanceof Error ? error.message : String(error)}`);
+    }
   });
 
 // Helper function to display hierarchy

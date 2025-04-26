@@ -232,8 +232,17 @@ ORDER BY
 
   Here are all the objects involved.
 
-  I need you to fill in the presentations records
+  I need you to fill in the presentations table records.
   first go through each sources_google file that is an mp4 file and create a presentation record for it.
+
+  From the sources_google file you can get the id field, and the video_source_id is the id of the mp4 file from sources_google. Also the web_view_link is the web view link of the mp4 file from sources_google, as well as the root_drive_id. If possible provide the duration_seconds field from the size field of the sources_google file.
+
+  Then find the related expert_documents record and you can pull the title from the dedicted field and transfer it to the presentations title field.
+
+  after you have created the presentation record with these basic fields for each mp4 file, 
+then you need to recursively (up to 6 levels go through all the records in sources_google and find the 
+
+
 
 
 

@@ -39,7 +39,7 @@ interface ExpertDocument {
   source_id: string;
   processed_content?: any;
   title?: string | null;
-  sources_google: SourceGoogle | null;
+  sources_google: SourceGoogle[] | SourceGoogle | null;
 }
 
 // Result of processing a document
@@ -142,7 +142,11 @@ async function processDocument(
       };
     }
     
-    const sourceInfo = doc.sources_google;
+    // Handle sources_google which could be an array or object
+    const sourceInfo = Array.isArray(doc.sources_google) 
+      ? (doc.sources_google.length > 0 ? doc.sources_google[0] : null)
+      : doc.sources_google;
+    
     const fileName = sourceInfo?.name || 'Unknown file';
     const mimeType = sourceInfo?.mime_type || 'Unknown type';
     
@@ -368,13 +372,16 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
       }
     }
     
-    // Build the base query
+    // Just get raw documents from expert_documents table
+    // We've tried complex filtering at the DB level and it's not working
+    // Instead, we'll get all docs and filter in code
     let query = supabase
       .from(entityType)
-      .select('id, source_id, processed_content, title')
-      .neq('processed_content', null)
-      .order('updated_at', { ascending: false })
-      .limit(limit);
+      .select('id, source_id, title')  // Don't select processed_content to keep response smaller
+      .limit(1000);  // Get a large batch we can filter through
+      
+    // Remove all limits here - we'll apply limit AFTER filtering out already classified docs
+    // This ensures we get enough documents that need classification
     
     // Skip already classified documents if requested
     if (skipClassified && classifiedIds.length > 0) {
@@ -384,8 +391,8 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
       // Supabase might have limits on how many IDs can be in a single 'not in' clause
       if (classifiedIds.length > 100) {
         Logger.info(`Large number of classified IDs (${classifiedIds.length}), using filter instead`);
-        // Instead of using "not in", we'll get more documents than needed and filter them after
-        query = query.limit(limit * 2); // Get more documents and filter later
+        // Instead of using "not in", we'll get all documents and filter them after
+        // DO NOT apply any limit here - we need all documents to filter properly
       } else {
         query = query.not('id', 'in', classifiedIds);
       }
@@ -394,6 +401,7 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
     // No longer filtering for missing titles
     
     // Execute the query
+    Logger.info('Executing query to fetch documents...');
     const { data: expertDocsRaw, error: docsError } = await query;
     
     if (docsError) {
@@ -406,26 +414,59 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
       return;
     }
     
-    // If we're skipping classified documents and have many classified IDs,
-    // filter the results manually to exclude already classified documents
-    let expertDocs = expertDocsRaw;
+    Logger.info(`Initial query returned ${expertDocsRaw.length} documents.`);
     
-    if (skipClassified && classifiedIds.length > 100) {
+    // Let's do all filtering in code since the DB filtering appears to be inconsistent
+    // Keep a running list of eligible documents
+    let expertDocs = expertDocsRaw;
+    Logger.info(`Starting with ${expertDocs.length} documents`);
+    
+    // Filter #1: Must have source_id
+    expertDocs = expertDocs.filter(doc => doc.source_id && doc.source_id.trim() !== '');
+    Logger.info(`After source_id filtering: ${expertDocs.length} documents remaining`);
+    
+    // Filter #2: Skip already classified documents
+    if (skipClassified && classifiedIds.length > 0) {
       // Convert classified IDs to a Set for faster lookups
       const classifiedIdsSet = new Set(classifiedIds);
       
       // Filter out documents that are already classified
-      expertDocs = expertDocsRaw.filter(doc => !classifiedIdsSet.has(doc.id));
+      expertDocs = expertDocs.filter(doc => !classifiedIdsSet.has(doc.id));
+      Logger.info(`After filtering out classified docs: ${expertDocs.length} documents remaining to process`);
+    }
+    
+    // Now we need to verify which ones have processed_content (we didn't fetch it earlier to save bandwidth)
+    if (expertDocs.length > 0) {
+      // Get details for these specific documents with processed_content
+      const docIds = expertDocs.map(doc => doc.id).slice(0, Math.min(expertDocs.length, limit * 3));
+      const { data: docsWithContent, error: contentError } = await supabase
+        .from(entityType)
+        .select('id, source_id, processed_content, title')
+        .in('id', docIds)
+        .not('processed_content', 'is', null);
       
-      // Limit to the requested number
+      if (contentError) {
+        Logger.error(`Error fetching documents with content: ${contentError.message}`);
+        return;
+      }
+      
+      expertDocs = docsWithContent || [];
+      Logger.info(`After checking for processed content: ${expertDocs.length} documents with content`);
+    }
+    
+    // Now apply the limit - after we've filtered out already classified docs
+    // This ensures we get the requested number of unclassified docs
+    if (!verbose && expertDocs.length > limit) {
+      Logger.info(`Found ${expertDocs.length} documents, limiting to ${limit} for processing`);
       expertDocs = expertDocs.slice(0, limit);
-      
-      Logger.info(`After filtering: ${expertDocs.length} documents remaining to process`);
     }
     
     Logger.info(`Found ${expertDocs.length} expert documents with processed content.`);
     
-    // Get sources for these expert documents
+    // Need to fetch sources separately since we can't join directly
+    Logger.info(`Found ${expertDocs.length} expert documents with processed content.`);
+    
+    // Get source IDs for the filtered documents
     const sourceIds = expertDocs.map(doc => doc.source_id);
     
     Logger.info(`Fetching sources for ${sourceIds.length} expert documents...`);
@@ -445,7 +486,7 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
       sourcesMap[source.id] = source;
     });
     
-    // Combine the data and filter by extensions if needed
+    // Combine the data
     let documents = expertDocs.map(doc => ({
       ...doc,
       sources_google: sourcesMap[doc.source_id] || null
@@ -462,7 +503,12 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
       
       // Filter documents by extension
       documents = documents.filter(doc => {
-        const filename = doc.sources_google?.name || '';
+        // Handle sources_google which could be an array or object
+        const sourceInfo = Array.isArray(doc.sources_google) 
+          ? (doc.sources_google.length > 0 ? doc.sources_google[0] : null) 
+          : doc.sources_google;
+        
+        const filename = sourceInfo?.name || '';
         const extension = filename.substring(filename.lastIndexOf('.')).toLowerCase();
         return lowerExtensions.includes(extension);
       });
