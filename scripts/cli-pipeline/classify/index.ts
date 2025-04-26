@@ -1,0 +1,416 @@
+#!/usr/bin/env ts-node
+import { Command } from 'commander';
+import { Logger } from '../../../packages/shared/utils/logger';
+import { healthCheckCommand } from './commands/health-check';
+import { classifyService } from '../../../packages/shared/services/classify-service';
+
+// Create the main program
+const program = new Command()
+  .name('classify-cli')
+  .description('CLI for managing subject classifications and classification operations')
+  .version('1.0.0');
+
+// Define list command
+program
+  .command('list')
+  .description('List all subject classifications')
+  .option('-c, --category <category>', 'Filter by category')
+  .option('-f, --format <format>', 'Output format (table, json)', 'table')
+  .option('-o, --output-file <path>', 'Path to write output to')
+  .action(async (options: any) => {
+    try {
+      Logger.info('Listing subject classifications...');
+      
+      let classifications;
+      if (options.category) {
+        classifications = await classifyService.getClassificationsByCategory(options.category);
+        Logger.info(`Found ${classifications.length} classifications in category '${options.category}'`);
+      } else {
+        classifications = await classifyService.getAllClassifications();
+        Logger.info(`Found ${classifications.length} total classifications`);
+      }
+      
+      if (classifications.length === 0) {
+        Logger.info('No classifications found.');
+        return;
+      }
+      
+      if (options.format === 'json') {
+        console.log(JSON.stringify(classifications, null, 2));
+        return;
+      }
+      
+      // Display as table
+      console.log('| ID | Name | Description | Category | Parent ID | Active |');
+      console.log('|----|------|-------------|----------|-----------|--------|');
+      
+      for (const classification of classifications) {
+        const id = classification.id.substring(0, 8);
+        const name = classification.name || 'N/A';
+        const description = (classification.description || 'N/A').substring(0, 30);
+        const category = classification.category || 'N/A';
+        const parentId = classification.parent_id ? classification.parent_id.substring(0, 8) : 'N/A';
+        const active = classification.is_active ? 'Yes' : 'No';
+        
+        console.log(`| ${id} | ${name} | ${description} | ${category} | ${parentId} | ${active} |`);
+      }
+      
+      // Write to output file if specified
+      if (options.outputFile) {
+        const fs = require('fs');
+        let outputContent;
+        
+        if (options.format === 'json') {
+          outputContent = JSON.stringify(classifications, null, 2);
+        } else {
+          // Markdown table
+          outputContent = '# Subject Classifications\n\n';
+          outputContent += '| ID | Name | Description | Category | Parent ID | Active |\n';
+          outputContent += '|----|------|-------------|----------|-----------|--------|\n';
+          
+          for (const classification of classifications) {
+            const id = classification.id;
+            const name = classification.name || 'N/A';
+            const description = classification.description || 'N/A';
+            const category = classification.category || 'N/A';
+            const parentId = classification.parent_id || 'N/A';
+            const active = classification.is_active ? 'Yes' : 'No';
+            
+            outputContent += `| ${id} | ${name} | ${description} | ${category} | ${parentId} | ${active} |\n`;
+          }
+        }
+        
+        fs.writeFileSync(options.outputFile, outputContent);
+        Logger.info(`Output written to ${options.outputFile}`);
+      }
+    } catch (error) {
+      Logger.error('Error listing classifications:', error);
+      process.exit(1);
+    }
+  });
+
+// Define get command
+program
+  .command('get <id>')
+  .description('Get a specific subject classification')
+  .option('-f, --format <format>', 'Output format (table, json)', 'table')
+  .action(async (id: string, options: any) => {
+    try {
+      Logger.info(`Getting classification with ID: ${id}`);
+      
+      const classification = await classifyService.getClassificationById(id);
+      
+      if (!classification) {
+        Logger.error(`Classification with ID ${id} not found`);
+        process.exit(1);
+      }
+      
+      if (options.format === 'json') {
+        console.log(JSON.stringify(classification, null, 2));
+        return;
+      }
+      
+      // Display as table
+      console.log('| Property | Value |');
+      console.log('|----------|-------|');
+      console.log(`| ID | ${classification.id} |`);
+      console.log(`| Name | ${classification.name} |`);
+      console.log(`| Description | ${classification.description || 'N/A'} |`);
+      console.log(`| Category | ${classification.category || 'N/A'} |`);
+      console.log(`| Parent ID | ${classification.parent_id || 'N/A'} |`);
+      console.log(`| Created At | ${classification.created_at || 'N/A'} |`);
+      console.log(`| Updated At | ${classification.updated_at || 'N/A'} |`);
+      console.log(`| Active | ${classification.is_active ? 'Yes' : 'No'} |`);
+      
+    } catch (error) {
+      Logger.error('Error getting classification:', error);
+      process.exit(1);
+    }
+  });
+
+// Define create command
+program
+  .command('create')
+  .description('Create a new subject classification')
+  .option('-n, --name <name>', 'Classification name (required)')
+  .option('-d, --description <description>', 'Classification description')
+  .option('-c, --category <category>', 'Classification category')
+  .option('-p, --parent-id <parentId>', 'Parent classification ID')
+  .option('--inactive', 'Set as inactive')
+  .action(async (options: any) => {
+    try {
+      if (!options.name) {
+        Logger.error('Error: --name is required');
+        process.exit(1);
+      }
+      
+      Logger.info(`Creating new classification: ${options.name}`);
+      
+      const newClassification = await classifyService.createClassification({
+        name: options.name,
+        description: options.description,
+        category: options.category,
+        parent_id: options.parentId,
+        is_active: !options.inactive
+      });
+      
+      Logger.info(`Successfully created classification with ID: ${newClassification.id}`);
+      
+      // Show the created classification
+      console.log('Created classification:');
+      console.log('| Property | Value |');
+      console.log('|----------|-------|');
+      console.log(`| ID | ${newClassification.id} |`);
+      console.log(`| Name | ${newClassification.name} |`);
+      console.log(`| Description | ${newClassification.description || 'N/A'} |`);
+      console.log(`| Category | ${newClassification.category || 'N/A'} |`);
+      console.log(`| Parent ID | ${newClassification.parent_id || 'N/A'} |`);
+      console.log(`| Created At | ${newClassification.created_at || 'N/A'} |`);
+      console.log(`| Updated At | ${newClassification.updated_at || 'N/A'} |`);
+      console.log(`| Active | ${newClassification.is_active ? 'Yes' : 'No'} |`);
+      
+    } catch (error) {
+      Logger.error('Error creating classification:', error);
+      process.exit(1);
+    }
+  });
+
+// Define update command
+program
+  .command('update <id>')
+  .description('Update an existing subject classification')
+  .option('-n, --name <name>', 'New classification name')
+  .option('-d, --description <description>', 'New classification description')
+  .option('-c, --category <category>', 'New classification category')
+  .option('-p, --parent-id <parentId>', 'New parent classification ID')
+  .option('--active <boolean>', 'Set active status (true or false)')
+  .action(async (id: string, options: any) => {
+    try {
+      Logger.info(`Updating classification with ID: ${id}`);
+      
+      // Build the updates object with only provided fields
+      const updates: any = {};
+      if (options.name !== undefined) updates.name = options.name;
+      if (options.description !== undefined) updates.description = options.description;
+      if (options.category !== undefined) updates.category = options.category;
+      if (options.parentId !== undefined) updates.parent_id = options.parentId;
+      if (options.active !== undefined) {
+        updates.is_active = options.active === 'true' || options.active === true;
+      }
+      
+      if (Object.keys(updates).length === 0) {
+        Logger.warn('No update fields provided. Nothing to update.');
+        return;
+      }
+      
+      const updatedClassification = await classifyService.updateClassification(id, updates);
+      
+      Logger.info(`Successfully updated classification with ID: ${updatedClassification.id}`);
+      
+      // Show the updated classification
+      console.log('Updated classification:');
+      console.log('| Property | Value |');
+      console.log('|----------|-------|');
+      console.log(`| ID | ${updatedClassification.id} |`);
+      console.log(`| Name | ${updatedClassification.name} |`);
+      console.log(`| Description | ${updatedClassification.description || 'N/A'} |`);
+      console.log(`| Category | ${updatedClassification.category || 'N/A'} |`);
+      console.log(`| Parent ID | ${updatedClassification.parent_id || 'N/A'} |`);
+      console.log(`| Created At | ${updatedClassification.created_at || 'N/A'} |`);
+      console.log(`| Updated At | ${updatedClassification.updated_at || 'N/A'} |`);
+      console.log(`| Active | ${updatedClassification.is_active ? 'Yes' : 'No'} |`);
+      
+    } catch (error) {
+      Logger.error('Error updating classification:', error);
+      process.exit(1);
+    }
+  });
+
+// Define delete command
+program
+  .command('delete <id>')
+  .description('Delete a subject classification')
+  .option('--force', 'Force deletion without confirmation')
+  .action(async (id: string, options: any) => {
+    try {
+      Logger.info(`Deleting classification with ID: ${id}`);
+      
+      // Get the classification first to confirm it exists
+      const classification = await classifyService.getClassificationById(id);
+      
+      if (!classification) {
+        Logger.error(`Classification with ID ${id} not found`);
+        process.exit(1);
+      }
+      
+      // Confirm deletion if not forced
+      if (!options.force) {
+        const readline = require('readline').createInterface({
+          input: process.stdin,
+          output: process.stdout
+        });
+        
+        const answer = await new Promise<string>(resolve => {
+          readline.question(`Are you sure you want to delete classification "${classification.name}" (${id})? (y/N): `, resolve);
+        });
+        
+        readline.close();
+        
+        if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
+          Logger.info('Deletion cancelled');
+          return;
+        }
+      }
+      
+      await classifyService.deleteClassification(id);
+      
+      Logger.info(`Successfully deleted classification with ID: ${id}`);
+      
+    } catch (error) {
+      Logger.error('Error deleting classification:', error);
+      process.exit(1);
+    }
+  });
+
+// Define hierarchy command
+program
+  .command('hierarchy')
+  .description('Get hierarchical view of classifications')
+  .option('-f, --format <format>', 'Output format (tree, json)', 'tree')
+  .option('-o, --output-file <path>', 'Path to write output to')
+  .action(async (options: any) => {
+    try {
+      Logger.info('Getting classification hierarchy...');
+      
+      const hierarchy = await classifyService.getClassificationHierarchy();
+      
+      if (hierarchy.length === 0) {
+        Logger.info('No classifications found.');
+        return;
+      }
+      
+      if (options.format === 'json') {
+        console.log(JSON.stringify(hierarchy, null, 2));
+      } else {
+        // Display as tree
+        console.log('Classification Hierarchy:');
+        displayHierarchy(hierarchy);
+      }
+      
+      // Write to output file if specified
+      if (options.outputFile) {
+        const fs = require('fs');
+        let outputContent;
+        
+        if (options.format === 'json') {
+          outputContent = JSON.stringify(hierarchy, null, 2);
+        } else {
+          // Markdown tree
+          outputContent = '# Classification Hierarchy\n\n';
+          const hierarchyLines: string[] = [];
+          renderHierarchyMarkdown(hierarchy, '', hierarchyLines);
+          outputContent += hierarchyLines.join('\n');
+        }
+        
+        fs.writeFileSync(options.outputFile, outputContent);
+        Logger.info(`Output written to ${options.outputFile}`);
+      }
+    } catch (error) {
+      Logger.error('Error getting classification hierarchy:', error);
+      process.exit(1);
+    }
+  });
+
+// Define batch-create command
+program
+  .command('batch-create <file>')
+  .description('Create multiple classifications from a JSON file')
+  .option('--dry-run', 'Show what would be created without actually creating records')
+  .action(async (file: string, options: any) => {
+    try {
+      Logger.info(`Loading classifications from file: ${file}`);
+      
+      const fs = require('fs');
+      if (!fs.existsSync(file)) {
+        Logger.error(`File not found: ${file}`);
+        process.exit(1);
+      }
+      
+      const fileContent = fs.readFileSync(file, 'utf8');
+      let classifications;
+      
+      try {
+        classifications = JSON.parse(fileContent);
+      } catch (parseError) {
+        Logger.error(`Error parsing JSON file: ${parseError}`);
+        process.exit(1);
+      }
+      
+      if (!Array.isArray(classifications)) {
+        Logger.error('JSON file must contain an array of classifications');
+        process.exit(1);
+      }
+      
+      // Validate each classification has a name
+      const invalidClassifications = classifications.filter(c => !c.name);
+      if (invalidClassifications.length > 0) {
+        Logger.error(`${invalidClassifications.length} classifications are missing required 'name' field`);
+        process.exit(1);
+      }
+      
+      Logger.info(`Found ${classifications.length} classifications in file`);
+      
+      if (options.dryRun) {
+        Logger.info('Dry run - no classifications will be created');
+        console.log('Classifications to create:');
+        console.log(JSON.stringify(classifications, null, 2));
+        return;
+      }
+      
+      const createdClassifications = await classifyService.createClassificationsBatch(classifications);
+      
+      Logger.info(`Successfully created ${createdClassifications.length} classifications`);
+      
+    } catch (error) {
+      Logger.error('Error batch creating classifications:', error);
+      process.exit(1);
+    }
+  });
+
+// Add health-check command
+program
+  .command('health-check')
+  .description('Check the health of the classify service')
+  .option('--verbose', 'Show detailed output', false)
+  .action(async (options: any) => {
+    await healthCheckCommand(options);
+  });
+
+// Helper function to display hierarchy
+function displayHierarchy(items: any[], level = 0): void {
+  const indent = '  '.repeat(level);
+  for (const item of items) {
+    console.log(`${indent}• ${item.name}${item.category ? ` (${item.category})` : ''}`);
+    if (item.children && item.children.length > 0) {
+      displayHierarchy(item.children, level + 1);
+    }
+  }
+}
+
+// Helper function to render hierarchy for markdown
+function renderHierarchyMarkdown(items: any[], indent: string, lines: string[]): void {
+  for (const item of items) {
+    lines.push(`${indent}- **${item.name}**${item.category ? ` (${item.category})` : ''}`);
+    if (item.children && item.children.length > 0) {
+      renderHierarchyMarkdown(item.children, `${indent}  `, lines);
+    }
+  }
+}
+
+// Handle if no command is provided
+program.parse(process.argv);
+
+// Show help if no command is provided
+if (process.argv.length === 2) {
+  program.help();
+}

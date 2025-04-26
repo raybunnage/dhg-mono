@@ -4,6 +4,148 @@ scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --d
 
 ./scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --doc-type docx --mark-for-reprocessing --execute
 
+
+│ > I have the presentations table and its most important fields come from both the sources_google table and the expert_documents table.   
+
+
+  presentations: 
+          title: string | null
+          high_level_folder_source_id   uuid    -- get folder name, and look up the expertid from sources_google_experts
+          video_source_id   uuid                -- get name, id, mime_type, filesize, original document type
+          web_view_link: string | null          -- get from the sources_google
+          root_drive_id: string | null          -- get from the sources_google
+          expert_document_id  uuid              -- lookup the expert_docimemnt and get the id
+          expert_id  uuid                       -- look up the expertid from sources_google_experts
+          view_count: number |                  -- each time someone plays it the count
+          duration_seconds: number | null
+          created_at: datetime | null
+          updated_at: datetime | null
+
+
+presentation_assets
+    id:  uuid 
+    presentation_id: uuid -- from presentations
+    asset_source_id  -- from sources_google 
+    asset_expert_document_id  -- from expert_documents 
+    asset_role: Database["public"]["Enums"]["asset_role_enum"] | null
+    asset_type: Database["public"]["Enums"]["asset_type_enum"] | null
+    importance_level: number | null
+    metadata: Json | null
+    timestamp_start: number | null
+    timestamp_end: number | null
+    user_notes: string | null
+    created_at: datetime | null
+    updated_at: datetime | null
+
+
+
+
+     asset_role: Database["public"]["Enums"]["asset_role_enum"] | null
+          asset_type: Database["public"]["Enums"]["asset_type_enum"] | null
+          asset_type_id: string | null
+          created_at: string
+          expert_document_id: string | null
+          id: string
+          metadata: Json | null
+          presentation_id: string | null
+          source_id: string | null
+          updated_at: string
+
+
+
+scripts/cli-pipeline/classify
+
+
+
+
+  expert_documents
+
+
+
+
+
+
+
+
+
+
+
+video_source_id     - get name, id, mime_type, filesize, original document type
+video_source_folder_id   - get folder name, and look up the expertid from sources_google_experts
+expert_document_id   - raw content, processed content, processing information and status and final document type, and subject classification
+expert_id - anything related to the expert 
+title
+
+presenttion asset
+presentation_id 
+source_id
+expert_id  - processed_content  json and markdown summaries for docx, pdf's and powerpoints 
+
+
+what do you want to see when you click on one - a top bar all the way across
+Title - nice lookking
+PILLS for major subjects you can click on  - I think these are the subject classifications - click takes you totally somewhere else - or shifts context?
+expert name, date, time, # views for popularity - track usage
+
+
+on the left a list of everything
+1) the video announbcmebnt
+2) the video summary
+3) the powerpoint sometime
+4) in depth about the expert
+5) pdf 1 -
+5) pdf 2
+6) a thumbnail of the video that will restore it - should sonemthing else get chosen
+7) related video 1
+8) related video 2
+9) supporting documents
+
+
+on the right
+the video itself - prominent
+a summary of the video that is present - you can always read
+a transcript of the video should you want it
+
+
+
+Clickable variatio
+1) the anncoument and intro - all about the author if we have it
+2) the summary of the video - so you know what you are getting into 
+3 ) thoe powerpoint sonmetimnes - if we have it
+4) 2 key pdfs - the main autrhos work or most relevant pdfs we can find
+
+the expert - deails - more references, links to their articles, more papers
+more pdfs
+=
+
+
+
+
+{"audio_path":"/Users/raybunnage/Documents/github/dhg-mono/file_types/m4a/INGESTED_03.08.24.Landenecker.m4a","created_at":"2025-03-31T00:51:38.735Z","audio_size_mb":65.94875144958496,"disk_filename":"03.08.24.Landenecker.mp4","disk_file_size":357596016,"audio_extracted":true,"creation_source":"mp4-cli-pipeline","audio_extraction_date":"2025-03-31T00:52:19.591Z"}
+
+
+# Summary: Novel Applications of CRISPR Gene Editing in Rare Diseases
+
+## Overview
+The presentation explored cutting-edge applications of CRISPR-Cas9 technology in addressing rare genetic disorders, highlighting both clinical breakthroughs and emerging research directions. The speaker emphasized how CRISPR's precision has transformed therapeutic approaches for previously untreatable conditions.
+
+## Key Therapeutic Areas Discussed
+- **Hematological Disorders**: Significant progress in beta-thalassemia and sickle cell disease through ex vivo editing of hematopoietic stem cells
+- **Neurodegenerative Rare Diseases**: Promising preclinical results for Huntington's disease using striatal delivery of CRISPR systems
+- **Metabolic Disorders**: Liver-targeted in vivo editing for conditions like phenylketonuria and hereditary tyrosinemia
+
+## Technical Innovations Presented
+- Development of base editing and prime editing techniques offering reduced off-target effects
+- Novel delivery vectors including engineered lipid nanoparticles for tissue-specific targeting
+- Multiplexed editing strategies addressing polygenic rare disorders
+
+## Clinical Translation Updates
+- Results from three Phase 1/2 trials showing safety and preliminary efficacy
+- Discussion of regulatory pathways specific to rare disease gene editing therapies
+- Ethical considerations regarding germline editing and genetic enhancement
+
+## Future Directions
+The presentation concluded by outlining research priorities: improving delivery systems for crossing the blood-brain barrier, enhancing editing efficiency in post-mitotic cells, and developing standardized safety assessment protocols for CRISPR-based therapeutics.
   
   raybunnage@Rays-Laptop dhg-mono % ./scripts/cli-pipeline/google_sync/google-sync-cli.sh list --console
 Loading environment variables from /Users/raybunnage/Documents/github/dhg-mono/.env.development
