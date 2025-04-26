@@ -5,7 +5,7 @@
  */
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { promptService } from '../../../../packages/shared/services/prompt-service';
-import { ClaudeService } from '../../../../packages/shared/services/claude-service';
+import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -189,8 +189,7 @@ async function extractTitle(
         // We need to modify the prompt to include system instructions
         const combinedPrompt = `${systemPrompt}\n\n${userMessage}`;
         
-        // Use Claude service
-        const claudeService = new ClaudeService();
+        // Use Claude service singleton
         const response = await claudeService.sendPrompt(combinedPrompt);
         
         // Parse the JSON response, handling potential markdown formatting

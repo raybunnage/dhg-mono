@@ -88,6 +88,11 @@ function display_help() {
   echo -e "    --retry-delay <number>     Initial delay in milliseconds between retries (default: 1000)"
   echo -e "    --verbose                  Show detailed output"
   echo -e "    --dry-run                  Show what would be extracted without making changes"
+  echo -e ""
+  echo -e "  check-mp4-titles           Check MP4 files for missing titles in expert_documents"
+  echo -e "    -l, --limit <number>       Maximum number of MP4 files to check (default: 500)"
+  echo -e "    -x, --expert <n>        Filter by expert name"
+  echo -e "    --verbose                  Show detailed output including MP4 files without expert_documents"
   echo ""
   echo -e "\033[1mExamples:\033[0m"
   echo -e "  $ classify-cli list"
@@ -101,6 +106,8 @@ function display_help() {
   echo -e "  $ classify-cli classify-subjects --concurrency 3 --max-retries 5 --retry-delay 2000 -l 30"
   echo -e "  $ classify-cli extract-titles -l 50 --verbose"
   echo -e "  $ classify-cli extract-titles -x \"Navieux\" --concurrency 3 --verbose"
+  echo -e "  $ classify-cli check-mp4-titles -l 1000 --verbose"
+  echo -e "  $ classify-cli check-mp4-titles -x \"Navieux\""
 }
 
 # Handle list command
@@ -153,6 +160,11 @@ extract_titles_command() {
   track_command "extract-titles" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts extract-titles $@"
 }
 
+# Handle check-mp4-titles command
+check_mp4_titles_command() {
+  track_command "check-mp4-titles" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts check-mp4-titles $@"
+}
+
 # Direct handling of health-check command for better error output
 if [[ "$1" == "health-check" ]]; then
   health_check_command "${@:2}"
@@ -190,6 +202,9 @@ case "$1" in
     ;;
   "extract-titles")
     extract_titles_command "${@:2}"
+    ;;
+  "check-mp4-titles")
+    check_mp4_titles_command "${@:2}"
     ;;
   "help"|"--help"|"-h"|"")
     display_help

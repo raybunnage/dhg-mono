@@ -4,6 +4,7 @@ import { Logger } from '../../../packages/shared/utils/logger';
 import { healthCheckCommand } from './commands/health-check';
 import { classifySubjectsCommand } from './commands/classify-subjects';
 import { extractTitlesCommand } from './commands/extract-titles';
+import { checkMp4TitlesCommand } from './commands/check-mp4-titles';
 import { classifyService } from '../../../packages/shared/services/classify-service';
 
 // Create the main program
@@ -458,6 +459,24 @@ program
       concurrency,
       maxRetries,
       retryDelayMs
+    });
+  });
+
+// Add check-mp4-titles command
+program
+  .command('check-mp4-titles')
+  .description('Check MP4 files in sources_google for missing titles in expert_documents')
+  .option('-l, --limit <number>', 'Maximum number of MP4 files to check', '500')
+  .option('-x, --expert <n>', 'Filter by expert name')
+  .option('--verbose', 'Show detailed output including MP4 files without expert_documents', false)
+  .action(async (options: any) => {
+    // Parse limit as integer
+    const limit = options.limit ? parseInt(options.limit, 10) : 500;
+    
+    await checkMp4TitlesCommand({
+      limit,
+      expertName: options.expert,
+      verbose: options.verbose
     });
   });
 
