@@ -98,6 +98,32 @@ function display_help() {
   echo -e "    -l, --limit <number>       Maximum number of documents to list (0 for all)"
   echo -e "    -c, --with-content         Show content preview (only with --verbose)"
   echo -e "    -v, --verbose              Show detailed output including content preview"
+  echo -e ""
+  echo -e "  classify-source             Classify a specific source by its ID"
+  echo -e "    -i, --source-id <id>       The source ID to classify (required)"
+  echo -e "    -t, --table <tableName>    Target table to classify (default: \"expert_documents\")"
+  echo -e "    -f, --force                Force reclassification even if document already has classifications"
+  echo -e "    --max-retries <number>     Maximum number of retries for failed API calls (default: 3)"
+  echo -e "    --retry-delay <number>     Initial delay in milliseconds between retries (default: 1000)"
+  echo -e "    --verbose                  Show detailed output"
+  echo -e "    --dry-run                  Show what would be classified without making changes"
+  echo -e ""
+  echo -e "  write-unclassified-ids       Write unclassified sources_google IDs to a markdown file"
+  echo -e "    -o, --output-file <file>   Path to the output markdown file (default: docs/cli-pipeline/need_classification.md)"
+  echo -e "    -l, --limit <number>       Maximum number of documents to process (0 for all)"
+  echo -e "    -e, --extensions <ext>     Filter by file extension(s), comma-separated (e.g., mp4,pdf,docx)"
+  echo -e "    -x, --expert <name>        Filter by expert name"
+  echo -e "    --verbose                  Show detailed output"
+  echo -e "  classify-batch-from-file     Classify sources in batches from a file containing source IDs"
+  echo -e "    -i, --input-file <file>    Path to the input markdown file (default: docs/cli-pipeline/need_classification.md)"
+  echo -e "    -b, --batch-size <number>  Number of sources to process in each batch (default: 10)"
+  echo -e "    -c, --concurrency <number> Number of sources to process concurrently (default: 1)"
+  echo -e "    -f, --force                Force reclassification even if document already has classifications"
+  echo -e "    --max-retries <number>     Maximum number of retries for failed API calls (default: 3)"
+  echo -e "    --retry-delay <number>     Initial delay in milliseconds between retries (default: 2000)"
+  echo -e "    --verbose                  Show detailed output"
+  echo -e "    --dry-run                  Show what would be classified without making changes"
+  echo ""
   echo ""
   echo -e "\033[1mExamples:\033[0m"
   echo -e "  $ classify-cli list"
@@ -113,6 +139,8 @@ function display_help() {
   echo -e "  $ classify-cli extract-titles -x \"Navieux\" --concurrency 3 --verbose"
   echo -e "  $ classify-cli check-mp4-titles -l 1000 --verbose"
   echo -e "  $ classify-cli check-mp4-titles -x \"Navieux\""
+  echo -e "  $ classify-cli write-unclassified-ids -e mp4,pdf,docx"
+  echo -e "  $ classify-cli classify-batch-from-file -b 5 -c 3 -f --verbose"
 }
 
 # Handle list command
@@ -185,6 +213,21 @@ list_unclassified_command() {
   track_command "list-unclassified" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts list-unclassified $@"
 }
 
+# Handle classify-source command
+classify_source_command() {
+  track_command "classify-source" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts classify-source $@"
+}
+
+# Handle write-unclassified-ids command
+write_unclassified_ids_command() {
+  track_command "write-unclassified-ids" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts write-unclassified-ids $@"
+}
+
+# Handle classify-batch-from-file command
+classify_batch_from_file_command() {
+  track_command "classify-batch-from-file" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts classify-batch-from-file $@"
+}
+
 # Direct handling of health-check command for better error output
 if [[ "$1" == "health-check" ]]; then
   health_check_command "${@:2}"
@@ -234,6 +277,15 @@ case "$1" in
     ;;
   "list-unclassified")
     list_unclassified_command "${@:2}"
+    ;;
+  "classify-source")
+    classify_source_command "${@:2}"
+    ;;
+  "write-unclassified-ids")
+    write_unclassified_ids_command "${@:2}"
+    ;;
+  "classify-batch-from-file")
+    classify_batch_from_file_command "${@:2}"
     ;;
   "help"|"--help"|"-h"|"")
     display_help

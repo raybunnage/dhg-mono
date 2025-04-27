@@ -137,15 +137,16 @@ export async function listUnclassifiedCommand(options: ListUnclassifiedOptions):
     // 5. Display the results in a table format
     console.log('\nUnclassified Documents with Processed Content:');
     console.log('=================================================');
-    console.log(`${'Source Name'.padEnd(100)} | ${'Title'.padEnd(50)}`);
-    console.log(`${'-'.repeat(100)} | ${'-'.repeat(50)}`);
+    console.log(`${'Source ID'.padEnd(40)} | ${'Source Name'.padEnd(90)} | ${'Title'.padEnd(50)}`);
+    console.log(`${'-'.repeat(40)} | ${'-'.repeat(90)} | ${'-'.repeat(50)}`);
     
     for (const doc of unclassifiedDocs) {
       const source = sourceMap[doc.source_id];
+      const sourceId = doc.source_id || 'Unknown ID';
       const sourceName = source?.name || 'Unknown';
       const title = doc.title || 'No title';
       
-      console.log(`${sourceName.substring(0, 100).padEnd(100)} | ${title.substring(0, 50).padEnd(50)}`);
+      console.log(`${sourceId.substring(0, 40).padEnd(40)} | ${sourceName.substring(0, 90).padEnd(90)} | ${title.substring(0, 50).padEnd(50)}`);
       
       // If verbose mode, also display processed content
       if (verbose && withContent) {

@@ -6,6 +6,9 @@ import { classifySubjectsCommand } from './commands/classify-subjects';
 import { extractTitlesCommand } from './commands/extract-titles';
 import { checkMp4TitlesCommand } from './commands/check-mp4-titles';
 import { listUnclassifiedCommand } from './commands/list-unclassified';
+import { classifySourceCommand } from './commands/classify-source';
+import { writeUnclassifiedIdsCommand } from './commands/write-unclassified-ids';
+import { classifyBatchFromFileCommand } from './commands/classify-batch-from-file';
 import { classifyService } from '../../../packages/shared/services/classify-service';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
@@ -400,6 +403,7 @@ program
   .option('-x, --expert <name>', 'Filter by expert name')
   .option('-t, --table <tableName>', 'Target table to classify (default: "expert_documents")')
   .option('-s, --skip-classified', 'Skip documents that already have classifications', false)
+  .option('-i, --source-id <id>', 'Directly classify a specific source by its ID')
   .option('--concurrency <number>', 'Number of documents to process concurrently (default: 3)', '3')
   .option('--max-retries <number>', 'Maximum number of retries for failed API calls (default: 3)', '3')
   .option('--retry-delay <number>', 'Initial delay in milliseconds between retries (default: 1000)', '1000')
@@ -427,7 +431,8 @@ program
       entityType: options.table || 'expert_documents',
       concurrency,
       maxRetries,
-      retryDelayMs
+      retryDelayMs,
+      sourceId: options.sourceId
     });
   });
 
@@ -759,6 +764,106 @@ program
       });
     } catch (error) {
       Logger.error(`Error in list-unclassified command: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
+// Add classify-source command
+program
+  .command('classify-source')
+  .description('Classify a specific source by its ID')
+  .option('-i, --source-id <id>', 'The source ID to classify (required)')
+  .option('-t, --table <tableName>', 'Target table to classify (default: "expert_documents")')
+  .option('-f, --force', 'Force reclassification even if document already has classifications', false)
+  .option('--max-retries <number>', 'Maximum number of retries for failed API calls (default: 3)', '3')
+  .option('--retry-delay <number>', 'Initial delay in milliseconds between retries (default: 1000)', '1000')
+  .option('--verbose', 'Show detailed output', false)
+  .option('--dry-run', 'Show what would be classified without making changes', false)
+  .action(async (options: any) => {
+    try {
+      if (!options.sourceId) {
+        Logger.error('Source ID is required. Use --source-id <id> to specify a source to classify.');
+        return;
+      }
+      
+      // Parse retry options
+      const maxRetries = options.maxRetries ? parseInt(options.maxRetries, 10) : 3;
+      const retryDelayMs = options.retryDelay ? parseInt(options.retryDelay, 10) : 1000;
+      
+      await classifySourceCommand({
+        sourceId: options.sourceId,
+        entityType: options.table || 'expert_documents',
+        verbose: options.verbose,
+        dryRun: options.dryRun,
+        maxRetries,
+        retryDelayMs,
+        force: options.force
+      });
+    } catch (error) {
+      Logger.error(`Error in classify-source command: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
+// Add write-unclassified-ids command
+program
+  .command('write-unclassified-ids')
+  .description('Write unclassified sources_google IDs to a markdown file')
+  .option('-o, --output-file <file>', 'Path to the output markdown file', 'docs/cli-pipeline/need_classification.md')
+  .option('-l, --limit <number>', 'Maximum number of documents to process (0 for all)', '0')
+  .option('-e, --extensions <extensions>', 'Filter by file extension(s), separated by commas (e.g., "mp4,pdf,docx")')
+  .option('-x, --expert <name>', 'Filter by expert name')
+  .option('--verbose', 'Show detailed output', false)
+  .action(async (options: any) => {
+    try {
+      // Parse limit as integer
+      const limit = options.limit ? parseInt(options.limit, 10) : 0;
+      
+      // Parse file extensions if provided
+      const fileExtensions = options.extensions ? options.extensions.split(',').map((ext: string) => ext.trim()) : undefined;
+      
+      await writeUnclassifiedIdsCommand({
+        outputFile: options.outputFile,
+        limit,
+        fileExtensions,
+        expertName: options.expert,
+        verbose: options.verbose
+      });
+    } catch (error) {
+      Logger.error(`Error in write-unclassified-ids command: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
+// Add classify-batch-from-file command
+program
+  .command('classify-batch-from-file')
+  .description('Classify sources in batches from a file containing source IDs')
+  .option('-i, --input-file <file>', 'Path to the input markdown file', 'docs/cli-pipeline/need_classification.md')
+  .option('-b, --batch-size <number>', 'Number of sources to process in each batch', '10')
+  .option('-c, --concurrency <number>', 'Number of sources to process concurrently (default: 1)', '1')
+  .option('-f, --force', 'Force reclassification even if document already has classifications', false)
+  .option('--max-retries <number>', 'Maximum number of retries for failed API calls (default: 3)', '3')
+  .option('--retry-delay <number>', 'Initial delay in milliseconds between retries (default: 2000)', '2000')
+  .option('--verbose', 'Show detailed output', false)
+  .option('--dry-run', 'Show what would be classified without making changes', false)
+  .action(async (options: any) => {
+    try {
+      // Parse numeric options
+      const batchSize = options.batchSize ? parseInt(options.batchSize, 10) : 10;
+      const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : 1;
+      const maxRetries = options.maxRetries ? parseInt(options.maxRetries, 10) : 3;
+      const retryDelayMs = options.retryDelay ? parseInt(options.retryDelay, 10) : 2000;
+      
+      await classifyBatchFromFileCommand({
+        inputFile: options.inputFile,
+        batchSize,
+        concurrency,
+        verbose: options.verbose,
+        dryRun: options.dryRun,
+        force: options.force,
+        maxRetries,
+        retryDelayMs
+      });
+    } catch (error) {
+      Logger.error(`Error in classify-batch-from-file command: ${error instanceof Error ? error.message : String(error)}`);
     }
   });
 
