@@ -147,10 +147,10 @@ async function processDocument(
       ? (doc.sources_google.length > 0 ? doc.sources_google[0] : null)
       : doc.sources_google;
     
-    const fileName = sourceInfo?.name || 'Unknown file';
+    const documentFileName = sourceInfo?.name || 'Unknown file';
     const mimeType = sourceInfo?.mime_type || 'Unknown type';
     
-    Logger.info(`Processing document: ${fileName} (${mimeType})`);
+    Logger.info(`Processing document: ${documentFileName} (${mimeType})`);
     
     // Extract content from processed_content
     let content = '';
@@ -185,7 +185,7 @@ async function processDocument(
     // Skip actual classification in dry run mode
     if (dryRun) {
       Logger.info(`[DRY RUN] Would classify document: ${doc.id}`);
-      Logger.info(`Document source: ${fileName}`);
+      Logger.info(`Document source: ${documentFileName}`);
       Logger.info(`MIME type: ${mimeType}`);
       return {
         documentId: doc.id,
@@ -256,6 +256,29 @@ async function processDocument(
     
     // IMPORTANT: First check if this document already has ANY classifications
     // This is critical because our list of classified IDs may be stale - other processes might have classified this doc
+    
+    // Look up the source_id from expert_documents
+    const sourceId = doc.source_id;
+    
+    if (!sourceId) {
+      Logger.error(`Document ${doc.id} has no source_id, cannot verify source classifications`);
+      return {
+        documentId: doc.id,
+        success: false,
+        error: `Document has no source_id, cannot verify source classifications`
+      };
+    }
+    
+    // Get the filename from sources_google for better logging
+    const { data: sourceData, error: sourceError } = await supabase
+      .from('sources_google')
+      .select('name')
+      .eq('id', sourceId)
+      .single();
+      
+    const sourceFileName = sourceData?.name || 'Unknown file';
+    
+    // First check if this specific document has classifications
     const { data: anyExistingClassifications, error: checkAnyError } = await supabase
       .from('table_classifications')
       .select('id')
@@ -264,7 +287,7 @@ async function processDocument(
       .limit(1);
       
     if (checkAnyError) {
-      Logger.error(`Error checking existing classifications: ${checkAnyError.message}`);
+      Logger.error(`Error checking existing classifications for document: ${checkAnyError.message}`);
       return {
         documentId: doc.id,
         success: false,
@@ -272,9 +295,27 @@ async function processDocument(
       };
     }
     
-    // If this document already has ANY classifications at all, skip it completely
-    if (anyExistingClassifications && anyExistingClassifications.length > 0) {
-      Logger.info(`Document ${doc.id} already has classifications - skipping completely.`);
+    // Next check if the SOURCE file has any classifications
+    const { data: sourceClassifications, error: sourceClassError } = await supabase
+      .from('table_classifications')
+      .select('id')
+      .eq('entity_id', sourceId)
+      .eq('entity_type', 'sources_google')
+      .limit(1);
+      
+    if (sourceClassError) {
+      Logger.error(`Error checking source classifications: ${sourceClassError.message}`);
+      return {
+        documentId: doc.id,
+        success: false,
+        error: `Error checking source classifications: ${sourceClassError.message}`
+      };
+    }
+    
+    // If this document or its source already has ANY classifications at all, skip it completely
+    if ((anyExistingClassifications && anyExistingClassifications.length > 0) || 
+        (sourceClassifications && sourceClassifications.length > 0)) {
+      Logger.info(`Document or source ${sourceFileName} (${doc.id}) already has classifications - skipping completely.`);
       return {
         documentId: doc.id,
         success: true,
@@ -283,8 +324,13 @@ async function processDocument(
       };
     }
     
+    Logger.info(`Document and source have no existing classifications: ${sourceFileName} (${doc.id})`);
+    
+    
     // This document has no classifications yet - add all the new ones
     let insertedCount = 0;
+    
+    // First classify the expert_document
     for (const subjectId of classificationResult.subject_ids) {
       // Create a record in the table_classifications table
       const { error: insertError } = await supabase
@@ -298,9 +344,30 @@ async function processDocument(
         });
       
       if (insertError) {
-        Logger.error(`Error storing classification: ${insertError.message}`);
+        Logger.error(`Error storing classification for document: ${insertError.message}`);
       } else {
         insertedCount++;
+      }
+    }
+    
+    // Then also classify the source file in sources_google
+    // This ensures we don't try to reclassify the same file multiple times
+    for (const subjectId of classificationResult.subject_ids) {
+      // Create a record in the table_classifications table
+      const { error: insertSourceError } = await supabase
+        .from('table_classifications')
+        .insert({
+          id: uuidv4(),
+          entity_id: sourceId,
+          entity_type: 'sources_google',
+          subject_classification_id: subjectId,
+          notes: `Automatically classified with title: ${classificationResult.title} (from document ${doc.id})`
+        });
+      
+      if (insertSourceError) {
+        Logger.error(`Error storing classification for source: ${insertSourceError.message}`);
+      } else {
+        // Don't count these in insertedCount since they're just backup classifications
       }
     }
     
@@ -575,18 +642,58 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
     
     if (skipClassified) {
       Logger.info('Fetching already classified document IDs to skip them...');
+      
+      // First get document IDs that have been directly classified
       const { data: alreadyClassified, error: classifiedError } = await supabase
         .from('table_classifications')
         .select('entity_id')
         .eq('entity_type', entityType);
       
+      // Then get source IDs that have been classified
+      const { data: classifiedSources, error: sourcesError } = await supabase
+        .from('table_classifications')
+        .select('entity_id')
+        .eq('entity_type', 'sources_google');
+        
       if (classifiedError) {
         Logger.warn(`Error fetching classified documents: ${classifiedError.message}`);
+      } else if (sourcesError) {
+        Logger.warn(`Error fetching classified sources: ${sourcesError.message}`);
       } else {
-        classifiedIds = (alreadyClassified || []).map(item => item.entity_id);
-        // Use Array.from instead of spread operator to avoid TypeScript issue
+        // Get all expert_documents that reference classified sources
+        let docsWithClassifiedSources: string[] = [];
+        
+        if (classifiedSources && classifiedSources.length > 0) {
+          const sourceIds = classifiedSources.map(item => item.entity_id);
+          
+          // Only do this query if we have some classified sources
+          if (sourceIds.length > 0) {
+            // Break into chunks to avoid query length limits
+            const CHUNK_SIZE = 100;
+            for (let i = 0; i < sourceIds.length; i += CHUNK_SIZE) {
+              const chunk = sourceIds.slice(i, i + CHUNK_SIZE);
+              const { data: docsForSources, error: docsError } = await supabase
+                .from(entityType)
+                .select('id')
+                .in('source_id', chunk);
+                
+              if (!docsError && docsForSources) {
+                docsWithClassifiedSources = [
+                  ...docsWithClassifiedSources,
+                  ...docsForSources.map(doc => doc.id)
+                ];
+              }
+            }
+          }
+        }
+        
+        // Combine directly classified documents and documents with classified sources
+        const directlyClassifiedIds = (alreadyClassified || []).map(item => item.entity_id);
+        classifiedIds = [...directlyClassifiedIds, ...docsWithClassifiedSources];
+        
+        // Make unique
         const uniqueIds = Array.from(new Set(classifiedIds));
-        Logger.info(`Found ${uniqueIds.length} already classified ${entityType} to skip.`);
+        Logger.info(`Found ${uniqueIds.length} already classified ${entityType} to skip (including those with classified sources).`);
         classifiedIds = uniqueIds;
       }
     }
