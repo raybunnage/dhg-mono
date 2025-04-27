@@ -136,6 +136,20 @@ function display_help() {
   echo -e "    --name-width <number>       Width of name column in output (default: 60)"
   echo -e "    --verbose                   Show detailed output including additional diagnostics"
   echo ""
+  echo -e "  check-classified-files        Check which sources have been classified successfully"
+  echo -e "    -i, --input-file <file>     Path to the input markdown file (default: docs/cli-pipeline/need_classification.md)"
+  echo -e "    -o, --output-file <file>    Path to the output markdown file"
+  echo -e "    --verbose                   Show detailed output"
+  echo ""
+  echo -e "  classify-remaining-experts    Classify remaining expert documents using specialized filtering"
+  echo -e "    -l, --limit <number>        Maximum number of documents to process (default: 10)"
+  echo -e "    -x, --expert <n>         Filter by expert name"
+  echo -e "    -c, --concurrency <number>  Number of documents to process concurrently (default: 3)"
+  echo -e "    --max-retries <number>      Maximum number of retries for failed API calls (default: 3)"
+  echo -e "    --retry-delay <number>      Initial delay in milliseconds between retries (default: 1000)"
+  echo -e "    --verbose                   Show detailed output"
+  echo -e "    --dry-run                   Show what would be classified without making changes"
+  echo ""
   echo ""
   echo -e "\033[1mExamples:\033[0m"
   echo -e "  $ classify-cli list"
@@ -155,6 +169,10 @@ function display_help() {
   echo -e "  $ classify-cli classify-batch-from-file -b 5 -c 3 -f --verbose"
   echo -e "  $ classify-cli compare-presentations-assets"
   echo -e "  $ classify-cli compare-presentations-assets --limit 25 --verbose"
+  echo -e "  $ classify-cli check-classified-files"
+  echo -e "  $ classify-cli check-classified-files -i docs/cli-pipeline/need_classification.md -o docs/cli-pipeline/classification_status.md"
+  echo -e "  $ classify-cli classify-remaining-experts -l 5 --verbose"
+  echo -e "  $ classify-cli classify-remaining-experts -x \"Navieux\" -c 3 --dry-run"
 }
 
 # Handle list command
@@ -247,6 +265,16 @@ compare_presentations_assets_command() {
   track_command "compare-presentations-assets" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts compare-presentations-assets $@"
 }
 
+# Handle check-classified-files command
+check_classified_files_command() {
+  track_command "check-classified-files" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts check-classified-files $@"
+}
+
+# Handle classify-remaining-experts command
+classify_remaining_experts_command() {
+  track_command "classify-remaining-experts" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts classify-remaining-experts $@"
+}
+
 
 # Direct handling of health-check command for better error output
 if [[ "$1" == "health-check" ]]; then
@@ -309,6 +337,12 @@ case "$1" in
     ;;
   "compare-presentations-assets")
     compare_presentations_assets_command "${@:2}"
+    ;;
+  "check-classified-files")
+    check_classified_files_command "${@:2}"
+    ;;
+  "classify-remaining-experts")
+    classify_remaining_experts_command "${@:2}"
     ;;
   "help"|"--help"|"-h"|"")
     display_help

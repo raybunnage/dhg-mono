@@ -888,3 +888,11 @@ The Claude service supports processing PDFs and will automatically:
 - Convert PDFs to Claude's required format
 - Return either text or structured JSON
 
+## sources_google Folder Hierarchy
+
+The parent-child relationship in sources_google table is stored using Google Drive IDs, not Supabase UUIDs. For example, "Envy.pdf" has a parent_folder_id of "1ZUpNHLc9iNMQj-6q3t80Hyu1ylJyP2Yw", which is the drive_id of the "Papers/References" folder.
+
+This is essential to understand when working with recursive searching in the sources_google table. High-level folders have a path_depth of 0, with nested folders incrementing this value.
+
+When implementing recursive folder traversal or searching operations, always use the drive_id and parent_folder_id fields to navigate the hierarchy, not the Supabase UUIDs.
+

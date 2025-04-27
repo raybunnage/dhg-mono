@@ -212,7 +212,7 @@ CREATE TRIGGER update_presentation_assets_updated_at
 -- Create a view that joins table_classifications to expert_documents and related tables
 CREATE OR REPLACE VIEW document_classifications_view AS
 SELECT 
-  sg.filename AS file_name,
+  sg.name AS file_name,
   ed.processed_content,
   dt.document_type,
   sc.short_name AS subject_classification
@@ -228,6 +228,63 @@ LEFT JOIN
   sources_google sg ON ed.source_id = sg.id
 ORDER BY 
   sg.filename;
+
+
+the entity_id in table_classifications is id of the  expert_documents table 
+give me sql that returns all the expert_documents that do not have at least one id entry in the table_classifications table and join to the sources_google on the source_id field of expert_documents and make sure you exclude the following mime_types, document_types and all folders
+
+-- unsupported folders
+bd903d99-64a1-4297-ba76-1094ab235dac 
+dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd 
+0d61a685-10e0-4c82-b964-60b88b02ac15 
+
+
+
+=== Unsupported Document Type IDs ===
+6ece37e7-840d-4a0c-864d-9f1f971b1d7e | m4a audio
+e9d3e473-5315-4837-9f5f-61f150cbd137 | Code Documentation Markdown
+4edfb133-ffeb-4b9c-bfd4-79ee9a9d73af | mp3 audio
+d2206940-e4f3-476e-9245-0e1eb12fd195 | aac audio
+8ce8fbbc-b397-4061-a80f-81402515503b | m3u file
+fe697fc5-933c-41c9-9b11-85e0defa86ed | wav audio
+db6518ad-765c-4a02-a684-9c2e49d77cf5 | png image
+68b95822-2746-4ce1-ad35-34e5b0297177 | jpg image
+3e7c880c-d821-4d01-8cc5-3547bdd2e347 | video mpeg
+d70a258e-262b-4bb3-95e3-f826ee9b918b | video quicktime
+91fa92a3-d606-493b-832d-9ba1fa83dc9f | video microsoft avi
+28ab55b9-b408-486f-b1c3-8f0f0a174ad4 | m4v
+2c1d3bdc-b429-4194-bec2-7e4bbb165dbf | conf file
+53f42e7d-78bd-4bde-8106-dc12a4835695 | Document Processing Script
+4fdbd8be-fe5a-4341-934d-2b6bd43be7be | CI CD Pipeline Script
+a1dddf8e-1264-4ec0-a5af-52eafb536ee3 | Deployment Script
+561a86b0-7064-4c20-a40e-2ec6905c4a42 | Database Management Script
+f7e83857-8bb8-4b18-9d8f-16d5cb783650 | Environment Setup Script
+b26a68ed-a0d1-415d-8271-cba875bfe3ce | xlsx document
+920893fc-f0be-4211-85b4-fc29882ade97 | google sheet
+e29b5194-7ba0-4a3c-a7db-92b0d8adca6a | Unknown Type
+9dbe32ff-5e82-4586-be63-1445e5bcc548 | unknown document type
+
+=== Unsupported MIME Types ===
+application/vnd.google-apps.audio
+application/vnd.google-apps.video
+application/vnd.google-apps.drawing
+application/vnd.google-apps.form
+application/vnd.google-apps.map
+application/vnd.google-apps.presentation
+audio/mpeg
+audio/mp3
+audio/wav
+audio/ogg
+video/mpeg
+video/quicktime
+video/x-msvideo
+image/jpeg
+image/png
+image/gif
+image/svg+xml
+
+
+
 
 
   Here are all the objects involved.

@@ -11,6 +11,7 @@ import { writeUnclassifiedIdsCommand } from './commands/write-unclassified-ids';
 import { classifyBatchFromFileCommand } from './commands/classify-batch-from-file';
 import { checkClassifiedFilesCommand } from './commands/check-classified-files';
 import { comparePresentationsAssetsCommand } from './commands/compare-presentations-assets';
+import { classifyRemainingExpertsCommand } from './commands/classify-remaining-experts';
 import { classifyService } from '../../../packages/shared/services/classify-service';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
@@ -898,6 +899,58 @@ program
       });
     } catch (error) {
       Logger.error(`Error in compare-presentations-assets command: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
+// Add check-classified-files command
+program
+  .command('check-classified-files')
+  .description('Check which sources have been classified successfully')
+  .option('-i, --input-file <file>', 'Path to the input markdown file', 'docs/cli-pipeline/need_classification.md')
+  .option('-o, --output-file <file>', 'Path to the output markdown file')
+  .option('--verbose', 'Show detailed output', false)
+  .action(async (options: any) => {
+    try {
+      await checkClassifiedFilesCommand({
+        inputFile: options.inputFile,
+        outputFile: options.outputFile,
+        verbose: options.verbose
+      });
+    } catch (error) {
+      Logger.error(`Error in check-classified-files command: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
+// Add classify-remaining-experts command
+program
+  .command('classify-remaining-experts')
+  .description('Classify remaining expert documents using specialized filtering')
+  .option('-l, --limit <number>', 'Maximum number of documents to process', '10')
+  .option('-x, --expert <name>', 'Filter by expert name')
+  .option('-c, --concurrency <number>', 'Number of documents to process concurrently (default: 3)', '3')
+  .option('--max-retries <number>', 'Maximum number of retries for failed API calls (default: 3)', '3')
+  .option('--retry-delay <number>', 'Initial delay in milliseconds between retries (default: 1000)', '1000')
+  .option('--verbose', 'Show detailed output', false)
+  .option('--dry-run', 'Show what would be classified without making changes', false)
+  .action(async (options: any) => {
+    try {
+      // Parse numeric options
+      const limit = options.limit ? parseInt(options.limit, 10) : 10;
+      const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : 3;
+      const maxRetries = options.maxRetries ? parseInt(options.maxRetries, 10) : 3;
+      const retryDelayMs = options.retryDelay ? parseInt(options.retryDelay, 10) : 1000;
+      
+      await classifyRemainingExpertsCommand({
+        limit,
+        expertName: options.expert,
+        verbose: options.verbose,
+        dryRun: options.dryRun,
+        concurrency,
+        maxRetries,
+        retryDelayMs
+      });
+    } catch (error) {
+      Logger.error(`Error in classify-remaining-experts command: ${error instanceof Error ? error.message : String(error)}`);
     }
   });
 
