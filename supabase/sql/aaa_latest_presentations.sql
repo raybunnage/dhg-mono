@@ -284,6 +284,13 @@ image/gif
 image/svg+xml
 
 
+please remove the following 3 commands in the classify cli pipeline as they didnt work well and we have a better way now
+
+classify-cli write-unclassified-ids 
+  $ classify-cli classify-batch-from-file 
+  $ classify-cli check-classified-files 
+  
+
 
 
 

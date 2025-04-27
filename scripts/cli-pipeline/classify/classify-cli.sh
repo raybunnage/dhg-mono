@@ -41,14 +41,14 @@ function display_help() {
   echo -e "    -f, --format <format>      Output format (table, json)"
   echo ""
   echo -e "  create                     Create a new classification"
-  echo -e "    -n, --name <name>          Classification name (required)"
+  echo -e "    -n, --name <n>          Classification name (required)"
   echo -e "    -d, --description <desc>   Classification description"
   echo -e "    -c, --category <category>  Classification category"
   echo -e "    -p, --parent-id <id>       Parent classification ID"
   echo -e "    --inactive                 Set as inactive (default is active)"
   echo ""
   echo -e "  update <id>                Update an existing classification"
-  echo -e "    -n, --name <name>          New classification name"
+  echo -e "    -n, --name <n>          New classification name"
   echo -e "    -d, --description <desc>   New classification description"
   echo -e "    -c, --category <category>  New classification category"
   echo -e "    -p, --parent-id <id>       New parent classification ID"
@@ -71,7 +71,7 @@ function display_help() {
   echo -e "  classify-subjects          Apply subject classification to documents with processed content"
   echo -e "    -l, --limit <number>       Maximum number of documents to process (default: 10)"
   echo -e "    -e, --extensions <ext>     Filter by file extension(s), comma-separated (e.g., mp4,pdf,docx)"
-  echo -e "    -x, --expert <name>        Filter by expert name"
+  echo -e "    -x, --expert <n>        Filter by expert name"
   echo -e "    -t, --table <tableName>    Target table to classify (default: \"expert_documents\")"
   echo -e "    -s, --skip-classified      Skip documents that already have classifications"
   echo -e "    --concurrency <number>     Number of documents to process concurrently (default: 3)"
@@ -112,34 +112,11 @@ function display_help() {
     --verbose                  Show detailed output"
   echo -e "    --dry-run                  Show what would be classified without making changes"
   echo -e ""
-  echo -e "  write-unclassified-ids       Write unclassified sources_google IDs to a markdown file"
-  echo -e "    -o, --output-file <file>   Path to the output markdown file (default: docs/cli-pipeline/need_classification.md)"
-  echo -e "    -l, --limit <number>       Maximum number of documents to process (0 for all)"
-  echo -e "    -e, --extensions <ext>     Filter by file extension(s), comma-separated (e.g., mp4,pdf,docx)"
-  echo -e "    -x, --expert <name>        Filter by expert name"
-  echo -e "    --include-unsupported      Include unsupported document types and MIME types
-    --verbose                  Show detailed output"
-  echo -e "  classify-batch-from-file     Classify sources in batches from a file containing source IDs"
-  echo -e "    -i, --input-file <file>    Path to the input markdown file (default: docs/cli-pipeline/need_classification.md)"
-  echo -e "    -b, --batch-size <number>  Number of sources to process in each batch (default: 10)"
-  echo -e "    -c, --concurrency <number> Number of sources to process concurrently (default: 1)"
-  echo -e "    -f, --force                Force reclassification even if document already has classifications"
-  echo -e "    --max-retries <number>     Maximum number of retries for failed API calls (default: 3)"
-  echo -e "    --retry-delay <number>     Initial delay in milliseconds between retries (default: 2000)"
-  echo -e "    --include-unsupported      Include unsupported document types and MIME types
-    --verbose                  Show detailed output"
-  echo -e "    --dry-run                  Show what would be classified without making changes"
-  echo ""
   echo -e "  compare-presentations-assets  Compare presentations against presentation_assets to find missing assets"
   echo -e "    -l, --limit <number>        Maximum number of presentations to display (0 for all)"
   echo -e "    --id-width <number>         Width of ID column in output (default: 40)"
   echo -e "    --name-width <number>       Width of name column in output (default: 60)"
   echo -e "    --verbose                   Show detailed output including additional diagnostics"
-  echo ""
-  echo -e "  check-classified-files        Check which sources have been classified successfully"
-  echo -e "    -i, --input-file <file>     Path to the input markdown file (default: docs/cli-pipeline/need_classification.md)"
-  echo -e "    -o, --output-file <file>    Path to the output markdown file"
-  echo -e "    --verbose                   Show detailed output"
   echo ""
   echo -e "  classify-remaining-experts    Classify remaining expert documents using specialized filtering"
   echo -e "    -l, --limit <number>        Maximum number of documents to process (default: 10)"
@@ -165,12 +142,8 @@ function display_help() {
   echo -e "  $ classify-cli extract-titles -x \"Navieux\" --concurrency 3 --verbose"
   echo -e "  $ classify-cli check-mp4-titles -l 1000 --verbose"
   echo -e "  $ classify-cli check-mp4-titles -x \"Navieux\""
-  echo -e "  $ classify-cli write-unclassified-ids -e mp4,pdf,docx"
-  echo -e "  $ classify-cli classify-batch-from-file -b 5 -c 3 -f --verbose"
   echo -e "  $ classify-cli compare-presentations-assets"
   echo -e "  $ classify-cli compare-presentations-assets --limit 25 --verbose"
-  echo -e "  $ classify-cli check-classified-files"
-  echo -e "  $ classify-cli check-classified-files -i docs/cli-pipeline/need_classification.md -o docs/cli-pipeline/classification_status.md"
   echo -e "  $ classify-cli classify-remaining-experts -l 5 --verbose"
   echo -e "  $ classify-cli classify-remaining-experts -x \"Navieux\" -c 3 --dry-run"
 }
@@ -250,24 +223,9 @@ classify_source_command() {
   track_command "classify-source" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts classify-source $@"
 }
 
-# Handle write-unclassified-ids command
-write_unclassified_ids_command() {
-  track_command "write-unclassified-ids" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts write-unclassified-ids $@"
-}
-
-# Handle classify-batch-from-file command
-classify_batch_from_file_command() {
-  track_command "classify-batch-from-file" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts classify-batch-from-file $@"
-}
-
 # Handle compare-presentations-assets command
 compare_presentations_assets_command() {
   track_command "compare-presentations-assets" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts compare-presentations-assets $@"
-}
-
-# Handle check-classified-files command
-check_classified_files_command() {
-  track_command "check-classified-files" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts check-classified-files $@"
 }
 
 # Handle classify-remaining-experts command
@@ -329,17 +287,8 @@ case "$1" in
   "classify-source")
     classify_source_command "${@:2}"
     ;;
-  "write-unclassified-ids")
-    write_unclassified_ids_command "${@:2}"
-    ;;
-  "classify-batch-from-file")
-    classify_batch_from_file_command "${@:2}"
-    ;;
   "compare-presentations-assets")
     compare_presentations_assets_command "${@:2}"
-    ;;
-  "check-classified-files")
-    check_classified_files_command "${@:2}"
     ;;
   "classify-remaining-experts")
     classify_remaining_experts_command "${@:2}"

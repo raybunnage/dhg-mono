@@ -7,9 +7,6 @@ import { extractTitlesCommand } from './commands/extract-titles';
 import { checkMp4TitlesCommand } from './commands/check-mp4-titles';
 import { listUnclassifiedCommand } from './commands/list-unclassified';
 import { classifySourceCommand } from './commands/classify-source';
-import { writeUnclassifiedIdsCommand } from './commands/write-unclassified-ids';
-import { classifyBatchFromFileCommand } from './commands/classify-batch-from-file';
-import { checkClassifiedFilesCommand } from './commands/check-classified-files';
 import { comparePresentationsAssetsCommand } from './commands/compare-presentations-assets';
 import { classifyRemainingExpertsCommand } from './commands/classify-remaining-experts';
 import { classifyService } from '../../../packages/shared/services/classify-service';
@@ -143,7 +140,7 @@ program
 program
   .command('create')
   .description('Create a new subject classification')
-  .option('-n, --name <name>', 'Classification name (required)')
+  .option('-n, --name <n>', 'Classification name (required)')
   .option('-d, --description <description>', 'Classification description')
   .option('-c, --category <category>', 'Classification category')
   .option('-p, --parent-id <parentId>', 'Parent classification ID')
@@ -190,7 +187,7 @@ program
 program
   .command('update <id>')
   .description('Update an existing subject classification')
-  .option('-n, --name <name>', 'New classification name')
+  .option('-n, --name <n>', 'New classification name')
   .option('-d, --description <description>', 'New classification description')
   .option('-c, --category <category>', 'New classification category')
   .option('-p, --parent-id <parentId>', 'New parent classification ID')
@@ -403,7 +400,7 @@ program
   .description('Apply subject classification to expert documents with processed content')
   .option('-l, --limit <number>', 'Maximum number of documents to process', '10')
   .option('-e, --extensions <extensions>', 'Filter by file extension(s), separated by commas (e.g., "mp4,pdf,docx")')
-  .option('-x, --expert <name>', 'Filter by expert name')
+  .option('-x, --expert <n>', 'Filter by expert name')
   .option('-t, --table <tableName>', 'Target table to classify (default: "expert_documents")')
   .option('-s, --skip-classified', 'Skip documents that already have classifications', false)
   .option('-i, --source-id <id>', 'Directly classify a specific source by its ID')
@@ -806,76 +803,6 @@ program
     }
   });
 
-// Add write-unclassified-ids command
-program
-  .command('write-unclassified-ids')
-  .description('Write unclassified sources_google IDs to a markdown file')
-  .option('-o, --output-file <file>', 'Path to the output markdown file', 'docs/cli-pipeline/need_classification.md')
-  .option('-l, --limit <number>', 'Maximum number of documents to process (0 for all)', '0')
-  .option('-e, --extensions <extensions>', 'Filter by file extension(s), separated by commas (e.g., "mp4,pdf,docx")')
-  .option('-x, --expert <name>', 'Filter by expert name')
-  .option('--include-unsupported', 'Include unsupported document types and MIME types', false)
-  .option('--verbose', 'Show detailed output', false)
-  .action(async (options: any) => {
-    try {
-      // Parse limit as integer
-      const limit = options.limit ? parseInt(options.limit, 10) : 0;
-      
-      // Parse file extensions if provided
-      const fileExtensions = options.extensions ? options.extensions.split(',').map((ext: string) => ext.trim()) : undefined;
-      
-      await writeUnclassifiedIdsCommand({
-        outputFile: options.outputFile,
-        limit,
-        fileExtensions,
-        expertName: options.expert,
-        verbose: options.verbose,
-        includeUnsupported: options.includeUnsupported
-      });
-    } catch (error) {
-      Logger.error(`Error in write-unclassified-ids command: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  });
-
-// Add classify-batch-from-file command
-program
-  .command('classify-batch-from-file')
-  .description('Classify sources in batches from a file containing source IDs')
-  .option('-i, --input-file <file>', 'Path to the input markdown file', 'docs/cli-pipeline/need_classification.md')
-  .option('-b, --batch-size <number>', 'Number of sources to process in each batch', '5')
-  .option('-c, --concurrency <number>', 'Number of sources to process concurrently (default: 1)', '1')
-  .option('-l, --limit <number>', 'Maximum number of sources to process (0 for all)', '0')
-  .option('-f, --force', 'Force reclassification even if document already has classifications', false)
-  .option('--max-retries <number>', 'Maximum number of retries for failed API calls (default: 3)', '3')
-  .option('--retry-delay <number>', 'Initial delay in milliseconds between retries (default: 2000)', '2000')
-  .option('--verbose', 'Show detailed output', false)
-  .option('--dry-run', 'Show what would be classified without making changes', false)
-  .action(async (options: any) => {
-    try {
-      // Parse numeric options
-      const batchSize = options.batchSize ? parseInt(options.batchSize, 10) : 5;
-      const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : 1;
-      const limit = options.limit ? parseInt(options.limit, 10) : 0;
-      const maxRetries = options.maxRetries ? parseInt(options.maxRetries, 10) : 3;
-      const retryDelayMs = options.retryDelay ? parseInt(options.retryDelay, 10) : 2000;
-      
-      await classifyBatchFromFileCommand({
-        inputFile: options.inputFile,
-        batchSize,
-        concurrency,
-        limit,
-        verbose: options.verbose,
-        dryRun: options.dryRun,
-        force: options.force,
-        maxRetries,
-        retryDelayMs
-      });
-    } catch (error) {
-      Logger.error(`Error in classify-batch-from-file command: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  });
-
-
 // Add compare-presentations-assets command
 program
   .command('compare-presentations-assets')
@@ -902,31 +829,12 @@ program
     }
   });
 
-// Add check-classified-files command
-program
-  .command('check-classified-files')
-  .description('Check which sources have been classified successfully')
-  .option('-i, --input-file <file>', 'Path to the input markdown file', 'docs/cli-pipeline/need_classification.md')
-  .option('-o, --output-file <file>', 'Path to the output markdown file')
-  .option('--verbose', 'Show detailed output', false)
-  .action(async (options: any) => {
-    try {
-      await checkClassifiedFilesCommand({
-        inputFile: options.inputFile,
-        outputFile: options.outputFile,
-        verbose: options.verbose
-      });
-    } catch (error) {
-      Logger.error(`Error in check-classified-files command: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  });
-
 // Add classify-remaining-experts command
 program
   .command('classify-remaining-experts')
   .description('Classify remaining expert documents using specialized filtering')
   .option('-l, --limit <number>', 'Maximum number of documents to process', '10')
-  .option('-x, --expert <name>', 'Filter by expert name')
+  .option('-x, --expert <n>', 'Filter by expert name')
   .option('-c, --concurrency <number>', 'Number of documents to process concurrently (default: 3)', '3')
   .option('--max-retries <number>', 'Maximum number of retries for failed API calls (default: 3)', '3')
   .option('--retry-delay <number>', 'Initial delay in milliseconds between retries (default: 1000)', '1000')
