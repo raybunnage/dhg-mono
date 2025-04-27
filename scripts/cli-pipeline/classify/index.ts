@@ -744,7 +744,7 @@ function renderHierarchyMarkdown(items: any[], indent: string, lines: string[]):
 program
   .command('list-unclassified')
   .description('List expert documents with processed content that need classification')
-  .option('-l, --limit <number>', 'Maximum number of documents to list', '50')
+  .option('-l, --limit <number>', 'Maximum number of documents to list (0 for all)', '0')
   .option('-c, --with-content', 'Show content preview (only with --verbose)', false)
   .option('-v, --verbose', 'Show detailed output including content preview', false)
   .action(async (options) => {

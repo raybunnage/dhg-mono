@@ -95,7 +95,7 @@ function display_help() {
   echo -e "    --verbose                  Show detailed output including MP4 files without expert_documents"
   echo -e ""
   echo -e "  list-unclassified           List expert documents with processed content that haven't been classified"
-  echo -e "    -l, --limit <number>       Maximum number of documents to list (default: 50)"
+  echo -e "    -l, --limit <number>       Maximum number of documents to list (0 for all)"
   echo -e "    -c, --with-content         Show content preview (only with --verbose)"
   echo -e "    -v, --verbose              Show detailed output including content preview"
   echo ""

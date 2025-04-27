@@ -1234,28 +1234,52 @@ program
   .option('--no-dry-run', 'Actually create the presentations instead of just showing what would be created')
   .option('-l, --limit <number>', 'Limit the number of MP4 files to process', '100')
   .option('-v, --verbose', 'Show detailed logs')
+  .option('--fix-missing-folders', 'Fix presentations with missing high-level folder source IDs')
   .action(async (options: any) => {
     try {
-      Logger.info('Creating presentations from MP4 files...');
+      if (options.fixMissingFolders) {
+        Logger.info('Fixing presentations with missing high-level folder IDs...');
+      } else {
+        Logger.info('Creating presentations from MP4 files...');
+      }
       
       const result = await createPresentationsFromMp4Command({
         dryRun: options.dryRun !== false,
         limit: parseInt(options.limit),
-        verbose: options.verbose
+        verbose: options.verbose,
+        fixMissingFolders: options.fixMissingFolders
       });
       
       if (result.success) {
-        if (result.dryRun) {
-          Logger.info(`Found ${result.count} MP4 files that need presentations.`);
-          Logger.info('Run without --dry-run to actually create the presentations.');
+        if (options.fixMissingFolders) {
+          if (result.dryRun) {
+            if (result.wouldFix) {
+              Logger.info(`DRY RUN: Would update ${result.wouldFix} presentations with high-level folder IDs.`);
+              Logger.info('Run with --no-dry-run to actually apply the updates.');
+            } else {
+              Logger.info('No presentations need updating.');
+            }
+          } else if (result.fixed !== undefined) {
+            Logger.info(`Successfully updated ${result.fixed} presentations with high-level folder IDs.`);
+            if (result.failed && result.failed > 0) {
+              Logger.error(`Failed to update ${result.failed} presentations.`);
+            }
+          }
         } else {
-          Logger.info(`Created ${result.created} presentation records successfully.`);
-          if (result.failed && result.failed > 0) {
-            Logger.error(`Failed to create ${result.failed} presentation records.`);
+          if (result.dryRun) {
+            Logger.info(`Found ${result.count} MP4 files that need presentations.`);
+            Logger.info('Run without --dry-run to actually create the presentations.');
+          } else {
+            Logger.info(`Created ${result.created} presentation records successfully.`);
+            if (result.failed && result.failed > 0) {
+              Logger.error(`Failed to create ${result.failed} presentation records.`);
+            }
           }
         }
       } else {
-        Logger.error('Error creating presentations from MP4 files.');
+        Logger.error(options.fixMissingFolders 
+          ? 'Error fixing presentations with missing high-level folder IDs.' 
+          : 'Error creating presentations from MP4 files.');
       }
     } catch (error) {
       Logger.error('Error creating presentations from MP4 files:', error);

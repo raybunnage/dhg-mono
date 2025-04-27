@@ -72,6 +72,34 @@ scripts/cli-pipeline/classify
 
   expert_documents
 
+Here's the syntax for the new command that fixes missing high-level folder source IDs:
+
+  # Check which presentations have missing high-level folder source IDs (dry run mode)
+  ./scripts/cli-pipeline/presentations/presentations-cli.sh create-presentations-from-mp4
+  --fix-missing-folders --verbose
+
+  # Actually update presentations with missing high-level folder source IDs
+  ./scripts/cli-pipeline/presentations/presentations-cli.sh create-presentations-from-mp4
+  --fix-missing-folders --no-dry-run
+
+  # Limit the number of presentations to process
+  ./scripts/cli-pipeline/presentations/presentations-cli.sh create-presentations-from-mp4
+  --fix-missing-folders --limit 10 --no-dry-run
+
+  The command works by:
+  1. Finding all presentations with null high_level_folder_source_id
+  2. Getting the source details for each presentation
+  3. Using two matching strategies:
+    - Direct mapping via the main_video_id (exact match)
+    - Keyword matching using words from the source filename
+  4. Updating presentations with matches in batches
+
+  In this case, we successfully fixed 25 out of 29 presentations that were missing high-level folder
+  source IDs, but 4 remain that need manual intervention due to mismatches between filenames and
+  titles.
+
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ >                                                                                                     │
 
 
 

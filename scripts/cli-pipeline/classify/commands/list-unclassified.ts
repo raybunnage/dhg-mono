@@ -71,59 +71,81 @@ export async function listUnclassifiedCommand(options: ListUnclassifiedOptions):
     }
     
     // 3. Get details for the unclassified documents
-    const fetchLimit = Math.min(unclassifiedIds.length, limit);
-    const idsToFetch = unclassifiedIds.slice(0, fetchLimit);
+    // Process in batches to avoid overwhelming the database
+    const BATCH_SIZE = 50;
+    let allUnclassifiedDocs: any[] = [];
     
-    Logger.info(`Fetching details for ${fetchLimit} unclassified documents...`);
-    const { data: unclassifiedDocs, error: docsError } = await supabase
-      .from('expert_documents')
-      .select('id, source_id, title')
-      .in('id', idsToFetch);
+    // Process up to the limit, or all if no limit is specified
+    const maxToProcess = limit > 0 ? Math.min(unclassifiedIds.length, limit) : unclassifiedIds.length;
+    
+    Logger.info(`Fetching details for ${maxToProcess} unclassified documents (processing in batches of ${BATCH_SIZE})...`);
+    
+    for (let i = 0; i < maxToProcess; i += BATCH_SIZE) {
+      const idsToFetch = unclassifiedIds.slice(i, i + BATCH_SIZE);
+      Logger.info(`Fetching batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(maxToProcess/BATCH_SIZE)}...`);
       
-    if (docsError) {
-      Logger.error(`Error fetching document details: ${docsError.message}`);
-      return;
+      const { data: batchDocs, error: batchError } = await supabase
+        .from('expert_documents')
+        .select('id, source_id, title')
+        .in('id', idsToFetch);
+        
+      if (batchError) {
+        Logger.error(`Error fetching batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batchError.message}`);
+        continue; // Try the next batch
+      }
+      
+      if (batchDocs && batchDocs.length > 0) {
+        allUnclassifiedDocs = [...allUnclassifiedDocs, ...batchDocs];
+      }
     }
+    
+    const unclassifiedDocs = allUnclassifiedDocs;
     
     if (!unclassifiedDocs || unclassifiedDocs.length === 0) {
       Logger.info('No unclassified documents found with the given criteria.');
       return;
     }
     
-    // 4. Get source information for these documents
+    // 4. Get source information for these documents in batches
     const sourceIds = unclassifiedDocs.map(doc => doc.source_id).filter(id => id);
-    
-    Logger.info(`Fetching source information for ${sourceIds.length} documents...`);
-    const { data: sources, error: sourcesError } = await supabase
-      .from('sources_google')
-      .select('id, name, mime_type')
-      .in('id', sourceIds);
-      
-    if (sourcesError) {
-      Logger.error(`Error fetching sources: ${sourcesError.message}`);
-      return;
-    }
-    
-    // Create a map of source info by ID
     const sourceMap: Record<string, any> = {};
-    sources?.forEach(source => {
-      sourceMap[source.id] = source;
-    });
+    
+    // Process in batches to avoid query size limits
+    const SOURCES_BATCH_SIZE = 30;
+    Logger.info(`Fetching source information for ${sourceIds.length} documents in batches of ${SOURCES_BATCH_SIZE}...`);
+    
+    for (let i = 0; i < sourceIds.length; i += SOURCES_BATCH_SIZE) {
+      const batchIds = sourceIds.slice(i, i + SOURCES_BATCH_SIZE);
+      Logger.info(`Fetching sources batch ${Math.floor(i/SOURCES_BATCH_SIZE) + 1} of ${Math.ceil(sourceIds.length/SOURCES_BATCH_SIZE)}...`);
+      
+      const { data: sources, error: sourcesError } = await supabase
+        .from('sources_google')
+        .select('id, name, mime_type')
+        .in('id', batchIds);
+        
+      if (sourcesError) {
+        Logger.error(`Error fetching sources batch ${Math.floor(i/SOURCES_BATCH_SIZE) + 1}: ${sourcesError.message}`);
+        continue; // Try the next batch
+      }
+      
+      // Add to our source map
+      sources?.forEach(source => {
+        sourceMap[source.id] = source;
+      });
+    }
     
     // 5. Display the results in a table format
     console.log('\nUnclassified Documents with Processed Content:');
     console.log('=================================================');
-    console.log(`${'ID'.padEnd(10)} | ${'Source Name'.padEnd(60)} | ${'MIME Type'.padEnd(40)} | ${'Title'.padEnd(30)}`);
-    console.log(`${'-'.repeat(10)} | ${'-'.repeat(60)} | ${'-'.repeat(40)} | ${'-'.repeat(30)}`);
+    console.log(`${'Source Name'.padEnd(100)} | ${'Title'.padEnd(50)}`);
+    console.log(`${'-'.repeat(100)} | ${'-'.repeat(50)}`);
     
     for (const doc of unclassifiedDocs) {
       const source = sourceMap[doc.source_id];
-      const docId = doc.id.substring(0, 8);
       const sourceName = source?.name || 'Unknown';
-      const mimeType = source?.mime_type || 'Unknown';
       const title = doc.title || 'No title';
       
-      console.log(`${docId.padEnd(10)} | ${sourceName.substring(0, 60).padEnd(60)} | ${mimeType.padEnd(40)} | ${title.substring(0, 30).padEnd(30)}`);
+      console.log(`${sourceName.substring(0, 100).padEnd(100)} | ${title.substring(0, 50).padEnd(50)}`);
       
       // If verbose mode, also display processed content
       if (verbose && withContent) {
