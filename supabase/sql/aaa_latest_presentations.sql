@@ -240,47 +240,41 @@ ORDER BY
   Then find the related expert_documents record and you can pull the title from the dedicted field and transfer it to the presentations title field.
 
   after you have created the presentation record with these basic fields for each mp4 file, 
-then you need to recursively (up to 6 levels go through all the records in sources_google and find the 
+  use this query   
+"select id, path_depth, main_video_id, name from sources_google where path_depth = 0 and document_type_id = 'bd903d99-64a1-4297-ba76-1094ab235dac'"
+
+when the main_video_id in this query matches the id of the sources_google mp4 you know you have the right high_level_folder_source_id  and you can set that wih this field in presentations table with this source_id field.   Now you can use this folder id as it is the source_id in the sources_google_experts table and you can return the associated expert_id field and set it in the presetnations.  Thus you should be able to get all the fields for the presentations table except the view count which we'll  work out later. 
 
 
 
 
+now the presentations_assets table you need to do the following
+for each presentation that has a high_level_folder_source_id with a depth of zero
+fin that source id in the sources_google table and that folder which is have a path_depth of 0 and then do a recursive search within each of those folders to find all the files that are in it (you can go to a depth of 6 levels) - if it is a supported file then create a presentation_assets record for it and fill in the the presentation_id of the presentation record you created earlier that has the video and fill in the following fields:
 
 
 
-
-
-CREATE TABLE "presentations" (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    title TEXT,
-    high_level_folder_source_id UUID REFERENCES sources_google(id),  -- Assuming this references a sources_google table
-    video_source_id UUID REFERENCES sources_google(id),              -- Assuming this references a sources_google table
-    web_view_link TEXT,
-    root_drive_id TEXT,
-    expert_document_id UUID REFERENCES expert_documents(id),
-    expert_id UUID REFERENCES experts(id),
-    view_count INTEGER DEFAULT 0,
-    duration_seconds INTEGER,
+-- Create the presentation_assets table
+CREATE TABLE "presentation_assets" (
+    presentation_id  -- comes from the presentations table
+    asset_source_id UUID REFERENCES sources_google(id),
+    asset_expert_document_id UUID REFERENCES expert_documents(id),
+    asset_role asset_role_enum,
+    asset_type asset_type_enum,
+    importance_level INTEGER CHECK (importance_level >= 0 AND importance_level <= 10),
+    metadata JSONB,
+    timestamp_start INTEGER CHECK (timestamp_start >= 0),
+    timestamp_end INTEGER CHECK (timestamp_end >= 0),
+    user_notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
-    -- Add indexes for frequently queried fields and foreign keys
-    CONSTRAINT view_count_non_negative CHECK (view_count >= 0),
-    CONSTRAINT duration_seconds_non_negative CHECK (duration_seconds >= 0)
+    -- Add constraint to ensure timestamp_end is after timestamp_start
+    CONSTRAINT valid_timestamp_range 
+        CHECK (timestamp_end IS NULL OR timestamp_start IS NULL OR timestamp_end >= timestamp_start)
 );
 
-     presentations: {
-        Row: {
-          created_at: string | null
-          duration_seconds: number | null
-          expert_document_id: string | null
-          expert_id: string | null
-          high_level_folder_source_id: string | null
-          id: string
-          root_drive_id: string | null
-          title: string | null
-          updated_at: string | null
-          video_source_id: string | null
-          view_count: number | null
-          web_view_link: string | null
-        }
+
+ 
+
+

@@ -220,8 +220,23 @@ async function processDocument(
           jsonStr = jsonMatch[1];
         }
         
-        // Try to parse the JSON
-        classificationResult = JSON.parse(jsonStr) as SubjectClassificationResult;
+        try {
+          // Try to parse the JSON directly
+          classificationResult = JSON.parse(jsonStr) as SubjectClassificationResult;
+        } catch (jsonError) {
+          // If that fails, try additional cleanup for better JSON handling
+          
+          // Some responses might have additional markdown formatting
+          // Try stripping any remaining markdown artifacts
+          const cleanedJsonStr = jsonStr
+            .replace(/^```json\s*/, '') // Remove opening ```json
+            .replace(/```\s*$/, '')     // Remove closing ```
+            .replace(/^```\s*/, '')     // Remove any opening ``` without language
+            .trim();
+            
+          // Try parsing again with the cleaned string
+          classificationResult = JSON.parse(cleanedJsonStr) as SubjectClassificationResult;
+        }
         
         if (!classificationResult || !classificationResult.subject_ids) {
           throw new Error(`Failed to get valid classification result for document ${doc.id}`);

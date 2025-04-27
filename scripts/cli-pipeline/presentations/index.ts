@@ -7,6 +7,7 @@ import { ExpertDocumentService } from './services/expert-document-service';
 import { ClaudeService } from '../../../packages/shared/services/claude-service';
 import { generateSummaryCommand } from './commands/generate-summary';
 import { presentationAssetBioCommand } from './commands/presentation-asset-bio';
+import { createPresentationsFromMp4Command } from './commands/create-presentations-from-mp4';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
@@ -496,9 +497,9 @@ program
     }
   });
 
-// Define check-professional-documents command
+// Define check-professional-docs command
 program
-  .command('check-professional-documents')
+  .command('check-professional-docs')
   .description('Check for professional documents (CV, bio, announcement) associated with presentations')
   .option('-p, --presentation-id <id>', 'Specific presentation ID to check')
   .option('-e, --expert-id <id>', 'Filter by expert ID')
@@ -1222,6 +1223,42 @@ program
       });
     } catch (error) {
       Logger.error('Error updating root_drive_id:', error);
+      process.exit(1);
+    }
+  });
+
+// Define create-presentations-from-mp4 command
+program
+  .command('create-presentations-from-mp4')
+  .description('Create presentation records for MP4 files in sources_google')
+  .option('--no-dry-run', 'Actually create the presentations instead of just showing what would be created')
+  .option('-l, --limit <number>', 'Limit the number of MP4 files to process', '100')
+  .option('-v, --verbose', 'Show detailed logs')
+  .action(async (options: any) => {
+    try {
+      Logger.info('Creating presentations from MP4 files...');
+      
+      const result = await createPresentationsFromMp4Command({
+        dryRun: options.dryRun !== false,
+        limit: parseInt(options.limit),
+        verbose: options.verbose
+      });
+      
+      if (result.success) {
+        if (result.dryRun) {
+          Logger.info(`Found ${result.count} MP4 files that need presentations.`);
+          Logger.info('Run without --dry-run to actually create the presentations.');
+        } else {
+          Logger.info(`Created ${result.created} presentation records successfully.`);
+          if (result.failed && result.failed > 0) {
+            Logger.error(`Failed to create ${result.failed} presentation records.`);
+          }
+        }
+      } else {
+        Logger.error('Error creating presentations from MP4 files.');
+      }
+    } catch (error) {
+      Logger.error('Error creating presentations from MP4 files:', error);
       process.exit(1);
     }
   });

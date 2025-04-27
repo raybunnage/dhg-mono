@@ -40,6 +40,7 @@ function display_help() {
   echo -e "  export-status              Export presentation transcription status to markdown"
   echo -e "  repair-presentations       Repair presentations with missing main_video_id"
   echo -e "  create-from-expert-docs    Create presentations from expert documents"
+  echo -e "  create-presentations-from-mp4   Create presentation records for MP4 files in sources_google"
   echo -e "  scan-for-ai-summaries      Scan for documents that need AI summarization"
   echo -e "  show-missing-content       Show presentations without content that need reprocessing"
   echo -e "  show-ai-summary-status     Show AI summary status for expert documents in markdown table"
@@ -93,6 +94,24 @@ function display_help() {
   echo -e "    --folder-id <id>             Filter by folder ID (default: Dynamic Healing Discussion Group)"
   echo -e "    -o, --output-file <path>     Path to write markdown report to (default: docs/cli-pipeline/ai_summary_status.md)"
   echo ""
+  
+  echo -e "\033[1mDetailed Command: create-presentations-from-mp4\033[0m"
+  echo -e "  Usage: presentations-cli create-presentations-from-mp4 [options]"
+  echo ""
+  echo -e "  Description:"
+  echo -e "    Creates presentation records for MP4 files in the sources_google table. It will:"
+  echo -e "    - Find all MP4 files without presentation records"
+  echo -e "    - Create presentations with basic data from sources_google"
+  echo -e "    - Link presentations to experts using high-level folder information"
+  echo -e "    - Set duration_seconds based on file size if possible"
+  echo -e "    - Use titles from expert_documents when available"
+  echo ""
+  echo -e "  Options:"
+  echo -e "    --dry-run                   Preview what would be created without making changes (default: true)"
+  echo -e "    --no-dry-run                Actually create the presentations"
+  echo -e "    -l, --limit <number>        Limit the number of MP4 files to process (default: 100)"
+  echo -e "    -v, --verbose               Show detailed logs during processing"
+  echo ""
   echo -e "\033[1mDetailed Command: presentation-asset-bio\033[0m"
   echo -e "  Usage: presentations-cli presentation-asset-bio [options]"
   echo ""
@@ -131,6 +150,12 @@ function display_help() {
   echo ""
   echo -e "  # Actually update root_drive_id for all presentations"
   echo -e "  presentations-cli update-root-drive-id"
+  echo ""
+  echo -e "  # Preview presentations that would be created from MP4 files"
+  echo -e "  presentations-cli create-presentations-from-mp4"
+  echo ""
+  echo -e "  # Create presentations from MP4 files with verbose logging"
+  echo -e "  presentations-cli create-presentations-from-mp4 --no-dry-run -v"
   echo ""
   echo -e "  # Scan for documents that need AI summary processing (from Dynamic Healing Discussion Group)"
   echo -e "  presentations-cli scan-for-ai-summaries"
@@ -237,6 +262,77 @@ fi
 # Handle health-check command directly
 if [[ "$1" == "health-check" ]]; then
   track_command "health-check" "ts-node $SCRIPT_DIR/index.ts health-check ${@:2}"
+  exit $?
+fi
+
+# Handle specific commands directly to ensure proper tracking
+if [[ "$1" == "create-presentations-from-mp4" ]]; then
+  track_command "create-presentations-from-mp4" "ts-node $SCRIPT_DIR/index.ts create-presentations-from-mp4 ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "scan-for-ai-summaries" ]]; then
+  track_command "scan-for-ai-summaries" "ts-node $SCRIPT_DIR/index.ts scan-for-ai-summaries ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "show-ai-summary-status" ]]; then
+  track_command "show-ai-summary-status" "ts-node $SCRIPT_DIR/index.ts show-ai-summary-status ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "show-missing-content" ]]; then
+  track_command "show-missing-content" "ts-node $SCRIPT_DIR/index.ts show-missing-content ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "presentation-asset-bio" ]]; then
+  track_command "presentation-asset-bio" "ts-node $SCRIPT_DIR/index.ts presentation-asset-bio ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "add-specific-files" ]]; then
+  track_command "add-specific-files" "ts-node $SCRIPT_DIR/index.ts add-specific-files ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "update-root-drive-id" ]]; then
+  track_command "update-root-drive-id" "ts-node $SCRIPT_DIR/index.ts update-root-drive-id ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "create-from-expert-docs" ]]; then
+  track_command "create-from-expert-docs" "ts-node $SCRIPT_DIR/index.ts create-from-expert-docs ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "repair-presentations" ]]; then
+  track_command "repair-presentations" "ts-node $SCRIPT_DIR/index.ts repair-presentations ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "export-status" ]]; then
+  track_command "export-status" "ts-node $SCRIPT_DIR/index.ts export-status ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "create-missing-assets" ]]; then
+  track_command "create-missing-assets" "ts-node $SCRIPT_DIR/index.ts create-missing-assets ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "check-professional-docs" ]]; then
+  track_command "check-professional-docs" "ts-node $SCRIPT_DIR/index.ts check-professional-docs ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "generate-expert-bio" ]]; then
+  track_command "generate-expert-bio" "ts-node $SCRIPT_DIR/index.ts generate-expert-bio ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "review-presentations" ]]; then
+  track_command "review-presentations" "ts-node $SCRIPT_DIR/index.ts review-presentations ${@:2}"
   exit $?
 fi
 

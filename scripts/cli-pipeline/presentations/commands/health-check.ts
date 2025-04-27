@@ -3,11 +3,13 @@ import { trackCommandExecution } from '../../../../packages/shared/services/trac
 import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 
 interface HealthCheckOptions {
   skipDatabase?: boolean;
   skipPresentations?: boolean;
   skipClaude?: boolean;
+  skipCommandVerification?: boolean;
   verbose?: boolean;
 }
 
@@ -21,6 +23,7 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
         database: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
         presentations: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
         claude: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
+        commands: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
       };
       
       console.log('🏥 Running presentations pipeline health checks...');
@@ -68,40 +71,67 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
           const supabase = SupabaseClientService.getInstance().getClient();
           
           // Check if presentations table exists by querying it
-          const { data: presentations, error } = await supabase
-            .from('presentations')
-            .select('count(*)', { count: 'exact', head: true });
+          let error;
+          try {
+            const { count, error: countError } = await supabase
+              .from('presentations')
+              .select('*', { count: 'exact', head: true });
+            
+            if (countError) {
+              error = countError;
+            } else {
+              console.log(`   ✅ Presentations table has approximately ${count} records`);
+            }
+          } catch (e) {
+            error = e;
+          }
           
           if (error) {
-            throw new Error(`Error querying presentations table: ${error.message}`);
+            throw new Error(`Error querying presentations table: ${error instanceof Error ? error.message : String(error)}`);
           }
           
           // Check for expert_documents table as well
-          const { data: expertDocs, error: expertDocsError } = await supabase
-            .from('expert_documents')
-            .select('count(*)', { count: 'exact', head: true });
+          let expertDocsError;
+          try {
+            const { count, error: countError } = await supabase
+              .from('expert_documents')
+              .select('*', { count: 'exact', head: true });
+              
+            if (countError) {
+              expertDocsError = countError;
+              console.warn(`⚠️ Could not verify expert_documents table: ${countError.message}`);
+            } else {
+              console.log(`   ✅ Expert documents table has approximately ${count} records`);
+            }
+          } catch (e) {
+            expertDocsError = e;
+            console.warn(`⚠️ Could not verify expert_documents table: ${e instanceof Error ? e.message : String(e)}`);
+          }
           
-          if (expertDocsError) {
-            console.warn(`⚠️ Could not verify expert_documents table: ${expertDocsError.message}`);
+          // Check join tables
+          let assetsError;
+          try {
+            const { count, error: countError } = await supabase
+              .from('presentation_assets')
+              .select('*', { count: 'exact', head: true });
+              
+            if (countError) {
+              assetsError = countError;
+              console.warn(`⚠️ Could not verify presentation_assets table: ${countError.message}`);
+            } else {
+              console.log(`   ✅ Presentation assets table has approximately ${count} records`);
+            }
+          } catch (e) {
+            assetsError = e;
+            console.warn(`⚠️ Could not verify presentation_assets table: ${e instanceof Error ? e.message : String(e)}`);
           }
           
           results.presentations = { 
             status: 'success', 
-            message: `Presentations table accessible, expert_documents table ${expertDocsError ? 'not accessible' : 'accessible'}.`
+            message: `Presentations table accessible, expert_documents table ${expertDocsError ? 'not accessible' : 'accessible'}, presentation_assets table ${assetsError ? 'not accessible' : 'accessible'}.`
           };
           
           console.log('✅ Presentations table accessible');
-          
-          // Check join tables
-          const { data: presentationAssets, error: assetsError } = await supabase
-            .from('presentation_assets')
-            .select('count(*)', { count: 'exact', head: true });
-          
-          if (assetsError) {
-            console.warn(`⚠️ Could not verify presentation_assets table: ${assetsError.message}`);
-          } else {
-            console.log('   ✅ Presentation assets table accessible');
-          }
           
         } catch (error) {
           results.presentations = { 
@@ -117,6 +147,150 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
         }
       } else {
         console.log('⏩ Skipping presentations table check');
+      }
+      
+      // Check CLI commands
+      if (!options.skipCommandVerification) {
+        console.log('\n🔍 Checking CLI command registration...');
+        try {
+          // List of expected commands that should be registered
+          const expectedCommands = [
+            'review-presentations',
+            'generate-summary',
+            'generate-expert-bio',
+            'check-professional-docs',
+            'create-missing-assets',
+            'export-status',
+            'repair-presentations',
+            'create-from-expert-docs',
+            'create-presentations-from-mp4',
+            'scan-for-ai-summaries',
+            'show-missing-content',
+            'show-ai-summary-status',
+            'presentation-asset-bio',
+            'add-specific-files',
+            'update-root-drive-id',
+            'health-check'
+          ];
+          
+          // Get the script directory
+          const scriptDir = path.dirname(__dirname);
+          const cliScriptPath = path.join(scriptDir, 'presentations-cli.sh');
+          
+          // Check if the CLI script exists
+          if (!fs.existsSync(cliScriptPath)) {
+            throw new Error(`CLI script not found at ${cliScriptPath}`);
+          }
+          
+          // Check if all expected commands are registered in the CLI script
+          const scriptContent = fs.readFileSync(cliScriptPath, 'utf8');
+          const missingInScript: string[] = [];
+          
+          for (const command of expectedCommands) {
+            // Check for direct handling of command in the shell script
+            if (!scriptContent.includes(`if [[ "$1" == "${command}"`)) {
+              // Some commands might be caught by the default handler
+              if (!scriptContent.includes(`track_command "$COMMAND"`)) {
+                missingInScript.push(command);
+              }
+            }
+          }
+          
+          // Check index.ts for command registration
+          const indexPath = path.join(scriptDir, 'index.ts');
+          const indexContent = fs.readFileSync(indexPath, 'utf8');
+          const missingInIndex: string[] = [];
+          
+          for (const command of expectedCommands) {
+            // Look for command registration patterns in index.ts
+            const patternA = `.command('${command}')`;
+            const patternB = `= require('./commands/${command}')`;
+            
+            if (!indexContent.includes(patternA) && !indexContent.includes(patternB)) {
+              missingInIndex.push(command);
+            }
+          }
+          
+          // Check command help output
+          let helpOutput = '';
+          try {
+            helpOutput = execSync(`${cliScriptPath} --help`, { 
+              encoding: 'utf8', 
+              stdio: ['pipe', 'pipe', 'pipe'] 
+            });
+          } catch (helpError) {
+            console.warn(`⚠️ Could not check help output: ${helpError instanceof Error ? helpError.message : String(helpError)}`);
+          }
+          
+          const missingInHelp: string[] = [];
+          for (const command of expectedCommands) {
+            if (!helpOutput.includes(command)) {
+              missingInHelp.push(command);
+            }
+          }
+          
+          if (missingInScript.length === 0 && missingInIndex.length === 0 && missingInHelp.length === 0) {
+            results.commands = {
+              status: 'success',
+              message: 'All expected commands are properly registered in shell script and index.ts'
+            };
+            console.log('✅ All expected commands are properly registered');
+          } else {
+            let message = '';
+            if (missingInScript.length > 0) {
+              message += `Commands missing in shell script: ${missingInScript.join(', ')}. `;
+              console.warn(`⚠️ Commands missing in shell script: ${missingInScript.join(', ')}`);
+            }
+            if (missingInIndex.length > 0) {
+              message += `Commands missing in index.ts: ${missingInIndex.join(', ')}. `;
+              console.warn(`⚠️ Commands missing in index.ts: ${missingInIndex.join(', ')}`);
+            }
+            if (missingInHelp.length > 0) {
+              message += `Commands missing in help output: ${missingInHelp.join(', ')}. `;
+              console.warn(`⚠️ Commands missing in help output: ${missingInHelp.join(', ')}`);
+            }
+            
+            results.commands = {
+              status: missingInScript.length > 0 || missingInIndex.length > 0 ? 'failure' : 'unknown',
+              message
+            };
+          }
+          
+          // Check tracking setup for each command
+          if (options.verbose) {
+            const commandsWithoutTracking: string[] = [];
+            
+            for (const command of expectedCommands) {
+              // Better pattern search for tracking
+              const pattern1 = `track_command "${command}"`;
+              const pattern2 = `if [[ "$1" == "${command}" ]]`;
+              
+              if (!scriptContent.includes(pattern1) || (!scriptContent.includes(pattern2) && !pattern1.includes('health-check'))) {
+                commandsWithoutTracking.push(command);
+              }
+            }
+            
+            if (commandsWithoutTracking.length > 0) {
+              console.warn(`⚠️ Commands without clear tracking: ${commandsWithoutTracking.join(', ')}`);
+            } else {
+              console.log('   ✅ Command tracking appears to be set up for all commands');
+            }
+          }
+          
+        } catch (error) {
+          results.commands = {
+            status: 'failure',
+            message: `Command verification failed: ${error instanceof Error ? error.message : String(error)}`
+          };
+          
+          console.error('❌ Command verification failed');
+          if (options.verbose) {
+            console.error('Error details:');
+            console.error(error);
+          }
+        }
+      } else {
+        console.log('⏩ Skipping command verification');
       }
       
       // Check Claude service
@@ -184,6 +358,7 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
       console.log('====================');
       console.log(`Database: ${results.database.status === 'success' ? '✅ Healthy' : results.database.status === 'failure' ? '❌ Unhealthy' : '⚠️ Unknown'}`);
       console.log(`Presentations: ${results.presentations.status === 'success' ? '✅ Healthy' : results.presentations.status === 'failure' ? '❌ Unhealthy' : '⚠️ Unknown'}`);
+      console.log(`CLI Commands: ${results.commands.status === 'success' ? '✅ Healthy' : results.commands.status === 'failure' ? '❌ Unhealthy' : '⚠️ Unknown'}`);
       console.log(`Claude Service: ${results.claude.status === 'success' ? '✅ Healthy' : results.claude.status === 'failure' ? '❌ Unhealthy' : '⚠️ Unknown'}`);
       
       // Overall status
