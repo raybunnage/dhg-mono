@@ -4,6 +4,8 @@ scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --d
 
 ./scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --doc-type docx --mark-for-reprocessing --execute
 
+./scripts/cli-pipeline/presentations/presentations-cli.sh  create-presentations-from-mp4 --limit 20 --no-dry-run 
+
 
 │ > I have the presentations table and its most important fields come from both the sources_google table and the expert_documents table.   
 

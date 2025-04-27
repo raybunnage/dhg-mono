@@ -827,6 +827,7 @@ program
         fileExtensions,
         expertName: options.expert,
         verbose: options.verbose,
+        includeUnsupported: options.includeUnsupported
       });
     } catch (error) {
       Logger.error(`Error in write-unclassified-ids command: ${error instanceof Error ? error.message : String(error)}`);

@@ -1296,15 +1296,23 @@ program
   .option('--dry-run', 'Show what would be created without making any changes', false)
   .option('-l, --limit <number>', 'Limit the number of presentations to process')
   .option('-d, --depth <number>', 'Maximum folder depth to search (default: 6)')
+  .option('--skip-existing [boolean]', 'Skip presentations with existing assets (default: true)', true)
   .action(async (options: any) => {
     try {
       Logger.info('Creating presentation assets for files in high-level folders...');
+      
+      // Convert skip-existing option to boolean if it's a string
+      let skipExisting = options.skipExisting;
+      if (typeof skipExisting === 'string') {
+        skipExisting = skipExisting.toLowerCase() !== 'false';
+      }
       
       const result = await createPresentationAssetsCommand({
         presentationId: options.presentationId,
         dryRun: options.dryRun,
         limit: options.limit ? parseInt(options.limit) : undefined,
-        depth: options.depth ? parseInt(options.depth) : undefined
+        depth: options.depth ? parseInt(options.depth) : undefined,
+        skipExisting: skipExisting
       });
       
       if (result.success) {

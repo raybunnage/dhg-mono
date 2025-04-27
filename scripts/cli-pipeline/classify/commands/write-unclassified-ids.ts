@@ -42,6 +42,9 @@ const UNSUPPORTED_DOCUMENT_TYPE_IDS = [
   '920893fc-f0be-4211-85b4-fc29882ade97', // google sheet
   'e29b5194-7ba0-4a3c-a7db-92b0d8adca6a', // Unknown Type
   '9dbe32ff-5e82-4586-be63-1445e5bcc548', // unknown document type
+  'bd903d99-64a1-4297-ba76-1094ab235dac', // application/vnd.google-apps.folder
+  'dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd', // folder
+  '0d61a685-10e0-4c82-b964-60b88b02ac15', // Directory
 ];
 
 // List of unsupported MIME types
@@ -52,6 +55,7 @@ const UNSUPPORTED_MIME_TYPES = [
   'application/vnd.google-apps.form',
   'application/vnd.google-apps.map',
   'application/vnd.google-apps.presentation',
+  'application/vnd.google-apps.folder',
   'audio/mpeg',
   'audio/mp3',
   'audio/wav',

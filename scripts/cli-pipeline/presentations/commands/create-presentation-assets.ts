@@ -12,6 +12,7 @@ export async function createPresentationAssetsCommand(options: {
   dryRun: boolean;
   limit?: number;
   depth?: number;
+  skipExisting?: boolean; // New parameter to skip presentations with existing assets
 }): Promise<{
   success: boolean;
   count?: number;
@@ -20,7 +21,10 @@ export async function createPresentationAssetsCommand(options: {
   message?: string;
 }> {
   try {
-    Logger.info(`Starting create-presentation-assets command ${options.dryRun ? "(dry run)" : ""}`);
+    // Default skipExisting to true if not provided
+    const skipExisting = options.skipExisting !== false;
+    
+    Logger.info(`Starting create-presentation-assets command ${options.dryRun ? "(dry run)" : ""} ${skipExisting ? "(skipping presentations with existing assets)" : ""}`);
     
     const supabase = SupabaseClientService.getInstance().getClient();
     
@@ -111,6 +115,7 @@ export async function createPresentationAssetsCommand(options: {
     
     let totalCreated = 0;
     let totalFailed = 0;
+    let presentationsSkipped = 0;
     
     // Process each presentation
     for (const presentation of presentations) {
@@ -120,6 +125,24 @@ export async function createPresentationAssetsCommand(options: {
         if (!presentation.high_level_folder_source_id) {
           Logger.warn(`Presentation ${presentation.id} has null high_level_folder_source_id despite query filter`);
           continue;
+        }
+        
+        // Check if the presentation already has assets and skip if needed
+        if (skipExisting) {
+          const { data, error: countError, count } = await supabase
+            .from('presentation_assets')
+            .select('id', { count: 'exact', head: true })
+            .eq('presentation_id', presentation.id);
+          
+          const assetCount = count || 0;
+          
+          if (countError) {
+            Logger.error(`Error checking existing assets count for presentation ${presentation.id}:`, countError);
+          } else if (assetCount > 0) {
+            Logger.info(`Skipping presentation ${presentation.id} - already has ${assetCount} assets`);
+            presentationsSkipped++;
+            continue;
+          }
         }
         
         // Verify folder source exists and has a path_depth of 0
@@ -372,8 +395,8 @@ export async function createPresentationAssetsCommand(options: {
     }
     
     const resultMessage = options.dryRun
-      ? `[DRY RUN] Would create ${totalCreated} presentation_assets (${totalFailed} would fail)`
-      : `Created ${totalCreated} presentation_assets (${totalFailed} failed)`;
+      ? `[DRY RUN] Would create ${totalCreated} presentation_assets (${totalFailed} would fail, ${presentationsSkipped} presentations skipped)`
+      : `Created ${totalCreated} presentation_assets (${totalFailed} failed, ${presentationsSkipped} presentations skipped)`;
     
     Logger.info(resultMessage);
     
