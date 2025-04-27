@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 /**
- * List Unclassified PDF and PowerPoint Files
+ * List Unclassified Document Files
  * 
- * This script lists PDF and PowerPoint files in the sources_google table that
+ * This script lists PDF, PowerPoint, TXT, and DOCX files in the sources_google table that
  * don't have a document_type_id set, to identify files that need classification.
  * 
  * Usage:
@@ -86,15 +86,21 @@ export async function listUnclassifiedFiles(
   const supabase = SupabaseClientService.getInstance().getClient();
   
   try {
-    // Get all PDF and PowerPoint files
-    Logger.info('Querying for PDF and PowerPoint files...');
+    // Get all document files (PDF, PowerPoint, TXT, DOCX)
+    Logger.info('Querying for PDF, PowerPoint, TXT, and DOCX files...');
     
-    // Build query for PDF and PowerPoint files
+    // Build query for PDF, PowerPoint, TXT, and DOCX files
     const query = supabase
       .from('sources_google')
       .select('id, name, mime_type, path, drive_id, document_type_id')
       .eq('is_deleted', false)
-      .or('mime_type.eq.application/pdf,mime_type.eq.application/vnd.openxmlformats-officedocument.presentationml.presentation,mime_type.eq.application/vnd.ms-powerpoint')
+      .or(
+        'mime_type.eq.application/pdf,' + 
+        'mime_type.eq.application/vnd.openxmlformats-officedocument.presentationml.presentation,' +
+        'mime_type.eq.application/vnd.ms-powerpoint,' +
+        'mime_type.eq.text/plain,' +
+        'mime_type.eq.application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      )
       .order('path');
       
     // Apply limit if specified
@@ -111,7 +117,7 @@ export async function listUnclassifiedFiles(
     }
     
     if (!files || files.length === 0) {
-      Logger.info('No PDF or PowerPoint files found in the database.');
+      Logger.info('No document files (PDF, PowerPoint, TXT, DOCX) found in the database.');
       return;
     }
     
@@ -120,6 +126,10 @@ export async function listUnclassifiedFiles(
     const pdfWithoutType: FileInfo[] = [];
     const pptWithType: FileInfo[] = [];
     const pptWithoutType: FileInfo[] = [];
+    const txtWithType: FileInfo[] = [];
+    const txtWithoutType: FileInfo[] = [];
+    const docxWithType: FileInfo[] = [];
+    const docxWithoutType: FileInfo[] = [];
     
     for (const file of files) {
       const fileInfo: FileInfo = {
@@ -134,6 +144,8 @@ export async function listUnclassifiedFiles(
       const isPdf = file.mime_type === 'application/pdf';
       const isPpt = file.mime_type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || 
                    file.mime_type === 'application/vnd.ms-powerpoint';
+      const isTxt = file.mime_type === 'text/plain';
+      const isDocx = file.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       
       if (isPdf) {
         if (file.document_type_id) {
@@ -147,35 +159,61 @@ export async function listUnclassifiedFiles(
         } else {
           pptWithoutType.push(fileInfo);
         }
+      } else if (isTxt) {
+        if (file.document_type_id) {
+          txtWithType.push(fileInfo);
+        } else {
+          txtWithoutType.push(fileInfo);
+        }
+      } else if (isDocx) {
+        if (file.document_type_id) {
+          docxWithType.push(fileInfo);
+        } else {
+          docxWithoutType.push(fileInfo);
+        }
       }
     }
     
     const totalPdf = pdfWithType.length + pdfWithoutType.length;
     const totalPpt = pptWithType.length + pptWithoutType.length;
-    const totalFiles = totalPdf + totalPpt;
-    const totalUnclassified = pdfWithoutType.length + pptWithoutType.length;
+    const totalTxt = txtWithType.length + txtWithoutType.length;
+    const totalDocx = docxWithType.length + docxWithoutType.length;
+    const totalFiles = totalPdf + totalPpt + totalTxt + totalDocx;
+    const totalUnclassified = pdfWithoutType.length + pptWithoutType.length + txtWithoutType.length + docxWithoutType.length;
     
-    Logger.info(`Found ${totalFiles} total files (${totalPdf} PDFs and ${totalPpt} PowerPoint files)`);
-    Logger.info(`${pdfWithoutType.length + pptWithoutType.length} files need classification (${pdfWithoutType.length} PDFs, ${pptWithoutType.length} PowerPoint files)`);
+    Logger.info(`Found ${totalFiles} total files (${totalPdf} PDFs, ${totalPpt} PowerPoint files, ${totalTxt} TXT files, ${totalDocx} DOCX files)`);
+    Logger.info(`${totalUnclassified} files need classification (${pdfWithoutType.length} PDFs, ${pptWithoutType.length} PowerPoint files, ${txtWithoutType.length} TXT files, ${docxWithoutType.length} DOCX files)`);
     
     // Create markdown content
     let reportContent = '# Unclassified Files Report\n\n';
     reportContent += `Report generated on ${new Date().toISOString()}\n\n`;
-    reportContent += `This report shows PDF and PowerPoint files that need classification (missing document_type_id values).\n\n`;
+    reportContent += `This report shows PDF, PowerPoint, TXT, and DOCX files that need classification (missing document_type_id values).\n\n`;
     
     // Summary section
     reportContent += `## Summary\n\n`;
-    reportContent += `- Total PDF and PowerPoint files: ${totalFiles}\n`;
+    reportContent += `- Total document files: ${totalFiles}\n`;
     reportContent += `- Files already classified: ${totalFiles - totalUnclassified} (${Math.round((totalFiles - totalUnclassified) / totalFiles * 100)}%)\n`;
     reportContent += `- Files needing classification: ${totalUnclassified} (${Math.round(totalUnclassified / totalFiles * 100)}%)\n\n`;
+    
     reportContent += `### PDF Files\n`;
     reportContent += `- Total PDF files: ${totalPdf}\n`;
     reportContent += `- Classified PDF files: ${pdfWithType.length} (${totalPdf > 0 ? Math.round(pdfWithType.length / totalPdf * 100) : 0}%)\n`;
     reportContent += `- Unclassified PDF files: ${pdfWithoutType.length} (${totalPdf > 0 ? Math.round(pdfWithoutType.length / totalPdf * 100) : 0}%)\n\n`;
+    
     reportContent += `### PowerPoint Files\n`;
     reportContent += `- Total PowerPoint files: ${totalPpt}\n`;
     reportContent += `- Classified PowerPoint files: ${pptWithType.length} (${totalPpt > 0 ? Math.round(pptWithType.length / totalPpt * 100) : 0}%)\n`;
     reportContent += `- Unclassified PowerPoint files: ${pptWithoutType.length} (${totalPpt > 0 ? Math.round(pptWithoutType.length / totalPpt * 100) : 0}%)\n\n`;
+    
+    reportContent += `### TXT Files\n`;
+    reportContent += `- Total TXT files: ${totalTxt}\n`;
+    reportContent += `- Classified TXT files: ${txtWithType.length} (${totalTxt > 0 ? Math.round(txtWithType.length / totalTxt * 100) : 0}%)\n`;
+    reportContent += `- Unclassified TXT files: ${txtWithoutType.length} (${totalTxt > 0 ? Math.round(txtWithoutType.length / totalTxt * 100) : 0}%)\n\n`;
+    
+    reportContent += `### DOCX Files\n`;
+    reportContent += `- Total DOCX files: ${totalDocx}\n`;
+    reportContent += `- Classified DOCX files: ${docxWithType.length} (${totalDocx > 0 ? Math.round(docxWithType.length / totalDocx * 100) : 0}%)\n`;
+    reportContent += `- Unclassified DOCX files: ${docxWithoutType.length} (${totalDocx > 0 ? Math.round(docxWithoutType.length / totalDocx * 100) : 0}%)\n\n`;
     
     // Unclassified PDF section
     reportContent += `## Unclassified PDF Files (${pdfWithoutType.length})\n\n`;
@@ -211,6 +249,40 @@ export async function listUnclassifiedFiles(
       reportContent += `\n`;
     }
     
+    // Unclassified TXT section
+    reportContent += `## Unclassified TXT Files (${txtWithoutType.length})\n\n`;
+    
+    if (txtWithoutType.length === 0) {
+      reportContent += `No unclassified TXT files found.\n\n`;
+    } else {
+      // Create table
+      reportContent += `| File Name | File Path | Google Drive ID |\n`;
+      reportContent += `|-----------|-----------|----------------|\n`;
+      
+      for (const file of txtWithoutType) {
+        reportContent += `| ${file.name} | ${file.path} | ${file.drive_id} |\n`;
+      }
+      
+      reportContent += `\n`;
+    }
+    
+    // Unclassified DOCX section
+    reportContent += `## Unclassified DOCX Files (${docxWithoutType.length})\n\n`;
+    
+    if (docxWithoutType.length === 0) {
+      reportContent += `No unclassified DOCX files found.\n\n`;
+    } else {
+      // Create table
+      reportContent += `| File Name | File Path | Google Drive ID |\n`;
+      reportContent += `|-----------|-----------|----------------|\n`;
+      
+      for (const file of docxWithoutType) {
+        reportContent += `| ${file.name} | ${file.path} | ${file.drive_id} |\n`;
+      }
+      
+      reportContent += `\n`;
+    }
+    
     // Write to output file if specified
     if (actualOutputFile) {
       try {
@@ -233,6 +305,8 @@ export async function listUnclassifiedFiles(
     console.log('-------------------------');
     console.log(`Total PDF files: ${totalPdf} (${pdfWithoutType.length} unclassified)`);
     console.log(`Total PowerPoint files: ${totalPpt} (${pptWithoutType.length} unclassified)`);
+    console.log(`Total TXT files: ${totalTxt} (${txtWithoutType.length} unclassified)`);
+    console.log(`Total DOCX files: ${totalDocx} (${docxWithoutType.length} unclassified)`);
     console.log(`Total unclassified files: ${totalUnclassified} out of ${totalFiles} (${Math.round(totalUnclassified / totalFiles * 100)}%)`);
     
   } catch (error: any) {

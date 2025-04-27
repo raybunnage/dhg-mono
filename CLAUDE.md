@@ -122,7 +122,7 @@
 
 4. **Singleton Pattern for Services**: Always use and create singleton patterns for service classes:
    - ⚠️ **CRITICAL: Use existing singletons for external services**:
-     - Supabase: `packages/shared/services/supabase-service`
+     - Supabase: `packages/shared/services/supabase-client.ts`
      - Google Drive: `packages/shared/services/google-drive`
      - Claude AI: `packages/shared/services/claude-service`
    
@@ -173,10 +173,24 @@
    - Document types are a special table that contains the document types for the project
    - it has a field called document_type which is the type of the document - but we use instead of name which seems to confuse you regularly
 
-9. **Using Claude**:
-   - When using Claude, always use the ClaudeService singleton
-   - you will find it inpackages/shared/services/claude-service.ts
-   - if you are not having success with claude there are a number of scripts that successfully work with it in scripts/cli-pipeline
+9. **Using Claude Service - CRITICAL IMPLEMENTATION GUIDELINES**:
+   - ⚠️ **DO NOT CREATE NEW INSTANCES** - NEVER use `new ClaudeService()`
+   - ⚠️ **ALWAYS USE THE SINGLETON PATTERN** to access Claude:
+     ```typescript
+     // CORRECT IMPORT - Use this exact path and import
+     import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+     
+     // CORRECT USAGE - Use the imported singleton directly
+     const response = await claudeService.sendPrompt('Your prompt');
+     ```
+   - When searching for examples, look at these correct implementations:
+     - `scripts/cli-pipeline/examples/claude-service-example.ts`
+     - `scripts/cli-pipeline/media-processing/commands/process-summary.ts`
+     - `scripts/cli-pipeline/presentations/commands/generate-summary.ts`
+   - ⚠️ **ERROR HANDLING REQUIREMENTS**:
+     - ALWAYS handle errors properly when working with Claude
+     - Use try/catch blocks to catch and log errors properly 
+     - Provide meaningful error messages that will help users understand what went wrong
 
 10. **Ignore file_types folder off the root**:
    - this folder is for temporary file processing and archiving 
@@ -204,6 +218,36 @@
    - Avoid committing sensitive files (.env files, credentials, etc.)
    - Double-check all secret handling is done via environment variables
    - Review file paths to ensure no sensitive data is accidentally included
+
+14. **SUPABASE CONNECTIVITY: Standard patterns for database access**:
+   - ⚠️ **CRITICAL: ALWAYS use the SupabaseClientService singleton**
+   - Located at: `packages/shared/services/supabase-client.ts`
+   - Import pattern: `import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';`
+   - Usage pattern: `const supabase = SupabaseClientService.getInstance().getClient();`
+   - NEVER create your own Supabase client instances or implement custom credential loading
+   - Credential loading priority (handled automatically by the service):
+     1. Direct extraction from `.env.development` using regex
+     2. Configuration object if available
+     3. Environment variables loaded via dotenv from multiple files
+     4. Various environment variable naming patterns (SUPABASE_URL, VITE_SUPABASE_URL, etc.)
+   - Required environment variables in `.env.development`:
+     ```
+     SUPABASE_URL=https://your-project-id.supabase.co
+     SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+     ```
+   - When troubleshooting connectivity issues:
+     - Check that `.env.development` exists in the project root
+     - Verify it contains the correct SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
+     - Use `process.cwd()` to verify the current working directory
+     - Run connection test: `await SupabaseClientService.getInstance().testConnection()`
+   - Always handle errors properly:
+     ```typescript
+     const { data, error } = await supabase.from('table_name').select('*');
+     if (error) {
+       console.error('Database error:', error);
+       return;
+     }
+     ```
 
 
 ## CLI Pipeline Integration Requirements
@@ -382,6 +426,18 @@
 ## Continuous Improvement
 ⚠️ **PRE-IMPLEMENTATION AND POST-IMPLEMENTATION VERIFICATION**
 
+⚠️ **CRITICAL: ERROR HANDLING AND COMMUNICATION**
+- When encountering errors or issues, DO NOT implement workarounds without explaining the underlying problem
+- NEVER create "dummy" implementations or partial solutions to try to make the user happy
+- ALWAYS clearly explain what's going wrong, why it's happening, and what options exist
+- Let the USER decide how to proceed when there are roadblocks - don't try to hide issues
+- When faced with a complex problem:
+  1. STOP and think through the problem carefully
+  2. Clearly communicate the exact issue you're encountering
+  3. Present options for how to proceed (when possible)
+  4. Let the user make an informed decision
+  5. Implement the chosen solution thoroughly and correctly
+
 When implementing solutions, always check this section for known issues and their solutions. Run through this checklist before and after writing code:
 
 7. **Issue**: Missing ID fields in database records
@@ -455,7 +511,7 @@ When implementing solutions, always check this section for known issues and thei
 1. **Issue**: Authentication and credential management for external services
    **Solution**: Always use the existing singleton services for authentication
    **Implementation**: 
-   - For Supabase access issues, use the singleton in `packages/shared/services/supabase-service/supabase-service.ts` instead of implementing custom authentication
+   - For Supabase access issues, use the singleton in `packages/shared/services/supabase-client.ts` instead of implementing custom authentication
    - For Google Drive access issues, use the authentication singleton in `packages/shared/services/google-drive` which handles token management and authentication flows
    - Never implement custom authentication logic or hardcode credentials
    - If encountering authentication errors, look for the established patterns in the shared services first
@@ -512,11 +568,26 @@ When implementing solutions, always check this section for known issues and thei
 6. **Issue**: Multiple implementations of the Claude AI service
    **Solution**: Use the consolidated Claude service
    **Implementation**:
-   - Always use `packages/shared/services/claude-service` for all Claude AI interactions
-   - Import the singleton instance: `import { claudeService } from '../../packages/shared/services/claude-service'`
-   - Never create new implementations or instances of the Claude service
-   - Leverage the existing methods for text generation, JSON responses, and classification
-   - Refer to the README.md in the claude-service folder for usage examples
+   - ⚠️ **CRITICAL: ALWAYS use the correct singleton import path and pattern:**
+     ```typescript
+     import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+     ```
+   - ⚠️ **CRITICAL: NEVER create new instances with `new ClaudeService()`**
+   - ⚠️ **CRITICAL: ALWAYS use the imported singleton directly:**
+     ```typescript
+     // CORRECT
+     const response = await claudeService.sendPrompt('Your prompt');
+     
+     // WRONG - Do not create new instances!
+     const claudeInstance = new ClaudeService(); // WRONG!
+     const response = await claudeInstance.sendPrompt('Your prompt'); // WRONG!
+     ```
+   - When implementing new Claude integrations, first examine working examples:
+     - `scripts/cli-pipeline/examples/claude-service-example.ts`
+     - `scripts/cli-pipeline/media-processing/commands/process-summary.ts`
+   - Handle errors properly with try/catch blocks and meaningful error messages
+   - Use explicit TypeScript types for Claude method parameters and return values
+   - Test your Claude integration with small inputs before processing large content
 
 ## TypeScript Best Practices
 ⚠️ **TYPESCRIPT VERIFICATION WORKFLOW**
@@ -553,6 +624,194 @@ When implementing solutions, always check this section for known issues and thei
    - Improper type assertions
    - Missing generic type parameters
 
+## SUPABASE QUERY PATTERNS: How to Successfully Query Supabase
+
+⚠️ **CRITICAL: FOLLOW THESE EXACT PATTERNS FOR SUPABASE QUERIES**
+
+1. **Connection Setup - ALWAYS use the singleton pattern**:
+   ```typescript
+   // CORRECT IMPORT - Use this exact path
+   import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+   
+   // CORRECT USAGE - Get the client once at the beginning of your function
+   const supabase = SupabaseClientService.getInstance().getClient();
+   ```
+   
+   - **IMPORTANT**: Never attempt to use psql, direct SQL queries, or other database connection methods
+   - The `SupabaseClientService` handles all authentication and connection management
+   - Creating multiple instances wastes resources and may lead to connection issues
+
+2. **Basic Select Query Pattern**:
+   ```typescript
+   // Pattern for simple queries with proper error handling
+   const { data, error } = await supabase
+     .from('table_name')
+     .select('column1, column2, column3')
+     .limit(10);
+   
+   if (error) {
+     console.error('Database error:', error);
+     throw new Error(`Failed to retrieve data: ${error.message}`);
+   }
+   
+   // Use the data
+   console.log(`Retrieved ${data.length} records`);
+   ```
+
+3. **Filtered Queries Pattern**:
+   ```typescript
+   // Pattern for queries with conditions
+   const { data, error } = await supabase
+     .from('expert_documents')
+     .select('id, title, content')
+     .eq('document_type_id', documentTypeId)
+     .is('processing_skip_reason', null)
+     .limit(100);
+   
+   if (error) {
+     console.error('Database error:', error);
+     throw new Error(`Failed to retrieve documents: ${error.message}`);
+   }
+   ```
+   
+   - Common filter operations:
+     - `.eq('column', value)` - Equals
+     - `.neq('column', value)` - Not equals
+     - `.gt('column', value)` - Greater than
+     - `.gte('column', value)` - Greater than or equal
+     - `.lt('column', value)` - Less than
+     - `.lte('column', value)` - Less than or equal
+     - `.like('column', '%pattern%')` - LIKE pattern matching
+     - `.is('column', null)` - IS NULL
+     - `.not('column', 'is', null)` - IS NOT NULL
+     - `.in('column', [val1, val2])` - IN array of values
+
+4. **Insert Record Pattern**:
+   ```typescript
+   // Pattern for inserting records
+   const { data, error } = await supabase
+     .from('table_name')
+     .insert({
+       column1: value1,
+       column2: value2
+     })
+     .select(); // Always include select() to get the inserted record back
+   
+   if (error) {
+     console.error('Insert error:', error);
+     throw new Error(`Failed to insert record: ${error.message}`);
+   }
+   
+   console.log('Inserted record:', data[0]);
+   ```
+
+5. **Update Record Pattern**:
+   ```typescript
+   // Pattern for updating records
+   const { data, error } = await supabase
+     .from('table_name')
+     .update({ 
+       column1: newValue1,
+       column2: newValue2
+     })
+     .eq('id', recordId)
+     .select(); // Always include select() to get the updated record
+   
+   if (error) {
+     console.error('Update error:', error);
+     throw new Error(`Failed to update record: ${error.message}`);
+   }
+   
+   console.log('Updated record:', data[0]);
+   ```
+
+6. **Relationship Queries Pattern**:
+   ```typescript
+   // Pattern for querying with relationships
+   const { data, error } = await supabase
+     .from('presentations')
+     .select(`
+       id,
+       title,
+       presentation_assets!inner(
+         id,
+         asset_type,
+         asset_role,
+         source_id,
+         sources_google:source_id(
+           id,
+           name,
+           mime_type
+         )
+       )
+     `)
+     .is('main_video_id', null)
+     .eq('presentation_assets.sources_google.mime_type', 'video/mp4');
+   
+   if (error) {
+     console.error('Query error:', error);
+     throw new Error(`Failed to retrieve related data: ${error.message}`);
+   }
+   ```
+   
+   - **IMPORTANT**: Note the proper syntax for nested relationships:
+     - Use backticks for multi-line queries
+     - `table!inner(fields)` for inner joins 
+     - `related_table:foreign_key(fields)` for foreign key relationships
+
+7. **Count Queries Pattern**:
+   ```typescript
+   // Pattern for counting records
+   const { data, error, count } = await supabase
+     .from('table_name')
+     .select('id', { count: 'exact', head: true })
+     .eq('status', 'pending');
+   
+   if (error) {
+     console.error('Count error:', error);
+     throw new Error(`Failed to count records: ${error.message}`);
+   }
+   
+   console.log(`Found ${count} pending records`);
+   ```
+
+8. **Testing Connection Pattern**:
+   ```typescript
+   // Pattern for testing connection
+   try {
+     // First test the connection with a simple query
+     const connectionTest = await supabase.from('document_types').select('id').limit(1);
+     if (connectionTest.error) {
+       throw new Error(`Supabase connection error: ${connectionTest.error.message}`);
+     }
+     console.log("Supabase connection successful");
+   } catch (error) {
+     console.error('Database connection error:', error);
+     // Handle connection failure
+   }
+   ```
+
+⚠️ **COMMON SUPABASE QUERY ERRORS AND SOLUTIONS**:
+
+1. **Authentication Issues**:
+   - **Symptoms**: "JWT expired", "Invalid API key", "Not authorized"
+   - **Solution**: 
+     - Ensure `.env.development` file exists in project root with correct credentials
+     - `SUPABASE_URL=https://your-project-id.supabase.co`
+     - `SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here` (for admin access)
+     - NEVER hardcode these credentials in source files
+
+2. **Schema Access Issues**:
+   - **Symptoms**: "permission denied for table", "relation does not exist"
+   - **Solution**:
+     - Verify table names in `supabase/types.ts` (the single source of truth)
+     - Check RLS policies if applicable
+     - Ensure you're using the service role key for admin access
+
+3. **Transaction Issues**:
+   - **Symptoms**: "Query not allowed in a transaction block"
+   - **Solution**: Use individual queries instead of transactions for complex operations
+
 ## Database Schema Conventions
   
 1. **BEFORE WRITING DATABASE CODE**:
@@ -588,3 +847,52 @@ When implementing solutions, always check this section for known issues and thei
    - Ensure all insert operations include `.select()` to return generated IDs
    - Test database operations with real data
    - Check for any hardcoded credentials or connection strings
+# Claude Service Standard Implementation
+
+This repository uses a singleton instance of the Claude service for all Claude AI interactions.
+
+## How to Use Claude Service
+
+1. Import the singleton instance:
+```typescript
+import { claudeService } from '../../../packages/shared/services/claude-service';
+```
+
+2. Use the appropriate methods:
+```typescript
+// For simple text responses
+const textResponse = await claudeService.sendPrompt('Your prompt here');
+
+// For structured JSON responses
+const jsonResponse = await claudeService.getJsonResponse('Your prompt here');
+
+// For PDF processing
+const pdfContent = await claudeService.analyzePdf('/path/to/file.pdf', 'Your prompt here');
+const pdfJson = await claudeService.analyzePdfToJson('/path/to/file.pdf', 'Your prompt here');
+```
+
+3. Never create new instances with 'new ClaudeService()'. Always use the singleton.
+
+## Available Methods
+
+- sendPrompt: Get a text response
+- getJsonResponse: Get a structured JSON response
+- classifyText: Classify text content
+- analyzePdf: Process a PDF file and return text
+- analyzePdfToJson: Process a PDF file and return JSON
+
+## PDF Processing
+
+The Claude service supports processing PDFs and will automatically:
+- Handle large PDFs by splitting them
+- Convert PDFs to Claude's required format
+- Return either text or structured JSON
+
+## sources_google Folder Hierarchy
+
+The parent-child relationship in sources_google table is stored using Google Drive IDs, not Supabase UUIDs. For example, "Envy.pdf" has a parent_folder_id of "1ZUpNHLc9iNMQj-6q3t80Hyu1ylJyP2Yw", which is the drive_id of the "Papers/References" folder.
+
+This is essential to understand when working with recursive searching in the sources_google table. High-level folders have a path_depth of 0, with nested folders incrementing this value.
+
+When implementing recursive folder traversal or searching operations, always use the drive_id and parent_folder_id fields to navigate the hierarchy, not the Supabase UUIDs.
+

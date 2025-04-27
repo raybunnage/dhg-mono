@@ -7,6 +7,8 @@ import { ExpertDocumentService } from './services/expert-document-service';
 import { ClaudeService } from '../../../packages/shared/services/claude-service';
 import { generateSummaryCommand } from './commands/generate-summary';
 import { presentationAssetBioCommand } from './commands/presentation-asset-bio';
+import { createPresentationsFromMp4Command } from './commands/create-presentations-from-mp4';
+import { createPresentationAssetsCommand } from './commands/create-presentation-assets';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
@@ -496,9 +498,9 @@ program
     }
   });
 
-// Define check-professional-documents command
+// Define check-professional-docs command
 program
-  .command('check-professional-documents')
+  .command('check-professional-docs')
   .description('Check for professional documents (CV, bio, announcement) associated with presentations')
   .option('-p, --presentation-id <id>', 'Specific presentation ID to check')
   .option('-e, --expert-id <id>', 'Filter by expert ID')
@@ -1177,6 +1179,160 @@ program
   .option('--dry-run', 'Show what would be added without making changes', false)
   .option('--source-ids <ids>', 'Comma-separated list of source_ids to add')
   .option('--verbose', 'Show detailed logs', false)
+  
+// Health check command
+program
+  .command('health-check')
+  .description('Check the health of presentations pipeline infrastructure')
+  .option('--skip-database', 'Skip database connection check')
+  .option('--skip-presentations', 'Skip presentations table check')
+  .option('--skip-claude', 'Skip Claude service check')
+  .option('-v, --verbose', 'Show verbose output')
+  .action(async (options: any) => {
+    try {
+      // Import the healthCheckCommand function
+      const { healthCheckCommand } = require('./commands/health-check');
+      
+      // Run the health check
+      await healthCheckCommand({
+        skipDatabase: options.skipDatabase,
+        skipPresentations: options.skipPresentations,
+        skipClaude: options.skipClaude,
+        verbose: options.verbose
+      });
+    } catch (error) {
+      Logger.error('Error running health check:', error);
+      process.exit(1);
+    }
+  });
+
+// Define update-root-drive-id command
+program
+  .command('update-root-drive-id')
+  .description('Fill in the root_drive_id for all records with the value of 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
+  .option('--dry-run', 'Show what would be updated without making changes', false)
+  .option('-v, --verbose', 'Show detailed logs', false)
+  .action(async (options: any) => {
+    try {
+      // Import the updateRootDriveIdCommand function
+      const { updateRootDriveIdCommand } = require('./commands/update-root-drive-id');
+      
+      // Run the command
+      await updateRootDriveIdCommand({
+        dryRun: options.dryRun,
+        verbose: options.verbose
+      });
+    } catch (error) {
+      Logger.error('Error updating root_drive_id:', error);
+      process.exit(1);
+    }
+  });
+
+// Define create-presentations-from-mp4 command
+program
+  .command('create-presentations-from-mp4')
+  .description('Create presentation records for MP4 files in sources_google')
+  .option('--no-dry-run', 'Actually create the presentations instead of just showing what would be created')
+  .option('-l, --limit <number>', 'Limit the number of MP4 files to process', '100')
+  .option('-v, --verbose', 'Show detailed logs')
+  .option('--fix-missing-folders', 'Fix presentations with missing high-level folder source IDs')
+  .action(async (options: any) => {
+    try {
+      if (options.fixMissingFolders) {
+        Logger.info('Fixing presentations with missing high-level folder IDs...');
+      } else {
+        Logger.info('Creating presentations from MP4 files...');
+      }
+      
+      const result = await createPresentationsFromMp4Command({
+        dryRun: options.dryRun !== false,
+        limit: parseInt(options.limit),
+        verbose: options.verbose,
+        fixMissingFolders: options.fixMissingFolders
+      });
+      
+      if (result.success) {
+        if (options.fixMissingFolders) {
+          if (result.dryRun) {
+            if (result.wouldFix) {
+              Logger.info(`DRY RUN: Would update ${result.wouldFix} presentations with high-level folder IDs.`);
+              Logger.info('Run with --no-dry-run to actually apply the updates.');
+            } else {
+              Logger.info('No presentations need updating.');
+            }
+          } else if (result.fixed !== undefined) {
+            Logger.info(`Successfully updated ${result.fixed} presentations with high-level folder IDs.`);
+            if (result.failed && result.failed > 0) {
+              Logger.error(`Failed to update ${result.failed} presentations.`);
+            }
+          }
+        } else {
+          if (result.dryRun) {
+            Logger.info(`Found ${result.count} MP4 files that need presentations.`);
+            Logger.info('Run without --dry-run to actually create the presentations.');
+          } else {
+            Logger.info(`Created ${result.created} presentation records successfully.`);
+            if (result.failed && result.failed > 0) {
+              Logger.error(`Failed to create ${result.failed} presentation records.`);
+            }
+          }
+        }
+      } else {
+        Logger.error(options.fixMissingFolders 
+          ? 'Error fixing presentations with missing high-level folder IDs.' 
+          : 'Error creating presentations from MP4 files.');
+      }
+    } catch (error) {
+      Logger.error('Error creating presentations from MP4 files:', error);
+      process.exit(1);
+    }
+  });
+
+// Define create-presentation-assets command
+program
+  .command('create-presentation-assets')
+  .description('Create presentation_assets for all supported files in each presentation\'s high-level folder')
+  .option('-p, --presentation-id <id>', 'Specific presentation ID to process')
+  .option('--dry-run', 'Show what would be created without making any changes', false)
+  .option('-l, --limit <number>', 'Limit the number of presentations to process')
+  .option('-d, --depth <number>', 'Maximum folder depth to search (default: 6)')
+  .option('--skip-existing [boolean]', 'Skip presentations with existing assets (default: true)', true)
+  .action(async (options: any) => {
+    try {
+      Logger.info('Creating presentation assets for files in high-level folders...');
+      
+      // Convert skip-existing option to boolean if it's a string
+      let skipExisting = options.skipExisting;
+      if (typeof skipExisting === 'string') {
+        skipExisting = skipExisting.toLowerCase() !== 'false';
+      }
+      
+      const result = await createPresentationAssetsCommand({
+        presentationId: options.presentationId,
+        dryRun: options.dryRun,
+        limit: options.limit ? parseInt(options.limit) : undefined,
+        depth: options.depth ? parseInt(options.depth) : undefined,
+        skipExisting: skipExisting
+      });
+      
+      if (result.success) {
+        Logger.info(result.message || 'Successfully created presentation assets');
+      } else {
+        Logger.error(`Error creating presentation assets: ${result.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      Logger.error('Error running create-presentation-assets command:', error);
+      process.exit(1);
+    }
+  });
+
+// Define add-specific-files command (moved below health-check)
+program
+  .command('add-specific-files')
+  .description('Add specific files from sources_google to presentations, create expert documents and assets')
+  .option('--dry-run', 'Show what would be added without making changes', false)
+  .option('--source-ids <ids>', 'Comma-separated list of source_ids to add')
+  .option('--verbose', 'Show detailed logs', false)
   .action(async (options: any) => {
     try {
       Logger.info('Adding specific files to presentations...');
@@ -1455,6 +1611,7 @@ Available Commands:
   create-from-expert-docs    Create presentations from expert documents
   show-missing-content       Show presentations without content that need reprocessing
   show-ai-summary-status     Show AI summary status for expert documents in markdown table
+  update-root-drive-id       Fill in the root_drive_id for all records with the specified value
   
 For detailed help on a specific command, run:
   presentations-cli [command] --help

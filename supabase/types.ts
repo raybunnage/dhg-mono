@@ -247,13 +247,6 @@ export type Database = {
             foreignKeyName: "audio_processing_stages_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
-            referencedRelation: "batch_processing_status"
-            referencedColumns: ["batch_id"]
-          },
-          {
-            foreignKeyName: "audio_processing_stages_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
             referencedRelation: "processing_batches"
             referencedColumns: ["id"]
           },
@@ -519,6 +512,7 @@ export type Database = {
         Row: {
           ai_processing_rules: Json | null
           category: string
+          classifier: Database["public"]["Enums"]["document_classifier"] | null
           content_schema: Json | null
           created_at: string
           current_num_of_type: number | null
@@ -537,6 +531,7 @@ export type Database = {
         Insert: {
           ai_processing_rules?: Json | null
           category: string
+          classifier?: Database["public"]["Enums"]["document_classifier"] | null
           content_schema?: Json | null
           created_at?: string
           current_num_of_type?: number | null
@@ -555,6 +550,7 @@ export type Database = {
         Update: {
           ai_processing_rules?: Json | null
           category?: string
+          classifier?: Database["public"]["Enums"]["document_classifier"] | null
           content_schema?: Json | null
           created_at?: string
           current_num_of_type?: number | null
@@ -651,78 +647,6 @@ export type Database = {
         Relationships: []
       }
       documentation_files_backup_20240317_snapshot_20240318: {
-        Row: {
-          ai_assessment: Json | null
-          ai_generated_tags: string[] | null
-          assessment_created_at: string | null
-          assessment_date: string | null
-          assessment_model: string | null
-          assessment_quality_score: number | null
-          assessment_updated_at: string | null
-          assessment_version: number | null
-          created_at: string | null
-          document_type_id: string | null
-          file_hash: string | null
-          file_path: string | null
-          id: string | null
-          is_deleted: boolean | null
-          last_indexed_at: string | null
-          last_modified_at: string | null
-          manual_tags: string[] | null
-          metadata: Json | null
-          summary: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string | null
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string | null
-          id?: string | null
-          is_deleted?: boolean | null
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json | null
-          summary?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string | null
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string | null
-          id?: string | null
-          is_deleted?: boolean | null
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json | null
-          summary?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      documentation_files_backup_20250216: {
         Row: {
           ai_assessment: Json | null
           ai_generated_tags: string[] | null
@@ -1505,8 +1429,6 @@ export type Database = {
       }
       expert_documents: {
         Row: {
-          ai_analysis: Json | null
-          ai_processing_details: Json | null
           ai_summary_status:
             | Database["public"]["Enums"]["ai_summary_status_type"]
             | null
@@ -1517,34 +1439,31 @@ export type Database = {
           content_type: string | null
           created_at: string
           diarization_complete: boolean | null
+          document_processing_status:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at: string | null
           document_type_id: string | null
-          error_message: string | null
-          expert_id: string | null
           id: string
           is_latest: boolean | null
           key_insights: string[] | null
           language: string | null
-          last_error_at: string | null
           last_processed_at: string | null
-          last_viewed_at: string | null
-          model_used: string | null
-          previous_version_id: string | null
           processed_at: string | null
           processed_content: Json | null
           processing_completed_at: string | null
           processing_error: string | null
+          processing_skip_reason: string | null
           processing_started_at: string | null
           processing_stats: Json | null
           processing_status: string | null
-          prompt_used: string | null
-          queued_at: string | null
+          processing_status_updated_at: string | null
           raw_content: string | null
           retry_count: number | null
           source_id: string
           status: string | null
-          structure: Json | null
           summary_complete: boolean | null
-          token_count: number | null
+          title: string | null
           topics: string[] | null
           transcription_complete: boolean | null
           updated_at: string
@@ -1553,8 +1472,6 @@ export type Database = {
           word_count: number | null
         }
         Insert: {
-          ai_analysis?: Json | null
-          ai_processing_details?: Json | null
           ai_summary_status?:
             | Database["public"]["Enums"]["ai_summary_status_type"]
             | null
@@ -1565,34 +1482,31 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
           document_type_id?: string | null
-          error_message?: string | null
-          expert_id?: string | null
           id?: string
           is_latest?: boolean | null
           key_insights?: string[] | null
           language?: string | null
-          last_error_at?: string | null
           last_processed_at?: string | null
-          last_viewed_at?: string | null
-          model_used?: string | null
-          previous_version_id?: string | null
           processed_at?: string | null
           processed_content?: Json | null
           processing_completed_at?: string | null
           processing_error?: string | null
+          processing_skip_reason?: string | null
           processing_started_at?: string | null
           processing_stats?: Json | null
           processing_status?: string | null
-          prompt_used?: string | null
-          queued_at?: string | null
+          processing_status_updated_at?: string | null
           raw_content?: string | null
           retry_count?: number | null
           source_id: string
           status?: string | null
-          structure?: Json | null
           summary_complete?: boolean | null
-          token_count?: number | null
+          title?: string | null
           topics?: string[] | null
           transcription_complete?: boolean | null
           updated_at?: string
@@ -1601,8 +1515,6 @@ export type Database = {
           word_count?: number | null
         }
         Update: {
-          ai_analysis?: Json | null
-          ai_processing_details?: Json | null
           ai_summary_status?:
             | Database["public"]["Enums"]["ai_summary_status_type"]
             | null
@@ -1613,34 +1525,31 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
           document_type_id?: string | null
-          error_message?: string | null
-          expert_id?: string | null
           id?: string
           is_latest?: boolean | null
           key_insights?: string[] | null
           language?: string | null
-          last_error_at?: string | null
           last_processed_at?: string | null
-          last_viewed_at?: string | null
-          model_used?: string | null
-          previous_version_id?: string | null
           processed_at?: string | null
           processed_content?: Json | null
           processing_completed_at?: string | null
           processing_error?: string | null
+          processing_skip_reason?: string | null
           processing_started_at?: string | null
           processing_stats?: Json | null
           processing_status?: string | null
-          prompt_used?: string | null
-          queued_at?: string | null
+          processing_status_updated_at?: string | null
           raw_content?: string | null
           retry_count?: number | null
           source_id?: string
           status?: string | null
-          structure?: Json | null
           summary_complete?: boolean | null
-          token_count?: number | null
+          title?: string | null
           topics?: string[] | null
           transcription_complete?: boolean | null
           updated_at?: string
@@ -1653,13 +1562,6 @@ export type Database = {
             foreignKeyName: "expert_documents_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
-            referencedRelation: "batch_processing_status"
-            referencedColumns: ["batch_id"]
-          },
-          {
-            foreignKeyName: "expert_documents_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
             referencedRelation: "processing_batches"
             referencedColumns: ["id"]
           },
@@ -1668,20 +1570,6 @@ export type Database = {
             columns: ["document_type_id"]
             isOneToOne: false
             referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "expert_documents_expert_id_fkey"
-            columns: ["expert_id"]
-            isOneToOne: false
-            referencedRelation: "experts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "expert_documents_previous_version_id_fkey"
-            columns: ["previous_version_id"]
-            isOneToOne: false
-            referencedRelation: "expert_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -1824,6 +1712,300 @@ export type Database = {
           structure?: Json | null
           summary_complete?: boolean | null
           token_count?: number | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Relationships: []
+      }
+      expert_documents_backup_20250422: {
+        Row: {
+          ai_analysis: Json | null
+          ai_processing_details: Json | null
+          ai_summary_status:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id: string | null
+          classification_confidence: number | null
+          classification_metadata: Json | null
+          confidence_score: number | null
+          content_type: string | null
+          created_at: string | null
+          diarization_complete: boolean | null
+          document_processing_status:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at: string | null
+          document_type_id: string | null
+          error_message: string | null
+          expert_id: string | null
+          id: string | null
+          is_latest: boolean | null
+          key_insights: string[] | null
+          language: string | null
+          last_error_at: string | null
+          last_processed_at: string | null
+          last_viewed_at: string | null
+          model_used: string | null
+          previous_version_id: string | null
+          processed_at: string | null
+          processed_content: Json | null
+          processing_completed_at: string | null
+          processing_error: string | null
+          processing_skip_reason: string | null
+          processing_started_at: string | null
+          processing_stats: Json | null
+          processing_status: string | null
+          processing_status_updated_at: string | null
+          prompt_used: string | null
+          queued_at: string | null
+          raw_content: string | null
+          retry_count: number | null
+          source_id: string | null
+          status: string | null
+          structure: Json | null
+          summary_complete: boolean | null
+          token_count: number | null
+          topics: string[] | null
+          transcription_complete: boolean | null
+          updated_at: string | null
+          version: number | null
+          whisper_model_used: string | null
+          word_count: number | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_processing_details?: Json | null
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          error_message?: string | null
+          expert_id?: string | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_error_at?: string | null
+          last_processed_at?: string | null
+          last_viewed_at?: string | null
+          model_used?: string | null
+          previous_version_id?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          prompt_used?: string | null
+          queued_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          status?: string | null
+          structure?: Json | null
+          summary_complete?: boolean | null
+          token_count?: number | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_processing_details?: Json | null
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          error_message?: string | null
+          expert_id?: string | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_error_at?: string | null
+          last_processed_at?: string | null
+          last_viewed_at?: string | null
+          model_used?: string | null
+          previous_version_id?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          prompt_used?: string | null
+          queued_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          status?: string | null
+          structure?: Json | null
+          summary_complete?: boolean | null
+          token_count?: number | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Relationships: []
+      }
+      expert_documents_backup_20250423: {
+        Row: {
+          ai_summary_status:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id: string | null
+          classification_confidence: number | null
+          classification_metadata: Json | null
+          confidence_score: number | null
+          content_type: string | null
+          created_at: string | null
+          diarization_complete: boolean | null
+          document_processing_status:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at: string | null
+          document_type_id: string | null
+          id: string | null
+          is_latest: boolean | null
+          key_insights: string[] | null
+          language: string | null
+          last_processed_at: string | null
+          processed_at: string | null
+          processed_content: Json | null
+          processing_completed_at: string | null
+          processing_error: string | null
+          processing_skip_reason: string | null
+          processing_started_at: string | null
+          processing_stats: Json | null
+          processing_status: string | null
+          processing_status_updated_at: string | null
+          raw_content: string | null
+          retry_count: number | null
+          source_id: string | null
+          status: string | null
+          summary_complete: boolean | null
+          topics: string[] | null
+          transcription_complete: boolean | null
+          updated_at: string | null
+          version: number | null
+          whisper_model_used: string | null
+          word_count: number | null
+        }
+        Insert: {
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_processed_at?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          status?: string | null
+          summary_complete?: boolean | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Update: {
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_processed_at?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          status?: string | null
+          summary_complete?: boolean | null
           topics?: string[] | null
           transcription_complete?: boolean | null
           updated_at?: string | null
@@ -2309,66 +2491,63 @@ export type Database = {
       }
       presentation_assets: {
         Row: {
+          asset_expert_document_id: string | null
           asset_role: Database["public"]["Enums"]["asset_role_enum"] | null
+          asset_source_id: string | null
           asset_type: Database["public"]["Enums"]["asset_type_enum"] | null
-          asset_type_id: string | null
-          created_at: string
-          expert_document_id: string | null
+          created_at: string | null
           id: string
           importance_level: number | null
           metadata: Json | null
-          presentation_id: string | null
-          source_id: string | null
+          presentation_id: string
           timestamp_end: number | null
           timestamp_start: number | null
-          updated_at: string
+          updated_at: string | null
           user_notes: string | null
         }
         Insert: {
+          asset_expert_document_id?: string | null
           asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
+          asset_source_id?: string | null
           asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
-          asset_type_id?: string | null
-          created_at?: string
-          expert_document_id?: string | null
+          created_at?: string | null
           id?: string
           importance_level?: number | null
           metadata?: Json | null
-          presentation_id?: string | null
-          source_id?: string | null
+          presentation_id: string
           timestamp_end?: number | null
           timestamp_start?: number | null
-          updated_at?: string
+          updated_at?: string | null
           user_notes?: string | null
         }
         Update: {
+          asset_expert_document_id?: string | null
           asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
+          asset_source_id?: string | null
           asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
-          asset_type_id?: string | null
-          created_at?: string
-          expert_document_id?: string | null
+          created_at?: string | null
           id?: string
           importance_level?: number | null
           metadata?: Json | null
-          presentation_id?: string | null
-          source_id?: string | null
+          presentation_id?: string
           timestamp_end?: number | null
           timestamp_start?: number | null
-          updated_at?: string
+          updated_at?: string | null
           user_notes?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "presentation_assets_asset_type_id_fkey"
-            columns: ["asset_type_id"]
+            foreignKeyName: "presentation_assets_asset_expert_document_id_fkey"
+            columns: ["asset_expert_document_id"]
             isOneToOne: false
-            referencedRelation: "asset_types"
+            referencedRelation: "expert_documents"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "presentation_assets_expert_document_id_fkey"
-            columns: ["expert_document_id"]
+            foreignKeyName: "presentation_assets_asset_source_id_fkey"
+            columns: ["asset_source_id"]
             isOneToOne: false
-            referencedRelation: "expert_documents"
+            referencedRelation: "sources_google"
             referencedColumns: ["id"]
           },
           {
@@ -2461,22 +2640,7 @@ export type Database = {
           strength?: number | null
           target_presentation_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "presentation_relationships_source_presentation_id_fkey"
-            columns: ["source_presentation_id"]
-            isOneToOne: false
-            referencedRelation: "presentations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "presentation_relationships_target_presentation_id_fkey"
-            columns: ["target_presentation_id"]
-            isOneToOne: false
-            referencedRelation: "presentations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       presentation_search_index: {
         Row: {
@@ -2602,59 +2766,76 @@ export type Database = {
       presentations: {
         Row: {
           created_at: string | null
-          duration: unknown | null
           duration_seconds: number | null
-          filename: string
-          folder_path: string
+          expert_document_id: string | null
+          expert_id: string | null
+          high_level_folder_source_id: string | null
           id: string
-          is_public: boolean | null
-          main_video_id: string | null
-          metadata: Json | null
-          presenter_name: string | null
-          recorded_date: string | null
+          root_drive_id: string | null
           title: string | null
-          transcript: string | null
-          transcript_status: string | null
           updated_at: string | null
+          video_source_id: string | null
           view_count: number | null
+          web_view_link: string | null
         }
         Insert: {
           created_at?: string | null
-          duration?: unknown | null
           duration_seconds?: number | null
-          filename: string
-          folder_path: string
+          expert_document_id?: string | null
+          expert_id?: string | null
+          high_level_folder_source_id?: string | null
           id?: string
-          is_public?: boolean | null
-          main_video_id?: string | null
-          metadata?: Json | null
-          presenter_name?: string | null
-          recorded_date?: string | null
+          root_drive_id?: string | null
           title?: string | null
-          transcript?: string | null
-          transcript_status?: string | null
           updated_at?: string | null
+          video_source_id?: string | null
           view_count?: number | null
+          web_view_link?: string | null
         }
         Update: {
           created_at?: string | null
-          duration?: unknown | null
           duration_seconds?: number | null
-          filename?: string
-          folder_path?: string
+          expert_document_id?: string | null
+          expert_id?: string | null
+          high_level_folder_source_id?: string | null
           id?: string
-          is_public?: boolean | null
-          main_video_id?: string | null
-          metadata?: Json | null
-          presenter_name?: string | null
-          recorded_date?: string | null
+          root_drive_id?: string | null
           title?: string | null
-          transcript?: string | null
-          transcript_status?: string | null
           updated_at?: string | null
+          video_source_id?: string | null
           view_count?: number | null
+          web_view_link?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "presentations_expert_document_id_fkey"
+            columns: ["expert_document_id"]
+            isOneToOne: false
+            referencedRelation: "expert_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentations_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "experts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentations_high_level_folder_source_id_fkey"
+            columns: ["high_level_folder_source_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentations_video_source_id_fkey"
+            columns: ["video_source_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       presentations_backup_2024_04_06: {
         Row: {
@@ -2705,6 +2886,123 @@ export type Database = {
           metadata?: Json | null
           presenter_name?: string | null
           recorded_date?: string | null
+          title?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      presentations_backup_20250423: {
+        Row: {
+          created_at: string | null
+          duration: unknown | null
+          duration_seconds: number | null
+          filename: string | null
+          folder_path: string | null
+          id: string | null
+          is_public: boolean | null
+          main_video_id: string | null
+          metadata: Json | null
+          presenter_name: string | null
+          recorded_date: string | null
+          title: string | null
+          transcript: string | null
+          transcript_status: string | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration?: unknown | null
+          duration_seconds?: number | null
+          filename?: string | null
+          folder_path?: string | null
+          id?: string | null
+          is_public?: boolean | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          presenter_name?: string | null
+          recorded_date?: string | null
+          title?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          duration?: unknown | null
+          duration_seconds?: number | null
+          filename?: string | null
+          folder_path?: string | null
+          id?: string | null
+          is_public?: boolean | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          presenter_name?: string | null
+          recorded_date?: string | null
+          title?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      presentations_original_20250424: {
+        Row: {
+          created_at: string | null
+          duration: unknown | null
+          duration_seconds: number | null
+          filename: string | null
+          folder_path: string | null
+          id: string | null
+          is_public: boolean | null
+          main_video_id: string | null
+          metadata: Json | null
+          presenter_name: string | null
+          recorded_date: string | null
+          root_drive_id: string | null
+          title: string | null
+          transcript: string | null
+          transcript_status: string | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration?: unknown | null
+          duration_seconds?: number | null
+          filename?: string | null
+          folder_path?: string | null
+          id?: string | null
+          is_public?: boolean | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          presenter_name?: string | null
+          recorded_date?: string | null
+          root_drive_id?: string | null
+          title?: string | null
+          transcript?: string | null
+          transcript_status?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          duration?: unknown | null
+          duration_seconds?: number | null
+          filename?: string | null
+          folder_path?: string | null
+          id?: string | null
+          is_public?: boolean | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          presenter_name?: string | null
+          recorded_date?: string | null
+          root_drive_id?: string | null
           title?: string | null
           transcript?: string | null
           transcript_status?: string | null
@@ -3903,6 +4201,81 @@ export type Database = {
         }
         Relationships: []
       }
+      sources_google_backup_20250422: {
+        Row: {
+          created_at: string | null
+          document_type_id: string | null
+          drive_id: string | null
+          file_signature: string | null
+          id: string | null
+          is_deleted: boolean | null
+          is_root: boolean | null
+          last_indexed: string | null
+          main_video_id: string | null
+          metadata: Json | null
+          mime_type: string | null
+          modified_at: string | null
+          name: string | null
+          parent_folder_id: string | null
+          path: string | null
+          path_array: string[] | null
+          path_depth: number | null
+          root_drive_id: string | null
+          size: number | null
+          thumbnail_link: string | null
+          updated_at: string | null
+          web_view_link: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          file_signature?: string | null
+          id?: string | null
+          is_deleted?: boolean | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
+          root_drive_id?: string | null
+          size?: number | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          file_signature?: string | null
+          id?: string | null
+          is_deleted?: boolean | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
+          root_drive_id?: string | null
+          size?: number | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Relationships: []
+      }
       sources_google_experts: {
         Row: {
           created_at: string | null
@@ -4307,6 +4680,36 @@ export type Database = {
         }
         Relationships: []
       }
+      subject_classifications: {
+        Row: {
+          associated_concepts: string | null
+          created_at: string | null
+          id: string
+          short_name: string | null
+          subject: string
+          subject_character: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          associated_concepts?: string | null
+          created_at?: string | null
+          id?: string
+          short_name?: string | null
+          subject: string
+          subject_character?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          associated_concepts?: string | null
+          created_at?: string | null
+          id?: string
+          short_name?: string | null
+          subject?: string
+          subject_character?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sync_history: {
         Row: {
           completed_at: string | null
@@ -4459,6 +4862,44 @@ export type Database = {
           total_google_drive_items?: number | null
         }
         Relationships: []
+      }
+      table_classifications: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["classified_entity_type"]
+          id: string
+          notes: string | null
+          subject_classification_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["classified_entity_type"]
+          id?: string
+          notes?: string | null
+          subject_classification_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: Database["public"]["Enums"]["classified_entity_type"]
+          id?: string
+          notes?: string | null
+          subject_classification_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_subject_classification"
+            columns: ["subject_classification_id"]
+            isOneToOne: false
+            referencedRelation: "subject_classifications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       temp_sources: {
         Row: {
@@ -4655,46 +5096,34 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_annotations_asset_id_fkey"
-            columns: ["asset_id"]
-            isOneToOne: false
-            referencedRelation: "presentation_assets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_annotations_presentation_id_fkey"
-            columns: ["presentation_id"]
-            isOneToOne: false
-            referencedRelation: "presentations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      view_backups: {
+        Row: {
+          definition: string | null
+          schemaname: unknown | null
+          viewname: unknown | null
+        }
+        Insert: {
+          definition?: string | null
+          schemaname?: unknown | null
+          viewname?: unknown | null
+        }
+        Update: {
+          definition?: string | null
+          schemaname?: unknown | null
+          viewname?: unknown | null
+        }
+        Relationships: []
       }
     }
     Views: {
-      batch_processing_status: {
+      document_classifications_view: {
         Row: {
-          batch_completed_at: string | null
-          batch_created_at: string | null
-          batch_id: string | null
-          batch_started_at: string | null
-          batch_status: string | null
-          completed_count: number | null
-          computed_status: string | null
-          error_messages: string | null
-          error_rate_percentage: number | null
-          failed_count: number | null
-          in_progress_count: number | null
-          latest_error_at: string | null
-          max_retries: number | null
-          permanent_failures: number | null
-          processing_hours: number | null
-          queued_count: number | null
-          top_error_types: Json | null
-          total_documents: number | null
-          total_files: number | null
+          document_type: string | null
+          file_name: string | null
+          processed_content: Json | null
+          subject_classification: string | null
         }
         Relationships: []
       }
@@ -5096,6 +5525,10 @@ export type Database = {
         Args: { favorite_id: string }
         Returns: undefined
       }
+      increment_presentation_view_count: {
+        Args: { presentation_uuid: string }
+        Returns: undefined
+      }
       list_function_comments: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -5194,6 +5627,17 @@ export type Database = {
         | "transcription"
         | "diarization"
         | "summarization"
+      classified_entity_type:
+        | "expert_documents"
+        | "documentation_files"
+        | "sources_google"
+        | "scripts"
+      document_classifier: "pdf" | "powerpoint" | "docx" | "expert"
+      document_processing_status:
+        | "needs_reprocessing"
+        | "reprocessing_done"
+        | "skip_processing"
+        | "not_set"
       processing_stage:
         | "queued"
         | "downloading"
@@ -5377,6 +5821,19 @@ export const Constants = {
         "transcription",
         "diarization",
         "summarization",
+      ],
+      classified_entity_type: [
+        "expert_documents",
+        "documentation_files",
+        "sources_google",
+        "scripts",
+      ],
+      document_classifier: ["pdf", "powerpoint", "docx", "expert"],
+      document_processing_status: [
+        "needs_reprocessing",
+        "reprocessing_done",
+        "skip_processing",
+        "not_set",
       ],
       processing_stage: [
         "queued",

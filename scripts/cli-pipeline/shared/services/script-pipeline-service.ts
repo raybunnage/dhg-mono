@@ -9,7 +9,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { logger } from './logger-service';
 import { DatabaseService } from './database-service';
-import { ClaudeService } from './claude-service';
+import { claudeService } from '../../../../packages/shared/services/claude-service';
 import { EnvironmentService } from './environment-service';
 
 /**
@@ -20,7 +20,7 @@ export class ScriptPipelineService {
   private rootDir: string;
   private reportsDir: string;
   private dbService: DatabaseService;
-  private claudeService: ClaudeService;
+  // Using the shared claude service singleton
   private envService: EnvironmentService;
   
   /**
@@ -66,7 +66,6 @@ export class ScriptPipelineService {
     
     // Initialize services
     this.dbService = DatabaseService.getInstance();
-    this.claudeService = ClaudeService.getInstance();
     this.envService = EnvironmentService.getInstance();
   }
   
@@ -767,7 +766,7 @@ Please analyze this script and provide a full assessment according to the instru
           
           logger.info(`Submitting script for classification: ${script.file_path}`);
           
-          const classificationResult = await this.claudeService.getJsonResponse<{
+          const classificationResult = await claudeService.getJsonResponse<{
             script_type_id: string;
             ai_generated_tags: string[];
             title: string;
@@ -1033,7 +1032,7 @@ Please analyze this script and provide a full assessment according to the instru
           
           logger.info(`Submitting script for classification: ${script.file_path}`);
           
-          const classificationResult = await this.claudeService.getJsonResponse<{
+          const classificationResult = await claudeService.getJsonResponse<{
             script_type_id: string;
             ai_generated_tags: string[];
             title: string;

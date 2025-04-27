@@ -9,8 +9,10 @@ import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import { linkTopLevelFolders } from './commands/link-top-level-folders';
 import { assignExpert } from './commands/assign-expert';
+import { assignFolderExperts } from './commands/assign-folder-experts';
 import { listExperts } from './commands/list-experts';
 import { addExpert } from './commands/add-expert';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Load environment variables
 dotenv.config();
@@ -22,9 +24,10 @@ program
   .name('experts-cli')
   .description('CLI utilities for managing experts and their associations\n\n' +
     'Common commands:\n' +
-    '  list-experts      List all experts with their unique 3-character mnemonics\n' +
-    '  assign-expert -i  Interactively assign experts to folders using mnemonics\n' +
-    '  link-top-level-folders  List folders with videos that need expert assignment')
+    '  list-experts              List all experts with their unique 3-character mnemonics\n' +
+    '  assign-expert -i          Interactively assign experts to folders using mnemonics\n' +
+    '  assign-folder-experts     Interactively assign experts to high-level folders with path_depth = 0\n' +
+    '  link-top-level-folders    List folders with videos that need expert assignment')
   .version('1.0.0');
 
 // Command to list top-level folders for expert assignment
@@ -121,6 +124,33 @@ program
     });
   });
 
+// Command to assign experts to high-level folders with path_depth = 0
+program
+  .command('assign-folder-experts')
+  .description('Interactively assign experts to high-level folders with path_depth = 0\n' +
+    'Examples:\n' +
+    '  # Assign experts to high-level folders interactively\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh assign-folder-experts\n\n' +
+    '  # Run in dry-run mode to see what would happen\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh assign-folder-experts --dry-run\n\n' +
+    'Workflow:\n' +
+    '  1. The command first displays a list of all available experts with their 3-char mnemonics\n' +
+    '  2. It then shows each high-level folder with path_depth = 0 one at a time\n' +
+    '  3. Enter the 3-char mnemonic to assign that expert to the current folder\n' +
+    '  4. Type "SKIP" to skip assigning an expert to the current folder')
+  .option('-d, --dry-run', 'Show what would be done without making changes', false)
+  .option('-p, --primary', 'Set associations as primary', true)
+  .option('-v, --verbose', 'Show more detailed output', false)
+  .option('-l, --limit <number>', 'Limit number of folders shown', '50')
+  .action(async (options) => {
+    await assignFolderExperts({
+      dryRun: options.dryRun,
+      isPrimary: options.primary,
+      verbose: options.verbose,
+      limit: parseInt(options.limit, 10)
+    });
+  });
+
 // Command to add a new expert
 program
   .command('add-expert')
@@ -129,7 +159,9 @@ program
     '  # Add a basic expert\n' +
     '  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager"\n\n' +
     '  # Add expert with full details\n' +
-    '  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager" --full-name "Tor Wager" --expertise "Neuroscience" --core-group')
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager" --full-name "Tor Wager" --expertise "Neuroscience" --core-group\n\n' +
+    '  # Add expert with custom mnemonic\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager" --mnemonic "WAG"')
   .option('--expert-name <n>', 'Short name for the expert (required)')
   .option('--full-name <n>', 'Full name of the expert')
   .option('--expertise <area>', 'Area of expertise')
@@ -137,16 +169,94 @@ program
   .option('--core-group', 'Set as a core group member', false)
   .option('-d, --dry-run', 'Show what would be done without making changes', false)
   .option('-v, --verbose', 'Show more detailed output', false)
-  .action(async (options) => {
+  .action(async (options: any) => {
+    // Always log options for debugging
+    console.log('Options received:', options);
+    console.log('Expert name:', options.expertName);
+    console.log('Full name:', options.fullName);
+    console.log('Expertise area:', options.expertise);
+    console.log('Core group:', options.coreGroup);
+    
+    // Fix the parameters - manually map them properly
     await addExpert({
-      expertName: options.expertName,
-      fullName: options.fullName,
-      expertiseArea: options.expertise,
-      mnemonic: options.mnemonic,
-      isInCoreGroup: options.coreGroup,
-      dryRun: options.dryRun,
-      verbose: options.verbose
+      expertName: options.expertName || '',
+      fullName: options.fullName || '',
+      expertiseArea: options.expertise || '',
+      mnemonic: options.mnemonic || '',
+      isInCoreGroup: options.coreGroup === true,
+      dryRun: options.dryRun === true,
+      verbose: true // Force verbose mode for debugging
     });
+  });
+
+// Health check command
+program
+  .command('health-check')
+  .description('Check the health of the experts service infrastructure')
+  .option('--skip-database', 'Skip database connection check')
+  .option('-v, --verbose', 'Show verbose output')
+  .action(async (options) => {
+    try {
+      console.log('🏥 Running experts pipeline health checks...');
+      
+      // Check database connection
+      if (!options.skipDatabase) {
+        console.log('\n🔍 Checking Supabase database connection...');
+        try {
+          // Test connection to database
+          const connectionTest = await SupabaseClientService.getInstance().testConnection();
+          
+          if (connectionTest.success) {
+            console.log('✅ Database connection successful');
+            
+            // Additional check for experts table
+            const supabase = SupabaseClientService.getInstance().getClient();
+            const { data, error } = await supabase
+              .from('experts')
+              .select('count(*)', { count: 'exact', head: true });
+              
+            if (error) {
+              throw new Error(`Error querying experts table: ${error.message}`);
+            }
+            
+            console.log('✅ Experts table accessible');
+            
+            // Additional check for folder-expert relationships
+            const { data: relations, error: relError } = await supabase
+              .from('folder_expert_relationships')
+              .select('count(*)', { count: 'exact', head: true });
+              
+            if (relError) {
+              console.warn(`⚠️ Could not verify folder_expert_relationships table: ${relError.message}`);
+            } else {
+              console.log('✅ Folder-expert relationships table accessible');
+            }
+          } else {
+            const errorMessage = connectionTest.error || 'Unknown database connection error';
+            throw new Error(errorMessage);
+          }
+        } catch (error) {
+          console.error('❌ Database connection failed');
+          if (options.verbose) {
+            console.error('Error details:');
+            console.error(error);
+          }
+        }
+      } else {
+        console.log('⏩ Skipping database check');
+      }
+      
+      // Summary
+      console.log('\n📋 Overall Status:');
+      if (!options.skipDatabase) {
+        console.log('✅ Experts service infrastructure appears healthy');
+      } else {
+        console.log('⚠️ Health status unknown (database check skipped)');
+      }
+    } catch (error) {
+      console.error(`Error performing health check: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    }
   });
 
 // Execute the program

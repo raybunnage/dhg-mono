@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { PresentationService } from '../services/presentation-service';
-import { claudeService } from '../../shared/services/claude-service';
+import { claudeService } from '../../../../packages/shared/services/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
 import { PromptQueryService } from '../../../../packages/cli/src/services/prompt-query-service';
 import * as fs from 'fs';

@@ -468,14 +468,25 @@ async function reclassifyDocuments(
     const supabase = SupabaseClientService.getInstance().getClient();
     
     // 2. Build query for already classified files that need reclassification
+    // Focus only on document types that make sense to process with text analysis
+    const textProcessableMimeTypes = [
+      'application/pdf',
+      'text/plain',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'application/vnd.google-apps.document',
+      'text/markdown'
+    ];
+
     let query = supabase
       .from('sources_google')
       .select(`
         *,
-        expert_documents(id)
+        expert_documents(id, document_processing_status)
       `)
       .not('document_type_id', 'is', null)  // Only include documents that have been classified
-      .is('is_deleted', false);
+      .is('is_deleted', false)
+      .in('mime_type', textProcessableMimeTypes);  // Focus only on text-based documents
     
     // Filter by folder if provided
     if (folderId) {
@@ -527,6 +538,9 @@ async function reclassifyDocuments(
     if (startDate) {
       query = query.gte('created_at', startDate);
     }
+    
+    // Only process documents that are specifically marked as "needs_reprocessing"
+    query = query.or('expert_documents.document_processing_status.eq.needs_reprocessing,expert_documents.document_processing_status.is.null');
     
     // Apply sort and limit
     query = query
@@ -616,16 +630,30 @@ async function reclassifyDocuments(
             }
             
             if (expertDocId) {
+              // Check if this document needed reprocessing
+              const needsReprocessing = file.expert_documents && 
+                                        file.expert_documents.length > 0 && 
+                                        file.expert_documents[0].document_processing_status === 'needs_reprocessing';
+              
               // Update existing expert document
+              const updateData = {
+                document_type_id: classificationResult.document_type_id,
+                classification_confidence: classificationResult.classification_confidence || 0.75,
+                classification_metadata: classificationResult,
+                processed_content: classificationResult,
+                updated_at: new Date().toISOString()
+              };
+              
+              // If this file needed reprocessing, mark it as "reprocessing_done"
+              if (needsReprocessing) {
+                updateData['document_processing_status'] = 'reprocessing_done';
+                updateData['document_processing_status_updated_at'] = new Date().toISOString();
+                console.log(`Marking file ${file.name} as "reprocessing_done"`);
+              }
+              
               const { error: updateError } = await supabase
                 .from('expert_documents')
-                .update({
-                  document_type_id: classificationResult.document_type_id,
-                  classification_confidence: classificationResult.classification_confidence || 0.75,
-                  classification_metadata: classificationResult,
-                  processed_content: classificationResult,
-                  updated_at: new Date().toISOString()
-                })
+                .update(updateData)
                 .eq('id', expertDocId);
                 
               if (updateError) {
@@ -646,6 +674,14 @@ async function reclassifyDocuments(
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
               };
+              
+              // If this file needed reprocessing, mark it as "reprocessing_done"
+              if (file.expert_documents && file.expert_documents.length > 0 && 
+                  file.expert_documents[0].document_processing_status === 'needs_reprocessing') {
+                expertDoc['document_processing_status'] = 'reprocessing_done';
+                expertDoc['document_processing_status_updated_at'] = new Date().toISOString();
+                console.log(`Marking new expert document for ${file.name} as "reprocessing_done"`);
+              }
               
               const { error: insertError } = await supabase
                 .from('expert_documents')

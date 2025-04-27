@@ -159,16 +159,32 @@ async function findDocumentIdFromFilename(filename: string, supabase: any): Prom
     // Strip extension if present
     const baseFilename = filename.replace(/\.[^/.]+$/, "");
     
-    // Find corresponding documents in database
+    // Find documents by querying separately - avoid join issues
+    // First find matching source in sources_google
+    const { data: matchingSources, error: sourcesError } = await supabase
+      .from('sources_google')
+      .select('id, name, mime_type')
+      .eq('mime_type', 'video/mp4')
+      .eq('is_deleted', false)
+      .ilike('name', `%${baseFilename}%`);
+    
+    if (sourcesError) {
+      Logger.error(`❌ Error querying sources_google for ${filename}: ${sourcesError.message}`);
+      return null;
+    }
+    
+    if (!matchingSources || matchingSources.length === 0) {
+      Logger.warn(`No matching sources found for ${baseFilename}`);
+      return null;
+    }
+    
+    // Then find expert documents linked to those sources
+    const sourceIds = matchingSources.map(source => source.id);
     const { data: matchingDocs, error: queryError } = await supabase
       .from('expert_documents')
-      .select(`
-        id, 
-        sources_google!inner(id, name, mime_type)
-      `)
+      .select('id, source_id, content_type')
       .eq('content_type', 'presentation')
-      .eq('sources_google.mime_type', 'video/mp4')
-      .ilike('sources_google.name', `%${baseFilename}%`);
+      .in('source_id', sourceIds);
     
     if (queryError) {
       Logger.error(`❌ Error querying documents for ${filename}: ${queryError.message}`);
@@ -177,15 +193,26 @@ async function findDocumentIdFromFilename(filename: string, supabase: any): Prom
     
     if (!matchingDocs || matchingDocs.length === 0) {
       // Try to find files with the extension
+      // Check sources first
+      const { data: matchingSourcesWithExt, error: sourcesExtError } = await supabase
+        .from('sources_google')
+        .select('id, name, mime_type')
+        .eq('mime_type', 'video/mp4')
+        .eq('is_deleted', false)
+        .ilike('name', `%${filename}%`);
+      
+      if (sourcesExtError || !matchingSourcesWithExt || matchingSourcesWithExt.length === 0) {
+        Logger.warn(`No matching sources with extension found for ${filename}`);
+        return null;
+      }
+      
+      // Find documents linked to these sources
+      const sourceIdsWithExt = matchingSourcesWithExt.map(source => source.id);
       const { data: matchingDocsWithExt } = await supabase
         .from('expert_documents')
-        .select(`
-          id, 
-          sources_google!inner(id, name, mime_type)
-        `)
+        .select('id, source_id')
         .eq('content_type', 'presentation')
-        .eq('sources_google.mime_type', 'video/mp4')
-        .ilike('sources_google.name', `%${filename}%`);
+        .in('source_id', sourceIdsWithExt);
       
       if (!matchingDocsWithExt || matchingDocsWithExt.length === 0) {
         Logger.error(`❌ No matching document found for file: ${filename}`);
@@ -270,7 +297,7 @@ async function registerMp4File(supabase: any, fileInfo: MP4FileInfo): Promise<st
       .from('sources_google')
       .select('id, name')
       .eq('name', fileInfo.name)
-      .eq('deleted', false);
+      .eq('is_deleted', false);
     
     if (sourceError) {
       Logger.error(`Error checking sources_google for ${fileInfo.name}: ${sourceError.message}`);
@@ -298,7 +325,7 @@ async function registerMp4File(supabase: any, fileInfo: MP4FileInfo): Promise<st
         .from('sources_google')
         .select('id, name')
         .eq('name', fileInfo.name)
-        .eq('deleted', false);
+        .eq('is_deleted', false);
       
       if (newSourceError || !newSourceData || newSourceData.length === 0) {
         Logger.error(`Failed to register source for ${fileInfo.name}`);

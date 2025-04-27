@@ -60,6 +60,8 @@ function display_help() {
   echo "  check-media-files            Check for missing/orphaned MP4 and M4A files"
   echo "  find-missing-media           Find missing MP4 files in Google Drive and generate copy commands"
   echo "                               Options: --deep, --limit, --source, --format"
+  echo "  find-missing-sources_google-mp4s  Find MP4 files from sources_google with video/mp4 type not in presentations"
+  echo "                               Options: --limit, --format, --path-contains"
   echo "  find-missing-js-files        Run JavaScript-based MP4 file checker (legacy)"
   echo "  run-shell-check [--script]   Run shell script (default: mp4-files-check.sh)"
   echo "  purge-processed-media        Find and remove MP4/M4A files that have been successfully processed"
@@ -76,6 +78,8 @@ function display_help() {
   echo "  register-expert-docs         Register MP4 files as expert documents in the database"
   echo "  register-local-mp4-files     Add local MP4 files to database that are not already registered"
   echo "                               Options: --dry-run, --force, --specific-files"
+  echo "  health-check                 Check the health of media processing infrastructure"
+  echo "                               Options: --skip-database, --skip-file-system, --skip-ffmpeg, --verbose"
   echo ""
   echo "Options:"
   echo "  --dry-run                    Show what would happen without making changes"
@@ -118,6 +122,7 @@ function display_help() {
   echo "  media-processing-cli.sh update-disk-status --dry-run"
   echo "  media-processing-cli.sh register-expert-docs --limit 20"
   echo "  media-processing-cli.sh purge-processed-media --dry-run"
+  echo "  media-processing-cli.sh find-missing-sources_google-mp4s --limit 10 --format commands"
 }
 
 # No arguments provided
@@ -184,6 +189,9 @@ case "$COMMAND" in
   find-missing-media)
     track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/find-missing-media.ts $*"
     ;;
+  find-missing-sources_google-mp4s)
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/find-missing-sources_google-mp4s.ts $*"
+    ;;
   find-missing-js-files)
     track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/find-missing-js-files.ts $*"
     ;;
@@ -211,6 +219,11 @@ case "$COMMAND" in
     ;;
   register-local-mp4-files)
     track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/register-local-mp4-files.ts $*"
+    ;;
+    
+  # Health check command
+  health-check)
+    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/health-check.ts $*"
     ;;
     
   # Help commands

@@ -3,8 +3,11 @@
  * 
  * Main service for document pipeline operations.
  * Uses shared services for file operations, database access, and Claude integration.
+ * 
+ * @module document-service
  */
 import * as path from 'path';
+import * as fs from 'fs';
 import * as crypto from 'crypto';
 
 // Import shared services
@@ -12,7 +15,8 @@ import { fileService } from '../../shared/file-service';
 import { databaseService } from '../../shared/services/database-service';
 import { logger } from '../../shared/services/logger-service';
 import { environmentService } from '../../shared/services/environment-service';
-import { claudeService } from '../../shared/services/claude-service';
+import { claudeService } from '../../../../packages/shared/services/claude-service';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 // Import types
 import { FileMetadata } from '../../shared/interfaces/types';
@@ -108,6 +112,193 @@ export class DocumentService {
   public async testConnection(): Promise<boolean> {
     const result = await databaseService.testConnection();
     return result.success;
+  }
+  
+  /**
+   * Perform a health check on all components required by the document service
+   * @param options Options for the health check
+   * @returns Health status of all components
+   */
+  public async performHealthCheck(options: {
+    skipDatabase?: boolean;
+    skipFiles?: boolean;
+    skipClaude?: boolean;
+    verbose?: boolean;
+  } = {}): Promise<{
+    database: { status: 'success' | 'failure' | 'unknown'; message: string; };
+    fileSystem: { status: 'success' | 'failure' | 'unknown'; message: string; };
+    claude: { status: 'success' | 'failure' | 'unknown'; message: string; };
+    documentTypes: { status: 'success' | 'failure' | 'unknown'; message: string; };
+    overall: { status: 'healthy' | 'unhealthy' | 'warning'; message: string; };
+  }> {
+    const results = {
+      database: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
+      fileSystem: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
+      claude: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
+      documentTypes: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
+      overall: { status: 'warning' as 'healthy' | 'unhealthy' | 'warning', message: 'Health check incomplete' }
+    };
+    
+    // Check database connection
+    if (!options.skipDatabase) {
+      try {
+        const dbResult = await databaseService.testConnection();
+        
+        if (dbResult.success) {
+          results.database = { 
+            status: 'success', 
+            message: 'Connected to database successfully' 
+          };
+          
+          // Also check document_types table since it's critical for this service
+          try {
+            // Use the supabase client directly from SupabaseClientService
+            const supabase = SupabaseClientService.getInstance().getClient();
+            const { data, error } = await supabase
+              .from('document_types')
+              .select('id', { count: 'exact' });
+            
+            if (error) {
+              logger.error('Error querying document_types:', error);
+              results.documentTypes = {
+                status: 'failure',
+                message: `Failed to query document_types: ${error.message}`
+              };
+            } else if (data && data.length > 0) {
+              results.documentTypes = {
+                status: 'success',
+                message: `Found ${data.length} document types in the database`
+              };
+            } else {
+              results.documentTypes = {
+                status: 'failure',
+                message: 'No document types found in the database'
+              };
+            }
+          } catch (error) {
+            results.documentTypes = {
+              status: 'failure',
+              message: `Error checking document types: ${error instanceof Error ? error.message : String(error)}`
+            };
+          }
+        } else {
+          results.database = { 
+            status: 'failure', 
+            message: dbResult.error || 'Failed to connect to database' 
+          };
+        }
+      } catch (error) {
+        results.database = { 
+          status: 'failure', 
+          message: `Database connection failed: ${error instanceof Error ? error.message : String(error)}` 
+        };
+      }
+    }
+    
+    // Check file system access
+    if (!options.skipFiles) {
+      try {
+        const docsPath = path.resolve(this.rootDir, 'docs');
+        
+        // Use fs.readdirSync directly since fileService might not have listFiles
+        if (fs.existsSync(docsPath)) {
+          const files = fs.readdirSync(docsPath).slice(0, 5);
+          
+          if (files && files.length > 0) {
+            results.fileSystem = {
+              status: 'success',
+              message: `Successfully accessed file system at ${docsPath}. Found ${files.length} files in sample.`
+            };
+          } else {
+            results.fileSystem = {
+              status: 'warning',
+              message: `Directory exists but no files found in ${docsPath}`
+            };
+          }
+        } else {
+          results.fileSystem = {
+            status: 'failure',
+            message: `Directory does not exist: ${docsPath}`
+          };
+        }
+      } catch (error) {
+        results.fileSystem = {
+          status: 'failure',
+          message: `File system access failed: ${error instanceof Error ? error.message : String(error)}`
+        };
+      }
+    }
+    
+    // Check Claude service
+    if (!options.skipClaude) {
+      try {
+        const claudeKey = environmentService.get('claudeApiKey') || environmentService.get('anthropicApiKey');
+        
+        if (claudeKey) {
+          try {
+            // Very short test prompt with minimal token usage
+            const response = await claudeService.sendPrompt('Say "healthy" if you can read this.', {
+              maxTokens: 10
+            });
+            
+            if (response && (response.toLowerCase().includes('healthy') || response.includes('Healthy'))) {
+              results.claude = { 
+                status: 'success', 
+                message: `Claude API connection successful.` 
+              };
+            } else {
+              results.claude = { 
+                status: 'failure', 
+                message: `Claude API returned unexpected response: ${response}` 
+              };
+            }
+          } catch (apiError) {
+            results.claude = { 
+              status: 'failure', 
+              message: `Claude API connection failed: ${apiError instanceof Error ? apiError.message : String(apiError)}` 
+            };
+          }
+        } else {
+          results.claude = { 
+            status: 'unknown', 
+            message: 'Claude API key not found in environment variables' 
+          };
+        }
+      } catch (error) {
+        results.claude = { 
+          status: 'failure', 
+          message: `Claude service initialization failed: ${error instanceof Error ? error.message : String(error)}` 
+        };
+      }
+    }
+    
+    // Calculate overall status
+    const allSuccess = Object.entries(results)
+      .filter(([key]) => key !== 'overall')
+      .every(([_, value]) => value.status === 'success');
+      
+    const anyFailure = Object.entries(results)
+      .filter(([key]) => key !== 'overall')
+      .some(([_, value]) => value.status === 'failure');
+    
+    if (allSuccess) {
+      results.overall = {
+        status: 'healthy',
+        message: 'All systems are healthy'
+      };
+    } else if (anyFailure) {
+      results.overall = {
+        status: 'unhealthy',
+        message: 'One or more systems are unhealthy'
+      };
+    } else {
+      results.overall = {
+        status: 'warning',
+        message: 'Health status unknown for some systems'
+      };
+    }
+    
+    return results;
   }
   
   /**

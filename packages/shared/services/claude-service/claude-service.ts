@@ -244,8 +244,8 @@ export class ClaudeService {
     prompt: string,
     options: ClaudeRequestOptions = {}
   ): Promise<T> {
-    // Set JSON specific options
-    options.temperature = options.temperature ?? 0;
+    // Always use temperature 0 for JSON responses (deterministic outputs)
+    options.temperature = 0;
     options.jsonMode = options.jsonMode ?? true;
     
     // Set system message for JSON responses - enhanced to be very explicit
@@ -853,8 +853,8 @@ export class ClaudeService {
     prompt: string,
     options: ClaudeRequestOptions = {}
   ): Promise<T> {
-    // Set JSON specific options
-    options.temperature = options.temperature ?? 0;
+    // Always use temperature 0 for JSON responses (deterministic outputs)
+    options.temperature = 0;
     
     // Set JSON-specific system message if not provided
     if (!options.system) {
@@ -960,7 +960,7 @@ export class ClaudeService {
     // Use enhanced analyzePdfToJson with the classification prompt
     return this.analyzePdfToJson<T>(pdfPath, enhancedPrompt, {
       ...options,
-      temperature: options.temperature ?? 0 // Ensure deterministic output for classification
+      temperature: 0 // Always use temperature 0 for classifications
     });
   }
 }

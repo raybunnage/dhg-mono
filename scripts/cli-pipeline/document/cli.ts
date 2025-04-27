@@ -288,6 +288,131 @@ cliService.registerCommand({
   }
 });
 
+// Add health-check command
+cliService.registerCommand({
+  name: 'health-check',
+  description: 'Check the health of the document pipeline service',
+  options: [
+    {
+      name: 'skip-database',
+      description: 'Skip database connection check',
+      type: 'boolean',
+      default: false
+    },
+    {
+      name: 'skip-files',
+      description: 'Skip file system check',
+      type: 'boolean',
+      default: false
+    },
+    {
+      name: 'skip-claude',
+      description: 'Skip Claude service check',
+      type: 'boolean',
+      default: false
+    },
+    {
+      name: 'verbose',
+      shortName: 'v',
+      description: 'Show verbose output',
+      type: 'boolean',
+      default: false
+    }
+  ],
+  action: async (args) => {
+    cliService.info('🏥 Running document pipeline health checks...');
+    
+    const options = {
+      skipDatabase: args['skip-database'] || false,
+      skipFiles: args['skip-files'] || false,
+      skipClaude: args['skip-claude'] || false,
+      verbose: args.verbose || false
+    };
+    
+    try {
+      // Perform health checks
+      const results = await documentService.performHealthCheck(options);
+      
+      // Display results
+      if (!options.skipDatabase) {
+        console.log('\n🔍 Checking Supabase database connection...');
+        if (results.database.status === 'success') {
+          console.log('✅ Database connection successful');
+        } else {
+          console.error('❌ Database connection failed');
+          if (options.verbose) {
+            console.error('Error details:', results.database.message);
+          }
+        }
+        
+        console.log('\n🔍 Checking document types...');
+        if (results.documentTypes.status === 'success') {
+          console.log(`✅ ${results.documentTypes.message}`);
+        } else {
+          console.error(`❌ ${results.documentTypes.message}`);
+        }
+      }
+      
+      if (!options.skipFiles) {
+        console.log('\n🔍 Checking file system access...');
+        if (results.fileSystem.status === 'success') {
+          console.log(`✅ ${results.fileSystem.message}`);
+        } else {
+          console.error(`❌ ${results.fileSystem.message}`);
+        }
+      }
+      
+      if (!options.skipClaude) {
+        console.log('\n🔍 Checking Claude service...');
+        if (results.claude.status === 'success') {
+          console.log('✅ Claude API connection successful');
+        } else if (results.claude.status === 'unknown') {
+          console.warn('⚠️ Claude API status unknown - ' + results.claude.message);
+        } else {
+          console.error('❌ Claude API connection failed');
+          if (options.verbose) {
+            console.error('Error details:', results.claude.message);
+          }
+        }
+      }
+      
+      // Summary
+      console.log('\n📊 Health Check Summary:');
+      console.log('====================');
+      console.log(`Database: ${results.database.status === 'success' ? '✅ Healthy' : results.database.status === 'failure' ? '❌ Unhealthy' : '⚠️ Unknown'}`);
+      console.log(`Document Types: ${results.documentTypes.status === 'success' ? '✅ Healthy' : results.documentTypes.status === 'failure' ? '❌ Unhealthy' : '⚠️ Unknown'}`);
+      console.log(`File System: ${results.fileSystem.status === 'success' ? '✅ Healthy' : results.fileSystem.status === 'failure' ? '❌ Unhealthy' : '⚠️ Unknown'}`);
+      console.log(`Claude Service: ${results.claude.status === 'success' ? '✅ Healthy' : results.claude.status === 'failure' ? '❌ Unhealthy' : '⚠️ Unknown'}`);
+      
+      // Overall status
+      console.log('\n📋 Overall Status:');
+      if (results.overall.status === 'healthy') {
+        console.log('✅ All systems healthy');
+      } else if (results.overall.status === 'unhealthy') {
+        console.log('❌ One or more systems are unhealthy');
+      } else {
+        console.log('⚠️ Health status unknown for some systems');
+      }
+      
+      // Return overall result for tracking purposes
+      return {
+        success: results.overall.status === 'healthy',
+        message: results.overall.message,
+        details: results
+      };
+    } catch (error) {
+      cliService.error('Error performing health check');
+      logger.error('Health check error:', error);
+      
+      return {
+        success: false,
+        message: 'Error performing health check',
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+});
+
 // Main function
 async function main() {
   try {

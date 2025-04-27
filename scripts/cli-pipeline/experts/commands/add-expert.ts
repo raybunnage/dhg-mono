@@ -146,7 +146,12 @@ export async function addExpert(options: AddExpertOptions): Promise<void> {
     loggerUtil.info(`Options: ${JSON.stringify(options, null, 2)}`);
   }
   
-  // Validate required parameters
+  // Log what we have
+  if (verbose) {
+    loggerUtil.info(`Command line arguments: ${process.argv.join(' ')}`);
+    loggerUtil.info(`Expert name from options: ${expertName || 'None found'}`);
+  }
+  
   if (!expertName) {
     loggerUtil.error('Expert name is required. Use --expert-name option.');
     return;
@@ -158,6 +163,15 @@ export async function addExpert(options: AddExpertOptions): Promise<void> {
   }
   
   try {
+    // More verbose logging for debugging
+    if (verbose) {
+      loggerUtil.info(`Debug: expertName = "${expertName}"`);
+      loggerUtil.info(`Debug: fullName = "${fullName}"`);
+      loggerUtil.info(`Debug: expertiseArea = "${expertiseArea}"`);
+      loggerUtil.info(`Debug: isInCoreGroup = ${isInCoreGroup}`);
+      loggerUtil.info(`Debug: mnemonic = "${mnemonic}"`);
+    }
+    
     // Get Supabase client
     const supabaseClientService = SupabaseClientService.getInstance();
     const supabase = supabaseClientService.getClient();

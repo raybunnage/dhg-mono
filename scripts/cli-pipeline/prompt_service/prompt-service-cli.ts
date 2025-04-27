@@ -5,8 +5,13 @@ import { Command } from 'commander';
 import { loadPromptCommand } from './commands/load-prompt';
 import { listPromptsCommand } from './commands/list-prompts';
 import { viewPromptCommand } from './commands/view-prompt';
+import { viewPromptMetadataCommand } from './commands/view-prompt-metadata';
 import { addQueryCommand } from './commands/add-query';
 import { updatePromptCommand } from './commands/update-prompt';
+import { cleanPromptMetadataCommand } from './commands/clean-prompt-metadata';
+import { verifyClaudeTemperatureCommand } from './commands/verify-claude-temperature';
+import { summarizeMetadataFieldsCommand } from './commands/summarize-metadata-fields';
+import { healthCheckCommand } from './commands/health-check';
 
 const program = new Command();
 
@@ -38,6 +43,12 @@ program.command('view')
   .option('-f, --format <format>', 'Output format (json, text, markdown)', 'text')
   .action(viewPromptCommand);
 
+// View prompt metadata command
+program.command('view-metadata')
+  .description('View only the metadata of a prompt')
+  .argument('<n>', 'Name of the prompt to view')
+  .action(viewPromptMetadataCommand);
+
 // Add database query command
 program.command('add-query')
   .description('Add or update a database query for a prompt')
@@ -54,6 +65,31 @@ program.command('update')
   .argument('<file-path>', 'Path to the updated prompt file')
   .option('--dry-run', 'Show what would be updated without making changes', false)
   .action(updatePromptCommand);
+
+// Clean prompt metadata command
+program.command('clean-metadata')
+  .description('Clean metadata by removing specified fields from prompt records')
+  .option('-f, --fields <fields...>', 'Fields to remove (default: content,temperature)')
+  .action(cleanPromptMetadataCommand);
+
+// Verify Claude temperature command
+program.command('verify-claude-temperature')
+  .description('Verify that Claude service is using temperature=0')
+  .action(verifyClaudeTemperatureCommand);
+
+// Summarize metadata fields command
+program.command('summarize-metadata')
+  .description('Summarize metadata fields across all prompt records')
+  .action(summarizeMetadataFieldsCommand);
+
+// Health check command
+program.command('health-check')
+  .description('Check the health of the prompt service infrastructure')
+  .option('--skip-database', 'Skip database connection check')
+  .option('--skip-prompts', 'Skip prompt service check')
+  .option('--skip-claude', 'Skip Claude service check')
+  .option('-v, --verbose', 'Show verbose output')
+  .action(healthCheckCommand);
 
 // Parse the arguments
 program.parse(process.argv);

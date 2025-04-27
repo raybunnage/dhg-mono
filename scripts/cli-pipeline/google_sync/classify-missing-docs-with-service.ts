@@ -372,6 +372,51 @@ async function processFile(
   }
 }
 
+// Simple helper for running promises with concurrency control
+async function processWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  processor: (item: T, index: number) => Promise<R>,
+  progressCallback?: (current: number, total: number) => void
+): Promise<R[]> {
+  const results: R[] = [];
+  let currentIndex = 0;
+  const total = items.length;
+
+  // Process the next item in the queue
+  async function processNext(): Promise<void> {
+    const index = currentIndex++;
+    if (index >= total) return;
+
+    try {
+      const result = await processor(items[index], index);
+      results[index] = result; // Store the result at the correct index
+      
+      if (progressCallback) {
+        progressCallback(index + 1, total);
+      }
+
+      // Process the next item
+      await processNext();
+    } catch (error) {
+      console.error(`Error processing item at index ${index}:`, error);
+      // Even if there's an error, try to process the next item
+      await processNext();
+    }
+  }
+
+  // Start processing up to 'concurrency' items in parallel
+  const workers = [];
+  for (let i = 0; i < Math.min(concurrency, total); i++) {
+    workers.push(processNext());
+  }
+
+  // Wait for all workers to complete
+  await Promise.all(workers);
+  
+  return results;
+}
+
 // Main classification function
 async function classifyMissingDocuments(
   limit: number,
@@ -379,18 +424,79 @@ async function classifyMissingDocuments(
   outputPath?: string,
   includePdfs: boolean = false,
   debug: boolean = false,
-  dryRun: boolean = false
+  dryRun: boolean = false,
+  concurrency: number = 1
 ): Promise<any[]> {
   try {
     // 1. Get the Supabase client
     const supabase = SupabaseClientService.getInstance().getClient();
     
-    // 2. Build query for unclassified files
+    // 2. Build query for documents to process
+    // First, we'll try to find unclassified files (null document_type_id)
     let query = supabase
       .from('sources_google')
-      .select('*')
-      .is('document_type_id', null)
+      .select('*, expert_documents(id, document_processing_status)')
       .is('is_deleted', false);
+    
+    // We'll use two separate queries and combine the results:
+    // 1. First, get files with null document_type_id (unclassified)
+    const unclassifiedQuery = supabase
+      .from('sources_google')
+      .select('*')
+      .is('is_deleted', false)
+      .is('document_type_id', null);
+      
+    // 2. Find source files related to expert_documents needing reprocessing
+    // First, get the list of expert_documents with needs_reprocessing status
+    const { data: expertDocsNeedingReprocessing, error: expertDocsError } = await supabase
+      .from('expert_documents')
+      .select('source_id')
+      .eq('document_processing_status', 'needs_reprocessing');
+      
+    if (expertDocsError) {
+      throw new Error(`Error fetching expert documents: ${expertDocsError.message}`);
+    }
+    
+    // Now, get those source files
+    const sourceIds = expertDocsNeedingReprocessing?.map(doc => doc.source_id) || [];
+    
+    let reprocessingFiles: any[] = [];
+    if (sourceIds.length > 0) {
+      const reprocessingQuery = supabase
+        .from('sources_google')
+        .select('*')
+        .is('is_deleted', false)
+        .in('id', sourceIds);
+    
+      const { data: reprocessingSources, error: reprocessingError } = await reprocessingQuery;
+      if (reprocessingError) {
+        throw new Error(`Error fetching files needing reprocessing: ${reprocessingError.message}`);
+      }
+      
+      reprocessingFiles = reprocessingSources || [];
+    }
+      
+    // Execute the unclassified files query
+    const { data: unclassifiedFiles, error: unclassifiedError } = await unclassifiedQuery;
+    if (unclassifiedError) {
+      throw new Error(`Error fetching unclassified files: ${unclassifiedError.message}`);
+    }
+    
+    // Combine results, removing duplicates by ID
+    const filesMap = new Map();
+    
+    // Add all unclassified files
+    unclassifiedFiles?.forEach(file => {
+      filesMap.set(file.id, file);
+    });
+    
+    // Add all reprocessing files
+    reprocessingFiles?.forEach(file => {
+      filesMap.set(file.id, file);
+    });
+    
+    // Convert back to array
+    let files = Array.from(filesMap.values());
     
     // Filter by folder if provided
     if (folderId) {
@@ -414,54 +520,97 @@ async function classifyMissingDocuments(
           }
           
           if (folder.root_drive_id) {
-            query = query.eq('root_drive_id', folder.root_drive_id);
+            // Filter by root_drive_id
+            files = files.filter(file => file.root_drive_id === folder.root_drive_id);
           } else {
-            query = query.eq('parent_id', folder.drive_id);
+            // Filter by parent_id
+            files = files.filter(file => file.parent_id === folder.drive_id);
           }
         } else {
           console.log(`No folders found matching '${folderId}'`);
         }
       } else {
         // It's a UUID or Drive ID
-        query = query.eq('parent_id', folderId);
+        files = files.filter(file => file.parent_id === folderId);
       }
     }
     
-    // Build mime type filter
-    let mimeTypeFilter = 'mime_type.eq.application/vnd.openxmlformats-officedocument.wordprocessingml.document,mime_type.eq.text/plain,mime_type.eq.application/vnd.google-apps.document';
+    // Now we'll filter the combined results by mime type
+    const validMimeTypes = [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/vnd.google-apps.document'
+    ];
     
     // Include PDFs if requested
     if (includePdfs) {
-      mimeTypeFilter += ',mime_type.eq.application/pdf';
+      validMimeTypes.push('application/pdf');
     }
     
-    // Apply mime type filter, sort, and limit
-    query = query
-      .or(mimeTypeFilter)
-      .order('modified_at', { ascending: false })
-      .limit(limit);
+    // Filter by mime type
+    let filteredFiles = files.filter(file => validMimeTypes.includes(file.mime_type));
     
-    // 3. Execute the query
-    const { data: files, error } = await query;
+    // Sort by modified_at descending and limit
+    filteredFiles = filteredFiles
+      .sort((a, b) => {
+        // Sort by modified_at in descending order (newest first)
+        const dateA = new Date(a.modified_at || 0).getTime();
+        const dateB = new Date(b.modified_at || 0).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, limit);
+      
+    // Replace the files array with our filtered version
+    files = filteredFiles;
     
-    if (error) {
-      throw new Error(`Error fetching files: ${error.message}`);
-    }
+    // Note: We've already executed the queries and combined the results above
     
     if (debug) {
-      console.log(`Found ${files?.length || 0} files missing document types`);
+      console.log(`Found ${files?.length || 0} files that need processing`);
     }
     
     if (!files || files.length === 0) {
       return [];
     }
     
-    // 4. Process each file
-    const results = [];
-    for (const file of files) {
+    // 4. Process files with concurrency
+    console.log(`Processing ${files.length} files with concurrency of ${concurrency}`);
+    
+    // Since we've already filtered the files properly in our database queries,
+    // we can just use all the files in the combined filtered array.
+    // For debugging purposes, let's calculate the breakdown
+    const unclassifiedCount = files.filter(file => file.document_type_id === null).length;
+    const reprocessingCount = files.length - unclassifiedCount;
+    
+    if (debug) {
+      console.log(`Of the ${files.length} files to process:`);
+      console.log(`- ${unclassifiedCount} are missing document types`);
+      console.log(`- ${reprocessingCount} are marked for reprocessing`);
+    }
+    
+    // All files in our list need processing, so no additional filtering needed
+    const filesToProcess = files;
+    
+    if (filesToProcess.length !== files.length) {
+      console.log(`Note: Filtered down to ${filesToProcess.length} files that actually need processing`);
+    }
+    
+    // Validate concurrency value
+    if (isNaN(concurrency) || concurrency < 1) {
+      console.warn(`Invalid concurrency value: ${concurrency}, defaulting to 1`);
+      concurrency = 1;
+    } else if (concurrency > 5) {
+      console.log(`Note: High concurrency (${concurrency}) may lead to rate limiting with Claude API`);
+    }
+    
+    // Process a single file
+    const processFileWithResult = async (file: any, index: number): Promise<any> => {
+      // Always show progress, regardless of debug mode
+      console.log(`Processing file ${index+1}/${files.length}: ${file.name}`);
+      
       try {
         if (debug) {
-          console.log(`Processing file: ${file.name} (${file.id})`);
+          console.log(`File details: ${file.name} (${file.id})`);
         }
         
         // Process the file
@@ -471,6 +620,14 @@ async function classifyMissingDocuments(
           file.name || '',
           debug
         );
+        
+        // Show classification result regardless of debug mode
+        if (classificationResult && classificationResult.document_type) {
+          console.log(`[${index+1}/${files.length}] ✅ Classified as: ${classificationResult.document_type}`);
+          console.log(`[${index+1}/${files.length}] 📊 Confidence: ${(classificationResult.classification_confidence * 100).toFixed(1)}%`);
+        } else {
+          console.log(`[${index+1}/${files.length}] ❌ Classification failed`);
+        }
         
         // Only update the database if not in dry run mode
         if (!dryRun && classificationResult.document_type_id) {
@@ -486,98 +643,182 @@ async function classifyMissingDocuments(
             console.log(`Updated document type for ${file.name} to ${classificationResult.document_type_id}`);
           }
           
-          // Create expert document record - now including raw_content and processed_content
-          try {
-            // First try to sanitize raw_content that might have illegal Unicode escape sequences
-            let sanitizedContent = fileContent;
+          // Check if this file already has an expert_document entry that needs reprocessing
+          // We need to query directly since we don't have the joined data anymore
+          const { data: expertDocs, error: expertDocsError } = await supabase
+            .from('expert_documents')
+            .select('*')
+            .eq('source_id', file.id)
+            .eq('document_processing_status', 'needs_reprocessing')
+            .limit(1);
             
-            // If debug mode is enabled, log what we're about to insert
+          if (expertDocsError) {
+            console.error(`Error checking expert documents: ${expertDocsError.message}`);
+          }
+          
+          const existingExpertDoc = expertDocs && expertDocs.length > 0 ? expertDocs[0] : null;
+          
+          if (existingExpertDoc) {
+            // Update existing expert document with new classification
             if (debug) {
-              console.log(`Inserting expert document for ${file.name} with document_type_id: ${classificationResult.document_type_id}`);
+              console.log(`Updating existing expert document for ${file.name} that needs reprocessing`);
             }
             
-            // Try to create minimal document first, then extend with content if needed
-            const minimalDoc = {
-              id: uuidv4(),
-              source_id: file.id,
-              document_type_id: classificationResult.document_type_id,
-              classification_confidence: classificationResult.classification_confidence || 0.75,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            
-            // Insert the minimal document first (always works)
-            const { error: minimalError, data: minimalData } = await supabase
-              .from('expert_documents')
-              .insert(minimalDoc)
-              .select();
-              
-            if (minimalError) {
-              console.error(`Error creating minimal expert document: ${minimalError.message}`);
-            } else {
-              if (debug) {
-                console.log(`Created minimal expert document for ${file.name}`);
+            try {
+              // Create a clean version of content with all problematic characters removed
+              let cleanContent = '';
+              try {
+                // Remove ALL non-ASCII printable characters to ensure database compatibility
+                cleanContent = fileContent
+                  .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')  // Control chars
+                  .replace(/\\u[\dA-Fa-f]{4}/g, '')              // Unicode escapes
+                  .replace(/\u0000/g, '')                        // Null bytes
+                  .replace(/\n{3,}/g, '\n\n')                    // Multiple line breaks
+                  .trim();
+                  
+                // If that fails, try a more aggressive approach
+                if (!cleanContent || cleanContent.includes('\\u')) {
+                  cleanContent = fileContent.replace(/[^\x20-\x7E\r\n\t]/g, '');
+                }
+              } catch (sanitizeErr) {
+                console.warn(`Content sanitization error: ${sanitizeErr instanceof Error ? sanitizeErr.message : 'Unknown error'}`);
+                cleanContent = '[Content could not be sanitized for database storage]';
               }
               
-              // Now try to update with full content if minimal insert succeeded
-              try {
-                // Create a clean version of content with all problematic characters removed
-                let cleanContent = '';
-                try {
-                  // Remove ALL non-ASCII printable characters to ensure database compatibility
-                  cleanContent = fileContent
-                    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')  // Control chars
-                    .replace(/\\u[\dA-Fa-f]{4}/g, '')              // Unicode escapes
-                    .replace(/\u0000/g, '')                        // Null bytes
-                    .replace(/\n{3,}/g, '\n\n')                    // Multiple line breaks
-                    .trim();
-                    
-                  // If that fails, try a more aggressive approach
-                  if (!cleanContent || cleanContent.includes('\\u')) {
-                    cleanContent = fileContent.replace(/[^\x20-\x7E\r\n\t]/g, '');
-                  }
-                } catch (sanitizeErr) {
-                  console.warn(`Content sanitization error: ${sanitizeErr instanceof Error ? sanitizeErr.message : 'Unknown error'}`);
-                  cleanContent = '[Content could not be sanitized for database storage]';
+              // Prepare proper document summary JSON structure for processed_content
+              const documentSummary = {
+                document_summary: classificationResult.document_summary || "",
+                key_topics: classificationResult.key_topics || [],
+                target_audience: classificationResult.target_audience || "",
+                unique_insights: classificationResult.unique_insights || [],
+                document_type: classificationResult.document_type || "",
+                classification_confidence: classificationResult.classification_confidence || 0.75,
+                classification_reasoning: classificationResult.classification_reasoning || ""
+              };
+              
+              // Update the existing expert document
+              const { error: updateExpertDocError } = await supabase
+                .from('expert_documents')
+                .update({
+                  document_type_id: classificationResult.document_type_id,
+                  classification_confidence: classificationResult.classification_confidence || 0.75,
+                  classification_metadata: classificationResult,
+                  processed_content: documentSummary,
+                  raw_content: cleanContent,
+                  document_processing_status: 'reprocessing_done',
+                  document_processing_status_updated_at: new Date().toISOString(),
+                  processing_skip_reason: null,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', existingExpertDoc.id);
+                
+              if (updateExpertDocError) {
+                console.error(`Error updating expert document: ${updateExpertDocError.message}`);
+              } else if (debug) {
+                console.log(`✅ Successfully updated expert document with reprocessed content`);
+              }
+            } catch (err) {
+              console.error(`Error updating expert document: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            }
+          } else {
+            // Create a new expert document record - now including raw_content and processed_content
+            try {
+              // First try to sanitize raw_content that might have illegal Unicode escape sequences
+              let sanitizedContent = fileContent;
+              
+              // If debug mode is enabled, log what we're about to insert
+              if (debug) {
+                console.log(`Inserting expert document for ${file.name} with document_type_id: ${classificationResult.document_type_id}`);
+              }
+              
+              // Try to create minimal document first, then extend with content if needed
+              const minimalDoc = {
+                id: uuidv4(),
+                source_id: file.id,
+                document_type_id: classificationResult.document_type_id, // Use the classified document type
+                classification_confidence: classificationResult.classification_confidence || 0.75,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              };
+              
+              // Insert the minimal document first (always works)
+              const { error: minimalError, data: minimalData } = await supabase
+                .from('expert_documents')
+                .insert(minimalDoc)
+                .select();
+                
+              if (minimalError) {
+                console.error(`Error creating minimal expert document: ${minimalError.message}`);
+              } else {
+                if (debug) {
+                  console.log(`Created minimal expert document for ${file.name}`);
                 }
                 
-                // Only attempt content update if there's actual content to add
-                if (cleanContent && minimalData && minimalData.length > 0) {
-                  const { error: contentUpdateError } = await supabase
-                    .from('expert_documents')
-                    .update({
-                      classification_metadata: classificationResult,
-                      processed_content: classificationResult,  // Also set processed_content to match classification result
-                      raw_content: cleanContent
-                    })
-                    .eq('id', minimalDoc.id);
-                  
-                  if (contentUpdateError) {
-                    if (debug) {
-                      console.log(`Could not add full content data: ${contentUpdateError.message}`);
+                // Now try to update with full content if minimal insert succeeded
+                try {
+                  // Create a clean version of content with all problematic characters removed
+                  let cleanContent = '';
+                  try {
+                    // Remove ALL non-ASCII printable characters to ensure database compatibility
+                    cleanContent = fileContent
+                      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')  // Control chars
+                      .replace(/\\u[\dA-Fa-f]{4}/g, '')              // Unicode escapes
+                      .replace(/\u0000/g, '')                        // Null bytes
+                      .replace(/\n{3,}/g, '\n\n')                    // Multiple line breaks
+                      .trim();
+                    
+                    // If that fails, try a more aggressive approach
+                    if (!cleanContent || cleanContent.includes('\\u')) {
+                      cleanContent = fileContent.replace(/[^\x20-\x7E\r\n\t]/g, '');
                     }
-                    // This is fine, we already have the minimal record
-                  } else if (debug) {
-                    console.log(`Updated expert document with full content for ${file.name}`);
+                  } catch (sanitizeErr) {
+                    console.warn(`Content sanitization error: ${sanitizeErr instanceof Error ? sanitizeErr.message : 'Unknown error'}`);
+                    cleanContent = '[Content could not be sanitized for database storage]';
+                  }
+                
+                  // Only attempt content update if there's actual content to add
+                  if (cleanContent && minimalData && minimalData.length > 0) {
+                    // Prepare proper document summary JSON structure for processed_content
+                    const documentSummary = {
+                      document_summary: classificationResult.document_summary || "",
+                      key_topics: classificationResult.key_topics || [],
+                      target_audience: classificationResult.target_audience || "",
+                      unique_insights: classificationResult.unique_insights || [],
+                      document_type: classificationResult.document_type || "",
+                      classification_confidence: classificationResult.classification_confidence || 0.75,
+                      classification_reasoning: classificationResult.classification_reasoning || ""
+                    };
+                    
+                    const { error: contentUpdateError } = await supabase
+                      .from('expert_documents')
+                      .update({
+                        classification_metadata: classificationResult,
+                        processed_content: documentSummary,  // Set processed_content with proper document summary structure
+                        raw_content: cleanContent
+                      })
+                      .eq('id', minimalDoc.id);
+                    
+                    if (contentUpdateError) {
+                      if (debug) {
+                        console.log(`Could not add full content data: ${contentUpdateError.message}`);
+                      }
+                      // This is fine, we already have the minimal record
+                    } else if (debug) {
+                      console.log(`Updated expert document with full content for ${file.name}`);
+                    }
+                  }
+                } catch (contentErr) {
+                  // Just log in debug mode, we already have the minimal document
+                  if (debug) {
+                    console.log(`Could not add content: ${contentErr instanceof Error ? contentErr.message : 'Unknown error'}`);
                   }
                 }
-              } catch (contentErr) {
-                // Just log in debug mode, we already have the minimal document
-                if (debug) {
-                  console.log(`Could not add content: ${contentErr instanceof Error ? contentErr.message : 'Unknown error'}`);
-                }
               }
+            } catch (err) {
+              console.error(`Error in expert document creation process: ${err instanceof Error ? err.message : 'Unknown error'}`);
             }
-          } catch (err) {
-            console.error(`Error in expert document creation process: ${err instanceof Error ? err.message : 'Unknown error'}`);
           }
         }
-        
-        // Add to results
-        results.push({
-          file,
-          result: classificationResult
-        });
         
         // Save results to output directory if specified
         if (outputPath && classificationResult) {
@@ -594,17 +835,38 @@ async function classifyMissingDocuments(
             console.log(`Saved classification result to ${filePath}`);
           }
         }
+        
+        // Return successful result
+        return {
+          file,
+          result: classificationResult,
+          status: 'completed'
+        };
       } catch (error) {
         console.error(`Error processing file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         
-        // Add the error to results
-        results.push({
+        // Return error result
+        return {
           file,
           result: null,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+          error: error instanceof Error ? error.message : 'Unknown error',
+          status: 'failed'
+        };
       }
-    }
+    };
+    
+    // Process all files with concurrency
+    const results = await processWithConcurrency(
+      filesToProcess,
+      concurrency,
+      processFileWithResult,
+      (current, total) => {
+        if (debug) {
+          const percentage = Math.round((current / total) * 100);
+          console.log(`Progress: ${percentage}% (${current}/${total})`);
+        }
+      }
+    );
     
     // Save combined results if output path specified
     if (outputPath && results.length > 0) {
@@ -646,6 +908,7 @@ program
   .option('--dry-run', 'Process files but do not update database', false)
   .option('--include-pdfs', 'Include PDF files in classification (by default only .docx and .txt files are processed)', false)
   .option('--folder-id <id>', 'Filter by Google Drive folder ID or folder name', '')
+  .option('-c, --concurrency <number>', 'Number of files to process concurrently (1-5, default: 1)', '1')
   .action(async (options) => {
     try {
       // Set debug mode if verbose is enabled
@@ -659,11 +922,13 @@ program
       console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
       console.log(`Debug: ${debug ? 'ON' : 'OFF'}`);
       
-      // Parse limit
+      // Parse limit and concurrency
       const limit = parseInt(options.limit, 10);
+      const concurrency = parseInt(options.concurrency, 10);
       
       // Process files
       console.log(`Processing up to ${limit} files missing document types...`);
+      console.log(`Concurrency: ${concurrency} (processing up to ${concurrency} files simultaneously)`);
       
       const results = await classifyMissingDocuments(
         limit,
@@ -671,7 +936,8 @@ program
         options.output,
         options.includePdfs,
         debug,
-        dryRun
+        dryRun,
+        concurrency
       );
       
       // Show summary
@@ -681,18 +947,19 @@ program
       
       // Show results table
       console.log('\nResults:');
-      console.log('-'.repeat(80));
-      console.log('| File ID                               | File Name                  | Status    |');
-      console.log('-'.repeat(80));
+      console.log('-'.repeat(155));
+      console.log('| File ID                               | File Name                                                         | Document Type              | Status    |');
+      console.log('-'.repeat(155));
       
       results.forEach(r => {
         const id = r.file.id.substring(0, 36).padEnd(36);
-        const name = (r.file.name || 'Unknown').substring(0, 25).padEnd(25);
+        const name = (r.file.name || 'Unknown').substring(0, 60).padEnd(60);
+        const docType = r.result ? (r.result.document_type || '').substring(0, 30).padEnd(30) : ''.padEnd(30);
         const status = r.result ? 'Success' : 'Failed';
-        console.log(`| ${id} | ${name} | ${status.padEnd(9)} |`);
+        console.log(`| ${id} | ${name} | ${docType} | ${status.padEnd(9)} |`);
       });
       
-      console.log('-'.repeat(80));
+      console.log('-'.repeat(155));
     } catch (error) {
       console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       if (options.verbose) {
@@ -710,6 +977,7 @@ export async function classifyMissingDocsWithService(options: {
   includePdfs?: boolean;
   debug?: boolean;
   dryRun?: boolean;
+  concurrency?: number;
 }): Promise<any[]> {
   const {
     limit = 10,
@@ -717,7 +985,8 @@ export async function classifyMissingDocsWithService(options: {
     outputPath,
     includePdfs = false,
     debug = false,
-    dryRun = false
+    dryRun = false,
+    concurrency = 1
   } = options;
   
   return classifyMissingDocuments(
@@ -726,7 +995,8 @@ export async function classifyMissingDocsWithService(options: {
     outputPath,
     includePdfs,
     debug,
-    dryRun
+    dryRun,
+    concurrency
   );
 }
 

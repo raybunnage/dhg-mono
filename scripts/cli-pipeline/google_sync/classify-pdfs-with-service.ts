@@ -14,34 +14,90 @@ import { SupabaseClientService } from '../../../packages/shared/services/supabas
 import { promptService } from '../../../packages/shared/services/prompt-service';
 import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
 import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
+import { BatchProcessingService } from '../../../packages/shared/services/batch-processing-service';
 
 // Define the prompt name to use for classification
 const CLASSIFICATION_PROMPT = 'scientific-document-analysis-prompt';
 
 // Function to create a fallback classification when Claude API fails
-function createFallbackClassification(file: any): any {
+async function createFallbackClassification(file: any, supabase: any): Promise<any> {
   const fileName = file.name || 'Unknown Document';
   const extension = fileName.split('.').pop()?.toLowerCase() || '';
-  // Determine document type based on file extension and name
+
+  // Define a document type interface to use for typing
+  interface DocumentType {
+    id: string;
+    document_type: string;
+  }
+
+  // Fetch valid document types from the database to ensure we use an existing ID
+  const { data: documentTypes, error } = await supabase
+    .from('document_types')
+    .select('id, document_type')
+    .order('document_type');
+
+  if (error) {
+    console.error(`Error fetching document types: ${error.message}`);
+  }
+
+  // Default to "unknown document type" if we can't determine anything better
   let documentType = 'unknown document type';
-  let documentTypeId = '9dbe32ff-5e82-4586-be63-1445e5bcc548'; // ID for unknown document type
-  
-  // Basic file type detection from extension and name patterns
-  if (extension === 'pdf') {
-    documentType = 'pdf document';
-    documentTypeId = 'e3e10835-61f5-4734-a088-cfe2a9a0b1d7'; // ID for PDF document type
+  let documentTypeId = '';
+
+  // Find the unknown document type ID from the fetched document types
+  const unknownType = documentTypes?.find((dt: DocumentType) => 
+    dt.document_type.toLowerCase() === 'unknown document type' ||
+    dt.document_type.toLowerCase() === 'unknown' ||
+    dt.document_type.toLowerCase().includes('unclassified')
+  );
+
+  if (unknownType) {
+    documentTypeId = unknownType.id;
+  } else if (documentTypes && documentTypes.length > 0) {
+    // If no unknown type found, just use the first document type as a fallback
+    documentTypeId = documentTypes[0].id;
+    documentType = documentTypes[0].document_type;
+  }
+
+  // Determine document type based on extension and filename patterns if document types were fetched
+  if (documentTypes && documentTypes.length > 0) {
+    // For PDF files
+    if (extension === 'pdf') {
+      const pdfType = documentTypes.find((dt: DocumentType) => 
+        dt.document_type.toLowerCase().includes('pdf') ||
+        dt.document_type.toLowerCase().includes('document')
+      );
+      
+      if (pdfType) {
+        documentType = pdfType.document_type;
+        documentTypeId = pdfType.id;
+      }
+    }
+    
+    // For transcripts
+    if (fileName.toLowerCase().includes('transcript')) {
+      const transcriptType = documentTypes.find((dt: DocumentType) => 
+        dt.document_type.toLowerCase().includes('transcript')
+      );
+      
+      if (transcriptType) {
+        documentType = transcriptType.document_type;
+        documentTypeId = transcriptType.id;
+      }
+    }
   }
   
-  // Check if it's a transcript based on filename patterns
-  if (fileName.toLowerCase().includes('transcript')) {
-    documentType = 'presentation transcript';
-    documentTypeId = 'c1a7b78b-c61e-44a4-8b77-a27a38cbba7e';
+  // Check for large PDFs specifically to provide a better error message
+  let reasoningMessage = `Fallback classification created automatically due to API issues. Determined type based on filename "${fileName}" and extension "${extension}".`;
+  let summaryMessage = 'This document could not be analyzed by AI due to service connectivity issues. The classification is based on the file\'s metadata.';
+  
+  // For large PDFs, provide a more specific message
+  if (file.size && file.size > 10 * 1024 * 1024) {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    reasoningMessage = `Document is too large (${sizeMB}MB) for Claude's 10MB PDF limit. Classified based on filename "${fileName}" and extension "${extension}".`;
+    summaryMessage = `This document exceeds Claude's 10MB size limit for PDFs. Consider splitting the PDF into smaller parts for analysis or using a different approach for large documents.`;
   }
-  
-  // Create reasoning message
-  const reasoningMessage = `Fallback classification created automatically due to API issues. Determined type based on filename "${fileName}" and extension "${extension}".`;
-  const summaryMessage = 'This document could not be analyzed by AI due to service connectivity issues. The classification is based on the file\'s metadata.';
-  
+
   // Return a basic classification structure
   return {
     document_type: documentType,
@@ -62,17 +118,22 @@ function createFallbackClassification(file: any): any {
 async function processPdfFile(
   fileId: string,
   fileName: string,
-  debug: boolean = false
+  debug: boolean = false,
+  supabase: any = null
 ): Promise<{ classificationResult: any, tempFilePath: string | null }> {
   let tempFilePath: string | null = null;
+  // Array to collect temporary files for cleanup later
+  const tempFiles: string[] = [];
   
   try {
     if (debug) {
       console.log(`Processing PDF file: ${fileName} (ID: ${fileId})`);
     }
     
-    // Get Supabase client
-    const supabase = SupabaseClientService.getInstance().getClient();
+    // Get Supabase client if not provided
+    if (!supabase) {
+      supabase = SupabaseClientService.getInstance().getClient();
+    }
     
     // Import auth service
     const { GoogleAuthService } = require('../../../packages/shared/services/google-drive/google-auth-service');
@@ -103,10 +164,36 @@ async function processPdfFile(
     
     const drive = google.drive({ version: 'v3', auth: authClient });
     
-    // 1. Get file metadata first to confirm it's a PDF
+    // 1. Get file metadata first to confirm it's a PDF and check size
     const file = await googleDriveService.getFile(fileId);
     if (debug) {
       console.log(`PDF file details: ${JSON.stringify(file, null, 2)}`);
+    }
+    
+    // Check file size before downloading
+    let isLargeFile = false;
+    let fileSizeMB = 0;
+    
+    if (file && file.size) {
+      const fileSizeBytes = parseInt(file.size, 10);
+      fileSizeMB = fileSizeBytes / (1024 * 1024);
+      
+      // Check if the file exceeds Claude's 10MB limit for PDFs
+      if (fileSizeBytes > 10 * 1024 * 1024) {
+        isLargeFile = true;
+        
+        // Use a more noticeable warning for large files
+        console.log('');
+        console.log('⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️');
+        console.log(`⚠️  PDF file is too large (${fileSizeMB.toFixed(2)}MB). Claude has a 10MB limit for PDF files.`);
+        console.log('⚠️  Will extract and analyze the first 99 pages instead of using metadata.');
+        console.log('⚠️  This partial analysis will provide better results than metadata alone.');
+        console.log('⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️');
+        console.log('');
+        
+        // Continue as normal and let the file be downloaded
+        // We'll try to extract pages from it after download
+      }
     }
     
     // 2. Download the PDF file
@@ -134,6 +221,215 @@ async function processPdfFile(
     
     if (debug) {
       console.log(`Saved temporary PDF file to ${tempFilePath}`);
+    }
+    
+    // Check if this is a large file and we need to extract pages
+    if (isLargeFile && tempFilePath) {
+      console.log(`Processing large PDF (${fileSizeMB.toFixed(2)}MB) - extracting first 50 pages to stay under Claude's size limit...`);
+      
+      try {
+        // Create a path for the extracted PDF
+        const extractedPdfPath = tempFilePath.replace('.pdf', '_first50pages.pdf');
+        
+        // Try to use pdf-lib to extract the first 50 pages
+        try {
+          // Use pdf-lib to extract pages
+          const { PDFDocument } = require('pdf-lib');
+          
+          // Read the PDF bytes
+          const pdfBytes = fs.readFileSync(tempFilePath);
+          
+          // Load the document
+          const pdfDoc = await PDFDocument.load(pdfBytes);
+          
+          // Get page count and calculate how many to extract - limiting to 50 instead of 99
+          // to ensure we stay under Claude's size limit
+          const pageCount = pdfDoc.getPageCount();
+          const pagesToExtract = Math.min(pageCount, 50);
+          
+          console.log(`PDF has ${pageCount} pages. Extracting first ${pagesToExtract} pages...`);
+          
+          // Create a new document for the extracted pages
+          const extractedPdf = await PDFDocument.create();
+          
+          // Copy the first 50 pages (or less if the document has fewer)
+          const copiedPages = await extractedPdf.copyPages(
+            pdfDoc, 
+            Array.from({ length: pagesToExtract }, (_, i) => i)
+          );
+          
+          // Add all copied pages to the new document
+          copiedPages.forEach((page: any) => {
+            extractedPdf.addPage(page);
+          });
+          
+          // Save the new PDF with extracted pages and compression
+          // Using the most compact PDFlib settings to reduce file size
+          const extractedPdfBytes = await extractedPdf.save({
+            useObjectStreams: true,
+            addDefaultPage: false,
+            objectsPerTick: 100,
+            updateFieldAppearances: false
+          });
+          
+          fs.writeFileSync(extractedPdfPath, extractedPdfBytes);
+          
+          // Get file size of the extracted PDF
+          const stats = fs.statSync(extractedPdfPath);
+          const extractedSizeMB = stats.size / (1024 * 1024);
+          
+          console.log(`Successfully extracted ${pagesToExtract} pages to ${extractedPdfPath} (${extractedSizeMB.toFixed(2)}MB)`);
+          
+          // If still too large, reduce to even fewer pages
+          if (extractedSizeMB > 9.5) {
+            console.log(`Extracted PDF is still large (${extractedSizeMB.toFixed(2)}MB), reducing to first 25 pages...`);
+            
+            // Create a further reduced PDF
+            const reducedPdfPath = tempFilePath.replace('.pdf', '_first25pages.pdf');
+            
+            // Load the already extracted PDF
+            const reducedPdfDoc = await PDFDocument.load(extractedPdfBytes);
+            
+            // Create a new document for fewer pages
+            const veryReducedPdf = await PDFDocument.create();
+            
+            // Copy an even smaller number of pages
+            const pagesToKeep = Math.min(reducedPdfDoc.getPageCount(), 25);
+            const furtherReducedPages = await veryReducedPdf.copyPages(
+              reducedPdfDoc,
+              Array.from({ length: pagesToKeep }, (_, i) => i)
+            );
+            
+            // Add the reduced pages
+            furtherReducedPages.forEach((page: any) => {
+              veryReducedPdf.addPage(page);
+            });
+            
+            // Save with maximum compression settings
+            const reducedPdfBytes = await veryReducedPdf.save({
+              useObjectStreams: true,
+              addDefaultPage: false,
+              objectsPerTick: 100,
+              updateFieldAppearances: false
+            });
+            
+            fs.writeFileSync(reducedPdfPath, reducedPdfBytes);
+            
+            // Check size again
+            const reducedStats = fs.statSync(reducedPdfPath);
+            const reducedSizeMB = reducedStats.size / (1024 * 1024);
+            
+            console.log(`Created smaller PDF with ${pagesToKeep} pages: ${reducedPdfPath} (${reducedSizeMB.toFixed(2)}MB)`);
+            
+            // Use the further reduced PDF
+            const originalTempFilePath = tempFilePath;
+            tempFilePath = reducedPdfPath;
+            
+            // Add all files to cleanup
+            tempFiles.push(originalTempFilePath);
+            tempFiles.push(extractedPdfPath);
+            tempFiles.push(reducedPdfPath);
+          } else {
+            // Update the tempFilePath to use our extracted file
+            const originalTempFilePath = tempFilePath;
+            tempFilePath = extractedPdfPath;
+            
+            // Add both files to cleanup list at the end
+            tempFiles.push(originalTempFilePath);
+            tempFiles.push(extractedPdfPath);
+          }
+        } catch (pdfLibError) {
+          console.error(`Error using pdf-lib to extract pages: ${pdfLibError}`);
+          
+          // Try a more aggressive approach - take just the first 10 pages as a last resort
+          try {
+            console.log(`Attempting one last extraction with only 10 pages...`);
+            const lastResortPath = tempFilePath.replace('.pdf', '_first10pages.pdf');
+            
+            const { PDFDocument } = require('pdf-lib');
+            const pdfBytes = fs.readFileSync(tempFilePath);
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            const minimalPdf = await PDFDocument.create();
+            
+            // Only take 10 pages max
+            const pagesToKeep = Math.min(pdfDoc.getPageCount(), 10);
+            const minimalPages = await minimalPdf.copyPages(
+              pdfDoc,
+              Array.from({ length: pagesToKeep }, (_, i) => i)
+            );
+            
+            minimalPages.forEach((page: any) => {
+              minimalPdf.addPage(page);
+            });
+            
+            // Maximum compression
+            const minimalBytes = await minimalPdf.save({
+              useObjectStreams: true,
+              addDefaultPage: false,
+              objectsPerTick: 50,
+              updateFieldAppearances: false
+            });
+            
+            fs.writeFileSync(lastResortPath, minimalBytes);
+            
+            // Update the path and add to cleanup
+            const originalPath = tempFilePath;
+            tempFilePath = lastResortPath;
+            tempFiles.push(originalPath);
+            tempFiles.push(lastResortPath);
+            
+            console.log(`Created minimal 10-page PDF as last resort: ${lastResortPath}`);
+          } catch (minimalError) {
+            console.error(`Final extraction attempt failed: ${minimalError}`);
+            console.log(`Will try to continue with full PDF, but may encounter size issues.`);
+          }
+        }
+      } catch (extractionError) {
+        console.error(`Error during page extraction: ${extractionError}`);
+        
+        // Try a very minimal approach with just 5 pages
+        try {
+          console.log(`Attempting emergency extraction with only 5 pages...`);
+          const emergencyPath = tempFilePath.replace('.pdf', '_first5pages.pdf');
+          
+          const { PDFDocument } = require('pdf-lib');
+          const pdfBytes = fs.readFileSync(tempFilePath);
+          const pdfDoc = await PDFDocument.load(pdfBytes);
+          const emergencyPdf = await PDFDocument.create();
+          
+          // Only take 5 pages max
+          const pagesToKeep = Math.min(pdfDoc.getPageCount(), 5);
+          const emergencyPages = await emergencyPdf.copyPages(
+            pdfDoc,
+            Array.from({ length: pagesToKeep }, (_, i) => i)
+          );
+          
+          emergencyPages.forEach((page: any) => {
+            emergencyPdf.addPage(page);
+          });
+          
+          // Maximum compression
+          const emergencyBytes = await emergencyPdf.save({
+            useObjectStreams: true,
+            addDefaultPage: false,
+            objectsPerTick: 20,
+            updateFieldAppearances: false
+          });
+          
+          fs.writeFileSync(emergencyPath, emergencyBytes);
+          
+          // Update the path and add to cleanup
+          const originalPath = tempFilePath;
+          tempFilePath = emergencyPath;
+          tempFiles.push(originalPath);
+          tempFiles.push(emergencyPath);
+          
+          console.log(`Created emergency 5-page PDF: ${emergencyPath}`);
+        } catch (emergencyError) {
+          console.error(`Emergency extraction failed: ${emergencyError}`);
+          console.log(`All extraction attempts failed. Will try with full PDF but may encounter size issues.`);
+        }
+      }
     }
     
     // 4. Read a few lines of the PDF content to check if it seems valid
@@ -186,9 +482,31 @@ async function processPdfFile(
       }
       
       // Prepare the classification prompt with document types information
+      // Add a note if this is an extracted partial PDF
+      const is50PagesPdf = tempFilePath && tempFilePath.includes('_first50pages.pdf');
+      const is25PagesPdf = tempFilePath && tempFilePath.includes('_first25pages.pdf');
+      const is10PagesPdf = tempFilePath && tempFilePath.includes('_first10pages.pdf');
+      const is5PagesPdf = tempFilePath && tempFilePath.includes('_first5pages.pdf');
+      const isPartialPdf = is50PagesPdf || is25PagesPdf || is10PagesPdf || is5PagesPdf;
+      
+      // Determine how many pages were extracted
+      let pageCount = "partial";
+      if (is5PagesPdf) {
+        pageCount = "first 5";
+      } else if (is10PagesPdf) {
+        pageCount = "first 10";
+      } else if (is25PagesPdf) {
+        pageCount = "first 25";
+      } else if (is50PagesPdf) {
+        pageCount = "first 50";
+      }
+      
       const userMessage = `${promptResult.combinedContent}
 
       Please read and analyze this PDF document carefully.
+      ${isPartialPdf ? `NOTE: This is ONLY the ${pageCount} pages of a larger document that was too large for complete analysis.` : ""}
+      ${isPartialPdf ? "Your classification and summary should be based on this partial content." : ""}
+      
       1. Examine its content, structure, and purpose.
       2. Determine which document_type from the document_types table best describes it.
       3. Create a detailed summary (at least 3 paragraphs) that captures the key concepts.
@@ -198,6 +516,7 @@ async function processPdfFile(
       - Select the most appropriate document_type_id from the available options in the document_types table
       - Base your classification on the actual content of the PDF, not just the filename
       - Provide detailed reasoning for your classification choice
+      ${isPartialPdf ? `- Acknowledge in your summary that you've only analyzed the ${pageCount} pages of the document` : ""}
       `;
       
       // 7. Get classification from Claude using direct PDF reading capability
@@ -211,6 +530,9 @@ async function processPdfFile(
             console.log(`Using direct PDF analysis with Claude (attempt ${retries + 1}/${maxRetries})`);
           }
           
+          // Always show that we're sending to Claude, regardless of debug mode
+          console.log(`Sending PDF to Claude API for analysis...`);
+          
           // Use Claude's direct PDF analysis capability
           classificationResult = await claudeService.analyzePdfToJson(
             tempFilePath,
@@ -223,8 +545,11 @@ async function processPdfFile(
             }
           );
           
+          // Always show success message
+          console.log(`✅ Successfully analyzed PDF content with Claude`);
+          
           if (debug) {
-            console.log(`Successfully analyzed PDF content directly with Claude`);
+            console.log(`Document type assigned: ${classificationResult.document_type || 'Unknown'}`);
           }
           
           // If we got here, the API call succeeded
@@ -310,17 +635,19 @@ async function processPdfFile(
               } catch (fallbackError) {
                 console.error(`Fallback classification also failed: ${fallbackError}`);
                 // Create a very basic fallback classification based on file metadata
-                classificationResult = createFallbackClassification({
-                  name: fileName || 'Unknown Document'
-                });
+                classificationResult = await createFallbackClassification(
+                  { name: fileName || 'Unknown Document', drive_id: fileId },
+                  supabase
+                );
               }
             }
           } else {
             // For other types of errors, don't retry
             console.error(`Non-retryable Claude API error: ${errorMessage}`);
-            classificationResult = createFallbackClassification({
-              name: fileName || 'Unknown Document'
-            });
+            classificationResult = await createFallbackClassification(
+              { name: fileName || 'Unknown Document', drive_id: fileId },
+              supabase
+            );
             break;
           }
         }
@@ -328,9 +655,10 @@ async function processPdfFile(
       
       if (!classificationResult) {
         // Just in case we didn't set it in the error handlers
-        classificationResult = createFallbackClassification({
-          name: fileName || 'Unknown Document'
-        });
+        classificationResult = await createFallbackClassification(
+          { name: fileName || 'Unknown Document', drive_id: fileId },
+          supabase
+        );
       }
       
       if (debug) {
@@ -348,11 +676,23 @@ async function processPdfFile(
   } catch (error) {
     console.error(`Error processing PDF file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     
+    // Clean up any temporary files we created
+    for (const file of tempFiles) {
+      if (fs.existsSync(file)) {
+        try {
+          fs.unlinkSync(file);
+        } catch (cleanupError) {
+          console.warn(`Could not clean up temporary file ${file}: ${cleanupError}`);
+        }
+      }
+    }
+    
     // If we failed but have a temporary file, return it for cleanup
     return {
-      classificationResult: createFallbackClassification({
-        name: fileName || 'Unknown Document'
-      }),
+      classificationResult: await createFallbackClassification(
+        { name: fileName || 'Unknown Document', drive_id: fileId },
+        supabase
+      ),
       tempFilePath
     };
   }
@@ -371,13 +711,59 @@ function cleanupTempFiles(filePaths: string[]): void {
   }
 }
 
-// Main classification function
+// Simple helper for running promises with concurrency control
+async function processWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  processor: (item: T, index: number) => Promise<R>,
+  progressCallback?: (current: number, total: number) => void
+): Promise<R[]> {
+  const results: R[] = [];
+  let currentIndex = 0;
+  const total = items.length;
+
+  // Process the next item in the queue
+  async function processNext(): Promise<void> {
+    const index = currentIndex++;
+    if (index >= total) return;
+
+    try {
+      const result = await processor(items[index], index);
+      results[index] = result; // Store the result at the correct index
+      
+      if (progressCallback) {
+        progressCallback(index + 1, total);
+      }
+
+      // Process the next item
+      await processNext();
+    } catch (error) {
+      console.error(`Error processing item at index ${index}:`, error);
+      // Even if there's an error, try to process the next item
+      await processNext();
+    }
+  }
+
+  // Start processing up to 'concurrency' items in parallel
+  const workers = [];
+  for (let i = 0; i < Math.min(concurrency, total); i++) {
+    workers.push(processNext());
+  }
+
+  // Wait for all workers to complete
+  await Promise.all(workers);
+  
+  return results;
+}
+
+// Main classification function with batch processing and concurrency
 async function classifyPdfDocuments(
   limit: number,
   folderId?: string,
   outputPath?: string,
   debug: boolean = false,
-  dryRun: boolean = false
+  dryRun: boolean = false,
+  concurrency: number = 3 // Default concurrency of 3
 ): Promise<any[]> {
   const tempFiles: string[] = [];
   
@@ -385,15 +771,56 @@ async function classifyPdfDocuments(
     // 1. Get the Supabase client
     const supabase = SupabaseClientService.getInstance().getClient();
     
-    // 2. Build query for unclassified PDF files
+    // 2. Use a direct approach to find PDF files needing reprocessing
+    console.log("Using direct approach to find PDFs marked as needs_reprocessing...");
+    
+    // First find expert_documents with needs_reprocessing status
+    const { data: docsToReprocess, error: docsError } = await supabase
+      .from('expert_documents')
+      .select('id, source_id, document_processing_status')
+      .eq('document_processing_status', 'needs_reprocessing')
+      .limit(limit * 2);
+      
+    if (docsError) {
+      console.error(`Error fetching documents to reprocess: ${docsError.message}`);
+      throw new Error(`Error fetching documents to reprocess: ${docsError.message}`);
+    }
+    
+    if (!docsToReprocess || docsToReprocess.length === 0) {
+      console.log('No documents found with needs_reprocessing status.');
+      // Fall back to finding unclassified PDF files
+      console.log('Falling back to looking for unclassified PDF files...');
+      // Execute the query and return empty array if nothing found
+      const { data: fallbackFiles, error: fallbackError } = await supabase
+        .from('sources_google')
+        .select('*')
+        .is('is_deleted', false)
+        .eq('mime_type', 'application/pdf')
+        .is('document_type_id', null)
+        .order('modified_at', { ascending: false })
+        .limit(limit);
+      
+      if (fallbackError) {
+        console.error(`Error in fallback query: ${fallbackError.message}`);
+        return [];
+      }
+      
+      console.log(`Found ${fallbackFiles?.length || 0} unclassified PDF files in fallback query`);
+      return fallbackFiles || [];
+    }
+    
+    console.log(`Found ${docsToReprocess.length} documents with needs_reprocessing status.`);
+    
+    // Get the corresponding sources_google records for PDF files
+    const sourceIds = docsToReprocess.map(doc => doc.source_id);
+    
     let query = supabase
       .from('sources_google')
       .select('*')
-      .is('document_type_id', null)
-      .is('is_deleted', false)
+      .in('id', sourceIds)
       .eq('mime_type', 'application/pdf')
-      .order('modified_at', { ascending: false })
-      .limit(limit);
+      .is('is_deleted', false)
+      .order('modified_at', { ascending: false }); // Get the most recently modified first
     
     // Filter by folder if provided
     if (folderId) {
@@ -431,33 +858,160 @@ async function classifyPdfDocuments(
     }
     
     // 3. Execute the query
-    const { data: files, error } = await query;
+    const { data: allFiles, error } = await query;
     
     if (error) {
       throw new Error(`Error fetching PDF files: ${error.message}`);
     }
     
-    if (debug) {
-      console.log(`Found ${files?.length || 0} PDF files missing document types`);
+    // 4. Manually fetch expert documents for these files
+    if (allFiles && allFiles.length > 0) {
+      const sourceIds = allFiles.map(file => file.id);
+      
+      // Get all expert documents for these sources, not just those needing reprocessing
+      const { data: expertDocuments, error: expertError } = await supabase
+        .from('expert_documents')
+        .select('*')
+        .in('source_id', sourceIds);
+        
+      if (expertError) {
+        console.warn(`Warning: Could not fetch expert documents: ${expertError.message}`);
+      } else if (expertDocuments && expertDocuments.length > 0) {
+        // Attach expert documents to their source files
+        for (const file of allFiles) {
+          file.expert_documents = expertDocuments.filter(doc => doc.source_id === file.id);
+          // Add debug information for each file
+          const needsReprocessingDocs = file.expert_documents.filter(
+            (doc: { document_processing_status?: string }) => doc.document_processing_status === 'needs_reprocessing'
+          );
+          if (needsReprocessingDocs.length > 0) {
+            console.log(`File ${file.name} has ${needsReprocessingDocs.length} document(s) marked as needs_reprocessing`);
+          }
+        }
+        console.log(`Attached ${expertDocuments.length} expert documents to ${allFiles.length} PDF files`);
+      } else {
+        console.log(`No expert documents found for the ${allFiles.length} PDF files`);
+        // Initialize empty expert_documents array for each file
+        allFiles.forEach(file => { file.expert_documents = []; });
+      }
     }
     
-    if (!files || files.length === 0) {
+    if (!allFiles || allFiles.length === 0) {
+      console.log('No PDF files found that need processing');
       return [];
     }
     
-    // 4. Process each file
-    const results = [];
-    for (const file of files) {
+    // If no files need processing so far, let's also directly check for files with needs_reprocessing status
+    // This is a more direct approach to ensure we don't miss any files
+    const { data: directReprocessingDocs, error: directError } = await supabase
+      .from('expert_documents')
+      .select('id, source_id, document_processing_status')
+      .eq('document_processing_status', 'needs_reprocessing')
+      .limit(limit);
+      
+    if (directError) {
+      console.warn(`Warning: Could not directly check for files needing reprocessing: ${directError.message}`);
+    } else if (directReprocessingDocs && directReprocessingDocs.length > 0) {
+      console.log(`Directly found ${directReprocessingDocs.length} expert documents with needs_reprocessing status`);
+      
+      // Get the source_ids from these documents
+      const reprocessingSourceIds = directReprocessingDocs.map(doc => doc.source_id);
+      
+      // Fetch the source files for these expert documents
+      const { data: reprocessingFiles, error: reprocessingError } = await supabase
+        .from('sources_google')
+        .select('*')
+        .in('id', reprocessingSourceIds)
+        .eq('mime_type', 'application/pdf')
+        .is('is_deleted', false);
+        
+      if (reprocessingError) {
+        console.warn(`Warning: Could not fetch source files for reprocessing: ${reprocessingError.message}`);
+      } else if (reprocessingFiles && reprocessingFiles.length > 0) {
+        console.log(`Found ${reprocessingFiles.length} PDF files that need reprocessing via direct check`);
+        
+        // For each of these files, ensure they have their expert_documents attached
+        for (const file of reprocessingFiles) {
+          file.expert_documents = directReprocessingDocs.filter(doc => doc.source_id === file.id);
+        }
+        
+        // Add these to allFiles if they're not already there
+        const existingIds = new Set(allFiles.map(file => file.id));
+        const newFiles = reprocessingFiles.filter(file => !existingIds.has(file.id));
+        if (newFiles.length > 0) {
+          console.log(`Adding ${newFiles.length} additional files for processing`);
+          allFiles.push(...newFiles);
+        }
+      }
+    }
+    
+    // Now do the additional filtering for files that need reprocessing
+    // This is done in memory since the query syntax for this is complex
+    const files = allFiles.filter(file => {
+      // If we started with needs_reprocessing expert documents, always include the file
+      // This is the key change to ensure we process all files with needs_reprocessing status
+      if (docsToReprocess && docsToReprocess.some(doc => doc.source_id === file.id)) {
+        console.log(`Including file ${file.name} because it has a needs_reprocessing document`);
+        return true;
+      }
+      
+      // Include files with no document_type_id
+      if (!file.document_type_id) {
+        if (debug) {
+          console.log(`Including file with no document_type_id: ${file.name}`);
+        }
+        return true;
+      }
+      
+      // Include files where at least one expert document has status 'needs_reprocessing'
+      if (file.expert_documents && file.expert_documents.length > 0) {
+        const needsReprocessing = file.expert_documents.some((doc: { document_processing_status?: string }) => 
+          doc.document_processing_status === 'needs_reprocessing'
+        );
+        
+        if (needsReprocessing) {
+          console.log(`Including file with needs_reprocessing status: ${file.name}`);
+          return true;
+        }
+      }
+      
+      return false;
+    });
+    
+    console.log(`Found ${files.length} PDF files that need processing out of ${allFiles.length} total PDF files`);
+    
+    if (files.length === 0) {
+      return [];
+    }
+    
+    // Process files with concurrency
+    console.log(`Processing ${files.length} PDF files with concurrency of ${concurrency}`);
+    
+    // Validate concurrency value
+    if (isNaN(concurrency) || concurrency < 1) {
+      console.warn(`Invalid concurrency value: ${concurrency}, defaulting to 1`);
+      concurrency = 1;
+    } else if (concurrency > 5) {
+      console.log(`Note: High concurrency (${concurrency}) may lead to rate limiting with Claude API`);
+    }
+    
+    // Process a single file
+    const processFile = async (file: any, index: number): Promise<any> => {
+      // Always show progress, regardless of debug mode
+      console.log(`Processing PDF file ${index+1}/${files.length}: ${file.name}`);
+      
       try {
         if (debug) {
-          console.log(`Processing PDF file: ${file.name} (${file.id})`);
+          console.log(`File details: ${file.name} (${file.id}, Drive ID: ${file.drive_id})`);
         }
         
         // Process the file
+        console.log(`[${index+1}/${files.length}] ⏳ Reading PDF content...`);
         const { classificationResult, tempFilePath } = await processPdfFile(
           file.drive_id,
           file.name || '',
-          debug
+          debug,
+          supabase
         );
         
         // Add any temporary files to cleanup list
@@ -465,18 +1019,30 @@ async function classifyPdfDocuments(
           tempFiles.push(tempFilePath);
         }
         
+        // Show classification result regardless of debug mode
+        if (classificationResult && classificationResult.document_type) {
+          console.log(`[${index+1}/${files.length}] ✅ Classified as: ${classificationResult.document_type}`);
+          console.log(`[${index+1}/${files.length}] 📊 Confidence: ${(classificationResult.classification_confidence * 100).toFixed(1)}%`);
+        } else {
+          console.log(`[${index+1}/${files.length}] ❌ Classification failed`);
+        }
+        
         // Only update the database if not in dry run mode
-        if (!dryRun && classificationResult.document_type_id) {
-          // Update document type in sources_google
+        if (!dryRun) {
+          // For PDF files, we always set the document_type_id to the PDF document type
+          // This is the ID specified in the requirements: 2fa04116-04ed-4828-b091-ca6840eb8863
+          const pdfDocumentTypeId = '2fa04116-04ed-4828-b091-ca6840eb8863';
+          
+          // Update document type in sources_google - always use PDF document type ID for .pdf files
           const { error: updateError } = await supabase
             .from('sources_google')
-            .update({ document_type_id: classificationResult.document_type_id })
+            .update({ document_type_id: pdfDocumentTypeId })
             .eq('id', file.id);
           
           if (updateError) {
             console.error(`Error updating document type: ${updateError.message}`);
           } else if (debug) {
-            console.log(`Updated document type for ${file.name} to ${classificationResult.document_type_id}`);
+            console.log(`Updated document type for ${file.name} to ${pdfDocumentTypeId} (PDF document type)`);
           }
           
           // Create expert document record
@@ -486,15 +1052,52 @@ async function classifyPdfDocuments(
               console.log(`Inserting expert document for ${file.name} with document_type_id: ${classificationResult.document_type_id}`);
             }
             
-            // Create minimal document
-            const minimalDoc = {
+            // Create minimal document with proper typing
+            const minimalDoc: {
+              id: string;
+              source_id: string;
+              document_type_id: string;
+              classification_confidence: number;
+              created_at: string;
+              updated_at: string;
+              document_processing_status?: string;
+              document_processing_status_updated_at?: string;
+            } = {
               id: uuidv4(),
               source_id: file.id,
-              document_type_id: classificationResult.document_type_id,
+              document_type_id: "2f5af574-9053-49b1-908d-c35001ce9680", // Fixed document_type_id for Json pdf summary (type with "pdf" classifier)
               classification_confidence: classificationResult.classification_confidence || 0.75,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             };
+            
+            // If this file needed reprocessing, mark it as "reprocessing_done"
+            const needsReprocessingDocs = file.expert_documents ? 
+              file.expert_documents.filter((d: { document_processing_status?: string }) => d.document_processing_status === 'needs_reprocessing') : [];
+              
+            if (needsReprocessingDocs.length > 0) {
+              minimalDoc.document_processing_status = 'reprocessing_done';
+              minimalDoc.document_processing_status_updated_at = new Date().toISOString();
+              console.log(`Marking file ${file.name} as "reprocessing_done"`);
+              
+              // Also update the original expert document that needed reprocessing
+              for (const doc of needsReprocessingDocs) {
+                if (doc.id) {
+                  console.log(`Updating existing document ${doc.id} to reprocessing_done status`);
+                  try {
+                    await supabase
+                      .from('expert_documents')
+                      .update({
+                        document_processing_status: 'reprocessing_done',
+                        document_processing_status_updated_at: new Date().toISOString()
+                      })
+                      .eq('id', doc.id);
+                  } catch (updateErr) {
+                    console.warn(`Could not update existing document status: ${updateErr}`);
+                  }
+                }
+              }
+            }
             
             // Insert the minimal document first (always works)
             const { error: minimalError, data: minimalData } = await supabase
@@ -512,11 +1115,22 @@ async function classifyPdfDocuments(
               // Now try to update with classification metadata
               try {
                 if (minimalData && minimalData.length > 0) {
+                  // Prepare proper document summary JSON structure for processed_content
+                  const documentSummary = {
+                    document_summary: classificationResult.document_summary || "",
+                    key_topics: classificationResult.key_topics || [],
+                    target_audience: classificationResult.target_audience || "",
+                    unique_insights: classificationResult.unique_insights || [],
+                    document_type: classificationResult.document_type || "",
+                    classification_confidence: classificationResult.classification_confidence || 0.75,
+                    classification_reasoning: classificationResult.classification_reasoning || ""
+                  };
+                  
                   const { error: contentUpdateError } = await supabase
                     .from('expert_documents')
                     .update({
                       classification_metadata: classificationResult,
-                      processed_content: classificationResult  // Also set processed_content to match classification result
+                      processed_content: documentSummary  // Set processed_content with proper document summary structure
                     })
                     .eq('id', minimalDoc.id);
                   
@@ -541,13 +1155,7 @@ async function classifyPdfDocuments(
           }
         }
         
-        // Add to results
-        results.push({
-          file,
-          result: classificationResult
-        });
-        
-        // Save results to output directory if specified
+        // Save individual result to output directory if specified
         if (outputPath && classificationResult) {
           const outputDir = path.dirname(outputPath);
           if (!fs.existsSync(outputDir)) {
@@ -562,17 +1170,38 @@ async function classifyPdfDocuments(
             console.log(`Saved classification result to ${filePath}`);
           }
         }
+        
+        // Return successful result
+        return {
+          file,
+          result: classificationResult,
+          status: 'completed'
+        };
       } catch (error) {
         console.error(`Error processing file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         
-        // Add the error to results
-        results.push({
+        // Return error result
+        return {
           file,
           result: null,
+          status: 'failed',
           error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        };
       }
-    }
+    };
+    
+    // Process all files with concurrency
+    const results = await processWithConcurrency(
+      files,
+      concurrency,
+      processFile,
+      (current, total) => {
+        if (debug) {
+          const percentage = Math.round((current / total) * 100);
+          console.log(`Progress: ${percentage}% (${current}/${total})`);
+        }
+      }
+    );
     
     // Save combined results if output path specified
     if (outputPath && results.length > 0) {
@@ -607,16 +1236,19 @@ async function classifyPdfDocuments(
   }
 }
 
+// Function definition removed since it's now integrated into the main classifyPdfDocuments function
+
 // Define CLI program
 program
   .name('classify-pdfs-with-service')
-  .description('Classify PDF files missing document types using the PromptService')
+  .description('Classify PDF files missing document types or marked as needs_reprocessing using Claude AI')
   .option('-l, --limit <number>', 'Limit the number of files to process', '10')
   .option('-o, --output <path>', 'Output file path for classification results')
   .option('-d, --debug', 'Enable debug logging', false)
   .option('-v, --verbose', 'Enable verbose logging (includes debug)', false)
   .option('--dry-run', 'Process files but do not update database', false)
   .option('--folder-id <id>', 'Filter by Google Drive folder ID or folder name', '')
+  .option('-c, --concurrency <number>', 'Number of files to process concurrently (1-5, default: 3)', '3')
   .action(async (options) => {
     try {
       // Set debug mode if verbose is enabled
@@ -624,24 +1256,36 @@ program
       const dryRun = options.dryRun;
       
       // Show header
-      console.log('='.repeat(50));
+      console.log('='.repeat(70));
       console.log('PDF DOCUMENT CLASSIFICATION WITH PROMPT SERVICE');
-      console.log('='.repeat(50));
-      console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
-      console.log(`Debug: ${debug ? 'ON' : 'OFF'}`);
+      console.log('='.repeat(70));
       
-      // Parse limit
+      // Parse limit and concurrency
       const limit = parseInt(options.limit, 10);
+      const concurrency = parseInt(options.concurrency, 10);
       
-      // Process files
-      console.log(`Processing up to ${limit} PDF files missing document types...`);
+      // Show detailed configuration
+      console.log(`Mode:              ${dryRun ? '🔍 DRY RUN (no database changes)' : '💾 LIVE (updating database)'}`);
+      console.log(`Debug logs:        ${debug ? '✅ ON' : '❌ OFF'}`);
+      console.log(`Concurrency:       ${concurrency} files at a time`);
+      console.log(`Max files:         ${limit}`);
+      console.log(`Folder filter:     ${options.folderId ? options.folderId : 'All folders'}`);
+      console.log(`Output file:       ${options.output ? options.output : 'None specified'}`);
+      console.log('-'.repeat(70));
+      console.log(`Using Claude API to analyze PDF content directly`);
+      console.log(`Processing:        PDF files with missing document types or marked as 'needs_reprocessing'`);
+      console.log(`PDF document type: sources_google files will be set to document type ID 2fa04116-04ed-4828-b091-ca6840eb8863`);
+      console.log(`expert_documents:  Will be set to document type ID 2f5af574-9053-49b1-908d-c35001ce9680 (with 'pdf' classifier)`);
+      console.log(`This may take some time, especially for large PDF files`);
+      console.log('='.repeat(70));
       
       const results = await classifyPdfDocuments(
         limit,
         options.folderId || '',
         options.output,
         debug,
-        dryRun
+        dryRun,
+        concurrency
       );
       
       // Show summary
@@ -679,13 +1323,15 @@ export async function classifyPdfsWithService(options: {
   outputPath?: string;
   debug?: boolean;
   dryRun?: boolean;
+  concurrency?: number;
 }): Promise<any[]> {
   const {
     limit = 10,
     folderId = '',
     outputPath,
     debug = false,
-    dryRun = false
+    dryRun = false,
+    concurrency = 3
   } = options;
   
   return classifyPdfDocuments(
@@ -693,7 +1339,8 @@ export async function classifyPdfsWithService(options: {
     folderId,
     outputPath,
     debug,
-    dryRun
+    dryRun,
+    concurrency
   );
 }
 

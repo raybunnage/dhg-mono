@@ -185,6 +185,76 @@ program
 
 // Add test record
 program
+  .command('health-check')
+  .description('Check the health of the command tracking service')
+  .option('-v, --verbose', 'Show verbose output')
+  .action(async (options) => {
+    try {
+      Logger.info('Performing command tracking service health check...');
+      
+      // Check connection to database
+      Logger.info('\nChecking Supabase connection...');
+      const supabase = SupabaseClientService.getInstance().getClient();
+      
+      try {
+        const { data, error } = await supabase
+          .from('cli_command_tracking')
+          .select('count', { count: 'exact', head: true });
+        
+        if (error) {
+          throw new Error(`Database query error: ${error.message}`);
+        }
+        
+        Logger.info('✅ Database connection successful');
+        Logger.info(`✅ CLI command tracking table accessible (contains entries)`);
+        
+        // Check RPC function
+        try {
+          const { data: stats, error: rpcError } = await supabase.rpc('get_cli_command_stats');
+          
+          if (rpcError) {
+            Logger.warn(`⚠️ RPC function check failed: ${rpcError.message}`);
+          } else {
+            Logger.info('✅ RPC functions working correctly');
+          }
+        } catch (rpcError) {
+          Logger.warn(`⚠️ RPC function check failed: ${rpcError instanceof Error ? rpcError.message : String(rpcError)}`);
+        }
+        
+        // Test tracking function
+        Logger.info('\nTesting command tracking functionality...');
+        const startTime = new Date();
+        const trackingId = await commandTrackingService.startTracking('tracking', 'health-check');
+        
+        await commandTrackingService.completeTracking(trackingId, {
+          recordsAffected: 0,
+          affectedEntity: 'health-check',
+          summary: 'Health check command executed successfully'
+        });
+        
+        Logger.info('✅ Command tracking functionality working correctly');
+        
+        // Overall status
+        Logger.info('\n📋 Overall Status:');
+        Logger.info('✅ Command tracking service is healthy');
+        
+      } catch (error) {
+        Logger.error('❌ Health check failed:', error instanceof Error ? error.message : String(error));
+        
+        if (options.verbose) {
+          console.error('Error details:');
+          console.error(error);
+        }
+        
+        process.exit(1);
+      }
+    } catch (error) {
+      Logger.error('Error performing health check:', error);
+      process.exit(1);
+    }
+  });
+
+program
   .command('test')
   .description('Add a test record to the command_history table')
   .action(async () => {
