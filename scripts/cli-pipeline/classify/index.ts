@@ -483,7 +483,7 @@ program
     await checkMp4TitlesCommand({
       limit,
       expertName: options.expert,
-      verbose: options.verbose
+      verbose: options.verbose,
     });
   });
 
@@ -760,7 +760,7 @@ program
       await listUnclassifiedCommand({
         limit,
         withContent: options.withContent,
-        verbose: options.verbose
+        verbose: options.verbose,
       });
     } catch (error) {
       Logger.error(`Error in list-unclassified command: ${error instanceof Error ? error.message : String(error)}`);
@@ -811,6 +811,7 @@ program
   .option('-l, --limit <number>', 'Maximum number of documents to process (0 for all)', '0')
   .option('-e, --extensions <extensions>', 'Filter by file extension(s), separated by commas (e.g., "mp4,pdf,docx")')
   .option('-x, --expert <name>', 'Filter by expert name')
+  .option('--include-unsupported', 'Include unsupported document types and MIME types', false)
   .option('--verbose', 'Show detailed output', false)
   .action(async (options: any) => {
     try {
@@ -825,7 +826,7 @@ program
         limit,
         fileExtensions,
         expertName: options.expert,
-        verbose: options.verbose
+        verbose: options.verbose,
       });
     } catch (error) {
       Logger.error(`Error in write-unclassified-ids command: ${error instanceof Error ? error.message : String(error)}`);
@@ -837,8 +838,9 @@ program
   .command('classify-batch-from-file')
   .description('Classify sources in batches from a file containing source IDs')
   .option('-i, --input-file <file>', 'Path to the input markdown file', 'docs/cli-pipeline/need_classification.md')
-  .option('-b, --batch-size <number>', 'Number of sources to process in each batch', '10')
+  .option('-b, --batch-size <number>', 'Number of sources to process in each batch', '5')
   .option('-c, --concurrency <number>', 'Number of sources to process concurrently (default: 1)', '1')
+  .option('-l, --limit <number>', 'Maximum number of sources to process (0 for all)', '0')
   .option('-f, --force', 'Force reclassification even if document already has classifications', false)
   .option('--max-retries <number>', 'Maximum number of retries for failed API calls (default: 3)', '3')
   .option('--retry-delay <number>', 'Initial delay in milliseconds between retries (default: 2000)', '2000')
@@ -847,8 +849,9 @@ program
   .action(async (options: any) => {
     try {
       // Parse numeric options
-      const batchSize = options.batchSize ? parseInt(options.batchSize, 10) : 10;
+      const batchSize = options.batchSize ? parseInt(options.batchSize, 10) : 5;
       const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : 1;
+      const limit = options.limit ? parseInt(options.limit, 10) : 0;
       const maxRetries = options.maxRetries ? parseInt(options.maxRetries, 10) : 3;
       const retryDelayMs = options.retryDelay ? parseInt(options.retryDelay, 10) : 2000;
       
@@ -856,6 +859,7 @@ program
         inputFile: options.inputFile,
         batchSize,
         concurrency,
+        limit,
         verbose: options.verbose,
         dryRun: options.dryRun,
         force: options.force,
@@ -866,6 +870,7 @@ program
       Logger.error(`Error in classify-batch-from-file command: ${error instanceof Error ? error.message : String(error)}`);
     }
   });
+
 
 // Handle if no command is provided
 program.parse(process.argv);

@@ -65,7 +65,8 @@ function display_help() {
   echo -e "    --dry-run                  Show what would be created without actually creating"
   echo ""
   echo -e "  health-check               Check the health of the classify service"
-  echo -e "    --verbose                  Show detailed output"
+  echo -e "    --include-unsupported      Include unsupported document types and MIME types
+    --verbose                  Show detailed output"
   echo ""
   echo -e "  classify-subjects          Apply subject classification to documents with processed content"
   echo -e "    -l, --limit <number>       Maximum number of documents to process (default: 10)"
@@ -76,7 +77,8 @@ function display_help() {
   echo -e "    --concurrency <number>     Number of documents to process concurrently (default: 3)"
   echo -e "    --max-retries <number>     Maximum number of retries for failed API calls (default: 3)"
   echo -e "    --retry-delay <number>     Initial delay in milliseconds between retries (default: 1000)"
-  echo -e "    --verbose                  Show detailed output"
+  echo -e "    --include-unsupported      Include unsupported document types and MIME types
+    --verbose                  Show detailed output"
   echo -e "    --dry-run                  Show what would be classified without making changes"
   echo ""
   echo -e "  extract-titles             Extract titles from MP4 files and update expert_documents"
@@ -86,7 +88,8 @@ function display_help() {
   echo -e "    --concurrency <number>     Number of documents to process concurrently (default: 3)"
   echo -e "    --max-retries <number>     Maximum number of retries for failed API calls (default: 3)"
   echo -e "    --retry-delay <number>     Initial delay in milliseconds between retries (default: 1000)"
-  echo -e "    --verbose                  Show detailed output"
+  echo -e "    --include-unsupported      Include unsupported document types and MIME types
+    --verbose                  Show detailed output"
   echo -e "    --dry-run                  Show what would be extracted without making changes"
   echo -e ""
   echo -e "  check-mp4-titles           Check MP4 files for missing titles in expert_documents"
@@ -105,7 +108,8 @@ function display_help() {
   echo -e "    -f, --force                Force reclassification even if document already has classifications"
   echo -e "    --max-retries <number>     Maximum number of retries for failed API calls (default: 3)"
   echo -e "    --retry-delay <number>     Initial delay in milliseconds between retries (default: 1000)"
-  echo -e "    --verbose                  Show detailed output"
+  echo -e "    --include-unsupported      Include unsupported document types and MIME types
+    --verbose                  Show detailed output"
   echo -e "    --dry-run                  Show what would be classified without making changes"
   echo -e ""
   echo -e "  write-unclassified-ids       Write unclassified sources_google IDs to a markdown file"
@@ -113,7 +117,8 @@ function display_help() {
   echo -e "    -l, --limit <number>       Maximum number of documents to process (0 for all)"
   echo -e "    -e, --extensions <ext>     Filter by file extension(s), comma-separated (e.g., mp4,pdf,docx)"
   echo -e "    -x, --expert <name>        Filter by expert name"
-  echo -e "    --verbose                  Show detailed output"
+  echo -e "    --include-unsupported      Include unsupported document types and MIME types
+    --verbose                  Show detailed output"
   echo -e "  classify-batch-from-file     Classify sources in batches from a file containing source IDs"
   echo -e "    -i, --input-file <file>    Path to the input markdown file (default: docs/cli-pipeline/need_classification.md)"
   echo -e "    -b, --batch-size <number>  Number of sources to process in each batch (default: 10)"
@@ -121,7 +126,8 @@ function display_help() {
   echo -e "    -f, --force                Force reclassification even if document already has classifications"
   echo -e "    --max-retries <number>     Maximum number of retries for failed API calls (default: 3)"
   echo -e "    --retry-delay <number>     Initial delay in milliseconds between retries (default: 2000)"
-  echo -e "    --verbose                  Show detailed output"
+  echo -e "    --include-unsupported      Include unsupported document types and MIME types
+    --verbose                  Show detailed output"
   echo -e "    --dry-run                  Show what would be classified without making changes"
   echo ""
   echo ""
@@ -227,6 +233,7 @@ write_unclassified_ids_command() {
 classify_batch_from_file_command() {
   track_command "classify-batch-from-file" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts classify-batch-from-file $@"
 }
+
 
 # Direct handling of health-check command for better error output
 if [[ "$1" == "health-check" ]]; then

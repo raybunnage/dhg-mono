@@ -18,6 +18,7 @@ interface ClassifyBatchFromFileOptions {
   maxRetries?: number;
   retryDelayMs?: number;
   concurrency?: number;
+  limit?: number; // Optional limit on number of sources to process
 }
 
 /**
@@ -48,10 +49,7 @@ function extractSourceIdsFromMarkdown(content: string): string[] {
 }
 
 /**
- * Process sources in batches
- */
-/**
- * Process sources with concurrency control
+ * Process sources with improved memory management and concurrency control
  */
 async function processWithConcurrency<T, R>(
   items: T[],
@@ -59,45 +57,32 @@ async function processWithConcurrency<T, R>(
   concurrency: number
 ): Promise<R[]> {
   const results: R[] = [];
-  const runningPromises: Promise<void>[] = [];
-  const itemsToProcess = [...items]; // Create a copy of the items array
   
-  // Process items concurrently but limited to the concurrency setting
-  while (itemsToProcess.length > 0 || runningPromises.length > 0) {
-    // Fill up to concurrency limit
-    while (runningPromises.length < concurrency && itemsToProcess.length > 0) {
-      const item = itemsToProcess.shift()!;
-      const promise = (async () => {
-        const result = await processItem(item);
-        results.push(result);
-      })();
-      runningPromises.push(promise);
-    }
+  // Process items in batches to manage memory better
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const batchPromises = batch.map(item => 
+      processItem(item)
+        .then(result => {
+          results.push(result);
+          return result;
+        })
+        .catch(error => {
+          // Still count this item but mark it as failed
+          return { success: false, error } as unknown as R;
+        })
+    );
     
-    // Wait for at least one promise to complete
-    if (runningPromises.length > 0) {
-      await Promise.race(runningPromises.map(p => p.catch(e => e)));
-      // Check which promises are still pending
-      const pendingPromises: Promise<void>[] = [];
-      for (const promise of runningPromises) {
-        // Create a flag to track if this promise is still pending
-        let isResolved = false;
-        
-        // Set up a race between the promise and a flag-setter
-        // This will only set the flag if the promise is already resolved
-        await Promise.race([
-          promise.then(() => { isResolved = true; }, () => { isResolved = true; }),
-          Promise.resolve()
-        ]);
-        
-        if (!isResolved) {
-          pendingPromises.push(promise);
-        }
+    // Wait for all promises in this batch to complete before moving to next batch
+    await Promise.all(batchPromises);
+    
+    // Force garbage collection if possible (Node might ignore this, but worth trying)
+    if (global.gc) {
+      try {
+        global.gc();
+      } catch (e) {
+        // Ignore if gc is not available
       }
-      
-      // Replace the list with only pending promises
-      runningPromises.length = 0;
-      runningPromises.push(...pendingPromises);
     }
   }
   
@@ -113,7 +98,8 @@ export async function classifyBatchFromFileCommand(options: ClassifyBatchFromFil
     force = false,
     maxRetries = 3,
     retryDelayMs = 2000,
-    concurrency = 1
+    concurrency = 1,
+    limit = 0 // 0 means process all
   } = options;
 
   try {
@@ -138,15 +124,30 @@ export async function classifyBatchFromFileCommand(options: ClassifyBatchFromFil
       return;
     }
     
+    // Limit the number of sources if specified
+    const sourcesToProcess = limit > 0 ? sourceIds.slice(0, limit) : sourceIds;
+    
     // Process in batches
-    Logger.info(`Will process sources in batches of ${batchSize} with concurrency ${concurrency}`);
+    Logger.info(`Will process ${sourcesToProcess.length} sources in batches of ${batchSize} with concurrency ${concurrency}`);
     
     let currentBatch = 1;
     let processedCount = 0;
     let failedCount = 0;
     
-    for (let i = 0; i < sourceIds.length; i += batchSize) {
-      const batchIds = sourceIds.slice(i, i + batchSize);
+    // Periodically force garbage collection to release memory
+    const forceGC = async (): Promise<void> => {
+      if (global.gc) {
+        try {
+          global.gc();
+          Logger.debug('Forced garbage collection');
+        } catch (e) {
+          // Ignore if gc is not available
+        }
+      }
+    };
+    
+    for (let i = 0; i < sourcesToProcess.length; i += batchSize) {
+      const batchIds = sourcesToProcess.slice(i, i + batchSize);
       Logger.info(`Processing batch ${currentBatch} with ${batchIds.length} sources...`);
       
       if (dryRun) {
@@ -244,7 +245,13 @@ export async function classifyBatchFromFileCommand(options: ClassifyBatchFromFil
       
       // Log progress
       Logger.info(`Completed batch ${currentBatch - 1} in ${duration.toFixed(2)} seconds (${processedCount} sources processed, ${failedCount} failed)`);
-      Logger.info(`Progress: ${((processedCount / sourceIds.length) * 100).toFixed(2)}% complete`);
+      Logger.info(`Progress: ${((processedCount / sourcesToProcess.length) * 100).toFixed(2)}% complete`);
+      
+      // Force garbage collection between batches to free memory
+      await forceGC();
+      
+      // Brief pause between batches to reduce memory pressure
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
     
     Logger.info(`Batch classification complete. Processed ${processedCount} sources, ${failedCount} failed.`);

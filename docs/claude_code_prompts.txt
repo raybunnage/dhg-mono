@@ -8,6 +8,19 @@ scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --d
 │ > I have the presentations table and its most important fields come from both the sources_google table and the expert_documents table.   
 
 
+Now I understand the relationship! The parent-child relationship is stored using the Google Drive IDs, not the Supabase UUIDs. "Envy.pdf" has a parent_folder_id
+  of "1ZUpNHLc9iNMQj-6q3t80Hyu1ylJyP2Yw", which is the drive_id of the "Papers/ References" folder.
+
+  Let's update our code to use this relationship:
+
+⏺ Update(file_path: scripts/cli-pipeline/presentations/commands/create-presentation-assets.ts)…
+  ⎿ Updated scripts/cli-pipeline/presentations/commands/create-presentation-assets.ts with 84 additions and 75 removals
+     138 
+
+
+
+
+
 Perfect! We have successfully extracted titles for all MP4 files. Here's a summary of what we did:
 
   1. First, we fixed a bug in the extract-titles command that was causing it to not use the Claude service properly. The issue was that it was creating a new

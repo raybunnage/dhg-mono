@@ -624,6 +624,194 @@ When implementing solutions, always check this section for known issues and thei
    - Improper type assertions
    - Missing generic type parameters
 
+## SUPABASE QUERY PATTERNS: How to Successfully Query Supabase
+
+⚠️ **CRITICAL: FOLLOW THESE EXACT PATTERNS FOR SUPABASE QUERIES**
+
+1. **Connection Setup - ALWAYS use the singleton pattern**:
+   ```typescript
+   // CORRECT IMPORT - Use this exact path
+   import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+   
+   // CORRECT USAGE - Get the client once at the beginning of your function
+   const supabase = SupabaseClientService.getInstance().getClient();
+   ```
+   
+   - **IMPORTANT**: Never attempt to use psql, direct SQL queries, or other database connection methods
+   - The `SupabaseClientService` handles all authentication and connection management
+   - Creating multiple instances wastes resources and may lead to connection issues
+
+2. **Basic Select Query Pattern**:
+   ```typescript
+   // Pattern for simple queries with proper error handling
+   const { data, error } = await supabase
+     .from('table_name')
+     .select('column1, column2, column3')
+     .limit(10);
+   
+   if (error) {
+     console.error('Database error:', error);
+     throw new Error(`Failed to retrieve data: ${error.message}`);
+   }
+   
+   // Use the data
+   console.log(`Retrieved ${data.length} records`);
+   ```
+
+3. **Filtered Queries Pattern**:
+   ```typescript
+   // Pattern for queries with conditions
+   const { data, error } = await supabase
+     .from('expert_documents')
+     .select('id, title, content')
+     .eq('document_type_id', documentTypeId)
+     .is('processing_skip_reason', null)
+     .limit(100);
+   
+   if (error) {
+     console.error('Database error:', error);
+     throw new Error(`Failed to retrieve documents: ${error.message}`);
+   }
+   ```
+   
+   - Common filter operations:
+     - `.eq('column', value)` - Equals
+     - `.neq('column', value)` - Not equals
+     - `.gt('column', value)` - Greater than
+     - `.gte('column', value)` - Greater than or equal
+     - `.lt('column', value)` - Less than
+     - `.lte('column', value)` - Less than or equal
+     - `.like('column', '%pattern%')` - LIKE pattern matching
+     - `.is('column', null)` - IS NULL
+     - `.not('column', 'is', null)` - IS NOT NULL
+     - `.in('column', [val1, val2])` - IN array of values
+
+4. **Insert Record Pattern**:
+   ```typescript
+   // Pattern for inserting records
+   const { data, error } = await supabase
+     .from('table_name')
+     .insert({
+       column1: value1,
+       column2: value2
+     })
+     .select(); // Always include select() to get the inserted record back
+   
+   if (error) {
+     console.error('Insert error:', error);
+     throw new Error(`Failed to insert record: ${error.message}`);
+   }
+   
+   console.log('Inserted record:', data[0]);
+   ```
+
+5. **Update Record Pattern**:
+   ```typescript
+   // Pattern for updating records
+   const { data, error } = await supabase
+     .from('table_name')
+     .update({ 
+       column1: newValue1,
+       column2: newValue2
+     })
+     .eq('id', recordId)
+     .select(); // Always include select() to get the updated record
+   
+   if (error) {
+     console.error('Update error:', error);
+     throw new Error(`Failed to update record: ${error.message}`);
+   }
+   
+   console.log('Updated record:', data[0]);
+   ```
+
+6. **Relationship Queries Pattern**:
+   ```typescript
+   // Pattern for querying with relationships
+   const { data, error } = await supabase
+     .from('presentations')
+     .select(`
+       id,
+       title,
+       presentation_assets!inner(
+         id,
+         asset_type,
+         asset_role,
+         source_id,
+         sources_google:source_id(
+           id,
+           name,
+           mime_type
+         )
+       )
+     `)
+     .is('main_video_id', null)
+     .eq('presentation_assets.sources_google.mime_type', 'video/mp4');
+   
+   if (error) {
+     console.error('Query error:', error);
+     throw new Error(`Failed to retrieve related data: ${error.message}`);
+   }
+   ```
+   
+   - **IMPORTANT**: Note the proper syntax for nested relationships:
+     - Use backticks for multi-line queries
+     - `table!inner(fields)` for inner joins 
+     - `related_table:foreign_key(fields)` for foreign key relationships
+
+7. **Count Queries Pattern**:
+   ```typescript
+   // Pattern for counting records
+   const { data, error, count } = await supabase
+     .from('table_name')
+     .select('id', { count: 'exact', head: true })
+     .eq('status', 'pending');
+   
+   if (error) {
+     console.error('Count error:', error);
+     throw new Error(`Failed to count records: ${error.message}`);
+   }
+   
+   console.log(`Found ${count} pending records`);
+   ```
+
+8. **Testing Connection Pattern**:
+   ```typescript
+   // Pattern for testing connection
+   try {
+     // First test the connection with a simple query
+     const connectionTest = await supabase.from('document_types').select('id').limit(1);
+     if (connectionTest.error) {
+       throw new Error(`Supabase connection error: ${connectionTest.error.message}`);
+     }
+     console.log("Supabase connection successful");
+   } catch (error) {
+     console.error('Database connection error:', error);
+     // Handle connection failure
+   }
+   ```
+
+⚠️ **COMMON SUPABASE QUERY ERRORS AND SOLUTIONS**:
+
+1. **Authentication Issues**:
+   - **Symptoms**: "JWT expired", "Invalid API key", "Not authorized"
+   - **Solution**: 
+     - Ensure `.env.development` file exists in project root with correct credentials
+     - `SUPABASE_URL=https://your-project-id.supabase.co`
+     - `SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here` (for admin access)
+     - NEVER hardcode these credentials in source files
+
+2. **Schema Access Issues**:
+   - **Symptoms**: "permission denied for table", "relation does not exist"
+   - **Solution**:
+     - Verify table names in `supabase/types.ts` (the single source of truth)
+     - Check RLS policies if applicable
+     - Ensure you're using the service role key for admin access
+
+3. **Transaction Issues**:
+   - **Symptoms**: "Query not allowed in a transaction block"
+   - **Solution**: Use individual queries instead of transactions for complex operations
+
 ## Database Schema Conventions
   
 1. **BEFORE WRITING DATABASE CODE**:

@@ -114,40 +114,38 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
     Logger.info(`Processing source: ${source.name} (${source.mime_type})`);
     
     // 3. Check if this document or source already has classifications
-    // Check if this document has classifications
-    const { data: docClassifications, error: docClassError } = await supabase
+    // Check if this document has classifications - use count instead of selecting records to reduce memory usage
+    const { count: docCount, error: docClassError } = await supabase
       .from('table_classifications')
-      .select('id')
+      .select('id', { count: 'exact', head: true })
       .eq('entity_id', expertDocument.id)
-      .eq('entity_type', entityType)
-      .limit(1);
+      .eq('entity_type', entityType);
       
     if (docClassError) {
       Logger.error(`Error checking document classifications: ${docClassError.message}`);
       return;
     }
     
-    // Check if the source has classifications
-    const { data: sourceClassifications, error: sourceClassError } = await supabase
+    // Check if the source has classifications - use count instead of selecting records
+    const { count: sourceCount, error: sourceClassError } = await supabase
       .from('table_classifications')
-      .select('id')
+      .select('id', { count: 'exact', head: true })
       .eq('entity_id', expertDocument.source_id)
-      .eq('entity_type', 'sources_google')
-      .limit(1);
+      .eq('entity_type', 'sources_google');
       
     if (sourceClassError) {
       Logger.error(`Error checking source classifications: ${sourceClassError.message}`);
       return;
     }
     
-    const hasDocClassifications = docClassifications && docClassifications.length > 0;
-    const hasSourceClassifications = sourceClassifications && sourceClassifications.length > 0;
+    const hasDocClassifications = docCount && docCount > 0;
+    const hasSourceClassifications = sourceCount && sourceCount > 0;
     
     // Skip this check if --force flag was provided
     if ((hasDocClassifications || hasSourceClassifications) && !options.force) {
       Logger.info(`Document or source already has classifications. Use --force to override.`);
-      Logger.info(`Document classifications: ${hasDocClassifications ? docClassifications!.length : 0}`);
-      Logger.info(`Source classifications: ${hasSourceClassifications ? sourceClassifications!.length : 0}`);
+      Logger.info(`Document classifications: ${hasDocClassifications ? docCount : 0}`);
+      Logger.info(`Source classifications: ${hasSourceClassifications ? sourceCount : 0}`);
       return;
     } else if (hasDocClassifications || hasSourceClassifications) {
       Logger.info(`Document or source already has classifications but --force flag was provided. Proceeding with reclassification.`);
@@ -182,45 +180,110 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
       }
     }
     
-    // 4. Extract content from processed_content
+    // 4. Extract content from processed_content with memory-efficient handling
     let content = '';
+    
+    // Extract a limited preview for extremely large content to avoid memory issues
+    const extractSafeContent = (text: string): string => {
+      // For very large content, take only the first part to avoid memory issues
+      const maxPreviewLength = 40000; // Maximum safe size for preview
+      if (text.length > maxPreviewLength) {
+        Logger.warn(`Content is extremely large (${text.length} chars). Using truncated content to avoid memory issues.`);
+        
+        // Take the beginning, some from the middle, and the end to get a representative sample
+        const beginningLength = Math.floor(maxPreviewLength * 0.6); // 60% from beginning
+        const endLength = Math.floor(maxPreviewLength * 0.3);       // 30% from end
+        const middleLength = maxPreviewLength - beginningLength - endLength; // 10% from middle
+        
+        // Calculate the middle position (approximately 40% into the document)
+        const middleStart = Math.floor(text.length * 0.4);
+        
+        // Combine the three sections with separator notes
+        return (
+          text.substring(0, beginningLength) + 
+          "\n\n[... Content truncated to avoid memory issues ...]\n\n" +
+          text.substring(middleStart, middleStart + middleLength) +
+          "\n\n[... Content truncated to avoid memory issues ...]\n\n" +
+          text.substring(text.length - endLength)
+        );
+      }
+      return text;
+    };
+    
+    // Process based on content format
     if (typeof expertDocument.processed_content === 'string') {
-      content = expertDocument.processed_content;
-    } else if (expertDocument.processed_content.content) {
-      content = typeof expertDocument.processed_content.content === 'string' 
+      content = extractSafeContent(expertDocument.processed_content);
+    } else if (expertDocument.processed_content?.content) {
+      const textContent = typeof expertDocument.processed_content.content === 'string' 
         ? expertDocument.processed_content.content 
         : JSON.stringify(expertDocument.processed_content.content);
-    } else if (expertDocument.processed_content.text) {
-      content = typeof expertDocument.processed_content.text === 'string'
+      content = extractSafeContent(textContent);
+    } else if (expertDocument.processed_content?.text) {
+      const textContent = typeof expertDocument.processed_content.text === 'string'
         ? expertDocument.processed_content.text
         : JSON.stringify(expertDocument.processed_content.text);
+      content = extractSafeContent(textContent);
     } else {
       // Just stringify the whole object as a fallback
-      content = JSON.stringify(expertDocument.processed_content);
+      const jsonContent = JSON.stringify(expertDocument.processed_content);
+      content = extractSafeContent(jsonContent);
+    }
+    
+    // Force garbage collection if possible
+    if (global.gc) {
+      try {
+        global.gc();
+      } catch (e) {
+        // Ignore if gc is not available
+      }
     }
     
     // Set a max chunk size that leaves enough room for the subject classification prompt and Claude's response
-    // Using a more conservative chunk size to avoid context limit errors
-    const MAX_CHUNK_LENGTH = 12000;
+    // Using a very conservative chunk size to avoid context limit errors and memory issues
+    const MAX_CHUNK_LENGTH = 4000;
     let contentChunks: string[] = [];
     
     // Split content into chunks if it's large
     if (content.length > MAX_CHUNK_LENGTH) {
       Logger.info(`Content length (${content.length} chars) exceeds maximum chunk size. Splitting into chunks...`);
       
-      // Create multiple chunks with some overlap
+      // For very large content, be even more aggressive with chunking
+      // Progressively use smaller chunks for larger content to prevent memory issues
+      let actualChunkSize: number;
+      if (content.length > 100000) {
+        actualChunkSize = 2000; // For extremely large content (>100K), use tiny chunks
+      } else if (content.length > 50000) {
+        actualChunkSize = 3000; // For very large content (>50K), use small chunks
+      } else {
+        actualChunkSize = MAX_CHUNK_LENGTH; // For moderately large content, use standard chunk size
+      }
+      
+      Logger.info(`Using chunk size of ${actualChunkSize} characters based on content length of ${content.length} characters`);
+      
+      // Create multiple chunks with minimal overlap for memory efficiency
       let currentPosition = 0;
+      const minOverlapSize = 200; // Minimum overlap to maintain some context
+      
       while (currentPosition < content.length) {
-        // Determine the end of this chunk (with potential overlap)
-        const chunkEnd = Math.min(currentPosition + MAX_CHUNK_LENGTH, content.length);
+        // Determine the end of this chunk
+        const chunkEnd = Math.min(currentPosition + actualChunkSize, content.length);
         
         // Extract the chunk
         const chunk = content.substring(currentPosition, chunkEnd);
         contentChunks.push(chunk);
         
-        // Move to the next chunk with a slight overlap for context preservation
-        // Using a 10% overlap to maintain context between chunks
-        currentPosition = chunkEnd - Math.min(1500, chunkEnd - currentPosition);
+        // Move to the next chunk with minimal overlap
+        const overlapSize = Math.min(minOverlapSize, Math.floor(actualChunkSize * 0.04));
+        currentPosition = chunkEnd - overlapSize;
+        
+        // Force garbage collection after each chunk if available
+        if (global.gc) {
+          try {
+            global.gc();
+          } catch (e) {
+            // Ignore if gc is not available
+          }
+        }
         
         // Avoid infinite loops due to overlap calculation
         if (currentPosition >= content.length - 100) break;
@@ -291,7 +354,8 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
           
           // Use Claude service (singleton pattern) with limited output tokens
           const response = await claudeService.sendPrompt(combinedPrompt, {
-            maxTokens: 1000 // Limit output tokens since we only need the JSON classification
+            maxTokens: 1000, // Limit output tokens since we only need the JSON classification
+            temperature: 0.2 // Lower temperature for more consistent outputs
           });
           
           // Parse the JSON response, handling potential markdown formatting
