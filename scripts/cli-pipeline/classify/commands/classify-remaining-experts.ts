@@ -58,39 +58,39 @@ async function fetchRemainingExpertDocuments(limit: number, expertName?: string)
   try {
     Logger.info('Finding remaining expert documents that need classification...');
 
-    // Define SQL parts for the special filters
-    const unsupportedFoldersSql = `
+    // Define arrays for filtering
+    const unsupportedFolders = [
       'bd903d99-64a1-4297-ba76-1094ab235dac',
       'dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd',
       '0d61a685-10e0-4c82-b964-60b88b02ac15'
-    `;
+    ];
 
-    const unsupportedDocTypesSql = `
-      '6ece37e7-840d-4a0c-864d-9f1f971b1d7e', -- m4a audio
-      'e9d3e473-5315-4837-9f5f-61f150cbd137', -- Code Documentation Markdown
-      '4edfb133-ffeb-4b9c-bfd4-79ee9a9d73af', -- mp3 audio
-      'd2206940-e4f3-476e-9245-0e1eb12fd195', -- aac audio
-      '8ce8fbbc-b397-4061-a80f-81402515503b', -- m3u file
-      'fe697fc5-933c-41c9-9b11-85e0defa86ed', -- wav audio
-      'db6518ad-765c-4a02-a684-9c2e49d77cf5', -- png image
-      '68b95822-2746-4ce1-ad35-34e5b0297177', -- jpg image
-      '3e7c880c-d821-4d01-8cc5-3547bdd2e347', -- video mpeg
-      'd70a258e-262b-4bb3-95e3-f826ee9b918b', -- video quicktime
-      '91fa92a3-d606-493b-832d-9ba1fa83dc9f', -- video microsoft avi
-      '28ab55b9-b408-486f-b1c3-8f0f0a174ad4', -- m4v
-      '2c1d3bdc-b429-4194-bec2-7e4bbb165dbf', -- conf file
-      '53f42e7d-78bd-4bde-8106-dc12a4835695', -- Document Processing Script
-      '4fdbd8be-fe5a-4341-934d-2b6bd43be7be', -- CI CD Pipeline Script
-      'a1dddf8e-1264-4ec0-a5af-52eafb536ee3', -- Deployment Script
-      '561a86b0-7064-4c20-a40e-2ec6905c4a42', -- Database Management Script
-      'f7e83857-8bb8-4b18-9d8f-16d5cb783650', -- Environment Setup Script
-      'b26a68ed-a0d1-415d-8271-cba875bfe3ce', -- xlsx document
-      '920893fc-f0be-4211-85b4-fc29882ade97', -- google sheet
-      'e29b5194-7ba0-4a3c-a7db-92b0d8adca6a', -- Unknown Type
-      '9dbe32ff-5e82-4586-be63-1445e5bcc548'  -- unknown document type
-    `;
+    const unsupportedDocTypes = [
+      '6ece37e7-840d-4a0c-864d-9f1f971b1d7e', // m4a audio
+      'e9d3e473-5315-4837-9f5f-61f150cbd137', // Code Documentation Markdown
+      '4edfb133-ffeb-4b9c-bfd4-79ee9a9d73af', // mp3 audio
+      'd2206940-e4f3-476e-9245-0e1eb12fd195', // aac audio
+      '8ce8fbbc-b397-4061-a80f-81402515503b', // m3u file
+      'fe697fc5-933c-41c9-9b11-85e0defa86ed', // wav audio
+      'db6518ad-765c-4a02-a684-9c2e49d77cf5', // png image
+      '68b95822-2746-4ce1-ad35-34e5b0297177', // jpg image
+      '3e7c880c-d821-4d01-8cc5-3547bdd2e347', // video mpeg
+      'd70a258e-262b-4bb3-95e3-f826ee9b918b', // video quicktime
+      '91fa92a3-d606-493b-832d-9ba1fa83dc9f', // video microsoft avi
+      '28ab55b9-b408-486f-b1c3-8f0f0a174ad4', // m4v
+      '2c1d3bdc-b429-4194-bec2-7e4bbb165dbf', // conf file
+      '53f42e7d-78bd-4bde-8106-dc12a4835695', // Document Processing Script
+      '4fdbd8be-fe5a-4341-934d-2b6bd43be7be', // CI CD Pipeline Script
+      'a1dddf8e-1264-4ec0-a5af-52eafb536ee3', // Deployment Script
+      '561a86b0-7064-4c20-a40e-2ec6905c4a42', // Database Management Script
+      'f7e83857-8bb8-4b18-9d8f-16d5cb783650', // Environment Setup Script
+      'b26a68ed-a0d1-415d-8271-cba875bfe3ce', // xlsx document
+      '920893fc-f0be-4211-85b4-fc29882ade97', // google sheet
+      'e29b5194-7ba0-4a3c-a7db-92b0d8adca6a', // Unknown Type
+      '9dbe32ff-5e82-4586-be63-1445e5bcc548'  // unknown document type
+    ];
 
-    const unsupportedMimeTypesSql = `
+    const unsupportedMimeTypes = [
       'application/vnd.google-apps.audio',
       'application/vnd.google-apps.video',
       'application/vnd.google-apps.drawing',
@@ -108,11 +108,13 @@ async function fetchRemainingExpertDocuments(limit: number, expertName?: string)
       'image/png',
       'image/gif',
       'image/svg+xml'
-    `;
+    ];
 
-    // Expert filter clause
-    let expertFilterClause = '';
-    let expertId = null;
+    // First, find expert documents with processed content
+    Logger.info('Finding expert documents with processed content...');
+    
+    // Handle expert filtering if needed
+    let expertSourceIds: string[] = [];
     
     if (expertName) {
       // Get the expert ID
@@ -132,7 +134,7 @@ async function fetchRemainingExpertDocuments(limit: number, expertName?: string)
         return [];
       }
       
-      expertId = expertData.id;
+      const expertId = expertData.id;
       
       // Get the sources for this expert
       const { data: expertSources, error: sourcesError } = await supabase
@@ -150,86 +152,124 @@ async function fetchRemainingExpertDocuments(limit: number, expertName?: string)
         return [];
       }
       
-      // Extract the source IDs
-      const sourceIds = expertSources.map(source => `'${source.source_id}'`).join(',');
-      expertFilterClause = `AND sg.id IN (${sourceIds})`;
-      
-      Logger.info(`Filtering by expert: ${expertName} (${expertSources.length} sources)`);
+      expertSourceIds = expertSources.map(source => source.source_id);
+      Logger.info(`Filtering by expert: ${expertName} (${expertSourceIds.length} sources)`);
     }
     
-    // Build the final SQL query with all filters
-    const query = `
-      WITH classified_docs AS (
-        -- Documents that already have at least one classification
-        SELECT DISTINCT entity_id
-        FROM table_classifications
-        WHERE entity_type = 'expert_documents'
-      )
-      
-      SELECT 
-        ed.id AS expert_document_id,
-        ed.title AS document_title,
-        ed.document_type_id,
-        dt.document_type AS document_type_name,
-        sg.id AS source_id,
-        sg.name AS source_name,
-        sg.mime_type,
-        ed.processed_content
-      FROM 
-        expert_documents ed
-      JOIN 
-        sources_google sg ON ed.source_id = sg.id
-      LEFT JOIN
-        document_types dt ON ed.document_type_id = dt.id
-      WHERE 
-        -- Document is not already classified
-        ed.id NOT IN (SELECT entity_id FROM classified_docs)
-        
-        -- Has processed content (indicating it's ready for classification)
-        AND ed.processed_content IS NOT NULL
-        
-        -- Not a folder
-        AND sg.mime_type != 'application/vnd.google-apps.folder'
-        
-        -- Not an unsupported document type
-        AND (ed.document_type_id IS NULL OR ed.document_type_id NOT IN (${unsupportedDocTypesSql}))
-        
-        -- Not an unsupported MIME type
-        AND sg.mime_type NOT IN (${unsupportedMimeTypesSql})
-        
-        ${expertFilterClause}
-        
-      ORDER BY 
-        -- Order by creation date, newest first
-        sg.created_at DESC
-        
-      LIMIT ${limit}
-    `;
+    // Find documents with processed content in expert_documents
+    Logger.info('Finding expert documents with processed content...');
+    let expertDocsQuery = supabase
+      .from('expert_documents')
+      .select('id, title, source_id, document_type_id, processed_content')
+      .not('processed_content', 'is', null);
     
-    Logger.info('Executing SQL query to find expert documents needing classification...');
+    // Add expert filtering if specified
+    if (expertName && expertSourceIds.length > 0) {
+      expertDocsQuery = expertDocsQuery.in('source_id', expertSourceIds);
+    }
     
-    const { data, error } = await supabase.rpc('execute_sql', { sql_query: query });
+    // Order by ID and get more than we need to account for filtering
+    const { data: expertDocs, error: expertDocsError } = await expertDocsQuery
+      .order('id', { ascending: false })
+      .limit(limit * 5); // Get more than we need since we'll filter some out
     
-    if (error) {
-      Logger.error(`Error executing SQL query: ${error.message}`);
+    if (expertDocsError) {
+      Logger.error(`Error fetching expert documents: ${expertDocsError.message}`);
       return [];
     }
     
-    Logger.info(`Found ${data?.length || 0} documents that need classification.`);
+    Logger.info(`Found ${expertDocs?.length || 0} expert documents with processed content.`);
+    
+    if (!expertDocs || expertDocs.length === 0) {
+      return [];
+    }
+    
+    // Get the source IDs to fetch additional information
+    const sourceIds = expertDocs.map(doc => doc.source_id).filter(id => id);
+    
+    // Fetch source information for these documents
+    Logger.info(`Fetching source information for ${sourceIds.length} sources...`);
+    const { data: sources, error: sourcesError } = await supabase
+      .from('sources_google')
+      .select('id, name, mime_type')
+      .in('id', sourceIds);
+    
+    if (sourcesError) {
+      Logger.error(`Error fetching sources: ${sourcesError.message}`);
+      return [];
+    }
+    
+    // Create a lookup map for sources
+    const sourcesMap: Record<string, {id: string, name: string, mime_type: string}> = {};
+    sources?.forEach(source => {
+      sourcesMap[source.id] = source;
+    });
+    
+    // Filter out documents with unsupported mime types and document types
+    let allDocs = expertDocs.filter(doc => {
+      // Need the source to check mime type
+      const source = doc.source_id ? sourcesMap[doc.source_id] : null;
+      if (!source) return false;
+      
+      // Check MIME type
+      if (source.mime_type === 'application/vnd.google-apps.folder') return false;
+      if (unsupportedMimeTypes.includes(source.mime_type)) return false;
+      
+      // Check document type
+      if (doc.document_type_id && unsupportedDocTypes.includes(doc.document_type_id)) return false;
+      
+      return true;
+    });
+    
+    Logger.info(`After filtering unsupported types: ${allDocs.length} documents (removed ${expertDocs.length - allDocs.length}).`);
+    
+    // Get the IDs of these documents
+    const docIds = allDocs.map(doc => doc.id);
+    
+    // Now check which of these documents are already classified
+    Logger.info('Checking which documents are already classified...');
+    const { data: classifiedDocs, error: classifiedError } = await supabase
+      .from('table_classifications')
+      .select('entity_id')
+      .eq('entity_type', 'expert_documents')
+      .in('entity_id', docIds);
+    
+    if (classifiedError) {
+      Logger.error(`Error checking classified documents: ${classifiedError.message}`);
+      return [];
+    }
+    
+    // Create a Set of already classified document IDs for fast lookups
+    const classifiedIds = new Set(classifiedDocs?.map(doc => doc.entity_id) || []);
+    Logger.info(`Found ${classifiedIds.size} already classified documents out of ${docIds.length}.`);
+    
+    // Filter out the already classified documents
+    const unclassifiedDocs = allDocs.filter(doc => !classifiedIds.has(doc.id));
+    Logger.info(`Found ${unclassifiedDocs.length} unclassified documents that need classification.`);
+    
+    // Limit to the requested number
+    const documentsToProcess = unclassifiedDocs.slice(0, limit);
+    
+    Logger.info(`Selected ${documentsToProcess.length} documents for classification processing.`);
     
     // Transform the results to match our ExpertDocument interface
-    const documents: ExpertDocument[] = (data || []).map((doc: any) => ({
-      id: doc.expert_document_id,
-      source_id: doc.source_id,
-      processed_content: doc.processed_content,
-      title: doc.document_title,
-      document_type_id: doc.document_type_id,
-      sources_google: {
-        id: doc.source_id,
-        name: doc.source_name,
-        mime_type: doc.mime_type
-      }
-    }));
+    const documents: ExpertDocument[] = documentsToProcess.map((doc: any) => {
+      // Get source information from our sources map
+      const sourceInfo = doc.source_id ? sourcesMap[doc.source_id] : null;
+      
+      return {
+        id: doc.id,
+        source_id: doc.source_id,
+        processed_content: doc.processed_content,
+        title: doc.title,
+        document_type_id: doc.document_type_id,
+        sources_google: sourceInfo ? {
+          id: sourceInfo.id,
+          name: sourceInfo.name,
+          mime_type: sourceInfo.mime_type
+        } : null
+      };
+    });
     
     return documents;
   } catch (error) {
