@@ -130,6 +130,12 @@ function display_help() {
     --verbose                  Show detailed output"
   echo -e "    --dry-run                  Show what would be classified without making changes"
   echo ""
+  echo -e "  compare-presentations-assets  Compare presentations against presentation_assets to find missing assets"
+  echo -e "    -l, --limit <number>        Maximum number of presentations to display (0 for all)"
+  echo -e "    --id-width <number>         Width of ID column in output (default: 40)"
+  echo -e "    --name-width <number>       Width of name column in output (default: 60)"
+  echo -e "    --verbose                   Show detailed output including additional diagnostics"
+  echo ""
   echo ""
   echo -e "\033[1mExamples:\033[0m"
   echo -e "  $ classify-cli list"
@@ -147,6 +153,8 @@ function display_help() {
   echo -e "  $ classify-cli check-mp4-titles -x \"Navieux\""
   echo -e "  $ classify-cli write-unclassified-ids -e mp4,pdf,docx"
   echo -e "  $ classify-cli classify-batch-from-file -b 5 -c 3 -f --verbose"
+  echo -e "  $ classify-cli compare-presentations-assets"
+  echo -e "  $ classify-cli compare-presentations-assets --limit 25 --verbose"
 }
 
 # Handle list command
@@ -234,6 +242,11 @@ classify_batch_from_file_command() {
   track_command "classify-batch-from-file" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts classify-batch-from-file $@"
 }
 
+# Handle compare-presentations-assets command
+compare_presentations_assets_command() {
+  track_command "compare-presentations-assets" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts compare-presentations-assets $@"
+}
+
 
 # Direct handling of health-check command for better error output
 if [[ "$1" == "health-check" ]]; then
@@ -293,6 +306,9 @@ case "$1" in
     ;;
   "classify-batch-from-file")
     classify_batch_from_file_command "${@:2}"
+    ;;
+  "compare-presentations-assets")
+    compare_presentations_assets_command "${@:2}"
     ;;
   "help"|"--help"|"-h"|"")
     display_help

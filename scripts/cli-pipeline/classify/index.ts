@@ -9,6 +9,8 @@ import { listUnclassifiedCommand } from './commands/list-unclassified';
 import { classifySourceCommand } from './commands/classify-source';
 import { writeUnclassifiedIdsCommand } from './commands/write-unclassified-ids';
 import { classifyBatchFromFileCommand } from './commands/classify-batch-from-file';
+import { checkClassifiedFilesCommand } from './commands/check-classified-files';
+import { comparePresentationsAssetsCommand } from './commands/compare-presentations-assets';
 import { classifyService } from '../../../packages/shared/services/classify-service';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
@@ -872,6 +874,32 @@ program
     }
   });
 
+
+// Add compare-presentations-assets command
+program
+  .command('compare-presentations-assets')
+  .description('Compare presentations against presentation_assets to find missing assets')
+  .option('-l, --limit <number>', 'Maximum number of presentations to display (0 for all)', '0')
+  .option('--id-width <number>', 'Width of ID column in output', '40')
+  .option('--name-width <number>', 'Width of name column in output', '60')
+  .option('--verbose', 'Show detailed output including additional diagnostics', false)
+  .action(async (options) => {
+    try {
+      // Parse options
+      const limit = options.limit ? parseInt(options.limit, 10) : 0;
+      const idWidth = options.idWidth ? parseInt(options.idWidth, 10) : 40;
+      const nameWidth = options.nameWidth ? parseInt(options.nameWidth, 10) : 60;
+      
+      await comparePresentationsAssetsCommand({
+        limit,
+        idWidth,
+        nameWidth,
+        verbose: options.verbose
+      });
+    } catch (error) {
+      Logger.error(`Error in compare-presentations-assets command: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
 
 // Handle if no command is provided
 program.parse(process.argv);
