@@ -93,6 +93,11 @@ function display_help() {
   echo -e "    -l, --limit <number>       Maximum number of MP4 files to check (default: 500)"
   echo -e "    -x, --expert <n>        Filter by expert name"
   echo -e "    --verbose                  Show detailed output including MP4 files without expert_documents"
+  echo -e ""
+  echo -e "  list-unclassified           List expert documents with processed content that haven't been classified"
+  echo -e "    -l, --limit <number>       Maximum number of documents to list (default: 50)"
+  echo -e "    -c, --with-content         Show content preview (only with --verbose)"
+  echo -e "    -v, --verbose              Show detailed output including content preview"
   echo ""
   echo -e "\033[1mExamples:\033[0m"
   echo -e "  $ classify-cli list"
@@ -175,6 +180,11 @@ examine_document_command() {
   track_command "examine-document" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts examine-document $@"
 }
 
+# Handle list-unclassified command
+list_unclassified_command() {
+  track_command "list-unclassified" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts list-unclassified $@"
+}
+
 # Direct handling of health-check command for better error output
 if [[ "$1" == "health-check" ]]; then
   health_check_command "${@:2}"
@@ -221,6 +231,9 @@ case "$1" in
     ;;
   "examine-document")
     examine_document_command "${@:2}"
+    ;;
+  "list-unclassified")
+    list_unclassified_command "${@:2}"
     ;;
   "help"|"--help"|"-h"|"")
     display_help

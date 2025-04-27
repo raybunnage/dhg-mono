@@ -5,6 +5,7 @@ import { healthCheckCommand } from './commands/health-check';
 import { classifySubjectsCommand } from './commands/classify-subjects';
 import { extractTitlesCommand } from './commands/extract-titles';
 import { checkMp4TitlesCommand } from './commands/check-mp4-titles';
+import { listUnclassifiedCommand } from './commands/list-unclassified';
 import { classifyService } from '../../../packages/shared/services/classify-service';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
@@ -738,6 +739,28 @@ function renderHierarchyMarkdown(items: any[], indent: string, lines: string[]):
     }
   }
 }
+
+// Add list-unclassified command
+program
+  .command('list-unclassified')
+  .description('List expert documents with processed content that need classification')
+  .option('-l, --limit <number>', 'Maximum number of documents to list', '50')
+  .option('-c, --with-content', 'Show content preview (only with --verbose)', false)
+  .option('-v, --verbose', 'Show detailed output including content preview', false)
+  .action(async (options) => {
+    try {
+      // Parse limit as integer
+      const limit = options.limit ? parseInt(options.limit, 10) : 50;
+      
+      await listUnclassifiedCommand({
+        limit,
+        withContent: options.withContent,
+        verbose: options.verbose
+      });
+    } catch (error) {
+      Logger.error(`Error in list-unclassified command: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
 
 // Handle if no command is provided
 program.parse(process.argv);
