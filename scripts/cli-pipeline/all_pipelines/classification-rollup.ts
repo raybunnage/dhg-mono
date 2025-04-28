@@ -48,33 +48,39 @@ export async function generateClassificationRollup(options: ClassificationRollup
     // First get a rollup of all expert_documents classifications
     console.log(chalk.blue('Fetching classification counts for all expert documents...'));
     
-    // We need to join with subject_classifications to get the subject names
-    // First get the counts by subject_classification_id
+    // First get the list of subject classifications to have proper names available
+    const { data: subjectsList, error: subjectsError } = await supabase
+      .from('subject_classifications')
+      .select('id, subject, subject_character');
+      
+    if (subjectsError) {
+      console.error(chalk.red('Error fetching subject classifications:'), subjectsError.message);
+      return;
+    }
+    
+    // Create a lookup map for subject classifications
+    const subjectsMap: Record<string, any> = {};
+    subjectsList?.forEach(subject => {
+      subjectsMap[subject.id] = subject;
+    });
+    
+    // Get counts by subject_classification_id
     const { data: countData, error: countError } = await supabase.rpc(
-      'execute_sql_query',
+      'execute_sql',
       {
-        query_text: `
-          WITH counts AS (
-            SELECT 
-              subject_classification_id, 
-              COUNT(*) as count
-            FROM table_classifications
-            WHERE entity_type = 'expert_documents'
-            GROUP BY subject_classification_id
-          )
+        sql: `
           SELECT 
-            c.subject_classification_id,
-            s.subject,
-            s.subject_character,
-            c.count
-          FROM counts c
-          JOIN subject_classifications s ON c.subject_classification_id = s.id
-          ORDER BY c.count DESC
+            subject_classification_id, 
+            COUNT(*) as count
+          FROM table_classifications
+          WHERE entity_type = 'expert_documents'
+          GROUP BY subject_classification_id
+          ORDER BY COUNT(*) DESC
         `
       }
     );
     
-    const allClassificationCounts = countData?.result || [];
+    const allClassificationCounts = countData || [];
     
     if (countError) {
       console.error(chalk.red('Error fetching expert document classification counts:'), countError.message);
@@ -115,31 +121,22 @@ export async function generateClassificationRollup(options: ClassificationRollup
       // Find classifications for these video source IDs using a SQL query
       const sourceIdsString = videoSourceIds.map(id => `'${id}'`).join(',');
       const { data: videoData, error: videoClassError } = await supabase.rpc(
-        'execute_sql_query', 
+        'execute_sql', 
         {
-          query_text: `
-            WITH counts AS (
-              SELECT 
-                subject_classification_id, 
-                COUNT(*) as count
-              FROM table_classifications
-              WHERE entity_type = 'sources_google'
-              AND entity_id IN (${sourceIdsString})
-              GROUP BY subject_classification_id
-            )
+          sql: `
             SELECT 
-              c.subject_classification_id,
-              s.subject,
-              s.subject_character,
-              c.count
-            FROM counts c
-            JOIN subject_classifications s ON c.subject_classification_id = s.id
-            ORDER BY c.count DESC
+              subject_classification_id, 
+              COUNT(*) as count
+            FROM table_classifications
+            WHERE entity_type = 'sources_google'
+            AND entity_id IN (${sourceIdsString})
+            GROUP BY subject_classification_id
+            ORDER BY COUNT(*) DESC
           `
         }
       );
       
-      const videoClassifications = videoData?.result || [];
+      const videoClassifications = videoData || [];
       
       if (videoClassError) {
         console.error(chalk.red('Error fetching video classification counts:'), videoClassError.message);
@@ -151,22 +148,28 @@ export async function generateClassificationRollup(options: ClassificationRollup
       // Process the results
       const allDocsClassifications = allClassificationCounts?.filter(
         (c: any) => c.count >= minCount
-      ).map((c: any) => ({
-        subject_id: c.subject_classification_id,
-        subject: c.subject_classifications?.subject || 'Unknown',
-        subject_character: c.subject_classifications?.subject_character || null,
-        count: c.count
-      })) || [];
+      ).map((c: any) => {
+        const subjectInfo = subjectsMap[c.subject_classification_id];
+        return {
+          subject_id: c.subject_classification_id,
+          subject: subjectInfo?.subject || 'Unknown',
+          subject_character: subjectInfo?.subject_character || null,
+          count: parseInt(c.count)
+        };
+      }) || [];
       
       const videoOnlyClassifications = videoClassifications?.filter(
         (c: any) => c.count >= minCount
-      ).map((c: any) => ({
-        subject_id: c.subject_classification_id,
-        subject: c.subject_classifications?.subject || 'Unknown',
-        subject_character: c.subject_classifications?.subject_character || null,
-        count: c.count,
-        video_count: c.count
-      })) || [];
+      ).map((c: any) => {
+        const subjectInfo = subjectsMap[c.subject_classification_id];
+        return {
+          subject_id: c.subject_classification_id,
+          subject: subjectInfo?.subject || 'Unknown',
+          subject_character: subjectInfo?.subject_character || null,
+          count: parseInt(c.count),
+          video_count: parseInt(c.count)
+        };
+      }) || [];
       
       // Generate the report in the requested format
       if (format === 'json') {

@@ -86,11 +86,11 @@ program
       // Determine the output path
       const outputPath = options.output || path.join(
         process.cwd(),
-        'docs/subject-classification-rollup.md'
+        'docs/script-reports/subject-classification-rollup.md'
       );
       
       await generateClassificationRollup({
-        outputPath: options.output,
+        outputPath: outputPath,
         minCount: parseInt(options.minCount, 10),
         format: options.format as 'markdown' | 'json',
         includeSubjectInfo: options.subjectInfo !== false
