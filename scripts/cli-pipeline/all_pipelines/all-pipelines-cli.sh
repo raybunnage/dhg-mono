@@ -42,6 +42,11 @@ usage_report() {
   track_command "usage-report" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts usage-report $@"
 }
 
+# Command handler for classification-rollup
+classification_rollup() {
+  track_command "classification-rollup" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts classification-rollup $@"
+}
+
 # Print help information
 show_help() {
   echo "All Pipelines CLI - Master CLI for running health checks across all pipelines"
@@ -52,6 +57,7 @@ show_help() {
   echo "COMMANDS:"
   echo "  master-health-check       Run health checks for all pipelines and report consolidated status"
   echo "  usage-report              Generate a markdown report of CLI command usage"
+  echo "  classification-rollup     Generate a rollup report of subject classifications by type"
   echo "  help                      Show this help message"
   echo ""
   echo "OPTIONS for master-health-check:"
@@ -85,6 +91,22 @@ show_help() {
   echo ""
   echo "  # Generate a report showing only active pipelines with custom output path"
   echo "  ./all-pipelines-cli.sh usage-report --only-active --output ./docs/cli-report.md"
+  echo ""
+  echo "OPTIONS for classification-rollup:"
+  echo "  -o, --output <path>       Output file path for the report"
+  echo "  -m, --min-count <number>  Minimum count to include in report (default: 1)"
+  echo "  -f, --format <format>     Output format: markdown or json (default: markdown)"
+  echo "  --no-subject-info         Exclude additional subject information from the report"
+  echo ""
+  echo "EXAMPLES:"
+  echo "  # Generate a classification rollup report with default settings"
+  echo "  ./all-pipelines-cli.sh classification-rollup"
+  echo ""
+  echo "  # Generate a JSON report with custom output path"
+  echo "  ./all-pipelines-cli.sh classification-rollup --format json --output ./docs/classifications.json"
+  echo ""
+  echo "  # Generate a report with only subjects appearing at least 5 times"
+  echo "  ./all-pipelines-cli.sh classification-rollup --min-count 5"
 }
 
 # Main command router
@@ -94,6 +116,9 @@ case "$1" in
     ;;
   "usage-report")
     usage_report "${@:2}"
+    ;;
+  "classification-rollup")
+    classification_rollup "${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

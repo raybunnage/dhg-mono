@@ -10,6 +10,7 @@ import { Command } from 'commander';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { runMasterHealthCheck } from './master-health-check';
 import { generateUsageReport } from './usage-report';
+import { generateClassificationRollup } from './classification-rollup';
 import * as path from 'path';
 
 // Create a new command instance
@@ -72,6 +73,35 @@ program
   });
 
 // Parse arguments and run
+// Add classification-rollup command
+program
+  .command('classification-rollup')
+  .description('Generate a rollup report of subject classifications by type')
+  .option('-o, --output <path>', 'Output file path for the report')
+  .option('-m, --min-count <number>', 'Minimum count to include in report', '1')
+  .option('-f, --format <format>', 'Output format (markdown, json)', 'markdown')
+  .option('--no-subject-info', 'Exclude additional subject information from the report')
+  .action(async (options) => {
+    try {
+      // Determine the output path
+      const outputPath = options.output || path.join(
+        process.cwd(),
+        'docs/subject-classification-rollup.md'
+      );
+      
+      await generateClassificationRollup({
+        outputPath: options.output,
+        minCount: parseInt(options.minCount, 10),
+        format: options.format as 'markdown' | 'json',
+        includeSubjectInfo: options.subjectInfo !== false
+      });
+    } catch (error) {
+      console.error('Failed to generate classification rollup report:', 
+        error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  });
+
 program.parse(process.argv);
 
 // If no arguments, show help

@@ -11,16 +11,23 @@ require('dotenv').config({
 const program = new Command();
 
 program
-  .name('database')
+  .name('database-cli')
   .description('CLI tool for monitoring and managing Supabase database')
   .version('1.0.0');
 
-// Import all command modules
-import './commands/table-records';
-import './commands/empty-tables';
-import './commands/database-functions';
-import './commands/table-structure';
-import './commands/schema-health';
+// Import command modules
+import tableRecordsCommand from './commands/table-records';
+import emptyTablesCommand from './commands/empty-tables';
+import databaseFunctionsCommand from './commands/database-functions';
+import tableStructureCommand from './commands/table-structure';
+import schemaHealthCommand from './commands/schema-health';
+
+// Add commands to program
+program.addCommand(tableRecordsCommand);
+program.addCommand(emptyTablesCommand);
+program.addCommand(databaseFunctionsCommand);
+program.addCommand(tableStructureCommand);
+program.addCommand(schemaHealthCommand);
 
 // Process command line arguments
 program.parse(process.argv);
