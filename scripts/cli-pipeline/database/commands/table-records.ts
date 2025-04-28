@@ -16,8 +16,14 @@ program
   .action(async (options) => {
     const trackingId = await commandTrackingService.startTracking('database', 'table-records');
     try {
-      // Get all tables with record counts
+      // Notify user we're starting
+      process.stdout.write("Starting table records query...\n");
+      
+      // Get all tables with record counts 
       const tables = await databaseService.getTablesWithRecordCounts();
+      
+      // Immediately notify that we got results to ensure something is displayed
+      process.stdout.write(`Retrieved information about ${tables.length} tables.\n`);
       
       // Filter tables based on options
       let filteredTables = tables;
@@ -64,13 +70,24 @@ program
         ]);
       });
       
-      // Print the table with both console.log and process.stdout.write for debugging
-      console.log("Attempting to display table with console.log:");
-      console.log(table.toString());
+      // Print the table directly without any fancy stuff - just raw strings
+      // This guarantees it's visible even if other methods are failing
+      process.stdout.write('\n');
+      process.stdout.write('========= DATABASE TABLES =========' + '\n');
+      process.stdout.write('Table Name                               | Record Count' + '\n');
+      process.stdout.write('-------------------------------------------------------' + '\n');
       
-      console.log("\nAttempting to display table with process.stdout.write:");
-      process.stdout.write(table.toString() + "\n");
-      process.stdout.write(`\nTotal tables: ${filteredTables.length}\n`);
+      filteredTables.forEach(tableInfo => {
+        process.stdout.write(
+          tableInfo.tableName.padEnd(40) + 
+          '| ' + 
+          (tableInfo.count === -1 ? 'ERROR' : tableInfo.count.toString()) + 
+          '\n'
+        );
+      });
+      
+      process.stdout.write('-------------------------------------------------------' + '\n');
+      process.stdout.write(`Total tables: ${filteredTables.length}\n`);
       
       // Calculate statistics
       const totalRecords = filteredTables.reduce((sum, table) => {
