@@ -3,15 +3,9 @@
  * 
  * Provides integration with Claude AI models through Anthropic's API.
  * Handles API requests, rate limiting, and response parsing.
- * Now includes support for direct PDF binary analysis.
  */
-import axios, { AxiosInstance } from 'axios';
+import axios from 'axios';
 import { config, Logger } from '../../utils';
-import * as fs from 'fs';
-import * as path from 'path';
-// Import pdf-lib for PDF manipulation (splitPdfFirstChunk)
-// pdf-lib is compatible with Node.js environments
-import { PDFDocument } from 'pdf-lib';
 
 /**
  * Claude API response structure

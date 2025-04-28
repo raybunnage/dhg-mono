@@ -1,7 +1,7 @@
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { promptManagementService } from '../../../../packages/shared/services/prompt-service/prompt-management-service';
 import { trackCommandExecution } from '../../../../packages/shared/services/tracking-service/cli-tracking-wrapper';
-import { ClaudeService } from '../../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -138,15 +138,14 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
       if (!options.skipClaude) {
         console.log('\n🔍 Checking Claude service...');
         try {
-          const claude = ClaudeService.getInstance();
-          
+          // Use the claudeService singleton directly
           if (process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY) {
             // Only attempt to call Claude if we have API key
             console.log('  API key found, testing Claude API connection...');
             
             try {
               // Very short test prompt with minimal token usage
-              const response = await claude.sendPrompt('Say "healthy" if you can read this.', {
+              const response = await claudeService.sendPrompt('Say "healthy" if you can read this.', {
                 maxTokens: 10
               });
               

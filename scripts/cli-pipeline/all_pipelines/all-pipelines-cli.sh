@@ -37,6 +37,11 @@ master_health_check() {
   track_command "master-health-check" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts master-health-check $@"
 }
 
+# Command handler for usage-report
+usage_report() {
+  track_command "usage-report" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts usage-report $@"
+}
+
 # Print help information
 show_help() {
   echo "All Pipelines CLI - Master CLI for running health checks across all pipelines"
@@ -46,6 +51,7 @@ show_help() {
   echo ""
   echo "COMMANDS:"
   echo "  master-health-check       Run health checks for all pipelines and report consolidated status"
+  echo "  usage-report              Generate a markdown report of CLI command usage"
   echo "  help                      Show this help message"
   echo ""
   echo "OPTIONS for master-health-check:"
@@ -53,6 +59,13 @@ show_help() {
   echo "  -t, --timeout <ms>        Timeout for individual health check operations in milliseconds (default: 30000)"
   echo "  --include <pipelines>     Comma-separated list of pipelines to include (default: all)"
   echo "  --exclude <pipelines>     Comma-separated list of pipelines to exclude"
+  echo ""
+  echo "OPTIONS for usage-report:"
+  echo "  -t, --top <number>        Number of top commands to show per pipeline (default: 10)"
+  echo "  -d, --days <number>       Number of days to look back for recent commands (default: 30)"
+  echo "  -o, --output <path>       Output file path (default: docs/script-reports/cli-usage-report.md)"
+  echo "  --only-active             Only include pipelines with recent activity"
+  echo "  --detailed                Include detailed command execution history"
   echo ""
   echo "EXAMPLES:"
   echo "  # Run health checks for all pipelines"
@@ -64,17 +77,23 @@ show_help() {
   echo "  # Run health checks for specific pipelines"
   echo "  ./all-pipelines-cli.sh master-health-check --include google_sync,document"
   echo ""
-  echo "  # Run health checks excluding specific pipelines"
-  echo "  ./all-pipelines-cli.sh master-health-check --exclude media_processing"
+  echo "  # Generate a usage report with default settings"
+  echo "  ./all-pipelines-cli.sh usage-report"
   echo ""
-  echo "  # Set custom timeout (in milliseconds)"
-  echo "  ./all-pipelines-cli.sh master-health-check --timeout 60000"
+  echo "  # Generate a detailed usage report for the last 60 days"
+  echo "  ./all-pipelines-cli.sh usage-report --days 60 --detailed"
+  echo ""
+  echo "  # Generate a report showing only active pipelines with custom output path"
+  echo "  ./all-pipelines-cli.sh usage-report --only-active --output ./docs/cli-report.md"
 }
 
 # Main command router
 case "$1" in
   "master-health-check")
     master_health_check "${@:2}"
+    ;;
+  "usage-report")
+    usage_report "${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

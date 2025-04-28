@@ -9,6 +9,8 @@
 import { Command } from 'commander';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { runMasterHealthCheck } from './master-health-check';
+import { generateUsageReport } from './usage-report';
+import * as path from 'path';
 
 // Create a new command instance
 const program = new Command();
@@ -29,6 +31,36 @@ program
   .option('--exclude <pipelines>', 'Comma-separated list of pipelines to exclude')
   .action(async (options) => {
     await runMasterHealthCheck(options);
+  });
+
+// Add the usage-report command
+program
+  .command('usage-report')
+  .description('Generate a markdown report of CLI command usage across all pipelines')
+  .option('-t, --top <number>', 'Number of top commands to show per pipeline', '10')
+  .option('-d, --days <number>', 'Number of days to look back for recent commands', '30')
+  .option('-o, --output <path>', 'Output file path (default: docs/script-reports/cli-usage-report.md)')
+  .option('--only-active', 'Only include pipelines with recent activity')
+  .option('--detailed', 'Include detailed command execution history')
+  .action(async (options) => {
+    try {
+      // Determine the output path
+      const outputPath = options.output || path.join(
+        process.cwd(),
+        'docs/script-reports/cli-usage-report.md'
+      );
+      
+      await generateUsageReport({
+        topCommands: parseInt(options.top, 10),
+        recentDays: parseInt(options.days, 10),
+        outputPath,
+        onlyActive: !!options.onlyActive,
+        includeDetailedStats: !!options.detailed
+      });
+    } catch (error) {
+      console.error('Failed to generate usage report:', error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
   });
 
 // Add help command

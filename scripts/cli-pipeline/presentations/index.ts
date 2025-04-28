@@ -4,7 +4,7 @@ import { Logger } from '../../../packages/shared/utils/logger';
 import { PresentationService } from './services/presentation-service';
 import { PresentationRepairService } from './services/presentation-repair-service';
 import { ExpertDocumentService } from './services/expert-document-service';
-import { ClaudeService } from '../../../packages/shared/services/claude-service';
+import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
 import { generateSummaryCommand } from './commands/generate-summary';
 import { presentationAssetBioCommand } from './commands/presentation-asset-bio';
 import { createPresentationsFromMp4Command } from './commands/create-presentations-from-mp4';
