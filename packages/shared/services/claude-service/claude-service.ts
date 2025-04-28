@@ -28,44 +28,6 @@ interface ClaudeResponse {
 }
 
 /**
- * Claude API message content item for text
- */
-interface MessageContentText {
-  type: 'text';
-  text: string;
-}
-
-/**
- * Claude API message content item for media
- */
-interface MessageContentMedia {
-  type: 'image';
-  source: {
-    type: 'base64';
-    media_type: string;
-    data: string;
-  };
-}
-
-/**
- * Union type for message content
- */
-type MessageContent = MessageContentText | MessageContentMedia;
-
-/**
- * Claude API request options
- */
-interface ClaudeRequestOptions {
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-  system?: string;
-  jsonMode?: boolean;
-  jsonSchema?: any; // Optional JSON schema for structured outputs
-  content?: MessageContent[]; // Support for direct message content array with mixed media
-}
-
-/**
  * Claude Service implementation
  */
 export class ClaudeService {
@@ -74,10 +36,6 @@ export class ClaudeService {
   private baseUrl: string;
   private apiVersion: string;
   private defaultModel: string;
-  private client: AxiosInstance;
-  private pdfEnabledClient: AxiosInstance;  // Special client with PDF beta headers
-  private retryCount: number = 5; // Increased from 3 to 5
-  private retryDelay: number = 2000; // Increased from 1000 to 2000
   
   /**
    * Create a new Claude service
@@ -86,56 +44,16 @@ export class ClaudeService {
   private constructor() {
     this.apiKey = config.claudeApiKey;
     this.baseUrl = config.claudeApiBaseUrl || 'https://api.anthropic.com';
-    // Using latest API version that supports response_format parameter
     this.apiVersion = config.claudeApiVersion || '2023-12-15';
     this.defaultModel = config.defaultModel || 'claude-3-7-sonnet-20250219';
-    
-    // Create standard HTTP client with increased timeout
-    this.client = axios.create({
-      baseURL: this.baseUrl,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': this.apiVersion,
-        'anthropic-api-version': this.apiVersion // Adding explicit API version header for new API endpoints
-      },
-      timeout: 120000 // Default 2 minute timeout, can be overridden in individual requests
-    });
-    
-    // Create PDF-enabled HTTP client with proper headers and increased timeout for PDFs
-    this.pdfEnabledClient = axios.create({
-      baseURL: this.baseUrl,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': this.apiVersion,
-        'anthropic-api-version': this.apiVersion
-        // No beta header needed for document type in content array
-      },
-      timeout: 180000 // Longer 3 minute timeout for PDF processing
-    });
-    
-    // Add request logging
-    this.client.interceptors.request.use((request: any) => {
-      Logger.debug(`Making Claude API request to ${request.url} with method ${request.method}`);
-      return request;
-    });
-    
-    // Add request logging for PDF client
-    this.pdfEnabledClient.interceptors.request.use((request: any) => {
-      Logger.debug(`Making Claude PDF API request to ${request.url} with method ${request.method}`);
-      return request;
-    });
     
     // Log configuration for debugging (not showing full key)
     Logger.debug(`ClaudeService initialized:
     🔑 API Key Present: ${!!this.apiKey} ${this.apiKey ? `(${this.apiKey.substring(0, 5)}...)` : ''}
     🌐 Base URL: ${this.baseUrl}
-    📝 API Version: ${this.apiVersion} (response_format requires 2023-12-15 or newer)
-    🤖 Default Model: ${this.defaultModel}
+    📝 API Version: ${this.apiVersion}
     🔍 Environment variables check:
     - CLAUDE_API_KEY set: ${!!process.env.CLAUDE_API_KEY}
-    - CLAUDE_API_VERSION set: ${!!process.env.CLAUDE_API_VERSION}
     - NODE_ENV: ${process.env.NODE_ENV}`);
   }
   
@@ -168,7 +86,12 @@ export class ClaudeService {
    */
   public async sendPrompt(
     prompt: string,
-    options: ClaudeRequestOptions = {}
+    options: {
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+      system?: string;
+    } = {}
   ): Promise<string> {
     if (!this.validateApiKey()) {
       throw new Error('Claude API key is not set. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY environment variable.');
@@ -197,23 +120,21 @@ export class ClaudeService {
         requestBody.system = system;
       }
       
-      // Log the request for debugging
-      Logger.debug(`Making Claude API request with the following parameters:
-      Model: ${requestBody.model}
-      API Version: ${this.apiVersion}
-      Has response_format: ${requestBody.response_format ? 'yes' : 'no'}
-      System message length: ${requestBody.system ? requestBody.system.length : 0} chars
-      User message length: ${requestBody.messages[0].content.length} chars`);
-      
-      // Make request with retries
-      const response = await this.makeRequestWithRetries<ClaudeResponse>(
-        '/v1/messages',
-        requestBody
+      const response = await axios.post(
+        `${this.baseUrl}/v1/messages`,
+        requestBody,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': this.apiKey,
+            'anthropic-version': this.apiVersion
+          }
+        }
       );
       
       // Extract the response content
-      if (response && response.content && response.content.length > 0) {
-        return response.content[0].text;
+      if (response.data && response.data.content && response.data.content.length > 0) {
+        return response.data.content[0].text;
       } else {
         throw new Error('Invalid response format from Claude API');
       }
@@ -231,296 +152,82 @@ export class ClaudeService {
   /**
    * Send a structured message to Claude that expects a structured response
    * @param prompt The prompt to send
-   * @param options Request options with jsonMode flag
+   * @param options Request options including model, temperature, etc.
    * @returns The JSON response from Claude
    */
   public async getJsonResponse<T = any>(
     prompt: string,
-    options: ClaudeRequestOptions = {}
+    options: {
+      jsonMode?: boolean;
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+      system?: string;
+    } = {}
   ): Promise<T> {
     // Always use temperature 0 for JSON responses (deterministic outputs)
     options.temperature = 0;
     options.jsonMode = options.jsonMode ?? true;
     
-    // Set system message for JSON responses - enhanced to be very explicit
+    // Set system message for JSON responses
     if (!options.system) {
-      options.system = "You are a helpful AI assistant that ONLY provides responses in valid JSON format. Your responses must be structured as valid, parseable JSON with nothing else before or after the JSON object. Do not include markdown code formatting, explanations, or any text outside the JSON object. Never wrap the JSON in ```json or ``` code blocks. The response should start with { and end with } with no other text before or after.";
+      options.system = "You are a helpful AI assistant that ONLY provides responses in valid JSON format. Your responses must be structured as valid, parseable JSON with nothing else before or after the JSON object. Do not include markdown code formatting, explanations, or any text outside the JSON object.";
     }
     
     // Add explicit JSON instructions to the prompt if needed
     let enhancedPrompt = prompt;
     
-    // If not already formatted for JSON specifically
     if (options.jsonMode && !prompt.includes("valid JSON") && !prompt.includes("JSON format")) {
-      // Add a clear instruction for JSON response with stronger language
-      enhancedPrompt = `${prompt}\n\nIMPORTANT: Respond with ONLY a valid JSON object and nothing else. Do NOT include ```json code blocks, explanations, preamble, or any text outside the JSON object. Your entire response should be valid JSON that can be directly parsed, starting with '{' and ending with '}' with no other text before or after.`;
+      enhancedPrompt = `${prompt}\n\nIMPORTANT: Respond with ONLY a JSON object and nothing else. Do not include explanations, markdown formatting, or any text outside the JSON object.`;
     }
     
     try {
-      // For jsonMode true, add response_format to API request if model supports it
-      if (options.jsonMode) {
-        const model = options.model || this.defaultModel;
-        
-        // Create request body
-        const requestBody: any = {
-          model: model,
-          max_tokens: options.maxTokens ?? 4000,
-          temperature: options.temperature,
-          system: options.system,
-          messages: [
-            {
-              role: 'user',
-              content: enhancedPrompt
-            }
-          ]
-        };
-        
-        // Debug log the model being used
-        Logger.debug(`Using model for JSON response: ${model}`);
-        
-        // Add response_format for JSON responses
-        // This requires API version 2023-12-15 or newer
-        // All Claude 3 models support this parameter
-        const supportsResponseFormat = model.includes('claude-3');
-        
-        Logger.debug(`JSON response request details:
-        - Model: ${model}
-        - API Version: ${this.apiVersion}
-        - Model supports response_format: ${supportsResponseFormat ? 'yes' : 'no'}`);
-        
-        // We have issues with response_format parameter
-        // For now, rely on text-based JSON parsing which works reliably with all Claude models
-        Logger.debug(`Not using response_format parameter due to API compatibility issues`);
-        
-        // Adding more explicit JSON instructions to the prompt
-        enhancedPrompt = `${enhancedPrompt}\n\nYou MUST respond with ONLY a valid JSON object, and nothing else. Do not include explanations, markdown formatting, or any text outside the JSON object. The response should start with '{' and end with '}' with no other text before or after. DO NOT wrap the response in a code block or triple backticks.`;
-        
-        // Add JSON schema if provided
-        if (options.jsonSchema) {
-          enhancedPrompt = `${enhancedPrompt}\n\nYour response MUST follow this exact JSON schema:\n${JSON.stringify(options.jsonSchema, null, 2)}`;
-        }
-        
-        // Make direct API call with json_object format
-        const response = await this.makeRequestWithRetries<ClaudeResponse>(
-          '/v1/messages',
-          requestBody
-        );
-        
-        // Extract and parse JSON response
-        if (response && response.content && response.content.length > 0) {
-          const content = response.content[0].text;
-          
-          try {
-            // First, try to parse directly
-            try {
-              return JSON.parse(content) as T;
-            } catch (initialParseError) {
-              // If direct parsing fails, try cleaning the response
-              
-              // Remove markdown code block formatting if present
-              let cleanedContent = content;
-              if (content.includes('```json') || content.includes('```')) {
-                // Extract content between markdown code blocks
-                const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-                if (codeBlockMatch && codeBlockMatch[1]) {
-                  cleanedContent = codeBlockMatch[1];
-                  Logger.debug('Extracted JSON from markdown code block');
-                }
-              }
-              
-              // Find JSON object pattern (most reliable method)
-              const jsonMatch = cleanedContent.match(/(\{[\s\S]*\})/);
-              if (jsonMatch && jsonMatch[1]) {
-                const jsonText = jsonMatch[1];
-                Logger.debug(`Extracted JSON object pattern (${jsonText.length} chars)`);
-                return JSON.parse(jsonText) as T;
-              }
-              
-              // If we get here, rethrow the original error
-              throw initialParseError;
-            }
-          } catch (parseError) {
-            Logger.error(`Error parsing JSON from Claude API response: ${parseError}`);
-            Logger.debug(`Response text: ${content.substring(0, 200)}...`);
-            
-            // Provide helpful error information
-            if (content.includes('```')) {
-              Logger.debug('Response contains markdown code blocks that may be causing parsing issues');
-            }
-            
-            throw new Error('Invalid JSON response from Claude API');
-          }
-        } else {
-          throw new Error('Invalid response format from Claude API');
-        }
-      } else {
-        // Get text response and try to parse as JSON
-        const responseText = await this.sendPrompt(enhancedPrompt, options);
-        
+      // Get text response and parse as JSON
+      const responseText = await this.sendPrompt(enhancedPrompt, options);
+      
+      try {
+        // First, try to parse directly
         try {
-          // First, try to parse directly
-          try {
-            return JSON.parse(responseText) as T;
-          } catch (initialParseError) {
-            // If direct parsing fails, try cleaning the response
-            
-            // Remove markdown code block formatting if present
-            let cleanedContent = responseText;
-            if (responseText.includes('```json') || responseText.includes('```')) {
-              // Extract content between markdown code blocks
-              const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-              if (codeBlockMatch && codeBlockMatch[1]) {
-                cleanedContent = codeBlockMatch[1];
-                Logger.debug('Extracted JSON from markdown code block');
-              }
-            }
-            
-            // Find JSON object pattern (most reliable method)
-            const jsonMatch = cleanedContent.match(/(\{[\s\S]*\})/);
-            if (jsonMatch && jsonMatch[1]) {
-              const jsonText = jsonMatch[1];
-              Logger.debug(`Extracted JSON object pattern (${jsonText.length} chars)`);
-              return JSON.parse(jsonText) as T;
-            }
-            
-            // If we get here, rethrow the original error
-            throw initialParseError;
-          }
-        } catch (parseError) {
-          Logger.error(`Error parsing JSON from Claude API response: ${parseError}`);
-          Logger.debug(`Response text: ${responseText.substring(0, 200)}...`);
+          return JSON.parse(responseText) as T;
+        } catch (initialParseError) {
+          // If direct parsing fails, try cleaning the response
           
-          // Provide helpful error information
-          if (responseText.includes('```')) {
-            Logger.debug('Response contains markdown code blocks that may be causing parsing issues');
+          // Remove markdown code block formatting if present
+          let cleanedContent = responseText;
+          if (responseText.includes('```json') || responseText.includes('```')) {
+            // Extract content between markdown code blocks
+            const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (codeBlockMatch && codeBlockMatch[1]) {
+              cleanedContent = codeBlockMatch[1];
+              Logger.debug('Extracted JSON from markdown code block');
+            }
           }
           
-          throw new Error('Invalid JSON response from Claude API');
+          // Find JSON object pattern (most reliable method)
+          const jsonMatch = cleanedContent.match(/(\{[\s\S]*\})/);
+          if (jsonMatch && jsonMatch[1]) {
+            const jsonText = jsonMatch[1];
+            Logger.debug(`Extracted JSON object pattern (${jsonText.length} chars)`);
+            return JSON.parse(jsonText) as T;
+          }
+          
+          // If we get here, rethrow the original error
+          throw initialParseError;
         }
+      } catch (parseError) {
+        Logger.error(`Error parsing JSON from Claude API response: ${parseError}`);
+        Logger.debug(`Response text: ${responseText.substring(0, 200)}...`);
+        
+        // Provide helpful error information
+        if (responseText.includes('```')) {
+          Logger.debug('Response contains markdown code blocks that may be causing parsing issues');
+        }
+        
+        throw new Error('Invalid JSON response from Claude API');
       }
     } catch (error) {
       Logger.error(`Error getting JSON response from Claude: ${error}`);
       throw error;
-    }
-  }
-  
-  /**
-   * Make request with retries using standard client
-   * @param endpoint API endpoint
-   * @param data Request body
-   * @returns API response
-   */
-  private async makeRequestWithRetries<T>(
-    endpoint: string,
-    data: any
-  ): Promise<T> {
-    let lastError: any;
-    
-    for (let attempt = 1; attempt <= this.retryCount; attempt++) {
-      try {
-        const response = await this.client.post(endpoint, data);
-        return response.data as T;
-      } catch (error: any) {
-        lastError = error;
-        
-        // Log retry attempt
-        Logger.warn(`Claude API request failed (attempt ${attempt}/${this.retryCount}): ${error.response?.status} - ${error.response?.data?.error?.message || error.message}`);
-        
-        // Check if we should retry
-        if (
-          attempt < this.retryCount && 
-          (error.response?.status === 429 || 
-           error.response?.status === 500 ||
-           error.response?.status === 529 || // Add explicit Overloaded status code
-           error.response?.data?.error?.message?.includes('Overloaded') ||
-           error.message?.includes('Overloaded'))
-        ) {
-          // Calculate delay with exponential backoff and add jitter
-          const baseDelay = this.retryDelay * Math.pow(2, attempt - 1);
-          // Add 0-25% random jitter to avoid thundering herd
-          const jitter = Math.random() * 0.25 * baseDelay;
-          const delay = baseDelay + jitter;
-          
-          Logger.warn(`Claude API overloaded or rate limited. Retrying in ${Math.round(delay)}ms... (attempt ${attempt}/${this.retryCount})`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        } else {
-          break;
-        }
-      }
-    }
-    
-    // If we get here, all retries failed
-    if (axios.isAxiosError(lastError)) {
-      throw new Error(
-        `Claude API error: ${lastError.response?.data?.error?.message || lastError.message}`
-      );
-    } else {
-      throw lastError || new Error('Unknown error calling Claude API');
-    }
-  }
-  
-  /**
-   * Make request with retries using PDF-enabled client
-   * @param endpoint API endpoint
-   * @param data Request body
-   * @returns API response
-   */
-  private async makeRequestWithPdfClient<T>(
-    endpoint: string,
-    data: any
-  ): Promise<T> {
-    let lastError: any;
-    
-    for (let attempt = 1; attempt <= this.retryCount; attempt++) {
-      try {
-        const response = await this.pdfEnabledClient.post(endpoint, data);
-        return response.data as T;
-      } catch (error: any) {
-        lastError = error;
-        
-        // Log retry attempt
-        Logger.warn(`Claude PDF API request failed (attempt ${attempt}/${this.retryCount}): ${error.response?.status} - ${error.response?.data?.error?.message || error.message}`);
-        
-        // Check if we should retry
-        if (
-          attempt < this.retryCount && 
-          (error.response?.status === 429 || 
-           error.response?.status === 500 ||
-           error.response?.status === 529 || // Add explicit Overloaded status code
-           error.response?.data?.error?.message?.includes('Overloaded') ||
-           error.message?.includes('Overloaded'))
-        ) {
-          // Calculate delay with exponential backoff and add jitter
-          const baseDelay = this.retryDelay * Math.pow(2, attempt - 1);
-          // Add 0-25% random jitter to avoid thundering herd
-          const jitter = Math.random() * 0.25 * baseDelay;
-          const delay = baseDelay + jitter;
-          
-          Logger.warn(`Claude API overloaded or rate limited. Retrying in ${Math.round(delay)}ms... (attempt ${attempt}/${this.retryCount})`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        } else {
-          break;
-        }
-      }
-    }
-    
-    // If we get here, all retries failed
-    if (axios.isAxiosError(lastError)) {
-      // Provide more detailed error for PDF processing failures
-      const statusCode = lastError.response?.status;
-      const errorMessage = lastError.response?.data?.error?.message || lastError.message;
-      
-      if (statusCode === 413 || errorMessage.includes('exceeds') || errorMessage.includes('too large')) {
-        throw new Error(`PDF file exceeds Claude's size limits: ${errorMessage}`);
-      } else if (statusCode === 415 || errorMessage.includes('media type') || errorMessage.includes('format')) {
-        throw new Error(`PDF format not supported: ${errorMessage}`);
-      } else if (statusCode === 400 && errorMessage.includes('process')) {
-        throw new Error(`Claude couldn't process the PDF: ${errorMessage}`);
-      } else {
-        throw new Error(`Claude API error: ${errorMessage}`);
-      }
-    } else {
-      throw lastError || new Error('Unknown error calling Claude PDF API');
     }
   }
   
@@ -534,428 +241,18 @@ export class ClaudeService {
   public async classifyText<T = any>(
     text: string, 
     classificationPrompt: string,
-    options: ClaudeRequestOptions = {}
+    options: {
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+      system?: string;
+    } = {}
   ): Promise<T> {
     // Combine text with classification prompt
     const fullPrompt = `${classificationPrompt}\n\nText to classify:\n\`\`\`\n${text}\n\`\`\``;
     
     // Get JSON response
     return this.getJsonResponse<T>(fullPrompt, options);
-  }
-  
-  /**
-   * Convert a file to base64 encoding
-   * @param filePath Path to the file to encode
-   * @returns Base64 encoded string
-   */
-  private async fileToBase64(filePath: string): Promise<string> {
-    try {
-      const buffer = await fs.promises.readFile(filePath);
-      return buffer.toString('base64');
-    } catch (error) {
-      Logger.error(`Error reading file at ${filePath}: ${error}`);
-      throw new Error(`Failed to read file for base64 encoding: ${error}`);
-    }
-  }
-  
-  /**
-   * Get the media type based on file extension
-   * @param filePath Path to the file
-   * @returns Media type string
-   */
-  private getMediaType(filePath: string): string {
-    const extension = filePath.split('.').pop()?.toLowerCase();
-    
-    // Map common extensions to media types
-    switch (extension) {
-      case 'pdf':
-        return 'application/pdf';
-      case 'png':
-        return 'image/png';
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'gif':
-        return 'image/gif';
-      case 'webp':
-        return 'image/webp';
-      default:
-        // Default to octet-stream for unknown types
-        return 'application/octet-stream';
-    }
-  }
-  
-  /**
-   * Initialize PDF.js for document processing
-   * @returns Initialized PDF.js instance
-   */
-  private async initPdfJs() {
-    // This method is no longer used since we're estimating page count based on file size
-    // Keeping the method signature for compatibility
-    throw new Error('PDF.js initialization is not supported in this environment');
-  }
-
-  /**
-   * Get page count of a PDF file
-   * @param pdfPath Path to the PDF file
-   * @returns Number of pages in the PDF
-   */
-  private async getPdfPageCount(pdfPath: string): Promise<number> {
-    try {
-      // Instead of using PDF.js, use file size as a proxy for page count estimation
-      // The typical PDF page is roughly 100KB, so a 10MB file likely has around 100 pages
-      // This is just a heuristic to catch obviously large PDFs
-      const stats = fs.statSync(pdfPath);
-      const fileSizeInMB = stats.size / (1024 * 1024);
-      
-      // Extremely rough estimation - assume 100KB per page
-      const estimatedPages = Math.ceil(stats.size / (100 * 1024));
-      
-      Logger.debug(`PDF page count estimation for ${pdfPath}: ${fileSizeInMB.toFixed(2)}MB, estimated ~${estimatedPages} pages`);
-      
-      return estimatedPages;
-    } catch (error) {
-      Logger.error(`Error estimating PDF page count: ${error}`);
-      throw new Error(`Failed to estimate PDF page count: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-  
-  /**
-   * Split a PDF and return the path to a new PDF with just the first N pages
-   * Used to handle PDFs that exceed Claude's 100-page limit
-   * @param pdfPath Path to the original PDF file
-   * @param maxPages Maximum number of pages to include (default: 99)
-   * @returns Path to the new PDF with only the first chunk of pages
-   */
-  public async splitPdfFirstChunk(pdfPath: string, maxPages: number = 99): Promise<string> {
-    try {
-      // Estimate page count based on file size
-      const estimatedPages = await this.getPdfPageCount(pdfPath);
-      
-      if (estimatedPages <= maxPages) {
-        Logger.debug(`PDF ${pdfPath} has estimated ${estimatedPages} pages and does not need splitting`);
-        return pdfPath; // No need to split
-      }
-      
-      Logger.info(`PDF ${pdfPath} has estimated ${estimatedPages} pages which exceeds the limit of ${maxPages}. Splitting PDF...`);
-      
-      // Create output path for the split PDF
-      const parsedPath = path.parse(pdfPath);
-      const outputPath = path.join(
-        parsedPath.dir, 
-        `${parsedPath.name}_first${maxPages}pages${parsedPath.ext}`
-      );
-      
-      // Read the PDF file
-      const pdfBytes = fs.readFileSync(pdfPath);
-      
-      // Load the PDF document
-      const sourcePdf = await PDFDocument.load(pdfBytes);
-      const totalPageCount = sourcePdf.getPageCount();
-      
-      // More accurate page count now that we have the document loaded
-      if (totalPageCount <= maxPages) {
-        Logger.debug(`PDF actually has ${totalPageCount} pages and does not need splitting`);
-        return pdfPath; // No need to split
-      }
-      
-      // Create a new PDF document
-      const newPdf = await PDFDocument.create();
-      
-      // Copy the first N pages to the new document
-      const pagesToCopy = Math.min(totalPageCount, maxPages);
-      
-      // Copy pages one by one
-      for (let i = 0; i < pagesToCopy; i++) {
-        try {
-          const [copiedPage] = await newPdf.copyPages(sourcePdf, [i]);
-          newPdf.addPage(copiedPage);
-        } catch (pageError) {
-          Logger.warn(`Error copying page ${i}: ${pageError}`);
-          // Continue with other pages
-        }
-      }
-      
-      // Save the new PDF document
-      const newPdfBytes = await newPdf.save();
-      fs.writeFileSync(outputPath, newPdfBytes);
-      
-      Logger.info(`Successfully split PDF. New file at ${outputPath} with ${pagesToCopy} pages`);
-      return outputPath;
-    } catch (error) {
-      Logger.error(`Error in PDF splitting: ${error instanceof Error ? error.message : String(error)}`);
-      Logger.warn('Falling back to using original PDF file');
-      return pdfPath; // Return original path on error
-    }
-  }
-
-  /**
-   * Analyze a PDF document using Claude's binary format handling
-   * This allows Claude to directly read and understand PDF content
-   * 
-   * NOTE: The current Claude API only supports images, not PDFs directly
-   * This method now includes a fallback to handle the limitation
-   * 
-   * @param pdfPath Path to the PDF file
-   * @param prompt The text prompt to accompany the PDF
-   * @param options Request options
-   * @returns Claude's analysis of the PDF content
-   */
-  public async analyzePdf(
-    pdfPath: string,
-    prompt: string,
-    options: ClaudeRequestOptions = {}
-  ): Promise<string> {
-    if (!this.validateApiKey()) {
-      throw new Error('Claude API key is not set. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY environment variable.');
-    }
-    
-    if (!fs.existsSync(pdfPath)) {
-      throw new Error(`PDF file not found at path: ${pdfPath}`);
-    }
-    
-    try {
-      // Check if the PDF is too large (by page count) and split if necessary
-      const estimatedPages = await this.getPdfPageCount(pdfPath);
-      let pdfPathToUse = pdfPath;
-      
-      // If the PDF might exceed Claude's page limit, split it to first 99 pages
-      if (estimatedPages > 99) {
-        Logger.warn(`PDF has approximately ${estimatedPages} pages which may exceed Claude's limit. Splitting...`);
-        pdfPathToUse = await this.splitPdfFirstChunk(pdfPath, 99);
-        Logger.info(`Using split PDF: ${pdfPathToUse}`);
-      }
-      
-      // Now check the file size - Claude has a 10MB limit for binary attachments
-      const stats = fs.statSync(pdfPathToUse);
-      const fileSizeInMB = stats.size / (1024 * 1024);
-      
-      if (fileSizeInMB > 10) {
-        throw new Error(`PDF file is too large (${fileSizeInMB.toFixed(2)}MB). Claude has a 10MB limit for PDF files.`);
-      }
-      
-      // We've already handled page count and splitting above
-      let pathToAnalyze = pdfPathToUse;
-      
-      // If we're using a split PDF, add a note to the prompt
-      if (pathToAnalyze !== pdfPath) {
-        prompt = `${prompt}\n\nNote: This PDF has approximately ${estimatedPages} total pages, but due to API limitations, only the first 99 pages are being analyzed.`;
-      }
-      
-      // Encode PDF as base64 - use the potentially split PDF path
-      const base64Data = await this.fileToBase64(pathToAnalyze);
-      
-      // Set up request options
-      const model = options.model || this.defaultModel;
-      const temperature = options.temperature ?? 0;
-      const maxTokens = options.maxTokens ?? 4000;
-      
-      // Create messages with proper document type and PDF content
-      const messageContent = [
-        {
-          type: 'document',
-          source: {
-            type: 'base64',
-            media_type: 'application/pdf',
-            data: base64Data
-          }
-        },
-        {
-          type: 'text',
-          text: prompt
-        }
-      ];
-      
-      // Create request body with proper type support
-      const requestBody = {
-        model,
-        max_tokens: maxTokens,
-        temperature,
-        messages: [
-          {
-            role: 'user',
-            content: messageContent
-          }
-        ]
-      } as any; // Using any to handle system parameter
-      
-      // Add system message if provided
-      if (options.system) {
-        requestBody.system = options.system;
-      }
-      
-      Logger.debug(`Making Claude API request with PDF content:
-      Model: ${model}
-      PDF path: ${pdfPath}
-      PDF size: ${fileSizeInMB.toFixed(2)}MB
-      Content items: ${messageContent.length}`);
-      
-      // Make request with retries using PDF-enabled client
-      try {
-        // Use the PDF-enabled client with the beta header
-        const response = await this.makeRequestWithPdfClient<ClaudeResponse>(
-          '/v1/messages',
-          requestBody
-        );
-        
-        // Extract the response content
-        if (response && response.content && response.content.length > 0) {
-          return response.content[0].text;
-        } else {
-          throw new Error('Invalid response format from Claude API');
-        }
-      } catch (pdfError) {
-        // Log the error but throw it up - no fallbacks
-        Logger.error(`Error processing PDF with Claude: ${pdfError}`);
-        throw pdfError;
-      }
-    } catch (error) {
-      // Log and rethrow - no fallbacks
-      if (axios.isAxiosError(error)) {
-        const statusCode = error.response?.status;
-        const errorMessage = error.response?.data?.error?.message || error.message;
-        
-        // Special handling for common PDF processing errors
-        if (statusCode === 413 || errorMessage.includes('exceeds') || errorMessage.includes('too large')) {
-          throw new Error(`PDF file exceeds Claude's size limits: ${errorMessage}`);
-        } else if (statusCode === 415 || errorMessage.includes('media type') || errorMessage.includes('format')) {
-          throw new Error(`PDF format not supported: ${errorMessage}`);
-        } else if (statusCode === 400 && errorMessage.includes('process')) {
-          throw new Error(`Claude couldn't process the PDF: ${errorMessage}. The PDF may be corrupt, password-protected, or in an unsupported format.`);
-        } else if (statusCode === 400 && (errorMessage.includes('maximum of 100 PDF pages') || errorMessage.includes('page limit'))) {
-          throw new Error(`PDF exceeds Claude's 100-page limit: ${errorMessage}`);
-        } else {
-          throw new Error(`Claude API error: ${errorMessage}`);
-        }
-      } else {
-        Logger.error(`Unknown error calling Claude API with PDF: ${error}`);
-        throw error;
-      }
-    }
-  }
-  
-  /**
-   * Analyze a PDF and get a JSON response
-   * Allows for structured analysis of PDF content
-   * @param pdfPath Path to the PDF file
-   * @param prompt The text prompt to accompany the PDF
-   * @param options Request options
-   * @returns JSON response from Claude's analysis
-   */
-  public async analyzePdfToJson<T = any>(
-    pdfPath: string,
-    prompt: string,
-    options: ClaudeRequestOptions = {}
-  ): Promise<T> {
-    // Always use temperature 0 for JSON responses (deterministic outputs)
-    options.temperature = 0;
-    
-    // Set JSON-specific system message if not provided
-    if (!options.system) {
-      options.system = "You are a helpful AI assistant that analyzes PDF documents and ONLY provides responses in valid JSON format. Your responses must be structured as valid, parseable JSON with nothing else before or after the JSON object. Do not include markdown code formatting, explanations, or any text outside the JSON object.";
-    }
-    
-    // Add explicit JSON instructions to the prompt
-    let enhancedPrompt = prompt;
-    if (!prompt.includes("valid JSON") && !prompt.includes("JSON format")) {
-      enhancedPrompt = `${prompt}\n\nIMPORTANT: Respond with ONLY a JSON object and nothing else. Do not include explanations, markdown formatting, or any text outside the JSON object. The response should start with '{' and end with '}' with no other text before or after.`;
-    }
-    
-    // Get text response from PDF analysis with enhanced prompt
-    const textResponse = await this.analyzePdf(pdfPath, enhancedPrompt, options);
-    
-    try {
-      // Try to parse JSON directly
-      try {
-        return JSON.parse(textResponse) as T;
-      } catch (error) {
-        // If direct parsing fails, try cleaning the response
-        const initialParseError = error as Error;
-        Logger.warn(`Initial JSON parse failed: ${initialParseError.message}. Attempting to clean response.`);
-        
-        // Remove markdown code block formatting if present
-        let cleanedContent = textResponse;
-        if (textResponse.includes('```json') || textResponse.includes('```')) {
-          // Extract content between markdown code blocks - enhanced pattern that finds the first code block
-          const codeBlockMatch = textResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-          if (codeBlockMatch && codeBlockMatch[1]) {
-            cleanedContent = codeBlockMatch[1].trim();
-            Logger.debug('Extracted JSON from markdown code block');
-          } else {
-            // Try a more aggressive approach to find ANY content within code blocks
-            const allCodeBlocks = textResponse.match(/```([\s\S]*?)```/g);
-            if (allCodeBlocks && allCodeBlocks.length > 0) {
-              // Extract the content from the first code block that looks like JSON
-              for (const block of allCodeBlocks) {
-                const content = block.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '').trim();
-                if (content.startsWith('{') && content.endsWith('}')) {
-                  cleanedContent = content;
-                  Logger.debug('Found JSON-like content in code block');
-                  break;
-                }
-              }
-            }
-          }
-        }
-        
-        // Find JSON object pattern (strict matching) - improved to find complete JSON objects
-        const jsonMatch = cleanedContent.match(/(\{[\s\S]*?\})(?!\s*[\w\d"':,])/);
-        if (jsonMatch && jsonMatch[1]) {
-          const jsonText = jsonMatch[1].trim();
-          Logger.debug(`Extracted JSON object pattern (${jsonText.length} chars)`);
-          
-          // Additional verification - check if it looks like valid JSON
-          if (!jsonText.includes('```') && jsonText.startsWith('{') && jsonText.endsWith('}')) {
-          try {
-            return JSON.parse(jsonText) as T;
-          } catch (error) {
-            const jsonError = error as Error;
-            Logger.error(`Failed to parse extracted JSON: ${jsonError.message}`);
-            // Continue to error handling
-          }
-          } else {
-            Logger.debug(`Extracted JSON doesn't look valid, will try other methods`);
-          }
-        }
-        
-        // If we get here, provide a detailed error with context
-        Logger.error(`Failed to parse JSON from response. First 200 chars of response: ${textResponse.substring(0, 200)}...`);
-        throw new Error(`Failed to parse JSON from Claude's response: ${initialParseError.message}`);
-      }
-    } catch (error) {
-      Logger.error(`Error processing JSON from Claude's PDF analysis: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error;
-    }
-  }
-  
-  /**
-   * Classify a PDF document with Claude
-   * @param pdfPath Path to the PDF file
-   * @param classificationPrompt Prompt that guides classification
-   * @param options Request options
-   * @returns Classification results as JSON
-   */
-  public async classifyPdf<T = any>(
-    pdfPath: string, 
-    classificationPrompt: string,
-    options: ClaudeRequestOptions = {}
-  ): Promise<T> {
-    // Set classification-specific options
-    if (!options.system) {
-      options.system = "You are a helpful AI assistant that accurately classifies PDF documents based on their content. You examine the entire document and provide detailed classification results as valid JSON. Your analysis is thorough and considers both the structure and content of the document.";
-    }
-    
-    // Add explicit classification instructions if not already present
-    let enhancedPrompt = classificationPrompt;
-    if (!classificationPrompt.includes("classify") && !classificationPrompt.includes("categorize")) {
-      enhancedPrompt = `Please carefully analyze and classify the attached PDF document. ${classificationPrompt}`;
-    }
-    
-    // Use enhanced analyzePdfToJson with the classification prompt
-    return this.analyzePdfToJson<T>(pdfPath, enhancedPrompt, {
-      ...options,
-      temperature: 0 // Always use temperature 0 for classifications
-    });
   }
 }
 

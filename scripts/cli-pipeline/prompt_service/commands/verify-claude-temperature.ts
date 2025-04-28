@@ -101,9 +101,7 @@ export async function verifyClaudeTemperatureCommand() {
     // Make a test API call to verify runtime behavior
     console.log('\nMaking a test API call to verify runtime behavior...');
     try {
-      // Get the Claude service instance
-      const claudeService = ClaudeService.getInstance();
-      
+      // Use the claudeService singleton directly (already imported)
       const testResponse = await claudeService.sendPrompt(
         'Please respond with the word "test" and nothing else.',
         { maxTokens: 10 }  // Don't specify temperature to use the default
