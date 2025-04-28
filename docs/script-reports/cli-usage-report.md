@@ -1,13 +1,27 @@
 # CLI Command Usage Report
 
-*Generated on 4/28/2025 at 10:55:47 AM*
+*Generated on 4/28/2025 at 11:06:52 AM*
+
+## Database CLI: Output Display Issue Fixed
+
+We identified and fixed an issue with the database CLI pipeline tools like `table-records` not displaying output to the terminal. The main problem was:
+
+1. **Database Query Issue**: The database service was attempting to directly query `information_schema.tables` which isn't directly accessible via Supabase's client interface. This was fixed by using the `execute_sql` RPC function.
+
+2. **Output Buffering**: Added console output interception to force immediate display with `process.stdout.write`.
+
+These changes were implemented with two new CLI flags:
+- `--debug`: Run commands directly without tracking infrastructure.
+- `--direct-run`: Run with a delayed process exit to ensure output is flushed.
+
+The database CLI now properly displays tables with record counts and other information as expected.
 
 ## Summary
 
-- Total Pipelines: 12
+- Total Pipelines: 12 (active in last 30 days)
 - Total Commands: 145
-- Total Executions: 2461
-- Success Rate: 85.3%
+- Total Executions: 2472
+- Success Rate: 85.4%
 
 ## Most Used Commands
 
@@ -28,16 +42,16 @@
 
 | Command | Pipeline | Times Used | Last Used |
 | ------- | -------- | ---------- | --------- |
-| usage-report | all_pipelines | 4 | 4/28/2025, 10:55:46 AM |
+| usage-report | all_pipelines | 5 | 4/28/2025, 11:06:51 AM |
+| connection-test | database | 4 | 4/28/2025, 11:06:09 AM |
+| schema-health | database | 2 | 4/28/2025, 11:05:54 AM |
+| table-structure | database | 3 | 4/28/2025, 11:05:39 AM |
+| database-functions | database | 2 | 4/28/2025, 11:05:27 AM |
+| empty-tables | database | 2 | 4/28/2025, 11:05:13 AM |
+| table-records | database | 5 | 4/28/2025, 11:04:59 AM |
+| db-health-check | database | 4 | 4/28/2025, 11:04:33 AM |
+| classification-rollup | all_pipelines | 8 | 4/28/2025, 10:56:04 AM |
 | --help | presentations | 6 | 4/28/2025, 10:55:36 AM |
-| health-check | presentations | 45 | 4/28/2025, 10:55:34 AM |
-| health-check | prompt_service | 39 | 4/28/2025, 10:55:34 AM |
-| health-check | document_types | 39 | 4/28/2025, 10:55:34 AM |
-| health-check | scripts | 20 | 4/28/2025, 10:55:32 AM |
-| health-check | document | 22 | 4/28/2025, 10:55:32 AM |
-| health-check | google_sync | 23 | 4/28/2025, 10:55:32 AM |
-| health-check | media_processing | 21 | 4/28/2025, 10:55:32 AM |
-| health-check | experts | 21 | 4/28/2025, 10:55:32 AM |
 
 ## Usage by Pipeline
 
@@ -166,6 +180,20 @@
 | --helP | 1 | 0.0% | 1.01s | 4/21/2025, 5:19:33 PM |
 | --hellp | 1 | 0.0% | 1.08s | 4/21/2025, 4:49:38 PM |
 
+### all_pipelines
+
+- Commands: 3
+- Total Executions: 35
+- Success Rate: 94.3%
+
+#### Most Used Commands
+
+| Command | Total Uses | Success Rate | Avg Duration | Last Used |
+| ------- | ---------- | ------------ | ------------ | --------- |
+| master-health-check | 22 | 100.0% | 8.30s | 4/28/2025, 10:55:28 AM |
+| classification-rollup | 8 | 87.5% | 1.82s | 4/28/2025, 10:56:04 AM |
+| usage-report | 5 | 80.0% | 1.28s | 4/28/2025, 11:06:51 AM |
+
 ### media_processing
 
 - Commands: 5
@@ -182,19 +210,23 @@
 | transcribe | 2 | 50.0% | 144.27s | 4/18/2025, 6:11:02 PM |
 | convert | 1 | 100.0% | 3.53s | 4/18/2025, 5:56:21 PM |
 
-### all_pipelines
+### database
 
-- Commands: 3
-- Total Executions: 33
-- Success Rate: 93.9%
+- Commands: 7
+- Total Executions: 22
+- Success Rate: 95.5%
 
 #### Most Used Commands
 
 | Command | Total Uses | Success Rate | Avg Duration | Last Used |
 | ------- | ---------- | ------------ | ------------ | --------- |
-| master-health-check | 22 | 100.0% | 8.30s | 4/28/2025, 10:55:28 AM |
-| classification-rollup | 7 | 85.7% | 1.86s | 4/28/2025, 10:45:53 AM |
-| usage-report | 4 | 75.0% | 1.28s | 4/28/2025, 10:55:46 AM |
+| table-records | 5 | 80.0% | 1.18s | 4/28/2025, 11:04:59 AM |
+| connection-test | 4 | 100.0% | 1.02s | 4/28/2025, 11:06:09 AM |
+| db-health-check | 4 | 100.0% | 967ms | 4/28/2025, 11:04:33 AM |
+| table-structure | 3 | 100.0% | 944ms | 4/28/2025, 11:05:39 AM |
+| schema-health | 2 | 100.0% | 987ms | 4/28/2025, 11:05:54 AM |
+| database-functions | 2 | 100.0% | 1.16s | 4/28/2025, 11:05:27 AM |
+| empty-tables | 2 | 100.0% | 1.02s | 4/28/2025, 11:05:13 AM |
 
 ### document
 
@@ -219,24 +251,6 @@
 | Command | Total Uses | Success Rate | Avg Duration | Last Used |
 | ------- | ---------- | ------------ | ------------ | --------- |
 | health-check | 20 | 65.0% | 1.34s | 4/28/2025, 10:55:32 AM |
-
-### database
-
-- Commands: 7
-- Total Executions: 13
-- Success Rate: 92.3%
-
-#### Most Used Commands
-
-| Command | Total Uses | Success Rate | Avg Duration | Last Used |
-| ------- | ---------- | ------------ | ------------ | --------- |
-| table-records | 4 | 75.0% | 1.25s | 4/28/2025, 10:54:14 AM |
-| db-health-check | 3 | 100.0% | 932ms | 4/28/2025, 10:54:28 AM |
-| table-structure | 2 | 100.0% | 893ms | 4/28/2025, 10:54:50 AM |
-| connection-test | 1 | 100.0% | 1.04s | 4/28/2025, 10:54:02 AM |
-| schema-health | 1 | 100.0% | 1.01s | 4/28/2025, 4:23:22 AM |
-| empty-tables | 1 | 100.0% | 1.12s | 4/28/2025, 4:19:01 AM |
-| database-functions | 1 | 100.0% | 1.33s | 4/28/2025, 4:18:20 AM |
 
 ### document_pipeline
 

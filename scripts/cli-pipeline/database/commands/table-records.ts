@@ -64,9 +64,13 @@ program
         ]);
       });
       
-      // Print the table
+      // Print the table with both console.log and process.stdout.write for debugging
+      console.log("Attempting to display table with console.log:");
       console.log(table.toString());
-      console.log(`\nTotal tables: ${filteredTables.length}`);
+      
+      console.log("\nAttempting to display table with process.stdout.write:");
+      process.stdout.write(table.toString() + "\n");
+      process.stdout.write(`\nTotal tables: ${filteredTables.length}\n`);
       
       // Calculate statistics
       const totalRecords = filteredTables.reduce((sum, table) => {

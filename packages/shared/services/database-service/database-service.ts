@@ -26,20 +26,40 @@ export class DatabaseService {
    */
   public async getTablesWithRecordCounts(): Promise<{ tableName: string; count: number }[]> {
     try {
-      // Query the information_schema to get all tables in the public schema
-      const { data: tables, error: tablesError } = await this.supabase
-        .from('information_schema.tables')
-        .select('table_name')
-        .eq('table_schema', 'public')
-        .eq('table_type', 'BASE TABLE');
+      // Query the information_schema directly with RPC since we can't query information_schema directly
+      let { data: tables, error: tablesError } = await this.supabase
+        .rpc('execute_sql', {
+          sql: `SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_type = 'BASE TABLE'`
+        });
 
       if (tablesError) {
         throw new Error(`Failed to get tables: ${tablesError.message}`);
       }
+      
+      // If no tables were returned, try a fallback approach
+      if (!tables || tables.length === 0) {
+        // Fallback: Hardcode a list of known tables 
+        console.log("Using fallback approach for table listing");
+        const { data: fallbackTables, error: fallbackError } = await this.supabase
+          .rpc('execute_sql', {
+            sql: `SELECT tablename as table_name FROM pg_tables WHERE schemaname = 'public' LIMIT 50`
+          });
+          
+        if (fallbackError) {
+          throw new Error(`Fallback tables query failed: ${fallbackError.message}`);
+        }
+        
+        if (fallbackTables && fallbackTables.length > 0) {
+          tables = fallbackTables;
+        }
+      }
 
       // Get record counts for each table
       const result = await Promise.all(
-        tables.map(async (table) => {
+        tables.map(async (table: { table_name: string }) => {
           const { count, error: countError } = await this.supabase
             .from(table.table_name)
             .select('*', { count: 'exact', head: true });
