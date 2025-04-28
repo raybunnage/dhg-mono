@@ -23,7 +23,10 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@supabase/*": ["../../supabase/*"],
+      "packages/*": ["../../packages/*"],
+      "packages/shared/services/supabase-client": ["./src/adapters/supabase-client-adapter.ts"]
     }
   },
   "include": ["src"]

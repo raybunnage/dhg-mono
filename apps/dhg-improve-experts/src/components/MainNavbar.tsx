@@ -6,6 +6,7 @@ export function MainNavbar() {
   
   const navigation = [
     { name: 'Home', href: '/' },
+    { name: 'Easy', href: '/easy' },
     { name: 'Viewer', href: '/viewer' },
     { name: 'Viewer2', href: '/viewer2' },
     { name: 'Show', href: '/show' },

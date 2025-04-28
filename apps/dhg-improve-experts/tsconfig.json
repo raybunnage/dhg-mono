@@ -8,7 +8,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@supabase/*": ["../../supabase/*"]
+      "@supabase/*": ["../../supabase/*"],
+      "packages/*": ["../../packages/*"],
+      "packages/shared/services/supabase-client": ["./src/adapters/supabase-client-adapter.ts"]
     },
     "noImplicitAny": false,
     "noUnusedParameters": false,

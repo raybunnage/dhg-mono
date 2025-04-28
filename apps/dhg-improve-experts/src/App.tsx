@@ -23,6 +23,7 @@ import { Analyze } from '@/pages/Analyze';
 import { Transcribe } from '@/pages/Transcribe';
 import { SupabasePage } from './pages/Supabase'
 import SupabaseAdmin from './pages/SupabaseAdmin'
+import { EasyPage } from './pages/Easy'
 import { FileTree } from './pages/FileTree';
 import { BatchProcessingMonitor } from './components/BatchProcessingMonitor';
 import Viewer from '@/pages/Viewer';
@@ -112,6 +113,7 @@ function App() {
         <Route path="/file-tree" element={<FileTree />} />
         <Route path="/batches" element={<BatchProcessingMonitor />} />
         <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+        <Route path="/easy" element={<EasyPage />} />
         <Route path="/experts" element={<ExpertsDashboard />} />
         <Route path="/code" element={<CodeDashboard />} />
         <Route path="/write" element={<Write />} />

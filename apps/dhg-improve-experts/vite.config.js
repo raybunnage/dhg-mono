@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(__dirname, 'src'),
+      'packages': path.resolve(__dirname, '../../packages'),
+      'packages/shared/services/supabase-client': path.resolve(__dirname, 'src/adapters/supabase-client-adapter.ts')
     }
   }
 })

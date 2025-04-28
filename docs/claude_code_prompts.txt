@@ -225,6 +225,24 @@ Now I understand the relationship! The parent-child relationship is stored using
     -- Order by creation date, newest first
     sg.created_at DESC
 
+I've implemented a universal adapter approach that should work well in both frontend and backend environments:
+
+  1. Universal Adapter: The SupabaseClientService in src/packages/shared/services/supabase-client.ts now:
+    - Detects the environment (browser vs Node.js)
+    - Uses the appropriate environment variables (import.meta.env vs process.env)
+    - Creates a client with environment-specific options
+    - Handles authentication differently in each environment (in Node.js it always "succeeds" as we use the service role key)
+  2. Updated Easy Page: The page now:
+    - Attempts to use the universal adapter
+    - Displays the authentication status
+    - Shows the count of records if successful
+    - Provides detailed information about available environment variables
+    - Explains how the universal adapter works
+
+  This approach allows for standardizing on a single import path (import { SupabaseClientService } from 
+  '../../../packages/shared/services/supabase-client') across both frontend and backend code, while providing environment-appropriate behavior.
+
+  If the authentication error still occurs, you'll at least get a clearer view of what's happening and why it's failing.
 
 
 
