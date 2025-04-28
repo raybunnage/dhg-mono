@@ -41,6 +41,8 @@ import Gmail from '@/pages/Gmail';
 import Scripts from '@/pages/Scripts';
 // Import archived components for fallback routes
 import ScriptAnalysis from '@/pages/ScriptAnalysis.archive';
+// Import the new Easy page that uses the universal adapter
+import { Easy } from './pages/Easy';
 // import DocumentationTest from '@/pages/DocumentationTest'; // Archived on 2025-03-04
 
 // Component imports
@@ -131,6 +133,7 @@ function App() {
         <Route path="/scripts" element={<Scripts />} />
         <Route path="/script-analysis" element={<ScriptAnalysis />} />
         <Route path="/scripts-archive" element={<ScriptAnalysis />} />
+        <Route path="/easy" element={<Easy />} /> {/* New page using the universal Supabase adapter */}
       </Routes>
     </QueryClientProvider>
   );

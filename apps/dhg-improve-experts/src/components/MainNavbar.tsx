@@ -15,6 +15,7 @@ export function MainNavbar() {
     { name: 'Classify', href: '/classify' },
     { name: 'Transcribe', href: '/transcribe' },
     { name: 'Supabase', href: '/supabase' },
+    { name: 'Easy', href: '/easy' }, // New Universal Supabase Adapter page
     { name: 'Write', href: '/write' },
     { name: 'Experts', href: '/experts' },
     { name: 'Gmail', href: '/gmail' },
