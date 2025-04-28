@@ -70,9 +70,16 @@ program
   .option('-c, --category <category>', 'Filter by category')
   .option('-j, --json', 'Output as JSON')
   .action(async (options: ListOptions) => {
-    const trackingId = await commandTrackingService.startTracking('document_types', 'list');
+    // Use optional tracking to avoid errors
+    let trackingId: string | undefined;
+    try {
+      trackingId = await commandTrackingService.startTracking('document_types', 'list').catch(err => {
+        console.log('Note: Command tracking is temporarily disabled');
+        return undefined;
+      });
     
     try {
+      // Use real data from Supabase
       let documentTypes;
       
       if (options.category) {
@@ -131,13 +138,23 @@ program
         console.log(`Total: ${documentTypes.length} document types`);
       }
       
-      await commandTrackingService.completeTracking(trackingId, {
-        recordsAffected: documentTypes.length,
-        summary: `Listed ${documentTypes.length} document types${options.category ? ` in category ${options.category}` : ''}`
-      });
+      // Only track if tracking was successful
+      if (trackingId) {
+        await commandTrackingService.completeTracking(trackingId, {
+          recordsAffected: documentTypes.length,
+          summary: `Listed ${documentTypes.length} document types${options.category ? ` in category ${options.category}` : ''}`
+        }).catch(err => console.log('Note: Command tracking completion failed'));
+      }
     } catch (error) {
       console.error('Error listing document types:', error instanceof Error ? error.message : error);
-      await commandTrackingService.failTracking(trackingId, `Failed to list document types: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (trackingId) {
+        await commandTrackingService.failTracking(trackingId, `Failed to list document types: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          .catch(err => console.log('Note: Command tracking failure notification failed'));
+      }
+      process.exit(1);
+    }
+    } catch (outerError) {
+      console.error('Unexpected error:', outerError instanceof Error ? outerError.message : String(outerError));
       process.exit(1);
     }
   });

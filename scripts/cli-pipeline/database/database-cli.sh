@@ -8,20 +8,25 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
 source "$PROJECT_ROOT/.env.development" 2>/dev/null || true
 
-# Function to track commands
+# Function to track commands (DISABLED due to network connectivity issues)
 track_command() {
   local pipeline_name="database"
   local command_name="$1"
   shift
   local full_command="$@"
   
-  local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
-  if [ -f "$TRACKER_TS" ]; then
-    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
-  else
-    echo "ℹ️ Tracking not available. Running command directly."
-    eval "$full_command"
-  fi
+  # BYPASS TRACKING: Execute command directly to avoid fetch errors
+  echo "ℹ️ Command tracking disabled due to network connectivity issues. Executing command directly."
+  eval "$full_command"
+  
+  # ORIGINAL CODE (commented out):
+  # local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
+  # if [ -f "$TRACKER_TS" ]; then
+  #   npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+  # else
+  #   echo "ℹ️ Tracking not available. Running command directly."
+  #   eval "$full_command"
+  # fi
 }
 
 # Help message
