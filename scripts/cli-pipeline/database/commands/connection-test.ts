@@ -56,9 +56,7 @@ program
     try {
       let trackingId;
       try {
-        // Skip command tracking for now to avoid fetch errors
-        // trackingId = await commandTrackingService.startTracking('database', 'connection-test');
-        console.log(chalk.yellow('Note: Command tracking is temporarily disabled.'));
+        trackingId = await commandTrackingService.startTracking('database', 'connection-test');
       } catch (trackingError) {
         console.log(chalk.yellow('Note: Command tracking is unavailable. This won\'t affect the connection test.'));
       }
@@ -160,10 +158,10 @@ program
       console.log(chalk.cyan('\nTesting database connection:'));
       
       try {
-        const connectionTest = await databaseService.testConnection();
+        const connectionTest = await SupabaseClientService.getInstance().testConnection();
         
         if (connectionTest.success) {
-          console.log(chalk.green(`✓ ${connectionTest.message}`));
+          console.log(chalk.green(`✓ Database connection successful`));
           
           // Show additional details if requested
           if (options.detailed) {
@@ -196,12 +194,12 @@ program
             console.log(chalk.green(`✓ Empty tables: ${tables.filter(t => t.count === 0).length}`));
           }
         } else {
-          console.log(chalk.red(`✗ ${connectionTest.message}`));
+          console.log(chalk.red(`✗ Database connection failed`));
           
           if (connectionTest.error) {
             console.log('');
             console.log(chalk.cyan('Error details:'));
-            console.log(chalk.red(JSON.stringify(connectionTest.error, null, 2)));
+            console.log(chalk.red(connectionTest.error));
           }
           
           console.log('');
@@ -215,16 +213,16 @@ program
         console.log(chalk.red(`✗ Error testing database connection: ${dbError instanceof Error ? dbError.message : String(dbError)}`));
       }
       
-      // Skip command tracking completion
-      // if (trackingId) {
-      //   try {
-      //     await commandTrackingService.completeTracking(trackingId, {
-      //       summary: `Database connection test completed`
-      //     });
-      //   } catch (error) {
-      //     // Ignore tracking errors
-      //   }
-      // }
+      // Complete command tracking
+      if (trackingId) {
+        try {
+          await commandTrackingService.completeTracking(trackingId, {
+            summary: `Database connection test completed`
+          });
+        } catch (error) {
+          // Ignore tracking errors
+        }
+      }
     } catch (error) {
       console.error(chalk.red('Error testing connection:'), error);
       process.exit(1);

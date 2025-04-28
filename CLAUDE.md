@@ -350,6 +350,26 @@
    
    - The `cli_command_tracking` table stores all command execution records
    - You can view command history using the tracking CLI: `scripts/cli-pipeline/tracking/cli.ts history`
+   
+   - **TROUBLESHOOTING COMMAND TRACKING**:
+     - If command tracking appears to be failing, check these common issues:
+       1. **Supabase connectivity**: Command tracking requires database access; if your Supabase connection is failing, tracking will fail silently
+       2. **Environment variables**: Ensure `.env.development` contains valid `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`
+       3. **Network connectivity**: If there are network issues, the tracking service may fail to connect to Supabase
+       4. **Missing shell script settings**: Ensure your shell script correctly exports environment variables with:
+          ```bash
+          # Export Supabase environment variables
+          ENV_DEV_FILE="${PROJECT_ROOT}/.env.development"
+          if [ -f "$ENV_DEV_FILE" ]; then
+            echo "Loading environment variables from $ENV_DEV_FILE"
+            export $(grep -E "SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY" "$ENV_DEV_FILE" | xargs)
+          fi
+          ```
+       5. **Commented out tracking code**: Check individual TypeScript files to ensure direct command tracking isn't commented out
+       
+     - **DO NOT DISABLE COMMAND TRACKING**: If tracking appears to fail, fix the underlying connection issue instead of disabling tracking
+     - Use the `connection-test` command in the database CLI to diagnose Supabase connectivity issues
+     - Always set up proper error handling in tracking code so that command execution can continue even if tracking fails
 
 4. **Command Implementation Checklist**:
    - Implement full functionality, not just placeholder or mock-up code

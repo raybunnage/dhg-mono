@@ -8,25 +8,21 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
 source "$PROJECT_ROOT/.env.development" 2>/dev/null || true
 
-# Function to track commands (DISABLED due to network connectivity issues)
+# Function to track commands
 track_command() {
   local pipeline_name="database"
   local command_name="$1"
   shift
   local full_command="$@"
   
-  # BYPASS TRACKING: Execute command directly to avoid fetch errors
-  echo "ℹ️ Command tracking disabled due to network connectivity issues. Executing command directly."
-  eval "$full_command"
-  
-  # ORIGINAL CODE (commented out):
-  # local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
-  # if [ -f "$TRACKER_TS" ]; then
-  #   npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
-  # else
-  #   echo "ℹ️ Tracking not available. Running command directly."
-  #   eval "$full_command"
-  # fi
+  local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
+  if [ -f "$TRACKER_TS" ]; then
+    echo "🔍 Tracking command: $command_name"
+    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+  else
+    echo "ℹ️ Tracking not available. Running command directly."
+    eval "$full_command"
+  fi
 }
 
 # Help message
@@ -39,6 +35,8 @@ show_help() {
   echo "  database-functions - List database functions"
   echo "  table-structure   - Get detailed information about a table structure"
   echo "  schema-health     - Analyze database schema health and identify issues"
+  echo "  connection-test   - Test connection to Supabase database and network connectivity"
+  echo "  db-health-check   - Simple database health check (quick connection test)"
   echo ""
   echo "Use './database-cli.sh <command> --help' for more information about a command"
 }
@@ -64,6 +62,14 @@ schema_health() {
   track_command "schema-health" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/schema-health.ts $@"
 }
 
+connection_test() {
+  track_command "connection-test" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/connection-test.ts $@"
+}
+
+db_health_check() {
+  track_command "db-health-check" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/db-health-check.ts $@"
+}
+
 # Main command processor
 case "$1" in
   "table-records")
@@ -80,6 +86,12 @@ case "$1" in
     ;;
   "schema-health")
     schema_health "${@:2}"
+    ;;
+  "connection-test")
+    connection_test "${@:2}"
+    ;;
+  "db-health-check")
+    db_health_check "${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help
