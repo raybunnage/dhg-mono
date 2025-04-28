@@ -74,6 +74,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
     "axios": "^1.8.4",
+    "cli-table3": "^0.6.5",
     "dotenv": "^16.4.7",
     "extract-zip": "^2.0.1",
     "googleapis": "^148.0.0",

@@ -106,36 +106,65 @@ export class DatabaseService {
    */
   public async getDatabaseFunctions(): Promise<{ name: string; type: string; usage: string | null }[]> {
     try {
+      // Try to get functions using direct SQL execution which is more reliable
+      const { data: directData, error: directError } = await this.supabase.rpc('execute_sql', {
+        sql: `
+          SELECT 
+            routine_name as name, 
+            routine_type as type,
+            CASE routine_type
+              WHEN 'FUNCTION' THEN data_type
+              ELSE NULL
+            END as usage
+          FROM information_schema.routines 
+          WHERE routine_schema = 'public'
+          ORDER BY routine_name
+        `
+      });
+      
+      if (directError) {
+        throw new Error(`Failed to get database functions: ${directError.message}`);
+      }
+      
+      if (directData && directData.length > 0) {
+        return directData;
+      }
+      
+      // If direct SQL didn't work, fall back to RPC
       const { data, error } = await this.supabase.rpc('get_functions', { schema_name: 'public' });
       
       if (error) {
         throw new Error(`Failed to get database functions: ${error.message}`);
       }
       
-      return data;
+      return data || [];
     } catch (error) {
       console.error('Error in getDatabaseFunctions:', error);
       
-      // Fallback: if RPC method is unavailable, query information_schema directly
+      // Last resort fallback: limited information
+      console.log('Attempting final fallback method');
       try {
-        const { data, error: directError } = await this.supabase
-          .from('information_schema.routines')
-          .select('routine_name, routine_type, data_type')
-          .eq('routine_schema', 'public')
-          .order('routine_name');
+        const { data: backupData, error: backupError } = await this.supabase.rpc('execute_sql', {
+          sql: `
+            SELECT 
+              p.proname as name,
+              'FUNCTION' as type,
+              pg_catalog.pg_get_function_result(p.oid) as usage
+            FROM pg_catalog.pg_proc p
+            JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+            WHERE n.nspname = 'public'
+          `
+        });
         
-        if (directError) {
-          throw directError;
+        if (backupError) {
+          throw backupError;
         }
         
-        return data.map((fn) => ({
-          name: fn.routine_name,
-          type: fn.routine_type,
-          usage: null
-        }));
+        return backupData || [];
       } catch (fallbackError) {
-        console.error('Fallback error:', fallbackError);
-        throw error; // Throw the original error
+        console.error('All fallback attempts failed:', fallbackError);
+        // Return empty array to avoid crashes
+        return [];
       }
     }
   }
