@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { 
   supabase, 
   supabaseAdapter 
-} from '../../../packages/shared/services/supabase-client/universal'
+} from '@root/packages/shared/services/supabase-client/universal'
 
 /**
  * Helper to check for potential API key issues
@@ -140,7 +140,7 @@ export function Easy() {
         </p>
         
         <div className="bg-gray-800 text-gray-200 p-3 rounded mb-4 font-mono text-sm">
-          import {'{supabase, supabaseAdapter}'} from '../../../packages/shared/services/supabase-client/universal'
+          import {'{supabase, supabaseAdapter}'} from '@root/packages/shared/services/supabase-client/universal'
         </div>
         
         <p className="mb-4">

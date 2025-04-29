@@ -15,9 +15,10 @@ This adapter provides a unified interface for both frontend and backend applicat
 
 ### Basic Usage
 
+For frontend (React) applications:
 ```typescript
 // Import the singleton adapter or client from the universal adapter
-import { supabase, supabaseAdapter } from '../../../packages/shared/services/supabase-client/universal';
+import { supabase, supabaseAdapter } from '@root/packages/shared/services/supabase-client/universal';
 
 // Use the client directly for queries
 const { data, error } = await supabase
@@ -27,6 +28,18 @@ const { data, error } = await supabase
 
 // Or use the adapter for additional operations
 const { success, diagnostics } = await supabaseAdapter.ensureAuth();
+```
+
+For backend (Node.js) applications:
+```typescript
+// Import the singleton adapter or client from the universal adapter
+import { supabase, supabaseAdapter } from '../../../packages/shared/services/supabase-client/universal';
+
+// The usage is identical in both environments
+const { data, error } = await supabase
+  .from('document_types')
+  .select('id')
+  .limit(10);
 ```
 
 ### Frontend Authentication
@@ -96,6 +109,8 @@ This repository includes an `Easy` page component that demonstrates how to use t
 To migrate existing code to use the universal adapter:
 
 1. Replace imports from application-specific Supabase clients:
+
+   **For frontend (React) applications:**
    ```typescript
    // Before
    import { supabase } from '@/lib/supabase';
@@ -103,12 +118,32 @@ To migrate existing code to use the universal adapter:
    import { supabase } from '@/integrations/supabase/client';
 
    // After
+   import { supabase } from '@root/packages/shared/services/supabase-client/universal';
+   ```
+
+   **For backend (Node.js) applications:**
+   ```typescript
+   // Before
+   import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+   const supabase = SupabaseClientService.getInstance().getClient();
+
+   // After
    import { supabase } from '../../../packages/shared/services/supabase-client/universal';
    ```
 
 2. For code that needs authentication or additional adapter features:
+
+   **For frontend (React) applications:**
    ```typescript
    // Import both the client and the adapter
+   import { 
+     supabase, 
+     supabaseAdapter 
+   } from '@root/packages/shared/services/supabase-client/universal';
+   ```
+
+   **For backend (Node.js) applications:**
+   ```typescript
    import { 
      supabase, 
      supabaseAdapter 
@@ -116,6 +151,20 @@ To migrate existing code to use the universal adapter:
    ```
 
 3. If your code handles user references, use the helper function:
+
+   **For frontend (React) applications:**
+   ```typescript
+   import { 
+     supabase, 
+     addUserReferences 
+   } from '@root/packages/shared/services/supabase-client/universal';
+
+   // Then use it in your data operations
+   const recordWithUser = await addUserReferences(yourData);
+   await supabase.from('your_table').insert(recordWithUser);
+   ```
+
+   **For backend (Node.js) applications:**
    ```typescript
    import { 
      supabase, 
