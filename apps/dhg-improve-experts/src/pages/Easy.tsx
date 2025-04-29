@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import { 
-  supabase, 
-  supabaseAdapter 
-} from '../utils/supabase-adapter'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '../../../supabase/types';
 
 /**
  * Helper to check for potential API key issues
@@ -32,10 +30,38 @@ function validateApiKey(key: string | undefined): { isValid: boolean; issue: str
 }
 
 /**
+ * Direct Supabase client using Vite environment variables
+ */
+const createSupabaseClient = () => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase credentials. Check .env.development file for VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+    throw new Error('Missing Supabase credentials');
+  }
+  
+  return createClient<Database>(supabaseUrl, supabaseKey, {
+    auth: {
+      storageKey: 'dhg-supabase-auth',
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  });
+};
+
+// Create Supabase client instance
+let supabase: SupabaseClient<Database>;
+try {
+  supabase = createSupabaseClient();
+} catch (error) {
+  console.error('Failed to create Supabase client:', error);
+}
+
+/**
  * Easy Page Component
  * 
- * This page demonstrates how to use the universal Supabase adapter in a React component.
- * It shows environment configuration, authentication status, and a simple data query.
+ * Demonstrates direct Supabase connection and authentication in a React app
  */
 export function Easy() {
   const [envDebug, setEnvDebug] = useState<Record<string, boolean>>({});
@@ -49,6 +75,15 @@ export function Easy() {
   // Check what environment variables we have access to and attempt to use the client
   useEffect(() => {
     async function initializeAndTest() {
+      console.log('Starting initialization and testing...');
+      
+      // Collect diagnostics
+      let diagOutput = "";
+      const addDiagnostic = (message: string) => {
+        console.log(message);
+        diagOutput += message + "\n";
+      };
+      
       // Debug environment variable access
       const envVars = {
         'VITE_SUPABASE_URL': !!import.meta.env.VITE_SUPABASE_URL,
@@ -70,57 +105,91 @@ export function Easy() {
       setKeyValidation(keyChecks);
       
       try {
-        // Authenticate
+        // Try authentication
         setAuthStatus('Authenticating...');
-        const { success: authSuccess, diagnostics: authDiagnostics } = await supabaseAdapter.ensureAuth();
-        setAuthStatus(authSuccess ? 'Authenticated' : 'Authentication failed');
-        setDiagnostics(authDiagnostics);
+        addDiagnostic('Attempting to authenticate...');
         
-        if (authSuccess) {
-          // Get document_types count
-          setLoading(true);
+        // Check if we already have a session
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) {
+          addDiagnostic(`Already authenticated as: ${sessionData.session.user.email || 'Unknown user'}`);
+          setAuthStatus('Authenticated');
+        } else if (import.meta.env.VITE_TEST_USER_EMAIL && import.meta.env.VITE_TEST_USER_PASSWORD) {
+          // Try to sign in with test credentials
+          addDiagnostic(`Attempting to sign in with test user: ${import.meta.env.VITE_TEST_USER_EMAIL}`);
           
-          try {
-            // Create a timeout promise to fail gracefully after 10 seconds
-            const timeoutPromise = new Promise<never>((_, reject) => {
-              setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000);
-            });
-            
-            // Query the document_types table
-            const queryPromise = supabase
-              .from('document_types')
-              .select('id', { count: 'exact', head: true });
-            
-            const result = await Promise.race([
-              queryPromise,
-              timeoutPromise
-            ]);
-            
-            if (result.error) {
-              console.error('Error getting count:', result.error);
-              throw new Error(`Error fetching count: ${result.error.message}`);
-            } else {
-              setCount(result.count || 0);
-              console.log('Successfully fetched count:', result.count);
-            }
-          } catch (err) {
-            console.error('Error fetching count:', err);
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            setError(`Error fetching count: ${errorMessage}`);
-            setCount(null);
-          } finally {
+          const { data, error: authError } = await supabase.auth.signInWithPassword({
+            email: import.meta.env.VITE_TEST_USER_EMAIL,
+            password: import.meta.env.VITE_TEST_USER_PASSWORD
+          });
+          
+          if (authError) {
+            addDiagnostic(`Authentication failed: ${authError.message}`);
+            setAuthStatus('Authentication failed');
+            setDiagnostics(diagOutput);
             setLoading(false);
+            setError(`Authentication failed: ${authError.message}`);
+            return;
+          }
+          
+          if (data.user) {
+            addDiagnostic(`Successfully authenticated as: ${data.user.email}`);
+            setAuthStatus('Authenticated');
           }
         } else {
+          addDiagnostic('No test user credentials available - using anonymous access');
+          setAuthStatus('Using anonymous access');
+        }
+        
+        setDiagnostics(diagOutput);
+        
+        // Get document_types count
+        setLoading(true);
+        
+        try {
+          addDiagnostic('Attempting to fetch document_types count...');
+          // Create a timeout promise to fail gracefully after 10 seconds
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000);
+          });
+          
+          // Query the document_types table
+          const queryPromise = supabase
+            .from('document_types')
+            .select('id', { count: 'exact', head: true });
+          
+          const result = await Promise.race([
+            queryPromise,
+            timeoutPromise
+          ]);
+          
+          if (result.error) {
+            console.error('Error getting count:', result.error);
+            addDiagnostic(`Error getting count: ${result.error.message}`);
+            throw new Error(`Error fetching count: ${result.error.message}`);
+          } else {
+            setCount(result.count || 0);
+            addDiagnostic(`Successfully fetched count: ${result.count}`);
+            console.log('Successfully fetched count:', result.count);
+          }
+        } catch (err) {
+          console.error('Error fetching count:', err);
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          addDiagnostic(`Error fetching count: ${errorMessage}`);
+          setError(`Error fetching count: ${errorMessage}`);
+          setCount(null);
+        } finally {
           setLoading(false);
-          setError('Authentication failed. See diagnostics section for more details.');
+          setDiagnostics(diagOutput);
         }
       } catch (err) {
         console.error('Error initializing Supabase:', err);
         const errorMessage = err instanceof Error ? err.message : String(err);
+        addDiagnostic(`Error initializing Supabase: ${errorMessage}`);
         setError(`Error initializing Supabase: ${errorMessage}`);
         setAuthStatus('Error initializing service');
         setLoading(false);
+        setDiagnostics(diagOutput);
       }
     }
     
@@ -135,17 +204,17 @@ export function Easy() {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">About This Page</h2>
         <p className="mb-4">
-          This is a demonstration page that shows how to use a dedicated Supabase adapter
-          for React applications.
+          This is a demonstration page that shows direct connection to Supabase 
+          in a React application using environment variables.
         </p>
         
         <div className="bg-gray-800 text-gray-200 p-3 rounded mb-4 font-mono text-sm">
-          import {'{supabase, supabaseAdapter}'} from '../utils/supabase-adapter'
+          {`import { createClient } from '@supabase/supabase-js'\n\nconst supabase = createClient(\n  import.meta.env.VITE_SUPABASE_URL,\n  import.meta.env.VITE_SUPABASE_ANON_KEY\n)`}
         </div>
         
         <p className="mb-4">
-          The adapter is specifically designed to work in browser environments, handling authentication
-          and environment variables appropriate for React applications.
+          This approach directly uses the Supabase JS client in the browser environment,
+          configured with your VITE_ prefixed environment variables.
         </p>
       </div>
       
@@ -154,7 +223,7 @@ export function Easy() {
         <h2 className="text-xl font-semibold mb-4">Authentication Status</h2>
         
         <div className={`p-4 rounded-md mb-4 ${
-          authStatus === 'Authenticated' 
+          authStatus === 'Authenticated' || authStatus === 'Using anonymous access'
             ? 'bg-green-50 text-green-700' 
             : authStatus === 'Authenticating...' 
               ? 'bg-blue-50 text-blue-700'
@@ -163,6 +232,8 @@ export function Easy() {
           <h3 className="text-lg font-semibold mb-2">Status: {authStatus}</h3>
           {authStatus === 'Authenticated' ? (
             <p>Successfully authenticated with Supabase!</p>
+          ) : authStatus === 'Using anonymous access' ? (
+            <p>Using anonymous access with Supabase anon key</p>
           ) : authStatus === 'Authentication failed' ? (
             <p>
               Failed to authenticate with Supabase. This could be due to invalid credentials
@@ -172,7 +243,7 @@ export function Easy() {
         </div>
         
         {/* Data Display */}
-        {authStatus === 'Authenticated' && (
+        {(authStatus === 'Authenticated' || authStatus === 'Using anonymous access') && (
           <div className="mt-4">
             <h3 className="text-lg font-semibold mb-2">Data from Supabase:</h3>
             {loading ? (
@@ -250,22 +321,20 @@ export function Easy() {
         <h2 className="text-xl font-semibold mb-4">Implementation Details</h2>
         
         <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">React-Specific Adapter</h3>
+          <h3 className="text-lg font-semibold mb-2">Direct Client Approach</h3>
           <p>
-            This solution uses a React-specific adapter that's optimized for browser environments.
-            It provides all the features needed for frontend applications while maintaining a clean API.
+            This implementation uses a direct Supabase client created with environment variables,
+            avoiding complex adapter patterns for simplicity and reliability.
           </p>
         </div>
         
         <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Key Features</h3>
+          <h3 className="text-lg font-semibold mb-2">Authentication Options</h3>
           <ul className="list-disc pl-6">
-            <li className="mb-2">Uses Vite environment variables (VITE_*)</li>
-            <li className="mb-2">Handles browser-specific authentication</li>
-            <li className="mb-2">Supports test user authentication</li>
-            <li className="mb-2">Provides consistent error handling</li>
-            <li className="mb-2">Implements the singleton pattern for efficiency</li>
-            <li className="mb-2">Includes detailed diagnostics for debugging</li>
+            <li className="mb-2">Uses test user credentials if available</li>
+            <li className="mb-2">Falls back to anonymous access with anon key</li>
+            <li className="mb-2">Maintains persistent session with browser storage</li>
+            <li className="mb-2">Automatically refreshes tokens when needed</li>
           </ul>
         </div>
       </div>
