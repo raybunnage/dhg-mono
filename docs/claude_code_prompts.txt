@@ -1,3 +1,57 @@
+Okay I need a new ppage in my dhg-hub project
+
+The poage will be called "Show"
+
+So I need to turn the "Home" page into a dashboard that does the following.
+
+1) Reads all the presentations from the presentations table 
+
+
+
+
+
+
+Great! I've created a new app in the apps/dhg-hub directory with the following components:
+
+
+
+
+
+
+  1. Basic Configuration:
+    - package.json with required dependencies
+    - vite.config.ts with proper path aliases
+    - tsconfig.json and tsconfig.node.json
+    - index.html entry point
+    - tailwind.config.ts and postcss.config.cjs for styling
+    - netlify.toml for deployment settings
+  2. Main App Structure:
+    - main.tsx - Entry point with React router setup
+    - App.tsx - Main app component with routes
+    - index.css - Base Tailwind CSS imports
+  3. Components:
+    - MainNavbar.tsx - Navigation bar component based on the one from dhg-improve-experts
+  4. Pages:
+    - Home.tsx - Simple home page
+    - Easy.tsx - Copy of the Easy page from dhg-improve-experts but using the universal Supabase adapter from shared services
+
+  The new app is set up to use the universal Supabase adapter from the packages/shared/services/supabase-client/universal directory, which provides a
+  consistent interface for Supabase operations in both browser and Node.js environments.
+
+  To run the app, you would need to:
+
+  1. Make sure you have environment variables set in a .env.development file at the root of the repository:
+  VITE_SUPABASE_URL=https://your-supabase-url.supabase.co
+  VITE_SUPABASE_ANON_KEY=your-anon-key
+  VITE_TEST_USER_EMAIL=your-test-email@example.com
+  VITE_TEST_USER_PASSWORD=your-test-password
+  2. Run the app from the apps/dhg-hub directory:
+  cd apps/dhg-hub
+  npm run dev
+
+  The application will run on port 5174 as configured in the vite.config.ts file.
+
+
 scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --doc-type pdf --mark-for-reprocessing --execute
 
 ./scripts/cli-pipeline/google_sync/google-sync-cli.sh sources-google-integrity --doc-type powerpoint --mark-for-reprocessing --execute
