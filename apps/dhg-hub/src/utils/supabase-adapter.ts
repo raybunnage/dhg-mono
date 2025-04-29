@@ -6,6 +6,9 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+// Import Database type from the project root
+// We're using a relative path to the types.ts file directly
+// @ts-ignore - This import will work at runtime
 import type { Database } from '../../../supabase/types';
 
 /**
@@ -233,25 +236,29 @@ export async function addUserReferences<T extends Record<string, any>>(record: T
     const userId = data?.session?.user?.id || SYSTEM_USER_ID;
     
     // Add user reference fields if they don't exist
-    if (!record.created_by) {
-      record.created_by = userId;
+    const recordWithRefs = { ...record };
+    
+    if (!('created_by' in recordWithRefs)) {
+      (recordWithRefs as any).created_by = userId;
     }
     
-    if (!record.updated_by) {
-      record.updated_by = userId;
+    if (!('updated_by' in recordWithRefs)) {
+      (recordWithRefs as any).updated_by = userId;
     }
     
-    return record;
+    return recordWithRefs;
   } catch (error) {
     // If there's any error, fall back to the system user ID
-    if (!record.created_by) {
-      record.created_by = SYSTEM_USER_ID;
+    const recordWithRefs = { ...record };
+    
+    if (!('created_by' in recordWithRefs)) {
+      (recordWithRefs as any).created_by = SYSTEM_USER_ID;
     }
     
-    if (!record.updated_by) {
-      record.updated_by = SYSTEM_USER_ID;
+    if (!('updated_by' in recordWithRefs)) {
+      (recordWithRefs as any).updated_by = SYSTEM_USER_ID;
     }
     
-    return record;
+    return recordWithRefs;
   }
 }

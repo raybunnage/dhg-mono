@@ -1,10 +1,81 @@
 Okay I need a new ppage in my dhg-hub project
+So I need to turn the "Home" page into a dashboard that does the following.                                                                           │
+│                                                                                                                                                         │
+│   The tables and fields involved are theses                                                                                                             │
+│   1) Reads all the presentations from the presentations table                                                                                           │
+│   a) each presentation is an mp4 file that is on the google drive.                                                                                      │
+│   b) each of these presentation records also has a video_source_id which is the link to the file in the sources_google table                            │
+│   c) but it also has a web_view_link which which you should display and stream the currently selected video in a window on the dashboard                │
+│   d) there is another field called expert_document_id which is the id of the expert_documents record where                                              │
+│   e) the "title" field of the expert_documents record for the mp4 file is the title you will need to display for the videos                             │
+│   in the processed_content there is a markdown or json summary of the video which we'll want to display somehow near the video - it needs to be nicely  │
+│   formatted anhd will be a few paragraphs long                                                                                                          │
+│                                                                                                                                                         │
+│   2) then there is the presentation_assets table which has the assets related to each presentation.                                                     │
+│   It will have the presentation_id of the presentation and then it will be one of the following types                                                   │
+│   a) a pdf file, a .txt file,  a .pptx file or a .docx file - one of these 4 types - the actually file type is on the asset_source_id which is the id   │
+│   field of rthe sources_google table  which has a name field (with the file extension) as well as a document_type_id which is from the document_types   │
+│   table where the document_type field is the name of the document type - there is a mime_type field associated with the document_types record as well   │
+│                                                                                                                                                         │
+│                                                                                                                                                         │
+│   3) another table that is critical is the table_classificatins table.  It links an entity_id (the expert_document_id to the id of the                  │
+│   subject_classifictations table, so each presentation_asset file has many classifications which describe its subject content.  These different         │
+│   subject areas will become pills that will allow you to filter on subjects classifictions and just see the videos that match the chosen pills.  You    │
+│   can see the rollup for this in the file docs/script-reports/subject-classification-rollup.md  and the code to do the rollup is in the                 │
+│   scripts/cli-pipeline/all_pipelines/classification-rollup.ts file                                                                                      │
+│                                                                                                                                                         │
+│   So in the end you will be using the following tables                                                                                                  │
+│   presentations                                                                                                                                         │
+│   presentation_assets                                                                                                                                   │
+│   sources_google                                                                                                                                        │
+│   expert_documents                                                                                                                                      │
+│   table_classifications                                                                                                                                 │
+│   subject_classifications                                                                                                                               │
+│   experts                                                                                                                                               │
+│                                                                                                                                                         │
+│                                                                                                                                                         │
+│                                                                                                                                                         │
+│   So the overall layout of the dashboard should be                                                                                                      │
+│   1) on top row - a search text box which you could search through all the titles -the titles are on the expert_documents on the file that is the mp4   │
+│   file                                                                                                                                                  │
+│   2) if the search is progressive in the search box, then a filter would apply to narrow down the titles somehow and finally you would choose the one   │
+│   you want to check out - it would appear in a window on the right but not start playing until the play button was pressed for the video when the       │
+│   web_view_link would start streaming the file                                                                                                          │
+│   2) pills from the rolloup of master_classifications showing the subject_classifictions - and the "short_name" field from this table for display       │
+│   purposes in the pills  - filtering of mp4 files should be based on the subject_classifications of the mp4 files                                       │
+│                                                                                                                                                         │
+│   3) on the left there should be cards of some sorts that once a a title is chosen display card information of all the prentattion assets files.        │
+│   clicking on a card wwould display a window on the right below the video which would display the summary from the presentation_asset's                 │
+│   expert_document_id which will retrieve the processed_document field and display the summary in it nicely whether it be JSON or markdown in a window   │
+│   below the video on the right                                                                                                                          │
+│                                                                                                                                                         │
+│   4) for each title chosen the following cards would appear                                                                                             │
+│   a) each presentation_asset would get a card with its filename, its file extension and in the window ojn the right as you clicked on a card the        │
+│   summary from its associated expert_documents record would retrieve and display the summary.  Perhaps if you doubleclick on the card the window on     │
+│   the right becomes a display window where the presentation_assets' asset_source_id is used to get the id from the sources_google and display the file  │
+│   with the google default viewer for that type in a window on the right.  So if its a pdf when doubleclicked the pdf viewer opens up, when its a docx   │
+│   the mammoth viewer kicks in and when its a powerpoint the powerpoint vieeer and then a txt file the actually test is displayable.  For now you        │
+│   don't have to display the actual web_link_view - just represent it in a window with the filename where it will be placed.                             │
+│                                                                                                                                                         │
+│   The cards on the left will go beyond the presentation assets, however,  If a certain pill is chosen it could display the titles from those            │
+│   expert_document_ids that have that subject classification - sort of a dynamic references approach which should be visually distinct from the          │
+│   presentation_assets as it is related but more indirectly.                                                                                             │
+│                                                                                                                                                         │
+│   Let's see what you come up with this design                                                                                                           │
+│     If you need inspiration see the apps/dhg-improve-experts/src/pages/Show.tsx page which is where I got some of my ideas.  It shows how you use the   │
+│   web_view_link to display the m04 file and has some nice loooking card examples to give you some suggestions. the packages/shared is where I am        │
+│   storing code shared across apps or even the backend.  There is a utils folder in there and dedicated services that you should always check out        │
+│   firsst.  I want the react code to be as light weight as possible and the shared code to be as much as possible because I will reuse these elements    │
+│   across other apps.   
 
-The poage will be called "Show"
 
-So I need to turn the "Home" page into a dashboard that does the following.
 
-1) Reads all the presentations from the presentations table 
+
+However I have a web_view_link field that allows you to stream the video from the google drive in a window in the daashboard
+There 
+
+
+2) reads all the presentatin
 
 
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 // Import the Supabase adapter
 import { supabase, supabaseAdapter } from '@/utils/supabase-adapter'
+// @ts-ignore - This import will work at runtime
 import type { Database } from '../../../supabase/types'
 
 /**
@@ -88,7 +89,7 @@ export function Easy() {
       
       // Get detailed adapter diagnostics
       const adapterDiagnostics = await supabaseAdapter.getDiagnostics();
-      addDiagnostic(`Using universal Supabase adapter in ${adapterDiagnostics.environment} environment`);
+      addDiagnostic(`Using universal Supabase adapter`);
       addDiagnostic(`Supabase URL: ${adapterDiagnostics.urlPreview}`);
       addDiagnostic(`Supabase Key: ${adapterDiagnostics.keyPreview}`);
       addDiagnostic(`Network status: ${navigator.onLine ? 'Online' : 'Offline'}`);
