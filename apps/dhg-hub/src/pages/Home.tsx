@@ -2,12 +2,32 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/utils/supabase-adapter';
 // @ts-ignore - This import will work at runtime
 import { Database } from '../../../supabase/types';
+import ReactMarkdown from 'react-markdown';
+
+// Helper function to extract Drive ID from Google Drive URL
+const extractDriveId = (url: string | null): string | null => {
+  if (!url) return null;
+  
+  try {
+    const match = url.match(/\/d\/([^/]+)/);
+    return match ? match[1] : null;
+  } catch (err) {
+    console.error("Error extracting drive ID:", err);
+    return null;
+  }
+};
 
 // Define key types
 type Presentation = Database['public']['Tables']['presentations']['Row'] & {
   title?: string | null;
   expert_document?: ExpertDocument | null;
   video_source?: SourceGoogle | null;
+  expert?: {
+    id: string;
+    full_name: string;
+    expert_name: string;
+  } | null;
+  created_at?: string | null;
 };
 
 type PresentationAsset = Database['public']['Tables']['presentation_assets']['Row'] & {
@@ -34,11 +54,14 @@ export function Home() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [subjectClassifications, setSubjectClassifications] = useState<SubjectClassification[]>([]);
   const [selectedPresentation, setSelectedPresentation] = useState<Presentation | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<PresentationAsset | null>(null);
   const [presentationAssets, setPresentationAssets] = useState<PresentationAsset[]>([]);
+  const [showExpertBio, setShowExpertBio] = useState<boolean>(false);
+  const [expertBioContent, setExpertBioContent] = useState<any>(null);
 
   // Fetch presentations data
   useEffect(() => {
@@ -52,7 +75,14 @@ export function Home() {
             id, 
             video_source_id,
             expert_document_id,
+            expert_id,
             web_view_link,
+            created_at,
+            expert:expert_id(
+              id,
+              full_name,
+              expert_name
+            ),
             expert_document:expert_document_id(
               id, 
               title, 
@@ -202,8 +232,14 @@ export function Home() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        p => p.expert_document?.title?.toLowerCase().includes(query) || 
-             p.video_source?.name?.toLowerCase().includes(query)
+        p => 
+          // Search in title
+          (p.expert_document?.title?.toLowerCase().includes(query)) || 
+          // Search in filename
+          (p.video_source?.name?.toLowerCase().includes(query)) ||
+          // Search in expert name
+          (p.expert?.full_name?.toLowerCase().includes(query) || 
+           p.expert?.expert_name?.toLowerCase().includes(query))
       );
     }
     
@@ -225,25 +261,303 @@ export function Home() {
     return filtered;
   }, [presentations, searchQuery, selectedSubjects, presentationClassifications]);
 
-  // Format and display processed content (JSON or markdown)
-  const formatContent = (content: any): string => {
-    if (!content) return 'No content available';
+  // Check if content is likely markdown
+  const isMarkdown = (content: string): boolean => {
+    // Check for common markdown elements
+    return (
+      content.includes('#') || // Headers
+      content.includes('==') || // Headers alternative
+      content.includes('```') || // Code blocks
+      /\[.+\]\(.+\)/.test(content) || // Links
+      /\*\*.+\*\*/.test(content) || // Bold
+      /\*.+\*/.test(content) || // Italic
+      /- .+/.test(content) || // Lists
+      /\d\. .+/.test(content) // Numbered lists
+    );
+  };
+
+  // Special formatter for expert profiles
+  const formatExpertProfile = (content: any): React.ReactNode => {
+    if (!content) return <p>No content available</p>;
+    
+    try {
+      // Ensure we have an object to work with
+      const profileData = typeof content === 'string' ? JSON.parse(content) : content;
+      
+      // Check if this is a profile object with expected fields
+      if (typeof profileData === 'object') {
+        return (
+          <div className="expert-profile">
+            {/* Name and Title Section */}
+            {profileData.name && (
+              <h2 className="text-xl font-bold mb-3">{profileData.name}</h2>
+            )}
+            
+            {profileData.title && (
+              <p className="text-lg text-gray-700 mb-4">{profileData.title}</p>
+            )}
+            
+            {/* Short Bio */}
+            {profileData.short_bio && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Biography</h3>
+                <p className="text-gray-800">{profileData.short_bio}</p>
+              </div>
+            )}
+            
+            {/* Areas of Expertise */}
+            {profileData.areas_of_expertise && profileData.areas_of_expertise.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Areas of Expertise</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  {profileData.areas_of_expertise.map((area: string, index: number) => (
+                    <li key={index} className="text-gray-800">{area}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Key Publications */}
+            {profileData.key_publications && profileData.key_publications.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Key Publications</h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  {profileData.key_publications.map((pub: string, index: number) => (
+                    <li key={index} className="text-gray-800">{pub}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Affiliations */}
+            {profileData.affiliations && profileData.affiliations.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Affiliations</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  {profileData.affiliations.map((affiliation: string, index: number) => (
+                    <li key={index} className="text-gray-800">{affiliation}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Education */}
+            {profileData.education && profileData.education.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Education</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  {profileData.education.map((edu: string, index: number) => (
+                    <li key={index} className="text-gray-800">{edu}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Contact Information */}
+            {(profileData.email || profileData.website) && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Contact</h3>
+                {profileData.email && <p className="text-gray-800">Email: {profileData.email}</p>}
+                {profileData.website && (
+                  <p className="text-gray-800">
+                    Website: <a href={profileData.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{profileData.website}</a>
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {/* Additional fields - display any other fields that weren't explicitly handled */}
+            {Object.entries(profileData)
+              .filter(([key]) => ![
+                'name', 'title', 'short_bio', 'areas_of_expertise', 
+                'key_publications', 'affiliations', 'education', 
+                'email', 'website'
+              ].includes(key))
+              .map(([key, value]) => {
+                // Skip if value is null/undefined or empty array/string
+                if (value === null || value === undefined) return null;
+                if (Array.isArray(value) && value.length === 0) return null;
+                if (typeof value === 'string' && value.trim() === '') return null;
+                
+                // Format arrays as lists
+                if (Array.isArray(value)) {
+                  return (
+                    <div key={key} className="mb-6">
+                      <h3 className="text-lg font-semibold mb-2">{key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</h3>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {value.map((item: any, index: number) => (
+                          <li key={index} className="text-gray-800">{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                }
+                
+                // Format objects recursively (skip for now to avoid complexity)
+                if (typeof value === 'object' && value !== null) {
+                  return (
+                    <div key={key} className="mb-6">
+                      <h3 className="text-lg font-semibold mb-2">{key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</h3>
+                      <pre className="text-sm bg-gray-50 p-2 rounded">{JSON.stringify(value, null, 2)}</pre>
+                    </div>
+                  );
+                }
+                
+                // Format strings and other primitives
+                return (
+                  <div key={key} className="mb-6">
+                    <h3 className="text-lg font-semibold mb-2">{key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</h3>
+                    <p className="text-gray-800">{String(value)}</p>
+                  </div>
+                );
+              })
+            }
+          </div>
+        );
+      }
+      
+      // If not a structured profile, fall back to the normal content formatter
+      return formatContent(content);
+    } catch (error) {
+      console.error("Error formatting expert profile:", error);
+      // Fallback to normal content formatter
+      return formatContent(content);
+    }
+  };
+
+  // Format and display processed content (JSON, markdown, or plain text)
+  const formatContent = (content: any): React.ReactNode => {
+    if (!content) return <p>No content available</p>;
     
     if (typeof content === 'string') {
-      return content;
+      // Check if the content is likely markdown
+      if (isMarkdown(content)) {
+        return (
+          <div className="markdown-content">
+            <ReactMarkdown>{content}</ReactMarkdown>
+          </div>
+        );
+      }
+      
+      // If not markdown, split by double newlines to create paragraphs
+      return (
+        <div>
+          {content.split('\n\n').map((paragraph, index) => (
+            <p key={index} className="mb-4">
+              {/* Check if this looks like a heading (all caps or ends with colon) */}
+              {(paragraph.toUpperCase() === paragraph && paragraph.length > 4) || paragraph.trim().endsWith(':') ? 
+                <strong>{paragraph}</strong> : 
+                paragraph}
+            </p>
+          ))}
+        </div>
+      );
     }
     
     if (typeof content === 'object') {
       // Check if there's a summary field
       if (content.summary) {
-        return content.summary;
+        const summaryContent = content.summary;
+        const keyName = content.key_points ? "Points" : content.key_insights ? "Insights" : "Highlights";
+        
+        // Check if the summary is markdown
+        if (typeof summaryContent === 'string' && isMarkdown(summaryContent)) {
+          return (
+            <div className="markdown-content">
+              <h3 className="font-bold text-base mb-3">Summary:</h3>
+              <div className="mb-6">
+                <ReactMarkdown>{summaryContent}</ReactMarkdown>
+              </div>
+              
+              {/* Add key points/insights if they exist */}
+              {(content.key_points || content.highlights || content.key_insights) && (
+                <div className="mt-6">
+                  <h3 className="font-bold text-base mb-3">Key {keyName}:</h3>
+                  <ul className="list-disc pl-5 space-y-2">
+                    {(content.key_points || content.highlights || content.key_insights || []).map((point: string, index: number) => (
+                      <li key={index}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          );
+        }
+        
+        // If not markdown, format as paragraphs
+        return (
+          <div>
+            <h3 className="font-bold text-base mb-3">Summary:</h3>
+            <div className="mb-6">
+              {summaryContent.split('\n\n').map((paragraph: string, index: number) => (
+                <p key={index} className="mb-3">
+                  {/* Check if this looks like a heading */}
+                  {(paragraph.toUpperCase() === paragraph && paragraph.length > 4) || paragraph.trim().endsWith(':') ? 
+                    <strong>{paragraph}</strong> : 
+                    paragraph}
+                </p>
+              ))}
+            </div>
+            
+            {/* Add key points/insights if they exist */}
+            {(content.key_points || content.highlights || content.key_insights) && (
+              <div className="mt-6">
+                <h3 className="font-bold text-base mb-3">Key {keyName}:</h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  {(content.key_points || content.highlights || content.key_insights || []).map((point: string, index: number) => (
+                    <li key={index}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      // If there are key_points or highlights, format them as a list
+      if (content.key_points || content.highlights || content.key_insights) {
+        const points = content.key_points || content.highlights || content.key_insights || [];
+        const keyName = content.key_points ? "Points" : content.key_insights ? "Insights" : "Highlights";
+        
+        return (
+          <div>
+            {content.summary && (
+              <div className="mb-6">
+                <h3 className="font-bold text-base mb-3">Summary:</h3>
+                {content.summary.split('\n\n').map((paragraph: string, index: number) => (
+                  <p key={index} className="mb-3">{paragraph}</p>
+                ))}
+              </div>
+            )}
+            
+            {points.length > 0 && (
+              <div className="mt-6">
+                <h3 className="font-bold text-base mb-3">Key {keyName}:</h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  {points.map((point: string, index: number) => (
+                    <li key={index}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      // Check if the object has a markdown field
+      if (content.markdown) {
+        return (
+          <div className="markdown-content">
+            <ReactMarkdown>{content.markdown}</ReactMarkdown>
+          </div>
+        );
       }
       
       // Otherwise stringify the JSON
-      return JSON.stringify(content, null, 2);
+      return <pre className="text-xs overflow-auto p-2 bg-gray-50 rounded">{JSON.stringify(content, null, 2)}</pre>;
     }
     
-    return 'Content format not supported';
+    return <p>Content format not supported</p>;
   };
 
   // Toggle subject filter
@@ -255,10 +569,167 @@ export function Home() {
     }
   };
 
+  // Fetch expert bio
+  const fetchExpertBio = async (expertId?: string) => {
+    if (!expertId) {
+      console.log("No expert ID provided");
+      return;
+    }
+    
+    try {
+      // First try to get the expert's basic info to ensure we can display something
+      const { data: expertData, error: expertError } = await supabase
+        .from('experts')
+        .select('id, full_name, expert_name, bio')
+        .eq('id', expertId)
+        .single();
+      
+      if (expertError) {
+        console.error('Error fetching expert:', expertError);
+        // Create a fallback profile to display
+        setExpertBioContent({ 
+          name: "Expert Profile",
+          short_bio: "Unable to load expert profile information."
+        });
+        setShowExpertBio(true);
+        return;
+      }
+      
+      // If expert has a bio field directly in the experts table, use that
+      if (expertData && expertData.bio) {
+        // Check if bio is a string (possibly JSON) or already an object
+        if (typeof expertData.bio === 'string') {
+          try {
+            // Try to parse it as JSON
+            const parsedBio = JSON.parse(expertData.bio);
+            setExpertBioContent(parsedBio);
+          } catch (parseError) {
+            // If parsing fails, use as plain text
+            setExpertBioContent({
+              name: expertData.full_name || expertData.expert_name,
+              short_bio: expertData.bio
+            });
+          }
+        } else {
+          // If bio is already an object, use it directly
+          setExpertBioContent(expertData.bio);
+        }
+        setShowExpertBio(true);
+        return;
+      }
+      
+      // If no bio in experts table, try to fetch an expert document with the bio document_type_id
+      const { data: bioDocuments, error: bioError } = await supabase
+        .from('expert_documents')
+        .select(`
+          id,
+          processed_content,
+          source_id
+        `)
+        .eq('document_type_id', '554ed67c-35d1-4218-abba-8d1b0ff7156d'); // Bio document type ID
+      
+      if (bioError) {
+        console.error('Error fetching expert bio documents:', bioError);
+        // Fall back to basic profile
+        setExpertBioContent({ 
+          name: expertData.full_name || expertData.expert_name,
+          short_bio: "Profile information is currently unavailable."
+        });
+        setShowExpertBio(true);
+        return;
+      }
+      
+      // Find if any of the bio documents is associated with this expert
+      if (bioDocuments && bioDocuments.length > 0) {
+        // Get presentation_assets for the current expert to find matching source_ids
+        const { data: expertAssets, error: assetsError } = await supabase
+          .from('presentation_assets')
+          .select('source_id')
+          .eq('expert_id', expertId);
+          
+        if (!assetsError && expertAssets && expertAssets.length > 0) {
+          const expertSourceIds = expertAssets.map(asset => asset.source_id);
+          const matchingBio = bioDocuments.find(doc => 
+            expertSourceIds.includes(doc.source_id)
+          );
+          
+          if (matchingBio) {
+            // Found a matching bio document
+            const bioContent = matchingBio.processed_content;
+            
+            // Ensure the content has the expert's name if it's missing
+            if (typeof bioContent === 'object' && bioContent !== null && !bioContent.name && expertData) {
+              bioContent.name = expertData.full_name || expertData.expert_name;
+            }
+            
+            setExpertBioContent(bioContent);
+            setShowExpertBio(true);
+            return;
+          }
+        }
+        
+        // If we didn't find a matching bio, use the first bio but add the expert's name
+        const firstBioContent = bioDocuments[0].processed_content;
+        if (typeof firstBioContent === 'object' && firstBioContent !== null && !firstBioContent.name && expertData) {
+          firstBioContent.name = expertData.full_name || expertData.expert_name;
+        }
+        
+        setExpertBioContent(firstBioContent);
+        setShowExpertBio(true);
+        return;
+      }
+      
+      // If no specific bio documents found, try to get any document associated with this expert
+      const { data: expertAssets, error: assetsError } = await supabase
+        .from('presentation_assets')
+        .select('source_id')
+        .eq('expert_id', expertId);
+          
+      if (!assetsError && expertAssets && expertAssets.length > 0) {
+        const sourceId = expertAssets[0].source_id;
+        
+        const { data: anyDocument, error: anyError } = await supabase
+          .from('expert_documents')
+          .select('id, processed_content')
+          .eq('source_id', sourceId)
+          .limit(1);
+        
+        if (!anyError && anyDocument && anyDocument.length > 0) {
+          // Ensure the content has a name
+          const docContent = anyDocument[0].processed_content;
+          if (typeof docContent === 'object' && docContent !== null && !docContent.name && expertData) {
+            docContent.name = expertData.full_name || expertData.expert_name;
+          }
+          
+          setExpertBioContent(docContent);
+          setShowExpertBio(true);
+          return;
+        }
+      }
+      
+      // If we got here, we couldn't find any detailed profile info - create a minimal profile
+      setExpertBioContent({ 
+        name: expertData.full_name || expertData.expert_name,
+        title: expertData.expert_name ? `Known as: ${expertData.expert_name}` : undefined,
+        short_bio: "No detailed biography is available for this expert."
+      });
+      setShowExpertBio(true);
+    } catch (err) {
+      console.error('Error in fetchExpertBio:', err);
+      // Show a fallback profile even if everything fails
+      setExpertBioContent({ 
+        name: "Expert Profile",
+        short_bio: "Unable to load expert profile information due to an error."
+      });
+      setShowExpertBio(true);
+    }
+  };
+
   // Handle presentation selection
   const handlePresentationSelect = (presentation: Presentation) => {
     setSelectedPresentation(presentation);
     setSelectedAsset(null);
+    setShowExpertBio(false); // Hide expert bio when changing presentations
   };
 
   // Add state for showing asset viewer
@@ -276,8 +747,50 @@ export function Home() {
     setShowAssetViewer(true);
   };
 
+  // Close the expert bio modal
+  const closeExpertBio = () => {
+    setShowExpertBio(false);
+  };
+  
+  // Handle closing the search results
+  const closeSearchResults = () => {
+    setIsSearchFocused(false);
+  };
+  
   return (
     <div className="container mx-auto p-4">
+      {/* Expert Bio Modal */}
+      {showExpertBio && expertBioContent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b flex justify-between items-center bg-blue-50">
+              <h3 className="text-xl font-semibold text-gray-900">Expert Profile</h3>
+              <button 
+                onClick={closeExpertBio}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
+                {formatExpertProfile(expertBioContent)}
+              </div>
+            </div>
+            <div className="px-6 py-3 bg-gray-50 rounded-b-lg">
+              <button
+                onClick={closeExpertBio}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left sidebar - Presentations and Filters */}
         <div className="lg:w-1/3 space-y-6">
@@ -287,14 +800,89 @@ export function Home() {
               <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
                 Search Presentations
               </label>
-              <input
-                type="text"
-                id="search"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Search titles..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="search"
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Search titles, experts, or content..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              
+              {/* Search Results Counter */}
+              {searchQuery && (
+                <div className="mt-2 text-sm text-gray-600">
+                  Found {filteredPresentations.length} matching presentations
+                </div>
+              )}
+              
+              {/* Floating Search Results - Only show when there are results and searching */}
+              {searchQuery && isSearchFocused && filteredPresentations.length > 0 ? (
+                <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-[60vh] overflow-y-auto">
+                  <div className="p-2 border-b sticky top-0 bg-gray-50 flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">
+                      {filteredPresentations.length} search results
+                    </span>
+                    <button
+                      onClick={closeSearchResults}
+                      className="text-gray-400 hover:text-gray-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div className="divide-y divide-gray-100">
+                    {filteredPresentations.slice(0, 20).map((presentation) => (
+                      <div
+                        key={presentation.id}
+                        onClick={() => {
+                          handlePresentationSelect(presentation);
+                          closeSearchResults();
+                        }}
+                        className="p-3 hover:bg-blue-50 cursor-pointer transition-colors flex flex-col"
+                      >
+                        <span className="font-medium text-gray-900 line-clamp-1">
+                          {presentation.expert_document?.title || presentation.video_source?.name || 'Untitled Presentation'}
+                        </span>
+                        <div className="flex items-center text-xs text-gray-500 mt-1 gap-2">
+                          {presentation.expert?.full_name && (
+                            <span className="truncate">{presentation.expert.full_name}</span>
+                          )}
+                          {presentation.created_at && (
+                            <span className="whitespace-nowrap text-gray-400">
+                              {new Date(presentation.created_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short'
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {filteredPresentations.length > 20 && (
+                      <div className="p-2 text-center text-sm text-gray-500 bg-gray-50">
+                        {filteredPresentations.length - 20} more results available. Refine your search to see more specific results.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -348,11 +936,62 @@ export function Home() {
                     <h3 className="font-medium text-gray-900 line-clamp-2">
                       {presentation.expert_document?.title || presentation.video_source?.name || 'Untitled Presentation'}
                     </h3>
-                    <div className="text-sm text-gray-500 mt-1">
-                      {presentation.video_source?.name && (
-                        <span className="inline-block mr-2">
-                          {presentation.video_source.name}
+                    
+                    {/* Author and date info */}
+                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                      {presentation.expert?.full_name && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent triggering parent's onClick
+                            fetchExpertBio(presentation.expert?.id);
+                          }}
+                          className="truncate max-w-[120px] hover:text-blue-600 hover:underline"
+                        >
+                          {presentation.expert.full_name}
+                        </button>
+                      )}
+                      
+                      {presentation.created_at && (
+                        <span className="whitespace-nowrap">
+                          {new Date(presentation.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short'
+                          })}
                         </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-1">
+                      <div className="text-sm text-gray-500 truncate">
+                        {presentation.video_source?.name && (
+                          <span className="text-xs italic">
+                            {presentation.video_source.name}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Display any classifications/tags if available */}
+                      {presentation.video_source_id && 
+                       presentationClassifications[presentation.video_source_id] && 
+                       presentationClassifications[presentation.video_source_id].length > 0 && (
+                        <div className="flex gap-1 flex-shrink-0">
+                          {presentationClassifications[presentation.video_source_id]
+                            .slice(0, 2) // Limit to first 2 tags
+                            .map(subjectId => {
+                              const subject = subjectClassifications.find(s => s.id === subjectId);
+                              return subject ? (
+                                <span 
+                                  key={subjectId}
+                                  className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600"
+                                >
+                                  {subject.short_name || subject.subject.substring(0, 8)}
+                                </span>
+                              ) : null;
+                            })}
+                          {presentationClassifications[presentation.video_source_id].length > 2 && (
+                            <span className="text-xs text-gray-500">+{presentationClassifications[presentation.video_source_id].length - 2}</span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -364,12 +1003,43 @@ export function Home() {
 
         {/* Right Content Area */}
         <div className="lg:w-2/3 space-y-6">
-          {/* Video Player */}
+          {/* Video Title and Player */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            {selectedPresentation?.web_view_link ? (
+            {selectedPresentation?.expert_document?.title && (
+              <div className="px-4 py-3 bg-gray-50 border-b">
+                <h2 className="text-xl font-semibold text-gray-900">{selectedPresentation.expert_document.title}</h2>
+                <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-600">
+                  {selectedPresentation.expert?.full_name && (
+                    <button 
+                      onClick={() => fetchExpertBio(selectedPresentation.expert?.id)}
+                      className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span className="hover:underline">{selectedPresentation.expert.full_name}</span>
+                    </button>
+                  )}
+                  
+                  {selectedPresentation.created_at && (
+                    <div className="flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>{new Date(selectedPresentation.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long'
+                      })}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {selectedPresentation?.video_source?.web_view_link ? (
               <div className="aspect-video bg-black">
                 <iframe 
-                  src={selectedPresentation.web_view_link}
+                  src={`https://drive.google.com/file/d/${extractDriveId(selectedPresentation.video_source.web_view_link)}/preview`}
                   className="w-full h-full"
                   title="Video Player"
                   allow="autoplay"
@@ -396,8 +1066,8 @@ export function Home() {
               <h2 className="text-lg font-medium text-gray-900 mb-3">
                 Video Summary
               </h2>
-              <div className="prose prose-sm max-w-none">
-                <p>{formatContent(selectedPresentation.expert_document.processed_content)}</p>
+              <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
+                {formatContent(selectedPresentation.expert_document.processed_content)}
               </div>
             </div>
           )}
@@ -422,15 +1092,16 @@ export function Home() {
               {showAssetViewer && selectedAsset.source_file?.web_view_link ? (
                 <div className="h-[400px] border rounded overflow-hidden">
                   <iframe 
-                    src={selectedAsset.source_file.web_view_link}
+                    src={`https://drive.google.com/file/d/${extractDriveId(selectedAsset.source_file.web_view_link)}/preview`}
                     className="w-full h-full"
                     title={selectedAsset.source_file.name || 'Asset Preview'}
+                    allow="autoplay"
                   />
                 </div>
               ) : (
-                <div className="prose prose-sm max-w-none">
+                <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
                   {selectedAsset.expert_document?.processed_content ? (
-                    <p>{formatContent(selectedAsset.expert_document.processed_content)}</p>
+                    <div className="p-1">{formatContent(selectedAsset.expert_document.processed_content)}</div>
                   ) : (
                     <p>No content available for this asset</p>
                   )}
