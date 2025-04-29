@@ -240,6 +240,19 @@ Perfect! We have successfully extracted titles for all MP4 files. Here's a summa
 
   Now all MP4 files in the system have titles, which will improve the usability and searchability of the video content in the application.
 
+ think you tried making such an adaptor: _archive/2025-04-28/app-supabase-client.2025-04-28.ts   is where its located.   feel free to look at it,    │
+│   but lrts letds handle the authentication and environmeent differences differently as appropriate for front and and back end.  I do like leveraging    │
+│   the singleton services on the backend if possible, but then diverging from there as needed to do the front end correctly.  I even tried to make a     │
+│   page in the dhg-improve-experts app called "Easy" and it is in the code _archive/2025-04-28 folder, so if you could try again on that I would         │
+│   appreciate it.  We settled on makikng an adator as you suggested, but I'm not exacly sure where all this code ended up - but check this archive       │
+│   folder. All the "Easy" page had to do was to connect to the supabase and get the count of the document_types table.  But it has to work - NO          │
+│   WORKAROUNDS, NO DUMMMY CODE, NO TRYING TO PLEASE ME - JUST FIGURE OUT HOW TO DO THIS RIGHT FOR REACT APPS and once it works we'll right it up and     │
+│   apply to all my react pages.  But only after you have it workiong.  Read claude.md for instructions that ata least applyu to backend appictains.      │
+│   But first use git and creat a new branch for this fix so I can revert to the old branch if I abort and it doesn't work.  So before you start on       │
+│   refactoring let's just get a new branch.  Know that the .env.development has all my backend credentials for supabase (off the root).  If you need to  │
+│   make a new .env file somewhere with VITE keys please use .env.development for the correct kesy which I jusst got from supabase.  Also do not change   │
+│   .env.development for any reason without first telling me what you are doing and why                                                                   │
+╰────────────────────────────────────────────────────────────────────────────────────────────
 
 
   presentations: 
