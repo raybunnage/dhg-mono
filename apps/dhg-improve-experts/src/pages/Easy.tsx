@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { 
   supabase, 
   supabaseAdapter 
-} from '@root/packages/shared/services/supabase-client/universal'
+} from '../utils/supabase-adapter'
 
 /**
  * Helper to check for potential API key issues
@@ -135,17 +135,17 @@ export function Easy() {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">About This Page</h2>
         <p className="mb-4">
-          This is a demonstration page that shows how to use the universal Supabase adapter
-          in the frontend, using the following import:
+          This is a demonstration page that shows how to use a dedicated Supabase adapter
+          for React applications.
         </p>
         
         <div className="bg-gray-800 text-gray-200 p-3 rounded mb-4 font-mono text-sm">
-          import {'{supabase, supabaseAdapter}'} from '@root/packages/shared/services/supabase-client/universal'
+          import {'{supabase, supabaseAdapter}'} from '../utils/supabase-adapter'
         </div>
         
         <p className="mb-4">
-          The universal adapter works in both browser and Node.js environments, providing the same interface
-          while handling environment-specific implementations transparently.
+          The adapter is specifically designed to work in browser environments, handling authentication
+          and environment variables appropriate for React applications.
         </p>
       </div>
       
@@ -250,23 +250,22 @@ export function Easy() {
         <h2 className="text-xl font-semibold mb-4">Implementation Details</h2>
         
         <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Universal Adapter Pattern</h3>
+          <h3 className="text-lg font-semibold mb-2">React-Specific Adapter</h3>
           <p>
-            The solution uses a universal adapter pattern that works identically in both
-            frontend and backend code. The adapter detects the environment and provides
-            appropriate implementations.
+            This solution uses a React-specific adapter that's optimized for browser environments.
+            It provides all the features needed for frontend applications while maintaining a clean API.
           </p>
         </div>
         
         <div className="mb-4">
           <h3 className="text-lg font-semibold mb-2">Key Features</h3>
           <ul className="list-disc pl-6">
-            <li className="mb-2">Environment detection (browser vs Node.js)</li>
-            <li className="mb-2">Automatic environment variable selection</li>
-            <li className="mb-2">Authentication handling for browser environments</li>
-            <li className="mb-2">Consistent interface across environments</li>
-            <li className="mb-2">Singleton pattern for efficient resource usage</li>
-            <li className="mb-2">Detailed diagnostics for troubleshooting</li>
+            <li className="mb-2">Uses Vite environment variables (VITE_*)</li>
+            <li className="mb-2">Handles browser-specific authentication</li>
+            <li className="mb-2">Supports test user authentication</li>
+            <li className="mb-2">Provides consistent error handling</li>
+            <li className="mb-2">Implements the singleton pattern for efficiency</li>
+            <li className="mb-2">Includes detailed diagnostics for debugging</li>
           </ul>
         </div>
       </div>
