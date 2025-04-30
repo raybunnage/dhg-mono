@@ -4684,6 +4684,7 @@ export type Database = {
         Row: {
           associated_concepts: string | null
           created_at: string | null
+          description: string | null
           id: string
           short_name: string | null
           subject: string
@@ -4693,6 +4694,7 @@ export type Database = {
         Insert: {
           associated_concepts?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           short_name?: string | null
           subject: string
@@ -4702,6 +4704,7 @@ export type Database = {
         Update: {
           associated_concepts?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           short_name?: string | null
           subject?: string

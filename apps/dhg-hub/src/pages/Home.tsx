@@ -22,6 +22,7 @@ type Presentation = Database['public']['Tables']['presentations']['Row'] & {
   title?: string | null;
   expert_document?: ExpertDocument | null;
   video_source?: SourceGoogle | null;
+  high_level_folder?: SourceGoogle | null;
   expert?: {
     id: string;
     full_name: string;
@@ -76,6 +77,7 @@ export function Home() {
             video_source_id,
             expert_document_id,
             expert_id,
+            high_level_folder_source_id,
             web_view_link,
             created_at,
             expert:expert_id(
@@ -93,7 +95,13 @@ export function Home() {
               name, 
               mime_type, 
               web_view_link,
-              document_type_id
+              document_type_id,
+              created_at,
+              modified_at
+            ),
+            high_level_folder:high_level_folder_source_id(
+              id,
+              name
             )
           `)
           .not('video_source_id', 'is', null);
@@ -153,7 +161,8 @@ export function Home() {
             expert_document:asset_expert_document_id(
               id, 
               processed_content,
-              document_type_id
+              document_type_id,
+              title
             )
           `)
           .eq('presentation_id', selectedPresentation.id);
@@ -183,9 +192,9 @@ export function Home() {
       if (presentations.length === 0) return;
       
       try {
-        // Get all video source IDs from presentations
+        // Get all video source IDs from presentations (only MP4 files)
         const videoSourceIds = presentations
-          .filter(p => p.video_source_id)
+          .filter(p => p.video_source_id && p.video_source?.mime_type === 'video/mp4')
           .map(p => p.video_source_id!);
         
         if (videoSourceIds.length === 0) return;
@@ -464,7 +473,7 @@ export function Home() {
         if (typeof summaryContent === 'string' && isMarkdown(summaryContent)) {
           return (
             <div className="markdown-content">
-              <h3 className="font-bold text-base mb-3">Summary:</h3>
+              <h3 className="font-bold text-lg text-blue-700 mb-3">Summary</h3>
               <div className="mb-6">
                 <ReactMarkdown>{summaryContent}</ReactMarkdown>
               </div>
@@ -487,7 +496,7 @@ export function Home() {
         // If not markdown, format as paragraphs
         return (
           <div>
-            <h3 className="font-bold text-base mb-3">Summary:</h3>
+            <h3 className="font-bold text-lg text-blue-700 mb-3">Summary</h3>
             <div className="mb-6">
               {summaryContent.split('\n\n').map((paragraph: string, index: number) => (
                 <p key={index} className="mb-3">
@@ -523,7 +532,7 @@ export function Home() {
           <div>
             {content.summary && (
               <div className="mb-6">
-                <h3 className="font-bold text-base mb-3">Summary:</h3>
+                <h3 className="font-bold text-lg text-blue-700 mb-3">Summary</h3>
                 {content.summary.split('\n\n').map((paragraph: string, index: number) => (
                   <p key={index} className="mb-3">{paragraph}</p>
                 ))}
@@ -553,8 +562,67 @@ export function Home() {
         );
       }
       
-      // Otherwise stringify the JSON
-      return <pre className="text-xs overflow-auto p-2 bg-gray-50 rounded">{JSON.stringify(content, null, 2)}</pre>;
+      // Enhance JSON display with better formatting
+      return (
+        <div className="json-formatted-content p-3 bg-white border border-gray-200 rounded-md shadow-sm">
+          {Object.entries(content).map(([key, value]) => {
+            // Skip null or undefined values
+            if (value === null || value === undefined) return null;
+            
+            // Format each key-value pair nicely
+            return (
+              <div key={key} className="mb-4">
+                <h4 className="text-md font-bold text-blue-700 mb-1 capitalize">
+                  {key.replace(/_/g, ' ')}
+                </h4>
+                
+                {/* Handle different value types */}
+                {typeof value === 'string' && (
+                  <p className="text-gray-800">{value}</p>
+                )}
+                
+                {typeof value === 'number' && (
+                  <p className="text-gray-800">{value}</p>
+                )}
+                
+                {typeof value === 'boolean' && (
+                  <p className="text-gray-800">{value ? 'Yes' : 'No'}</p>
+                )}
+                
+                {Array.isArray(value) && value.length > 0 && (
+                  <ul className="list-disc pl-5 space-y-1">
+                    {value.map((item, idx) => (
+                      <li key={idx} className="text-gray-800">
+                        {typeof item === 'object' ? JSON.stringify(item) : String(item)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                
+                {typeof value === 'object' && !Array.isArray(value) && value !== null && (
+                  <div className="pl-4 border-l-2 border-gray-200">
+                    {Object.entries(value).map(([subKey, subValue]) => {
+                      if (subValue === null || subValue === undefined) return null;
+                      return (
+                        <div key={subKey} className="mb-2">
+                          <h5 className="text-sm font-semibold text-gray-700 capitalize">
+                            {subKey.replace(/_/g, ' ')}
+                          </h5>
+                          {typeof subValue === 'object' ? (
+                            <pre className="text-xs bg-gray-50 p-1 rounded">{JSON.stringify(subValue, null, 2)}</pre>
+                          ) : (
+                            <p className="text-sm text-gray-600">{String(subValue)}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      );
     }
     
     return <p>Content format not supported</p>;
@@ -626,7 +694,11 @@ export function Home() {
           processed_content,
           source_id
         `)
-        .eq('document_type_id', '554ed67c-35d1-4218-abba-8d1b0ff7156d'); // Bio document type ID
+        .in('document_type_id', [
+          '554ed67c-35d1-4218-abba-8d1b0ff7156d',
+          'af194b7e-cbf9-45c3-a1fc-863dbc815f1e',
+          '03743a23-d2f3-4c73-a282-85afc138fdfd'
+        ]); // Bio document type IDs
       
       if (bioError) {
         console.error('Error fetching expert bio documents:', bioError);
@@ -863,12 +935,17 @@ export function Home() {
                           {presentation.expert?.full_name && (
                             <span className="truncate">{presentation.expert.full_name}</span>
                           )}
-                          {presentation.created_at && (
+                          {presentation.video_source?.modified_at && (
                             <span className="whitespace-nowrap text-gray-400">
-                              {new Date(presentation.created_at).toLocaleDateString('en-US', {
+                              {new Date(presentation.video_source.modified_at).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'short'
                               })}
+                            </span>
+                          )}
+                          {presentation.high_level_folder?.name && (
+                            <span className="text-blue-600 font-medium truncate max-w-[180px] inline-block">
+                              {presentation.high_level_folder.name}
                             </span>
                           )}
                         </div>
@@ -890,19 +967,70 @@ export function Home() {
           <div className="bg-white rounded-lg shadow p-4">
             <h2 className="text-lg font-medium text-gray-900 mb-3">Filter by Subject</h2>
             <div className="flex flex-wrap gap-2">
-              {subjectClassifications.map((subject) => (
-                <button
-                  key={subject.id}
-                  onClick={() => toggleSubject(subject.id)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                    selectedSubjects.includes(subject.id)
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                  }`}
-                >
-                  {subject.short_name || subject.subject}
-                </button>
-              ))}
+              {subjectClassifications
+                .map((subject) => {
+                  // Count how many videos have this subject tag
+                  const videoCount = Object.values(presentationClassifications)
+                    .filter(subjectIds => subjectIds.includes(subject.id))
+                    .length;
+                  
+                  return {
+                    subject,
+                    videoCount
+                  };
+                })
+                // Filter out subjects with zero videos
+                .filter(({ videoCount }) => videoCount > 0)
+                // Sort by count (highest first)
+                .sort((a, b) => b.videoCount - a.videoCount)
+                .map(({ subject, videoCount }) => {
+                  // Format the subject text - remove prefix numbers, underscores, dashes and capitalize first letter
+                  const formattedSubject = subject.subject
+                    .replace(/^\d+[.\s_-]*\s*/g, '')  // Remove number prefixes and separators
+                    .replace(/^[_-]+/, '')  // Remove leading underscores or dashes
+                    .replace(/^\w/, (c: string) => c.toUpperCase());  // Capitalize first letter
+                  
+                  return (
+                    <div key={subject.id} className="relative group">
+                      <button
+                        onClick={() => toggleSubject(subject.id)}
+                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                          selectedSubjects.includes(subject.id)
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                        }`}
+                        title={`${formattedSubject} (${videoCount} video${videoCount !== 1 ? 's' : ''})${subject.description ? ': ' + subject.description : ''}`}
+                      >
+                        {subject.short_name || formattedSubject}
+                      </button>
+                      
+                      {/* Custom Tooltip */}
+                      <div className="absolute z-10 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white p-2 rounded shadow-lg mt-2 min-w-[200px] max-w-xs text-left text-xs">
+                        <div className="font-semibold text-white mb-1">
+                          {/* Format subject text */}
+                          {formattedSubject}
+                        </div>
+                        <div className="text-gray-300 mb-1">{videoCount} video{videoCount !== 1 ? 's' : ''}</div>
+                        
+                        {/* Show the description if it exists */}
+                        {subject.description && (
+                          <div className="text-gray-300 border-t border-gray-600 pt-1 mt-1">
+                            {subject.description}
+                          </div>
+                        )}
+                        
+                        {/* Add a hint about clicking */}
+                        <div className="mt-1 pt-1 border-t border-gray-600 italic text-gray-400">
+                          Click to filter presentations
+                        </div>
+                        
+                        {/* Tooltip arrow */}
+                        <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+                      </div>
+                    </div>
+                  );
+                })
+              }
             </div>
           </div>
 
@@ -951,12 +1079,18 @@ export function Home() {
                         </button>
                       )}
                       
-                      {presentation.created_at && (
+                      {presentation.video_source?.modified_at && (
                         <span className="whitespace-nowrap">
-                          {new Date(presentation.created_at).toLocaleDateString('en-US', {
+                          {new Date(presentation.video_source.modified_at).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'short'
                           })}
+                        </span>
+                      )}
+                      
+                      {presentation.high_level_folder?.name && (
+                        <span className="text-blue-600 font-medium truncate max-w-[150px] inline-block">
+                          {presentation.high_level_folder.name}
                         </span>
                       )}
                     </div>
@@ -984,7 +1118,13 @@ export function Home() {
                                   key={subjectId}
                                   className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600"
                                 >
-                                  {subject.short_name || subject.subject.substring(0, 8)}
+                                  {subject.short_name || 
+                                    subject.subject
+                                      .replace(/^\d+[.\s_-]*\s*/g, '')  // Remove number prefixes
+                                      .replace(/^[_-]+/, '')  // Remove leading underscores or dashes
+                                      .replace(/^\w/, (c: string) => c.toUpperCase())  // Capitalize first letter
+                                      .substring(0, 12) // Limit length
+                                  }
                                 </span>
                               ) : null;
                             })}
@@ -1021,15 +1161,24 @@ export function Home() {
                     </button>
                   )}
                   
-                  {selectedPresentation.created_at && (
+                  {selectedPresentation.video_source?.modified_at && (
                     <div className="flex items-center gap-1">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <span>{new Date(selectedPresentation.created_at).toLocaleDateString('en-US', {
+                      <span>{new Date(selectedPresentation.video_source.modified_at).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long'
                       })}</span>
+                    </div>
+                  )}
+                  
+                  {selectedPresentation.high_level_folder?.name && (
+                    <div className="flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                      <span className="text-blue-600 font-medium">{selectedPresentation.high_level_folder.name}</span>
                     </div>
                   )}
                 </div>
@@ -1063,7 +1212,7 @@ export function Home() {
           {/* Video Summary */}
           {selectedPresentation?.expert_document?.processed_content && (
             <div className="bg-white rounded-lg shadow p-4">
-              <h2 className="text-lg font-medium text-gray-900 mb-3">
+              <h2 className="text-xl font-semibold text-blue-700 mb-3">
                 Video Summary
               </h2>
               <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
@@ -1089,16 +1238,46 @@ export function Home() {
                 )}
               </div>
               
-              {showAssetViewer && selectedAsset.source_file?.web_view_link ? (
-                <div className="h-[400px] border rounded overflow-hidden">
-                  <iframe 
-                    src={`https://drive.google.com/file/d/${extractDriveId(selectedAsset.source_file.web_view_link)}/preview`}
-                    className="w-full h-full"
-                    title={selectedAsset.source_file.name || 'Asset Preview'}
-                    allow="autoplay"
-                  />
+              {/* Full-screen modal for file viewing */}
+              {showAssetViewer && selectedAsset.source_file?.web_view_link && (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col">
+                    <div className="px-6 py-3 border-b flex justify-between items-center bg-blue-50">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {selectedAsset.source_file?.name || 'File Preview'}
+                      </h3>
+                      <button 
+                        onClick={() => setShowAssetViewer(false)}
+                        className="text-gray-500 hover:text-gray-700"
+                        aria-label="Close"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="flex-grow overflow-hidden">
+                      <iframe 
+                        src={`https://drive.google.com/file/d/${extractDriveId(selectedAsset.source_file.web_view_link)}/preview`}
+                        className="w-full h-full"
+                        title={selectedAsset.source_file.name || 'Asset Preview'}
+                        allow="autoplay"
+                      />
+                    </div>
+                    <div className="px-6 py-3 bg-gray-50 flex justify-end">
+                      <button
+                        onClick={() => setShowAssetViewer(false)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Return to Summary
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ) : (
+              )}
+              
+              {/* Summary content (shown when not viewing file) */}
+              {!showAssetViewer && (
                 <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
                   {selectedAsset.expert_document?.processed_content ? (
                     <div className="p-1">{formatContent(selectedAsset.expert_document.processed_content)}</div>

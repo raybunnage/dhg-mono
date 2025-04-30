@@ -1,3 +1,7 @@
+
+
+pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+
 Okay I need a new ppage in my dhg-hub project
 So I need to turn the "Home" page into a dashboard that does the following.                                                                           │
 │                                                                                                                                                         │
