@@ -48,6 +48,7 @@ function display_help() {
   echo -e "  add-specific-files         Add specific files from sources_google to presentations"
   echo -e "  update-root-drive-id       Fill in the root_drive_id for all records with the specified value"
   echo -e "  create-presentation-assets Create presentation_assets for files in presentations' high-level folders"
+  echo -e "  check-presentation-titles  Check presentation titles against processed content"
   echo -e "  health-check               Check the health of presentations pipeline infrastructure"
   echo -e "    --skip-database          Skip database connection check"
   echo -e "    --skip-presentations     Skip presentations table check" 
@@ -59,9 +60,11 @@ function display_help() {
   echo ""
   echo -e "  Options:"
   echo -e "    -p, --presentation-id <id>   Process a specific presentation ID"
+  echo -e "    -d, --document-id <id>       Expert document ID to directly process (bypasses presentation lookup)"
   echo -e "    -e, --expert-id <id>         Process presentations for a specific expert"
   echo -e "    -f, --force                  Regenerate summaries even if they exist"
   echo -e "    --dry-run                    Preview mode: generate but don't save to database"
+  echo -e "    --clear-existing             Clear existing processed_content before generating new summary"
   echo -e "    -l, --limit <number>         Max presentations to process (default: 5)"
   echo -e "    -o, --output <path>          Output file for JSON results"
   echo -e "    --format <format>            Summary style:"
@@ -69,6 +72,10 @@ function display_help() {
   echo -e "                                   detailed: 5-7 paragraph thorough summary"
   echo -e "                                   bullet-points: 5-10 key bullet points"
   echo -e "    --status <status>            Filter by presentation status (e.g., 'pending')"
+  echo -e ""
+  echo -e "  \033[1mNOTE:\033[0m The summary output is now in JSON format with structured fields like"
+  echo -e "  speakerProfile, presentationEssence, keyTakeaways, memorableQuotes, discussionHighlights,"
+  echo -e "  whyWatch, and a text summary field."
   echo ""
   echo -e "  \033[1mRequired Environment Variables:\033[0m"
   echo -e "    CLAUDE_API_KEY or ANTHROPIC_API_KEY    Required for AI summary generation"
@@ -133,6 +140,12 @@ function display_help() {
   echo -e "\033[1mExamples:\033[0m"
   echo -e "  # Generate summaries with detailed format"
   echo -e "  presentations-cli generate-summary --format detailed"
+  echo ""
+  echo -e "  # Process a specific expert document directly (useful for fixing misaligned summaries)"
+  echo -e "  presentations-cli generate-summary --document-id abc123-def456 --force"
+  echo ""
+  echo -e "  # Process a specific expert document and clear existing content first"
+  echo -e "  presentations-cli generate-summary --document-id abc123-def456 --clear-existing"
   echo ""
   echo -e "  # Match non-transcript documents with presentations"
   echo -e "  presentations-cli presentation-asset-bio --dry-run"
@@ -309,6 +322,10 @@ if [[ "$1" == "generate-summary" ]]; then
       exit $?
     fi
   done
+  
+  # Add explicit command for generate-summary
+  track_command "generate-summary" "ts-node $SCRIPT_DIR/index.ts generate-summary ${@:2}"
+  exit $?
 fi
 
 # Handle health-check command directly
@@ -390,6 +407,11 @@ fi
 
 if [[ "$1" == "review-presentations" ]]; then
   track_command "review-presentations" "ts-node $SCRIPT_DIR/index.ts review-presentations ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "check-presentation-titles" ]]; then
+  track_command "check-presentation-titles" "ts-node $SCRIPT_DIR/index.ts check-presentation-titles ${@:2}"
   exit $?
 fi
 
