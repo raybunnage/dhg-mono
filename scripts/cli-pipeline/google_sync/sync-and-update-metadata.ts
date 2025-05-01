@@ -601,7 +601,7 @@ async function syncFiles(
     // Get existing files to avoid duplicates
     const { data: existingRecords, error: queryError } = await supabase
       .from('sources_google')
-      .select('id, drive_id, root_drive_id, name')
+      .select('id, drive_id, root_drive_id, name, metadata')
       .eq('is_deleted', false);
       
     if (queryError) {
@@ -622,6 +622,13 @@ async function syncFiles(
         record.root_drive_id === DYNAMIC_HEALING_FOLDER_ID && 
         !foundDriveIds.has(record.drive_id)
       );
+      
+    // Make sure we have the metadata property on all records (TypeScript safety)
+    recordsToMarkDeleted.forEach(record => {
+      if (!record.metadata) {
+        record.metadata = {};
+      }
+    });
       
     // Double-check to make sure root folder isn't in the deletion list
     const rootFolderInDeletionList = recordsToMarkDeleted.some(record => record.drive_id === folderId);
@@ -644,71 +651,173 @@ async function syncFiles(
     if (recordsToMarkDeleted.length > 0) {
       console.log(`Found ${recordsToMarkDeleted.length} files to mark as deleted`);
       
-      // In verbose mode, show the files that will be marked as deleted
-      if (isVerbose) {
-        console.log("\n=== Files to mark as deleted ===");
-        recordsToMarkDeleted.slice(0, 10).forEach((record, index) => {
-          console.log(`${index + 1}. ${record.name || 'Unnamed'} (${record.drive_id})`);
-          // Try to verify if the file truly doesn't exist in Google Drive
+      // Enhanced verification process: actually check each file before marking as deleted
+      console.log("\n=== ENHANCED VERIFICATION PROCESS ===");
+      console.log("Performing direct verification of each file's existence in Google Drive before marking as deleted");
+      console.log("This helps prevent falsely marking files as deleted due to API failures or sync issues");
+      
+      // Verified lists will hold the files that have been directly verified to exist or not exist
+      const verifiedNotExisting: typeof recordsToMarkDeleted = [];
+      const verifiedStillExisting: typeof recordsToMarkDeleted = [];
+      const verificationErrors: typeof recordsToMarkDeleted = [];
+      
+      // Create a progress counter
+      let verifiedCount = 0;
+      const totalToVerify = Math.min(recordsToMarkDeleted.length, 100); // Limit to 100 for performance
+      
+      console.log(`Verifying up to ${totalToVerify} files (out of ${recordsToMarkDeleted.length} total)`);
+      
+      // Use a smaller batch size for verification to avoid overwhelming the API
+      const verificationBatchSize = 10;
+      const verificationBatches = Math.ceil(Math.min(totalToVerify, recordsToMarkDeleted.length) / verificationBatchSize);
+      
+      for (let batchIndex = 0; batchIndex < verificationBatches; batchIndex++) {
+        const start = batchIndex * verificationBatchSize;
+        const end = Math.min(start + verificationBatchSize, totalToVerify);
+        const verificationBatch = recordsToMarkDeleted.slice(start, end);
+        
+        console.log(`Verifying batch ${batchIndex + 1}/${verificationBatches} (${verificationBatch.length} files)`);
+        
+        // Create an array of promises to verify files in parallel
+        const verificationPromises = verificationBatch.map(async (record) => {
           try {
-            const checkFilePromise = async () => {
-              try {
-                // Use GoogleDriveService to check if file exists
-                await driveService.getFile(record.drive_id, 'id,name');
-                return { exists: true };
-              } catch (error: any) {
-                return { exists: false, error: error.message };
+            // Use GoogleDriveService to check if file exists
+            try {
+              await driveService.getFile(record.drive_id, 'id,name');
+              return { record, exists: true };
+            } catch (error: any) {
+              if (error.code === 404 || error.message?.includes('File not found')) {
+                return { record, exists: false };
               }
-            };
-            checkFilePromise().then(result => {
-              if (result.exists) {
-                console.log(`   ⚠️ WARNING: File ${record.drive_id} actually EXISTS in Google Drive!`);
-              } else {
-                console.log(`   ✓ Verified: File doesn't exist in Google Drive`);
-              }
-            });
-          } catch (error) {
-            console.log(`   ? Unable to verify file existence: ${error}`);
+              return { record, exists: null, error: error.message || 'Unknown error' };
+            }
+          } catch (error: any) {
+            return { record, exists: null, error: error.message || 'Unknown error' };
           }
         });
-        if (recordsToMarkDeleted.length > 10) {
-          console.log(`... and ${recordsToMarkDeleted.length - 10} more files`);
+        
+        // Wait for all verification promises to complete
+        const verificationResults = await Promise.all(verificationPromises);
+        
+        // Sort verification results into categories
+        for (const result of verificationResults) {
+          if (result.exists === true) {
+            verifiedStillExisting.push(result.record);
+            console.log(`⚠️ File still exists: ${result.record.name || 'Unnamed'} (${result.record.drive_id})`);
+          } else if (result.exists === false) {
+            verifiedNotExisting.push(result.record);
+            console.log(`✓ Verified gone: ${result.record.name || 'Unnamed'} (${result.record.drive_id})`);
+          } else {
+            verificationErrors.push(result.record);
+            console.log(`? Verification error: ${result.record.name || 'Unnamed'} (${result.record.drive_id}) - ${result.error}`);
+          }
+          verifiedCount++;
         }
-        console.log("=== End files to mark as deleted ===\n");
+        
+        // Show progress
+        console.log(`Verification progress: ${verifiedCount}/${totalToVerify}`);
       }
       
-      if (!isDryRun) {
-        // Mark files as deleted in batches
-        const batchSize = 50;
-        const deleteBatches = Math.ceil(recordsToMarkDeleted.length / batchSize);
+      console.log("\n=== VERIFICATION RESULTS ===");
+      console.log(`Total files marked for deletion: ${recordsToMarkDeleted.length}`);
+      console.log(`Files verified as not existing: ${verifiedNotExisting.length}`);
+      console.log(`Files that still exist in Google Drive: ${verifiedStillExisting.length}`);
+      console.log(`Files with verification errors: ${verificationErrors.length}`);
+      
+      // Only use the verified list that doesn't exist for deletion
+      const actualDeletionCandidates = verifiedNotExisting;
+      
+      // Safety check: If we have a high percentage of errors or still existing files, abort the deletion
+      const verifiedTotal = verifiedNotExisting.length + verifiedStillExisting.length + verificationErrors.length;
+      const errorPercentage = verificationErrors.length / (verifiedTotal || 1) * 100;
+      const stillExistingPercentage = verifiedStillExisting.length / (verifiedTotal || 1) * 100;
+      
+      if (errorPercentage > 20 || stillExistingPercentage > 20) {
+        console.log("\n⚠️ DELETION SAFETY WARNING ⚠️");
+        console.log(`High percentage of verification issues detected:`);
+        console.log(`- Error percentage: ${errorPercentage.toFixed(1)}% (threshold: 20%)`);
+        console.log(`- Still existing percentage: ${stillExistingPercentage.toFixed(1)}% (threshold: 20%)`);
+        console.log("\nAbandoning deletion operation to prevent accidentally marking existing files as deleted.");
+        console.log("The Google Drive API may be experiencing issues. Try again later or use the --force-deletion flag to override.");
+        console.log("You can also use the reset-deleted-files command to restore improperly deleted files.");
         
-        for (let i = 0; i < deleteBatches; i++) {
-          const start = i * batchSize;
-          const end = Math.min(start + batchSize, recordsToMarkDeleted.length);
-          const batch = recordsToMarkDeleted.slice(start, end);
-          
-          console.log(`Processing deletion batch ${i + 1}/${deleteBatches} (${batch.length} files)`);
-          
-          const idsToUpdate = batch.map(record => record.id);
-          
-          const { error } = await supabase
-            .from('sources_google')
-            .update({
-              is_deleted: true,
-              updated_at: new Date().toISOString()
-            })
-            .in('id', idsToUpdate);
-            
-          if (error) {
-            console.error(`Error marking batch ${i + 1} as deleted:`, error);
-            result.errors.push(`Error marking batch ${i + 1} as deleted: ${error.message}`);
-          } else {
-            result.filesMarkedDeleted += batch.length;
-            console.log(`Successfully marked ${batch.length} files as deleted in batch ${i + 1}`);
+        // Skip the deletion and just report what was found
+        result.errors.push(`Deletion aborted: High percentage of verification issues detected (${errorPercentage.toFixed(1)}% errors, ${stillExistingPercentage.toFixed(1)}% still existing)`);
+        
+        // Create an output report of the files that still exist for reference
+        if (verifiedStillExisting.length > 0) {
+          console.log("\nFiles that still exist but would have been marked as deleted:");
+          verifiedStillExisting.slice(0, 20).forEach((record, index) => {
+            console.log(`${index + 1}. ${record.name || 'Unnamed'} (${record.drive_id})`);
+          });
+          if (verifiedStillExisting.length > 20) {
+            console.log(`... and ${verifiedStillExisting.length - 20} more files`);
           }
         }
+        
+        // Since we're abandoning deletion, exit this section
+        console.log("\n=== END VERIFICATION PROCESS ===");
       } else {
-        console.log(`DRY RUN: Would mark ${recordsToMarkDeleted.length} files as deleted`);
+        // Proceed with deletion if in regular run mode
+        if (!isDryRun) {
+          console.log(`\nProceeding with deletion of ${actualDeletionCandidates.length} verified non-existent files`);
+          
+          // Mark files as deleted in batches
+          const batchSize = 50;
+          const deleteBatches = Math.ceil(actualDeletionCandidates.length / batchSize);
+          
+          for (let i = 0; i < deleteBatches; i++) {
+            const start = i * batchSize;
+            const end = Math.min(start + batchSize, actualDeletionCandidates.length);
+            const batch = actualDeletionCandidates.slice(start, end);
+            
+            console.log(`Processing deletion batch ${i + 1}/${deleteBatches} (${batch.length} files)`);
+            
+            const idsToUpdate = batch.map(record => record.id);
+            
+            const { error } = await supabase
+              .from('sources_google')
+              .update({
+                is_deleted: true,
+                updated_at: new Date().toISOString(),
+                metadata: {
+                  ...(batch[0].metadata || {}),
+                  deleted_at: new Date().toISOString(),
+                  deletion_verified: true,
+                  deletion_reason: 'Verified as not existing in Google Drive'
+                }
+              })
+              .in('id', idsToUpdate);
+              
+            if (error) {
+              console.error(`Error marking batch ${i + 1} as deleted:`, error);
+              result.errors.push(`Error marking batch ${i + 1} as deleted: ${error.message}`);
+            } else {
+              result.filesMarkedDeleted += batch.length;
+              console.log(`Successfully marked ${batch.length} files as deleted in batch ${i + 1}`);
+            }
+          }
+          
+          console.log(`\nDeletion complete. Marked ${result.filesMarkedDeleted} verified files as deleted.`);
+          console.log(`Files that still exist (${verifiedStillExisting.length}) were not marked as deleted.`);
+          
+          // If there were files that still exist, report them
+          if (verifiedStillExisting.length > 0) {
+            console.log("\nFiles that still exist and were NOT marked as deleted:");
+            verifiedStillExisting.slice(0, 10).forEach((record, index) => {
+              console.log(`${index + 1}. ${record.name || 'Unnamed'} (${record.drive_id})`);
+            });
+            if (verifiedStillExisting.length > 10) {
+              console.log(`... and ${verifiedStillExisting.length - 10} more files`);
+            }
+          }
+        } else {
+          console.log(`DRY RUN: Would mark ${actualDeletionCandidates.length} verified non-existent files as deleted`);
+          if (verifiedStillExisting.length > 0) {
+            console.log(`DRY RUN: Would NOT mark ${verifiedStillExisting.length} files that still exist as deleted`);
+          }
+        }
+        console.log("\n=== END VERIFICATION PROCESS ===");
       }
     } else {
       console.log('No files need to be marked as deleted');

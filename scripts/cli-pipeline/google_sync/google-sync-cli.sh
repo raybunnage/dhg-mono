@@ -397,7 +397,8 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * reclassify-docs              Re-classify documents that need reprocessing based on file type (61 uses)"
   echo "    check-duplicates             Check for duplicate files in sources_google"
   echo "    check-document-types         Check for files missing document types"
-  echo "    check-deleted-files          Check if files marked as deleted in the database still exist in Google Drive"
+  echo "    check-deleted-files          Check if files marked as deleted in the database still exist in Google Drive
+    reset-deleted-files          Reset is_deleted flag for files that still exist in Google Drive"
   echo "    fix-bad-folders              Fix files incorrectly marked with folder document types"
   echo "    fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records"
   echo "    fix-mp4-status               Fix MP4 files that are incorrectly marked as needs_reprocessing"
@@ -477,6 +478,10 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Find files with incorrect document types and mark for reprocessing"
   echo "  ./google-sync-cli.sh find-needs-reprocessing --limit 50"
+  echo ""
+  echo "  # Reset is_deleted flag for files that still exist in Google Drive"
+  echo "  ./google-sync-cli.sh reset-deleted-files --dry-run"
+  echo "  ./google-sync-cli.sh reset-deleted-files --verbose --limit 200"
   exit 0
 fi
 
@@ -814,6 +819,12 @@ fi
 if [ "$1" = "check-deleted-files" ]; then
   shift
   track_command "check-deleted-files" "ts-node $SCRIPT_DIR/check-deleted-files.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "reset-deleted-files" ]; then
+  shift
+  track_command "reset-deleted-files" "ts-node $SCRIPT_DIR/reset-deleted-files.ts $*"
   exit $?
 fi
 
