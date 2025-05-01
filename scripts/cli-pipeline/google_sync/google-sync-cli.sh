@@ -11,6 +11,7 @@
 #   classify-docs-service        Classify .docx and .txt files missing document types
 #   check-duplicates             Check for duplicate files in sources_google
 #   check-document-types         Check for files missing document types
+#   renamed-file                 Update sources_google record when a file has been renamed in Google Drive (by source ID)
 #   report-main-video-ids        Report on video files for folders
 #   show-expert-documents        Generate a report of expert documents in the database
 #   list                         List Google sources with their corresponding expert documents
@@ -576,6 +577,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Get information about a specific sources_google record using the full ID"
   echo "  ./google-sync-cli.sh source-info 17fcd345-3907-4fd5-b1f5-ad1219"
+  echo ""
+  echo "  # Update sources_google record when a file has been renamed in Google Drive"
+  echo "  ./google-sync-cli.sh renamed-file --source-id \"f8a7b9c3-1234-5678-9abc-def012345678\" --new-name \"NewFileName.mp4\""
+  echo ""
+  echo "  # Preview changes without making them (dry run mode)"
+  echo "  ./google-sync-cli.sh renamed-file --source-id \"f8a7b9c3-1234-5678-9abc-def012345678\" --new-name \"NewFileName.mp4\" --dry-run"
   exit 0
 fi
 
@@ -907,6 +914,57 @@ fi
 if [ "$1" = "list-main-video-folders-tree" ]; then
   shift
   track_command "list-main-video-folders-tree" "ts-node $SCRIPT_DIR/list-main-video-folders-tree.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "renamed-file" ]; then
+  shift
+  
+  # Process arguments to handle --source-id and --new-name
+  SOURCE_ID=""
+  NEW_NAME=""
+  OTHER_ARGS=""
+  
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --source-id=*)
+        SOURCE_ID="${1#*=}"
+        shift
+        ;;
+      --source-id)
+        SOURCE_ID="$2"
+        shift 2
+        ;;
+      --new-name=*)
+        NEW_NAME="${1#*=}"
+        shift
+        ;;
+      --new-name)
+        NEW_NAME="$2"
+        shift 2
+        ;;
+      *)
+        OTHER_ARGS="$OTHER_ARGS $1"
+        shift
+        ;;
+    esac
+  done
+  
+  # Validate required parameters
+  if [ -z "$SOURCE_ID" ]; then
+    echo "Error: --source-id parameter is required"
+    echo "Usage: ./google-sync-cli.sh renamed-file --source-id <source-id> --new-name <new-name> [options]"
+    exit 1
+  fi
+  
+  if [ -z "$NEW_NAME" ]; then
+    echo "Error: --new-name parameter is required"
+    echo "Usage: ./google-sync-cli.sh renamed-file --source-id <source-id> --new-name <new-name> [options]"
+    exit 1
+  fi
+  
+  # Form the command with proper parameter handling
+  track_command "renamed-file" "ts-node $SCRIPT_DIR/renamed-file.ts --source-id \"$SOURCE_ID\" --new-name \"$NEW_NAME\" $OTHER_ARGS"
   exit $?
 fi
 

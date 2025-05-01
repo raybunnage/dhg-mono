@@ -49,6 +49,8 @@ function display_help() {
   echo -e "  update-root-drive-id       Fill in the root_drive_id for all records with the specified value"
   echo -e "  create-presentation-assets Create presentation_assets for files in presentations' high-level folders"
   echo -e "  check-presentation-titles  Check presentation titles against processed content"
+  echo -e "  process-mp4-files         Process MP4 files in sources_google, find related expert_documents, and generate AI summaries"
+  echo -e "  test-process-document     Test processing a single document with detailed logs for troubleshooting"
   echo -e "  health-check               Check the health of presentations pipeline infrastructure"
   echo -e "    --skip-database          Skip database connection check"
   echo -e "    --skip-presentations     Skip presentations table check" 
@@ -72,6 +74,22 @@ function display_help() {
   echo -e "                                   detailed: 5-7 paragraph thorough summary"
   echo -e "                                   bullet-points: 5-10 key bullet points"
   echo -e "    --status <status>            Filter by presentation status (e.g., 'pending')"
+  echo ""
+  echo -e "\033[1mDetailed Command: process-mp4-files\033[0m"
+  echo -e "  Usage: presentations-cli process-mp4-files [options]"
+  echo ""
+  echo -e "  Description:"
+  echo -e "    Processes MP4 files in sources_google by finding related expert_documents,"
+  echo -e "    running the raw_content through the final_video-summary-prompt, formatting"
+  echo -e "    the AI result as JSON, and updating both the processed_content and title."
+  echo -e "    Works in batches to handle many files efficiently."
+  echo ""
+  echo -e "  Options:"
+  echo -e "    -d, --document-id <id>       Process a specific expert document ID (for testing)"
+  echo -e "    -l, --limit <limit>          Maximum number of MP4 files to process (default: 5)"
+  echo -e "    -b, --batch-size <size>      Number of files to process in each batch (default: 3)"
+  echo -e "    --dry-run                    Preview processing without saving to database"
+  echo -e "    -o, --output <path>          Output file path for the JSON results"
   echo -e ""
   echo -e "  \033[1mNOTE:\033[0m The summary output is now in JSON format with structured fields like"
   echo -e "  speakerProfile, presentationEssence, keyTakeaways, memorableQuotes, discussionHighlights,"
@@ -159,6 +177,15 @@ function display_help() {
   echo ""
   echo -e "  # Process summaries for a specific expert"
   echo -e "  presentations-cli generate-summary --expert-id 5678efgh --limit 10"
+  echo ""
+  echo -e "  # Process MP4 files and generate AI summaries with JSON output"
+  echo -e "  presentations-cli process-mp4-files --limit 10 --batch-size 5 --output results.json"
+  echo ""
+  echo -e "  # Test processing a single document with process-mp4-files (less verbose)"
+  echo -e "  presentations-cli process-mp4-files --document-id abc123-def456 --dry-run"
+  echo -e ""
+  echo -e "  # Test processing a single document with detailed debugging output"
+  echo -e "  presentations-cli test-process-document --document-id abc123-def456 --output debug-output.json"
   echo ""
   echo -e "  # Update root_drive_id for all presentations (display what would be updated)"
   echo -e "  presentations-cli update-root-drive-id --dry-run"
@@ -412,6 +439,16 @@ fi
 
 if [[ "$1" == "check-presentation-titles" ]]; then
   track_command "check-presentation-titles" "ts-node $SCRIPT_DIR/index.ts check-presentation-titles ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "process-mp4-files" ]]; then
+  track_command "process-mp4-files" "ts-node $SCRIPT_DIR/index.ts process-mp4-files ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "test-process-document" ]]; then
+  track_command "test-process-document" "ts-node $SCRIPT_DIR/index.ts test-process-document ${@:2}"
   exit $?
 fi
 

@@ -1,5 +1,5 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Logger } from '../utils/logger';
+import { SupabaseClientService } from '../../../shared/services/supabase-client';
 
 export interface Prompt {
   id: string;
@@ -26,18 +26,21 @@ export interface PromptQueryResult {
  * and provides robust fallbacks for different query formats.
  */
 export class PromptQueryService {
-  private client: SupabaseClient;
+  private static instance: PromptQueryService;
   
-  constructor(config: { url?: string; key?: string } = {}) {
-    const url = config.url || process.env.SUPABASE_URL || '';
-    const key = config.key || process.env.SUPABASE_SERVICE_KEY || '';
-    
-    if (!url || !key) {
-      Logger.warn('PromptQueryService initialized with empty URL or key');
-    }
-    
-    this.client = createClient(url, key);
+  private constructor() {
     Logger.debug('PromptQueryService initialized');
+  }
+  
+  /**
+   * Get the singleton instance of PromptQueryService
+   * @returns The singleton instance
+   */
+  public static getInstance(): PromptQueryService {
+    if (!PromptQueryService.instance) {
+      PromptQueryService.instance = new PromptQueryService();
+    }
+    return PromptQueryService.instance;
   }
   
   /**
@@ -49,7 +52,8 @@ export class PromptQueryService {
     try {
       Logger.debug(`Getting prompt by name: ${promptName}`);
       
-      const { data, error } = await this.client
+      const supabase = SupabaseClientService.getInstance().getClient();
+      const { data, error } = await supabase
         .from('prompts')
         .select('*')
         .eq('name', promptName)
@@ -82,7 +86,8 @@ export class PromptQueryService {
     try {
       Logger.debug(`Getting relationships for prompt ID: ${promptId}`);
       
-      const { data, error } = await this.client
+      const supabase = SupabaseClientService.getInstance().getClient();
+      const { data, error } = await supabase
         .from('prompt_relationships')
         .select('*')
         .eq('prompt_id', promptId);
@@ -112,6 +117,7 @@ export class PromptQueryService {
       queryText = queryText.trim().replace(/;+$/, '');
       
       Logger.debug(`Executing query: ${queryText}`);
+      const supabase = SupabaseClientService.getInstance().getClient();
       
       // Check if the query contains an unquoted UUID (common issue with parameter substitution)
       const uuidPattern = /WHERE\s+\w+\s*=\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*(?:;|$|AND|OR)/i;
@@ -131,7 +137,7 @@ export class PromptQueryService {
         Logger.debug("Detected Documentation category query - using direct table access");
         
         try {
-          const { data, error } = await this.client
+          const { data, error } = await supabase
             .from('document_types')
             .select('*')
             .eq('category', 'Documentation');
@@ -184,7 +190,7 @@ export class PromptQueryService {
           Logger.debug(`Detected IN query with categories: ${categoryValues.join(', ')}`);
           
           try {
-            const { data, error } = await this.client
+            const { data, error } = await supabase
               .from('document_types')
               .select('*')
               .in('category', categoryValues);
@@ -209,7 +215,7 @@ export class PromptQueryService {
         Logger.debug(`Trying with SQL-compatible single quotes: ${singleQuoteQuery}`);
         
         try {
-          const { data, error } = await this.client.rpc('execute_sql', { sql: singleQuoteQuery });
+          const { data, error } = await supabase.rpc('execute_sql', { sql: singleQuoteQuery });
           
           if (!error) {
             Logger.debug("Query execution successful via RPC with modified quotes");
@@ -224,7 +230,7 @@ export class PromptQueryService {
       
       // Try standard RPCs for other queries with original syntax
       try {
-        const { data, error } = await this.client.rpc('execute_sql', { sql: queryText });
+        const { data, error } = await supabase.rpc('execute_sql', { sql: queryText });
         
         if (!error) {
           Logger.debug("Query execution successful via RPC");
@@ -240,7 +246,7 @@ export class PromptQueryService {
       Logger.debug("Attempting to execute a simple direct query as last resort");
       try {
         // Try a simple query for document_types
-        const { data, error } = await this.client.from('document_types').select('*').limit(50);
+        const { data, error } = await supabase.from('document_types').select('*').limit(50);
         
         if (!error && data && data.length > 0) {
           Logger.debug(`Found ${data.length} document types with direct query fallback`);
@@ -341,8 +347,9 @@ export class PromptQueryService {
             
             // Try alternative strategies to find a valid script ID
             try {
+              const supabase = SupabaseClientService.getInstance().getClient();
               // Try to get the most recent script from the database as a fallback
-              const { data, error } = await this.client
+              const { data, error } = await supabase
                 .from('scripts')
                 .select('id')
                 .order('created_at', { ascending: false })

@@ -16,53 +16,11 @@
  */
 
 import { spawn } from 'child_process';
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import path from 'path';
-import fs from 'fs';
 
-// Load environment variables in order of precedence
-const repoRoot = path.resolve(__dirname, '../..');
-const envLocal = path.join(repoRoot, '.env.local');
-const envDev = path.join(repoRoot, '.env.development');
-const envBase = path.join(repoRoot, '.env');
-const appEnvDev = path.join(repoRoot, 'apps/dhg-improve-experts/.env.development');
-
-// Load base .env first (lowest precedence)
-if (fs.existsSync(envBase)) {
-  console.log(`Loading base environment variables from ${envBase}`);
-  dotenv.config({ path: envBase });
-}
-
-// Load environment-specific variables
-if (fs.existsSync(envDev)) {
-  console.log(`Loading environment-specific variables from ${envDev}`);
-  dotenv.config({ path: envDev });
-}
-
-// Load local variables (highest precedence)
-if (fs.existsSync(envLocal)) {
-  console.log(`Loading local environment variables from ${envLocal}`);
-  dotenv.config({ path: envLocal });
-}
-
-// Fallback to app-specific .env.development if needed
-if (fs.existsSync(appEnvDev)) {
-  console.log(`Loading app-specific environment variables from ${appEnvDev}`);
-  dotenv.config({ path: appEnvDev });
-}
-
-// Supabase client setup - try CLI_ prefixed variables first, then fall back
-const supabaseUrl = process.env.CLI_SUPABASE_URL || process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.CLI_SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Error: Supabase connection details not found in environment variables');
-  console.error('Please set CLI_SUPABASE_URL and CLI_SUPABASE_KEY in .env.local');
-  process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Use the singleton SupabaseClientService instead of creating a new client
+const supabase = SupabaseClientService.getInstance().getClient();
 
 // Command categories
 const validCategories = [

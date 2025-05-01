@@ -5,14 +5,14 @@
  * without needing to directly use TypeScript.
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 
 /**
  * Get recent documents
  */
-async function getRecentDocuments(supabaseUrl, supabaseKey, limit = 20) {
+async function getRecentDocuments(limit = 20) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Fetch documents without using foreign key relationship
     const { data, error } = await supabase
@@ -47,9 +47,9 @@ async function getRecentDocuments(supabaseUrl, supabaseKey, limit = 20) {
 /**
  * Get untyped documents
  */
-async function getUntypedDocuments(supabaseUrl, supabaseKey, limit = 20) {
+async function getUntypedDocuments(limit = 20) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     const { data, error } = await supabase
       .from('documentation_files')
@@ -81,9 +81,9 @@ async function getUntypedDocuments(supabaseUrl, supabaseKey, limit = 20) {
 /**
  * Get document types
  */
-async function getDocumentTypes(supabaseUrl, supabaseKey) {
+async function getDocumentTypes() {
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     const { data, error } = await supabase
       .from('document_types')
@@ -105,9 +105,9 @@ async function getDocumentTypes(supabaseUrl, supabaseKey) {
 /**
  * Find document type by name
  */
-async function findDocumentTypeByName(supabaseUrl, supabaseKey, typeName) {
+async function findDocumentTypeByName(typeName) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     const { data, error } = await supabase
       .from('document_types')
@@ -134,12 +134,12 @@ async function findDocumentTypeByName(supabaseUrl, supabaseKey, typeName) {
 /**
  * Update document classification
  */
-async function updateDocumentClassification(supabaseUrl, supabaseKey, documentId, classification) {
+async function updateDocumentClassification(documentId, classification) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // First, find the document type
-    const docType = await findDocumentTypeByName(supabaseUrl, supabaseKey, classification.document_type);
+    const docType = await findDocumentTypeByName(classification.document_type);
     
     if (!docType) {
       console.error(`Document type not found: ${classification.document_type}`);
@@ -209,6 +209,11 @@ async function enhanceDocumentsWithTypes(documents, supabase) {
       ...doc,
       document_type: { name: 'Untyped' }
     }));
+  }
+
+  // If no supabase client is provided, get it from the singleton
+  if (!supabase) {
+    supabase = SupabaseClientService.getInstance().getClient();
   }
   
   // Fetch document types

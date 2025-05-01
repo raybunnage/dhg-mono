@@ -1,43 +1,13 @@
 
-const { createClient } = require('@supabase/supabase-js');
-
 /**
- * Singleton service to manage Supabase client connections
+ * DEPRECATED - This mock file should not be used anymore.
+ * Please use the real SupabaseClientService from packages/shared/services/supabase-client instead.
+ * This file is kept for historical purposes but should be removed in a future cleanup.
  */
-class SupabaseClientService {
-  static instance;
-  supabaseUrl;
-  supabaseKey;
-  supabaseClient;
 
-  constructor() {
-    // Check for environment variables
-    this.supabaseUrl = process.env.SUPABASE_URL || process.env.CLI_SUPABASE_URL;
-    this.supabaseKey = process.env.SUPABASE_KEY || process.env.CLI_SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!this.supabaseUrl || !this.supabaseKey) {
-      throw new Error('Supabase URL and key must be provided in environment variables');
-    }
-    
-    // Create the client
-    this.supabaseClient = createClient(this.supabaseUrl, this.supabaseKey, {
-      auth: { persistSession: false }
-    });
-    
-    console.log('Created Supabase client with URL:', this.supabaseUrl.substring(0, 22) + '...');
-  }
+const { SupabaseClientService: RealSupabaseClientService } = require('../../../../packages/shared/services/supabase-client');
 
-  static getInstance() {
-    if (!SupabaseClientService.instance) {
-      SupabaseClientService.instance = new SupabaseClientService();
-    }
-    return SupabaseClientService.instance;
-  }
-
-  getClient() {
-    return this.supabaseClient;
-  }
-}
+// Just redirect to the real service
+const SupabaseClientService = RealSupabaseClientService;
 
 module.exports = { SupabaseClientService };
-  

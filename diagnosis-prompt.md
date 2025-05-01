@@ -5,9 +5,6 @@ You are tasked with creating an engaging, concise summary of an expert presentat
 ## Input Context
 I'll provide you with a transcript summary from Whisper of a video presentation featuring an expert speaker, often with a host and a follow-up discussion.
 
-## Transcript
-{{TRANSCRIPT}}
-
 ## Output Format
 After reviewing the transcript, create an appropriate title that captures the essence of the presentation, and generate a JSON object with the following structure:
 

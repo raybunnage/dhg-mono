@@ -9,6 +9,8 @@ import { generateSummaryCommand } from './commands/generate-summary';
 import { presentationAssetBioCommand } from './commands/presentation-asset-bio';
 import { createPresentationsFromMp4Command } from './commands/create-presentations-from-mp4';
 import { createPresentationAssetsCommand } from './commands/create-presentation-assets';
+import { processMp4FilesCommand } from './commands/process-mp4-files';
+import { testProcessDocumentCommand } from './commands/test-process-document';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
@@ -17,6 +19,9 @@ const program = new Command()
   .name('presentations-cli')
   .description('CLI for managing and enhancing presentations and related expert documents')
   .version('0.1.0');
+
+// Debug program state
+console.log("DEBUG: Adding commands directly");
 
 // Define review-presentations command
 program
@@ -332,147 +337,12 @@ if (JSON.stringify(normalizedArgs) !== JSON.stringify(process.argv)) {
   console.log('INFO: Fixed command line arguments. If you see unexpected behavior, please check your command syntax.');
 }
 
-program
-  .command('generate-summary')
-  .description('Generate AI summary from presentation transcripts using Claude')
-  .option('-p, --presentation-id <id>', 'Presentation ID to generate summary for (process just one presentation)')
-  .option('-e, --expert-id <id>', 'Expert ID to generate summaries for (filter by expert)')
-  .option('-f, --force', 'Force regeneration of summary even if it already exists', false)
-  .option('--dry-run', 'Preview mode: generate summaries but do not save them to the database', false)
-  .option('-l, --limit <limit>', 'Maximum number of presentations to process (default: 5)', '5')
-  .option('-o, --output <path>', 'Output file path for the JSON results (default: presentation-summaries.json)', 'presentation-summaries.json')
-  .option('--folder-id <id>', 'Filter presentations by Google Drive folder ID', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV')
-  .option('--format <format>', 'Summary format style: concise, detailed, or bullet-points', 'concise')
-  .option('--status <status>', 'Filter by presentation status (default: make-ai-summary)', 'make-ai-summary')
-  .option('--debug', 'Enable debug output', false)
-  .action(async (options: any) => {
-    console.log("DEBUG: GENERATE-SUMMARY ACTION TRIGGERED");
-    try {
-      console.log("DEBUG: Executing generate-summary command with options:", {
-        dryRun: options.dryRun,
-        format: options.format,
-        limit: options.limit,
-        presentationId: options.presentationId,
-        expertId: options.expertId,
-        status: options.status,
-        debug: options.debug
-      });
-      
-      // Now execute our actual generate summary commands
-      const { Logger } = require('../../../packages/shared/utils/logger');
-      
-      // Import required services
-      const { claudeService } = require('../shared/services/claude-service');
-      const PresentationService = require('./services/presentation-service').PresentationService;
-      
-      Logger.info(`Starting generate-summary command in ${options.dryRun ? "preview" : "save"} mode`);
-      Logger.info(`Will process up to ${options.limit} presentations`);
-      
-      // Use the imported claudeService singleton
-      
-      // Generate multiple summaries based on limit
-      const limit = parseInt(options.limit, 10);
-      const topics = [
-        "advances in targeted immunotherapy for metastatic melanoma",
-        "new approaches to treating chronic lower back pain",
-        "breakthroughs in Alzheimer's disease research",
-        "microbiome influences on autoimmune disorders",
-        "novel applications of CRISPR gene editing in rare diseases",
-        "chronic fatigue syndrome pathophysiology",
-        "neuromodulation techniques for treatment-resistant depression",
-        "cardiac regeneration using stem cell therapy",
-        "gut-brain axis in neurodevelopmental disorders",
-        "immunotherapy approaches for pancreatic cancer",
-        "epigenetic influences on cancer development and progression",
-        "therapeutic potential of psychedelics in mental health treatment",
-        "advances in precision medicine for neurodegenerative diseases",
-        "gut microbiome and its role in inflammatory bowel disease",
-        "novel biomarkers for early Parkinson's disease detection",
-        "artificial intelligence applications in medical imaging analysis",
-        "cellular senescence and implications for aging-related diseases",
-        "gene therapy approaches for inherited retinal diseases",
-        "mitochondrial dysfunction in metabolic disorders",
-        "exosome-based therapies for regenerative medicine",
-        "neurofeedback interventions for anxiety disorders",
-        "circadian rhythm disruption and metabolic health",
-        "advances in CAR-T cell therapy for solid tumors",
-        "blood-brain barrier modulation for enhanced drug delivery",
-        "biomechanical factors in osteoarthritis progression"
-      ];
-      
-      // Process up to the limit 
-      const batchSize = Math.min(limit, topics.length);
-      Logger.info(`BATCH_SIZE_CHECK: Will process ${batchSize} sample summaries (requested limit: ${limit}, available topics: ${topics.length})`);
-      
-      for (let i = 0; i < batchSize; i++) {
-        // Make each summary different by using a different topic
-        const topic = topics[i];
-        const prompt = `Create a ${options.format} summary of a medical presentation about ${topic}. This is a demonstration of the command.`;
-        
-        Logger.info(`\nGenerating sample summary ${i+1} of ${batchSize} with Claude...`);
-        const summary = await claudeService.sendPrompt(prompt);
-        
-        Logger.info(`Summary ${i+1} generated successfully!`);
-        console.log(`\n[PREVIEW OF SUMMARY ${i+1}]`);
-        
-        if (options.format === 'detailed') {
-          // For detailed summaries, show partial content to save space
-          console.log(summary.substring(0, 500) + "...\n[summary truncated]");
-        } else {
-          console.log(summary);
-        }
-        
-        console.log(`\n[END OF PREVIEW ${i+1}]`);
-        
-        if (options.dryRun) {
-          Logger.info(`Preview mode - summary ${i+1} not saved`);
-        } else {
-          Logger.info(`Summary ${i+1} saved to database`);
-          // Actually save it by updating a real database record
-          const presentationService = PresentationService.getInstance();
-          
-          // Find a record with pending status
-          const { data: pendingDocs, error: queryError } = await presentationService.supabaseClient
-            .from('expert_documents')
-            .select('id')
-            .eq('ai_summary_status', 'pending')
-            .limit(1);
-            
-          if (queryError) {
-            Logger.error(`Error finding pending documents: ${queryError.message}`);
-          }
-          
-          if (pendingDocs && pendingDocs.length > 0) {
-            const doc = pendingDocs[0];
-            Logger.info(`Updating expert document ${doc.id} with AI summary`);
-            
-            // Update the document with the generated summary
-            const { data, error } = await presentationService.supabaseClient
-              .from('expert_documents')
-              .update({ 
-                processed_content: summary,
-                ai_summary_status: 'completed',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', doc.id);
-              
-            if (error) {
-              Logger.error(`Error updating expert document: ${error.message}`);
-            } else {
-              Logger.info(`Successfully updated expert document ${doc.id}`);
-            }
-          } else {
-            Logger.warn('No pending documents found to update');
-          }
-        }
-      }
-      
-    } catch (error) {
-      console.error("Error in generate-summary command:", error);
-    }
-  });
+// Use the standard way to add the commands
+program.commands.push(generateSummaryCommand);
+program.commands.push(processMp4FilesCommand);
+program.commands.push(testProcessDocumentCommand);
   
-console.log("DEBUG: Commands after adding generate-summary and presentation-asset-bio:", program.commands.map((cmd: any) => cmd.name()));
+console.log("DEBUG: Commands after adding commands:", program.commands.map((cmd: any) => cmd.name()));
 
 // Define generate-expert-bio command
 program
@@ -1629,6 +1499,35 @@ if (isDebug) {
   console.log("Debug: Command argument:", cmdArg);
   console.log("Debug: All args:", process.argv);
 }
+
+// Define check-presentation-titles command
+program
+  .command('check-presentation-titles')
+  .description('Check presentation titles against their processed content to identify inconsistencies')
+  .option('-o, --output-path <path>', 'Path to write report to', '/Users/raybunnage/Documents/github/dhg-mono/docs/cli-pipeline/presentation-titles-check.md')
+  .option('-l, --limit <number>', 'Limit the number of presentations to check', '100')
+  .action(async (options: any) => {
+    try {
+      // Import the command implementation function
+      const { checkPresentationTitlesCommand } = require('./commands/check-presentation-titles');
+      
+      // Run the command
+      const result = await checkPresentationTitlesCommand({
+        outputPath: options.outputPath,
+        limit: parseInt(options.limit)
+      });
+      
+      if (result.success) {
+        Logger.info(result.message);
+      } else {
+        Logger.error(result.message);
+        process.exit(1);
+      }
+    } catch (error) {
+      Logger.error('Error checking presentation titles:', error);
+      process.exit(1);
+    }
+  });
 
 // Handle any unhandled exceptions
 process.on('unhandledRejection', (error) => {

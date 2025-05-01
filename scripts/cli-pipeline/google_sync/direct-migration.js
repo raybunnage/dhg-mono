@@ -7,41 +7,8 @@
  * Dynamic Healing Discussion Group and Polyvagal Steering Group folders.
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 const path = require('path');
-const dotenv = require('dotenv');
-
-// Load environment variables from .env files
-const envFiles = ['.env', '.env.local', '.env.development'];
-let envLoaded = false;
-
-for (const file of envFiles) {
-  const filePath = path.resolve(process.cwd(), file);
-  try {
-    require('fs').accessSync(filePath, require('fs').constants.R_OK);
-    console.log(`Loading environment from ${file}`);
-    dotenv.config({ path: filePath });
-    envLoaded = true;
-    break;
-  } catch (e) {
-    // File doesn't exist or isn't readable
-  }
-}
-
-if (!envLoaded) {
-  console.warn('No environment file found. Please create a .env.development file with Supabase credentials.');
-}
-
-// Get Supabase credentials from environment variables
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// Validate credentials
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('Error: Supabase credentials not found in environment variables.');
-  console.error('Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your .env.development file.');
-  process.exit(1);
-}
 
 // Target root folder IDs
 const ROOT_FOLDERS = {
@@ -65,8 +32,8 @@ async function main() {
       process.exit(1);
     }
     
-    // Create Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Get Supabase client from singleton service
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Check what we're targeting
     let targetRootId = null;

@@ -41,8 +41,8 @@ generateSummaryCommand
       });
       
       const presentationService = PresentationService.getInstance();
-      // Using the claudeService singleton imported from the correct location
-      const promptQueryService = new PromptQueryService();
+      // Using the PromptQueryService singleton
+      const promptQueryService = PromptQueryService.getInstance();
 
       // Get the summary prompt from the database
       Logger.info('Fetching video summary prompt from database...');

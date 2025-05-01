@@ -1,3 +1,36 @@
+ ffmpeg -i file_types/mp4/10.14.20.Aria.Patterson.Carter.SocialConnection.mp4 -vn -acodec copy
+  file_types/m4a/10.14.20.Aria.Patterson.Carter.SocialConnection.m4a
+
+
+  ffmpeg -i file_types/mp4/10.14.20.Aria.Patterson.Carter.SocialConnection.mp4 -vn -acodec copy file_types/m4a/10.14.20.Aria.Patterson.Carter.SocialConnection.m4a
+
+
+bad videos
+S.Othmer.12.09.20.Neuroregulation.m4v
+
+
+
+
+oogle table that need processing
+  2. Finds corresponding expert_documents by matching the source_id
+  3. Uses the final_video-summary-prompt to generate AI summaries in JSON format
+  4. Updates the expert_document with:
+    - Processed content containing the JSON response
+    - Title extracted from the AI response
+    - Updated AI summary status
+
+  The command includes:
+  - Batch processing capability to handle many files efficiently
+  - Option to test with a specific document ID
+  - Dry run mode to preview changes without saving
+  - Output to a JSON file for results
+
+  To use it:
+  # Process up to 10 MP4 files in batches of 5 with results saved to a file
+  presentations-cli process-mp4-files --limit 10 --batch-size 5 --output results.json
+
+  # Test with a specific document ID in dry run mode
+  presentations-cli process-mp4-files --document-id abc123-def456 --dry-run
 
 
 pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
