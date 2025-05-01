@@ -7,14 +7,9 @@
  * focusing on just the Dynamic Healing Discussion Group and Polyvagal Steering Group.
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 const fs = require('fs');
 const path = require('path');
-
-// Hardcode credentials from .env.development
-const SUPABASE_URL = 'https://jdksnfkupzywjdfefkyj.supabase.co';
-// Service role key from .env.development
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDE4OTAxMywiZXhwIjoyMDQ5NzY1MDEzfQ.ytwo7scGIQRoyue71Bu6W6P6vgSnLP3S3iaL6BoRP_E';
 
 // Target root folder IDs
 const ROOT_FOLDERS = {
@@ -237,8 +232,8 @@ async function main() {
     
     console.log(`Targets: ${targetNames.join(', ')}`);
     
-    // Create Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Get Supabase client from singleton service
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Step 1: Check initial record counts
     console.log('\nSTEP 1: Checking initial record counts...');

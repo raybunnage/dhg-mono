@@ -7,12 +7,7 @@
  * with improved structure, and focuses on the root folders we care about.
  */
 
-const { createClient } = require('@supabase/supabase-js');
-
-// Hardcode credentials from .env.development
-const SUPABASE_URL = 'https://jdksnfkupzywjdfefkyj.supabase.co';
-// Service role key from .env.development
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDE4OTAxMywiZXhwIjoyMDQ5NzY1MDEzfQ.ytwo7scGIQRoyue71Bu6W6P6vgSnLP3S3iaL6BoRP_E';
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 
 // Target root folder IDs
 const ROOT_FOLDERS = {
@@ -60,8 +55,8 @@ async function main() {
       process.exit(1);
     }
     
-    // Create Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Get Supabase client using the singleton service
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Step 1: Check if tables exist
     console.log('\nSTEP 1: Checking tables...');

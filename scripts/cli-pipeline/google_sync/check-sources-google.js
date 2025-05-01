@@ -4,19 +4,14 @@
  * This script checks the sources_google table
  */
 
-const { createClient } = require('@supabase/supabase-js');
-
-// Hardcode credentials from .env.development
-const SUPABASE_URL = 'https://jdksnfkupzywjdfefkyj.supabase.co';
-// Service role key from .env.development
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDE4OTAxMywiZXhwIjoyMDQ5NzY1MDEzfQ.ytwo7scGIQRoyue71Bu6W6P6vgSnLP3S3iaL6BoRP_E';
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 
 async function main() {
   try {
     console.log('Checking sources_google table...');
     
-    // Create Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Get Supabase client using the singleton service
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Check sources_google
     const { data: sg2Data, error: sg2Error } = await supabase

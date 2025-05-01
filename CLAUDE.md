@@ -126,6 +126,14 @@
      - Google Drive: `packages/shared/services/google-drive`
      - Claude AI: `packages/shared/services/claude-service`
    
+   - ⚠️ **CRITICAL: NEVER CREATE YOUR OWN SUPABASE CLIENT DIRECTLY**:
+     - ❌ NEVER IMPORT: `import { createClient } from '@supabase/supabase-js';`
+     - ❌ NEVER CREATE: `const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);`
+     - ✅ ALWAYS USE: `import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';`
+     - ✅ ALWAYS USE: `const supabase = SupabaseClientService.getInstance().getClient();`
+     - This applies to ALL code, including TypeScript, JavaScript, CLI tools, and any other code that needs Supabase
+     - If you find code using direct clients, REFACTOR IMMEDIATELY to use the singleton
+
    - ⚠️ **ALWAYS CREATE SINGLETONS for new services**:
      - When creating any new service class under `packages/shared/services/`
      - Follow the established singleton pattern from existing services

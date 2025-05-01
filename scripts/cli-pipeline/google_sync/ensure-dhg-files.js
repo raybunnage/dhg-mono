@@ -7,15 +7,10 @@
  * represented in sources_google table with proper metadata.
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-
-// Hardcode credentials from .env.development
-const SUPABASE_URL = 'https://jdksnfkupzywjdfefkyj.supabase.co';
-// Service role key from .env.development
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDE4OTAxMywiZXhwIjoyMDQ5NzY1MDEzfQ.ytwo7scGIQRoyue71Bu6W6P6vgSnLP3S3iaL6BoRP_E';
 
 // Define the DHG root folder ID
 const DHG_ROOT_ID = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';
@@ -139,8 +134,8 @@ async function main() {
     console.log('Ensuring Dynamic Healing Discussion Group files in sources_google...');
     console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'LIVE RUN'}`);
     
-    // Create Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Get Supabase client using the singleton service
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Step 1: Check if sources_google exists
     console.log('\nSTEP 1: Checking sources_google table...');

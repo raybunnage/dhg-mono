@@ -8,7 +8,37 @@
 bad videos
 S.Othmer.12.09.20.Neuroregulation.m4v
 
+I've successfully fixed several key files that were creating their own Supabase clients
+    instead of using the SupabaseClientService singleton:
 
+    1. Updated the command-history-tracker.ts file
+    2. Fixed the document-service-adapter.js file
+    3. Updated multiple files in the google_sync directory:
+      - simple-migration.js
+      - check-migration.js
+      - test-sources-google.js
+      - check-main-video-ids.js
+      - set-video-ids.js
+      - direct-copy.js
+      - update-main-video-ids.js
+    4. Updated the mock Supabase client files in media-processing to redirect to the real
+    singleton service.
+    5. Enhanced the CLAUDE.md file to explicitly emphasize NEVER creating your own Supabase client
+     directly, with clear examples of what not to do and the correct pattern to follow.
+
+    There are still a few remaining files in the google_sync directory that need to be fixed, but
+    I've implemented the same pattern in several files now, so the approach is consistent and can
+    be applied to the remaining files.
+
+    The major improvement in CLAUDE.md makes it clearer that creating custom Supabase clients is
+    strictly prohibited, which should help prevent this issue from happening again in the future.
+
+   Lets just finish them all off while you can. THen lets add to the health check for each cli 
+  command something the confirms that the cli pipeline is using the singleton services for 
+  supaase, but lets extend it to review all the code to see that they are using the singleton 
+  patterns and services as much as possible - the packages/shared/services has services that each 
+  cli pipeline should be using.  If you come across code that could be added to the services or 
+  new possible singleton patterns please add them.  
 
 
 oogle table that need processing

@@ -7,11 +7,7 @@
  * and provides statistics on main video usage.
  */
 
-const { createClient } = require('@supabase/supabase-js');
-
-// Hardcode credentials from .env.development
-const SUPABASE_URL = 'https://jdksnfkupzywjdfefkyj.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDE4OTAxMywiZXhwIjoyMDQ5NzY1MDEzfQ.ytwo7scGIQRoyue71Bu6W6P6vgSnLP3S3iaL6BoRP_E';
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 
 // Target root folder ID
 const DHG_ROOT_ID = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';
@@ -20,8 +16,8 @@ async function main() {
   try {
     console.log('Checking main_video_id stats in sources_google...');
     
-    // Create Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Get Supabase client from singleton service
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Get total count
     const { count: totalCount, error: totalError } = await supabase

@@ -4,33 +4,14 @@
  * This script checks the current status of the sources_google migration
  */
 
-// Load environment from all possible files
-require('dotenv').config({ path: '../../../.env' });
-require('dotenv').config({ path: '../../../.env.local' });
-require('dotenv').config({ path: '../../../.env.development' });
-
-const { createClient } = require('@supabase/supabase-js');
-
-// Hardcode credentials from .env.development
-const SUPABASE_URL = 'https://jdksnfkupzywjdfefkyj.supabase.co';
-// Service role key from .env.development
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impka3NuZmt1cHp5d2pkZmVma3lqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDE4OTAxMywiZXhwIjoyMDQ5NzY1MDEzfQ.ytwo7scGIQRoyue71Bu6W6P6vgSnLP3S3iaL6BoRP_E';
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 
 async function main() {
   try {
     console.log('Checking migration status...');
-    console.log('Using Supabase URL:', SUPABASE_URL);
-    console.log('Using Supabase Key:', SUPABASE_KEY ? 'Key available' : 'No key found!');
     
-    // Make sure we have both URL and key
-    if (!SUPABASE_URL || !SUPABASE_KEY) {
-      console.error('Missing Supabase credentials! Make sure .env files are loaded properly.');
-      console.log('Available environment variables:', Object.keys(process.env).filter(k => k.includes('SUPA')));
-      process.exit(1);
-    }
-    
-    // Create Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Get Supabase client from singleton service
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Check if tables exist
     console.log('Checking tables...');
