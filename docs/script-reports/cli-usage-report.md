@@ -1,41 +1,13 @@
 # CLI Command Usage Report
 
-*Generated on 4/28/2025 at 11:06:52 AM*
-
-## Database CLI: Output Display Issue Fixed
-
-We identified and fixed an issue with the database CLI pipeline tools like `table-records` not displaying output to the terminal. The main issues were:
-
-1. **Database Query Issue**: The database service was attempting to directly query `information_schema.tables` which isn't directly accessible via Supabase's client interface. Fixed by using the `execute_sql` RPC function.
-
-2. **Command Tracking Output Loss**: Output was being lost during the command tracking process. 
-
-The solution was implemented with a special `--simple` flag that:
-- Bypasses the complex command tracking infrastructure
-- Uses simplified scripts that focus solely on displaying output
-- Uses more direct output methods without fancy formatting
-- Works reliably in all cases
-
-**Usage Examples**:
-```
-# List database tables with records
-./scripts/cli-pipeline/database/database-cli.sh table-records --simple
-
-# Show empty tables
-./scripts/cli-pipeline/database/database-cli.sh empty-tables --simple  
-
-# Test database connection
-./scripts/cli-pipeline/database/database-cli.sh connection-test --simple
-```
-
-The `--simple` implementation approach is now available for all database CLI commands and guarantees terminal output display.
+*Generated on 5/1/2025 at 12:24:36 PM*
 
 ## Summary
 
-- Total Pipelines: 12 (active in last 30 days)
-- Total Commands: 145
-- Total Executions: 2472
-- Success Rate: 85.4%
+- Total Pipelines: 13
+- Total Commands: 155
+- Total Executions: 2684
+- Success Rate: 85.3%
 
 ## Most Used Commands
 
@@ -45,7 +17,7 @@ The `--simple` implementation approach is now available for all database CLI com
 | check-reprocessing-status | google_sync | 144 | 96.5% | 4/23/2025, 8:34:08 PM |
 | sources-google-integrity | google_sync | 108 | 86.1% | 4/23/2025, 8:20:25 PM |
 | show-expert-documents | google_sync | 100 | 83.0% | 4/21/2025, 4:24:26 PM |
-| list | document_types | 77 | 87.0% | 4/28/2025, 5:47:06 AM |
+| list | document_types | 84 | 88.1% | 5/1/2025, 10:25:39 AM |
 | list | google_sync | 66 | 98.5% | 4/23/2025, 9:04:56 PM |
 | classify-powerpoints | google_sync | 65 | 76.9% | 4/23/2025, 9:04:07 PM |
 | needs-reprocessing | google_sync | 65 | 72.3% | 4/23/2025, 8:32:13 PM |
@@ -56,24 +28,24 @@ The `--simple` implementation approach is now available for all database CLI com
 
 | Command | Pipeline | Times Used | Last Used |
 | ------- | -------- | ---------- | --------- |
-| usage-report | all_pipelines | 5 | 4/28/2025, 11:06:51 AM |
-| connection-test | database | 4 | 4/28/2025, 11:06:09 AM |
-| schema-health | database | 2 | 4/28/2025, 11:05:54 AM |
-| table-structure | database | 3 | 4/28/2025, 11:05:39 AM |
-| database-functions | database | 2 | 4/28/2025, 11:05:27 AM |
-| empty-tables | database | 2 | 4/28/2025, 11:05:13 AM |
-| table-records | database | 5 | 4/28/2025, 11:04:59 AM |
-| db-health-check | database | 4 | 4/28/2025, 11:04:33 AM |
-| classification-rollup | all_pipelines | 8 | 4/28/2025, 10:56:04 AM |
-| --help | presentations | 6 | 4/28/2025, 10:55:36 AM |
+| usage-report | all_pipelines | 6 | 5/1/2025, 12:24:35 PM |
+| sync-and-update-metadata | google_sync | 3 | 5/1/2025, 12:22:10 PM |
+| check-deleted-files | google_sync | 4 | 5/1/2025, 12:18:23 PM |
+| propagate-expert-ids | experts | 5 | 5/1/2025, 11:22:33 AM |
+| --help | experts | 1 | 5/1/2025, 11:22:04 AM |
+| list | document_types | 16 | 5/1/2025, 10:25:39 AM |
+| extract-video-metadata | media_processing | 8 | 5/1/2025, 10:01:24 AM |
+| process-mp4-files | presentations | 54 | 5/1/2025, 1:01:01 AM |
+| update | prompt_service | 14 | 4/30/2025, 11:07:10 PM |
+| test-process-document | presentations | 7 | 4/30/2025, 10:23:28 PM |
 
 ## Usage by Pipeline
 
 ### google_sync
 
-- Commands: 69
-- Total Executions: 1644
-- Success Rate: 87.0%
+- Commands: 71
+- Total Executions: 1661
+- Success Rate: 86.7%
 
 #### Most Used Commands
 
@@ -93,15 +65,15 @@ The `--simple` implementation approach is now available for all database CLI com
 ### document_types
 
 - Commands: 10
-- Total Executions: 242
-- Success Rate: 82.6%
+- Total Executions: 255
+- Success Rate: 83.5%
 
 #### Most Used Commands
 
 | Command | Total Uses | Success Rate | Avg Duration | Last Used |
 | ------- | ---------- | ------------ | ------------ | --------- |
-| list | 77 | 87.0% | 1.09s | 4/28/2025, 5:47:06 AM |
-| health-check | 43 | 83.7% | 1.75s | 4/28/2025, 10:55:34 AM |
+| list | 84 | 88.1% | 1.11s | 5/1/2025, 10:25:39 AM |
+| health-check | 49 | 85.7% | 1.74s | 4/30/2025, 9:19:48 PM |
 | update | 34 | 85.3% | 1.19s | 4/20/2025, 10:59:00 AM |
 | get | 27 | 96.3% | 950ms | 4/20/2025, 10:54:31 AM |
 | set-classifier | 26 | 61.5% | 75.56s | 4/20/2025, 10:50:24 AM |
@@ -110,6 +82,27 @@ The `--simple` implementation approach is now available for all database CLI com
 | categories | 6 | 100.0% | 1.02s | 4/20/2025, 10:36:23 AM |
 | delete | 4 | 100.0% | 1.66s | 4/19/2025, 7:28:03 PM |
 | stats | 2 | 100.0% | 1.42s | 4/19/2025, 7:09:24 PM |
+
+### presentations
+
+- Commands: 13
+- Total Executions: 210
+- Success Rate: 82.4%
+
+#### Most Used Commands
+
+| Command | Total Uses | Success Rate | Avg Duration | Last Used |
+| ------- | ---------- | ------------ | ------------ | --------- |
+| process-mp4-files | 54 | 81.5% | 24.49s | 5/1/2025, 1:01:01 AM |
+| health-check | 54 | 88.9% | 3.15s | 4/30/2025, 9:19:49 PM |
+| create-presentation-assets | 27 | 85.2% | 12.40s | 4/27/2025, 11:19:06 AM |
+| create-presentations-from-mp4 | 17 | 64.7% | 1.84s | 4/26/2025, 5:31:48 PM |
+| generate-summary | 16 | 93.8% | 2.72s | 4/30/2025, 2:29:31 PM |
+| --help | 11 | 81.8% | 591ms | 4/30/2025, 9:33:28 PM |
+| test-process-document | 7 | 85.7% | 1.57s | 4/30/2025, 10:23:28 PM |
+| presentations-cli | 7 | 100.0% | 1.48s | 4/30/2025, 5:41:40 PM |
+| update-root-drive-id | 6 | 83.3% | 2.93s | 4/24/2025, 3:16:13 AM |
+| review-presentations | 5 | 0.0% | 1.54s | 4/30/2025, 9:58:18 AM |
 
 ### classify
 
@@ -135,136 +128,130 @@ The `--simple` implementation approach is now available for all database CLI com
 ### prompt_service
 
 - Commands: 13
-- Total Executions: 117
-- Success Rate: 82.1%
+- Total Executions: 139
+- Success Rate: 80.6%
 
 #### Most Used Commands
 
 | Command | Total Uses | Success Rate | Avg Duration | Last Used |
 | ------- | ---------- | ------------ | ------------ | --------- |
-| health-check | 53 | 84.9% | 2.55s | 4/28/2025, 10:55:34 AM |
+| health-check | 59 | 86.4% | 2.58s | 4/30/2025, 9:19:48 PM |
+| update | 16 | 62.5% | 1.58s | 4/30/2025, 11:07:10 PM |
 | add-query | 14 | 64.3% | 1.87s | 4/20/2025, 12:03:15 PM |
+| view-metadata | 9 | 100.0% | 1.68s | 4/30/2025, 12:35:49 PM |
+| --help | 9 | 100.0% | 1.76s | 4/30/2025, 12:17:16 PM |
 | summarize-metadata | 9 | 88.9% | 1.71s | 4/20/2025, 12:04:15 PM |
 | load | 8 | 62.5% | 1.70s | 4/26/2025, 10:24:05 AM |
-| --help | 8 | 100.0% | 1.77s | 4/26/2025, 10:23:01 AM |
-| view-metadata | 8 | 100.0% | 1.65s | 4/20/2025, 12:13:57 PM |
 | verify-claude-temperature | 6 | 66.7% | 2.01s | 4/20/2025, 11:14:46 AM |
 | clean-metadata | 3 | 66.7% | 2.12s | 4/20/2025, 11:11:07 AM |
-| update | 2 | 100.0% | 1.34s | 4/20/2025, 12:13:51 PM |
 | list | 2 | 100.0% | 1.76s | 4/20/2025, 11:14:54 AM |
-
-### presentations
-
-- Commands: 9
-- Total Executions: 114
-- Success Rate: 80.7%
-
-#### Most Used Commands
-
-| Command | Total Uses | Success Rate | Avg Duration | Last Used |
-| ------- | ---------- | ------------ | ------------ | --------- |
-| health-check | 48 | 87.5% | 2.99s | 4/28/2025, 10:55:34 AM |
-| create-presentation-assets | 27 | 85.2% | 12.40s | 4/27/2025, 11:19:06 AM |
-| create-presentations-from-mp4 | 17 | 64.7% | 1.84s | 4/26/2025, 5:31:48 PM |
-| --help | 6 | 100.0% | N/A | 4/28/2025, 10:55:36 AM |
-| update-root-drive-id | 6 | 83.3% | 2.93s | 4/24/2025, 3:16:13 AM |
-| review-presentations | 4 | 0.0% | 1.50s | 4/27/2025, 10:50:23 AM |
-| create-presentations-assets | 3 | 66.7% | 1.37s | 4/27/2025, 11:15:28 AM |
-| compare-presentations-assets | 2 | 100.0% | 1.34s | 4/27/2025, 11:48:54 AM |
-| write-unclassified-ids | 1 | 100.0% | 1.43s | 4/27/2025, 11:10:30 AM |
 
 ### experts
 
-- Commands: 10
-- Total Executions: 59
-- Success Rate: 91.5%
+- Commands: 11
+- Total Executions: 68
+- Success Rate: 92.6%
 
 #### Most Used Commands
 
 | Command | Total Uses | Success Rate | Avg Duration | Last Used |
 | ------- | ---------- | ------------ | ------------ | --------- |
-| health-check | 22 | 100.0% | 2.59s | 4/28/2025, 10:55:32 AM |
+| health-check | 25 | 100.0% | 2.58s | 4/30/2025, 9:19:46 PM |
 | add-expert | 15 | 80.0% | 1.02s | 4/21/2025, 5:39:26 PM |
+| --help | 7 | 100.0% | 1.07s | 5/1/2025, 11:22:04 AM |
 | assign-folder-experts | 7 | 100.0% | 82.13s | 4/21/2025, 5:42:32 PM |
-| --help | 6 | 100.0% | 1.04s | 4/21/2025, 5:38:02 PM |
+| propagate-expert-ids | 5 | 100.0% | 51.92s | 5/1/2025, 11:22:33 AM |
 | list-experts | 4 | 100.0% | 1.17s | 4/21/2025, 5:38:44 PM |
 | list | 1 | 100.0% | 949ms | 4/21/2025, 5:37:49 PM |
 | LIST | 1 | 100.0% | 983ms | 4/21/2025, 5:37:41 PM |
 | main | 1 | 100.0% | 995ms | 4/21/2025, 5:23:52 PM |
 | --helP | 1 | 0.0% | 1.01s | 4/21/2025, 5:19:33 PM |
-| --hellp | 1 | 0.0% | 1.08s | 4/21/2025, 4:49:38 PM |
+
+### media_processing
+
+- Commands: 7
+- Total Executions: 57
+- Success Rate: 93.0%
+
+#### Most Used Commands
+
+| Command | Total Uses | Success Rate | Avg Duration | Last Used |
+| ------- | ---------- | ------------ | ------------ | --------- |
+| health-check | 26 | 96.2% | 2.10s | 4/30/2025, 9:19:46 PM |
+| extract-video-metadata | 8 | 100.0% | 1.79s | 5/1/2025, 10:01:24 AM |
+| process-local-mp4-files | 8 | 100.0% | 70.04s | 4/30/2025, 9:01:36 AM |
+| transcribe | 5 | 60.0% | 106.12s | 4/30/2025, 9:01:41 AM |
+| find-missing-sources_google-mp4s | 5 | 100.0% | 1.57s | 4/18/2025, 3:30:09 PM |
+| convert | 3 | 66.7% | 2.10s | 4/30/2025, 9:01:38 AM |
+| register-local-mp4-files | 2 | 100.0% | 1.30s | 4/30/2025, 8:15:35 AM |
 
 ### all_pipelines
 
 - Commands: 3
-- Total Executions: 35
-- Success Rate: 94.3%
+- Total Executions: 39
+- Success Rate: 94.9%
 
 #### Most Used Commands
 
 | Command | Total Uses | Success Rate | Avg Duration | Last Used |
 | ------- | ---------- | ------------ | ------------ | --------- |
-| master-health-check | 22 | 100.0% | 8.30s | 4/28/2025, 10:55:28 AM |
+| master-health-check | 25 | 100.0% | 8.53s | 4/30/2025, 9:19:42 PM |
 | classification-rollup | 8 | 87.5% | 1.82s | 4/28/2025, 10:56:04 AM |
-| usage-report | 5 | 80.0% | 1.28s | 4/28/2025, 11:06:51 AM |
-
-### media_processing
-
-- Commands: 5
-- Total Executions: 34
-- Success Rate: 94.1%
-
-#### Most Used Commands
-
-| Command | Total Uses | Success Rate | Avg Duration | Last Used |
-| ------- | ---------- | ------------ | ------------ | --------- |
-| health-check | 23 | 95.7% | 2.11s | 4/28/2025, 10:55:32 AM |
-| find-missing-sources_google-mp4s | 5 | 100.0% | 1.57s | 4/18/2025, 3:30:09 PM |
-| process-local-mp4-files | 3 | 100.0% | 99.88s | 4/18/2025, 6:10:59 PM |
-| transcribe | 2 | 50.0% | 144.27s | 4/18/2025, 6:11:02 PM |
-| convert | 1 | 100.0% | 3.53s | 4/18/2025, 5:56:21 PM |
+| usage-report | 6 | 83.3% | 1.30s | 5/1/2025, 12:24:35 PM |
 
 ### database
 
 - Commands: 7
-- Total Executions: 22
-- Success Rate: 95.5%
+- Total Executions: 34
+- Success Rate: 88.2%
 
 #### Most Used Commands
 
 | Command | Total Uses | Success Rate | Avg Duration | Last Used |
 | ------- | ---------- | ------------ | ------------ | --------- |
-| table-records | 5 | 80.0% | 1.18s | 4/28/2025, 11:04:59 AM |
+| table-records | 13 | 69.2% | 1.16s | 4/28/2025, 1:27:17 PM |
+| empty-tables | 5 | 100.0% | 1.11s | 4/28/2025, 1:43:02 PM |
 | connection-test | 4 | 100.0% | 1.02s | 4/28/2025, 11:06:09 AM |
 | db-health-check | 4 | 100.0% | 967ms | 4/28/2025, 11:04:33 AM |
+| database-functions | 3 | 100.0% | 1.10s | 4/28/2025, 1:31:37 PM |
 | table-structure | 3 | 100.0% | 944ms | 4/28/2025, 11:05:39 AM |
 | schema-health | 2 | 100.0% | 987ms | 4/28/2025, 11:05:54 AM |
-| database-functions | 2 | 100.0% | 1.16s | 4/28/2025, 11:05:27 AM |
-| empty-tables | 2 | 100.0% | 1.02s | 4/28/2025, 11:05:13 AM |
 
 ### document
 
 - Commands: 1
-- Total Executions: 22
-- Success Rate: 59.1%
+- Total Executions: 25
+- Success Rate: 64.0%
 
 #### Most Used Commands
 
 | Command | Total Uses | Success Rate | Avg Duration | Last Used |
 | ------- | ---------- | ------------ | ------------ | --------- |
-| health-check | 22 | 59.1% | 1.31s | 4/28/2025, 10:55:32 AM |
+| health-check | 25 | 64.0% | 1.20s | 4/30/2025, 9:19:46 PM |
 
 ### scripts
 
 - Commands: 1
-- Total Executions: 20
-- Success Rate: 65.0%
+- Total Executions: 23
+- Success Rate: 69.6%
 
 #### Most Used Commands
 
 | Command | Total Uses | Success Rate | Avg Duration | Last Used |
 | ------- | ---------- | ------------ | ------------ | --------- |
-| health-check | 20 | 65.0% | 1.34s | 4/28/2025, 10:55:32 AM |
+| health-check | 23 | 69.6% | 1.21s | 4/30/2025, 9:19:46 PM |
+
+### maintenance
+
+- Commands: 1
+- Total Executions: 10
+- Success Rate: 100.0%
+
+#### Most Used Commands
+
+| Command | Total Uses | Success Rate | Avg Duration | Last Used |
+| ------- | ---------- | ------------ | ------------ | --------- |
+| health-check | 10 | 100.0% | 679ms | 4/30/2025, 8:38:36 PM |
 
 ### document_pipeline
 

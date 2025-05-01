@@ -156,6 +156,20 @@ program
     await executeCommand('show-recent-expert-docs.ts', options);
   });
 
+// Extract video metadata command
+program
+  .command('extract-video-metadata')
+  .description('Extract metadata (especially duration) from MP4 video files')
+  .option('--file-id <id>', 'Process a specific file by its sources_google.id')
+  .option('--limit <number>', 'Limit to processing <number> of videos (default: 50)', '50')
+  .option('--dry-run', 'Show what would be updated without making changes')
+  .action(async (options) => {
+    console.log('Extracting video metadata');
+    // Parse numeric options
+    if (options.limit) options.limit = parseInt(options.limit);
+    await executeCommand('extract-video-metadata.ts', options);
+  });
+
 /**
  * Execute a command from the commands directory
  */

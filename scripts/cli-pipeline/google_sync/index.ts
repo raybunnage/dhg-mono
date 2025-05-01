@@ -1244,6 +1244,24 @@ program
     }
   });
 
+// Add check-deleted-files command  
+program
+  .command('check-deleted-files')
+  .description('Check if files marked as deleted in the database still exist in Google Drive')
+  .option('--limit <number>', 'Limit the number of files to check', '10')
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options) => {
+    try {
+      // This command is implemented in the shell script wrapper
+      console.log('check-deleted-files command is executed through the shell script');
+      console.log('Please run: ./google-sync-cli.sh check-deleted-files [options]');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error executing check-deleted-files:', error);
+      process.exit(1);
+    }
+  });
+
 // Handle any unhandled exceptions
 process.on('unhandledRejection', (error) => {
   Logger.error('Unhandled rejection:', error);

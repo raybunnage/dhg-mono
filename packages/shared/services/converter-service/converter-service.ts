@@ -11,6 +11,17 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { formatterService } from '../formatter-service';
 
+// Interface for video metadata
+export interface VideoMetadata {
+  durationSeconds: number;
+  width?: number;
+  height?: number;
+  bitrate?: number;
+  codec?: string;
+  fps?: number;
+  size?: number;
+}
+
 export class ConverterService {
   private static instance: ConverterService;
   
@@ -259,6 +270,121 @@ export class ConverterService {
     }
     
     return 0;
+  }
+
+  /**
+   * Extract metadata from MP4 video file using FFprobe
+   * 
+   * @param filePath Path to the MP4 file
+   * @param options Additional options for extraction
+   * @returns Promise resolving to the metadata
+   */
+  public async extractVideoMetadata(
+    filePath: string,
+    options: {
+      timeout?: number
+    } = {}
+  ): Promise<{ success: boolean; metadata?: VideoMetadata; error?: string }> {
+    // Handle missing input file
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: `Input file not found: ${filePath}` };
+    }
+
+    // Set default options
+    const timeout = options.timeout || 30 * 1000; // 30 seconds default timeout
+
+    return new Promise((resolve) => {
+      let timeoutId: NodeJS.Timeout;
+      let stdoutData = '';
+      let stderrData = '';
+      
+      // Spawn FFprobe process to get duration and other metadata
+      const ffprobe = spawn('ffprobe', [
+        '-v', 'error',
+        '-show_entries', 'format=duration,bit_rate,size:stream=width,height,codec_name,r_frame_rate',
+        '-of', 'json',
+        filePath
+      ]);
+      
+      ffprobe.stdout.on('data', (data) => {
+        stdoutData += data.toString();
+      });
+      
+      ffprobe.stderr.on('data', (data) => {
+        stderrData += data.toString();
+      });
+      
+      // Set timeout
+      timeoutId = setTimeout(() => {
+        ffprobe.kill();
+        resolve({
+          success: false,
+          error: `Metadata extraction timeout after ${formatterService.formatDuration(timeout)}`
+        });
+      }, timeout);
+      
+      ffprobe.on('close', (code) => {
+        clearTimeout(timeoutId);
+        
+        if (code === 0) {
+          try {
+            const ffprobeData = JSON.parse(stdoutData);
+            
+            // Extract relevant metadata
+            const metadata: VideoMetadata = {
+              durationSeconds: parseFloat(ffprobeData.format.duration) || 0,
+              size: parseInt(ffprobeData.format.size) || 0
+            };
+            
+            // Add video stream info if available
+            if (ffprobeData.streams && ffprobeData.streams.length > 0) {
+              const videoStream = ffprobeData.streams.find((s: any) => s.codec_type === 'video');
+              if (videoStream) {
+                metadata.width = videoStream.width;
+                metadata.height = videoStream.height;
+                metadata.codec = videoStream.codec_name;
+                
+                // Parse framerate (can be in format "24/1")
+                if (videoStream.r_frame_rate) {
+                  const frParts = videoStream.r_frame_rate.split('/');
+                  if (frParts.length === 2) {
+                    metadata.fps = parseInt(frParts[0]) / parseInt(frParts[1]);
+                  }
+                }
+              }
+            }
+            
+            // Add bitrate if available
+            if (ffprobeData.format.bit_rate) {
+              metadata.bitrate = parseInt(ffprobeData.format.bit_rate);
+            }
+            
+            resolve({
+              success: true,
+              metadata
+            });
+          } catch (err: any) {
+            resolve({
+              success: false,
+              error: `Failed to parse FFprobe output: ${err.message}`
+            });
+          }
+        } else {
+          resolve({
+            success: false,
+            error: `FFprobe exited with code ${code}: ${stderrData}`
+          });
+        }
+      });
+      
+      ffprobe.on('error', (err) => {
+        clearTimeout(timeoutId);
+        resolve({
+          success: false,
+          error: `Failed to start FFprobe: ${err.message}`
+        });
+      });
+    });
   }
 
   /**

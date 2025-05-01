@@ -72,7 +72,7 @@ export function ExpertList({
     ? experts.filter(expert => 
         expert.expert_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (expert.full_name && expert.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (expert.expertise_area && expert.expertise_area.toLowerCase().includes(searchTerm.toLowerCase()))
+        (expert.mnemonic && expert.mnemonic.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     : experts;
 
@@ -115,8 +115,7 @@ export function ExpertList({
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Expertise</TableHead>
-                  <TableHead>Experience</TableHead>
+                  <TableHead>Mnemonic</TableHead>
                   <TableHead className="w-[120px]">Status</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
@@ -124,7 +123,7 @@ export function ExpertList({
               <TableBody>
                 {filteredExperts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center h-32 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center h-32 text-muted-foreground">
                       {searchTerm ? 'No experts match your search' : 'No experts found'}
                     </TableCell>
                   </TableRow>
@@ -139,8 +138,7 @@ export function ExpertList({
                         <div className="font-medium">{expert.expert_name}</div>
                         <div className="text-sm text-muted-foreground">{expert.full_name || '-'}</div>
                       </TableCell>
-                      <TableCell>{expert.expertise_area || '-'}</TableCell>
-                      <TableCell>{expert.experience_years ? `${expert.experience_years} years` : '-'}</TableCell>
+                      <TableCell>{expert.mnemonic || '-'}</TableCell>
                       <TableCell>
                         {expert.is_in_core_group && (
                           <Badge variant="default" className="bg-green-600">Core</Badge>

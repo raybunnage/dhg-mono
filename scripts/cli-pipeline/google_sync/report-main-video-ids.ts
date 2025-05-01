@@ -383,7 +383,6 @@ export async function reportMainVideoIds(
   }
 
   // Initialize Google Drive service using the singleton pattern
-  const supabase = SupabaseClientService.getInstance().getClient();
   const driveService = getGoogleDriveService(supabase);
 
   // Supabase client is already initialized above

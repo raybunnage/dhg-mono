@@ -26,11 +26,9 @@ const expertFormSchema = z.object({
   full_name: z.string().min(2, {
     message: 'Full name must be at least 2 characters.',
   }),
-  bio: z.string().optional(),
-  email_address: z.string().email().optional().nullable(),
-  expertise_area: z.string().optional().nullable(),
-  experience_years: z.coerce.number().min(0).optional().nullable(),
   is_in_core_group: z.boolean().default(false),
+  mnemonic: z.string().optional().nullable(),
+  metadata: z.any().optional().nullable(),
 });
 
 interface ExpertFormProps {
@@ -48,11 +46,9 @@ export function ExpertForm({ expert, onSuccess, onCancel }: ExpertFormProps) {
     defaultValues: {
       expert_name: expert?.expert_name || '',
       full_name: expert?.full_name || '',
-      bio: expert?.bio || '',
-      email_address: expert?.email_address || '',
-      expertise_area: expert?.expertise_area || '',
-      experience_years: expert?.experience_years || 0,
       is_in_core_group: expert?.is_in_core_group || false,
+      mnemonic: expert?.mnemonic || '',
+      metadata: expert?.metadata || null,
     },
   });
 
@@ -126,60 +122,16 @@ export function ExpertForm({ expert, onSuccess, onCancel }: ExpertFormProps) {
 
         <FormField
           control={form.control}
-          name="email_address"
+          name="mnemonic"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email Address</FormLabel>
+              <FormLabel>Mnemonic</FormLabel>
               <FormControl>
-                <Input placeholder="email@example.com" {...field} value={field.value || ''} />
+                <Input placeholder="3-character code (e.g., WAG)" {...field} value={field.value || ''} />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="expertise_area"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Expertise Area</FormLabel>
-              <FormControl>
-                <Input placeholder="Neuroscience, Machine Learning, etc." {...field} value={field.value || ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="experience_years"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Years of Experience</FormLabel>
-              <FormControl>
-                <Input type="number" {...field} value={field.value || ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="bio"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Biography</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Expert bio and background information"
-                  className="min-h-32"
-                  {...field}
-                  value={field.value || ''}
-                />
-              </FormControl>
+              <FormDescription>
+                A short 3-character code used to quickly identify this expert
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

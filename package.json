@@ -87,6 +87,7 @@
     "pdfjs-dist": "^5.1.91",
     "pptx-parser": "^1.1.7-beta.9",
     "pptx-text-parser": "^1.1.1",
+    "react-json-pretty": "^2.2.0",
     "uuid": "^11.1.0",
     "which": "^5.0.0"
   }

@@ -121,9 +121,9 @@ const CUSTOM_MNEMONICS: Record<string, string> = {
 interface AddExpertOptions {
   expertName: string;
   fullName?: string;
-  expertiseArea?: string;
   isInCoreGroup?: boolean;
   mnemonic?: string;
+  metadata?: Record<string, any>;
   dryRun: boolean;
   verbose: boolean;
 }
@@ -135,9 +135,9 @@ export async function addExpert(options: AddExpertOptions): Promise<void> {
   const { 
     expertName, 
     fullName, 
-    expertiseArea, 
     isInCoreGroup,
     mnemonic,
+    metadata,
     dryRun, 
     verbose 
   } = options;
@@ -167,9 +167,9 @@ export async function addExpert(options: AddExpertOptions): Promise<void> {
     if (verbose) {
       loggerUtil.info(`Debug: expertName = "${expertName}"`);
       loggerUtil.info(`Debug: fullName = "${fullName}"`);
-      loggerUtil.info(`Debug: expertiseArea = "${expertiseArea}"`);
       loggerUtil.info(`Debug: isInCoreGroup = ${isInCoreGroup}`);
       loggerUtil.info(`Debug: mnemonic = "${mnemonic}"`);
+      if (metadata) loggerUtil.info(`Debug: metadata = ${JSON.stringify(metadata)}`);
     }
     
     // Get Supabase client
@@ -210,9 +210,9 @@ export async function addExpert(options: AddExpertOptions): Promise<void> {
       loggerUtil.info(`[DRY RUN] Would add expert:`);
       loggerUtil.info(`- Name: ${expertName}`);
       if (fullName) loggerUtil.info(`- Full Name: ${fullName}`);
-      if (expertiseArea) loggerUtil.info(`- Expertise: ${expertiseArea}`);
       loggerUtil.info(`- Core Group: ${isInCoreGroup ? 'Yes' : 'No'}`);
       loggerUtil.info(`- Mnemonic: ${expertMnemonic}`);
+      if (metadata) loggerUtil.info(`- Metadata: ${JSON.stringify(metadata)}`);
       return;
     }
     
@@ -224,9 +224,9 @@ export async function addExpert(options: AddExpertOptions): Promise<void> {
       .insert({
         expert_name: expertName,
         full_name: fullName || expertName,
-        expertise_area: expertiseArea || null,
         is_in_core_group: isInCoreGroup || false,
         mnemonic: expertMnemonic,
+        metadata: metadata || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })

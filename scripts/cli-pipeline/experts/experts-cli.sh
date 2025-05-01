@@ -8,6 +8,7 @@
 #   assign-folder-experts   Interactively assign experts to high-level folders (path_depth = 0)
 #   list-experts            List all experts with their mnemonics
 #   add-expert              Add a new expert to the database
+#   propagate-expert-ids    Recursively assign expert_id to all files under expert folders
 #   health-check            Check the health of the experts service infrastructure
 
 # Get the directory where this script is located
@@ -46,8 +47,8 @@ if [ "$COMMAND" = "add-expert" ]; then
   # Extract parameters from command line arguments
   EXPERT_NAME=""
   FULL_NAME=""
-  EXPERTISE=""
   MNEMONIC=""
+  METADATA=""
   CORE_GROUP=false
   DRY_RUN=false
   VERBOSE=false
@@ -63,12 +64,12 @@ if [ "$COMMAND" = "add-expert" ]; then
         FULL_NAME="$2"
         shift 2
         ;;
-      --expertise)
-        EXPERTISE="$2"
-        shift 2
-        ;;
       --mnemonic)
         MNEMONIC="$2"
+        shift 2
+        ;;
+      --metadata)
+        METADATA="$2"
         shift 2
         ;;
       --core-group)
@@ -104,12 +105,12 @@ if [ "$COMMAND" = "add-expert" ]; then
     PARAMS="$PARAMS --full-name \"$FULL_NAME\""
   fi
   
-  if [ -n "$EXPERTISE" ]; then
-    PARAMS="$PARAMS --expertise \"$EXPERTISE\""
-  fi
-  
   if [ -n "$MNEMONIC" ]; then
     PARAMS="$PARAMS --mnemonic \"$MNEMONIC\""
+  fi
+  
+  if [ -n "$METADATA" ]; then
+    PARAMS="$PARAMS --metadata '$METADATA'"
   fi
   
   if [ "$CORE_GROUP" = "true" ]; then
@@ -127,6 +128,58 @@ if [ "$COMMAND" = "add-expert" ]; then
   # Execute the command with properly formatted parameters
   track_command "add-expert" "cd \"$ROOT_DIR\" && ts-node \"$CLI_DIR/add-expert-direct.ts\" $PARAMS"
 else
+  # Show help if requested
+  if [ "$COMMAND" = "help" ] || [ "$COMMAND" = "--help" ] || [ "$COMMAND" = "-h" ]; then
+    echo "Experts CLI - Manage experts and their associations"
+    echo ""
+    echo "USAGE:"
+    echo "  ./experts-cli.sh <command> [options]"
+    echo ""
+    echo "COMMANDS:"
+    echo "  (* = frequently used commands based on usage statistics)"
+    echo ""
+    echo "EXPERTS MANAGEMENT:"
+    echo "  * add-expert              Add a new expert to the database (15 uses)"
+    echo "  * list-experts            List all experts with their mnemonics"
+    echo ""
+    echo "FOLDER ASSIGNMENTS:"
+    echo "  * assign-folder-experts   Interactively assign experts to high-level folders (7 uses)"
+    echo "    assign-expert           Assign an expert to a folder (interactive mode with -i)"
+    echo "    link-top-level-folders  List folders with videos for expert assignment"
+    echo "  * propagate-expert-ids    Recursively assign expert_id to all files under expert folders (5 uses)"
+    echo ""
+    echo "SYSTEM:"
+    echo "  * health-check            Check the health of the experts service infrastructure (25 uses)"
+    echo "    help                    Show this help message"
+    echo ""
+    echo "EXAMPLES:"
+    echo ""
+    echo "EXPERTS MANAGEMENT:"
+    echo "  # Add a basic expert"
+    echo "  ./experts-cli.sh add-expert --expert-name \"Wager\""
+    echo ""
+    echo "  # Add expert with full details"
+    echo "  ./experts-cli.sh add-expert --expert-name \"Wager\" --full-name \"Tor Wager\" --core-group"
+    echo ""
+    echo "  # List all experts with their mnemonics"
+    echo "  ./experts-cli.sh list-experts"
+    echo ""
+    echo "FOLDER ASSIGNMENTS:"
+    echo "  # Assign experts to high-level folders interactively"
+    echo "  ./experts-cli.sh assign-folder-experts"
+    echo ""
+    echo "  # Interactive mode for bulk assignment using mnemonics"
+    echo "  ./experts-cli.sh assign-expert -i"
+    echo ""
+    echo "  # Propagate expert IDs to all child files and folders"
+    echo "  ./experts-cli.sh propagate-expert-ids"
+    echo ""
+    echo "SYSTEM:"
+    echo "  # Check the health of the experts service"
+    echo "  ./experts-cli.sh health-check"
+    exit 0
+  fi
+
   # Regular command execution for other commands
   track_command "$COMMAND" "ts-node $CLI_DIR/experts-cli.ts $*"
 fi

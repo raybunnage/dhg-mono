@@ -12,9 +12,9 @@ const args = process.argv.slice(2);
 const options: {
   expertName?: string;
   fullName?: string;
-  expertiseArea?: string;
   mnemonic?: string;
   isInCoreGroup?: boolean;
+  metadata?: Record<string, any>;
   dryRun?: boolean;
   verbose?: boolean;
 } = {
@@ -33,11 +33,16 @@ for (let i = 0; i < args.length; i++) {
   else if (arg === '--full-name' && i + 1 < args.length) {
     options.fullName = args[++i];
   }
-  else if (arg === '--expertise' && i + 1 < args.length) {
-    options.expertiseArea = args[++i];
-  }
   else if (arg === '--mnemonic' && i + 1 < args.length) {
     options.mnemonic = args[++i];
+  }
+  else if (arg === '--metadata' && i + 1 < args.length) {
+    try {
+      options.metadata = JSON.parse(args[++i]);
+    } catch (error) {
+      console.error('Error: --metadata must be a valid JSON string');
+      process.exit(1);
+    }
   }
   else if (arg === '--core-group') {
     options.isInCoreGroup = true;
@@ -60,8 +65,8 @@ if (!options.expertName) {
 addExpert({
   expertName: options.expertName,
   fullName: options.fullName,
-  expertiseArea: options.expertiseArea,
   mnemonic: options.mnemonic,
+  metadata: options.metadata,
   isInCoreGroup: options.isInCoreGroup || false,
   dryRun: options.dryRun || false,
   verbose: options.verbose || false

@@ -2156,68 +2156,38 @@ export type Database = {
       }
       experts: {
         Row: {
-          bio: string | null
           created_at: string
-          email_address: string | null
-          experience_years: number | null
           expert_name: string
-          expertise_area: string | null
           full_name: string | null
-          google_email: string | null
-          google_profile_data: Json | null
-          google_user_id: string | null
           id: string
           is_in_core_group: boolean
-          last_synced_at: string | null
-          legacy_expert_id: number | null
+          metadata: Json | null
           mnemonic: string | null
           starting_ref_id: number | null
-          sync_error: string | null
-          sync_status: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
-          bio?: string | null
           created_at?: string
-          email_address?: string | null
-          experience_years?: number | null
           expert_name: string
-          expertise_area?: string | null
           full_name?: string | null
-          google_email?: string | null
-          google_profile_data?: Json | null
-          google_user_id?: string | null
           id?: string
           is_in_core_group?: boolean
-          last_synced_at?: string | null
-          legacy_expert_id?: number | null
+          metadata?: Json | null
           mnemonic?: string | null
           starting_ref_id?: number | null
-          sync_error?: string | null
-          sync_status?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
-          bio?: string | null
           created_at?: string
-          email_address?: string | null
-          experience_years?: number | null
           expert_name?: string
-          expertise_area?: string | null
           full_name?: string | null
-          google_email?: string | null
-          google_profile_data?: Json | null
-          google_user_id?: string | null
           id?: string
           is_in_core_group?: boolean
-          last_synced_at?: string | null
-          legacy_expert_id?: number | null
+          metadata?: Json | null
           mnemonic?: string | null
           starting_ref_id?: number | null
-          sync_error?: string | null
-          sync_status?: string | null
           updated_at?: string
           user_id?: string | null
         }

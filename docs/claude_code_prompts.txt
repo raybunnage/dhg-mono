@@ -1,3 +1,5 @@
+ pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+ 
  ffmpeg -i file_types/mp4/10.14.20.Aria.Patterson.Carter.SocialConnection.mp4 -vn -acodec copy
   file_types/m4a/10.14.20.Aria.Patterson.Carter.SocialConnection.m4a
 
@@ -95,6 +97,86 @@ I've successfully fixed several key files that were creating their own Supabase 
   standardized services that work consistently across the application.
 
 
+
+Let me also look for more information on the sync process:
+
+⏺ Search(pattern: "recordsToMarkDeleted")…
+  ⎿  Found 1 file
+
+⏺ Based on my investigation, I can now provide you with information about what could be setting is_deleted = TRUE in your files.
+
+  Investigation Findings: What's Setting is_deleted = TRUE
+
+  The primary issue is in the sync-and-update-metadata.ts file, which is triggered by the sync command in google-sync-cli.sh. Here's what's happening:
+
+  1. Root Cause Identified: The deletion logic is in the syncFiles function (lines 619-712 in sync-and-update-metadata.ts). The code:
+    - Creates a set of all drive IDs found in Google Drive (foundDriveIds)
+    - Gets all non-deleted records from the database
+    - Identifies records that are in the database but NOT in the Google Drive results (recordsToMarkDeleted)
+    - Marks those missing files as deleted by setting is_deleted: true
+  2. Problem: This means that if a file exists in your database but for some reason isn't returned in the Google Drive API call, it will be marked as
+  deleted, even if it actually still exists. This could happen if:
+    - The maximum depth setting (maxDepth) isn't high enough to reach all files
+    - There are temporary issues with the Google Drive API
+    - Permissions have changed on some files
+    - The API call is hitting rate limits and not returning all files
+  3. Key Code Section: Lines 619-626 show how files are marked for deletion:
+  const recordsToMarkDeleted = (existingRecords || [])
+    .filter(record =>
+      record.root_drive_id === DYNAMIC_HEALING_FOLDER_ID &&
+      !foundDriveIds.has(record.drive_id)
+    );
+  4. Default Settings Issues: The default maxDepth is 6 and default limit is 1000, but if your folder structure is deeper or you have more files, some
+  files won't be found and incorrectly marked as deleted.
+  5. No Safeguarding: While there is safeguarding for the root folder (it's explicitly added to foundDriveIds), there's no equivalent protection for other
+   important files.
+
+  Available Google Sync Commands
+
+  There are multiple commands available:
+
+  1. Primary Sync Command: ./google-sync-cli.sh sync - This is the main command that's causing files to be marked as deleted. It:
+    - Syncs files from Google Drive to the database
+    - Updates metadata for existing files
+    - Marks files not found in Google Drive as deleted
+  2. Checking Deleted Files: ./google-sync-cli.sh check-deleted-files - This can help you verify which files are marked as deleted and if they actually
+  exist in Google Drive.
+  3. Other Relevant Commands:
+    - ./google-sync-cli.sh health-check - Checks Google Drive API connection
+    - ./google-sync-cli.sh sources-google-integrity - Checks for integrity issues
+    - ./google-sync-cli.sh fix-bad-folders - Fixes files incorrectly marked with folder document types
+
+  Cleanup Options
+
+  If you need to clean up the incorrectly deleted files:
+
+  1. Check Deleted Files: First, run ./google-sync-cli.sh check-deleted-files to see which files are marked as deleted but still exist in Google Drive.
+  2. Run Sync with Better Parameters:
+  ./google-sync-cli.sh sync --max-depth 10 --verbose --limit 5000
+  2. This will use deeper traversal and check more files, potentially fixing the issue.
+  3. Direct Database Fix: You could create a script to reset the is_deleted flag for all files that still exist in Google Drive.
+
+  Recommendation
+
+  1. Use ./google-sync-cli.sh check-deleted-files to understand the scope of the issue
+  2. Run a more comprehensive sync with higher depth and limits:
+  ./google-sync-cli.sh sync --max-depth 10 --verbose --limit 5000 --dry-run
+  2. (Use --dry-run first to see what would change without making actual changes)
+  3. Check if this would fix the issue, then run without --dry-run if it looks correct
+  4. Consider modifying the sync-and-update-metadata.ts file to make the deletion process more cautious, perhaps by:
+    - Adding a verification step before marking files as deleted
+    - Only marking files as deleted if they've been missing for multiple sync runs
+    - Adding safeguards for important files beyond just the root folder
+
+  The sync command is the only one that should be setting files to is_deleted = true, but it's doing so based on which files it can find during the API
+  call to Google Drive.
+
+
+
+
+
+
+
 oogle table that need processing
   2. Finds corresponding expert_documents by matching the source_id
   3. Uses the final_video-summary-prompt to generate AI summaries in JSON format
@@ -117,7 +199,190 @@ oogle table that need processing
   presentations-cli process-mp4-files --document-id abc123-def456 --dry-run
 
 
-pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+
+
+
+Now we have successfully implemented all the required components:
+
+  1. Added a function to the converter service to extract video metadata using FFprobe
+  2. Updated the Google Drive sync code to extract and save video duration during
+  metadata updates
+  3. Created a new CLI command (extract-video-metadata) to extract metadata for existing
+  files
+  4. Modified the Home.tsx component to display actual duration from metadata or fall
+  back to estimation
+
+  To use this new functionality:
+
+  1. Run the extraction script to populate metadata for existing files:
+  cd /Users/raybunnage/Documents/github/dhg-mono
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh extract-video-metadata
+  --limit 100
+
+  2. The Home.tsx component will now display actual durations for videos with metadata,
+  and fall back to estimated durations for others.
+  3. New MP4 files uploaded to Google Drive will automatically have their duration
+  extracted during the sync process if they're available locally.
+
+  This implementation provides a much more accurate video duration display for users,
+  enhancing the UI of the video cards.
+
+
+Now we have successfully implemented all the required components:
+
+  1. Added a function to the converter service to extract video metadata using FFprobe
+  2. Updated the Google Drive sync code to extract and save video duration during
+  metadata updates
+  3. Created a new CLI command (extract-video-metadata) to extract metadata for existing
+  files
+  4. Modified the Home.tsx component to display actual duration from metadata or fall
+  back to estimation
+
+  To use this new functionality:
+
+  1. Run the extraction script to populate metadata for existing files:
+  cd /Users/raybunnage/Documents/github/dhg-mono
+  ./scripts/cli-pipeline/media-processing/media-processing-cli.sh extract-video-metadata
+  --limit 100
+
+  2. The Home.tsx component will now display actual durations for videos with metadata,
+  and fall back to estimated durations for others.
+  3. New MP4 files uploaded to Google Drive will automatically have their duration
+  extracted during the sync process if they're available locally.
+
+  This implementation provides a much more accurate video duration display for users,
+  enhancing the UI of the video cards.
+
+
+[
+  {
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()"
+  },
+  {
+    "column_name": "expert_name",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "column_name": "full_name",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "starting_ref_id",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "is_in_core_group",
+    "data_type": "boolean",
+    "is_nullable": "NO",
+    "column_default": "false"
+  },
+  {
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "CURRENT_TIMESTAMP"
+  },
+  {
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "CURRENT_TIMESTAMP"
+  },
+  {
+    "column_name": "user_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "expertise_area",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "bio",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "experience_years",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": "0"
+  },
+  {
+    "column_name": "email_address",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "legacy_expert_id",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "google_user_id",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "google_email",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "google_profile_data",
+    "data_type": "jsonb",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "last_synced_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "sync_status",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "sync_error",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "mnemonic",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "metadata",
+    "data_type": "jsonb",
+    "is_nullable": "YES",
+    "column_default": "'{}'::jsonb"
+  }
+]
+
 
 
 [

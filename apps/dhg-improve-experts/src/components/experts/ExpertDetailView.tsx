@@ -101,16 +101,8 @@ export function ExpertDetailView({
                 <div>{expert.full_name || '-'}</div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground">Email</div>
-                <div>{expert.email_address || '-'}</div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Expertise Area</div>
-                <div>{expert.expertise_area || '-'}</div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Experience</div>
-                <div>{expert.experience_years ? `${expert.experience_years} years` : '-'}</div>
+                <div className="text-sm font-medium text-muted-foreground">Mnemonic</div>
+                <div>{expert.mnemonic || '-'}</div>
               </div>
               <div>
                 <div className="text-sm font-medium text-muted-foreground">Core Group</div>
@@ -120,19 +112,14 @@ export function ExpertDetailView({
                 <div className="text-sm font-medium text-muted-foreground">Last Updated</div>
                 <div>{formatDate(expert.updated_at)}</div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Biography</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-64">
-                <div className="whitespace-pre-wrap">
-                  {expert.bio || 'No biography available'}
+              {expert.metadata && (
+                <div className="col-span-2">
+                  <div className="text-sm font-medium text-muted-foreground">Metadata</div>
+                  <div className="mt-1 text-sm font-mono bg-muted p-2 rounded">
+                    {JSON.stringify(expert.metadata, null, 2)}
+                  </div>
                 </div>
-              </ScrollArea>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

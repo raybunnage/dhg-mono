@@ -3,6 +3,53 @@ import { supabase } from '@/utils/supabase-adapter';
 // @ts-ignore - This import will work at runtime
 import { Database } from '../../../supabase/types';
 import ReactMarkdown from 'react-markdown';
+import JsonFormatter from '../components/JsonFormatter';
+
+// Utility function to get video duration, either from metadata or estimated from file size
+const getVideoDuration = (videoSource: SourceGoogle | null | undefined): string => {
+  if (!videoSource) return '';
+  
+  // Check if we have actual duration in metadata
+  if (videoSource.metadata && 
+      (videoSource.metadata.videoDuration || 
+       videoSource.metadata.formattedDuration ||
+       (videoSource.metadata.videoMetadata && videoSource.metadata.videoMetadata.durationSeconds))) {
+    
+    // If we have a pre-formatted duration string, use it
+    if (videoSource.metadata.formattedDuration) {
+      return videoSource.metadata.formattedDuration;
+    }
+    
+    // If we have duration in seconds, format it
+    const durationSeconds = videoSource.metadata.videoDuration || 
+                           (videoSource.metadata.videoMetadata && videoSource.metadata.videoMetadata.durationSeconds);
+    
+    if (durationSeconds) {
+      const hours = Math.floor(durationSeconds / 3600);
+      const minutes = Math.floor((durationSeconds % 3600) / 60);
+      const seconds = Math.floor(durationSeconds % 60);
+      
+      if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      } else {
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
+    }
+  }
+  
+  // Fall back to size-based estimation if no duration metadata is available
+  if (!videoSource.size) return '';
+  
+  // Assuming average bitrate of 2000 kbps (250 KB/s) for typical MP4 videos
+  // This is a rough estimate - actual duration depends on video encoding
+  const durationInSeconds = videoSource.size / (250 * 1024);
+  
+  // Format as minutes:seconds
+  const minutes = Math.floor(durationInSeconds / 60);
+  const seconds = Math.floor(durationInSeconds % 60);
+  
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
 
 // Helper function to extract Drive ID from Google Drive URL
 const extractDriveId = (url: string | null): string | null => {
@@ -97,7 +144,9 @@ export function Home() {
               web_view_link,
               document_type_id,
               created_at,
-              modified_at
+              modified_at,
+              size,
+              metadata
             ),
             high_level_folder:high_level_folder_source_id(
               id,
@@ -407,7 +456,7 @@ export function Home() {
                   return (
                     <div key={key} className="mb-6">
                       <h3 className="text-lg font-semibold mb-2">{key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</h3>
-                      <pre className="text-sm bg-gray-50 p-2 rounded">{JSON.stringify(value, null, 2)}</pre>
+                      <JsonFormatter data={value} fontSize="0.75rem" />
                     </div>
                   );
                 }
@@ -436,6 +485,36 @@ export function Home() {
 
   // Format and display processed content (JSON, markdown, or plain text)
   const formatContent = (content: any): React.ReactNode => {
+    if (!content) return <p>No content available</p>;
+    
+    // If we have an object, first show a nicely formatted JSON at the top for reference
+    if (typeof content === 'object') {
+      return (
+        <div className="space-y-6">
+          {/* JSON Formatter Display (Collapsible) */}
+          <details>
+            <summary className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium">
+              View Raw JSON Data
+            </summary>
+            <div className="mt-2">
+              <JsonFormatter data={content} fontSize="0.85rem" />
+            </div>
+          </details>
+          
+          {/* Regular formatted content below */}
+          <div className="mt-4">
+            {formatContentInternal(content)}
+          </div>
+        </div>
+      );
+    }
+    
+    // For strings or other types, just use the regular formatter
+    return formatContentInternal(content);
+  };
+  
+  // Internal version of formatContent that handles the actual formatting
+  const formatContentInternal = (content: any): React.ReactNode => {
     if (!content) return <p>No content available</p>;
     
     if (typeof content === 'string') {
@@ -473,18 +552,20 @@ export function Home() {
         if (typeof summaryContent === 'string' && isMarkdown(summaryContent)) {
           return (
             <div className="markdown-content">
-              <h3 className="font-bold text-lg text-blue-700 mb-3">Summary</h3>
-              <div className="mb-6">
+              <h2 className="font-bold text-xl text-blue-700 mb-4 pb-2 border-b border-blue-200">
+                Summary
+              </h2>
+              <div className="mb-6 text-gray-800">
                 <ReactMarkdown>{summaryContent}</ReactMarkdown>
               </div>
               
               {/* Add key points/insights if they exist */}
               {(content.key_points || content.highlights || content.key_insights) && (
-                <div className="mt-6">
-                  <h3 className="font-bold text-base mb-3">Key {keyName}:</h3>
+                <div className="mt-6 bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-bold text-base mb-3 text-blue-800">Key {keyName}:</h3>
                   <ul className="list-disc pl-5 space-y-2">
                     {(content.key_points || content.highlights || content.key_insights || []).map((point: string, index: number) => (
-                      <li key={index}>{point}</li>
+                      <li key={index} className="text-gray-700">{point}</li>
                     ))}
                   </ul>
                 </div>
@@ -495,26 +576,31 @@ export function Home() {
         
         // If not markdown, format as paragraphs
         return (
-          <div>
-            <h3 className="font-bold text-lg text-blue-700 mb-3">Summary</h3>
-            <div className="mb-6">
-              {summaryContent.split('\n\n').map((paragraph: string, index: number) => (
-                <p key={index} className="mb-3">
-                  {/* Check if this looks like a heading */}
-                  {(paragraph.toUpperCase() === paragraph && paragraph.length > 4) || paragraph.trim().endsWith(':') ? 
-                    <strong>{paragraph}</strong> : 
-                    paragraph}
-                </p>
-              ))}
+          <div className="content-container bg-white rounded-lg shadow-sm p-5">
+            <h2 className="font-bold text-xl text-blue-700 mb-4 pb-2 border-b border-blue-200">
+              Summary
+            </h2>
+            <div className="mb-6 text-gray-800">
+              {typeof summaryContent === 'string' ? 
+                summaryContent.split('\n\n').map((paragraph: string, index: number) => (
+                  <p key={index} className="mb-3">
+                    {/* Check if this looks like a heading */}
+                    {(paragraph.toUpperCase() === paragraph && paragraph.length > 4) || paragraph.trim().endsWith(':') ? 
+                      <strong>{paragraph}</strong> : 
+                      paragraph}
+                  </p>
+                )) : 
+                <JsonFormatter data={summaryContent} />
+              }
             </div>
             
             {/* Add key points/insights if they exist */}
             {(content.key_points || content.highlights || content.key_insights) && (
-              <div className="mt-6">
-                <h3 className="font-bold text-base mb-3">Key {keyName}:</h3>
+              <div className="mt-6 bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-bold text-base mb-3 text-blue-800">Key {keyName}:</h3>
                 <ul className="list-disc pl-5 space-y-2">
                   {(content.key_points || content.highlights || content.key_insights || []).map((point: string, index: number) => (
-                    <li key={index}>{point}</li>
+                    <li key={index} className="text-gray-700">{point}</li>
                   ))}
                 </ul>
               </div>
@@ -529,22 +615,27 @@ export function Home() {
         const keyName = content.key_points ? "Points" : content.key_insights ? "Insights" : "Highlights";
         
         return (
-          <div>
+          <div className="content-container bg-white rounded-lg shadow-sm p-5">
             {content.summary && (
               <div className="mb-6">
-                <h3 className="font-bold text-lg text-blue-700 mb-3">Summary</h3>
-                {content.summary.split('\n\n').map((paragraph: string, index: number) => (
-                  <p key={index} className="mb-3">{paragraph}</p>
-                ))}
+                <h2 className="font-bold text-xl text-blue-700 mb-4 pb-2 border-b border-blue-200">
+                  Summary
+                </h2>
+                {typeof content.summary === 'string' ? 
+                  content.summary.split('\n\n').map((paragraph: string, index: number) => (
+                    <p key={index} className="mb-3 text-gray-800">{paragraph}</p>
+                  )) : 
+                  <JsonFormatter data={content.summary} className="text-gray-800" />
+                }
               </div>
             )}
             
             {points.length > 0 && (
-              <div className="mt-6">
-                <h3 className="font-bold text-base mb-3">Key {keyName}:</h3>
+              <div className="mt-6 bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-bold text-base mb-3 text-blue-800">Key {keyName}:</h3>
                 <ul className="list-disc pl-5 space-y-2">
                   {points.map((point: string, index: number) => (
-                    <li key={index}>{point}</li>
+                    <li key={index} className="text-gray-700">{point}</li>
                   ))}
                 </ul>
               </div>
@@ -556,73 +647,225 @@ export function Home() {
       // Check if the object has a markdown field
       if (content.markdown) {
         return (
-          <div className="markdown-content">
+          <div className="markdown-content p-5 bg-white rounded-lg shadow-sm">
             <ReactMarkdown>{content.markdown}</ReactMarkdown>
           </div>
         );
       }
       
-      // Enhance JSON display with better formatting
-      return (
-        <div className="json-formatted-content p-3 bg-white border border-gray-200 rounded-md shadow-sm">
-          {Object.entries(content).map(([key, value]) => {
-            // Skip null or undefined values
-            if (value === null || value === undefined) return null;
-            
-            // Format each key-value pair nicely
-            return (
-              <div key={key} className="mb-4">
-                <h4 className="text-md font-bold text-blue-700 mb-1 capitalize">
-                  {key.replace(/_/g, ' ')}
-                </h4>
-                
-                {/* Handle different value types */}
-                {typeof value === 'string' && (
-                  <p className="text-gray-800">{value}</p>
-                )}
-                
-                {typeof value === 'number' && (
-                  <p className="text-gray-800">{value}</p>
-                )}
-                
-                {typeof value === 'boolean' && (
-                  <p className="text-gray-800">{value ? 'Yes' : 'No'}</p>
-                )}
-                
-                {Array.isArray(value) && value.length > 0 && (
-                  <ul className="list-disc pl-5 space-y-1">
-                    {value.map((item, idx) => (
-                      <li key={idx} className="text-gray-800">
-                        {typeof item === 'object' ? JSON.stringify(item) : String(item)}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                
-                {typeof value === 'object' && !Array.isArray(value) && value !== null && (
-                  <div className="pl-4 border-l-2 border-gray-200">
-                    {Object.entries(value).map(([subKey, subValue]) => {
-                      if (subValue === null || subValue === undefined) return null;
-                      return (
-                        <div key={subKey} className="mb-2">
-                          <h5 className="text-sm font-semibold text-gray-700 capitalize">
-                            {subKey.replace(/_/g, ' ')}
-                          </h5>
-                          {typeof subValue === 'object' ? (
-                            <pre className="text-xs bg-gray-50 p-1 rounded">{JSON.stringify(subValue, null, 2)}</pre>
-                          ) : (
-                            <p className="text-sm text-gray-600">{String(subValue)}</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+      // Enhanced structured content display
+      const hasSummarySection = content.summary || content.overview;
+      const hasKeyPoints = content.key_points || content.highlights || content.key_insights;
+      
+      if (hasSummarySection || hasKeyPoints) {
+        return (
+          <div className="json-enhanced-content p-5 bg-white rounded-lg shadow-sm">
+            {/* Summary Section */}
+            {(content.summary || content.overview) && (
+              <div className="mb-6">
+                <h2 className="font-bold text-xl text-blue-700 mb-4 pb-2 border-b border-blue-200">
+                  {content.summary ? "Summary" : "Overview"}
+                </h2>
+                <div className="text-gray-800">
+                  {typeof (content.summary || content.overview) === 'string' ?
+                    (content.summary || content.overview).split('\n\n').map((paragraph: string, index: number) => (
+                      <p key={index} className="mb-3">{paragraph}</p>
+                    )) :
+                    <JsonFormatter data={content.summary || content.overview} />
+                  }
+                </div>
               </div>
-            );
-          })}
-        </div>
-      );
+            )}
+            
+            {/* Key Points/Insights Section */}
+            {hasKeyPoints && (
+              <div className="mt-6 bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-bold text-lg mb-3 text-blue-800">
+                  {content.key_points ? "Key Points" : 
+                   content.key_insights ? "Key Insights" : 
+                   "Highlights"}
+                </h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  {(content.key_points || content.highlights || content.key_insights || []).map((point: string, index: number) => (
+                    <li key={index} className="text-gray-700">{point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Other sections that might be important */}
+            {Object.entries(content)
+              .filter(([key]) => !['summary', 'overview', 'key_points', 'highlights', 'key_insights'].includes(key))
+              .map(([key, value]) => {
+                if (value === null || value === undefined) return null;
+                
+                const displayName = key
+                  .replace(/_/g, ' ')
+                  .split(' ')
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ');
+                
+                return (
+                  <div key={key} className="mt-6">
+                    <h3 className="font-bold text-lg text-blue-700 mb-3">
+                      {displayName}
+                    </h3>
+                    
+                    {typeof value === 'string' && (
+                      <p className="text-gray-800">{value}</p>
+                    )}
+                    
+                    {typeof value === 'number' && (
+                      <p className="text-gray-800">{value}</p>
+                    )}
+                    
+                    {typeof value === 'boolean' && (
+                      <p className="text-gray-800">{value ? 'Yes' : 'No'}</p>
+                    )}
+                    
+                    {Array.isArray(value) && value.length > 0 && (
+                      <ul className="list-disc pl-5 space-y-2">
+                        {value.map((item, idx) => (
+                          <li key={idx} className="text-gray-800">
+                            {typeof item === 'object' ? 
+                              <div className="text-sm p-2">
+                                {Object.entries(item).map(([itemKey, itemValue]) => (
+                                  <div key={itemKey} className="mb-2">
+                                    <span className="font-semibold">{itemKey.replace(/_/g, ' ')}: </span>
+                                    <span>{String(itemValue)}</span>
+                                  </div>
+                                ))}
+                              </div> : 
+                              String(item)
+                            }
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    
+                    {typeof value === 'object' && !Array.isArray(value) && value !== null && (
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        {Object.entries(value).map(([subKey, subValue]) => {
+                          if (subValue === null || subValue === undefined) return null;
+                          
+                          const subKeyFormatted = subKey
+                            .replace(/_/g, ' ')
+                            .split(' ')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+                            
+                          return (
+                            <div key={subKey} className="mb-3">
+                              <span className="font-semibold text-blue-600">{subKeyFormatted}: </span>
+                              {typeof subValue === 'object' ? (
+                                <div className="pl-4 mt-1 border-l-2 border-blue-100">
+                                  {Array.isArray(subValue) ? (
+                                    <ul className="list-disc pl-4">
+                                      {subValue.map((item, i) => (
+                                        <li key={i} className="mb-1">{String(item)}</li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    Object.entries(subValue).map(([deepKey, deepValue]) => (
+                                      <div key={deepKey} className="mb-1">
+                                        <span className="font-medium">{deepKey.replace(/_/g, ' ')}: </span>
+                                        <span className="text-gray-700">{String(deepValue)}</span>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-700">{String(subValue)}</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            }
+            
+            {/* No need to show raw JSON here since we now show it at the top */}
+          </div>
+        );
+      } else {
+        // If no structured sections found, display in a clean format
+        return (
+          <div className="json-formatted-content p-5 bg-white rounded-lg shadow-sm">
+            <h2 className="font-bold text-xl text-blue-700 mb-4">Document Content</h2>
+            
+            {Object.entries(content).map(([key, value]) => {
+              if (value === null || value === undefined) return null;
+              
+              const displayName = key
+                .replace(/_/g, ' ')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+              
+              return (
+                <div key={key} className="mb-5 pb-4 border-b border-gray-100">
+                  <h3 className="font-bold text-lg text-blue-700 mb-2">
+                    {displayName}
+                  </h3>
+                  
+                  {typeof value === 'string' && (
+                    <p className="text-gray-800">{value}</p>
+                  )}
+                  
+                  {typeof value === 'number' && (
+                    <p className="text-gray-800">{value}</p>
+                  )}
+                  
+                  {typeof value === 'boolean' && (
+                    <p className="text-gray-800">{value ? 'Yes' : 'No'}</p>
+                  )}
+                  
+                  {Array.isArray(value) && (
+                    <ul className="list-disc pl-5 space-y-1">
+                      {value.map((item, idx) => (
+                        <li key={idx} className="text-gray-800">
+                          {typeof item === 'object' ? 
+                            <div className="text-sm p-2">
+                              {Object.entries(item).map(([itemKey, itemValue]) => (
+                                <div key={itemKey} className="mb-2">
+                                  <span className="font-semibold">{itemKey.replace(/_/g, ' ')}: </span>
+                                  <span>{String(itemValue)}</span>
+                                </div>
+                              ))}
+                            </div> : 
+                            String(item)
+                          }
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  
+                  {typeof value === 'object' && !Array.isArray(value) && value !== null && (
+                    <div className="pl-4 mt-2">
+                      {Object.entries(value).map(([subKey, subValue]) => {
+                        if (subValue === null || subValue === undefined) return null;
+                        return (
+                          <div key={subKey} className="mb-3">
+                            <span className="font-semibold text-blue-600">{subKey.replace(/_/g, ' ')}: </span>
+                            {typeof subValue === 'object' ? (
+                              <JsonFormatter data={subValue} fontSize="0.75rem" className="mt-1" />
+                            ) : (
+                              <span className="text-gray-700">{String(subValue)}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
     }
     
     return <p>Content format not supported</p>;
@@ -1038,16 +1281,34 @@ export function Home() {
           <div className="bg-white rounded-lg shadow p-4">
             <h2 className="text-lg font-medium text-gray-900 mb-3">Presentations</h2>
             {loading ? (
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <div className="flex flex-col items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+                <p className="text-sm text-gray-500">Loading presentations...</p>
               </div>
             ) : error ? (
-              <div className="bg-red-50 text-red-600 p-3 rounded">
-                Error: {error}
+              <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded">
+                <div className="font-semibold mb-1">Error loading presentations</div>
+                <div className="text-sm">{error}</div>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="mt-3 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-sm transition-colors"
+                >
+                  Retry
+                </button>
               </div>
             ) : filteredPresentations.length === 0 ? (
-              <div className="text-gray-500 text-center py-4">
-                No presentations found
+              <div className="text-gray-500 text-center py-6 bg-gray-50 rounded-md">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-10 w-10 mx-auto text-gray-400 mb-2" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <p className="mb-1">No presentations found</p>
+                <p className="text-xs text-gray-400">Try adjusting your search criteria</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -1100,6 +1361,9 @@ export function Home() {
                         {presentation.video_source?.name && (
                           <span className="text-xs italic">
                             {presentation.video_source.name}
+                            <span className="ml-1 text-xs bg-gray-100 px-1 py-0.5 rounded text-gray-600">
+                              {getVideoDuration(presentation.video_source)}
+                            </span>
                           </span>
                         )}
                       </div>
@@ -1179,6 +1443,12 @@ export function Home() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                       </svg>
                       <span className="text-blue-600 font-medium">{selectedPresentation.high_level_folder.name}</span>
+                      <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 ml-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="inline h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {getVideoDuration(selectedPresentation.video_source)}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1210,16 +1480,33 @@ export function Home() {
           </div>
 
           {/* Video Summary */}
-          {selectedPresentation?.expert_document?.processed_content && (
+          {selectedPresentation ? (
             <div className="bg-white rounded-lg shadow p-4">
               <h2 className="text-xl font-semibold text-blue-700 mb-3">
                 Video Summary
               </h2>
               <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
-                {formatContent(selectedPresentation.expert_document.processed_content)}
+                {selectedPresentation.expert_document?.processed_content ? (
+                  formatContent(selectedPresentation.expert_document.processed_content)
+                ) : (
+                  <div className="bg-blue-50 p-4 rounded-md">
+                    <p className="text-blue-700">No processed content available for this video.</p>
+                    <p className="text-sm text-blue-600 mt-2">Video metadata:</p>
+                    {selectedPresentation.video_source?.metadata ? (
+                      <div className="mt-2">
+                        <JsonFormatter 
+                          data={selectedPresentation.video_source.metadata} 
+                          fontSize="0.75rem"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic mt-1">No metadata available</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* Selected Asset Content or Viewer */}
           {selectedAsset && (

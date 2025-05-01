@@ -24,6 +24,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { getGoogleDriveService, GoogleDriveService } from '../../../packages/shared/services/google-drive';
 import type { Database } from '../../../supabase/types';
+// Note: converterService is dynamically imported within the updateMetadata function
+// to avoid circular dependencies
 
 // Load multiple environment files
 function loadEnvFiles() {
@@ -1131,6 +1133,73 @@ async function updateMetadata(
         
         // Mark last updated time
         metadata.lastUpdated = new Date().toISOString();
+        
+        // For MP4 videos, try to extract duration using FFprobe if file is available locally
+        if (fileData.mimeType === 'video/mp4' || record.mime_type === 'video/mp4') {
+          // Find the file in the local mp4 directory
+          const mp4Dir = path.join(process.cwd(), 'file_types', 'mp4');
+          const fileName = record.name || fileData.name;
+          const possiblePaths = [
+            path.join(mp4Dir, fileName),
+            path.join(mp4Dir, `INGESTED_${fileName}`)
+          ];
+          
+          let mp4Path = '';
+          for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+              mp4Path = p;
+              break;
+            }
+          }
+          
+          // If file found locally, extract metadata
+          if (mp4Path && isVerbose) {
+            console.log(`Found local MP4 file for ${fileName} at ${mp4Path}, extracting metadata...`);
+          }
+          
+          if (mp4Path && !isDryRun) {
+            try {
+              // Import the converter service (dynamically to avoid circular dependencies)
+              const { converterService } = require('../../../packages/shared/services/converter-service');
+              
+              // Extract metadata
+              const result = await converterService.extractVideoMetadata(mp4Path);
+              
+              if (result.success && result.metadata) {
+                if (isVerbose) {
+                  console.log(`Successfully extracted video metadata for ${fileName}:`);
+                  console.log(JSON.stringify(result.metadata, null, 2));
+                }
+                
+                // Add duration to metadata
+                metadata.videoDuration = result.metadata.durationSeconds;
+                metadata.videoMetadata = result.metadata;
+                
+                // Format duration for display
+                if (result.metadata.durationSeconds) {
+                  const hours = Math.floor(result.metadata.durationSeconds / 3600);
+                  const minutes = Math.floor((result.metadata.durationSeconds % 3600) / 60);
+                  const seconds = Math.floor(result.metadata.durationSeconds % 60);
+                  
+                  let formattedDuration = '';
+                  if (hours > 0) {
+                    formattedDuration = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                  } else {
+                    formattedDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                  }
+                  
+                  metadata.formattedDuration = formattedDuration;
+                }
+              } else if (isVerbose) {
+                console.log(`Could not extract video metadata: ${result.error}`);
+              }
+            } catch (error: any) {
+              if (isVerbose) {
+                console.warn(`Error extracting video metadata: ${error.message}`);
+              }
+            }
+          }
+        }
         
         // Additional column-specific updates
         const updateData: any = {

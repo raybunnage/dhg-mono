@@ -12,6 +12,7 @@ import { assignExpert } from './commands/assign-expert';
 import { assignFolderExperts } from './commands/assign-folder-experts';
 import { listExperts } from './commands/list-experts';
 import { addExpert } from './commands/add-expert';
+import { propagateExpertIds } from './commands/propagate-expert-ids';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Load environment variables
@@ -27,7 +28,8 @@ program
     '  list-experts              List all experts with their unique 3-character mnemonics\n' +
     '  assign-expert -i          Interactively assign experts to folders using mnemonics\n' +
     '  assign-folder-experts     Interactively assign experts to high-level folders with path_depth = 0\n' +
-    '  link-top-level-folders    List folders with videos that need expert assignment')
+    '  link-top-level-folders    List folders with videos that need expert assignment\n' +
+    '  propagate-expert-ids      Recursively assign expert_id to all files under expert folders')
   .version('1.0.0');
 
 // Command to list top-level folders for expert assignment
@@ -159,13 +161,15 @@ program
     '  # Add a basic expert\n' +
     '  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager"\n\n' +
     '  # Add expert with full details\n' +
-    '  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager" --full-name "Tor Wager" --expertise "Neuroscience" --core-group\n\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager" --full-name "Tor Wager" --core-group\n\n' +
     '  # Add expert with custom mnemonic\n' +
-    '  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager" --mnemonic "WAG"')
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager" --mnemonic "WAG"\n\n' +
+    '  # Add expert with metadata\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh add-expert --expert-name "Wager" --metadata \'{"field":"value"}\'')
   .option('--expert-name <n>', 'Short name for the expert (required)')
   .option('--full-name <n>', 'Full name of the expert')
-  .option('--expertise <area>', 'Area of expertise')
   .option('--mnemonic <code>', 'Custom 3-character mnemonic for the expert (auto-generated if not provided)')
+  .option('--metadata <json>', 'Additional metadata as a JSON string')
   .option('--core-group', 'Set as a core group member', false)
   .option('-d, --dry-run', 'Show what would be done without making changes', false)
   .option('-v, --verbose', 'Show more detailed output', false)
@@ -174,18 +178,55 @@ program
     console.log('Options received:', options);
     console.log('Expert name:', options.expertName);
     console.log('Full name:', options.fullName);
-    console.log('Expertise area:', options.expertise);
     console.log('Core group:', options.coreGroup);
+    
+    // Parse metadata if provided
+    let metadata = null;
+    if (options.metadata) {
+      try {
+        metadata = JSON.parse(options.metadata);
+      } catch (error) {
+        console.error('Error: --metadata must be a valid JSON string');
+        return;
+      }
+    }
     
     // Fix the parameters - manually map them properly
     await addExpert({
       expertName: options.expertName || '',
       fullName: options.fullName || '',
-      expertiseArea: options.expertise || '',
       mnemonic: options.mnemonic || '',
+      metadata: metadata,
       isInCoreGroup: options.coreGroup === true,
       dryRun: options.dryRun === true,
       verbose: true // Force verbose mode for debugging
+    });
+  });
+
+// Command to propagate expert IDs to all files under expert folders
+program
+  .command('propagate-expert-ids')
+  .description('Recursively assign expert_id to all files under expert folders\n' +
+    'Examples:\n' +
+    '  # Dry-run to see what would be updated\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh propagate-expert-ids --dry-run\n\n' +
+    '  # Process all folders and update files\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh propagate-expert-ids\n\n' +
+    '  # Process a specific folder\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh propagate-expert-ids --folder-id "<folder-id>"\n\n' +
+    'Workflow:\n' +
+    '  1. First assign experts to high-level folders using assign-expert or assign-folder-experts\n' +
+    '  2. Run this command to propagate those expert associations to all child files and folders')
+  .option('-d, --dry-run', 'Show what would be done without making changes', false)
+  .option('-v, --verbose', 'Show more detailed output', false)
+  .option('-l, --limit <number>', 'Limit number of folders processed', '0')
+  .option('--folder-id <id>', 'Process only a specific high-level folder')
+  .action(async (options) => {
+    await propagateExpertIds({
+      dryRun: options.dryRun,
+      verbose: options.verbose,
+      limit: parseInt(options.limit, 10),
+      folderId: options.folderId
     });
   });
 
