@@ -338,8 +338,45 @@ if (JSON.stringify(normalizedArgs) !== JSON.stringify(process.argv)) {
 }
 
 // Use the standard way to add the commands
+// FOR DEBUG: Let's log what the process-mp4-files command looks like
+console.log("DEBUG: processMp4FilesCommand =", {
+  name: processMp4FilesCommand.name(),
+  description: processMp4FilesCommand.description(),
+  options: processMp4FilesCommand.opts()
+});
+
+// Issue: Let's directly register the process-mp4-files command
+program
+  .command('process-mp4-files')
+  .description('DIRECT: Process MP4 files in sources_google, find related expert_documents, and generate AI summaries')
+  .option('-d, --document-id <id>', 'Specific expert document ID to process (for testing)')
+  .option('-l, --limit <limit>', 'Maximum number of MP4 files to process (default: 5)', '5')
+  .option('-b, --batch-size <size>', 'Number of files to process in each batch (default: 3)', '3')
+  .option('--dry-run', 'Preview processing without saving to database', false)
+  .option('--verbose', 'Show detailed logs during processing', false)
+  .option('-f, --force', 'Force processing even if already processed', false)
+  .option('-o, --output <path>', 'Output file path for the JSON results (default: mp4-processing-results.json)', 'mp4-processing-results.json')
+  .action(async (options: any) => {
+    // Extract only the needed options to avoid circular references
+    const extractedOptions = {
+      documentId: options.documentId,
+      limit: options.limit,
+      batchSize: options.batchSize,
+      dryRun: options.dryRun,
+      verbose: options.verbose,
+      force: options.force,
+      output: options.output
+    };
+    
+    console.log("DEBUG: DIRECT Action handler starting for process-mp4-files with options:", extractedOptions);
+    
+    // Load and run the command
+    const { processMp4FilesAction } = require('./commands/process-mp4-files-action');
+    await processMp4FilesAction(extractedOptions);
+  });
+
+// Now push the other commands (keep this for backward compatibility)
 program.commands.push(generateSummaryCommand);
-program.commands.push(processMp4FilesCommand);
 program.commands.push(testProcessDocumentCommand);
   
 console.log("DEBUG: Commands after adding commands:", program.commands.map((cmd: any) => cmd.name()));

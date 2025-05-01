@@ -11,6 +11,18 @@ const chalk = require('chalk');
 // Create a new command
 export const processMp4FilesCommand = new Command('process-mp4-files');
 
+// Helper function to write debug logs
+function writeDebugLog(message: string) {
+  const logPath = '/Users/raybunnage/Documents/github/dhg-mono/logs/process-mp4-debug.log';
+  const timestamp = new Date().toISOString();
+  const logMessage = `${timestamp} - ${message}\n`;
+  try {
+    fs.appendFileSync(logPath, logMessage);
+  } catch (error) {
+    console.error(`Failed to write to debug log: ${error}`);
+  }
+}
+
 // Set command description and options
 processMp4FilesCommand
   .description('Process MP4 files in sources_google, find related expert_documents, and generate AI summaries')
@@ -20,6 +32,10 @@ processMp4FilesCommand
   .option('--dry-run', 'Preview processing without saving to database', false)
   .option('-o, --output <path>', 'Output file path for the JSON results (default: mp4-processing-results.json)', 'mp4-processing-results.json')
   .action(async (options: any) => {
+    // Write to debug log
+    writeDebugLog(`Action handler started with options: ${JSON.stringify(options)}`);
+    console.log(`DEBUG: Action handler started with options: ${JSON.stringify(options)}`);
+    // This console log should appear in the terminal
     try {
       Logger.info('Starting MP4 files processing command');
       

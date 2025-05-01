@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "title_updated": false,
+  "new_title": "Untitled",
+  "old_title": "Untitled",
+  "ai_result": {
+    "title": "Untitled",
+    "summary": "I'll help you create an expert video summary in the requested JSON format. Please provide the transcript summary from Whisper of the video presentation you'd like me to analyze, and I'll generate a comprehensive summary following all the guidelines you've outlined.\n\nOnce you share the transcript, I'll:\n1. Create an engaging, descriptive title\n2. Extract speaker information\n3. Identify the core presentation content\n4. Highlight key takeaways\n5. Find memorable quotes\n6. Summarize discussion highli...",
+    "generated": true,
+    "note": "This is a simplified JSON generated from a non-JSON Claude response"
+  }
+}
