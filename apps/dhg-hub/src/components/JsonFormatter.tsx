@@ -61,12 +61,16 @@ const JsonFormatter: React.FC<JsonFormatterProps> = ({
       
       {/* JSON content with max height limit for large data unless expanded */}
       <div 
-        className={`overflow-auto ${isLargeJson && !isExpanded ? 'max-h-64' : ''}`}
-        style={isLargeJson && !isExpanded ? { 
-          WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
-          maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' 
-        } : {}}
+        className={`overflow-auto ${isLargeJson && !isExpanded ? 'max-h-64 relative' : ''}`}
       >
+        {isLargeJson && !isExpanded && (
+          <div 
+            className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none"
+            style={{
+              background: 'linear-gradient(to bottom, transparent, rgba(17, 24, 39, 0.9))'
+            }}
+          />
+        )}
         <pre 
           className="p-4 text-blue-300 font-mono"
           style={{ fontSize }}
@@ -115,8 +119,50 @@ function formatDataSize(bytes: number): string {
 // Helper function to format JSON with syntax highlighting using HTML
 function formatJsonWithSyntaxHighlighting(data: any): React.ReactNode {
   try {
-    // Convert data to pretty JSON string
-    const jsonString = JSON.stringify(data, null, 2);
+    // Circular reference detection
+    const seen = new WeakSet();
+    const safeStringify = (obj: any, indent = 0): string => {
+      // Handle primitive values
+      if (obj === null) return 'null';
+      if (obj === undefined) return 'undefined';
+      if (typeof obj !== 'object') return JSON.stringify(obj);
+      
+      // Handle arrays and objects with circular reference check
+      if (seen.has(obj)) return '"[Circular Reference]"';
+      seen.add(obj);
+      
+      if (Array.isArray(obj)) {
+        // Empty array
+        if (obj.length === 0) return '[]';
+        
+        // Format array
+        const items: string = obj.map((item: any): string => 
+          ' '.repeat(indent + 2) + safeStringify(item, indent + 2)
+        ).join(',\n');
+        
+        return `[\n${items}\n${' '.repeat(indent)}]`;
+      } else {
+        // Empty object
+        const keys = Object.keys(obj);
+        if (keys.length === 0) return '{}';
+        
+        // Format object
+        const props: string = keys.map((key: string): string => 
+          ' '.repeat(indent + 2) + `"${key}": ${safeStringify(obj[key], indent + 2)}`
+        ).join(',\n');
+        
+        return `{\n${props}\n${' '.repeat(indent)}}`;
+      }
+    };
+    
+    // Convert data to pretty JSON string with circular reference handling
+    let jsonString: string;
+    try {
+      jsonString = JSON.stringify(data, null, 2);
+    } catch (err) {
+      // If standard stringify fails, use our custom version
+      jsonString = safeStringify(data);
+    }
     
     // Handle empty or invalid data
     if (!jsonString || jsonString === '{}' || jsonString === '[]') {
@@ -140,8 +186,15 @@ function formatJsonWithSyntaxHighlighting(data: any): React.ReactNode {
       .replace(/: (-?\d+\.?\d*)/g, ': <span class="text-orange-400">$1</span>')
       // Highlight booleans
       .replace(/: (true|false)/g, ': <span class="text-purple-400">$1</span>')
-      // Highlight null
-      .replace(/: (null)/g, ': <span class="text-gray-500">$1</span>');
+      // Highlight null and undefined
+      .replace(/: (null|"undefined"|"\\[Circular Reference\\]")/g, (match, p1) => {
+        if (p1 === '"[Circular Reference]"') {
+          return ': <span class="text-yellow-300 italic">[Circular Reference]</span>';
+        } else if (p1 === '"undefined"') {
+          return ': <span class="text-gray-500">undefined</span>';
+        }
+        return ': <span class="text-gray-500">null</span>';
+      });
     
     // Add line numbers for better readability of large JSON objects
     const lines = highlightedJson.split('\n');
@@ -161,9 +214,9 @@ function formatJsonWithSyntaxHighlighting(data: any): React.ReactNode {
       <div className="text-red-500">
         <p className="font-bold">Error formatting data</p>
         <p className="text-sm">{String(error)}</p>
-        <p className="text-xs mt-2">Raw data:</p>
+        <p className="text-xs mt-2">Raw data type: {typeof data}</p>
         <pre className="text-xs mt-1 bg-gray-800 p-2 rounded overflow-auto">
-          {String(data)}
+          {typeof data === 'object' ? (data === null ? 'null' : Object.keys(data).join(', ')) : String(data)}
         </pre>
       </div>
     );
