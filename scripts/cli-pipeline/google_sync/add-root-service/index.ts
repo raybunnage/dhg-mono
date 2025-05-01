@@ -12,12 +12,10 @@
  *   npx ts-node add-root-service/index.ts 1MAyMwhKn8GwKHnb39-GbSNJQBYDVmxe1 --name "DHG Repository"
  */
 
-import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-import { google } from 'googleapis';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
-import { GoogleAuthService } from '../../../../packages/shared/services/google-drive/google-auth-service';
+import { GoogleDriveService, GoogleAuthService, getGoogleDriveService } from '../../../../packages/shared/services/google-drive';
 import { Logger } from '../../../../packages/shared/utils/logger';
 
 // Load environment variables
@@ -69,46 +67,25 @@ export async function addRootFolder(
     // Initialize Supabase client
     const supabase = SupabaseClientService.getInstance().getClient();
     
-    // Initialize Google Auth
-    const auth = GoogleAuthService.getInstance();
-    
-    // Create drive client using service account
-    const authToken = await auth.getAccessToken();
-    if (!authToken) {
-      Logger.error('❌ Failed to get Google Drive authentication token');
-      return false;
-    }
-    
-    // Create JWT auth client with the service account
-    const jwtClient = new google.auth.JWT({
-      email: undefined,
-      key: undefined,
-      scopes: ['https://www.googleapis.com/auth/drive.readonly'],
-      subject: undefined
-    });
-    
-    // Set the access token directly on the JWT client
-    jwtClient.credentials = { access_token: authToken };
-    
-    // Initialize the Drive client
-    const drive = google.drive({ version: 'v3', auth: jwtClient });
+    // Initialize Google Drive service using the singleton pattern
+    const driveService = getGoogleDriveService(supabase);
 
     // Verify the folder exists in Google Drive
     try {
-      const folderData = await drive.files.get({
-        fileId: resolvedFolderId,
-        fields: 'id,name,mimeType'
-      });
+      const folderData = await driveService.getFile(
+        resolvedFolderId, 
+        'id,name,mimeType'
+      );
       
-      const isFolder = folderData.data.mimeType === 'application/vnd.google-apps.folder';
+      const isFolder = folderData.mimeType === 'application/vnd.google-apps.folder';
       
       if (!isFolder) {
-        Logger.error(`❌ The provided ID is not a folder: ${folderData.data.mimeType}`);
+        Logger.error(`❌ The provided ID is not a folder: ${folderData.mimeType}`);
         return false;
       }
       
       // Use the folder name if no custom name is provided
-      const folderName = name || folderData.data.name;
+      const folderName = name || folderData.name;
       if (verbose) {
         Logger.info(`Using folder name: "${folderName}"`);
       }

@@ -9,8 +9,7 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
-import { google } from 'googleapis';
-import * as fs from 'fs';
+import { getGoogleDriveService } from '../../../packages/shared/services/google-drive';
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -24,50 +23,13 @@ const DYNAMIC_HEALING_FOLDER_ID = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';
 const supabaseClientService = SupabaseClientService.getInstance();
 const supabase = supabaseClientService.getClient();
 
-// Initialize Google Drive client
-async function initDriveClient() {
-  try {
-    // Get service account key file path from environment or use default
-    const keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
-                      path.resolve(process.cwd(), '.service-account.json');
-    
-    console.log(`🔑 Using service account key file: ${keyFilePath}`);
-    
-    // Check if file exists
-    if (!fs.existsSync(keyFilePath)) {
-      console.error(`❌ Service account key file not found: ${keyFilePath}`);
-      return null;
-    }
-    
-    // Read and parse the service account key file
-    const keyFile = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
-    
-    // Create JWT auth client with the service account
-    const auth = new google.auth.JWT(
-      keyFile.client_email,
-      undefined,
-      keyFile.private_key,
-      ['https://www.googleapis.com/auth/drive.readonly']
-    );
-    
-    // Initialize the Drive client
-    return google.drive({ version: 'v3', auth });
-  } catch (error) {
-    console.error('❌ Error initializing Drive client:', error);
-    return null;
-  }
-}
-
 // Check if a file exists in Google Drive
-async function checkFileExists(drive: any, fileId: string) {
+async function checkFileExists(driveService: any, fileId: string) {
   try {
-    const response = await drive.files.get({
-      fileId: fileId,
-      fields: 'id,name,mimeType,parents'
-    });
-    return { exists: true, data: response.data };
+    const fileData = await driveService.getFile(fileId, 'id,name,mimeType,parents');
+    return { exists: true, data: fileData };
   } catch (error: any) {
-    if (error.code === 404) {
+    if (error.code === 404 || error.message?.includes('File not found')) {
       return { exists: false, error: 'File not found' };
     }
     return { exists: false, error: error.message || 'Unknown error' };
@@ -79,12 +41,8 @@ async function checkDeletedFiles() {
   try {
     console.log('=== Checking Files Marked as Deleted ===');
     
-    // Initialize Google Drive client
-    const drive = await initDriveClient();
-    if (!drive) {
-      console.error('❌ Failed to initialize Google Drive client');
-      process.exit(1);
-    }
+    // Initialize Google Drive service using the singleton pattern
+    const driveService = getGoogleDriveService(supabase);
     
     // Fetch deleted files
     console.log('Fetching files marked as deleted...');
@@ -109,7 +67,7 @@ async function checkDeletedFiles() {
       console.log(`\nChecking file: ${file.name} (${file.drive_id})`);
       console.log(`Path: ${JSON.stringify(file.path_array)}`);
       
-      const result = await checkFileExists(drive, file.drive_id);
+      const result = await checkFileExists(driveService, file.drive_id);
       
       if (result.exists) {
         console.log(`✅ File EXISTS in Google Drive!`);

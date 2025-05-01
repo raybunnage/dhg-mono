@@ -16,10 +16,9 @@
  */
 
 import * as dotenv from 'dotenv';
-import * as fs from 'fs';
 import * as path from 'path';
-import { google } from 'googleapis';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import { getGoogleDriveService } from '../../../packages/shared/services/google-drive';
 import { v4 as uuidv4 } from 'uuid';
 
 // Load environment variables
@@ -51,54 +50,17 @@ const DYNAMIC_HEALING_FOLDER_ID = '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV';
 const supabaseClientService = SupabaseClientService.getInstance();
 const supabase = supabaseClientService.getClient();
 
-// Initialize Google Drive client
-async function initDriveClient() {
-  try {
-    // Get service account key file path from environment or use default
-    const keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
-                      path.resolve(process.cwd(), '.service-account.json');
-    
-    console.log(`🔑 Using service account key file: ${keyFilePath}`);
-    
-    // Check if file exists
-    if (!fs.existsSync(keyFilePath)) {
-      console.error(`❌ Service account key file not found: ${keyFilePath}`);
-      console.log('\nPlease do one of the following:');
-      console.log('1. Create the file at the path above');
-      console.log('2. Set GOOGLE_APPLICATION_CREDENTIALS environment variable to the correct path');
-      return null;
-    }
-    
-    // Read and parse the service account key file
-    const keyFile = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
-    
-    // Create JWT auth client with the service account
-    const auth = new google.auth.JWT(
-      keyFile.client_email,
-      undefined,
-      keyFile.private_key,
-      ['https://www.googleapis.com/auth/drive.readonly']
-    );
-    
-    // Initialize the Drive client
-    return google.drive({ version: 'v3', auth });
-  } catch (error) {
-    console.error('❌ Error initializing Drive client:', error);
-    return null;
-  }
-}
-
 /**
  * Get file details from Google Drive
  */
-async function getFileDetails(drive: any, fileId: string) {
+async function getFileDetails(driveService: any, fileId: string) {
   try {
-    const response = await drive.files.get({
-      fileId: fileId,
-      fields: 'id,name,mimeType,parents,modifiedTime,size,thumbnailLink,webViewLink'
-    });
+    const fileData = await driveService.getFile(
+      fileId,
+      'id,name,mimeType,parents,modifiedTime,size,thumbnailLink,webViewLink'
+    );
     
-    return { success: true, data: response.data };
+    return { success: true, data: fileData };
   } catch (error: any) {
     console.error(`Error getting file details: ${error.message || error}`);
     return { success: false, error: error.message || error };
@@ -108,15 +70,15 @@ async function getFileDetails(drive: any, fileId: string) {
 /**
  * Get parent folder path
  */
-async function getParentPath(drive: any, folderId: string): Promise<string> {
+async function getParentPath(driveService: any, folderId: string): Promise<string> {
   try {
     // Get folder details
-    const response = await drive.files.get({
-      fileId: folderId,
-      fields: 'id,name,parents'
-    });
+    const folderData = await driveService.getFile(
+      folderId,
+      'id,name,parents'
+    );
     
-    const folderName = response.data.name;
+    const folderName = folderData.name;
     
     // If this is the root folder, return its name with a slash
     if (folderId === DYNAMIC_HEALING_FOLDER_ID) {
@@ -124,12 +86,12 @@ async function getParentPath(drive: any, folderId: string): Promise<string> {
     }
     
     // Otherwise, get the parent path and append this folder's name
-    const parentId = response.data.parents?.[0];
+    const parentId = folderData.parents?.[0];
     if (!parentId) {
       return `/${folderName}/`;
     }
     
-    const parentPath = await getParentPath(drive, parentId);
+    const parentPath = await getParentPath(driveService, parentId);
     return `${parentPath}${folderName}/`;
   } catch (error) {
     console.error(`Error getting parent path: ${error}`);
@@ -158,7 +120,7 @@ async function checkFileExists(fileId: string) {
 /**
  * Insert file into sources_google
  */
-async function insertFile(drive: any, fileId: string, parentId: string) {
+async function insertFile(driveService: any, fileId: string, parentId: string) {
   console.log(`=== Inserting file ${fileId} ===`);
   
   try {
@@ -173,7 +135,7 @@ async function insertFile(drive: any, fileId: string, parentId: string) {
     }
     
     // Get file details from Google Drive
-    const fileDetails = await getFileDetails(drive, fileId);
+    const fileDetails = await getFileDetails(driveService, fileId);
     if (!fileDetails.success) {
       console.error(`❌ Failed to get file details: ${fileDetails.error}`);
       return { success: false, message: fileDetails.error };
@@ -185,7 +147,7 @@ async function insertFile(drive: any, fileId: string, parentId: string) {
     // Verify parent folder exists
     let parentPath = '/';
     try {
-      parentPath = await getParentPath(drive, parentId);
+      parentPath = await getParentPath(driveService, parentId);
       console.log(`✅ Parent path: ${parentPath}`);
     } catch (error) {
       console.warn(`⚠️ Could not determine parent path: ${error}`);
@@ -290,15 +252,11 @@ async function main() {
   console.log('=========================================================');
   
   try {
-    // Initialize Google Drive client
-    const drive = await initDriveClient();
-    if (!drive) {
-      console.error('❌ Failed to initialize Google Drive client');
-      process.exit(1);
-    }
+    // Initialize Google Drive service using the singleton pattern
+    const driveService = getGoogleDriveService(supabase);
     
     // Insert the file
-    const result = await insertFile(drive, fileId, parentId);
+    const result = await insertFile(driveService, fileId, parentId);
     
     console.log('\n=== Insert Results ===');
     console.log(`Success: ${result.success}`);
