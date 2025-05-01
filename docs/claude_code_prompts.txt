@@ -1,5 +1,101 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
+Abandoning deletion operation to prevent accidentally marking existing files as deleted.
+The Google Drive API may be experiencing issues. Try again later or use the --force-deletion flag to override.
+You can also use the reset-deleted-files command to restore improperly deleted files.
+
+Files that still exist but would have been marked as deleted:
+1. 2020-08-19-Porges-Polyvagal overview (1MmXhcJYlZfSOTnj1toaJtLl9bCNukJQX)
+2. Sutphinb.10.6.24.mp4 (1gxTVn2dq6-B_R8l3AK6YIAttAizcKRcl)
+3. Sapio.Threat.Physiology.transcript.docx (1UbpjpDFXXJmoVRO_eCjFfhNDjlmd9Bf3)
+4. 2020-12-16-Eagle-Armster-A.W.E somatic work (1_1tgwkG4wD6TaE5jgXiHAJ9SE5PvwSmh)
+5. Topics (1QxbrsH86oA1obiQc3BaygDsPtJhRFHCC)
+6. Wed PM.10.11.20.pptx (1fV-G3Rf9f_cBdAExYwWf77adEyt9dP7L)
+7. Peper.11.21.24.mp4 (1jvhuTpMRTlOPmnz987H-HRhR8gyZSfHQ)
+8. Peter Staats Announcement.docx (1ynoJBfJynKcE2fSj7IxBsqQMxxWhoyb7)
+9. 2025-05-07 - Raison - Depression a survival strategy (1XZlq1NQNmcLxgiuPooJ8QH3LP3lJlZB3)
+10. Nathan.Announcement.doc (1dJypvo3-2vgwXsT3NPHyCJ89l7iZUHAe)
+11. 2025-04-16 - Solomon - Death Denial (1fPlQsrzckjiq0OJeB0zCc_hYvCJ0NB4f)
+12. Dan Clauw.1.22.25.m4a (12P3G52_-7QRIgt_icfTFHWBDsntWZbar)
+13. Naviaux.CDR.stress.chronic disease.2020.pdf (1RTlYbEldbVnsGRcm5W4Bgj1RddM1zCkx)
+14. Cook.DR.docx (18fBj-wt1ovnoseANw8eoDmd2HJV6VlnQ)
+15. James Pennebaker announcement.docx (185jbkDZ8Pg7PZZgloHLSb3V3k-xAaZEd)
+16. DHDG.Nicole.12.7.22.docx (1hpUXseKfJP4wO0wJGeYY94zGFd1HRgtt)
+17. Napadow.Announcement.docx (1pN5_KCWhe_yz-tjHIKHRlAam76vcuP1q)
+18. LaniusetalSelf.PTSD.2020.pdf (1Xp1ACJncUTFpsBXosboMiGj6H0u0VpoO)
+19. chat.txt (1CwNv0zR0UcdzCZxJ2V5y1sWXYdWYyMdE)
+20. Brenda Stockdale announcement.docx (17c-SlrcvkoLfUEl8Exqk5ue4FuwaLIp2)
+... and 80 more files
+
+=== END VERIFICATION PROCESS ===
+Processing 0 files in 0 batches of 50
+
+=== Sync Summary ===
+Files found: 0
+Files inserted: 0 (all marked as needs_reprocessing)
+Files updated: 0
+Files marked deleted: 0
+Files skipped: 0
+Errors: 1
+
+Errors encountered during sync:
+1. Deletion aborted: High percentage of verification issues detected (0.0% errors, 100.0% still existing)
+
+=== Ensuring Root Folder Status ===
+✅ Root folder is correctly marked as not deleted
+=== End Root Folder Check ===
+
+
+=== Step 2: Update Metadata ===
+Starting metadata update for 1000 records...
+Error getting file metadata for 1d-6nq_rX2GJ74XPMkgkPuMW7GODayyBT: Google Drive API error: 404 {
+  "error": {
+    "code": 404,
+    "message": "File not found: 1d-6nq_rX2GJ74XPMkgkPuMW7GODayyBT.",
+    "errors": [
+      {
+        "message": "File not found: 1d-6nq_rX2GJ74XPMkgkPuMW7GODayyBT.",
+        "domain": "global",
+        "reason": "notFound",
+        "location": "fileId",
+        "locationType": "parameter"
+      }
+    ]
+  }
+}
+
+
+=== Update Summary ===
+Records found: 845
+Records updated: 844
+Records skipped: 1
+Errors: 1
+Duration: 92.102s
+
+Errors encountered during update:
+1. Error getting file metadata for 1d-6nq_rX2GJ74XPMkgkPuMW7GODayyBT: Google Drive API error: 404 {
+  "error": {
+    "code": 404,
+    "message": "File not found: 1d-6nq_rX2GJ74XPMkgkPuMW7GODayyBT.",
+    "errors": [
+      {
+        "message": "File not found: 1d-6nq_rX2GJ74XPMkgkPuMW7GODayyBT.",
+        "domain": "global",
+        "reason": "notFound",
+        "location": "fileId",
+        "locationType": "parameter"
+      }
+    ]
+  }
+}
+
+
+=== Sync and Update Complete ===
+Command exited with code 0
+raybunnage@Mac dhg-mono % ./scripts/cli-pipeline/google_sync/google-sync-cli.sh --help
+
+
+
  ffmpeg -i file_types/mp4/10.14.20.Aria.Patterson.Carter.SocialConnection.mp4 -vn -acodec copy
   file_types/m4a/10.14.20.Aria.Patterson.Carter.SocialConnection.m4a
 

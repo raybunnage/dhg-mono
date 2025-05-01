@@ -13,6 +13,7 @@ import { assignFolderExperts } from './commands/assign-folder-experts';
 import { listExperts } from './commands/list-experts';
 import { addExpert } from './commands/add-expert';
 import { propagateExpertIds } from './commands/propagate-expert-ids';
+import { transferExpertMetadata } from './commands/transfer-expert-metadata';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Load environment variables
@@ -227,6 +228,36 @@ program
       verbose: options.verbose,
       limit: parseInt(options.limit, 10),
       folderId: options.folderId
+    });
+  });
+
+// Command to transfer expert_documents processed_content to experts metadata field
+program
+  .command('transfer-expert-metadata')
+  .description('Transfer processed_content from expert_documents to experts.metadata field\n' +
+    'Examples:\n' +
+    '  # Run in dry-run mode first to see what changes would be made\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh transfer-expert-metadata --dry-run\n\n' +
+    '  # Run with verbose output\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh transfer-expert-metadata --verbose\n\n' +
+    '  # Actually update the metadata fields\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh transfer-expert-metadata\n\n' +
+    '  # Specify a different document type ID\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh transfer-expert-metadata --document-type-id "<uuid>"\n\n' +
+    'Workflow:\n' +
+    '  1. For each expert, finds the most recent source with document_type_id = 554ed67c-35d1-4218-abba-8d1b0ff7156d\n' +
+    '  2. Gets the expert_document associated with that source\n' +
+    '  3. If the processed_content field contains JSON, transfers it to the experts.metadata field')
+  .option('-d, --dry-run', 'Show what would be done without making changes', false)
+  .option('-v, --verbose', 'Show more detailed output', false)
+  .option('--document-type-id <id>', 'Specific document type ID to look for', '554ed67c-35d1-4218-abba-8d1b0ff7156d')
+  .option('--expert-limit <number>', 'Limit the number of experts to process (0 = no limit)', '0')
+  .action(async (options) => {
+    await transferExpertMetadata({
+      dryRun: options.dryRun,
+      verbose: options.verbose,
+      documentTypeId: options.documentTypeId,
+      expertLimit: parseInt(options.expertLimit, 10)
     });
   });
 

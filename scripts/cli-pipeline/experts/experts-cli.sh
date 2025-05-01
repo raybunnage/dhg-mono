@@ -9,6 +9,7 @@
 #   list-experts            List all experts with their mnemonics
 #   add-expert              Add a new expert to the database
 #   propagate-expert-ids    Recursively assign expert_id to all files under expert folders
+#   transfer-expert-metadata Transfer processed_content from expert_documents to experts.metadata field
 #   health-check            Check the health of the experts service infrastructure
 
 # Get the directory where this script is located
@@ -147,6 +148,7 @@ else
     echo "    assign-expert           Assign an expert to a folder (interactive mode with -i)"
     echo "    link-top-level-folders  List folders with videos for expert assignment"
     echo "  * propagate-expert-ids    Recursively assign expert_id to all files under expert folders (5 uses)"
+    echo "    transfer-expert-metadata Transfer processed_content to experts.metadata field"
     echo ""
     echo "SYSTEM:"
     echo "  * health-check            Check the health of the experts service infrastructure (25 uses)"
