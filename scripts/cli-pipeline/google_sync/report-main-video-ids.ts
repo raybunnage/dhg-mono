@@ -23,7 +23,7 @@ import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { Logger, LogLevel } from '../../../packages/shared/utils/logger';
-import { google } from 'googleapis';
+import { getGoogleDriveService } from '../../../packages/shared/services/google-drive';
 
 // Load environment variables
 const envFiles = ['.env', '.env.development', '.env.local'];
@@ -68,41 +68,7 @@ if (limitIndex !== -1 && args[limitIndex + 1]) {
   folderLimit = parseInt(args[limitIndex + 1], 10);
 }
 
-/**
- * Initialize Google Drive client using service account
- */
-async function initDriveClient() {
-  try {
-    // Get service account key file path from environment or use default
-    const keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
-                       path.resolve(process.cwd(), '.service-account.json');
-    
-    Logger.debug(`Using service account key file: ${keyFilePath}`);
-    
-    // Check if file exists
-    if (!fs.existsSync(keyFilePath)) {
-      Logger.error(`Service account key file not found: ${keyFilePath}`);
-      return null;
-    }
-    
-    // Read and parse the service account key file
-    const keyFile = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
-    
-    // Create JWT auth client with the service account
-    const auth = new google.auth.JWT(
-      keyFile.client_email,
-      undefined,
-      keyFile.private_key,
-      ['https://www.googleapis.com/auth/drive.readonly']
-    );
-    
-    // Initialize the Drive client
-    return google.drive({ version: 'v3', auth });
-  } catch (error) {
-    Logger.error(`Error initializing Drive client: ${error}`);
-    return null;
-  }
-}
+// The initDriveClient function has been replaced with the GoogleDriveService singleton
 
 interface FolderInfo {
   id: string;
@@ -130,37 +96,29 @@ interface Mp4FileInfo {
 }
 
 /**
- * List files recursively in Google Drive using the Drive API
+ * List files recursively in Google Drive using the GoogleDriveService
  */
-async function listFilesRecursively(drive: any, folderId: string, parentPath = ''): Promise<any[]> {
+async function listFilesRecursively(driveService: any, folderId: string, parentPath = ''): Promise<any[]> {
   let allFiles: any[] = [];
-  let pageToken: string | null = null;
   
   try {
-    do {
-      const response: any = await drive.files.list({
-        q: `'${folderId}' in parents and trashed=false`,
-        pageSize: 1000,
-        fields: 'nextPageToken, files(id, name, mimeType, parents)',
-        pageToken: pageToken
-      });
-      
-      const files = response.data.files || [];
-      
-      // Add all files to the collection
-      allFiles = [...allFiles, ...files.map((file: any) => ({ 
-        ...file, 
-        path: `${parentPath}${file.name}`
-      }))];
-      
-      // Process folders recursively
-      for (const folder of files.filter((file: any) => file.mimeType === 'application/vnd.google-apps.folder')) {
-        const subFiles: any[] = await listFilesRecursively(drive, folder.id, `${parentPath}${folder.name}/`);
-        allFiles = [...allFiles, ...subFiles];
-      }
-      
-      pageToken = response.data.nextPageToken;
-    } while (pageToken);
+    // Get files in the folder
+    const files = await driveService.listFilesInFolder(folderId, {
+      fields: 'id,name,mimeType,parents',
+      includeSubfolders: false
+    });
+    
+    // Add all files to the collection
+    allFiles = [...allFiles, ...files.map((file: any) => ({ 
+      ...file, 
+      path: `${parentPath}${file.name}`
+    }))];
+    
+    // Process folders recursively
+    for (const folder of files.filter((file: any) => file.mimeType === 'application/vnd.google-apps.folder')) {
+      const subFiles: any[] = await listFilesRecursively(driveService, folder.id, `${parentPath}${folder.name}/`);
+      allFiles = [...allFiles, ...subFiles];
+    }
     
     return allFiles;
   } catch (error) {
@@ -424,12 +382,9 @@ export async function reportMainVideoIds(
     Logger.error(`Error in document type lookup: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  // Initialize Drive client
-  const drive = await initDriveClient();
-  if (!drive) {
-    Logger.error('Failed to initialize Google Drive client');
-    process.exit(1);
-  }
+  // Initialize Google Drive service using the singleton pattern
+  const supabase = SupabaseClientService.getInstance().getClient();
+  const driveService = getGoogleDriveService(supabase);
 
   // Supabase client is already initialized above
   

@@ -20,9 +20,9 @@
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
-import { google } from 'googleapis';
 import { v4 as uuidv4 } from 'uuid';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import { getGoogleDriveService, GoogleDriveService } from '../../../packages/shared/services/google-drive';
 import type { Database } from '../../../supabase/types';
 
 // Load multiple environment files
@@ -115,57 +115,39 @@ interface GoogleDriveFile {
   depth?: number; // Track the folder depth level
 }
 
+// The initDriveClient function has been replaced with the GoogleDriveService singleton
+
 /**
- * Initialize Google Drive client using service account
+ * Extension method for GoogleDriveService to list files in a folder
+ * This combines the functionality we need from the GoogleDriveService class
  */
-async function initDriveClient() {
-  try {
-    // Get service account key file path from environment or use default
-    const keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
-                       path.resolve(process.cwd(), '.service-account.json');
-    
-    console.log(`🔑 Using service account key file: ${keyFilePath}`);
-    
-    // Check if file exists
-    if (!fs.existsSync(keyFilePath)) {
-      console.error(`❌ Service account key file not found: ${keyFilePath}`);
-      console.log('\nPlease do one of the following:');
-      console.log('1. Create the file at the path above');
-      console.log('2. Set GOOGLE_APPLICATION_CREDENTIALS environment variable to the correct path');
-      return null;
-    }
-    
-    // Read and parse the service account key file
-    const keyFile = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
-    
-    // Create JWT auth client with the service account
-    const auth = new google.auth.JWT(
-      keyFile.client_email,
-      undefined,
-      keyFile.private_key,
-      ['https://www.googleapis.com/auth/drive.readonly']
-    );
-    
-    // Initialize the Drive client
-    return google.drive({ version: 'v3', auth });
-  } catch (error) {
-    console.error('❌ Error initializing Drive client:', error);
-    return null;
-  }
+async function listFilesInFolder(
+  driveService: GoogleDriveService,
+  folderId: string,
+  options: { 
+    fields?: string,
+    includeSubfolders?: boolean 
+  } = {}
+): Promise<any[]> {
+  // Use the listFiles method instead, which is available in GoogleDriveService
+  const listResult = await driveService.listFiles(folderId, {
+    fields: options.fields || 'nextPageToken, files(id, name, mimeType, webViewLink, parents, modifiedTime, size, thumbnailLink)'
+  });
+  
+  return listResult.files;
 }
 
 /**
  * List files recursively
  */
 async function listFilesRecursively(
-  drive: any, 
+  driveService: GoogleDriveService, 
   folderId: string, 
   maxDepth: number = 3,
   currentDepth: number = 0,
   parentPath: string = '/'
 ): Promise<GoogleDriveFile[]> {
   let allFiles: GoogleDriveFile[] = [];
-  let pageToken: string | null = null;
   
   if (currentDepth > maxDepth) {
     if (isVerbose) console.log(`Reached max depth (${maxDepth}) at ${parentPath}`);
@@ -173,19 +155,10 @@ async function listFilesRecursively(
   }
   
   try {
-    // Query to get files in the current folder
-    const query = `'${folderId}' in parents and trashed=false`;
-    
-    do {
-      // Get a page of files
-      const response: any = await drive.files.list({
-        q: query,
-        pageSize: 1000,
-        fields: 'nextPageToken, files(id, name, mimeType, parents, modifiedTime, size, thumbnailLink, webViewLink)',
-        pageToken: pageToken
-      });
-      
-      const files = response.data.files || [];
+    // Get files in the folder using our helper method
+    const files = await listFilesInFolder(driveService, folderId, {
+      fields: 'id,name,mimeType,parents,modifiedTime,size,thumbnailLink,webViewLink'
+    });
       
       // Process files
       const enhancedFiles = files.map((file: GoogleDriveFile) => {
@@ -214,7 +187,7 @@ async function listFilesRecursively(
         
         const folderPath = `${parentPath}${folder.name}/`;
         const subFiles = await listFilesRecursively(
-          drive, 
+          driveService, 
           folder.id, 
           maxDepth, 
           currentDepth + 1, 
@@ -223,9 +196,6 @@ async function listFilesRecursively(
         
         allFiles = [...allFiles, ...subFiles];
       }
-      
-      pageToken = response.data.nextPageToken;
-    } while (pageToken);
     
     return allFiles;
   } catch (error: any) {
@@ -260,7 +230,7 @@ async function checkFileExists(fileId: string): Promise<{ exists: boolean, data?
 /**
  * Insert a specific file from Google Drive into sources_google
  */
-async function insertSpecificFile(drive: any, fileId: string, parentId: string, isDryRun: boolean, isVerbose: boolean): Promise<{ success: boolean, message?: string, data?: any }> {
+async function insertSpecificFile(driveService: GoogleDriveService, fileId: string, parentId: string, isDryRun: boolean, isVerbose: boolean): Promise<{ success: boolean, message?: string, data?: any }> {
   console.log(`=== Attempting to insert specific file ${fileId} ===`);
   
   try {
@@ -272,23 +242,21 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
     }
     
     // Get file details from Google Drive
-    const response = await drive.files.get({
-      fileId: fileId,
-      fields: 'id,name,mimeType,parents,modifiedTime,size,thumbnailLink,webViewLink'
-    });
-    
-    const file = response.data;
+    const file = await driveService.getFile(
+      fileId,
+      'id,name,mimeType,parents,modifiedTime,size,thumbnailLink,webViewLink'
+    );
     console.log(`✅ Found file in Google Drive: ${file.name} (${file.mimeType})`);
     
     // Get parent path
     let parentPath = '/';
     try {
-      const parentResponse = await drive.files.get({
-        fileId: parentId,
-        fields: 'id,name,parents'
-      });
+      const parentData = await driveService.getFile(
+        parentId,
+        'id,name,parents'
+      );
       
-      const folderName = parentResponse.data.name;
+      const folderName = parentData.name;
       parentPath = `/${folderName}/`;
       console.log(`✅ Parent path: ${parentPath}`);
     } catch (error) {
@@ -461,7 +429,7 @@ async function insertSpecificFile(drive: any, fileId: string, parentId: string, 
  * Sync files from Google Drive to Supabase sources_google table
  */
 async function syncFiles(
-  drive: any, 
+  driveService: GoogleDriveService, 
   folderId: string, 
   isDryRun: boolean,
   maxDepth: number = 3
@@ -477,13 +445,13 @@ async function syncFiles(
   };
   
   try {
-    // Get folder details
-    const folder = await drive.files.get({
-      fileId: folderId,
-      fields: 'id,name,mimeType,webViewLink,modifiedTime'
-    });
+    // Get folder details using GoogleDriveService
+    const folder = await driveService.getFile(
+      folderId,
+      'id,name,mimeType,webViewLink,modifiedTime'
+    );
     
-    console.log(`Syncing folder: ${folder.data.name} (${folderId})`);
+    console.log(`Syncing folder: ${folder.name} (${folderId})`);
     
     // Ensure it's a root folder in Supabase
     if (!isDryRun) {
@@ -510,10 +478,10 @@ async function syncFiles(
           const { error } = await supabase
             .from('sources_google')
             .update({
-              name: folder.data.name,
+              name: folder.name,
               is_root: true,
-              path: `/${folder.data.name}`,
-              path_array: ['', folder.data.name],
+              path: `/${folder.name}`,
+              path_array: ['', folder.name],
               path_depth: 2,
               parent_folder_id: null,
               updated_at: new Date().toISOString()
@@ -535,17 +503,17 @@ async function syncFiles(
         const insertData = {
           id: rootFolderId, // Explicitly set the ID field
           drive_id: folderId,
-          name: folder.data.name,
+          name: folder.name,
           is_root: true,
           mime_type: 'application/vnd.google-apps.folder',
-          path: `/${folder.data.name}`,
-          path_array: ['', folder.data.name],
+          path: `/${folder.name}`,
+          path_array: ['', folder.name],
           path_depth: 2,
           parent_folder_id: null,
           metadata: { 
             isRootFolder: true,
-            webViewLink: folder.data.webViewLink,
-            modifiedTime: folder.data.modifiedTime
+            webViewLink: folder.webViewLink,
+            modifiedTime: folder.modifiedTime
           },
           created_at: now,
           updated_at: now,
@@ -574,7 +542,7 @@ async function syncFiles(
     
     // List files recursively
     console.log(`Listing files recursively (max depth: ${maxDepth})...`);
-    const allFiles = await listFilesRecursively(drive, folderId, maxDepth);
+    const allFiles = await listFilesRecursively(driveService, folderId, maxDepth);
     
     result.filesFound = allFiles.length;
     console.log(`Found ${allFiles.length} files`);
@@ -683,10 +651,8 @@ async function syncFiles(
           try {
             const checkFilePromise = async () => {
               try {
-                await drive.files.get({
-                  fileId: record.drive_id,
-                  fields: 'id,name'
-                });
+                // Use GoogleDriveService to check if file exists
+                await driveService.getFile(record.drive_id, 'id,name');
                 return { exists: true };
               } catch (error: any) {
                 return { exists: false, error: error.message };
@@ -788,7 +754,7 @@ async function syncFiles(
       if (testFileInBatch && !existingDriveIds.has(testFileId)) {
         console.log(`\n✨ Special case: Test file found in Google Drive but not in database. Handling explicitly...`);
         const insertResult = await insertSpecificFile(
-          drive, 
+          driveService, 
           testFileId, 
           testFileInBatch.parentFolderId || DYNAMIC_HEALING_FOLDER_ID, 
           isDryRun,
@@ -1046,7 +1012,7 @@ async function syncFiles(
  * Update metadata for Google Drive files
  */
 async function updateMetadata(
-  drive: any,
+  driveService: GoogleDriveService,
   folderId: string, 
   limit: number, 
   dryRun: boolean, 
@@ -1112,12 +1078,13 @@ async function updateMetadata(
           try {
             if (verbose) console.log(`Fetching data for: ${record.name} (${record.drive_id})`);
             
-            const response = await drive.files.get({
-              fileId: record.drive_id,
-              fields: 'id,name,mimeType,webViewLink,modifiedTime,size,thumbnailLink'
-            });
+            // Use GoogleDriveService instead of direct API call
+            const fileData = await driveService.getFile(
+              record.drive_id,
+              'id,name,mimeType,webViewLink,modifiedTime,size,thumbnailLink'
+            );
             
-            return { record, fileData: response.data, success: true };
+            return { record, fileData, success: true };
           } catch (error: any) {
             const errorMessage = `Error getting file metadata for ${record.drive_id}: ${error.message || 'Unknown error'}`;
             console.error(errorMessage);
@@ -1273,7 +1240,7 @@ async function updateMetadata(
 /**
  * Direct lookup for a specific file in Google Drive
  */
-async function lookupSpecificFile(drive: any, fileId: string, isDryRun: boolean, isVerbose: boolean): Promise<void> {
+async function lookupSpecificFile(driveService: GoogleDriveService, fileId: string, isDryRun: boolean, isVerbose: boolean): Promise<void> {
   console.log(`\n=== Direct Lookup for File ID: ${fileId} ===`);
   
   try {
@@ -1284,25 +1251,26 @@ async function lookupSpecificFile(drive: any, fileId: string, isDryRun: boolean,
       return;
     }
     
-    // Look up file in Google Drive
+    // Look up file in Google Drive using the service
     try {
-      const fileResponse = await drive.files.get({
-        fileId: fileId,
-        fields: 'id,name,mimeType,parents,modifiedTime'
-      });
+      // Use GoogleDriveService instead of direct API call
+      const fileData = await driveService.getFile(
+        fileId,
+        'id,name,mimeType,parents,modifiedTime'
+      );
       
-      console.log(`✅ File found in Google Drive: ${fileResponse.data.name} (${fileResponse.data.mimeType})`);
+      console.log(`✅ File found in Google Drive: ${fileData.name} (${fileData.mimeType})`);
       
       // Get parent folder ID
-      const parentFolderId = fileResponse.data.parents?.[0] || DYNAMIC_HEALING_FOLDER_ID;
+      const parentFolderId = fileData.parents?.[0] || DYNAMIC_HEALING_FOLDER_ID;
       console.log(`Parent folder ID: ${parentFolderId}`);
       
       // Insert the file
       console.log(`Attempting to insert file into database...`);
-      const insertResult = await insertSpecificFile(drive, fileId, parentFolderId, isDryRun, isVerbose);
+      const insertResult = await insertSpecificFile(driveService, fileId, parentFolderId, isDryRun, isVerbose);
       
       if (insertResult.success) {
-        console.log(`✅ Successfully performed direct lookup and insertion of file ${fileResponse.data.name} (${fileId})`);
+        console.log(`✅ Successfully performed direct lookup and insertion of file ${fileData.name} (${fileId})`);
       } else {
         console.error(`❌ Failed to insert file: ${insertResult.message}`);
       }
@@ -1344,16 +1312,12 @@ export async function syncAndUpdateMetadata(
   console.log('=========================================================');
 
   try {
-    // Initialize Google Drive client with service account
-    const drive = await initDriveClient();
-    if (!drive) {
-      console.error('❌ Failed to initialize Google Drive client');
-      process.exit(1);
-    }
+    // Initialize Google Drive client using the singleton pattern
+    const driveService = getGoogleDriveService(supabase);
     
     // If a specific file ID was provided, do a direct lookup
     if (specificFileId) {
-      await lookupSpecificFile(drive, specificFileId, isDryRun, isVerbose);
+      await lookupSpecificFile(driveService, specificFileId, isDryRun, isVerbose);
     }
     
     // TEMPORARY: Direct test for specific file
@@ -1361,28 +1325,29 @@ export async function syncAndUpdateMetadata(
       console.log('\n=== TESTING DIRECT FILE LOOKUP ===');
       const testFileId = '1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM';
       try {
-        const fileResponse = await drive.files.get({
-          fileId: testFileId,
-          fields: 'id,name,mimeType,parents,modifiedTime'
-        });
+        // Use GoogleDriveService to get file
+        const fileData = await driveService.getFile(
+          testFileId,
+          'id,name,mimeType,parents,modifiedTime'
+        );
         
-        console.log('TEST FILE FOUND:', fileResponse.data);
+        console.log('TEST FILE FOUND:', fileData);
         
         // Check if it's in our target folder
-        const parentFolderId = fileResponse.data.parents?.[0];
+        const parentFolderId = fileData.parents?.[0];
         console.log(`Parent folder ID: ${parentFolderId}`);
         console.log(`Target folder ID: ${DYNAMIC_HEALING_FOLDER_ID}`);
         console.log(`Is in target folder: ${parentFolderId === DYNAMIC_HEALING_FOLDER_ID}`);
         
         // Also try to list files directly in the root folder
         console.log('\nDirect file listing in root folder:');
-        const listResponse = await drive.files.list({
-          q: `'${DYNAMIC_HEALING_FOLDER_ID}' in parents and trashed=false`,
-          pageSize: 1000,
-          fields: 'files(id,name,mimeType)'
-        });
+        // Use our helper function for listing files
+        const files = await listFilesInFolder(
+          driveService,
+          DYNAMIC_HEALING_FOLDER_ID, 
+          { fields: 'id,name,mimeType' }
+        );
         
-        const files = listResponse.data.files || [];
         console.log(`Found ${files.length} files directly in root folder`);
         
         const testFile = files.find((f: any) => f.id === testFileId);
@@ -1406,15 +1371,16 @@ export async function syncAndUpdateMetadata(
     console.log(`Checking folder: ${DYNAMIC_HEALING_FOLDER_ID}`);
     
     try {
-      const folder = await drive.files.get({
-        fileId: DYNAMIC_HEALING_FOLDER_ID,
-        fields: 'id,name,mimeType'
-      });
+      // Use GoogleDriveService to get folder
+      const folder = await driveService.getFile(
+        DYNAMIC_HEALING_FOLDER_ID,
+        'id,name,mimeType'
+      );
       
-      console.log(`✅ Folder exists: "${folder.data.name}"`);
+      console.log(`✅ Folder exists: "${folder.name}"`);
       
-      if (folder.data.mimeType !== 'application/vnd.google-apps.folder') {
-        throw new Error(`The provided ID is not a folder: ${folder.data.mimeType}`);
+      if (folder.mimeType !== 'application/vnd.google-apps.folder') {
+        throw new Error(`The provided ID is not a folder: ${folder.mimeType}`);
       }
     } catch (error: any) {
       console.error(`❌ Failed to get folder: ${error.message || error}`);
@@ -1423,7 +1389,7 @@ export async function syncAndUpdateMetadata(
 
     // STEP 1: Sync files from Google Drive to Supabase
     console.log('\n=== Step 1: Sync Files from Google Drive ===');
-    const syncResult = await syncFiles(drive, DYNAMIC_HEALING_FOLDER_ID, isDryRun, maxDepth);
+    const syncResult = await syncFiles(driveService, DYNAMIC_HEALING_FOLDER_ID, isDryRun, maxDepth);
     
     console.log('\n=== Sync Summary ===');
     console.log(`Files found: ${syncResult.filesFound}`);
@@ -1611,7 +1577,7 @@ export async function syncAndUpdateMetadata(
     // STEP 2: Update metadata for the files
     console.log('\n=== Step 2: Update Metadata ===');
     console.log(`Starting metadata update for ${limit} records...`);
-    const updateResult = await updateMetadata(drive, DYNAMIC_HEALING_FOLDER_ID, limit, isDryRun, isVerbose);
+    const updateResult = await updateMetadata(driveService, DYNAMIC_HEALING_FOLDER_ID, limit, isDryRun, isVerbose);
 
     console.log('\n=== Update Summary ===');
     console.log(`Records found: ${updateResult.records}`);
