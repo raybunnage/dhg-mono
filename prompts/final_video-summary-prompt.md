@@ -2,14 +2,21 @@
 
 You are tasked with creating an engaging, concise summary of an expert presentation video based on a transcript. Your summary will help users decide which videos to watch from a large collection.
 
-## Input Context
-I'll provide you with a transcript summary from Whisper of a video presentation featuring an expert speaker, often with a host and a follow-up discussion.
+## Important Instructions
+I will provide a transcript between the markers "{{TRANSCRIPT START}}" and "{{TRANSCRIPT END}}" below. Your job is to analyze this transcript and generate a structured JSON summary of the content.
 
-## Transcript
-{{TRANSCRIPT}}
+## Analysis Tasks
+When analyzing the transcript:
+1. Identify the main speaker and their expertise
+2. Determine the core topic and unique perspectives presented
+3. Extract key insights and actionable advice
+4. Find memorable direct quotes (exact wording)
+5. Note important points from any Q&A or discussion
+6. Create an appropriate, attention-grabbing title
+7. Determine who would benefit most from watching
 
 ## Output Format
-After reviewing the transcript, create an appropriate title that captures the essence of the presentation, and generate a JSON object with the following structure:
+You must respond with a single JSON object having the following structure:
 
 ```json
 {
@@ -54,20 +61,26 @@ After reviewing the transcript, create an appropriate title that captures the es
 }
 ```
 
+## Critical Requirements
+- You MUST respond with ONLY valid JSON format
+- Do NOT include any text before or after the JSON object
+- Do NOT include backticks or markdown code formatting
+- The JSON structure must exactly match the template above
+- All text fields should be properly escaped where needed
+- Your analysis should focus entirely on the actual transcript content
+
 ## Title Guidelines
 - Create a concise, attention-grabbing title (5-10 words)
 - Capture the main insight, expertise, or unique value of the presentation
 - Avoid generic titles - be specific and distinctive
-- Consider including the speaker's unique approach or methodology
 - Make it compelling for the target audience
 
-## Style Guidelines for the Summary Field
+## Summary Guidelines
 - Use enthusiastic, dynamic language that reflects the energy of the presentation
-- Highlight what's unique about the speaker's approach, perspective, or expertise
-- Convey the speaker's personality and presentation style
+- Highlight what's unique about the speaker's approach and expertise
 - Include specific details and examples rather than generic descriptions
-- Make the reader feel the excitement and value of the presentation
-- Avoid unnecessary jargon while preserving essential technical terminology
-- Aim for an engaging, conversational tone rather than a formal academic summary
+- Aim for an engaging, conversational tone
 
-Remember, your JSON response should make the presentation feel accessible and valuable while accurately representing its content and speaker's expertise. Ensure valid JSON formatting with proper quoting and escaping of special characters.
+{{TRANSCRIPT START}}
+{{TRANSCRIPT}}
+{{TRANSCRIPT END}}

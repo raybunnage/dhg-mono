@@ -11,13 +11,15 @@ const chalk = require('chalk');
 // Create a new command
 export const processMp4FilesCommand = new Command('process-mp4-files');
 
-// Helper function to write debug logs
+// Helper function to write debug logs and also output to console
 function writeDebugLog(message: string) {
   const logPath = '/Users/raybunnage/Documents/github/dhg-mono/logs/process-mp4-debug.log';
   const timestamp = new Date().toISOString();
   const logMessage = `${timestamp} - ${message}\n`;
   try {
     fs.appendFileSync(logPath, logMessage);
+    // Also log to console for visibility
+    console.log(`DEBUG: ${message}`);
   } catch (error) {
     console.error(`Failed to write to debug log: ${error}`);
   }
@@ -32,10 +34,12 @@ processMp4FilesCommand
   .option('--dry-run', 'Preview processing without saving to database', false)
   .option('-o, --output <path>', 'Output file path for the JSON results (default: mp4-processing-results.json)', 'mp4-processing-results.json')
   .action(async (options: any) => {
+    // Print clear start message to the console
+    console.log(`\n===== STARTING PROCESS-MP4-FILES COMMAND =====`);
+    console.log(`Options: ${JSON.stringify(options, null, 2)}\n`);
+    
     // Write to debug log
     writeDebugLog(`Action handler started with options: ${JSON.stringify(options)}`);
-    console.log(`DEBUG: Action handler started with options: ${JSON.stringify(options)}`);
-    // This console log should appear in the terminal
     try {
       Logger.info('Starting MP4 files processing command');
       
@@ -44,32 +48,104 @@ processMp4FilesCommand
       const promptQueryService = PromptQueryService.getInstance();
       
       // Get the summary prompt from the database
-      Logger.info('Fetching video summary prompt from database...');
+      console.log('Fetching video summary prompt from database...');
       let promptTemplate = '';
+      
       try {
+        // Load from database
         const { prompt: summaryPrompt } = await promptQueryService.getPromptWithQueryResults('final_video-summary-prompt');
+        
         if (summaryPrompt) {
-          promptTemplate = summaryPrompt.content;
-          Logger.info(`Found prompt: ${summaryPrompt.name}`);
+          console.log(`Found prompt in database: ${summaryPrompt.name}`);
+          console.log(`Raw content length: ${summaryPrompt.content?.length || 0} characters`);
+          
+          // Handle possible JSON serialization in the database content
+          if (typeof summaryPrompt.content === 'string') {
+            // Check if content is a JSON string that needs parsing
+            if (summaryPrompt.content.startsWith('"') || summaryPrompt.content.includes('\\n')) {
+              try {
+                // Try to parse as JSON string
+                const parsedContent = JSON.parse(summaryPrompt.content);
+                if (typeof parsedContent === 'string') {
+                  console.log(`Parsed JSON string successfully, using parsed content`);
+                  promptTemplate = parsedContent;
+                } else {
+                  console.log(`Parsed JSON but result is not a string, using raw content`);
+                  promptTemplate = summaryPrompt.content;
+                }
+              } catch (parseErr) {
+                console.log(`Content looks like JSON but failed to parse, using as-is`);
+                promptTemplate = summaryPrompt.content;
+              }
+            } else {
+              // Not JSON encoded, use as-is
+              console.log(`Using prompt content as-is`);
+              promptTemplate = summaryPrompt.content;
+            }
+          }
+          
+          // Check for problematic content
+          if (promptTemplate.includes('Jane Smith')) {
+            console.warn(`⚠️ WARNING: Prompt contains Jane Smith example - this may affect the summary!`);
+          }
         }
-      } catch (error) {
-        Logger.error('Error fetching prompt:', error);
-        process.exit(1);
+      } catch (dbError) {
+        console.error(`Error getting prompt from database: ${dbError}`);
+        console.log('Falling back to file prompt...');
+        
+        // Fallback to file if database fails
+        try {
+          const promptFilePath = '/Users/raybunnage/Documents/github/dhg-mono/prompts/final_video-summary-prompt.md';
+          promptTemplate = fs.readFileSync(promptFilePath, 'utf8');
+          console.log(`Successfully loaded fallback prompt from file`);
+        } catch (fileError) {
+          console.error('Error loading fallback prompt file:', fileError);
+          process.exit(1);
+        }
       }
       
       // Verify we have a prompt template
       if (!promptTemplate) {
-        Logger.error('Failed to get prompt template from database');
+        console.error('Failed to get prompt template');
         process.exit(1);
       }
+      
+      console.log(`Final prompt length: ${promptTemplate.length} characters`);
+      console.log(`Prompt starts with: ${promptTemplate.substring(0, 100)}...`);
 
       // If document ID is provided, process just that one document directly
       if (options.documentId) {
-        Logger.info(`Processing single expert document with ID: ${options.documentId}`);
+        Logger.info(chalk.blue(`==========================================`));
+        Logger.info(chalk.blue(`Processing single expert document with ID: ${options.documentId}`));
+        Logger.info(chalk.blue(`==========================================`));
+        
+        // First, get the document to see what we're working with
+        const supabase = SupabaseClientService.getInstance().getClient();
+        const { data: doc, error: docErr } = await supabase
+          .from('expert_documents')
+          .select('id, title, document_type_id, source_id, raw_content')
+          .eq('id', options.documentId)
+          .single();
+          
+        if (docErr) {
+          Logger.error(`Failed to fetch document: ${docErr.message}`);
+          return;
+        }
+        
+        Logger.info(`Document found - Title: "${doc.title || 'No title'}"`);
+        Logger.info(`Document Type ID: ${doc.document_type_id}`);
+        Logger.info(`Source ID: ${doc.source_id}`);
+        Logger.info(`Raw Content Length: ${doc.raw_content?.length || 0} characters`);
+        Logger.info(`Raw Content Preview: ${doc.raw_content?.substring(0, 200).replace(/\n/g, ' ')}...`);
+        Logger.info(chalk.blue(`-----------------------------------------`));
+        
         const result = await processSingleDocument(options.documentId, promptTemplate, options);
         
         if (result.success) {
           Logger.info(chalk.green('Successfully processed expert document'));
+          Logger.info(`Title: ${result.new_title}`);
+          Logger.info(`JSON keys: ${Object.keys(result.ai_result).join(', ')}`);
+          
           if (options.output) {
             fs.writeFileSync(path.resolve(options.output), JSON.stringify(result, null, 2));
             Logger.info(`Results saved to ${options.output}`);
@@ -224,9 +300,11 @@ async function findExpertDocumentForSource(sourceId: string): Promise<any> {
  * Process a single expert document
  */
 async function processSingleDocument(documentId: string, promptTemplate: string, options: any): Promise<any> {
+  console.log(`\n==== PROCESSING DOCUMENT: ${documentId} ====`);
   const supabase = SupabaseClientService.getInstance().getClient();
   
   try {
+    console.log(`Fetching expert document from Supabase...`);
     // Get the full expert document including raw_content
     const { data: expertDoc, error } = await supabase
       .from('expert_documents')
@@ -235,11 +313,18 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       .single();
       
     if (error || !expertDoc) {
+      console.error(`ERROR: Failed to fetch expert document: ${error?.message || 'Document not found'}`);
       return {
         success: false,
         error: `Error fetching expert document: ${error?.message || 'Document not found'}`
       };
     }
+    
+    console.log(`Successfully fetched document. Title: "${expertDoc.title || 'No title'}"`);
+    console.log(`Raw content length: ${expertDoc.raw_content?.length || 0} characters`);
+    console.log(`Document type ID: ${expertDoc.document_type_id}`);
+    console.log(`AI summary status: ${expertDoc.ai_summary_status || 'Not set'}`);
+    
     
     // Check if document has raw content
     if (!expertDoc.raw_content) {
@@ -259,33 +344,134 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       };
     }
     
-    // Replace the placeholder in the prompt with the document content
-    const customizedPrompt = promptTemplate.replace('{{TRANSCRIPT}}', expertDoc.raw_content);
+    // Create debug directory
+    const debugDir = path.resolve(__dirname, '../debug-output');
+    if (!fs.existsSync(debugDir)) {
+      fs.mkdirSync(debugDir, { recursive: true });
+    }
+    
+    // Save the raw transcript content for debugging
+    const rawContentPath = path.resolve(debugDir, `raw-content-${documentId.substring(0, 8)}.txt`);
+    fs.writeFileSync(rawContentPath, expertDoc.raw_content);
+    writeDebugLog(`Saved raw content to ${rawContentPath} (${expertDoc.raw_content.length} characters)`);
+    
+    // Extract the actual transcript content (first 4000 chars) for logging
+    const previewContent = expertDoc.raw_content.length > 4000 
+        ? expertDoc.raw_content.substring(0, 4000) + "...(truncated)"
+        : expertDoc.raw_content;
+    writeDebugLog(`Processing transcript starts with: ${previewContent.substring(0, 200).replace(/\n/g, ' ')}...`);
+    
+    // Inject the transcript into the template
+    console.log(`Creating customized prompt by injecting transcript...`);
+    
+    // Handle the different prompt formats for transcript injection
+    let customizedPrompt = '';
+    
+    // Check for {{TRANSCRIPT}} placeholder first (single placeholder)
+    if (promptTemplate.includes('{{TRANSCRIPT}}')) {
+      console.log(`Found {{TRANSCRIPT}} placeholder, replacing with transcript content`);
+      customizedPrompt = promptTemplate.replace('{{TRANSCRIPT}}', expertDoc.raw_content);
+    } 
+    // Check for {{TRANSCRIPT START}} and {{TRANSCRIPT END}} markers
+    else if (promptTemplate.includes('{{TRANSCRIPT START}}') && promptTemplate.includes('{{TRANSCRIPT END}}')) {
+      console.log(`Found {{TRANSCRIPT START/END}} markers, replacing content between them`);
+      
+      // Find the markers
+      const startMarker = '{{TRANSCRIPT START}}';
+      const endMarker = '{{TRANSCRIPT END}}';
+      
+      // Calculate positions
+      const startIndex = promptTemplate.indexOf(startMarker);
+      const endIndex = promptTemplate.indexOf(endMarker) + endMarker.length;
+      
+      if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+        // Replace the section between markers
+        const before = promptTemplate.substring(0, startIndex + startMarker.length);
+        const after = promptTemplate.substring(promptTemplate.indexOf(endMarker));
+        customizedPrompt = before + '\n' + expertDoc.raw_content + '\n' + after;
+      } else {
+        console.warn(`Markers found but in wrong order, using simple append fallback`);
+        customizedPrompt = promptTemplate + '\n\n' + expertDoc.raw_content;
+      }
+    }
+    // No recognized format, just append transcript
+    else {
+      console.warn(`No transcript placeholders found in prompt, appending transcript at end`);
+      customizedPrompt = promptTemplate + '\n\n' + expertDoc.raw_content;
+    }
+    
+    // Save the customized prompt for debugging
+    const promptPath = path.resolve(debugDir, `customized-prompt-${documentId.substring(0, 8)}.md`);
+    fs.writeFileSync(promptPath, customizedPrompt);
+    console.log(`Injected raw transcript (${expertDoc.raw_content?.length || 0} characters) into prompt template`);
+    console.log(`Saved customized prompt to: ${promptPath}`);
+    
+    // Log transcript information for verification
+    if (expertDoc.raw_content?.length > 0) {
+      console.log(`Transcript preview (first 200 chars): ${expertDoc.raw_content.substring(0, 200)}...`);
+    } else {
+      console.warn(`WARNING: Raw content is empty!`);
+    }
+    
+    // Verify no example transcript remains
+    if (customizedPrompt.includes('Jane Smith')) {
+      console.warn(`⚠️ WARNING: 'Jane Smith' example text detected in final prompt - may affect results!`);
+    }
+    
     
     Logger.info('Generating summary using Claude...');
     
     let summaryResponse: string;
     try {
       // Call Claude API to generate JSON summary
-      summaryResponse = await claudeService.sendPrompt(customizedPrompt);
+      writeDebugLog(`Calling Claude API for document ${documentId} using getJsonResponse...`);
       
-      // Extract JSON if it's wrapped in markdown code blocks
-      let jsonString = summaryResponse;
-      const jsonMatch = summaryResponse.match(/```json\s*([\s\S]*?)\s*```/);
-      if (jsonMatch && jsonMatch[1]) {
-        jsonString = jsonMatch[1];
-      }
-      
-      // Parse JSON to validate and extract title
       let parsedJson;
+      
+      // Use the getJsonResponse method to get structured JSON
       try {
-        parsedJson = JSON.parse(jsonString);
-      } catch (jsonError) {
-        Logger.warn(`Claude response is not valid JSON: ${jsonError instanceof Error ? jsonError.message : 'Unknown error'}`);
+        // Call Claude API to generate structured JSON from the transcript
+        console.log(`\n=== CALLING CLAUDE API ===`);
+        console.log(`Sending transcript to Claude for JSON summary generation...`);
+        
+        const jsonResult = await claudeService.getJsonResponse(customizedPrompt, {
+          jsonMode: true,
+          temperature: 0
+        });
+        
+        // Log the successfully received response
+        console.log(`\n=== CLAUDE API RESPONSE RECEIVED ===`);
+        console.log(`Successfully received JSON response with keys: ${Object.keys(jsonResult).join(', ')}`);
+        
+        // Save the JSON response for reference
+        const jsonResponsePath = path.resolve(debugDir, `claude-json-${documentId.substring(0, 8)}.json`);
+        fs.writeFileSync(jsonResponsePath, JSON.stringify(jsonResult, null, 2));
+        console.log(`Saved JSON response to: ${jsonResponsePath}`);
+        
+        // Use the structured JSON result
+        parsedJson = jsonResult;
+        summaryResponse = JSON.stringify(jsonResult);
+        
+        // Log key fields from the response
+        console.log(`\n=== GENERATED SUMMARY DETAILS ===`);
+        console.log(`Title: "${parsedJson.title}"`);
+        console.log(`Speaker: ${parsedJson.speakerProfile?.name} (${parsedJson.speakerProfile?.title})`);
+        console.log(`Core Topic: ${parsedJson.presentationEssence?.coreTopic}`);
+        console.log(`Key Takeaways: ${parsedJson.keyTakeaways?.length} items`);
+        console.log(`Memorable Quotes: ${parsedJson.memorableQuotes?.length} items`);
+        console.log(`Target Audience: ${parsedJson.whyWatch?.targetAudience}`);
+        console.log(`Summary Length: ${parsedJson.summary?.length || 0} characters`);
+        
+      } catch (jsonApiError) {
+        // Log the error
+        const errorMessage = jsonApiError instanceof Error ? jsonApiError.message : 'Unknown error';
+        console.error(`\n=== ERROR CALLING CLAUDE API ===`);
+        console.error(`JSON API call failed: ${errorMessage}`);
+        
+        // Return failure
         return {
           success: false,
-          error: 'Invalid JSON response from Claude',
-          ai_response: summaryResponse
+          error: `Failed to generate JSON from transcript: ${errorMessage}`
         };
       }
       
@@ -294,11 +480,19 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       
       // Extract title from the JSON
       const title = parsedJson.title || expertDoc.title || 'Untitled';
+      writeDebugLog(`Using title for update: "${title}" (original title: "${expertDoc.title || 'None'}")`);
+      
+      // Save the final processed JSON content to be stored
+      const finalJsonPath = path.resolve(debugDir, `final-json-${documentId.substring(0, 8)}.json`);
+      fs.writeFileSync(finalJsonPath, formattedJson);
+      writeDebugLog(`Saved final formatted JSON to ${finalJsonPath} (${formattedJson.length} characters)`);
       
       // If dry run, return the result without saving
       if (options.dryRun) {
-        Logger.info(chalk.yellow(`[DRY RUN] Would update document ${documentId} with new title: ${title}`));
-        Logger.info(chalk.yellow(`[DRY RUN] Would update processed_content with Claude's JSON response`));
+        console.log(`\n=== DRY RUN - NO DATABASE UPDATES ===`);
+        console.log(`Would update document ${documentId} with new title: "${title}"`);
+        console.log(`Would update processed_content with JSON (${formattedJson.length} characters)`);
+        console.log(`Would set ai_summary_status to 'completed'`);
         
         return {
           success: true,
@@ -311,24 +505,56 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       }
       
       // Update the document with the processed content and title
+      console.log(`\n=== UPDATING DATABASE ===`);
+      console.log(`Updating document ${documentId} with:`);
+      console.log(` - New title: "${title}"`);
+      console.log(` - Processed content: ${formattedJson.length} characters`);
+      console.log(` - AI summary status: 'completed'`);
+      
+      const updateData = {
+        processed_content: formattedJson,
+        title: title,
+        ai_summary_status: 'completed',
+        updated_at: new Date().toISOString()
+      };
+      
+      console.log(`Sending update to Supabase...`);
       const { data: updatedDoc, error: updateError } = await supabase
         .from('expert_documents')
-        .update({
-          processed_content: formattedJson,
-          title: title,
-          ai_summary_status: 'completed',
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', documentId)
         .select();
       
       if (updateError) {
+        console.error(`ERROR updating document: ${updateError.message}`);
         return {
           success: false,
           error: `Error updating expert document: ${updateError.message}`,
           ai_result: parsedJson
         };
       }
+      
+      // Update successful
+      console.log(`Update successful!`);
+      
+      // Verify by fetching the document again
+      console.log(`Verifying update by fetching updated document...`);
+      const { data: verifyDoc, error: verifyError } = await supabase
+        .from('expert_documents')
+        .select('id, title, processed_content')
+        .eq('id', documentId)
+        .single();
+        
+      if (verifyError) {
+        console.log(`Warning: Could not verify update: ${verifyError.message}`);
+      } else {
+        console.log(`Verification successful:`);
+        console.log(` - Updated title: "${verifyDoc.title}"`);
+        console.log(` - Updated processed_content length: ${verifyDoc.processed_content?.length || 0} characters`);
+      }
+      
+      console.log(`\n=== PROCESSING COMPLETE ===`);
+      console.log(`Successfully generated AI summary and updated document "${title}"`);
       
       return {
         success: true,
@@ -339,24 +565,55 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       };
       
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      writeDebugLog(`ERROR in Claude API or processing: ${errorMessage}`);
+      
+      // Save error details to debug file
+      const errorPath = path.resolve(debugDir, `error-${documentId.substring(0, 8)}.txt`);
+      fs.writeFileSync(errorPath, `Error processing document ${documentId}:\n${errorMessage}\n\nTimestamp: ${new Date().toISOString()}`);
+      
       // Update status to error if Claude API call fails
-      await supabase
-        .from('expert_documents')
-        .update({
-          ai_summary_status: 'error',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', documentId);
+      writeDebugLog(`Updating document ${documentId} status to 'error'`);
+      try {
+        const { error: updateError } = await supabase
+          .from('expert_documents')
+          .update({
+            ai_summary_status: 'error',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', documentId);
+          
+        if (updateError) {
+          writeDebugLog(`ERROR updating error status: ${updateError.message}`);
+        } else {
+          writeDebugLog(`Successfully updated status to 'error'`);
+        }
+      } catch (updateError) {
+        writeDebugLog(`EXCEPTION updating error status: ${updateError instanceof Error ? updateError.message : 'Unknown error'}`);
+      }
       
       return {
         success: false,
-        error: `Error generating summary with Claude: ${error instanceof Error ? error.message : 'Unknown error'}`
+        error: `Error generating summary with Claude: ${errorMessage}`
       };
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    writeDebugLog(`UNEXPECTED ERROR processing document ${documentId}: ${errorMessage}`);
+    
+    // Create debug directory if it doesn't exist yet
+    const debugDir = path.resolve(__dirname, '../debug-output');
+    if (!fs.existsSync(debugDir)) {
+      fs.mkdirSync(debugDir, { recursive: true });
+    }
+    
+    // Save error details
+    const fatalErrorPath = path.resolve(debugDir, `fatal-error-${documentId.substring(0, 8)}.txt`);
+    fs.writeFileSync(fatalErrorPath, `Fatal error processing document ${documentId}:\n${errorMessage}\n\nTimestamp: ${new Date().toISOString()}`);
+    
     return {
       success: false,
-      error: `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      error: `Unexpected error: ${errorMessage}`
     };
   }
 }
