@@ -1,5 +1,10 @@
 # Claude Code Instructions
 
+⚠️ **NEW SHARED SERVICES & HEALTH CHECKS AVAILABLE**
+- `formatterService` - Use for consistent text, date, number formatting (packages/shared/services/formatter-service)
+- `converterService` - Use for file conversions and format transformations (packages/shared/services/converter-service)
+- Health check tools available: `./scripts/cli-pipeline/maintenance-cli.sh health-check`
+
 ⚠️ **CRITICAL: CODE REVIEW CHECKLIST**
 
 ## BEFORE WRITING ANY CODE:
