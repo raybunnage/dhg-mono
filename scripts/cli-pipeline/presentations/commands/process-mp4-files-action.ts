@@ -35,39 +35,107 @@ export async function processMp4FilesAction(options: any) {
     const supabase = SupabaseClientService.getInstance().getClient();
     const promptQueryService = PromptQueryService.getInstance();
     
-    // Get the summary prompt from the database or use a dummy for testing
+    // Get the summary prompt from the database with proper error handling
     Logger.info('Fetching video summary prompt from database...');
     let promptTemplate = '';
+    let promptLoaded = false;
+    
+    // Create a debug directory for detailed debugging output
+    const debugDir = path.resolve(__dirname, '../debug-output');
+    if (!fs.existsSync(debugDir)) {
+      fs.mkdirSync(debugDir, { recursive: true });
+    }
+
     try {
-      // Try to get from database
-      try {
-        const { prompt: summaryPrompt } = await promptQueryService.getPromptWithQueryResults('final_video-summary-prompt');
-        if (summaryPrompt) {
-          promptTemplate = summaryPrompt.content;
-          Logger.info(`Found prompt: ${summaryPrompt.name}`);
-        }
-      } catch (promptError) {
-        Logger.warn('Could not get prompt from database, using fallback prompt for testing');
-        // For testing, use a hardcoded simple prompt template
-        promptTemplate = `Generate a structured JSON summary of the following transcript. Focus on the main ideas, key points, and overall message.
+      // Fetch the prompt from the database using the PromptQueryService
+      writeDebugLog(`Attempting to load prompt 'final_video-summary-prompt' from database`);
+      const promptResult = await promptQueryService.getPromptWithQueryResults('final_video-summary-prompt');
+      
+      if (promptResult.error) {
+        writeDebugLog(`Error loading prompt: ${promptResult.error}`);
+        Logger.warn(`Error loading prompt: ${promptResult.error}`);
+      }
+      
+      if (promptResult.prompt) {
+        promptTemplate = promptResult.prompt.content;
+        promptLoaded = true;
+        writeDebugLog(`Successfully loaded prompt from database: ${promptResult.prompt.name}`);
+        Logger.info(`Found prompt: ${promptResult.prompt.name}`);
+        
+        // Save the prompt to a debug file
+        const promptDebugPath = path.resolve(debugDir, 'prompt-template.md');
+        fs.writeFileSync(promptDebugPath, promptTemplate);
+        Logger.info(`Saved prompt template to ${promptDebugPath} for inspection`);
+      }
+    } catch (promptError) {
+      writeDebugLog(`Exception loading prompt: ${promptError instanceof Error ? promptError.message : 'Unknown error'}`);
+      Logger.warn(`Could not get prompt from database due to exception: ${promptError instanceof Error ? promptError.message : 'Unknown error'}`);
+    }
+    
+    // Use a fallback prompt if database load failed
+    if (!promptLoaded) {
+      Logger.warn('Using fallback prompt template for JSON generation');
+      writeDebugLog('Using fallback prompt template');
+      
+      promptTemplate = `# Expert Video Summary Generation Prompt
+
+You are tasked with creating an engaging, concise summary of an expert presentation video based on a transcript. Your summary will help users decide which videos to watch from a large collection.
+
+## Output Format
+Create a JSON object with the following structure:
+
+\`\`\`json
+{
+  "title": "Clear, concise title that captures the essence of the presentation",
+  "speakerProfile": {
+    "name": "Full name of the speaker",
+    "title": "Professional title or role",
+    "expertise": "Brief description of expertise and what makes them valuable"
+  },
+  "presentationEssence": {
+    "coreTopic": "Main subject or focus of the presentation",
+    "uniqueApproach": "What makes this presentation's perspective distinctive",
+    "problemAddressed": "Problem being addressed or opportunity explored",
+    "insightSummary": "Summary of the core insight or message"
+  },
+  "keyTakeaways": [
+    "First key insight or actionable advice",
+    "Second key insight or actionable advice",
+    "Third key insight or actionable advice",
+    "Fourth key insight or actionable advice (optional)"
+  ],
+  "memorableQuotes": [
+    {
+      "quote": "Direct quote from the speaker",
+      "context": "Brief context for the quote"
+    },
+    {
+      "quote": "Another direct quote (optional)",
+      "context": "Brief context for the second quote"
+    }
+  ],
+  "discussionHighlights": {
+    "exchanges": "Notable exchanges or insights from Q&A",
+    "challenges": "Interesting challenges or debates that emerged",
+    "additionalContext": "Any additional context from the discussion"
+  },
+  "whyWatch": {
+    "targetAudience": "Who would benefit most from this presentation",
+    "uniqueValue": "What distinguishes this from other videos on similar topics"
+  },
+  "summary": "A vibrant, informative 200-300 word summary that captures the overall presentation, combining elements from all sections above in an engaging narrative format"
+}
+\`\`\`
+
+IMPORTANT: Respond with ONLY valid JSON. Do not include any text outside the JSON object.
 
 TRANSCRIPT:
-{{TRANSCRIPT}}
+{{TRANSCRIPT}}`;
 
-Format your response as valid JSON with the following structure:
-{
-  "title": "Clear, concise title",
-  "speakerProfile": "Brief description of the speaker(s) and their expertise",
-  "presentationEssence": "2-3 sentence overview of what the presentation is about",
-  "keyTakeaways": ["List of 3-5 main points"],
-  "memorableQuotes": ["1-2 notable quotes from the transcript"],
-  "whyWatch": "Why someone should watch this presentation",
-  "summary": "Comprehensive 3-paragraph summary"
-}`;
-      }
-    } catch (error) {
-      Logger.error('Error in prompt handling:', error);
-      process.exit(1);
+      // Save the fallback prompt for debugging
+      const fallbackPath = path.resolve(debugDir, 'fallback-prompt.md');
+      fs.writeFileSync(fallbackPath, promptTemplate);
+      Logger.info(`Saved fallback prompt to ${fallbackPath} for inspection`);
     }
     
     // Verify we have a prompt template
@@ -282,64 +350,51 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
     
     Logger.info('Generating summary using Claude...');
     
-    let summaryResponse: string;
+    // Save content and customized prompt for debugging in the correct debug directory
+    const debugDir = path.resolve(__dirname, '../debug-output');
+    // Ensure debug directory exists
+    if (!fs.existsSync(debugDir)) {
+      fs.mkdirSync(debugDir, { recursive: true });
+    }
+    
+    const debugContentPath = path.resolve(debugDir, `raw-content-${documentId.substring(0, 8)}.txt`);
+    const debugPromptPath = path.resolve(debugDir, `customized-prompt-${documentId.substring(0, 8)}.md`);
+    
+    // Write files with truncated content if too large
+    if (expertDoc.raw_content) {
+      const contentPreview = expertDoc.raw_content.length > 5000 
+        ? expertDoc.raw_content.substring(0, 5000) + "\n\n... [Content truncated for debug file] ..."
+        : expertDoc.raw_content;
+      fs.writeFileSync(debugContentPath, contentPreview);
+      writeDebugLog(`Saved content preview to ${debugContentPath}`);
+    }
+    
+    fs.writeFileSync(debugPromptPath, customizedPrompt);
+    writeDebugLog(`Saved customized prompt to ${debugPromptPath}`);
+    
+    // Use proper JSON response method
     try {
-      // Call Claude API to generate JSON summary
-      summaryResponse = await claudeService.sendPrompt(customizedPrompt);
+      writeDebugLog(`Calling Claude API with jsonMode enabled to get structured response`);
+      Logger.info(`Calling Claude to generate JSON summary (this might take a moment)...`);
       
-      // Extract JSON if it's wrapped in markdown code blocks
-      writeDebugLog(`Claude raw response: ${summaryResponse.substring(0, 200)}...`);
+      // Use getJsonResponse which is specifically designed for JSON output
+      const jsonResponse = await claudeService.getJsonResponse(customizedPrompt, {
+        jsonMode: true,  // Enforce JSON-only output
+        temperature: 0,  // Use 0 temperature for most consistent JSON structure
+        system: "You are a helpful AI assistant that ONLY responds with valid JSON. Do not include any text before or after the JSON object."
+      });
       
-      // Handle different response formats
-      let parsedJson: any;
+      // Log the JSON response for debugging
+      const responsePreview = JSON.stringify(jsonResponse).substring(0, 200);
+      writeDebugLog(`Claude returned valid JSON response: ${responsePreview}...`);
       
-      // Try to find JSON in code blocks
-      const jsonMatch = summaryResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (jsonMatch && jsonMatch[1]) {
-        try {
-          parsedJson = JSON.parse(jsonMatch[1].trim());
-          writeDebugLog(`Successfully extracted JSON from code block`);
-        } catch (codeBlockError) {
-          writeDebugLog(`Found code block but content is not valid JSON: ${codeBlockError instanceof Error ? codeBlockError.message : 'Unknown error'}`);
-        }
-      }
+      // Save the full JSON response for inspection
+      const jsonResponsePath = path.resolve(debugDir, `claude-json-${documentId.substring(0, 8)}.json`);
+      fs.writeFileSync(jsonResponsePath, JSON.stringify(jsonResponse, null, 2));
+      writeDebugLog(`Saved complete JSON response to ${jsonResponsePath}`);
       
-      // If that fails, try looking for JSON objects in the text
-      if (!parsedJson) {
-        const jsonObjectMatch = summaryResponse.match(/{[\s\S]*}/);
-        if (jsonObjectMatch) {
-          try {
-            parsedJson = JSON.parse(jsonObjectMatch[0]);
-            writeDebugLog(`Successfully extracted JSON object from response`);
-          } catch (objectError) {
-            writeDebugLog(`Found JSON-like object but not valid JSON: ${objectError instanceof Error ? objectError.message : 'Unknown error'}`);
-          }
-        }
-      }
-      
-      // If still no valid JSON, generate a simplified JSON from the text
-      if (!parsedJson) {
-        writeDebugLog(`No valid JSON found in response, generating simplified JSON`);
-        
-        // Create a simple title from the first line or "Untitled"
-        let title = expertDoc.title || 'Untitled';
-        const firstLine = summaryResponse.split('\n')[0];
-        if (firstLine && firstLine.length < 100) {
-          title = firstLine.replace(/^#\s*/, '').trim();
-        }
-        
-        // Create a simple summary from the full text
-        const summary = summaryResponse.length > 500 
-          ? summaryResponse.substring(0, 500) + '...'
-          : summaryResponse;
-        
-        parsedJson = {
-          title: title,
-          summary: summary,
-          generated: true,
-          note: "This is a simplified JSON generated from a non-JSON Claude response"
-        };
-      }
+      // Assign the parsed JSON from the validated response
+      const parsedJson = jsonResponse;
       
       // Format the JSON nicely for storage
       const formattedJson = JSON.stringify(parsedJson, null, 2);
@@ -392,8 +447,15 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       };
       
     } catch (error) {
-      // Update status to error if Claude API call fails
-      writeDebugLog(`Error generating summary with Claude: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      writeDebugLog(`Error generating summary with Claude: ${errorMessage}`);
+      Logger.error(`Claude API error: ${errorMessage}`);
+      
+      // Save the error to a debug file
+      const errorPath = path.resolve(debugDir, `error-${documentId.substring(0, 8)}.txt`);
+      fs.writeFileSync(errorPath, `Error generating summary with Claude: ${errorMessage}\n\nTimestamp: ${new Date().toISOString()}`);
+      
+      // Update document status to error
       await supabase
         .from('expert_documents')
         .update({
@@ -404,7 +466,7 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       
       return {
         success: false,
-        error: `Error generating summary with Claude: ${error instanceof Error ? error.message : 'Unknown error'}`
+        error: `Error generating summary with Claude: ${errorMessage}`
       };
     }
   } catch (error) {
