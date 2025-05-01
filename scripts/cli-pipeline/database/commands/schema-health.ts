@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { databaseService } from '../../../../packages/shared/services/database-service';
 import { commandTrackingService } from '../../../../packages/shared/services/tracking-service/command-tracking-service';
+import { formatterService } from '../../../../packages/shared/services/formatter-service';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 
@@ -33,11 +34,14 @@ program
           // Process each issue type
           healthAnalysis.issues.forEach((issue: any, index: number) => {
             const severityColor = 
-              issue.severity === 'high' ? chalk.red :
-              issue.severity === 'medium' ? chalk.yellow :
-              chalk.blue;
+              issue.severity === 'high' ? 'error' :
+              issue.severity === 'medium' ? 'warning' : 
+              'info';
             
-            console.log(severityColor(`ISSUE #${index + 1}: ${formatIssueType(issue.type)} (${issue.severity.toUpperCase()})`));
+            console.log(formatterService.formatCli(
+              `ISSUE #${index + 1}: ${formatterService.formatIssueType(issue.type)} (${issue.severity.toUpperCase()})`,
+              severityColor
+            ));
             
             if (issue.type === 'missing_primary_key' && issue.tables) {
               console.log('Tables without primary keys:');
@@ -110,12 +114,6 @@ program
     }
   });
 
-// Helper function to format issue types
-function formatIssueType(type: string): string {
-  return type
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
+// Helper function has been moved to the FormatterService
 
 export default program;
