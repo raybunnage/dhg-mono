@@ -8,3 +8,5 @@ export * from "./supabase-service/supabase-service";
 export * from "./report-service/report-service";
 export * from "./formatter-service"; // Formatter service for consistent formatting
 export * from "./converter-service"; // Converter service for file and format conversions
+export * from "./document-classification-service"; // Document classification service for content classification
+export * from "./pdf-processor-service"; // PDF processor service for PDF file handling

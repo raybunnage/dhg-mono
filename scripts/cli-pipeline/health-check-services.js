@@ -53,6 +53,26 @@ const SERVICE_PATTERNS = [
       "trackCommand("
     ],
     sharedServicePath: 'packages/shared/services/tracking-service'
+  },
+  {
+    name: 'Document Classification',
+    correctPattern: "documentClassificationService",
+    incorrectPatterns: [
+      "createFallbackClassification(",
+      "classifyDocument(",
+      "document-classification-prompt"
+    ],
+    sharedServicePath: 'packages/shared/services/document-classification-service'
+  },
+  {
+    name: 'PDF Processor',
+    correctPattern: "pdfProcessorService",
+    incorrectPatterns: [
+      "extractTextFromPDF(",
+      "processPDFFromDrive(",
+      "processPDFFromFile("
+    ],
+    sharedServicePath: 'packages/shared/services/pdf-processor-service'
   }
 ];
 
