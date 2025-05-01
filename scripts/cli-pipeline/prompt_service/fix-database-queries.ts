@@ -5,7 +5,20 @@
  */
 import { config } from 'dotenv';
 import { resolve } from 'path';
-import { promptManagementService, DatabasePrompt } from '../../../packages/shared/services/prompt-service/prompt-management-service';
+import { promptService } from '../../../packages/shared/services/prompt-service';
+import { promptManagementService } from '../../../packages/shared/services/prompt-service/prompt-management-service';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+
+// Define interface for DatabasePrompt
+interface DatabasePrompt {
+  id: string;
+  name: string;
+  content: string;
+  metadata?: any;
+  created_at?: string;
+  updated_at?: string;
+  description?: string;
+}
 
 // Load environment variables from .env files
 const envFiles = ['.env', '.env.local', '.env.development'];
@@ -19,8 +32,16 @@ async function main() {
   try {
     console.log('Fixing database queries in prompts...');
     
-    // Get all prompts from the database
+    // Get all prompts from the database using promptManagementService
+    console.log('Getting prompts from database...');
     const prompts = await promptManagementService.getDatabasePrompts();
+    
+    if (!prompts || prompts.length === 0) {
+      console.error('No prompts found in the database');
+      return;
+    }
+    
+    console.log(`Found ${prompts.length} prompts in the database`);
     
     // Define the queries to update
     const queriesToUpdate = [
@@ -58,18 +79,19 @@ async function main() {
         databaseQuery: query
       };
       
-      // Update the prompt with the new metadata
+      // Update the prompt with the new metadata using promptManagementService
       console.log(`Setting databaseQuery for prompt: ${promptName}`);
       const result = await promptManagementService.updatePrompt(prompt.id, {
         metadata: updatedMetadata
       });
       
-      if (result) {
-        console.log(`✅ Successfully updated databaseQuery for prompt: ${promptName}`);
-        console.log(`Full query: ${query}`);
-      } else {
-        console.error(`❌ Failed to update metadata for prompt: ${promptName}`);
+      if (!result) {
+        console.error(`Error updating prompt metadata for ${promptName}`);
+        continue;
       }
+      
+      console.log(`✅ Successfully updated databaseQuery for prompt: ${promptName}`);
+      console.log(`Full query: ${query}`);
     }
     
   } catch (error) {

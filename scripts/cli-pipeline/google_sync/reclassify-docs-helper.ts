@@ -11,6 +11,8 @@
 
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { promptService } from '../../../packages/shared/services/prompt-service';
+import { documentClassificationService } from '../../../packages/shared/services/document-classification-service';
+import { pdfProcessorService } from '../../../packages/shared/services/pdf-processor-service';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as mammoth from 'mammoth';

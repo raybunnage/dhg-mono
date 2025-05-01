@@ -45,23 +45,86 @@ if (!url || !key) {
   process.exit(0);
 }
 
-console.log(`Testing connection to Supabase at ${url}`);
-console.log(`Using key with length: ${key.length} characters`);
+console.log(`Testing connection to Supabase...`);
 
-// Try a simple connection test
-const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient(url, key);
+// Try to require SupabaseClientService first
+let SupabaseClientService;
+try {
+  // Try different paths to find the client service
+  const paths = [
+    '../../../packages/shared/services/supabase-client',
+    '../../packages/shared/services/supabase-client',
+    '../packages/shared/services/supabase-client',
+    './packages/shared/services/supabase-client'
+  ];
+  
+  for (const servicePath of paths) {
+    try {
+      SupabaseClientService = require(servicePath).SupabaseClientService;
+      console.log(`✅ Found SupabaseClientService at: ${servicePath}`);
+      break;
+    } catch (e) {
+      // Continue trying other paths
+    }
+  }
+  
+  if (!SupabaseClientService) {
+    throw new Error('SupabaseClientService not found in any expected paths');
+  }
+} catch (err) {
+  console.warn('⚠️ Could not load SupabaseClientService:', err.message);
+  console.log('Falling back to direct client creation...');
+  
+  // Use direct client as fallback
+  const { createClient } = require('@supabase/supabase-js');
+  const supabase = createClient(url, key);
+  
+  // Simple connection test with direct client
+  (async () => {
+    try {
+      const { data, error, status } = await supabase
+        .from('scripts')
+        .select('count', { count: 'exact', head: true });
+      
+      if (error) {
+        console.error('❌ Connection test failed:', error.message);
+        console.log('Status:', status);
+        process.exit(1);
+      }
+      
+      console.log('✅ Connection successful! Ready to use Supabase.');
+      process.exit(0);
+    } catch (err) {
+      console.error('❌ Unexpected error during connection test:', err.message);
+      process.exit(1);
+    }
+  })();
+  
+  return;
+}
 
-// Simple connection test
+// Use the SupabaseClientService for the connection test
 (async () => {
   try {
-    const { data, error, status } = await supabase
+    // Get singleton instance
+    const supabaseService = SupabaseClientService.getInstance();
+    
+    // Test the connection
+    const connectionResult = await supabaseService.testConnection();
+    
+    if (!connectionResult.success) {
+      console.error('❌ Connection test failed:', connectionResult.error);
+      process.exit(1);
+    }
+    
+    // Get the client and test a simple query
+    const supabase = supabaseService.getClient();
+    const { data, error } = await supabase
       .from('scripts')
       .select('count', { count: 'exact', head: true });
-    
+      
     if (error) {
-      console.error('❌ Connection test failed:', error.message);
-      console.log('Status:', status);
+      console.error('❌ Query test failed:', error.message);
       process.exit(1);
     }
     

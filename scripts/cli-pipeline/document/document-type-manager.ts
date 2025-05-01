@@ -2,8 +2,8 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { config as loadDotEnv } from 'dotenv';
-import { ClaudeService } from '../../packages/cli/src/services/claude-service';
 import { SupabaseClientService } from '../../packages/shared/services/supabase-client';
+import { documentClassificationService } from '../../packages/shared/services/document-classification-service';
 
 // Initialize environment variables
 loadDotEnv();
@@ -67,7 +67,6 @@ interface ClassificationResult {
 
 class DocumentTypeManager {
   private supabaseService: SupabaseClientService;
-  private claudeService: ClaudeService;
   private rootDir: string;
 
   constructor() {
@@ -78,27 +77,10 @@ class DocumentTypeManager {
     // Test Supabase connection
     this.testConnection();
     
-    // Setup Claude service
-    // Try different environment variable names for Claude API key
-    let claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.CLI_CLAUDE_API_KEY;
-    
-    if (!claudeApiKey) {
-      throw new Error('Missing Claude API key. Please set CLAUDE_API_KEY, ANTHROPIC_API_KEY, or CLI_CLAUDE_API_KEY environment variable.');
-    }
-    
-    console.log(`Claude API key present (length: ${claudeApiKey.length})`);
-    console.log(`API key starts with: ${claudeApiKey.substring(0, 10)}...`);
-    
-    try {
-      this.claudeService = new ClaudeService(claudeApiKey);
-      console.log('Claude service initialized successfully.');
-    } catch (error) {
-      console.error('Error initializing Claude service:', error instanceof Error ? error.message : 'Unknown error');
-      throw new Error('Failed to initialize Claude service. Check your API key.');
-    }
-    
     // Set root directory
     this.rootDir = process.cwd();
+    
+    console.log('Document Type Manager initialized successfully');
   }
   
   /**
@@ -493,7 +475,7 @@ class DocumentTypeManager {
   }
 
   /**
-   * Classify a document using Claude 3.7 and a prompt
+   * Classify a document using Document Classification Service
    */
   async classifyDocument(documentPath: string, promptName: string): Promise<ClassificationResult> {
     try {
@@ -512,197 +494,42 @@ class DocumentTypeManager {
       const documentContent = fs.readFileSync(fullPath, 'utf8');
       console.log(`Read ${documentContent.length} characters from ${documentPath}`);
       
-      // Step 3: Look up the prompt
-      const promptData = await this.lookupPrompt(promptName);
-      
-      if (!promptData.prompt) {
-        return {
-          success: false,
-          error: `Prompt not found: ${promptName}`
-        };
-      }
-      
-      if (promptData.documentTypes.length === 0) {
-        return {
-          success: false,
-          error: 'No document types found for classification'
-        };
-      }
-      
-      // Step 4: Build the system prompt for Claude
-      // Use the prompt content from the database as is, don't modify it
-      let systemPrompt = promptData.prompt.content;
-      
-      // If the prompt doesn't have the document types listed, we'll add them
-      if (!systemPrompt.includes('document types you can choose from') && 
-          !systemPrompt.includes('document_type_id')) {
-        systemPrompt += `\n\nHere are the available document types you can choose from:\n`;
-        
-        promptData.documentTypes.forEach(type => {
-          systemPrompt += `- ${type.document_type} (ID: ${type.id}): ${type.description || 'No description'}\n`;
-        });
-        
-        systemPrompt += `\nAnalyze the following document and classify it as one of these document types. Return your response as a JSON object with document_type_id, document_type_name, and confidence (0-1).`;
-      }
-      
-      console.log('\n=== SYSTEM PROMPT ===');
-      console.log(systemPrompt.substring(0, 500) + '...');
-      console.log('(Truncated for display)');
-      
-      // Step 5: Create context object with related information
-      const contextObject = {
-        documentTypes: promptData.documentTypes,
-        filePath: documentPath,
-        relationships: promptData.relationships.map(rel => ({
-          id: rel.id,
-          asset_path: rel.asset_path,
-          relationship_type: rel.relationship_type,
-          relationship_context: rel.relationship_context || null
-        })),
-        files: Object.keys(promptData.files).map(filePath => ({
-          path: filePath,
-          content_summary: `${promptData.files[filePath].substring(0, 100)}...`
-        }))
-      };
-      
-      console.log('\n=== CONTEXT OBJECT ===');
-      console.log(JSON.stringify(contextObject, null, 2).substring(0, 500) + '...');
-      console.log('(Truncated for display)');
-      
-      // Step 6: Call Claude API
-      console.log('Calling Claude API for classification...');
-      const claudeResponse = await this.claudeService.classifyDocument(
-        documentContent,
-        systemPrompt,
-        JSON.stringify(contextObject)
+      // Use the DocumentClassificationService to classify the document
+      console.log(`Using document classification service with prompt: ${promptName}`);
+      const fileName = path.basename(documentPath);
+      const classificationResult = await documentClassificationService.classifyDocument(
+        documentContent, 
+        fileName,
+        promptName
       );
       
-      if (!claudeResponse.success) {
+      if (!classificationResult) {
+        console.error('Classification failed - no result returned from service');
         return {
           success: false,
-          error: `Claude API error: ${claudeResponse.error}`
+          error: 'Document classification service returned null result'
         };
       }
       
-      // Step 7: Extract the classification from the response
-      const responseContent = claudeResponse.result;
-      console.log('\n=== FULL CLAUDE API RESPONSE ===');
+      console.log('\n=== CLASSIFICATION RESULT ===');
+      console.log(JSON.stringify(classificationResult, null, 2));
       
-      // Display the full response for debugging
-      if (typeof responseContent === 'string') {
-        console.log(responseContent);
-      } else if (typeof responseContent === 'object') {
-        console.log(JSON.stringify(responseContent, null, 2));
-      } else {
-        console.log(`Response is of type: ${typeof responseContent}`);
-      }
+      // Convert from DocumentClassificationResult to our ClassificationResult format
+      const result: ClassificationResult = {
+        success: true,
+        document_type_id: classificationResult.document_type_id,
+        document_type_name: classificationResult.document_type,
+        confidence: classificationResult.classification_confidence,
+        summary: classificationResult.document_summary,
+        ai_generated_tags: classificationResult.key_topics,
+        ai_assessment: {
+          status_recommendation: 'Ready for use',
+          target_audience: classificationResult.target_audience,
+          classification_reasoning: classificationResult.classification_reasoning
+        }
+      };
       
-      try {
-        // Try to extract JSON from the response in different formats
-        let jsonStr = '';
-        let contentText = '';
-        
-        // Direct string response
-        if (typeof responseContent === 'string') {
-          console.log('Response content is a string');
-          
-          // Try to match JSON within code blocks or directly in the string
-          const jsonMatch = responseContent.match(/```json\s*({[\s\S]*?})\s*```/) || 
-                           responseContent.match(/{[\s\S]*?}/);
-                           
-          if (jsonMatch && (jsonMatch[1] || jsonMatch[0])) {
-            jsonStr = jsonMatch[1] || jsonMatch[0];
-            console.log('\nExtracted JSON from direct string response');
-          } else {
-            contentText = responseContent;
-          }
-        } 
-        // Object response structure (new Claude API format)
-        else if (typeof responseContent === 'object') {
-          console.log('Response content is an object');
-          
-          // Claude v2 format: content array with text objects
-          if (responseContent.content && Array.isArray(responseContent.content)) {
-            contentText = responseContent.content[0]?.text || '';
-            console.log(`Found content array with ${responseContent.content.length} items`);
-            
-            // Try to extract JSON from contentText 
-            const contentMatch = contentText.match(/```json\s*({[\s\S]*?})\s*```/) || 
-                               contentText.match(/{[\s\S]*?}/);
-                               
-            if (contentMatch && (contentMatch[1] || contentMatch[0])) {
-              jsonStr = contentMatch[1] || contentMatch[0];
-              console.log('\nExtracted JSON from content text');
-            }
-          }
-          // Direct JSON response or other format
-          else if (typeof JSON.stringify(responseContent) === 'string') {
-            // Just use the full object as JSON
-            jsonStr = JSON.stringify(responseContent);
-            console.log('\nUsing whole response object as JSON');
-          }
-        }
-        
-        // If we couldn't extract JSON through normal means, try alternative approaches
-        if (!jsonStr && contentText) {
-          console.log('Attempting alternative JSON extraction methods');
-          
-          // Try more aggressive JSON extraction for malformed responses
-          // Find anything that looks like JSON object with our expected fields
-          const looseMatch = contentText.match(/\{[^{]*?"document_type_id"[^}]*?\}/);
-          if (looseMatch) {
-            console.log('Found loose JSON match with document_type_id field');
-            jsonStr = looseMatch[0];
-          }
-        }
-        
-        // Last resort if we still don't have JSON
-        if (!jsonStr) {
-          console.error('Could not extract JSON from Claude response');
-          console.log('Raw response content:', typeof responseContent === 'string' 
-            ? responseContent.substring(0, 500) + '...' 
-            : JSON.stringify(responseContent).substring(0, 500) + '...');
-          return {
-            success: false,
-            error: 'Could not extract JSON from Claude response'
-          };
-        }
-        
-        console.log('\n=== EXTRACTED JSON ===');
-        console.log(jsonStr);
-        
-        // Parse the extracted JSON
-        const classification = JSON.parse(jsonStr);
-        
-        console.log('\n=== PARSED CLASSIFICATION ===');
-        console.log(JSON.stringify(classification, null, 2));
-        
-        // Ensure we're returning expected fields by checking and extracting them
-        const result: ClassificationResult = {
-          success: true,
-          document_type_id: classification.document_type_id,
-          document_type_name: classification.document_type_name,
-          confidence: classification.confidence,
-          // Include additional fields if available
-          summary: classification.summary,
-          title: classification.title,
-          ai_generated_tags: classification.ai_generated_tags,
-          status_recommendation: classification.status_recommendation
-        };
-        
-        // Also check for ai_assessment object that might contain status_recommendation
-        if (classification.ai_assessment) {
-          result.ai_assessment = classification.ai_assessment;
-        }
-        
-        return result;
-      } catch (parseError) {
-        console.error('Error parsing Claude response:', parseError);
-        return {
-          success: false,
-          error: `Error parsing Claude response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
-        };
-      }
+      return result;
     } catch (error) {
       console.error('Error classifying document:', error);
       return {

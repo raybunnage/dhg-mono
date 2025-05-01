@@ -89,6 +89,12 @@ const CLI_PIPELINES = [
     displayName: 'Supabase',
     category: 'Infrastructure',
     healthCommand: './packages/shared/services/supabase-client/health-check.sh'
+  },
+  {
+    name: 'database',
+    displayName: 'Database',
+    category: 'Infrastructure',
+    healthCommand: './scripts/cli-pipeline/database/health-check.sh'
   }
 ];
 

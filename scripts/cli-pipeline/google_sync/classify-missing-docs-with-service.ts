@@ -14,47 +14,18 @@ import { SupabaseClientService } from '../../../packages/shared/services/supabas
 import { promptService } from '../../../packages/shared/services/prompt-service';
 import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
 import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
+import { documentClassificationService } from '../../../packages/shared/services/document-classification-service';
 
 // Define the prompt name to use for classification
 const CLASSIFICATION_PROMPT = 'document-classification-prompt-new';
 
 // Function to create a fallback classification when Claude API fails
 function createFallbackClassification(file: any): any {
-  const fileName = file.name || 'Unknown Document';
-  const extension = fileName.split('.').pop()?.toLowerCase() || '';
-  
-  // Determine document type based on file extension and name
-  let documentType = 'unknown document type';
-  let documentTypeId = '9dbe32ff-5e82-4586-be63-1445e5bcc548'; // ID for unknown document type
-  
-  // Basic file type detection from extension and name patterns
-  if (extension === 'docx' || extension === 'doc') {
-    documentType = 'word document';
-    documentTypeId = 'bb90f01f-b6c4-4030-a3ea-db9dd8c4b55a';
-  } else if (extension === 'txt') {
-    documentType = 'text document';
-    documentTypeId = '99db0af9-0e09-49a7-8405-899849b8a86c';
-  }
-  
-  // Check if it's a transcript based on filename patterns
-  if (fileName.toLowerCase().includes('transcript')) {
-    documentType = 'presentation transcript';
-    documentTypeId = 'c1a7b78b-c61e-44a4-8b77-a27a38cbba7e';
-  }
-  
-  // Return a basic classification structure
-  return {
-    document_type: documentType,
-    document_type_id: documentTypeId,
-    classification_confidence: 0.6, // Lower confidence for fallback
-    classification_reasoning: `Fallback classification created automatically due to API issues. Determined type based on filename "${fileName}" and extension "${extension}".`,
-    document_summary: `This document could not be analyzed by AI due to service connectivity issues. The classification is based on the file's metadata.`,
-    key_topics: ['File analysis unavailable'],
-    target_audience: 'Unknown (automatic classification)',
-    unique_insights: [
-      'Document was classified automatically based on filename and extension'
-    ]
-  };
+  // Use the document classification service's createFallbackClassification method
+  return documentClassificationService.createFallbackClassification({
+    name: file.name || 'Unknown Document',
+    mime_type: file.mime_type || ''
+  });
 }
 
 // Process a single file using the prompt service and Claude

@@ -2,9 +2,9 @@
  * Document Classification Script
  * 
  * This script classifies documents using Claude and updates the database
+ * Uses the DocumentClassificationService singleton
  */
 
-const Anthropic = require('@anthropic-ai/sdk');
 const fs = require('fs');
 const path = require('path');
 const { 
@@ -14,32 +14,25 @@ const {
   updateDocumentClassification 
 } = require('../shared/document-service-adapter');
 
+// Import shared services
+const { documentClassificationService } = require('../../../packages/shared/services/document-classification-service');
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
+
 // Get environment variables
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
 const rootDir = process.env.ROOT_DIR;
 const count = parseInt(process.env.COUNT || '10', 10);
 const mode = process.env.MODE || 'recent'; // 'recent' or 'untyped'
 
+// Get Supabase client
+const supabase = SupabaseClientService.getInstance();
+const supabaseUrl = supabase.getUrl();
+const supabaseKey = supabase.getApiKey();
+
 // Validate environment
-if (!claudeApiKey) {
-  console.error('Missing Claude API key. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY.');
-  process.exit(1);
-}
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
-  process.exit(1);
-}
-
 if (!rootDir) {
   console.error('Missing ROOT_DIR. Please set the root directory path.');
   process.exit(1);
 }
-
-// Initialize Anthropic client
-const anthropic = new Anthropic({ apiKey: claudeApiKey });
 
 // Sleep function for rate limiting
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -100,7 +93,7 @@ async function getDocumentsToClassify() {
 }
 
 /**
- * Classify a document using Claude
+ * Classify a document using DocumentClassificationService
  */
 async function classifyDocument(document, documentTypes) {
   try {
@@ -112,64 +105,35 @@ async function classifyDocument(document, documentTypes) {
       return null;
     }
     
-    // Prepare prompt for Claude
-    const documentTypesText = documentTypes.map(type => 
-      `- ${type.document_type}: ${type.description || 'No description available'}`
-    ).join('\n');
-    
-    const prompt = `You are a document classification system. Analyze the document content below and identify the most appropriate document type from the provided list.
-
-Document Types:
-${documentTypesText}
-
-Document Details:
-- Title: ${document.title || path.basename(document.file_path)}
-- Path: ${document.file_path}
-- Language: ${document.language || 'Unknown'}
-
-The document content is between the triple hyphens:
----
-${content.substring(0, 10000)} ${content.length > 10000 ? '... (content truncated)' : ''}
----
-
-Please provide your classification in the following JSON format:
-{
-  "document_type": "Name of the most appropriate document type",
-  "confidence": "High/Medium/Low",
-  "reasoning": "Brief explanation of why this document type was selected"
-}
-
-Your classification should be based on the document content, structure, and purpose. Choose the most specific document type that accurately reflects the document's purpose and content.`;
-
     console.log(`Classifying document: ${document.file_path}`);
+    
+    // Get the file name from the path
+    const fileName = path.basename(document.file_path);
     
     // Rate limit to avoid API throttling
     await sleep(1000);
     
-    // Call Claude API
-    const response = await anthropic.messages.create({
-      model: "claude-3-sonnet-20240229",
-      max_tokens: 1000,
-      temperature: 0,
-      messages: [{ role: "user", content: prompt }]
-    });
+    // Use the document classification service to classify the document
+    const classificationResult = await documentClassificationService.classifyDocument(
+      content,
+      fileName,
+      'document-classification-prompt' // Use the default prompt
+    );
     
-    // Extract and parse JSON from Claude's response
-    const responseText = response.content[0].text;
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    
-    if (!jsonMatch) {
-      console.error('Could not extract JSON from Claude response');
+    if (!classificationResult) {
+      console.error('Classification failed - service returned null result');
       return null;
     }
     
-    try {
-      const classification = JSON.parse(jsonMatch[0]);
-      return classification;
-    } catch (error) {
-      console.error('Error parsing JSON from Claude response:', error);
-      return null;
-    }
+    // Convert the DocumentClassificationResult to the format expected by updateDocumentClassification
+    const classification = {
+      document_type: classificationResult.document_type,
+      confidence: classificationResult.classification_confidence > 0.8 ? "High" : 
+                  classificationResult.classification_confidence > 0.6 ? "Medium" : "Low",
+      reasoning: classificationResult.classification_reasoning || "No reasoning provided"
+    };
+    
+    return classification;
   } catch (error) {
     console.error(`Error classifying document ${document.file_path}:`, error);
     return null;

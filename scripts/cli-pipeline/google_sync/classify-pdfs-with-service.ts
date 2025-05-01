@@ -15,102 +15,20 @@ import { promptService } from '../../../packages/shared/services/prompt-service'
 import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
 import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
 import { BatchProcessingService } from '../../../packages/shared/services/batch-processing-service';
+import { documentClassificationService } from '../../../packages/shared/services/document-classification-service';
+import { pdfProcessorService } from '../../../packages/shared/services/pdf-processor-service';
 
 // Define the prompt name to use for classification
 const CLASSIFICATION_PROMPT = 'scientific-document-analysis-prompt';
 
 // Function to create a fallback classification when Claude API fails
 async function createFallbackClassification(file: any, supabase: any): Promise<any> {
-  const fileName = file.name || 'Unknown Document';
-  const extension = fileName.split('.').pop()?.toLowerCase() || '';
-
-  // Define a document type interface to use for typing
-  interface DocumentType {
-    id: string;
-    document_type: string;
-  }
-
-  // Fetch valid document types from the database to ensure we use an existing ID
-  const { data: documentTypes, error } = await supabase
-    .from('document_types')
-    .select('id, document_type')
-    .order('document_type');
-
-  if (error) {
-    console.error(`Error fetching document types: ${error.message}`);
-  }
-
-  // Default to "unknown document type" if we can't determine anything better
-  let documentType = 'unknown document type';
-  let documentTypeId = '';
-
-  // Find the unknown document type ID from the fetched document types
-  const unknownType = documentTypes?.find((dt: DocumentType) => 
-    dt.document_type.toLowerCase() === 'unknown document type' ||
-    dt.document_type.toLowerCase() === 'unknown' ||
-    dt.document_type.toLowerCase().includes('unclassified')
-  );
-
-  if (unknownType) {
-    documentTypeId = unknownType.id;
-  } else if (documentTypes && documentTypes.length > 0) {
-    // If no unknown type found, just use the first document type as a fallback
-    documentTypeId = documentTypes[0].id;
-    documentType = documentTypes[0].document_type;
-  }
-
-  // Determine document type based on extension and filename patterns if document types were fetched
-  if (documentTypes && documentTypes.length > 0) {
-    // For PDF files
-    if (extension === 'pdf') {
-      const pdfType = documentTypes.find((dt: DocumentType) => 
-        dt.document_type.toLowerCase().includes('pdf') ||
-        dt.document_type.toLowerCase().includes('document')
-      );
-      
-      if (pdfType) {
-        documentType = pdfType.document_type;
-        documentTypeId = pdfType.id;
-      }
-    }
-    
-    // For transcripts
-    if (fileName.toLowerCase().includes('transcript')) {
-      const transcriptType = documentTypes.find((dt: DocumentType) => 
-        dt.document_type.toLowerCase().includes('transcript')
-      );
-      
-      if (transcriptType) {
-        documentType = transcriptType.document_type;
-        documentTypeId = transcriptType.id;
-      }
-    }
-  }
-  
-  // Check for large PDFs specifically to provide a better error message
-  let reasoningMessage = `Fallback classification created automatically due to API issues. Determined type based on filename "${fileName}" and extension "${extension}".`;
-  let summaryMessage = 'This document could not be analyzed by AI due to service connectivity issues. The classification is based on the file\'s metadata.';
-  
-  // For large PDFs, provide a more specific message
-  if (file.size && file.size > 10 * 1024 * 1024) {
-    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-    reasoningMessage = `Document is too large (${sizeMB}MB) for Claude's 10MB PDF limit. Classified based on filename "${fileName}" and extension "${extension}".`;
-    summaryMessage = `This document exceeds Claude's 10MB size limit for PDFs. Consider splitting the PDF into smaller parts for analysis or using a different approach for large documents.`;
-  }
-
-  // Return a basic classification structure
-  return {
-    document_type: documentType,
-    document_type_id: documentTypeId,
-    classification_confidence: 0.6, // Lower confidence for fallback
-    classification_reasoning: reasoningMessage,
-    document_summary: summaryMessage,
-    key_topics: ['File analysis unavailable'],
-    target_audience: 'Unknown (automatic classification)',
-    unique_insights: [
-      'Document was classified automatically based on filename and extension'
-    ]
-  };
+  // Use the document classification service's createFallbackClassification method
+  return documentClassificationService.createFallbackClassification({
+    name: file.name || 'Unknown Document',
+    mime_type: file.mime_type || 'application/pdf'
+    // Removed size property as it's not supported in the parameter type
+  });
 }
 
 // Process a single PDF file using the prompt service and Claude
@@ -533,15 +451,16 @@ async function processPdfFile(
           // Always show that we're sending to Claude, regardless of debug mode
           console.log(`Sending PDF to Claude API for analysis...`);
           
-          // Use Claude's direct PDF analysis capability
-          classificationResult = await claudeService.analyzePdfToJson(
-            tempFilePath,
+          // Use the prompt service to analyze the PDF content with Claude
+          classificationResult = await promptService.usePromptWithClaude(
+            CLASSIFICATION_PROMPT,
             userMessage,
             {
-              temperature: 0,
-              maxTokens: 4000,
-              // Add a longer timeout for PDF processing
-              timeout: 180000 // 3 minutes timeout for PDF processing
+              expectJson: true,
+              claudeOptions: {
+                temperature: 0,
+                maxTokens: 4000
+              }
             }
           );
           

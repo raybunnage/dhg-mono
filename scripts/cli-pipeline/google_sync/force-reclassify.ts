@@ -11,6 +11,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as mammoth from 'mammoth';
 import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
+import { documentClassificationService } from '../../../packages/shared/services/document-classification-service';
+import { pdfProcessorService } from '../../../packages/shared/services/pdf-processor-service';
 
 // The prompt to use for classification
 const CLASSIFICATION_PROMPT = 'document-classification-prompt-new';
@@ -267,24 +269,24 @@ export async function forceReclassifyDocument(
         // Prepare the message for Claude
         const userMessage = "Please extract the text content from this PDF document. Focus on the main topics, key points, and conclusions.";
         
-        // Use Claude's PDF analysis capability
-        const claudeResponse = await claudeService.analyzePdf(
-          tempFilePath,
-          userMessage,
-          {
-            temperature: 0,
-            maxTokens: 4000
-          }
+        // Use the PDF processor service to analyze the PDF
+        // Read the file buffer (extractTextFromPDF expects a buffer, not a file path)
+        const fileBuffer = fs.readFileSync(tempFilePath);
+        
+        // Then pass the buffer to the PDF processor with proper method case (PDF, not pdf)
+        const extractResult = await pdfProcessorService.extractTextFromPDF(
+          fileBuffer,
+          source.name // Pass filename as additional context
         );
         
-        if (claudeResponse) {
+        if (extractResult.success && extractResult.content) {
           // Response is text content from the PDF
-          contentForClassification = claudeResponse;
+          contentForClassification = extractResult.content;
           if (debug) {
             console.log(`✅ Successfully extracted ${contentForClassification.length} characters from PDF`);
           }
         } else {
-          throw new Error("Failed to extract content from PDF");
+          throw new Error(`Failed to extract content from PDF: ${extractResult.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error(`Error processing PDF file: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -429,31 +431,16 @@ Based on the filename and any context, please help classify this document approp
     // 4. Classify the content
     if (contentForClassification) {
       try {
-        // Use the prompt service to load the classification prompt
-        const promptResult = await promptService.loadPrompt(CLASSIFICATION_PROMPT, {
-          includeDatabaseQueries: true,
-          executeQueries: true,
-          includeRelationships: true,
-          includeRelatedFiles: true
-        });
-        
         if (debug) {
-          console.log(`Loaded prompt with ${promptResult.combinedContent.length} characters of combined content`);
+          console.log(`Using document classification service to classify content (${contentForClassification.length} chars)`);
         }
         
-        // Send the file content for classification
-        const userMessage = `Please classify this document:\n\n${contentForClassification}`;
-        
-        classificationResult = await promptService.usePromptWithClaude(
-          CLASSIFICATION_PROMPT,
-          userMessage,
-          {
-            expectJson: true,
-            claudeOptions: {
-              temperature: 0,
-              maxTokens: 4000
-            }
-          }
+        // Use the document classification service
+        const fileName = source.name;
+        classificationResult = await documentClassificationService.classifyDocument(
+          contentForClassification,
+          fileName,
+          CLASSIFICATION_PROMPT
         );
         
         if (debug && classificationResult) {

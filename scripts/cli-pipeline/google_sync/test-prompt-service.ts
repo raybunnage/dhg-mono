@@ -2,8 +2,8 @@
 /**
  * Test script for PromptService using SupabaseClientService 
  */
-import { promptService } from './packages/shared/services/prompt-service/prompt-service';
-import { SupabaseClientService } from './packages/shared/services/supabase-client';
+import { promptService } from '../../../packages/shared/services/prompt-service';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 async function testPromptService() {
   console.log('=== Testing PromptService with SupabaseClientService Integration ===');

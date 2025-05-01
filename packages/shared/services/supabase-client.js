@@ -166,12 +166,31 @@ class SupabaseClientService {
                 throw new Error('Unable to find Supabase credentials. Please make sure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are defined in your .env.development file.');
             }
             console.log(`Creating Supabase client with URL: ${this.supabaseUrl.substring(0, 20)}...`);
-            // Create client with minimal configuration
-            // This approach works with the latest API keys
-            this.client = (0, supabase_js_1.createClient)(this.supabaseUrl, this.supabaseKey);
-            // Log the API key we're using (partially masked)
-            const maskedKey = this.supabaseKey.substring(0, 5) + '...' + this.supabaseKey.substring(this.supabaseKey.length - 5);
-            console.log(`Using API Key: ${maskedKey}`);
+            try {
+                // Create client with minimal configuration and set fetch options to handle DNS timeouts
+                this.client = (0, supabase_js_1.createClient)(this.supabaseUrl, this.supabaseKey, {
+                    global: {
+                        fetch: (url, init) => {
+                            // Add timeout for fetch operations to handle DNS resolution failures
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+                            const fetchPromise = fetch(url, {
+                                ...init,
+                                signal: controller.signal
+                            });
+                            fetchPromise.finally(() => clearTimeout(timeoutId));
+                            return fetchPromise;
+                        }
+                    }
+                });
+                // Log the API key we're using (partially masked)
+                const maskedKey = this.supabaseKey.substring(0, 5) + '...' + this.supabaseKey.substring(this.supabaseKey.length - 5);
+                console.log(`Using API Key: ${maskedKey}`);
+            }
+            catch (error) {
+                console.error('Error creating Supabase client:', error);
+                throw new Error(`Failed to create Supabase client: ${error instanceof Error ? error.message : String(error)}`);
+            }
         }
         return this.client;
     }

@@ -40,6 +40,60 @@ I've successfully fixed several key files that were creating their own Supabase 
   cli pipeline should be using.  If you come across code that could be added to the services or 
   new possible singleton patterns please add them.  
 
+  Conversation Summary
+
+  What We've Done
+
+  1. Refactored Supabase Client Usage:
+    - Updated the sync-and-update-metadata.ts file to use SupabaseClientService singleton
+  2. Fixed GoogleDriveService Implementation:
+    - Updated the sync-and-update-metadata.ts file to properly use the GoogleDriveService
+  singleton
+    - Added a helper method listFilesInFolder to bridge API differences
+  3. Created New Singleton Services:
+    - Created DocumentClassificationService to standardize document classification logic
+    - Created PDFProcessorService to centralize PDF file processing and text extraction
+  4. Updated Project Documentation:
+    - Updated CLAUDE.md to document the new singleton services
+    - Updated packages/shared/services/index.ts to export the new services
+  5. Improved Health Check Tool:
+    - Added patterns for the new services to health-check-services.js
+    - Tested the health check to identify files that should use the new services
+
+  Key Files We Modified
+
+  1. /scripts/cli-pipeline/google_sync/sync-and-update-metadata.ts
+  2. /packages/shared/services/document-classification-service/index.ts (new)
+  3. /packages/shared/services/pdf-processor-service/index.ts (new)
+  4. /packages/shared/services/index.ts
+  5. /CLAUDE.md
+  6. /scripts/cli-pipeline/health-check-services.js
+
+  Current Focus
+
+  We've been systematically identifying opportunities to use the singleton pattern throughout
+  the codebase to improve maintainability and reduce duplication. Our focus has been on:
+  - Ensuring consistent use of SupabaseClientService
+  - Refactoring GoogleDriveService usage
+  - Creating new singletons for document classification and PDF processing
+
+  What's Next
+
+  1. Refactor Files Using Health Check Results:
+    - The health check identified several files that should use the new services
+    - Prioritize high-value, actively used files (avoid archived code)
+  2. Enhance Existing Services:
+    - Consider adding more functionality to the DocumentClassificationService
+    - Add more robust error handling to PDFProcessorService
+  3. Implement Tests:
+    - Add unit tests for the new services to ensure they work correctly
+  4. Update Other CLI Tools:
+    - Update other CLI tools to use the new services where appropriate
+    - Ensure consistent usage patterns across the codebase
+
+  This systematic approach will continue to improve code maintainability while providing
+  standardized services that work consistently across the application.
+
 
 oogle table that need processing
   2. Finds corresponding expert_documents by matching the source_id

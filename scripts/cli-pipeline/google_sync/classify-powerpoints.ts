@@ -15,6 +15,8 @@ import { promptService } from '../../../packages/shared/services/prompt-service'
 import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
 import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
 import { BatchProcessingService } from '../../../packages/shared/services/batch-processing-service';
+import { documentClassificationService } from '../../../packages/shared/services/document-classification-service';
+import { pdfProcessorService } from '../../../packages/shared/services/pdf-processor-service';
 
 // Define the prompt name to use for classification
 const CLASSIFICATION_PROMPT = 'scientific-powerpoint';
@@ -130,84 +132,12 @@ async function mapDocumentTypeToId(documentTypeStr: string, supabase: any): Prom
 
 // Function to create a fallback classification when extraction or Claude API fails
 async function createFallbackClassification(file: SourceFile, supabase: any): Promise<any> {
-  const fileName = file.name || 'Unknown Document';
-  const extension = fileName.split('.').pop()?.toLowerCase() || '';
-
-  // Fetch valid document types from the database to ensure we use an existing ID
-  const { data: documentTypes, error } = await supabase
-    .from('document_types')
-    .select('id, document_type')
-    .order('document_type');
-
-  if (error) {
-    console.error(`Error fetching document types: ${error.message}`);
-  }
-
-  // Default to "unknown document type" if we can't determine anything better
-  let documentType = 'unknown document type';
-  let documentTypeId = '';
-
-  // Find the unknown document type ID from the fetched document types
-  const unknownType = documentTypes?.find((dt: DocumentType) => 
-    dt.document_type.toLowerCase() === 'unknown document type' ||
-    dt.document_type.toLowerCase() === 'unknown' ||
-    dt.document_type.toLowerCase().includes('unclassified')
-  );
-
-  if (unknownType) {
-    documentTypeId = unknownType.id;
-  } else if (documentTypes && documentTypes.length > 0) {
-    // If no unknown type found, just use the first document type as a fallback
-    documentTypeId = documentTypes[0].id;
-    documentType = documentTypes[0].document_type;
-  }
-
-  // Determine document type based on extension and filename patterns if document types were fetched
-  if (documentTypes && documentTypes.length > 0) {
-    // For PowerPoint files
-    if (extension === 'pptx') {
-      const presentationType = documentTypes.find((dt: DocumentType) => 
-        dt.document_type.toLowerCase().includes('presentation') ||
-        dt.document_type.toLowerCase().includes('powerpoint') ||
-        dt.document_type.toLowerCase().includes('slide')
-      );
-      
-      if (presentationType) {
-        documentType = presentationType.document_type;
-        documentTypeId = presentationType.id;
-      }
-    }
-    
-    // Check for common patterns in filenames
-    if (fileName.toLowerCase().includes('presentation')) {
-      const presentationType = documentTypes.find((dt: DocumentType) => 
-        dt.document_type.toLowerCase().includes('presentation')
-      );
-      
-      if (presentationType) {
-        documentType = presentationType.document_type;
-        documentTypeId = presentationType.id;
-      }
-    }
-  }
-  
-  // Check for large PowerPoint files specifically to provide a better error message
-  let reasoningMessage = `Fallback classification created automatically due to extraction issues. Determined type based on filename "${fileName}" and extension "${extension}".`;
-  let summaryMessage = 'This document could not be analyzed by AI due to content extraction issues. The classification is based on the file\'s metadata.';
-  
-  // Return a basic classification structure
-  return {
-    document_type: documentType,
-    document_type_id: documentTypeId,
-    classification_confidence: 0.6, // Lower confidence for fallback
-    classification_reasoning: reasoningMessage,
-    document_summary: summaryMessage,
-    key_topics: ['File analysis unavailable'],
-    target_audience: 'Unknown (automatic classification)',
-    unique_insights: [
-      'Document was classified automatically based on filename and extension'
-    ]
-  };
+  // Use the document classification service's createFallbackClassification method
+  return documentClassificationService.createFallbackClassification({
+    name: file.name || 'Unknown Document',
+    mime_type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    size: file.size
+  });
 }
 
 // Process a single PowerPoint file using the prompt service and Claude
@@ -624,13 +554,11 @@ async function processPowerPointFile(
           }
         }
         
-        // Use Claude to classify the content
-        classificationResult = await claudeService.getJsonResponse(
-          userMessage,
-          {
-            temperature: 0,
-            maxTokens: 4000
-          }
+        // Use document classification service to classify the content
+        classificationResult = await documentClassificationService.classifyDocument(
+          extractedText,
+          file.name,
+          CLASSIFICATION_PROMPT
         );
         
         // Always show success message

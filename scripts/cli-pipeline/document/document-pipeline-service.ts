@@ -11,7 +11,7 @@ import * as crypto from 'crypto';
 import { Logger } from '../../packages/shared/utils/logger';
 import config from '../../packages/shared/utils/config';
 import { SupabaseClientService } from '../../packages/shared/services/supabase-client';
-import { ClaudeService } from '../../packages/shared/services/claude-service';
+import { claudeService } from '../../packages/shared/services/claude-service/claude-service';
 
 // Define types for documents
 interface DocumentFile {
@@ -39,7 +39,6 @@ export class DocumentPipelineService {
   private reportsDir: string;
   private logsDir: string;
   private supabase: SupabaseClientService;
-  private claude: ClaudeService;
 
   constructor() {
     // Define paths and directories
@@ -51,7 +50,6 @@ export class DocumentPipelineService {
 
     // Initialize services
     this.supabase = SupabaseClientService.getInstance();
-    this.claude = new ClaudeService();
 
     Logger.info('Document Pipeline Service initialized');
   }
@@ -575,7 +573,7 @@ export class DocumentPipelineService {
         
         // Send to Claude
         try {
-          const response = await this.claude.getJsonResponse(prompt);
+          const response = await claudeService.getJsonResponse(prompt);
           
           if (response && response.document_type_id) {
             // Update the document with the new type
