@@ -165,65 +165,147 @@ TRANSCRIPT:
     // Find MP4 files in sources_google
     const batchSize = parseInt(options.batchSize, 10);
     const totalLimit = parseInt(options.limit, 10);
+    const concurrency = parseInt(options.concurrency || '1', 10);
     let processed = 0;
     let results: any[] = [];
     
-    Logger.info(`Will process up to ${totalLimit} MP4 files in batches of ${batchSize}`);
+    Logger.info(`Will process up to ${totalLimit} MP4 files in batches of ${batchSize} with concurrency ${concurrency}`);
+    
+    // Simple concurrency limiter
+    const processConcurrently = async <T, R>(
+      items: T[],
+      fn: (item: T) => Promise<R>,
+      maxConcurrent: number
+    ): Promise<R[]> => {
+      const results: R[] = [];
+      const inProgress: Promise<void>[] = [];
+      const itemsCopy = [...items]; // Create a copy to avoid modifying the original
+      
+      const executeNext = async (): Promise<void> => {
+        if (itemsCopy.length === 0) return;
+        
+        const item = itemsCopy.shift()!;
+        try {
+          const result = await fn(item);
+          results.push(result);
+        } catch (error) {
+          Logger.error(`Error in concurrent execution: ${error}`);
+          // Still count as a result to maintain correct order
+          results.push(null as unknown as R);
+        }
+        
+        // Process next item if there are any left
+        if (itemsCopy.length > 0) {
+          await executeNext();
+        }
+      };
+      
+      // Start up to maxConcurrent tasks
+      for (let i = 0; i < Math.min(maxConcurrent, items.length); i++) {
+        inProgress.push(executeNext());
+      }
+      
+      // Wait for all tasks to complete
+      await Promise.all(inProgress);
+      return results;
+    };
     
     while (processed < totalLimit) {
       // Get a batch of MP4 files
       const batchLimit = Math.min(batchSize, totalLimit - processed);
-      const batch = await getNextBatchOfMp4Files(batchLimit);
+      const batch = await getNextBatchOfMp4Files(batchLimit, options.force);
       
       if (batch.length === 0) {
         Logger.info('No more MP4 files to process');
         break;
       }
       
-      Logger.info(`Processing batch of ${batch.length} MP4 files`);
+      Logger.info(`Processing batch of ${batch.length} MP4 files with concurrency ${concurrency}`);
       
-      // Process each file in the batch
-      for (const file of batch) {
-        Logger.info(`Processing MP4 file: ${file.name} (${file.id})`);
-        
-        // Find related expert document
-        const expertDocument = await findExpertDocumentForSource(file.id);
-        
-        if (!expertDocument) {
-          Logger.warn(`No expert document found for source ID: ${file.id}`);
-          results.push({
+      // Process files concurrently with our limiter
+      const batchResults = await processConcurrently(
+        batch,
+        async (file) => {
+          Logger.info(`Processing MP4 file: ${file.name} (${file.id})`);
+          
+          // Verify file mime type is actually MP4
+          if (file.mime_type !== 'video/mp4') {
+            Logger.warn(`Skipping file: ${file.name} - Not an MP4 file (mime type: ${file.mime_type})`);
+            return {
+              source_id: file.id,
+              source_name: file.name,
+              processed: false,
+              error: 'Not an MP4 file'
+            };
+          }
+          
+          // Find related expert document
+          const expertDocument = await findExpertDocumentForSource(file.id);
+          
+          if (!expertDocument) {
+            Logger.warn(`No expert document found for source ID: ${file.id}`);
+            return {
+              source_id: file.id,
+              source_name: file.name,
+              processed: false,
+              error: 'No expert document found'
+            };
+          }
+          
+          // Check if document has raw_content
+          if (!expertDocument.raw_content) {
+            Logger.warn(`Skipping document: ${expertDocument.id} - No raw content found`);
+            return {
+              source_id: file.id,
+              source_name: file.name,
+              expert_document_id: expertDocument.id,
+              processed: false,
+              error: 'Document has no raw content'
+            };
+          }
+          
+          Logger.info(`Found expert document: ${expertDocument.id} with raw content (${expertDocument.raw_content.length} bytes)`);
+          
+          // Process document
+          const result = await processSingleDocument(expertDocument.id, promptTemplate, options);
+          
+          if (result.success) {
+            Logger.info(chalk.green(`Successfully processed document for ${file.name}`));
+          } else {
+            Logger.error(`Failed to process document for ${file.name}: ${result.error}`);
+          }
+          
+          return {
             source_id: file.id,
             source_name: file.name,
-            processed: false,
-            error: 'No expert document found'
-          });
-          continue;
-        }
-        
-        Logger.info(`Found expert document: ${expertDocument.id}`);
-        
-        // Process document
-        const result = await processSingleDocument(expertDocument.id, promptTemplate, options);
-        
-        if (result.success) {
-          Logger.info(chalk.green(`Successfully processed document for ${file.name}`));
-        } else {
-          Logger.error(`Failed to process document for ${file.name}: ${result.error}`);
-        }
-        
-        results.push({
-          source_id: file.id,
-          source_name: file.name,
-          expert_document_id: expertDocument.id,
-          processed: result.success,
-          error: result.error || null,
-          title_updated: result.title_updated || false,
-          ai_result: result.ai_result || null
-        });
-      }
+            expert_document_id: expertDocument.id,
+            processed: result.success,
+            error: result.error || null,
+            title_updated: result.title_updated || false,
+            ai_result: result.ai_result || null
+          };
+        },
+        concurrency
+      );
+      
+      // Add batch results to overall results
+      results = results.concat(batchResults.filter(r => r !== null));
       
       processed += batch.length;
       Logger.info(`Processed ${processed}/${totalLimit} MP4 files`);
+      
+      // Count files by error type for this batch
+      const batchWithNoRawContent = batchResults.filter(r => r && !r.processed && r.error === 'Document has no raw content').length;
+      const batchWithNoExpertDoc = batchResults.filter(r => r && !r.processed && r.error === 'No expert document found').length;
+      
+      // Log the specific issues we're encountering
+      if (batchWithNoRawContent > 0) {
+        Logger.warn(`${batchWithNoRawContent} files in this batch had no raw content in their expert documents`);
+      }
+      
+      if (batchWithNoExpertDoc > 0) {
+        Logger.warn(`${batchWithNoExpertDoc} files in this batch had no associated expert documents`);
+      }
       
       // Save intermediate results
       if (options.output) {
@@ -242,13 +324,40 @@ TRANSCRIPT:
     const titleUpdatedCount = results.filter(r => r.title_updated).length;
     const errorCount = results.filter(r => !r.processed).length;
     
+    // Get count of specific errors
+    const noRawContentCount = results.filter(r => !r.processed && r.error === 'Document has no raw content').length;
+    const noExpertDocCount = results.filter(r => !r.processed && r.error === 'No expert document found').length;
+    const notMp4Count = results.filter(r => !r.processed && r.error === 'Not an MP4 file').length;
+    
     Logger.info(chalk.green(`\nProcessing complete. Processed ${processed} MP4 files.`));
     Logger.info(`${successCount} documents processed successfully`);
     Logger.info(`${titleUpdatedCount} documents had titles updated`);
     Logger.info(`${errorCount} documents had processing errors`);
     
+    // Display detailed error breakdown
+    if (errorCount > 0) {
+      Logger.info(`\nError breakdown:`);
+      if (noRawContentCount > 0) Logger.info(`- ${noRawContentCount} documents had no raw content`);
+      if (noExpertDocCount > 0) Logger.info(`- ${noExpertDocCount} documents had no associated expert document`);
+      if (notMp4Count > 0) Logger.info(`- ${notMp4Count} documents were not MP4 files`);
+      
+      const otherErrors = errorCount - (noRawContentCount + noExpertDocCount + notMp4Count);
+      if (otherErrors > 0) Logger.info(`- ${otherErrors} documents had other errors`);
+      
+      Logger.info(`\nTo see all errors in detail, check the output file: ${options.output}`);
+    }
+    
     if (options.dryRun) {
       Logger.info(chalk.yellow('\nThis was a dry run. No changes were made to the database.'));
+    }
+    
+    // If there were no successful conversions, provide suggestions
+    if (successCount === 0 && processed > 0) {
+      Logger.info(chalk.yellow('\nTroubleshooting suggestions:'));
+      Logger.info('1. Check that your MP4 files have corresponding expert documents');
+      Logger.info('2. Ensure expert documents have raw_content populated');
+      Logger.info('3. Try processing a specific document with: --document-id <id>');
+      Logger.info('4. Consider using --force to reprocess already processed documents');
     }
     
   } catch (error) {
@@ -260,25 +369,95 @@ TRANSCRIPT:
 /**
 * Get the next batch of MP4 files from sources_google
 */
-async function getNextBatchOfMp4Files(limit: number): Promise<any[]> {
+async function getNextBatchOfMp4Files(limit: number, force: boolean = false): Promise<any[]> {
   const supabase = SupabaseClientService.getInstance().getClient();
   
-  // Find MP4 files that don't have .mp4 in the name but mime_type is video/mp4
-  const { data, error } = await supabase
-    .from('sources_google')
-    .select('id, name, mime_type, drive_id, path, web_view_link')
-    .eq('mime_type', 'video/mp4')
-    .not('name', 'ilike', '%.mp4')
-    .is('is_deleted', false)
-    .order('modified_at', { ascending: false })
-    .limit(limit);
+  // DIRECT APPROACH: Find expert documents with raw_content but missing processed_content or title
+  // This is exactly what you would process if given a specific document ID
+  if (force) {
+    Logger.info('FORCE mode: Finding ALL expert documents with raw content (including already processed ones)...');
+  } else {
+    Logger.info('Finding expert documents with raw content but missing processed content or title...');
+  }
   
-  if (error) {
-    Logger.error('Error fetching MP4 files:', error);
+  // Now we can use the foreign key relationship properly
+  // Let's be explicit about finding documents with sources that are MP4 files
+  const { data: docsToProcess, error: docsError } = await supabase
+    .from('expert_documents')
+    .select(`
+      id,
+      title,
+      source_id,
+      raw_content,
+      processed_content,
+      sources_google!inner(id, name, mime_type, drive_id, path, web_view_link, is_deleted)
+    `)
+    .not('raw_content', 'is', null)  // Must have raw content
+    .or(force ? 'raw_content.neq.null' : 'processed_content.is.null,title.is.null')  // If force, get all with raw content, otherwise only incomplete
+    .not('source_id', 'is', null)  // Must have a source ID
+    .eq('sources_google.mime_type', 'video/mp4')  // Only select MP4 files
+    .is('sources_google.is_deleted', false)  // That aren't deleted
+    .order('created_at', { ascending: false })  // Newest first
+    .limit(limit);
+    
+  // Log what we got to help with debugging
+  if (docsToProcess && docsToProcess.length > 0) {
+    Logger.info(`First returned document source details: ${JSON.stringify(docsToProcess[0].sources_google || 'No sources', null, 2)}`);
+  }
+  
+  if (docsError) {
+    Logger.error(`Error finding documents to process: ${docsError.message}`);
     return [];
   }
   
-  return data || [];
+  if (!docsToProcess || docsToProcess.length === 0) {
+    Logger.info('No expert documents with raw content but missing processed content or title found.');
+    Logger.info('Use --force to reprocess documents that already have content.');
+    return [];
+  }
+  
+  Logger.info(`Found ${docsToProcess.length} documents with raw content that need processing`);
+  
+  // With the new relationship structure, we can directly filter the documents that have mp4 sources
+  const mp4Sources = [];
+  
+  for (const doc of docsToProcess) {
+    // Each doc now has sources_google array or object with the joined records
+    const sourceData = doc.sources_google;
+    
+    // Log what we're seeing to help with debugging
+    Logger.info(`Processing doc ${doc.id} with source_id ${doc.source_id}, source data type: ${typeof sourceData}`);
+    
+    // Skip if no source data
+    if (!sourceData) {
+      Logger.info(`- No source data found for document ${doc.id}`);
+      continue;
+    }
+    
+    // Handle both array and single object response formats
+    const source = Array.isArray(sourceData) ? sourceData[0] : sourceData;
+    
+    if (!source) {
+      Logger.info(`- No valid source object for document ${doc.id}`);
+      continue;
+    }
+    
+    Logger.info(`- Source ${source.id}: mime_type=${source.mime_type}, is_deleted=${source.is_deleted}`);
+    
+    if (source.mime_type === 'video/mp4' && source.is_deleted !== true) {
+      Logger.info(`- Adding source ${source.id} (${source.name}) to processing list`);
+      mp4Sources.push(source);
+    }
+  }
+  
+  if (mp4Sources.length === 0) {
+    Logger.info('No MP4 files found for the expert documents');
+    return [];
+  }
+  
+  Logger.info(`Found ${mp4Sources.length} MP4 files from ${docsToProcess.length} expert documents`);
+  
+  return mp4Sources;
 }
 
 /**
@@ -287,6 +466,20 @@ async function getNextBatchOfMp4Files(limit: number): Promise<any[]> {
 async function findExpertDocumentForSource(sourceId: string): Promise<any> {
   const supabase = SupabaseClientService.getInstance().getClient();
   
+  // First, check if there's an expert document with raw content for this source
+  const { data: docWithContent, error: contentError } = await supabase
+    .from('expert_documents')
+    .select('id, raw_content, processed_content, title, document_type_id, ai_summary_status')
+    .eq('source_id', sourceId)
+    .not('raw_content', 'is', null)
+    .maybeSingle();
+  
+  if (docWithContent) {
+    Logger.info(`Found expert document with raw content: ${docWithContent.id}`);
+    return docWithContent;
+  }
+  
+  // If no document with content found, get any document
   const { data, error } = await supabase
     .from('expert_documents')
     .select('id, raw_content, processed_content, title, document_type_id, ai_summary_status')
@@ -296,6 +489,14 @@ async function findExpertDocumentForSource(sourceId: string): Promise<any> {
   if (error) {
     Logger.error(`Error finding expert document for source ${sourceId}:`, error);
     return null;
+  }
+  
+  if (data) {
+    if (!data.raw_content) {
+      Logger.warn(`Found expert document ${data.id} for source ${sourceId}, but it has no raw content`);
+    }
+  } else {
+    Logger.warn(`No expert document found for source ${sourceId}`);
   }
   
   return data;
@@ -334,14 +535,49 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       };
     }
     
+    // Log the content length for debugging
+    writeDebugLog(`Document has ${expertDoc.raw_content.length} bytes of raw content`);
+    
+    // Additional sanity check for empty raw content
+    if (expertDoc.raw_content.trim().length === 0) {
+      writeDebugLog(`Expert document has empty raw content (zero length after trimming)`);
+      return {
+        success: false,
+        error: 'Expert document has empty raw content'
+      };
+    }
+    
     // Check if already processed and has a title (unless force option is used)
     if (expertDoc.processed_content && expertDoc.title && !options.force) {
-      writeDebugLog(`Document already has processed content and title`);
+      writeDebugLog(`Document already has processed content and title. ai_summary_status=${expertDoc.ai_summary_status}`);
+      
+      // If it's been processed but status isn't 'completed', update it
+      if (expertDoc.ai_summary_status !== 'completed') {
+        try {
+          const { error: updateError } = await supabase
+            .from('expert_documents')
+            .update({
+              ai_summary_status: 'completed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', expertDoc.id);
+            
+          if (updateError) {
+            writeDebugLog(`Error updating expert document status to completed: ${updateError.message}`);
+          } else {
+            writeDebugLog(`Updated expert document status to 'completed'`);
+          }
+        } catch (updateError) {
+          writeDebugLog(`Exception updating status: ${updateError instanceof Error ? updateError.message : 'Unknown error'}`);
+        }
+      }
+      
       return {
         success: true,
         already_processed: true,
         title_updated: false,
-        message: 'Document already has processed content and title'
+        message: 'Document already has processed content and title',
+        ai_summary_status: expertDoc.ai_summary_status
       };
     }
     

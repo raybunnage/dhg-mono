@@ -102,6 +102,8 @@ function display_help() {
   echo -e "     -d, --document-id <id>       Process a specific document ID"
   echo -e "     -l, --limit <limit>          Maximum files to process (default: 5)"
   echo -e "     -b, --batch-size <size>      Files per batch (default: 3)"
+  echo -e "     -c, --concurrency <num>      Files to process concurrently (default: 1)"
+  echo -e "     -f, --force                  Reprocess already processed documents"
   echo -e "     --dry-run                    Preview without saving"
   echo ""
   

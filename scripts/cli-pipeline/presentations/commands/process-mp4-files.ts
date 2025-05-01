@@ -31,6 +31,7 @@ processMp4FilesCommand
   .option('-d, --document-id <id>', 'Specific expert document ID to process (for testing)')
   .option('-l, --limit <limit>', 'Maximum number of MP4 files to process (default: 5)', '5')
   .option('-b, --batch-size <size>', 'Number of files to process in each batch (default: 3)', '3')
+  .option('-c, --concurrency <num>', 'Number of files to process concurrently (default: 1)', '1')
   .option('--dry-run', 'Preview processing without saving to database', false)
   .option('-o, --output <path>', 'Output file path for the JSON results (default: mp4-processing-results.json)', 'mp4-processing-results.json')
   .action(async (options: any) => {

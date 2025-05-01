@@ -1,46 +1,1459 @@
-{
-  "success": true,
-  "title_updated": true,
-  "new_title": "The Curse of Consciousness: How Repetitive Unpleasant Thoughts Drive Chronic Disease",
-  "old_title": null,
-  "ai_result": {
-    "title": "The Curse of Consciousness: How Repetitive Unpleasant Thoughts Drive Chronic Disease",
-    "speakerProfile": {
-      "name": "Dr. David Hanscom",
-      "title": "Spine Surgeon and Chronic Pain Specialist",
-      "expertise": "Expert in treating chronic pain through addressing threat physiology rather than solely focusing on physical symptoms or cognitive approaches"
-    },
-    "presentationEssence": {
-      "coreTopic": "The relationship between repetitive unpleasant thoughts (RUTs), threat physiology, and chronic disease",
-      "uniqueApproach": "Addressing the physiological basis of intrusive thoughts rather than treating them as purely psychological phenomena",
-      "problemAddressed": "The inability to escape repetitive unpleasant thoughts that drive sustained threat physiology and chronic disease",
-      "insightSummary": "Intrusive thoughts are manifestations of threat physiology, not psychological disorders, and can be resolved by addressing the underlying physiological state rather than through cognitive approaches alone"
-    },
-    "keyTakeaways": [
-      "The human brain cannot differentiate between physical and mental threats, creating the same inflammatory physiological response to both",
-      "Attempting to suppress or control negative thoughts actually makes them stronger and more persistent (the 'white bears' experiment)",
-      "Chronic threat physiology drives both mental and physical disease through inflammatory processes and mitochondrial dysfunction",
-      "Healing requires a four-part approach: thought diversion, calming physiology, fostering creativity, and eventually dissolution of the ego"
-    ],
-    "memorableQuotes": [
-      {
-        "quote": "The inability to escape our thoughts, what I call the curse of consciousness, is what drives chronic disease, period.",
-        "context": "Discussing how sustained threat physiology from repetitive thoughts contributes to all chronic diseases"
+[
+  {
+    "source_id": "e1054ea9-7907-4aeb-9f9a-c79f5fc7e3ac",
+    "source_name": "Overman.11.17.21.mp4",
+    "expert_document_id": "493211de-dd1d-4a56-9739-6d965782546e",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "From Inflammation to Healing: A Rheumatologist's Journey Through Chronic Pain Prevention",
+      "speakerProfile": {
+        "name": "Dr. Stephen Arwin",
+        "title": "Rheumatologist and Healthcare Innovation Leader",
+        "expertise": "Veteran rheumatologist with 40+ years experience pioneering integrative approaches to chronic inflammatory diseases and pain management"
       },
-      {
-        "quote": "We categorize anxiety and anger as psychological situations instead of physiological states, and so if your regional premise of all your mental health treatment is based on a wrong premise, then it's going to keep going the wrong direction.",
-        "context": "Explaining why traditional mental health approaches often fail to resolve intrusive thoughts"
-      }
-    ],
-    "discussionHighlights": {
-      "exchanges": "The group discussed how cognitive behavioral therapy has limited effectiveness when used alone without addressing underlying physiology, and how societal factors contribute to overall threat load",
-      "challenges": "The challenge of getting patients to engage with emotional pain when they've been using physical pain as a distraction or externalization mechanism",
-      "additionalContext": "Dr. Dick Gevirtz shared research showing that perceived discrimination in African Americans strongly predicts heart rate variability, demonstrating how social threats directly impact physiological health markers"
-    },
-    "whyWatch": {
-      "targetAudience": "Healthcare providers treating chronic pain or mental health conditions, individuals suffering from intrusive thoughts or anxiety, and anyone interested in the physiological basis of mental health",
-      "uniqueValue": "Offers a revolutionary perspective that intrusive thoughts can be completely resolved by addressing physiology, rather than just managed through cognitive approaches"
-    },
-    "summary": "In this groundbreaking presentation, Dr. David Hanscom explores the phenomenon of repetitive unpleasant thoughts (RUTs) and their relationship to chronic disease. Drawing from his personal experience with crippling anxiety and 13 years of ineffective psychotherapy, Hanscom presents a paradigm shift: intrusive thoughts aren't psychological problems to be managed but manifestations of threat physiology that can be resolved. He explains how the unconscious brain generates these thoughts as part of a threat response, and how attempting to control them cognitively only strengthens them due to the mismatch between our conscious and unconscious processes. The presentation reveals how sustained threat physiology drives inflammation, mitochondrial dysfunction, and ultimately all chronic diseases—both physical and mental. Dr. Hanscom, joined by colleagues including Dr. Clauston and Dr. Gevirtz, outlines a four-part solution: thought diversion (not control), calming physiology through various techniques, fostering creativity, and eventually dissolution of the ego. The discussion challenges traditional mental health approaches that focus solely on cognitive processes while ignoring the underlying physiology. Most remarkably, Hanscom asserts that intrusive thoughts can be completely eliminated—not just managed—by addressing the physiological basis, a claim he supports with both personal experience and clinical success stories. This presentation connects silos of knowledge across neuroscience, psychology, and medicine to offer hope for those trapped in cycles of chronic pain and intrusive thoughts."
+      "presentationEssence": {
+        "coreTopic": "Preventing chronic pain and inflammation through integrated, early intervention approaches",
+        "uniqueApproach": "Combining clinical experience with emerging neuroscience to create a comprehensive framework for addressing chronic disease",
+        "problemAddressed": "The progression from acute to chronic pain and inflammation, and how to interrupt this pathway",
+        "insightSummary": "Chronic pain and inflammation can be prevented through early aggressive treatment, addressing emotional/physical trauma, collaborative care models, and patient empowerment within a polyvagal framework"
+      },
+      "keyTakeaways": [
+        "Develop collaborative, integrative care programs that foster co-regulation between providers and patients",
+        "Treat inflammation excessively early and aggressively to prevent sensitization and chronic disease",
+        "Recognize that both emotional and physical trauma can trigger chronic inflammatory diseases",
+        "Extend primary care with specialized 'principal care' that maintains whole-person focus",
+        "Treat to remission rather than symptom improvement, using clear targets and measurements"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "When deep injury is done to us, we never heal until we forgive.",
+          "context": "Discussing the challenging but essential role of forgiveness in healing chronic conditions"
+        },
+        {
+          "quote": "Feel threats, fear and hate, defend, protect or withdraw, let go love to heal.",
+          "context": "A haiku summarizing the journey from threat response to healing through connection"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Dr. Angelo emphasized the importance of early autonomic nervous system balance, particularly increasing parasympathetic tone through vagal stimulation",
+        "challenges": "The difficulty of implementing comprehensive care models within current healthcare systems and the need to change medical education",
+        "additionalContext": "Reference to a paper on Long COVID that applies these principles, showing how adversity history predicts COVID susceptibility and outcomes"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers treating chronic pain and inflammatory conditions, medical educators, and patients seeking to understand the mind-body connection in chronic disease",
+        "uniqueValue": "Bridges decades of clinical experience with cutting-edge neuroscience, offering practical frameworks for preventing chronic conditions that traditional medicine often fails to address"
+      },
+      "summary": "Dr. Stephen Arwin delivers a masterful synthesis of his 40-year journey as a rheumatologist, revealing how his clinical intuitions are now validated by emerging neuroscience. Drawing from compelling patient stories and research evidence, he presents seven key principles for preventing chronic pain and inflammation: developing collaborative care models that foster co-regulation; treating inflammation aggressively early; recognizing both emotional and physical trauma as disease triggers; extending primary care with specialized expertise; treating to remission rather than symptom improvement; empowering patients to drive their own care; and personalizing treatment based on prognosis. Dr. Arwin illustrates how the autonomic nervous system, particularly vagal tone, serves as the foundation for healing, and how early intervention can prevent the transition from acute to chronic conditions. His patient-centered approach includes a phase model of chronic illness that adapts provider roles from healer to coach to counselor to partner as patients progress. The presentation brilliantly connects polyvagal theory, inflammatory pathways, and psychosocial factors into a comprehensive framework that challenges traditional medical paradigms. As healthcare evolves toward more integrated models, Dr. Arwin's insights offer a roadmap for clinicians seeking to prevent rather than merely manage chronic disease."
+    }
+  },
+  {
+    "source_id": "9f88d354-ea8e-4f80-86b1-77bfbed8d5f7",
+    "source_name": "Oxytocin,neuromod7.29.20.mp4",
+    "expert_document_id": "d5237a0a-7b4e-4746-ae9b-82ac6e073e21",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "The Healing Power of Connection: Oxytocin's Role in Pain Management and Social Bonding",
+      "speakerProfile": {
+        "name": "Dr. Sue Carter",
+        "title": "Oxytocin Researcher",
+        "expertise": "Leading expert on oxytocin with 40 years of research experience, studying its effects on social bonding, pain management, and human evolution"
+      },
+      "presentationEssence": {
+        "coreTopic": "The relationship between oxytocin, social connection, and chronic pain management",
+        "uniqueApproach": "Examining how oxytocin functions as a natural pain reliever within social contexts, challenging the traditional medical view of it as merely a reproductive hormone",
+        "problemAddressed": "The disconnect between our understanding of social connection's role in pain management and the lack of oxytocin-focused interventions in medical practice",
+        "insightSummary": "Oxytocin serves as 'nature's medicine' by enabling social bonding that mitigates threat responses and reduces pain, though its effects can vary based on personal history and context"
+      },
+      "keyTakeaways": [
+        "Oxytocin levels rise significantly during intense social bonding, including in male warriors in combat situations, suggesting its role extends far beyond female reproduction",
+        "Social connection and engagement can temporarily eliminate pain perception by downregulating threat responses and increasing oxytocin production",
+        "Early life trauma can permanently alter oxytocin receptor function through epigenetic changes, potentially affecting one's ability to benefit from oxytocin's pain-relieving effects",
+        "Group therapy shows remarkable success in chronic pain management, likely due to the social connection mechanisms that trigger oxytocin release"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "If you have a history of trauma or adversity, oxytocin may switch over to the vasopressin receptor and it can make you worse. So yes, it's nature's medicine, but when you start trying to give it as a drug, it's a double-edged sword.",
+          "context": "Explaining why pharmaceutical companies haven't pursued oxytocin as a pain treatment despite its potential"
+        },
+        {
+          "quote": "I can give a webinar where I am focused and talking and engaged and feel great for the hour, hour and a half. I'm doing that. And then when I'm done, the body then goes to where it was before. The social interactions are critical.",
+          "context": "Dr. Stephen Porges sharing his personal experience with how social engagement temporarily eliminated his back pain"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "The group discussed how oxytocin levels are extremely high in SWAT team members and military personnel during intense bonding situations, challenging the notion that it's primarily a female hormone",
+        "challenges": "The discussion revealed the complexity of oxytocin's effects - it can help manage pain in some contexts but might exacerbate issues in individuals with trauma histories",
+        "additionalContext": "Several participants shared clinical experiences using group therapy for chronic pain management with remarkable success, suggesting practical applications of the oxytocin-social connection mechanism"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers treating chronic pain, psychologists, researchers interested in mind-body connections, and individuals seeking non-pharmaceutical approaches to pain management",
+        "uniqueValue": "This discussion bridges neuroscience, psychology, and clinical practice to offer a revolutionary perspective on how social connection physically alters pain perception through measurable biological mechanisms"
+      },
+      "summary": "In this fascinating roundtable discussion, Dr. Sue Carter shares groundbreaking insights from her 40 years researching oxytocin, revealing how this hormone functions as 'nature's medicine' for pain management through social connection. The conversation challenges the traditional view of oxytocin as merely a female reproductive hormone, presenting evidence of its crucial role in enabling human social bonding, pain relief, and evolutionary success. Dr. Stephen Porges adds personal testimony about how social engagement completely eliminated his back pain during focused interactions, demonstrating the powerful mind-body connection. The discussion explores how oxytocin levels spike dramatically in high-stress bonding situations like military combat teams, suggesting evolutionary mechanisms that keep humans functioning under threat. Particularly compelling is the revelation that early trauma can epigenetically alter oxytocin receptor function, potentially explaining why some people struggle more with chronic pain. The group connects these neurobiological insights to clinical observations about the remarkable success of group therapy for chronic pain management. This conversation offers a revolutionary framework for understanding pain not just as a physical sensation but as an experience deeply influenced by our social connections and sense of safety, with profound implications for how we might treat chronic pain beyond pharmaceutical approaches."
+    }
+  },
+  {
+    "source_id": "66224317-cf27-4467-b9f2-85a18032867c",
+    "source_name": "Pandi.2.24.21.mp4",
+    "expert_document_id": "3cc24687-5fc3-4dd5-abd3-44e2dc82812f",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Unlocking the Endocannabinoid System: Molecular Mechanisms of Cannabinoids in Pain Management",
+      "speakerProfile": {
+        "name": "Dr. Brototi Pandy",
+        "title": "Pharmaceutical Researcher and Molecular Biologist",
+        "expertise": "Expert in cannabinoid molecular biology with extensive experience in pharmaceutical drug discovery and receptor mechanisms"
+      },
+      "presentationEssence": {
+        "coreTopic": "The molecular mechanisms of cannabinoids and the endocannabinoid system in pain management",
+        "uniqueApproach": "Detailed molecular analysis of how different cannabinoids interact with specific receptors to produce therapeutic effects without psychoactive side effects",
+        "problemAddressed": "The need for effective pain management solutions that leverage the endocannabinoid system without the impairing effects of high-THC products",
+        "insightSummary": "The endocannabinoid system serves as a critical communication network connecting multiple body systems, with different cannabinoids offering therapeutic potential through distinct receptor interactions"
+      },
+      "keyTakeaways": [
+        "The endocannabinoid system maintains homeostasis through receptors (CB1, CB2), endocannabinoids (anandamide, 2-AG), enzymes, and transport proteins",
+        "THC primarily binds to CB1 receptors causing psychoactive effects, while CBD works through CB2 receptors and other pathways to reduce inflammation without impairment",
+        "CBD can allosterically modify CB1 receptors, reducing THC's binding affinity and minimizing its psychoactive effects when used in combination",
+        "Full-spectrum cannabinoid products containing multiple compounds produce an 'entourage effect' that is generally more effective than isolated cannabinoids"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "All my life, I try to find a molecule that will go and hit a receptor and bring down a therapeutic effect. That's all we have been doing. But when I see a discussion from this forum, it's a totally different perspective that I keep learning every time when I come.",
+          "context": "Dr. Pandy explaining how clinical applications provide a different perspective from pharmaceutical research"
+        },
+        {
+          "quote": "I like to think of THC as like the key that kind of opens the lock that allows the other cannabinoids to do what they need to do.",
+          "context": "Dr. Taylor explaining the entourage effect and why a small amount of THC can enhance the effectiveness of other cannabinoids"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Clinicians shared experiences about dosing variability, with some patients responding to as little as 2mg of CBD while others need 30-50mg for pain relief",
+        "challenges": "The discussion revealed the difficulty in predicting individual responses to cannabinoids, with only about a 6% success rate when patients self-administer without guidance",
+        "additionalContext": "Participants debated the medical value of THC, with addiction specialists expressing concern about high-potency recreational products while acknowledging potential benefits of low-dose THC in full-spectrum formulations"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers treating pain, sleep disorders, and anxiety; researchers interested in cannabinoid pharmacology; and clinicians seeking alternatives to traditional pain medications",
+        "uniqueValue": "Bridges the gap between molecular biology and clinical application with clear explanations of how cannabinoids work at the receptor level, providing scientific context for observed clinical effects"
+      },
+      "summary": "Dr. Brototi Pandy delivers a fascinating exploration of the endocannabinoid system and its role in pain management, breaking down complex molecular interactions into understandable mechanisms. The presentation reveals how our bodies produce endocannabinoids (anandamide and 2-AG) that maintain homeostasis by binding to CB1 and CB2 receptors. Dr. Pandy explains that while THC primarily binds to CB1 receptors causing psychoactive effects, CBD works through CB2 receptors and other pathways to reduce inflammation without impairment. Remarkably, CBD can also modify CB1 receptors to reduce THC's binding affinity, explaining why CBD/THC combinations can minimize unwanted psychoactive effects. The discussion expands to include other cannabinoids like CBN and CBDA, highlighting their unique therapeutic properties. Clinicians Dr. Jim Taylor and others join the conversation, emphasizing the importance of full-spectrum products that create an 'entourage effect' and the challenges of personalized dosing. They note that cannabinoid medicine remains highly individualized, with patients requiring different formulations and doses based on their unique endocannabinoid systems. This presentation brilliantly connects molecular mechanisms to clinical observations, offering valuable insights for healthcare providers seeking to understand and utilize cannabinoids in patient care."
+    }
+  },
+  {
+    "source_id": "1ed07aa0-3918-422b-8b92-38434a3ab1ac",
+    "source_name": "NP.Discussion Group..6.24.20.mp4",
+    "expert_document_id": "e46360ae-f48d-4897-bc7e-e40a7c8542b7",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Redefining Chronic Pain: Brain Imaging Insights from 30 Years of Research",
+      "speakerProfile": {
+        "name": "Dr. Vania Apkarian",
+        "title": "Neuroscientist and Pain Researcher",
+        "expertise": "Leading expert in human brain imaging with 30 years of experience studying chronic pain mechanisms, particularly focused on identifying neural signatures that predict pain chronification"
+      },
+      "presentationEssence": {
+        "coreTopic": "The neurological basis of chronic pain development and maintenance",
+        "uniqueApproach": "Using longitudinal brain imaging to identify predictive biomarkers that determine who will develop chronic pain after injury",
+        "problemAddressed": "Why some people develop chronic pain while others recover from the same injuries",
+        "insightSummary": "Chronic pain is not simply persistent acute pain, but a distinct neurological condition with specific brain signatures involving limbic system abnormalities that can predict pain chronification with 60% accuracy"
+      },
+      "keyTakeaways": [
+        "Predisposition to chronic pain is linked to specific brain properties including smaller hippocampal/amygdala volumes and abnormal white matter pathways",
+        "As pain transitions from acute to chronic, brain activity shifts from sensory regions to emotional/limbic circuits (medial prefrontal cortex, nucleus accumbens, amygdala)",
+        "Contrary to expectations, anxiety and depression levels don't increase as pain becomes chronic - they remain stable in those who develop chronic pain",
+        "Chronic pain patients show both suffering and enhanced coping mechanisms, with higher scores on positive traits like openness, extroversion and conscientiousness"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "As the pain persists in time, it becomes more emotional and more self-referential. Now, the pain is not looking as a nociceptive pain. It is looking like a pain that the subject thinks that is their own pain and it's fundamentally an emotional state.",
+          "context": "Explaining how brain activity patterns change as pain transitions from acute to chronic"
+        },
+        {
+          "quote": "The pharmaceutical industry has spent like 50 billion dollars on this concept, they're still spending that money, they're still looking for that magic sodium channel blocker that's going to cure all chronic pain. And it's still not there, we still have not found it.",
+          "context": "Discussing the limitations of the traditional nociceptive model of pain"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Detailed discussion about the independence of brain biomarkers (white matter pathways, functional connectivity, and amygdala volume) that predict chronic pain development",
+        "challenges": "Questions about the subjective nature of pain measurement and whether gender differences exist in chronic pain development",
+        "additionalContext": "The presenter revealed that a specific sub-portion of the hippocampus appears to be female-specific in chronic pain, with findings validated across populations in Chicago and China"
+      },
+      "whyWatch": {
+        "targetAudience": "Clinicians, neuroscientists, and healthcare professionals working with chronic pain patients",
+        "uniqueValue": "Presents groundbreaking longitudinal data that challenges conventional wisdom about chronic pain, offering a new framework for understanding why treatments succeed or fail"
+      },
+      "summary": "Dr. Vania Apkarian delivers a fascinating overview of his 30 years researching the neuroscience of chronic pain through brain imaging. His work has fundamentally challenged the traditional view that chronic pain is simply persistent acute pain. Instead, his longitudinal studies reveal that chronic pain represents a distinct neurological condition with specific brain signatures. Most remarkably, his team has identified brain biomarkers that can predict with 60% accuracy which patients will develop chronic pain after an injury - an unprecedented level of predictive power in pain research. These markers include smaller hippocampal and amygdala volumes, abnormal white matter pathways, and increased connectivity between the medial prefrontal cortex and nucleus accumbens. As pain transitions from acute to chronic, brain activity shifts dramatically from sensory regions to emotional/limbic circuits, even while pain intensity remains stable. Contrary to clinical expectations, anxiety and depression levels don't increase as pain becomes chronic but remain consistent in those predisposed to chronic pain. Perhaps most surprisingly, chronic pain patients demonstrate not just suffering but enhanced coping mechanisms, scoring higher on positive traits like openness and conscientiousness than average. This research offers profound implications for treatment approaches, suggesting interventions might be most effective during the transitional phase before pain becomes a stable, difficult-to-disrupt neurological state."
+    }
+  },
+  {
+    "source_id": "8345902e-af26-4252-b101-c5219d294745",
+    "source_name": "Neil.Nathan.11.16.22.mp4",
+    "expert_document_id": "d0e0d77b-642e-45c6-b1b5-3b3b6027158c",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Healing the Hypersensitive Patient: A Comprehensive Approach to Mold, Lyme, and Limbic Dysfunction",
+      "speakerProfile": {
+        "name": "Dr. Neil Nathan",
+        "title": "Board Certified Family Physician and Pain Management Specialist",
+        "expertise": "Expert in treating medical outliers with chronic complex illnesses, particularly those with mold toxicity, Lyme disease, and multiple chemical sensitivities who have fallen through the cracks of conventional medicine"
+      },
+      "presentationEssence": {
+        "coreTopic": "Understanding and treating patients with extreme sensitivities to medications, supplements, and environmental factors",
+        "uniqueApproach": "Addressing the triad of limbic system dysfunction, polyvagal dysregulation, and mast cell activation as the foundation of hypersensitivity",
+        "problemAddressed": "The medical marginalization of hypersensitive patients who are often dismissed as having psychosomatic conditions",
+        "insightSummary": "Hypersensitivity is a neurological and cellular condition with identifiable triggers that can be systematically addressed through a comprehensive treatment approach"
+      },
+      "keyTakeaways": [
+        "The three key physiological components of sensitivity are limbic system dysfunction, polyvagal dysregulation, and mast cell activation, which are all interconnected",
+        "Common triggers include mold toxicity, Lyme disease, electromagnetic fields (EMFs), thiamine deficiency, trauma, and stress",
+        "Mold toxicity is the most common trigger of sensitization, affecting an estimated 10 million Americans, and can be diagnosed through urine mycotoxin testing",
+        "Treatment must follow a specific order: first address limbic/vagal/mast cell issues, then treat the underlying triggers like mold or Lyme disease"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "For years, patients who had become unusually sensitive to medications, supplements, even homeopathics have been dismissed, denigrated and marginalized by the medical profession. Most were told repeatedly 'It's all in your head.'",
+          "context": "Describing how the medical establishment has historically mishandled hypersensitive patients"
+        },
+        {
+          "quote": "An organism cannot heal if they don't feel safe.",
+          "context": "Explaining the fundamental principle behind treating sensitive patients, referencing the cell danger response mechanism"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Dr. Nathan emphasized that while psychological trauma is important, many patients cannot address deeper emotional issues until their physiological sensitivities are treated, creating a foundation of safety",
+        "challenges": "The group discussed the difficulty of integrating this knowledge into conventional medical practice, noting that standard medical education is decades behind current understanding of these conditions",
+        "additionalContext": "Dr. Nathan mentioned his upcoming book 'Why Is My Body So Sensitive?' which will feature contributions from leading experts in the field including Stephen Porges"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers treating patients with chronic, complex illnesses; patients with multiple sensitivities who have been dismissed by conventional medicine",
+        "uniqueValue": "Provides a comprehensive framework for understanding hypersensitivity that bridges functional medicine, neuroscience, and immunology with practical diagnostic and treatment approaches"
+      },
+      "summary": "Dr. Neil Nathan delivers a groundbreaking presentation on treating patients with extreme sensitivities who have been marginalized by conventional medicine. He reveals that hypersensitivity is not psychological but neurological and cellular, stemming from three interconnected systems: limbic dysfunction, polyvagal dysregulation, and mast cell activation. These systems all monitor safety, and when triggered by factors like mold toxicity, Lyme disease, or EMF exposure, create a cascade of inflammatory responses. Dr. Nathan emphasizes that mold toxicity is the most common trigger, affecting an estimated 10 million Americans, and can be diagnosed through simple urine mycotoxin testing. His treatment approach follows a specific sequence: first addressing the neurological sensitivity through limbic retraining programs like DNRS or Gupta's Amygdala Retraining, then treating underlying triggers. He shares practical diagnostic tools and treatment protocols, including brain retraining programs, vagal nerve stimulation, and specific binders for mycotoxins. Throughout the discussion, Dr. Nathan stresses that establishing safety is paramount—patients cannot heal if they don't feel safe. This presentation offers hope to both clinicians and patients dealing with complex sensitivities, providing a comprehensive framework that integrates functional medicine, neuroscience, and immunology with practical clinical applications."
+    }
+  },
+  {
+    "source_id": "23e79937-d616-4b0b-baa2-9697d83e5f56",
+    "source_name": "Naviaux.3.2.22.Mito.metab.mp4",
+    "expert_document_id": "42ff8533-ffc4-4095-b68c-7e2d11c6dc40",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Healing Beyond Danger: Mitochondria, ATP, and the Science of Cellular Recovery",
+      "speakerProfile": {
+        "name": "Dr. Robert Naviaux",
+        "title": "MD, PhD, Professor at University of California San Diego",
+        "expertise": "Expert in mitochondrial medicine, metabolomics, and cellular healing mechanisms with groundbreaking work on autism and chronic disease"
+      },
+      "presentationEssence": {
+        "coreTopic": "The Cell Danger Response (CDR) and its role in healing and chronic disease",
+        "uniqueApproach": "Connecting cellular metabolic processes to social connection and polyvagal theory across multiple scales of biology",
+        "problemAddressed": "Why chronic diseases persist despite treatment and how incomplete healing cycles lead to chronic illness",
+        "insightSummary": "Healing requires both turning off local cellular danger signals (extracellular ATP) and restoring receptivity to remote safety signals from the nervous system"
+      },
+      "keyTakeaways": [
+        "The Cell Danger Response (CDR) is a universal, energy-consuming process that cells use to oppose threats to homeostasis",
+        "All stressors cause efflux of ATP from cells to the extracellular space where it acts as a danger signal that inhibits healing",
+        "Chronic illness results when cells cannot complete the three-stage healing cycle and remain stuck in persistent danger signaling",
+        "Local danger signals (extracellular ATP) must decrease before cells can respond to remote safety signals (vagal, oxytocin) for complete healing"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "The cell has to want to heal in order to respond.",
+          "context": "Explaining why nutritional interventions alone often aren't enough for complete healing"
+        },
+        {
+          "quote": "Safety and danger are unevenly distributed in time and space.",
+          "context": "Discussing why 'boots on the ground' information is evolutionarily important in healing processes"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Discussion about adenosine (ATP breakdown product) as both a sleep-inducing molecule and potential immunosuppressant at high levels",
+        "challenges": "Questions about how food causes stress and disease through mitochondrial pathways without necessarily causing cell death",
+        "additionalContext": "Exploration of how vagal nerve stimulation and social connection might influence the cellular healing process by providing safety signals"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare practitioners, researchers in chronic disease, and anyone interested in the biological basis of healing and social connection",
+        "uniqueValue": "Bridges cellular biology with systems-level understanding of chronic disease, offering a unifying framework for conditions previously seen as unrelated"
+      },
+      "summary": "Dr. Robert Naviaux delivers a fascinating exploration of how cellular healing mechanisms connect to chronic disease and social well-being. He introduces the Cell Danger Response (CDR) as the universal process cells use to combat threats, explaining how all stressors cause ATP to leak from cells into extracellular space where it acts as an alarm signal. This extracellular ATP, while necessary initially, must decrease for complete healing to occur. Dr. Naviaux reveals that chronic illnesses—from autism to chronic fatigue to depression—share a common root: incomplete healing cycles where cells remain stuck in danger signaling mode. His groundbreaking insight is that healing requires both turning off local danger signals and restoring cellular receptivity to remote safety signals from the nervous system and social connections. He connects this cellular biology to Hans Selye's work on stress and introduces 'salutogenesis' as the science of healing itself. The presentation culminates with promising therapeutic approaches that synergistically reduce extracellular ATP while enhancing safety signals through vagal stimulation and social connection. This revolutionary framework offers hope that seemingly incurable chronic conditions might respond to treatments targeting the healing process itself rather than just specific disease symptoms."
+    }
+  },
+  {
+    "source_id": "0a5c2adb-fe77-480e-b37a-f835f7b46787",
+    "source_name": "Naviaux.4.21.21.mp4",
+    "expert_document_id": "e0190956-3fbd-4fc9-b22c-51e1b0e003a9",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Mitochondrial Dynamics in Healing: The Three Phases of the Cell Danger Response",
+      "speakerProfile": {
+        "name": "Dr. Robert Naviaux",
+        "title": "Medical Researcher and Physician",
+        "expertise": "Expert in mitochondrial medicine, cell metabolism, and the biochemical basis of healing and chronic disease"
+      },
+      "presentationEssence": {
+        "coreTopic": "The role of mitochondria and ATP signaling in the healing process",
+        "uniqueApproach": "Viewing healing as a choreographed three-phase process driven by different mitochondrial states rather than simply the reverse of injury",
+        "problemAddressed": "Why removing the source of injury doesn't guarantee healing in chronic conditions",
+        "insightSummary": "Healing requires specific mitochondrial transitions through three distinct phases (M1, M0, M2), and hypersensitivity to extracellular ATP may underlie many chronic diseases"
+      },
+      "keyTakeaways": [
+        "The healing process involves three distinct mitochondrial states (M1, M0, M2) that must occur in sequence and cannot be skipped",
+        "Extracellular ATP acts as a danger signal, and hypersensitivity to it may underlie many chronic conditions including autism, chronic pain, and other disorders",
+        "Removing the source of injury does not guarantee healing - the body must actively receive safety signals to complete the healing cycle",
+        "Anti-purinergic drugs like suramin can block ATP danger signaling and have shown promise in treating conditions like autism"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "The process of healing is not the reverse of the process of injury. Just by removing the injury does not guarantee that a patient will heal.",
+          "context": "Explaining why many chronic conditions persist even after the initial trigger is removed"
+        },
+        {
+          "quote": "What if the root problem in chronic disease is a conditioned hypersensitivity to normal amounts of extracellular ATP released by stressed cells?",
+          "context": "Proposing a unifying theory for many chronic conditions"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Discussion of how safety signals (not just removal of threat) are necessary for healing, connecting with Dr. Porges' polyvagal theory",
+        "challenges": "Debate about whether vagal tone and safety cues can produce anti-purinergic effects similar to medications like suramin",
+        "additionalContext": "Exploration of how fever temporarily improves autism symptoms by reducing ATP production and signaling, creating a transient state of 'safety'"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare practitioners, researchers in chronic disease, and anyone interested in the biological basis of healing",
+        "uniqueValue": "Presents a revolutionary framework for understanding chronic disease as a disruption in the healing cycle rather than just persistent injury"
+      },
+      "summary": "Dr. Robert Naviaux delivers a groundbreaking presentation on the cellular mechanisms of healing, centered on the critical role of mitochondria and ATP signaling. He explains that healing is not simply the reverse of injury but a choreographed three-phase process driven by different mitochondrial states (M1, M0, M2) that must occur in sequence. When cells are stressed or injured, they release ATP into the extracellular space, serving as a danger signal that triggers defensive responses. Dr. Naviaux proposes that many chronic conditions—from autism to chronic pain—may result from hypersensitivity to these ATP danger signals, preventing completion of the healing cycle. His research with the anti-purinergic drug suramin, which blocks ATP signaling, has shown remarkable results in children with autism who began speaking in sentences after treatment. The presentation challenges conventional medical thinking by demonstrating that removing the source of injury doesn't guarantee healing; the body must actively receive safety signals to complete the healing process. This framework explains why many chronic conditions persist despite conventional treatments and offers new therapeutic directions. The discussion with other experts, including Dr. Porges, explores fascinating connections between ATP signaling, vagal tone, and the neurobiology of safety, suggesting an integrated model of healing that spans from cellular metabolism to whole-body regulation."
+    }
+  },
+  {
+    "source_id": "d941e474-42bd-4780-91cd-b6a9894c9317",
+    "source_name": "Naviaux.Mitochondria.chronic Disease.mp4",
+    "expert_document_id": "b94942bd-e6da-49b2-acb4-3d9e001c2f2a",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Mitochondria and the Cell Danger Response: Rethinking Chronic Illness and Healing",
+      "speakerProfile": {
+        "name": "Dr. Robert Naviaux",
+        "title": "Internist, Biochemical Geneticist, and Researcher",
+        "expertise": "Founder of the Mitochondrial and Metabolic Disease Center at UCSD, expert in mitochondrial function and cellular metabolism with extensive research on chronic illness mechanisms"
+      },
+      "presentationEssence": {
+        "coreTopic": "The cell danger response (CDR) and its role in chronic illness and healing",
+        "uniqueApproach": "Viewing chronic illness as a failure of healing rather than just focusing on pathogenesis, introducing a 'second book of medicine'",
+        "problemAddressed": "Why 60% of adults and 40% of children remain trapped in chronic illness despite modern medical interventions",
+        "insightSummary": "Healing is an active, sequential biological process that requires specific signals of safety, not just removal of the initial trigger"
+      },
+      "keyTakeaways": [
+        "Mitochondria are not just cellular power plants but dynamic organelles that change form and function in response to stress and during healing",
+        "The cell danger response is an ancient, conserved pathway that cells use to defend against threats, but it can become chronically activated",
+        "Extracellular ATP acts as a danger signal that triggers inflammation and communicates with the brain through the vagus nerve",
+        "Healing requires a choreographed sequence of events with different mitochondrial phenotypes (M0, M1, M2) that cannot be reversed or skipped"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Self-defense is nature's oldest law.",
+          "context": "Explaining how our genes have been selected for survival through countless threats over evolutionary history"
+        },
+        {
+          "quote": "A cell will only redirect resources away from defense and toward healing when it receives the signal to say the future is safe.",
+          "context": "Describing the fundamental principle of when healing can begin"
+        },
+        {
+          "quote": "It's not the things that make these disorders different that matters for healing, it's the things that make them the same.",
+          "context": "Explaining his research findings across multiple chronic conditions"
+        },
+        {
+          "quote": "The default condition of every cell is to assume the world is a dangerous place. We have to learn how to calm ourselves.",
+          "context": "Discussing why it takes more energy to relax than to react"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Fascinating discussion about the role of the vagus nerve in modulating inflammation and how ATP signaling interfaces with the autonomic nervous system",
+        "challenges": "The group debated the 'top-down versus bottom-up' approach to healing, with Dr. Naviaux suggesting this is a false dichotomy as the system works as an integrated whole",
+        "additionalContext": "Dr. Naviaux revealed that the chemical signature of psychological trauma is indistinguishable from physical trauma, suggesting common cellular mechanisms"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare practitioners, researchers, and anyone interested in chronic illness, pain management, or integrative approaches to healing",
+        "uniqueValue": "Provides a revolutionary framework that bridges biochemistry, neuroscience, and clinical medicine to explain why conventional approaches to chronic illness often fail"
+      },
+      "summary": "Dr. Robert Naviaux delivers a paradigm-shifting presentation on mitochondria and the cell danger response (CDR), challenging our fundamental understanding of chronic illness. As the founder of UCSD's Mitochondrial and Metabolic Disease Center, he brings decades of research to explain what medical school never taught him: healing is an active biological process, not a passive engineering one. Naviaux reveals how mitochondria—far more than just cellular power plants—change form and function when cells encounter threats, fragmenting from connected networks to isolated fragments while releasing ATP as a danger signal. This extracellular ATP triggers inflammation and communicates with the brain through the vagus nerve, creating a whole-body response. The brilliance of his model lies in distinguishing pathogenesis (how we get sick) from salutogenesis (how we heal), showing they follow different pathways. Healing requires a choreographed sequence involving different mitochondrial phenotypes that cannot be rushed or reversed. Most provocatively, Naviaux demonstrates that psychological and physical traumas create identical chemical signatures, explaining why emotional stress triggers physical illness. For the 60% of adults trapped in chronic conditions, this research offers hope by identifying specific blocks in the healing cycle that can be addressed. His work represents a 'second book of medicine' that could revolutionize treatment approaches by focusing on creating conditions of safety that allow the body's natural healing processes to function."
+    }
+  },
+  {
+    "source_id": "a67c80a8-e44b-4ce2-9b93-89e796bca447",
+    "source_name": "Navaux.4.17.24.mp4",
+    "expert_document_id": "0a9c84f7-e0ec-4e8a-9ee1-c0d74b4f33ce",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Mitochondria: The Hidden Key to Chronic Illness and Healing",
+      "speakerProfile": {
+        "name": "Dr. Robert Naviaux",
+        "title": "Professor of Medicine, Pediatrics, and Pathology at University of California San Diego",
+        "expertise": "Leading mitochondrial researcher with 30+ years of experience studying mitochondrial function from conception to old age"
+      },
+      "presentationEssence": {
+        "coreTopic": "The cell danger response and its role in chronic illness",
+        "uniqueApproach": "Connecting cellular-level mitochondrial function to whole-body chronic illness through the lens of extracellular ATP signaling",
+        "problemAddressed": "The misapplication of acute disease models to chronic illness, which requires fundamentally different treatment approaches",
+        "insightSummary": "Chronic illness represents a persistent state of hypersensitivity to ATP signaling that blocks healing signals, requiring both bottom-up (cellular) and top-down (nervous system) interventions for recovery"
+      },
+      "keyTakeaways": [
+        "Mitochondria are not just cellular powerhouses but coordinating centers for all metabolism and the first line of defense against threats",
+        "Extracellular ATP acts as a danger signal that can create a state of hypersensitivity in chronic illness, blocking the body's ability to respond to safety signals",
+        "Effective treatment of chronic conditions requires both desensitizing cells to ATP signaling (bottom-up) and providing rhythmic safety signals (top-down)",
+        "Chronic illness patients show measurable metabolic differences including lower body temperature, altered metabolism, and delayed hypersensitivity responses to stressors"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Mitochondria are only as important as the battery and motor of a Tesla car would be, and cells without mitochondria would function about as well as a Tesla car without those two things.",
+          "context": "Explaining the fundamental importance of mitochondria to cellular function"
+        },
+        {
+          "quote": "Anything constant is interpreted by the body as bad. This is danger. When cells are injured or stressed, they will unplug from the matrix.",
+          "context": "Describing how rhythmic variation is essential for health, while constant states signal danger"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Participants shared personal experiences of chronic illness matching Dr. Naviaux's models, including lower body temperature and autonomic dysfunction",
+        "challenges": "The difficulty of addressing both cellular hypersensitivity and psychological/nervous system components of chronic conditions simultaneously",
+        "additionalContext": "Dr. Naviaux shared his personal experience with anxiety after a heart attack, noting how physiological changes can manifest as psychological symptoms"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare practitioners treating chronic conditions, patients with chronic illness, and researchers interested in the connection between cellular metabolism and whole-body health",
+        "uniqueValue": "Bridges the gap between cellular biology and clinical practice by explaining how mitochondrial function directly impacts chronic illness, offering a new paradigm for treatment"
+      },
+      "summary": "Dr. Robert Naviaux delivers a groundbreaking explanation of how mitochondria function as the coordinating centers of cellular metabolism and the first line of defense against threats. He introduces the cell danger response (CDR), where stressed cells release extracellular ATP as a danger signal, creating a cascade of metabolic changes. In chronic illness, cells become hypersensitive to ATP signaling, creating a persistent state that blocks healing signals from the nervous system. This explains why chronic conditions differ fundamentally from acute illness and require different treatment approaches. Dr. Naviaux presents a dual approach to healing: bottom-up strategies that desensitize cells to ATP signaling, and top-down strategies that provide rhythmic safety signals through the autonomic nervous system. He shares fascinating research showing how chronic illness patients exhibit measurable metabolic differences, including lower body temperatures and delayed hypersensitivity responses to stressors. The presentation offers a revolutionary framework for understanding conditions ranging from chronic pain to anxiety, explaining how physiological changes at the cellular level manifest as psychological symptoms. Most importantly, Dr. Naviaux's work suggests that combining approaches that address both cellular hypersensitivity and nervous system regulation could lead to breakthroughs in treating previously intractable chronic conditions."
+    }
+  },
+  {
+    "source_id": "efce5e82-06e0-44c0-8022-9d4505e9fd1b",
+    "source_name": "Meredith.10.18.23.mp4",
+    "expert_document_id": "f92a65cf-d4cc-44c8-bb8c-0b0852a058c2",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Attachment Theory's Hidden Impact on Chronic Pain Management",
+      "speakerProfile": {
+        "name": "Dr. Pam Meredith",
+        "title": "Research Psychologist and Occupational Therapist",
+        "expertise": "Expert in attachment theory with over 20 years of research experience and 100+ publications, specializing in the intersection of attachment patterns and chronic pain management"
+      },
+      "presentationEssence": {
+        "coreTopic": "The relationship between attachment theory and chronic pain outcomes",
+        "uniqueApproach": "Bridging psychological attachment patterns with physiological pain responses to create a transdiagnostic framework for understanding individual differences in pain management",
+        "problemAddressed": "Why people respond differently to pain treatments and why standard interventions often fail to produce lasting results for those with insecure attachment patterns",
+        "insightSummary": "A person's early-formed attachment style significantly impacts their pain experience, healthcare utilization, and treatment outcomes by influencing how they appraise pain threats, seek support, and regulate emotions during pain episodes"
+      },
+      "keyTakeaways": [
+        "Insecure attachment patterns are significantly overrepresented in chronic pain populations (60-70% versus 40% in general population)",
+        "Attachment style predicts disability outcomes better than pain intensity itself, making it a valuable pre-injury predictor of post-injury recovery",
+        "Every clinical relationship is potentially an attachment relationship, with therapeutic rapport directly influencing pain treatment outcomes",
+        "Understanding attachment patterns helps clinicians tailor their communication approach and treatment plans to individual patients without blame or judgment"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Pain is an incredible motivator... persistent pain in particular, severe persistent pain, is one of the only things that will be louder than your attachment insecurity.",
+          "context": "Explaining why even attachment-avoidant individuals will eventually seek medical help for severe pain"
+        },
+        {
+          "quote": "What was really supportive and adaptive for them at one time point may not necessarily be so at this particular moment.",
+          "context": "Discussing how coping mechanisms developed in childhood may no longer serve adults with chronic pain"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Dr. Stephen Porges connected attachment styles to autonomic nervous system states, suggesting they represent the same underlying regulatory mechanisms viewed through different theoretical lenses",
+        "challenges": "Participants discussed the practical difficulties of identifying attachment styles in clinical settings and implementing interdisciplinary care in fragmented healthcare systems",
+        "additionalContext": "The group explored how breathing techniques and other physiological interventions might help regulate nervous system states that underlie attachment patterns and pain responses"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers working with chronic pain patients, particularly physical therapists, occupational therapists, psychologists, and physicians seeking to understand treatment resistance",
+        "uniqueValue": "Offers a non-blaming framework for understanding difficult patient behaviors and treatment outcomes, with practical insights for improving therapeutic relationships across all healthcare disciplines"
+      },
+      "summary": "Dr. Pam Meredith delivers a compelling exploration of how our earliest relationships shape our experience of chronic pain. Drawing on over two decades of research, she reveals how attachment patterns formed in childhood become powerful predictors of how we respond to pain and its treatment as adults. The presentation illuminates why individuals with insecure attachment styles—representing 60-70% of chronic pain populations—often struggle more with disability and show less sustainable improvement from standard interventions. Dr. Meredith explains that these patterns influence how patients appraise pain threats, seek support, and regulate emotions during painful episodes. The discussion expands into fascinating territory when Dr. Stephen Porges connects attachment theory to polyvagal theory and autonomic regulation, suggesting these frameworks observe the same underlying physiological mechanisms from different perspectives. What makes this presentation particularly valuable for clinicians is its practical application—understanding attachment patterns helps practitioners tailor their approach without blame, recognize why certain therapeutic relationships work better than others, and predict treatment outcomes. As one participant noted, this knowledge can transform frustration into compassion by recognizing that difficult patient behaviors aren't personal but rather adaptive responses developed early in life. For anyone working with chronic pain patients, this presentation offers a powerful lens for understanding treatment resistance and building more effective therapeutic relationships."
+    }
+  },
+  {
+    "source_id": "843ebc50-5c22-4aa9-89d9-13ad38176818",
+    "source_name": "Matt and Alona.10.21.20.mp4",
+    "expert_document_id": "c47c4a42-9bd4-4b72-b93e-082ebc33f56d",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "From Conflict to Connection: Transforming Relationships Through Heart-Centered Communication",
+      "speakerProfile": {
+        "name": "Matt and Alona",
+        "title": "Relationship Communication Specialists",
+        "expertise": "Experts in nonviolent communication and heart-centered connection techniques who help couples transform conflict into deeper understanding and intimacy"
+      },
+      "presentationEssence": {
+        "coreTopic": "Heart-centered communication as a tool for healing relationships and managing chronic pain",
+        "uniqueApproach": "Shifting from brain-based (evaluative) communication to heart-based (needs-focused) dialogue to maintain connection even during conflict",
+        "problemAddressed": "How family dynamics and relationship triggers can undermine physical treatments for chronic pain and create cycles of disconnection",
+        "insightSummary": "By focusing on connection rather than being right, couples can learn to translate 'brain messages' into 'heart messages' that foster co-regulation and healing rather than triggering defensive responses"
+      },
+      "keyTakeaways": [
+        "Connection is about feeling rather than thinking, and holding space where everyone's needs matter equally",
+        "Anger typically sits on a 'SHELF' - covering Sadness, Hurt, Embarrassment, Loneliness, and Fear",
+        "When triggered, check if your words, thoughts, and actions (STD) will enhance connection or create disconnection",
+        "Make clear requests rather than demands, and respond to 'no' by exploring what needs are preventing a 'yes'"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "One of the most perverse aspects of human existence is the depth of the triggers in close relationships.",
+          "context": "Discussing how our deepest connections can also contain our most powerful emotional triggers"
+        },
+        {
+          "quote": "The way to make yourself miserable is to think what's wrong with somebody else. And the way to make yourself really miserable is to tell them.",
+          "context": "Quoting Marshall Rosenberg, founder of Nonviolent Communication, on how criticism damages relationships"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "A powerful example was shared of a couple who resolved two weeks of conflict in just 30 minutes by focusing on needs and feelings rather than issues",
+        "challenges": "Participants discussed how the language of needs-based communication can initially feel manipulative or inauthentic to some people based on their cultural background",
+        "additionalContext": "Dr. Porges connected the communication approach to Polyvagal Theory, explaining how physiological states affect our ability to connect and process information"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers treating chronic pain, couples experiencing conflict, and individuals wanting to improve their communication skills",
+        "uniqueValue": "Combines practical communication techniques with insights from neuroscience to address how relationship dynamics directly impact physical health and pain management"
+      },
+      "summary": "In this illuminating presentation, relationship specialists Matt and Alona reveal how heart-centered communication can transform both relationships and chronic pain management. They introduce a powerful framework that shifts interactions from brain-based criticism to heart-based connection, explaining that our deepest relationships often contain our most powerful emotional triggers. Through real examples, including a couple who resolved two weeks of conflict in just 30 minutes, they demonstrate how focusing on feelings and needs rather than issues creates profound connection. The speakers introduce practical techniques like the 'heart message translator' that helps partners hear beyond triggering words to understand underlying needs. Dr. Porges connects these approaches to Polyvagal Theory, explaining how our physiological state affects our ability to communicate effectively. Particularly valuable for healthcare providers and couples, the presentation offers a revolutionary perspective: that healing physical pain often requires addressing the autonomic nervous system through improved relationship dynamics. By learning to make requests rather than demands, recognize that anger typically covers deeper emotions (SHELF: Sadness, Hurt, Embarrassment, Loneliness, Fear), and check whether our words enhance connection or create disconnection, viewers gain practical tools for transforming their most important relationships."
+    }
+  },
+  {
+    "source_id": "6e9cd3b6-dd92-4079-8704-0a926c6c8f6d",
+    "source_name": "MedSchoolTraining.WHitaker.mp4",
+    "expert_document_id": "c4086ba7-e334-4fd0-b2da-205aa64c68a6",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "The Healing Power of Co-Regulation: Transforming Medical Education Through Autonomic Awareness",
+      "speakerProfile": {
+        "name": "Dr. Bob Whitaker",
+        "title": "Pediatrician and Medical Educator at Columbia Bassett Program",
+        "expertise": "Specialist in pediatrics, social determinants of health, and innovative medical education with focus on trauma-informed care and longitudinal patient relationships"
+      },
+      "presentationEssence": {
+        "coreTopic": "Reimagining medical education to incorporate autonomic nervous system regulation and co-regulation skills",
+        "uniqueApproach": "Teaching medical students to understand their own nervous system regulation as a foundation for healing relationships with patients",
+        "problemAddressed": "The dehumanizing effects of traditional medical education that creates threat states, reduces compassion, and leads to physician burnout",
+        "insightSummary": "Social interaction is a powerful neural modulator that physicians can intentionally use for healing, but this requires first understanding and regulating their own autonomic nervous system"
+      },
+      "keyTakeaways": [
+        "Medical students' compassion plummets during training due to constant threat states and perfectionism, but teaching autonomic regulation can reverse this trend",
+        "Co-regulation (helping others feel safe) is a learnable skill that should be taught from day one of medical education",
+        "Understanding the neurophysiology of social behavior gives scientific legitimacy to the healing power of the physician-patient relationship",
+        "Self-regulation must precede compassion for others - physicians cannot effectively co-regulate patients if they themselves are in a threat state"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Social behavior is a neuromodulator of function that is actually a potent part of their own neurobiology. We're not distinct from our social interactions.",
+          "context": "Explaining how physicians' social behavior directly affects patient physiology"
+        },
+        {
+          "quote": "You can't take a frightened person and teach them compassion, but you can take a frightened person and make them feel safe. And then compassion might come out emergently as the natural feature of what it is to be a human.",
+          "context": "Discussing how safety must precede compassion in medical training"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "The group explored how medical students are constantly overloaded and threatened with failure, creating a physiological state incompatible with compassion",
+        "challenges": "Debate about whether medical school is the right place to address these issues or if executive coaching later in careers might be more effective",
+        "additionalContext": "The Columbia Bassett program was highlighted as an innovative model where students follow patients longitudinally and learn about trauma-informed care"
+      },
+      "whyWatch": {
+        "targetAudience": "Medical educators, healthcare administrators, physicians experiencing burnout, and anyone interested in transforming medical culture",
+        "uniqueValue": "Offers a neurobiologically-grounded approach to physician wellbeing that connects personal regulation to patient outcomes, rather than just focusing on resilience techniques"
+      },
+      "summary": "In this groundbreaking discussion, Dr. Bob Whitaker shares insights from the Columbia Bassett medical education program, which is reimagining physician training through the lens of autonomic nervous system regulation. The conversation reveals how traditional medical education creates threat states that diminish compassion and contribute to burnout rates exceeding 60% among physicians. Dr. Whitaker, alongside polyvagal expert Dr. Stephen Porges, proposes that teaching medical students about the neurophysiology of social behavior could transform healthcare. Rather than viewing compassion as an optional soft skill, they frame co-regulation—the ability to help others feel safe—as a scientifically-grounded healing modality with measurable physiological effects. The discussion highlights how physicians broadcast signals through their nervous systems that patients cannot ignore, making self-regulation a prerequisite for effective healing relationships. Particularly compelling is the insight that dispositional mindfulness serves as a protective buffer against childhood adversity, suggesting that teaching regulatory skills could benefit both physicians and patients. This conversation offers a revolutionary vision where medical education begins with understanding healthy autonomic function rather than pathology, potentially addressing the crisis of physician burnout while simultaneously improving patient outcomes."
+    }
+  },
+  {
+    "source_id": "ea42d9c4-9814-4801-8ee6-3c4ccd5d9c73",
+    "source_name": "Matt Lederman.mp4",
+    "expert_document_id": "77df7be5-21aa-45e5-aec7-de73463ceadb",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "The Power of Connection: Transforming Health Through Compassionate Communication",
+      "speakerProfile": {
+        "name": "Matt Letterman",
+        "title": "Physician and Non-Violent Communication Trainer",
+        "expertise": "Former conventional medicine practitioner who transformed his approach to healing through nutrition, lifestyle medicine, and non-violent communication techniques"
+      },
+      "presentationEssence": {
+        "coreTopic": "Using compassionate communication and connection as fundamental tools for healing",
+        "uniqueApproach": "Integrating non-violent communication techniques with physical health practices to address both emotional and physical disconnection",
+        "problemAddressed": "The widespread disconnection, dysregulation, and artificial harmony that leads to chronic health issues and pain",
+        "insightSummary": "True healing comes from addressing three interconnected elements: regulation of the nervous system, proper resourcing of the body, and authentic connection with oneself and others"
+      },
+      "keyTakeaways": [
+        "Our default state is to thrive, but modern environments and communication patterns create barriers to our natural well-being",
+        "Compassionate authenticity - expressing feelings and needs without judgment - creates healing connections that regulate the nervous system",
+        "The 'Hands of Joy' framework balances internal resources (sleep, nutrition, activity, play, self) with external connections (family, friends, work, spirituality, nature)",
+        "Distinguishing between observations vs. judgments, feelings vs. thoughts, needs vs. strategies, and requests vs. demands is essential for authentic connection"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "All any feelings want is to be welcomed with tenderness. It wants room to unfold. It wants to relax and tell its story.",
+          "context": "Explaining how acknowledging feelings without judgment allows them to be processed and resolved"
+        },
+        {
+          "quote": "Don't do anything that you can't do with the joy of a little child feeding a hungry duck.",
+          "context": "Introducing the 'duck meter' concept - only doing things with genuine willingness (7+ out of 10) to avoid resentment and disconnection"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Participants engaged in role-playing exercises demonstrating how to respond with empathy to challenging communications, including being interrupted and handling unsolicited calls",
+        "challenges": "Questions arose about when connection attempts might not be appropriate or realistic, particularly with strangers or in situations where genuine connection seems impossible",
+        "additionalContext": "The discussion connected non-violent communication principles with polyvagal theory and inflammatory responses, showing how emotional disconnection directly impacts physical pain through autonomic nervous system regulation"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare practitioners, chronic pain sufferers, couples experiencing communication difficulties, and anyone seeking deeper connections in their relationships",
+        "uniqueValue": "Provides practical, immediately applicable communication techniques that bridge emotional and physical healing, with real examples of how to transform potentially triggering interactions into connecting ones"
+      },
+      "summary": "In this illuminating presentation, Matt Letterman shares his journey from conventional medicine to a revolutionary approach centered on connection and compassionate communication. Drawing from his personal experience overcoming chronic pain, Letterman introduces the 'Hands of Joy' framework that balances internal resources (sleep, nutrition, activity, play, self-awareness) with external connections. The heart of his approach is non-violent communication—a method for identifying and expressing feelings and needs without judgment or blame. Through engaging role-plays, Letterman demonstrates how this approach transforms potentially triggering interactions into opportunities for deeper connection. He introduces practical tools like the 'duck meter,' which ensures actions come from genuine willingness rather than obligation. What makes this presentation particularly valuable is how it bridges emotional and physical healing, showing how disconnection manifests as physical symptoms through autonomic nervous system dysregulation. Participants witness firsthand how changing communication patterns can immediately shift physiological states, potentially alleviating pain and other symptoms. For healthcare practitioners, chronic pain sufferers, and anyone seeking more authentic relationships, Letterman offers a refreshingly practical approach to healing that addresses both the biological and emotional dimensions of wellbeing."
+    }
+  },
+  {
+    "source_id": "677f3cc3-9bf8-4a62-8fae-f050e05ec3d5",
+    "source_name": "Lustig.Metabolism.Inflammation.Sugar.mp4",
+    "expert_document_id": "f4fcce21-740b-403e-a002-bd2bf21882b4",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "The Dopamine Dilemma: How Modern Society is Hacking Our Brains and Health",
+      "speakerProfile": {
+        "name": "Dr. Robert Lustig",
+        "title": "Neuroendocrinologist and Chief Medical Officer",
+        "expertise": "Expert in metabolic health, sugar metabolism, and the intersection of biochemistry with mental health and addiction. Author of 'Fat Chance' and 'Metabolical'."
+      },
+      "presentationEssence": {
+        "coreTopic": "The connection between metabolic health dysfunction, mental health crisis, and healthcare costs",
+        "uniqueApproach": "Linking biochemistry of dopamine, serotonin, and cortisol to explain how modern society's pursuit of pleasure is driving both physical and mental health epidemics",
+        "problemAddressed": "The confusion between pleasure (dopamine) and happiness (serotonin) that is driving addiction, depression, and metabolic disease",
+        "insightSummary": "Our society's focus on dopamine-driven pleasure through sugar, processed food, and technology is damaging our prefrontal cortex, leading to a cascade of metabolic and mental health problems"
+      },
+      "keyTakeaways": [
+        "Sugar, particularly fructose, is both addictive and toxic to mitochondria, driving both addiction and metabolic disease",
+        "The prefrontal cortex is the brain's brake system - when damaged by excessive dopamine-seeking, it fails to inhibit addiction, depression, anxiety, inattention, and hate",
+        "Technology and social media are designed to trigger dopamine release, creating addiction patterns similar to substance abuse",
+        "The four C's for better health: Connect (in person), Contribute (outside yourself), Cope (sleep, mindfulness, exercise), and Cook (real food)"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "It's not unhappiness that kills. It's rather what we do to get happy that kills.",
+          "context": "Explaining that deaths of despair are driven by behaviors people engage in to feel better"
+        },
+        {
+          "quote": "Everything that raises your dopamine will kill you. Slowly, but it will kill you.",
+          "context": "Discussing how pleasure-seeking behaviors that trigger dopamine release have negative health consequences"
+        },
+        {
+          "quote": "Pleasure is dopamine and happiness is serotonin. Two different neurotransmitters, two different areas of the brain, two different receptor mechanisms, two different clearances, two different sets of pharmacology. They are not the same.",
+          "context": "Explaining the critical distinction between pleasure and happiness"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Discussion with experts on polyvagal theory, autonomic nervous system, and cell danger response, showing how different scientific frameworks can explain the same phenomena",
+        "challenges": "Debate about the role of the microbiome, inflammatory processes, and autonomic nervous system in metabolic syndrome and mental health",
+        "additionalContext": "Experts noted that eating is a calming behavior that recruits the ventral vagal circuit, but eating alone or with technology negates these benefits"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare professionals, mental health practitioners, public health experts, and anyone concerned about the modern epidemics of metabolic disease, addiction, and depression",
+        "uniqueValue": "Provides a comprehensive framework connecting biochemistry, neuroscience, and public health that explains why modern society is experiencing simultaneous crises in metabolic health, mental health, and healthcare costs"
+      },
+      "summary": "In this groundbreaking presentation, Dr. Robert Lustig reveals how our society's confusion between pleasure (dopamine) and happiness (serotonin) is driving epidemics of both metabolic and mental health disorders. With compelling data, he demonstrates how diabetes rates have exploded beyond all projections while deaths of despair have risen dramatically, particularly since 2007 when smartphones became ubiquitous. Dr. Lustig explains the biochemistry behind these trends: sugar (particularly fructose) and technology both trigger dopamine release, which downregulates its own receptors, requiring ever-increasing stimulation to achieve the same reward. Meanwhile, these same factors damage the prefrontal cortex—our brain's brake system—leading to addiction, depression, and anxiety. The presentation includes a fascinating computational model of the limbic system that explains these connections and offers hope through the 'Four C's': Connect (in-person social interaction), Contribute (outside yourself), Cope (sleep, mindfulness, exercise), and Cook (real food). What makes this talk exceptional is how Dr. Lustig bridges biochemistry, neuroscience, and public health to explain seemingly disparate trends in society, offering a unifying theory of how modern life is literally rewiring our brains and bodies for disease. His insights on the mitochondrial effects of fructose and the critical distinction between pleasure and happiness provide a roadmap for both individual and societal healing."
+    }
+  },
+  {
+    "source_id": "7380d746-866e-4981-a239-e9ec0a2905ba",
+    "source_name": "Marilyn Sanders.10.20.21.mp4",
+    "expert_document_id": "cfbbc17d-039b-4169-8084-9960d13bea6b",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Polyvagal Theory in the NICU: Promoting Safety for Vulnerable Newborns",
+      "speakerProfile": {
+        "name": "Dr. Marilyn Sanders",
+        "title": "Neonatologist at Connecticut Children's Medical Center",
+        "expertise": "Expert in neonatal intensive care with a focus on integrating polyvagal theory into newborn care to improve developmental outcomes and family connectedness"
+      },
+      "presentationEssence": {
+        "coreTopic": "Applying polyvagal theory to neonatal intensive care to improve outcomes for vulnerable infants",
+        "uniqueApproach": "Reframing NICU care from technology-focused to relationship-based, emphasizing parent-infant connectedness as medicine",
+        "problemAddressed": "High morbidity rates and social-emotional developmental issues in NICU graduates despite improved survival rates",
+        "insightSummary": "Creating environments of safety and social connectedness in the NICU can reset infants' autonomic nervous systems toward ventral vagal safety, potentially improving long-term developmental outcomes"
+      },
+      "keyTakeaways": [
+        "Preterm infants, especially those born before 28 weeks, face significantly increased risks for social-emotional and cognitive impairments that persist into adulthood",
+        "The NICU environment disrupts biological expectancies of both infants and parents, creating chronic disconnection that can be traumatic",
+        "Skin-to-skin contact (kangaroo care) provides crucial neuro-supportive care by offering the buffering support needed for normal neurodevelopment",
+        "Reframing the NICU as a 'Newborn Intensive Parenting Unit' shifts focus to the healing power of parent-infant relationships rather than just technology"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "By focusing on vital signs without appreciating the social engagement needs of staff and family, we create a cascade of risk factors that go well beyond oxygen sufficiency.",
+          "context": "Dr. Stephen Porges highlighting how medical focus on physiological parameters misses the critical social engagement needs"
+        },
+        {
+          "quote": "Trauma is a chronic disruption of connectedness.",
+          "context": "Dr. Sanders quoting Dr. Porges' functional definition of trauma, emphasizing that the impact depends on buffering support and repair"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Discussion revealed connections between NICU experiences and later conditions like autism, obesity, and stress disorders, suggesting common autonomic nervous system dysregulation",
+        "challenges": "The group explored how medical environments often disrupt natural healing processes by prioritizing technology over social connection and safety",
+        "additionalContext": "45-50% of NICU staff meet criteria for acute stress disorder, with 15-20% experiencing PTSD symptoms, highlighting the trauma experienced by caregivers as well"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare professionals working with infants and children, parents of NICU babies, researchers studying developmental trauma, and anyone interested in polyvagal theory applications",
+        "uniqueValue": "Provides a revolutionary framework for understanding how early medical interventions impact lifelong development, offering practical approaches to improve outcomes through relationship-based care"
+      },
+      "summary": "Dr. Marilyn Sanders delivers a groundbreaking presentation on applying polyvagal theory to neonatal intensive care, revealing how traditional NICU environments can inadvertently harm vulnerable infants' developing nervous systems. While survival rates for premature infants have dramatically improved, social-emotional and cognitive outcomes remain concerning, with significantly higher rates of autism and relationship difficulties persisting into adulthood. Sanders explains how the NICU disrupts biological expectancies of both infants and parents through separation, unpredictability, and noxious stimuli, creating what Dr. Porges defines as 'trauma' - a chronic disruption of connectedness. The presentation illuminates how infants' autonomic states can be observed through physiological signs: ventral vagal safety (calm, engaged), sympathetic activation (tachycardia, agitation), and dorsal vagal collapse (the dangerous 'death spells' where babies shut down). Sanders advocates for relationship-based, individualized care that prioritizes parent-infant connection through skin-to-skin contact, single-family rooms, and understanding babies' behavioral communication. The discussion reveals profound implications beyond neonatology, connecting early autonomic dysregulation to conditions like autism, obesity, and stress disorders. This presentation offers a revolutionary perspective for healthcare professionals, showing how creating environments of safety and connectedness can fundamentally improve developmental trajectories by supporting healthy autonomic nervous system function from life's earliest moments."
+    }
+  },
+  {
+    "source_id": "3277596d-302b-414e-96a9-320063af2049",
+    "source_name": "Liz Baker.11.3.21.mp4",
+    "expert_document_id": "03beac71-fb40-4036-9bb9-38f6d2039a47",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "The Healing Power of Group Therapy for Chronic Pain: Process Over Content",
+      "speakerProfile": {
+        "name": "Liz Arya",
+        "title": "Pain Psychologist",
+        "expertise": "Group psychotherapy specialist with 11 years of experience at Utah Valley Pain Management, trained under Gary Berlin Gang (president of the American Group Psychotherapy Association), with personal experience as a chronic pain patient following a traumatic brain injury"
+      },
+      "presentationEssence": {
+        "coreTopic": "The effectiveness of group therapy for chronic pain patients",
+        "uniqueApproach": "Focusing on interpersonal process elements rather than just content delivery in pain treatment",
+        "problemAddressed": "Chronic pain patients are an underrecognized, underserved population with limited access to effective psychological treatments",
+        "insightSummary": "Group therapy provides both efficient delivery of pain management strategies and addresses the crucial relational aspects of chronic pain through interpersonal healing processes"
+      },
+      "keyTakeaways": [
+        "Chronic pain is fundamentally a relational condition, affecting and being affected by interpersonal factors like trauma, attachment styles, and social isolation",
+        "Process-focused group therapy (emphasizing interpersonal dynamics) shows promising outcomes for pain intensity, interference, catastrophizing, self-efficacy, and quality of life",
+        "The 'here and now' focus in groups creates an interpersonal laboratory where patients can recognize patterns and experiment with new behaviors",
+        "Pre-group preparation significantly improves outcomes by setting appropriate expectations and teaching patients how to engage with process work"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "There's no human deed or thought that lies fully outside the experience of other people.",
+          "context": "Quoting Irv Yalom (father of group psychotherapy) to explain why group therapy is so powerful for addressing universal human experiences"
+        },
+        {
+          "quote": "People need people. For initial and continued survival. For socialization, for the pursuit of satisfaction. No one, not the dying, not the outcast, not the mighty, transcend the need for human context.",
+          "context": "Concluding quote from Irv Yalom emphasizing the fundamental human need for connection that makes group therapy effective"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Discussion highlighted how process-based therapy contrasts with traditional content-oriented pain clinics, and how the polyvagal theory supports the effectiveness of co-regulation in groups",
+        "challenges": "Questions arose about how to help patients in freeze states engage in groups, and whether physicians should participate in leading pain management groups",
+        "additionalContext": "Dr. Porges noted that many features of effective group therapy align with polyvagal theory, particularly around creating safety through prosodic voice, facial expressions, and movement"
+      },
+      "whyWatch": {
+        "targetAudience": "Pain management professionals, psychologists, physicians interested in group therapy approaches, and healthcare administrators looking to implement cost-effective pain treatment programs",
+        "uniqueValue": "Combines research evidence with practical implementation strategies for group therapy, while connecting interpersonal processes to physiological healing mechanisms"
+      },
+      "summary": "In this illuminating presentation, pain psychologist Liz Arya makes a compelling case for group therapy as a powerful treatment modality for chronic pain patients. Drawing from her 11 years of experience and personal journey as a pain patient following a traumatic brain injury, Arya highlights how chronic pain is fundamentally a relational condition that benefits from interpersonal healing. She distinguishes between content-focused approaches (common in traditional pain clinics) and process-focused therapy that emphasizes interpersonal dynamics and present-moment awareness. Recent meta-analyses show promising outcomes for group therapy in reducing pain intensity, interference, catastrophizing, and improving self-efficacy and quality of life. Arya provides practical guidance for implementing effective groups, including pre-group preparation and techniques for facilitating 'here and now' awareness. The ensuing discussion with experts like Dr. Stephen Porges connects these approaches to polyvagal theory, suggesting that group therapy's effectiveness stems from its ability to create safety, promote co-regulation, and activate anti-inflammatory physiological responses. This presentation offers a roadmap for clinicians seeking to harness the unique power of group settings to address both the psychological and physiological dimensions of chronic pain through human connection."
+    }
+  },
+  {
+    "source_id": "36bdcbd7-ca9f-4901-b13e-dd765632ccbf",
+    "source_name": "Luskin.3.17.21.mp4",
+    "expert_document_id": "bffe10ac-0d95-4935-9932-648d43897583",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "The Healing Power of Forgiveness: A Stanford Psychologist's Journey",
+      "speakerProfile": {
+        "name": "Fred Luskin",
+        "title": "Professor of Psychology at Stanford University",
+        "expertise": "Leading researcher and educator on forgiveness with decades of experience developing evidence-based forgiveness interventions and teaching worldwide"
+      },
+      "presentationEssence": {
+        "coreTopic": "The psychological and physiological benefits of forgiveness as a trainable skill",
+        "uniqueApproach": "A secular, evidence-based methodology for forgiveness that can be taught in group settings by paraprofessionals",
+        "problemAddressed": "The physical, mental, and spiritual damage caused by holding onto grievances and unforgiveness",
+        "insightSummary": "Forgiveness is not about condoning wrongdoing or reconciling with offenders, but rather a personal practice of changing one's narrative and physiological state to reclaim peace and wellbeing"
+      },
+      "keyTakeaways": [
+        "Forgiveness is a trainable skill that improves health markers, reduces stress, and increases wellbeing",
+        "The process of forgiveness is the same regardless of offense severity - it's about dealing with not getting what you wanted",
+        "Forgiveness requires calming the nervous system first before cognitive reframing can be effective",
+        "Self-compassion for being hurt is often more effective than trying to feel compassion for the offender"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Being right didn't matter. I just didn't know that. And I was convinced that being right was so important. And it just never entered my mind. It's like, so what? So you're right. But you can go to your grave with a bank account that says you're right. So what?",
+          "context": "Reflecting on his personal struggle with forgiveness and the realization that being technically right about a grievance doesn't help healing"
+        },
+        {
+          "quote": "Grievances are formed when people are unable to deal successfully with not getting what they wanted. And then they rent too much space in their minds to the injustice.",
+          "context": "Explaining the core concept behind his forgiveness methodology"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Rich discussion with other experts about the physiological aspects of forgiveness, including how polyvagal theory explains why calming the nervous system is essential before cognitive work can be effective",
+        "challenges": "Debate about whether bottom-up (physiological) or top-down (cognitive) approaches should come first in forgiveness work, with agreement that different people need different entry points",
+        "additionalContext": "The integration of heart math, rational emotive therapy, mindfulness, and narrative therapy creates multiple pathways to forgiveness"
+      },
+      "whyWatch": {
+        "targetAudience": "Mental health professionals, individuals struggling with unresolved hurt or anger, and anyone interested in evidence-based approaches to emotional healing",
+        "uniqueValue": "Combines personal vulnerability, scientific research, and practical methodology from someone who developed forgiveness training out of his own failure to heal from hurt"
+      },
+      "summary": "In this deeply personal and scientifically grounded presentation, Stanford psychologist Fred Luskin shares his journey from being stuck in bitterness to pioneering forgiveness research and interventions. After failing to heal from a personal betrayal despite his therapeutic training, Luskin developed a secular forgiveness methodology that has since been validated through rigorous studies, including work with people who lost family members to violence in Northern Ireland. His approach reframes forgiveness not as condoning wrongdoing or reconciling with offenders, but as a personal practice of changing one's narrative about painful events. The Stanford Forgiveness Project demonstrated significant reductions in anger, stress, and physical symptoms, while increasing hope and wellbeing. Luskin emphasizes that forgiveness is fundamentally about dealing with not getting what you wanted in life and learning to shift attention away from dwelling on wounds. The discussion with other experts reveals how forgiveness involves both physiological calming and cognitive reframing, with different people requiring different entry points to the process. What makes this presentation particularly valuable is Luskin's humility in acknowledging that after decades of work, he sees forgiveness as messier and more individualized than he initially thought, yet consistently powerful in its healing effects."
+    }
+  },
+  {
+    "source_id": "1528e5fa-fa42-4066-8335-d1b006e78410",
+    "source_name": "Lederman.4.4.24.mp4",
+    "expert_document_id": "7fbe4846-1618-48d3-bf16-37b01f5acdcc",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Bridging Human Connection Through AI: Matt Letterman's Non-Violent Communication Tool",
+      "speakerProfile": {
+        "name": "Matt Letterman",
+        "title": "Co-founder of Wee Heel and Chat EQ",
+        "expertise": "Certified trainer in Non-Violent Communication who has developed an AI tool to facilitate better human connections and conflict resolution"
+      },
+      "presentationEssence": {
+        "coreTopic": "Using AI to facilitate non-violent communication and improve human connection",
+        "uniqueApproach": "Creating an AI coach that guides users through difficult conversations without requiring them to master communication techniques themselves",
+        "problemAddressed": "The difficulty people have maintaining connection when triggered emotionally during conflicts",
+        "insightSummary": "AI can bypass physiological triggers that typically escalate conflicts, allowing people to practice and improve their communication skills in a safe environment"
+      },
+      "keyTakeaways": [
+        "The AI tool provides 24/7 coaching for difficult conversations without requiring users to remember complex communication rules when triggered",
+        "Users can practice conversations through role-playing, receive empathy, and get help drafting messages before engaging with the actual person",
+        "The tool helps translate judgments into connecting language by identifying feelings and needs of all parties",
+        "Children as young as 10 have successfully used the tool to resolve conflicts independently"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "My daughter went and she's 10 and when we weren't home... she said 'Dad you weren't home to help us so we got into a fight with my cousin Jonah who was at over the house. And I went and talked to Skyler and she helped me feel so heard that I got a tear in my eye.'",
+          "context": "Matt sharing how his daughter used the AI tool (nicknamed Skyler) to resolve a conflict independently"
+        },
+        {
+          "quote": "I'd like to create a connection check instead of a spelling and grammar check... because I think sometimes people say 'well, I don't trust the other person, they're just sending what the computer saying,' but the other side of that is 'hey, they don't have the language, but they would only send it if it really resonated.'",
+          "context": "Matt discussing potential future applications of the technology"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "The group discussed how the AI tool bypasses physiological triggers that typically escalate conflicts, allowing people to stay in their 'thinking brain' rather than reactive state",
+        "challenges": "Concerns were raised about privacy, data security, and whether the tool might inhibit authentic self-expression if users rely too heavily on suggested language",
+        "additionalContext": "Several participants noted the potential therapeutic applications, with suggestions for incorporating biofeedback and allowing users to control whether the AI remembers past conversations"
+      },
+      "whyWatch": {
+        "targetAudience": "People struggling with difficult relationships, parents helping children navigate conflicts, couples seeking to improve communication, and therapists looking for supplemental tools",
+        "uniqueValue": "Unlike traditional communication training which requires extensive practice, this AI tool provides immediate guidance when triggered, making effective communication accessible to everyone regardless of skill level"
+      },
+      "summary": "In this groundbreaking presentation, Matt Letterman introduces an innovative AI tool designed to transform how we handle difficult conversations. As a certified trainer in Non-Violent Communication, Matt recognized that even when people understand communication principles intellectually, they struggle to implement them when emotionally triggered. Working with co-founder Michael, a data scientist with a passion for emotional intelligence, they created an AI coach that guides users through conflicts in real-time. Through an impressive demonstration, Matt shows how the tool helps users identify feelings and needs, practice conversations through role-play, and draft connecting messages. What makes this approach revolutionary is how it bypasses the physiological triggers that typically escalate conflicts, allowing users to stay in a thinking rather than reactive state. The presentation sparked rich discussion about applications ranging from family conflicts to workplace communication, with touching anecdotes about children resolving disputes independently using the tool. While privacy concerns and questions about authenticity were raised, the group recognized the tremendous potential for this technology to enhance human connection rather than replace it. As one participant noted, this tool doesn't just solve problems—it creates a pathway for deeper understanding between people at times when they need it most."
+    }
+  },
+  {
+    "source_id": "1dfeb46b-e759-4ecb-b53d-f576d7e2732c",
+    "source_name": "Kate Wolovsky.2.3.21.mp4",
+    "expert_document_id": "ee2ba5b5-9658-4aa3-b6fc-3eaf5f62a497",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Invisible Threats and Subtle Cues of Safety: Navigating Healthcare Through a Disabled Patient's Eyes",
+      "speakerProfile": {
+        "name": "Kate Nicholson",
+        "title": "Clinician, Researcher, and Patient Advocate",
+        "expertise": "Expert in disability advocacy with personal experience of multiple chronic conditions including MS, bringing unique perspectives as both a healthcare provider and patient"
+      },
+      "presentationEssence": {
+        "coreTopic": "The patient experience of disability and chronic pain in healthcare settings",
+        "uniqueApproach": "Presenting the healthcare journey through the dual lens of a clinician and a person living with multiple disabilities",
+        "problemAddressed": "The disconnect between how healthcare providers perceive patients with disabilities and the actual lived experience of those patients",
+        "insightSummary": "Creating cues of safety rather than threat in healthcare settings can dramatically improve patient outcomes and experiences, requiring providers to truly listen and acknowledge patients' individual realities"
+      },
+      "keyTakeaways": [
+        "Medical providers cannot know what a patient feels - no amount of imaging or testing can reveal the subjective experience of living in another person's body",
+        "Environmental factors in healthcare settings (from intake forms to physical accessibility) can create significant barriers and cues of threat for disabled patients",
+        "Shifting language from 'pain management' to 'pain care' acknowledges patients as people rather than problems to be managed",
+        "Practitioners should practice self-care and take moments to center themselves before patient interactions, as their state directly impacts patient safety"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Not a single doctor, not a single person, not even my husband... could actually tell me what I feel like or what it's actually like to be in my body.",
+          "context": "Explaining how medical imaging can never reveal the subjective experience of pain or disability"
+        },
+        {
+          "quote": "I say it's like a surprise party. I never know who's showing up.",
+          "context": "Describing the unpredictable nature of her symptoms and mobility needs from day to day"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Exploration of embodiment versus disembodiment in chronic pain, with insights about how some patients learn to stay present with pain rather than dissociating",
+        "challenges": "Debate about whether certain conditions like Complex Regional Pain Syndrome have cures, highlighting the complexity of chronic conditions and the danger of oversimplification",
+        "additionalContext": "Introduction of an accessible survey designed by and for people with disabilities to improve research inclusivity and accuracy"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers, medical students, patient advocates, and anyone living with or supporting someone with chronic conditions or disabilities",
+        "uniqueValue": "Offers rare insight into both sides of the healthcare experience from someone who has navigated the system as both provider and patient with multiple chronic conditions"
+      },
+      "summary": "In this compelling presentation, Kate Nicholson shares her unique perspective as both a clinician and a person living with multiple disabilities including MS. On her 40th birthday, she invites viewers into the often invisible experience of navigating healthcare with chronic conditions. Through powerful personal anecdotes and evidence-based insights, Nicholson illustrates how environmental factors in healthcare settings—from inaccessible check-in kiosks to examination tables patients can't climb onto—create significant barriers and cues of threat. She challenges providers to reconsider language, shifting from 'pain management' to 'pain care,' and emphasizes that no amount of medical imaging can reveal what it's truly like to live in another person's body. Nicholson offers practical strategies for creating cues of safety, including checking the environment for accessibility, practicing self-care before patient interactions, and simply asking patients what language they prefer. The discussion explores the complex relationship between embodiment and pain, with Nicholson sharing how she's learned to remain present with her pain rather than dissociating from it. This presentation is invaluable for healthcare providers seeking to improve patient experiences and for anyone supporting those with chronic conditions, offering a rare glimpse into both sides of the healthcare journey."
+    }
+  },
+  {
+    "source_id": "a91d76f2-82be-4f4e-bb7f-37d9aeccbd78",
+    "source_name": "Ian Harris.MSK Surgery and Pain.5.4.22.mp4",
+    "expert_document_id": "a8ecab8a-f1c6-4eb4-a08b-d05d96456102",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "The Shocking Truth About Surgical Effectiveness: Evidence vs. Tradition",
+      "speakerProfile": {
+        "name": "Dr. Ian Harris",
+        "title": "Orthopedic Surgeon and Medical Researcher",
+        "expertise": "Specializes in trauma surgery and has published extensive research on surgical effectiveness, with a focus on evidence-based evaluation of common orthopedic procedures"
+      },
+      "presentationEssence": {
+        "coreTopic": "The lack of evidence supporting many common surgical procedures",
+        "uniqueApproach": "Using systematic reviews and randomized controlled trials to evaluate surgical procedures against non-surgical alternatives",
+        "problemAddressed": "The widespread use of surgical procedures that have little to no evidence of effectiveness compared to non-surgical alternatives",
+        "insightSummary": "Most common surgical procedures for musculoskeletal pain have not been properly tested against non-surgical alternatives, and when they are tested, they often show no significant benefit"
+      },
+      "keyTakeaways": [
+        "Less than 1% of all randomized controlled trials in surgery compare doing the procedure to not doing it",
+        "Of studies that do compare surgery to non-surgery, only 15% show favorable results for surgery, and none of the blinded studies favor surgery",
+        "Clinicians consistently overestimate the benefits and underestimate the harms of procedures they perform",
+        "Health systems incentivize procedures over preventive care, education, and non-surgical interventions"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Physicians are not prepared to discard therapies validated by both tradition and their own experience.",
+          "context": "This quote from 1836 shows how resistance to evidence-based medicine has persisted for centuries, from bloodletting to modern surgical procedures"
+        },
+        {
+          "quote": "What's the ethics of taking 200 patients, doing a spine fusion on 100 of them, doing placebo surgery on 100 of them and then finding out if it works or not, compared to the ethics of doing one million spine fusions per year without knowing if it works or not indefinitely?",
+          "context": "Challenging the notion that placebo-controlled surgical trials are unethical"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Discussion revealed that chronic pain is increasingly understood as a neurological/physiological issue rather than a structural one, yet medical practice continues to focus on structural interventions",
+        "challenges": "Medical education and practice still treat physicians as case managers rather than scientists, and the system incentivizes procedures over outcomes",
+        "additionalContext": "Several participants noted that their clinical experience shows chronic pain can be resolved by addressing the body's threat response and safety physiology rather than through surgical intervention"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare professionals, medical researchers, patients considering surgery for chronic pain, and policy makers in healthcare",
+        "uniqueValue": "Provides rare quantitative evidence about the true effectiveness of common surgical procedures, challenging conventional medical practice with hard data rather than anecdotes"
+      },
+      "summary": "Dr. Ian Harris delivers a compelling, evidence-based examination of surgical effectiveness that challenges the foundation of modern surgical practice. Drawing from his extensive research, Harris reveals that less than 1% of surgical randomized controlled trials actually compare doing a procedure to not doing it—and when they do, only 15% show favorable results for surgery. His analysis of common orthopedic procedures, including spine fusions, knee arthroscopies, and rotator cuff repairs, demonstrates that many widely-performed surgeries lack scientific validation despite their enormous costs. Harris explains how clinician bias, observation-based decision making, and financial incentives perpetuate ineffective procedures, noting that surgeons consistently overestimate benefits while underestimating harms. The presentation sparked rich discussion about chronic pain as a physiological rather than structural issue, with participants sharing how addressing the body's threat response often resolves pain without surgery. Harris offers practical solutions including multidisciplinary reviews, second opinions, and restructuring financial incentives. This eye-opening talk provides essential insights for healthcare professionals, patients, and policymakers seeking to understand the true value of surgical interventions and the systemic changes needed to improve patient outcomes."
+    }
+  },
+  {
+    "source_id": "aec79b00-3965-4759-bbc7-f0765f0d627d",
+    "source_name": "Halaris.8.4.21.Mental Pain.mp4",
+    "expert_document_id": "6855b20a-b59e-41de-b2ce-7c91507fcc3b",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Inflammation's Hidden Role in Mental Health: A Pioneer's Journey",
+      "speakerProfile": {
+        "name": "Dr. Angelos Halaris",
+        "title": "Psychiatrist and Researcher",
+        "expertise": "Pioneer in psychoneuroimmunology who has spent decades researching the connection between inflammation and psychiatric disorders, particularly depression and bipolar disorder."
+      },
+      "presentationEssence": {
+        "coreTopic": "The role of inflammation in psychiatric disorders, particularly depression and bipolar disorder",
+        "uniqueApproach": "Combining anti-inflammatory medications with traditional antidepressants to improve treatment outcomes for resistant cases",
+        "problemAddressed": "Treatment resistance in psychiatric disorders and the need for more effective, targeted interventions beyond traditional approaches",
+        "insightSummary": "Inflammatory processes are a key component of mental health disorders, and modulating inflammation through COX-2 inhibitors can significantly enhance treatment response in resistant cases of depression."
+      },
+      "keyTakeaways": [
+        "Inflammatory biomarkers are elevated in approximately 75% of patients with major depressive and bipolar disorders",
+        "Adding the COX-2 inhibitor celecoxib (Celebrex) to standard antidepressant treatment significantly improves outcomes in treatment-resistant bipolar depression",
+        "Genetic factors (SNPs) influence inflammatory responses and can predict which patients might benefit most from anti-inflammatory interventions",
+        "The inflammatory pathway disrupts serotonin production by shunting tryptophan away from serotonin synthesis, creating a biochemical basis for depression"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "I am absolutely fascinated by these SNPs governing the expression or upregulation of these biomarkers, the inflammatory biomarkers.",
+          "context": "Discussing how genetic factors influence inflammatory responses in psychiatric disorders"
+        },
+        {
+          "quote": "Inflammation is still in the center of many conditions, but it's not just inflammation. There's a lot more to inflammation than just the term inflammation.",
+          "context": "Explaining the complexity of inflammatory processes in psychiatric and other disorders"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "The discussion expanded to include how inflammation connects to autonomic nervous system function, brain imaging correlates, and the concept of a coordinated threat response that includes inflammatory, autonomic, and neurotransmitter changes.",
+        "challenges": "Participants debated whether 'inflammation' is the right term, with some suggesting 'threat cytokines' or 'activation' might better describe the biological processes involved in psychiatric disorders.",
+        "additionalContext": "The group discussed the clinical challenges of using anti-inflammatory medications in psychiatric practice, including FDA approval limitations and liability concerns despite promising research results."
+      },
+      "whyWatch": {
+        "targetAudience": "Psychiatrists, psychologists, neuroscientists, and healthcare professionals interested in integrative approaches to mental health treatment",
+        "uniqueValue": "Provides both clinical research evidence and practical insights from a pioneer who has been studying inflammation in psychiatry since the 1990s, well before it became mainstream"
+      },
+      "summary": "Dr. Angelos Halaris presents groundbreaking research on the role of inflammation in psychiatric disorders, particularly treatment-resistant depression and bipolar disorder. As an early pioneer in this field since the 1990s, he shares compelling evidence from his double-blind, placebo-controlled study showing that adding the COX-2 inhibitor celecoxib (Celebrex) to standard antidepressant treatment significantly improves outcomes. Dr. Halaris explains the complex biochemical pathways through which inflammation disrupts neurotransmitter systems, particularly how inflammatory cytokines activate an enzyme that diverts tryptophan away from serotonin production. His research extends to genetic factors, demonstrating how specific single nucleotide polymorphisms (SNPs) influence inflammatory responses and can predict which patients might benefit most from anti-inflammatory interventions. The presentation sparks rich discussion among neuroscientists and clinicians about the connections between inflammation, autonomic nervous system function, and brain imaging correlates, suggesting a coordinated threat response that encompasses multiple biological systems. Despite promising research, Dr. Halaris acknowledges the clinical challenges of implementing anti-inflammatory approaches in psychiatric practice, including FDA approval limitations. This presentation offers valuable insights for clinicians seeking more effective treatments for resistant psychiatric conditions and researchers exploring the complex interplay between inflammation and mental health."
+    }
+  },
+  {
+    "source_id": "0a86cd9f-23b3-48e7-b94a-cd2f6a9cdda2",
+    "source_name": "Hanscom.11.11.20.mp4",
+    "expert_document_id": "a88a1222-5ddc-4027-94e0-a78080eca1e4",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Polyvagal Theory and Oxytocin: The Neuroscience of Safety in Chronic Pain Treatment",
+      "speakerProfile": {
+        "name": "Dr. David Hanscom",
+        "title": "Pain Management Specialist and Former Spine Surgeon",
+        "expertise": "Expert in treating chronic pain through non-surgical approaches focused on neurophysiological mechanisms and creating environments of safety"
+      },
+      "presentationEssence": {
+        "coreTopic": "The neurophysiological basis of chronic pain and its relationship to safety versus threat responses",
+        "uniqueApproach": "Integrating polyvagal theory, oxytocin research, and mind-body connection to create comprehensive treatment frameworks",
+        "problemAddressed": "The failure of traditional medical approaches to chronic pain that treat symptoms rather than addressing the root cause of threat responses",
+        "insightSummary": "Chronic pain is fundamentally a neurological process driven by threat responses that can be effectively treated by creating cues of safety that allow the nervous system to regulate properly"
+      },
+      "keyTakeaways": [
+        "Chronic pain is a memorized neural circuit that becomes embedded regardless of the original anatomical cause",
+        "The autonomic nervous system responds to cues of threat by mobilizing (sympathetic activation) or immobilizing (dorsal vagal shutdown)",
+        "Creating environments of safety through human connection is more effective than treating isolated symptoms",
+        "Forgiveness, mindfulness, and vulnerability are essential components for breaking the cycle of chronic pain"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Chronic pain is a very solvable problem once you consistently address the root cause, which is safety versus threat.",
+          "context": "Dr. Hanscom explaining the fundamental principle behind successful pain treatment"
+        },
+        {
+          "quote": "Our body needs something else - needs cues of safety, cues of trust. And we are wired to accept those.",
+          "context": "Dr. Stephen Porges explaining how the nervous system requires positive cues, not just removal of threats"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "The roundtable featured Dr. Bernie Siegel sharing powerful clinical stories about connection and healing, Dr. Stephen Porges explaining vagal withdrawal and polyvagal theory, and Dr. Sue Carter discussing oxytocin as a 'physiological metaphor for safety'",
+        "challenges": "The group discussed the difficulty in translating neurophysiological concepts into practical clinical applications and the resistance from insurance companies to pay for talking-based interventions",
+        "additionalContext": "The discussion revealed how providing patients with understanding of their neurophysiology can transform their personal narrative from being victims to 'heroic survivors'"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers treating chronic pain, patients suffering from persistent pain conditions, and anyone interested in the mind-body connection",
+        "uniqueValue": "This presentation brings together leading experts across multiple disciplines to provide a comprehensive framework for understanding and treating chronic pain through the lens of safety versus threat"
+      },
+      "summary": "This fascinating roundtable discussion brings together leading experts in pain management, neuroscience, and mind-body medicine to explore the fundamental mechanisms behind chronic pain. Dr. David Hanscom leads a conversation that reveals how chronic pain is primarily a neurological process driven by threat responses rather than ongoing tissue damage. The presentation introduces a powerful framework that integrates Dr. Stephen Porges' polyvagal theory with Dr. Sue Carter's oxytocin research to explain how creating environments of safety can effectively treat chronic pain. Through compelling case studies, including a woman named Esti who became pain-free after years of suffering, the experts demonstrate how group settings that promote safety can trigger profound healing. Dr. Bernie Siegel adds powerful clinical stories that illustrate how human connection and changing one's personal narrative can transform physical symptoms. The discussion challenges traditional medical approaches that focus on symptoms rather than root causes, offering clinicians practical ways to understand how different interventions affect the input (sensory processing), nervous system regulation, and output (symptoms) aspects of chronic pain. This presentation provides a revolutionary perspective that explains why creating safety is not just psychologically comforting but physiologically necessary for healing chronic pain."
+    }
+  },
+  {
+    "source_id": "00fb5b92-7809-4f27-a55d-cf794668a75f",
+    "source_name": "GigiConstable.1.6.21.mp4",
+    "expert_document_id": "afa8b7fe-3350-49ef-8c03-00fec3aab224",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Rewiring the Nervous System: A Medical Student's Journey Through Chronic Pain",
+      "speakerProfile": {
+        "name": "GG Constable",
+        "title": "Medical Student on Leave",
+        "expertise": "Combining medical education with personal chronic pain experience, offering unique insights into the gaps between traditional medical training and holistic pain management"
+      },
+      "presentationEssence": {
+        "coreTopic": "The disconnect between medical education and effective chronic pain treatment approaches",
+        "uniqueApproach": "Integrating personal experience as both a medical student and chronic pain patient to identify critical gaps in physician training",
+        "problemAddressed": "The lack of education about the nervous system's role in chronic pain and the absence of lifestyle-based treatment approaches in medical training",
+        "insightSummary": "Medical education fails to teach students about the nervous system as a dynamic, changeable system that can drive multiple symptoms, leaving physicians ill-equipped to treat chronic pain effectively"
+      },
+      "keyTakeaways": [
+        "The stress response can manifest as numerous seemingly unrelated symptoms that are often treated separately by specialists rather than as a unified nervous system issue",
+        "Medical schools rarely teach lifestyle-based approaches to pain management despite their effectiveness in regulating the nervous system",
+        "Physicians aren't taught what dysregulation of the nervous system feels like from a patient perspective, making it difficult to recognize and treat",
+        "Understanding that chronic pain changes and shifts in location and intensity is crucial for both patients and providers to prevent unnecessary treatments"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "As a patient, you go from doctor to doctor to doctor and they try to treat each discrete symptom, but they don't link it together. And learning that all of this can fall under one cause is hugely valuable for the physician.",
+          "context": "Discussing how medical training fails to connect multiple symptoms to nervous system dysregulation"
+        },
+        {
+          "quote": "We are not taught what the nervous system feels like as a patient... we are not taught when your sympathetic nervous system is unregulated, out of control for years, this is what it feels like. This is what it looks like. That is a problem.",
+          "context": "Explaining a critical gap in medical education regarding the lived experience of nervous system dysregulation"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Dr. Dick Gevirtz clarified that vagal withdrawal (removing the parasympathetic 'brake') often precedes sympathetic activation in stress responses, challenging the simplistic view of 'sympathetic bad, parasympathetic good'",
+        "challenges": "Several participants discussed the difficulty of introducing these concepts in medical education, debating whether they belong in early training or later clinical years",
+        "additionalContext": "Multiple healthcare providers shared their own journeys toward integrating mind-body approaches, with many finding these concepts through personal health challenges rather than formal education"
+      },
+      "whyWatch": {
+        "targetAudience": "Medical students, physicians, healthcare providers treating chronic pain, and chronic pain patients seeking to understand their condition better",
+        "uniqueValue": "Offers a rare dual perspective from someone simultaneously navigating both sides of the healthcare system - as a medical student and as a complex chronic pain patient"
+      },
+      "summary": "In this compelling presentation, medical student GG Constable shares her unique dual perspective as both a healthcare provider in training and a complex chronic pain patient. After contracting a parasite infection in Uganda that led to GI issues and eventually full-blown Complex Regional Pain Syndrome (CRPS), GG found herself navigating a medical system unprepared to address her condition holistically. She identifies critical gaps in medical education: physicians aren't taught that multiple symptoms can stem from one dysregulated nervous system, they lack training in effective lifestyle interventions, and they don't understand what nervous system dysregulation actually feels like for patients. The discussion expands with insights from experienced practitioners who emphasize the importance of nervous system flexibility rather than simply reducing sympathetic activation. Several participants share their own journeys toward integrative approaches, often prompted by personal health challenges rather than formal training. The presentation highlights how medical education remains focused on the body as a machine rather than addressing wellness holistically, leaving physicians ill-equipped to help chronic pain patients effectively. GG's powerful testimony demonstrates how understanding the brain's role in pain creation and the nervous system's capacity for change can transform both patient experiences and clinical outcomes."
+    }
+  },
+  {
+    "source_id": "3763bd2a-c125-46a5-b54d-dad344ed81fc",
+    "source_name": "Gharbo.1.28.21.mp4",
+    "expert_document_id": "7c0bad08-15eb-49ac-8882-20fed236f081",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Harnessing Heart Rate Variability: The Science of Autonomic Regulation for Performance and Recovery",
+      "speakerProfile": {
+        "name": "Dr. Ron Gharbo",
+        "title": "Physiatrist and Performance Medicine Specialist",
+        "expertise": "Expert in autonomic nervous system regulation, biofeedback, and using heart rate variability (HRV) monitoring to improve both clinical outcomes and high performance"
+      },
+      "presentationEssence": {
+        "coreTopic": "Using heart rate variability (HRV) monitoring and biofeedback as tools for autonomic nervous system regulation",
+        "uniqueApproach": "Combining clinical biofeedback techniques with wearable technology to make autonomic regulation accessible for both patients and high performers",
+        "problemAddressed": "Energy depletion, poor recovery, and autonomic dysregulation that impacts decision-making, performance, and health",
+        "insightSummary": "Visual feedback of autonomic nervous system data can create powerful pivot points for behavior change by helping people recognize their finite energy and learn to regulate their physiological state"
+      },
+      "keyTakeaways": [
+        "Energy is finite - the first law of performance and recovery that must be understood and respected",
+        "Resonant frequency breathing (around 5-6 breaths per minute) is the most scientifically validated starting point for autonomic regulation",
+        "Visual feedback of HRV data can create powerful 'aha moments' that lead to behavior change without extensive counseling",
+        "Recovery is as important as performance - high performers often cut corners on recovery, leading to deterioration"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Calming people down improves subjective surveys, but does not improve their objective skills.",
+          "context": "Distinguishing between feeling better and developing actual physiological regulation skills"
+        },
+        {
+          "quote": "There's no subject to three months of good sleep.",
+          "context": "Explaining that consistent recovery over time is necessary for symptom resolution"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Extensive discussion about the history and science of biofeedback, particularly how HRV biofeedback evolved from Russian research that contradicted earlier American approaches",
+        "challenges": "Debate about whether self-regulation alone is sufficient versus the need for interactive regulation with a therapist, especially for those with trauma histories",
+        "additionalContext": "Experts clarified that HRV biofeedback primarily exercises the parasympathetic (ventral vagal) system rather than directly stimulating the sympathetic system"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers, performance coaches, and individuals interested in improving their autonomic regulation, recovery, and decision-making",
+        "uniqueValue": "Bridges clinical applications with performance enhancement while making complex autonomic science accessible through practical monitoring tools and techniques"
+      },
+      "summary": "Dr. Ron Gharbo delivers a compelling presentation on harnessing heart rate variability (HRV) as a window into autonomic nervous system function. He demonstrates how visual feedback of physiological data can create powerful behavior change, sharing a case study of a concussed cheerleader who made a life-changing decision after seeing her HRV data. Dr. Gharbo emphasizes two fundamental principles: energy is finite, and most people aren't as calm as they think they are. The presentation explores how resonant frequency breathing (around 5-6 breaths per minute) creates a synchronization between heart rate, respiration, and blood pressure that maximizes HRV and exercises the parasympathetic nervous system. What makes this approach particularly valuable is its accessibility - while biofeedback has existed for decades, modern wearable technology now allows for continuous monitoring and feedback. Dr. Gharbo argues that this approach works for both high performers and patients with various conditions by helping them recognize when they're depleting their energy and cutting corners on recovery. The discussion with other experts reveals the rich history of HRV biofeedback, its scientific underpinnings, and debates about self-regulation versus interactive regulation. For anyone interested in improving performance, recovery, or managing health conditions through autonomic regulation, this presentation offers both scientific depth and practical applications."
+    }
+  },
+  {
+    "source_id": "346f6486-52d0-4b0d-9278-71f875f2be48",
+    "source_name": "Gevirtz.3.10.21.mp4",
+    "expert_document_id": "9d4193e6-6503-4ffb-8b36-005b5f86d014",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Revolutionizing Chronic Pain Treatment: The Muscle Spindle-Vagal Connection",
+      "speakerProfile": {
+        "name": "Dr. Richard Gevirtz",
+        "title": "Clinical Psychologist and Researcher",
+        "expertise": "Expert in psychophysiology who pioneered research connecting autonomic nervous system function to myofascial pain disorders through groundbreaking work on muscle spindles and heart rate variability"
+      },
+      "presentationEssence": {
+        "coreTopic": "The physiological mechanism behind myofascial pain disorders and their treatment through autonomic regulation",
+        "uniqueApproach": "Identifying muscle spindles as the sympathetically-innervated source of trigger points, and using heart rate variability biofeedback to regulate the autonomic nervous system",
+        "problemAddressed": "The widespread misdiagnosis and ineffective treatment of myofascial pain disorders that are often mistaken for more serious structural problems",
+        "insightSummary": "Myofascial pain stems from sympathetically-activated muscle spindles creating trigger points, which can be effectively treated by combining physical release techniques with heart rate variability biofeedback to restore vagal tone"
+      },
+      "keyTakeaways": [
+        "Trigger points are not caused by muscle fatigue or inflammation, but by sympathetic nervous system activation of muscle spindles",
+        "A 12-minute educational video intervention for whiplash patients dramatically reduced pain, medication use, and healthcare utilization at 6-month follow-up",
+        "Heart rate variability biofeedback at resonance frequency (approximately 6 breaths per minute) strengthens vagal tone and inhibits sympathetic activity in trigger points",
+        "Combining physical trigger point release techniques with autonomic regulation creates longer-lasting pain relief than either approach alone"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "The naive perception is that pain in these patients comes from muscle fatigue. Turns out there's almost no evidence for that at all.",
+          "context": "Explaining why traditional medical approaches fail to properly diagnose myofascial pain"
+        },
+        {
+          "quote": "At six months, almost 37% of the regular treatment as usual, uncomplicated whiplash, were using narcotics for their neck and shoulder pain compared to basically one or two percent of the group that saw the video.",
+          "context": "Describing the dramatic impact of their educational intervention on preventing chronic pain"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Multiple clinicians confirmed seeing similar results in their practices and expressed frustration that this approach isn't more widely taught in medical education",
+        "challenges": "The difficulty of getting this approach into mainstream medical education despite its effectiveness, with one participant noting it's now part of the curriculum at the University of São Paulo in Brazil",
+        "additionalContext": "Several participants discussed applications to other conditions like migraines, epilepsy, and TMJ disorders, noting that vagal tone regulation may benefit multiple conditions with autonomic components"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers treating chronic pain, including physicians, physical therapists, chiropractors, psychologists, and bodyworkers",
+        "uniqueValue": "Provides a clear physiological explanation for common pain disorders that are frequently misdiagnosed, along with practical, evidence-based treatment approaches that combine physical and autonomic regulation techniques"
+      },
+      "summary": "Dr. Richard Gevirtz presents a revolutionary understanding of myofascial pain disorders that affects millions of patients worldwide. Through meticulous research, he demonstrates that trigger points—the hallmark of these conditions—are not caused by muscle fatigue or inflammation as commonly believed, but by sympathetic nervous system activation of muscle spindles. His team's groundbreaking work used needle EMG to show dramatic electrical activity in trigger points during stress that could be blocked with sympathetic (but not motor) nerve blockers, confirming the autonomic nature of these pain generators. Perhaps most striking was their finding that a simple 12-minute educational video for whiplash patients reduced pain, healthcare utilization, and narcotic use by over 90% at six months compared to usual care. Dr. Gevirtz explains how combining physical trigger point release techniques with heart rate variability biofeedback at resonance frequency (approximately six breaths per minute) creates a powerful intervention that strengthens vagal tone, inhibits sympathetic activity, and produces increasingly longer-lasting pain relief. This integrated approach addresses both the peripheral pain generators and the central autonomic dysregulation, offering a comprehensive solution for conditions often misdiagnosed as structural problems requiring invasive interventions. The discussion reveals how this work connects with polyvagal theory and has implications beyond musculoskeletal pain to conditions like migraines and epilepsy, highlighting the critical role of autonomic regulation in multiple disorders."
+    }
+  },
+  {
+    "source_id": "02bb1c3c-bf5d-4eb6-b040-996085718bef",
+    "source_name": "GMT20201001-000428_BIC-Q-A_640x360.mp4",
+    "expert_document_id": "eb68ba4e-7d0d-4842-8e66-a3379168de5d",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Polyvagal Theory in Pain Management: From Neural Regulation to Social Connection",
+      "speakerProfile": {
+        "name": "Multiple Experts",
+        "title": "Clinicians and Researchers in Pain Management",
+        "expertise": "Specialists in polyvagal theory, chronic pain, autonomic nervous system regulation, and mind-body approaches to healing"
+      },
+      "presentationEssence": {
+        "coreTopic": "Neural regulation and autonomic nervous system function in chronic pain conditions",
+        "uniqueApproach": "Integration of polyvagal theory with somatic awareness and social connection as treatment pathways",
+        "problemAddressed": "The persistence of chronic pain and functional disorders despite lack of structural pathology",
+        "insightSummary": "Chronic pain persists through autonomic dysregulation and threat physiology, which can be addressed through bottom-up approaches that restore a sense of safety rather than just cognitive interventions"
+      },
+      "keyTakeaways": [
+        "Somatic-oriented therapies that address body awareness show greater clinical effectiveness than purely cognitive approaches for chronic pain",
+        "The transition from nociception to chronic pain involves both bottom-up sensations and top-down narratives that create self-perpetuating cycles",
+        "Social isolation has health effects equivalent to smoking 15 cigarettes daily, making social connection a crucial intervention for chronic conditions",
+        "Creating physiological safety through vagal regulation can improve functional disorders like IBS without necessarily treating underlying structural conditions"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "The removal of threat is not equivalent to being safe. Our body needs cues of safety.",
+          "context": "Discussing how treatment must go beyond removing stressors to actively provide safety signals"
+        },
+        {
+          "quote": "You can't actually have visceral pain without emotional pain and you can't actually have emotional pain without visceral pain.",
+          "context": "Explaining the neurological connection between emotional processing and visceral sensations"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "The group discussed how children with functional abdominal pain show vagal withdrawal during school transitions, demonstrating how social context affects autonomic regulation",
+        "challenges": "Debate around whether chronic pain is primarily driven by neural memory circuits, cytokine processes, or sustained threat responses in the autonomic nervous system",
+        "additionalContext": "The discussion touched on how early childhood experiences and attachment patterns affect oxytocin receptor methylation, potentially creating lifelong patterns of autonomic dysregulation"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers treating chronic pain and functional disorders, particularly those interested in mind-body approaches and polyvagal theory",
+        "uniqueValue": "Offers a multidisciplinary integration of neuroscience, psychology, and clinical practice that challenges conventional medical approaches to chronic pain"
+      },
+      "summary": "This fascinating roundtable discussion brings together experts in pain management, neuroscience, and polyvagal theory to explore the underlying mechanisms of chronic pain and functional disorders. The conversation weaves through the complex interplay between bottom-up physiological processes and top-down cognitive narratives that perpetuate pain cycles. Participants share compelling clinical observations about how somatic-oriented therapies outperform purely cognitive approaches, with one expert noting that polyvagal-informed treatments were rated most beneficial by surveyed trauma therapists. The discussion highlights how chronic pain persists through autonomic dysregulation and sustained threat physiology, which can be addressed by restoring a sense of safety rather than just targeting cognitive distortions. Particularly illuminating is the exploration of functional abdominal disorders in children, where research shows vagal withdrawal during school transitions correlates with symptom development. The experts also delve into how early childhood experiences affect oxytocin receptor methylation, potentially creating lifelong patterns of autonomic dysregulation. Throughout the conversation, the group emphasizes the critical role of social connection in healing, noting research showing social isolation has health effects equivalent to smoking 15 cigarettes daily. This multidisciplinary integration challenges conventional medical approaches to chronic pain and offers a more holistic framework that acknowledges the body's need for safety signals and social connection to restore health."
+    }
+  },
+  {
+    "source_id": "9ac28879-497f-4e4a-8710-60099de84462",
+    "source_name": "Germer.Shame.Self Compassion.mp4",
+    "expert_document_id": "e4a8b724-bfd9-4bae-b8bc-833f2e90fbe1",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Shame: The Elephant in the Room for Chronic Conditions",
+      "speakerProfile": {
+        "name": "Dr. Christopher Germer",
+        "title": "Psychologist and Self-Compassion Researcher",
+        "expertise": "Expert in self-compassion training and mindfulness with extensive research experience in shame and chronic pain management"
+      },
+      "presentationEssence": {
+        "coreTopic": "The role of shame in chronic conditions and self-compassion as its antidote",
+        "uniqueApproach": "Exploring shame as an invisible source of disease and demonstrating how self-compassion training can directly address it",
+        "problemAddressed": "How unaddressed shame contributes to chronic illness and pain while creating barriers to healing",
+        "insightSummary": "Shame is a universal emotional threat that affects physical health by increasing stress hormones and inflammatory markers, but self-compassion provides a practical way to counteract these effects"
+      },
+      "keyTakeaways": [
+        "Shame increases cortisol and pro-inflammatory cytokines, directly impacting physical health more than other negative emotions like guilt or anxiety",
+        "Self-compassion has three components: kindness (vs. self-criticism), common humanity (vs. isolation), and mindfulness (vs. over-identification)",
+        "Shame feels blameworthy but is actually an innocent emotion arising from our universal wish to be loved and included",
+        "Self-compassion training has been shown to reduce chronic pain and pain-related disability by addressing the shame component"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Shame is the elephant in the room with chronic conditions. It is a source of stress, an emotional threat, but the body experiences it like any threat.",
+          "context": "Opening statement explaining why shame deserves more attention in healthcare"
+        },
+        {
+          "quote": "Shame means I am a mistake, while guilt means I made a mistake.",
+          "context": "Distinguishing between shame and guilt to highlight shame's attack on the self"
+        },
+        {
+          "quote": "Admit something: everyone you meet, you say to them 'love me.' Of course, you don't do this out loud or someone will call the cops.",
+          "context": "Quoting Daniel Ladinsky to illustrate our universal need for connection and love"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Discussion with healthcare professionals about the physiological mechanisms of self-compassion, including its relationship to heart rate variability and vagal tone",
+        "challenges": "Questions about how self-compassion compares to other therapeutic approaches like CBT, and how it might work differently than mindfulness alone",
+        "additionalContext": "Exploration of how self-compassion can help heal attachment injuries and create 'earned secure attachment' through internal reparenting"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers, particularly those working with chronic pain and illness patients, as well as anyone interested in the mind-body connection",
+        "uniqueValue": "Combines cutting-edge research on shame and self-compassion with a practical, experiential exercise that demonstrates how to transform shame in real-time"
+      },
+      "summary": "In this illuminating presentation, Dr. Christopher Germer reveals how shame functions as the hidden driver behind many chronic conditions. Drawing on extensive research, he explains that shame isn't just an uncomfortable emotion—it's a physiological threat that increases cortisol and inflammatory markers more significantly than other negative emotions. What makes Dr. Germer's approach revolutionary is his framework for understanding shame through three paradoxes: shame feels blameworthy but is actually innocent; it feels isolating but is universal; and it feels permanent but is temporary. The presentation includes compelling evidence from brain imaging studies showing how a mere 12 hours of self-compassion training reduced chronic back pain and pain-related disability by addressing the shame component that keeps patients trapped in avoidance behaviors. Dr. Germer guides viewers through a powerful 10-minute self-compassion exercise that demonstrates how to transform shame by recognizing it as arising from our fundamental wish to be loved. Healthcare providers will find particular value in understanding how self-compassion differs from mindfulness alone and how it correlates with improved heart rate variability and secure attachment. The discussion with other experts highlights the potential for self-compassion to function as 'portable therapy'—a practical tool patients can use between sessions to regulate their nervous system and create conditions for healing co-regulation with others."
+    }
+  },
+  {
+    "source_id": "f9a3c002-473c-4a28-b8e6-cd4575e3920d",
+    "source_name": "Gervitz.3.24.21.mp4",
+    "expert_document_id": "f7ded83b-fba1-4960-a458-50230936307a",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Rewiring the Brain Through Resonance Breathing: The Power of Vagal Afferent Pathways",
+      "speakerProfile": {
+        "name": "Dr. Richard Gevirtz",
+        "title": "Professor at California School of Professional Psychology, Alliant International University",
+        "expertise": "Health psychologist specializing in biofeedback and heart rate variability research, leading one of the country's most active graduate biofeedback programs"
+      },
+      "presentationEssence": {
+        "coreTopic": "Bottom-up interventions using heart rate variability biofeedback to influence brain function through vagal afferent pathways",
+        "uniqueApproach": "Focusing on the often-ignored afferent (body-to-brain) pathways that make up 80-90% of vagal fibers, rather than traditional top-down interventions",
+        "problemAddressed": "The limitations of purely cognitive (top-down) approaches to treating conditions like depression, anxiety, and chronic pain",
+        "insightSummary": "Slow, resonant breathing at 4-7 breaths per minute creates powerful oscillations in heart rate that travel through vagal afferent pathways to positively influence brain function, emotional regulation, and perception of safety"
+      },
+      "keyTakeaways": [
+        "Resonance frequency breathing (4-7 breaths/minute) significantly enhances communication between the heart and brain through vagal afferent pathways",
+        "Regular HRV biofeedback practice increases autonomic flexibility, improves baroreceptor reflex by 20-30%, and enhances brain networks involved in emotional regulation",
+        "Bottom-up interventions like HRV biofeedback can create a state of neurophysiological safety that makes top-down interventions more effective",
+        "Heart rate variability training strengthens the connection between the medial prefrontal cortex and amygdala, a critical pathway for emotional regulation"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "When the heart is affected, it reacts on the brain and the state of the brain again reacts on the heart. So that under any excitement, there will be much mutual action and reaction between these and the two most important organs in the body.",
+          "context": "Quoting Darwin from 1872, highlighting the historical recognition of heart-brain connection"
+        },
+        {
+          "quote": "The vast majority of the vagal fibers, 80 to 90%, are afferent, signaling information of the organs of the body to the brain.",
+          "context": "Explaining the often overlooked importance of body-to-brain communication pathways"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Extensive discussion about how resonance breathing entrains brain oscillations at the same frequency as heart rate oscillations, affecting multiple brain regions including the amygdala and prefrontal cortex",
+        "challenges": "Debate about whether the effects are truly bottom-up or if there's an artificial dichotomy between top-down and bottom-up approaches, with agreement that an integrated approach is most effective",
+        "additionalContext": "Clinical examples were shared showing how patients with chronic pain experienced reduced fear and increased functionality after vagal stimulation, even when pain intensity remained unchanged"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare professionals treating anxiety, depression, chronic pain, and trauma; psychologists interested in physiological approaches to mental health; anyone interested in mind-body connections",
+        "uniqueValue": "Presents compelling scientific evidence for a physiological approach to psychological problems that bridges the gap between body-based and cognitive interventions"
+      },
+      "summary": "Dr. Richard Gevirtz delivers a fascinating exploration of how we can influence brain function through the body using heart rate variability biofeedback. While psychology has traditionally focused on top-down interventions like cognitive therapy, Dr. Gevirtz highlights the untapped potential of bottom-up approaches that leverage the vagal afferent pathways—the information superhighway carrying signals from our organs to our brain. These pathways, making up 80-90% of vagal fibers, have been largely ignored in conventional treatment approaches. Through his research, Dr. Gevirtz demonstrates how slow, resonant breathing at 4-7 breaths per minute creates powerful oscillations in heart rate that dramatically affect brain function. Using sophisticated measurements like heart period evoked potentials and fMRI, his team has shown that this resonance breathing enhances communication between the heart and multiple brain regions, including those critical for emotional regulation. Perhaps most importantly, regular HRV biofeedback practice strengthens the connection between the medial prefrontal cortex and amygdala—a neural pathway essential for managing emotional responses. The clinical implications are profound: by creating a physiological state of safety through these bottom-up techniques, practitioners can make subsequent psychological interventions more effective. As one clinical example shared in the discussion illustrated, patients may experience reduced fear and increased functionality even when pain intensity remains unchanged. Dr. Gevirtz's work offers a compelling bridge between physiological and psychological approaches, suggesting that the most effective interventions address both the body's state of threat and the mind's interpretation of experience."
+    }
+  },
+  {
+    "source_id": "078fd33e-cd4c-46ad-af3f-f651abd18ae2",
+    "source_name": "From Flight to Faint.11.18.20.mp4",
+    "expert_document_id": "3a2e78bb-c069-49e9-bca7-888848abecc2",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Healing Through Embodiment: Dr. Stephen Porges on Anger, Anxiety, and the Nervous System",
+      "speakerProfile": {
+        "name": "Dr. Stephen Porges",
+        "title": "Neuroscientist and Developer of Polyvagal Theory",
+        "expertise": "Expert in autonomic nervous system function and how physiological states influence human behavior, emotion, and health outcomes"
+      },
+      "presentationEssence": {
+        "coreTopic": "The neurophysiological basis of emotional states and healing",
+        "uniqueApproach": "Examining emotions like anger and anxiety as physiological states rather than psychological constructs",
+        "problemAddressed": "The disconnect between conventional medical approaches to symptoms and the underlying neurophysiological causes",
+        "insightSummary": "Healing occurs when patients move from states of threat to states of safety, allowing the nervous system to regulate properly and restore homeostasis"
+      },
+      "keyTakeaways": [
+        "Emotions like anger and anxiety are symptoms of an underlying threat load, not separate conditions to be treated individually",
+        "Effective healing involves helping patients feel safe and embodied rather than focusing on their narrative or psychological constructs",
+        "The social engagement system (ventral vagal circuit) acts as a container that enables optimal experiences and healing to occur",
+        "Approaching patients through sensation and embodiment rather than labels helps bypass resistance and access deeper healing"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Every patient that truly heals does it with crossing the anger threshold.",
+          "context": "Discussing the importance of processing anger in the healing journey"
+        },
+        {
+          "quote": "If you're in pain and you're really as highly sympathetically activated, anger is an easy shift. If you're socially engaged and smiley and connected with people, anger is difficult to get to.",
+          "context": "Explaining how physiological states determine our emotional capacity"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "Clinicians shared case examples of helping patients with unexplained symptoms by guiding them to reconnect with bodily sensations rather than focusing on narratives",
+        "challenges": "The group debated the usefulness of emotional labels versus focusing on physiological states and sensations in the body",
+        "additionalContext": "The discussion revealed tension between clinical approaches that use emotional language as bridge concepts and those that focus purely on physiological states"
+      },
+      "whyWatch": {
+        "targetAudience": "Healthcare providers, pain specialists, therapists, and anyone interested in understanding the physiological basis of emotions and healing",
+        "uniqueValue": "Provides a revolutionary framework that bridges neuroscience and clinical practice, challenging conventional medical approaches to pain and emotional disorders"
+      },
+      "summary": "In this profound discussion, Dr. Stephen Porges and colleagues explore the neurophysiological underpinnings of emotional states like anger and anxiety, offering a revolutionary perspective on healing. Rather than viewing emotions as psychological constructs to be labeled and analyzed, they present them as physiological states arising from the body's response to perceived threats. The speakers share compelling clinical examples of how guiding patients to reconnect with bodily sensations—rather than focusing on narratives or labels—can bypass resistance and access deeper healing. Dr. Porges explains how the social engagement system acts as a neural container that enables optimal experiences and healing to occur, emphasizing that creating safety is fundamental to the healing process. The discussion challenges conventional medical approaches that treat symptoms without addressing the underlying neurophysiological causes, highlighting how every symptom in the body results from the nervous system's processing of environmental cues. Particularly noteworthy is the observation that healing consistently involves processing anger, which serves as a protective mechanism against vulnerability. This presentation offers healthcare providers a transformative framework that bridges cutting-edge neuroscience with practical clinical applications, potentially revolutionizing approaches to pain management and emotional disorders."
+    }
+  },
+  {
+    "source_id": "ba3a19ab-0fb7-4857-b64e-8708b0825175",
+    "source_name": "Fradkin.Obsessive Thoughts.1.8.23.mp4",
+    "expert_document_id": "51c173ba-f948-44ea-8a7f-c36753fe868f",
+    "processed": true,
+    "error": null,
+    "title_updated": true,
+    "ai_result": {
+      "title": "Proactive vs. Reactive Thought Control: New Insights into Obsessive Thinking",
+      "speakerProfile": {
+        "name": "Isaac Fradkin",
+        "title": "Clinical Psychologist in Training",
+        "expertise": "Specializes in understanding maladaptive thought patterns and thought dynamics, particularly in psychiatric contexts, using computational modeling to objectively measure thought control mechanisms"
+      },
+      "presentationEssence": {
+        "coreTopic": "Measuring and understanding how people control unwanted thoughts",
+        "uniqueApproach": "Using free association tasks and computational modeling to objectively measure thought control mechanisms without relying on self-reporting",
+        "problemAddressed": "The difficulty in scientifically studying private thought processes and understanding why some people experience uncontrollable, repetitive thoughts",
+        "insightSummary": "Thoughts are naturally self-reinforcing, but people possess both reactive and partial proactive control mechanisms that can be measured objectively through behavioral experiments"
+      },
+      "keyTakeaways": [
+        "People primarily use reactive thought control (rejecting thoughts after they arise) rather than proactive control (preventing thoughts from arising)",
+        "Thoughts are naturally self-reinforcing - thinking a thought once makes it more likely to recur in similar contexts",
+        "People with better thought control abilities can mitigate this self-reinforcing effect, explaining why some experience fewer repetitive thoughts",
+        "Deliberate thought suppression may interfere with natural proactive control mechanisms, while acceptance-based approaches may enhance them"
+      ],
+      "memorableQuotes": [
+        {
+          "quote": "Thoughts are self-reinforcing or memories are self-reinforcing. In other words, whenever we are thinking a certain thought, the probability that it will come again in the same context increases.",
+          "context": "Explaining why certain thoughts become repetitive and difficult to control"
+        },
+        {
+          "quote": "Sometimes I thought in my head, it's strong. It upsets me. It consumes me and will not go. Make me fixate on that thought, not allowing other thoughts to replace it.",
+          "context": "A research participant describing their experience with intrusive thoughts"
+        }
+      ],
+      "discussionHighlights": {
+        "exchanges": "The group discussed connections between thought patterns and physiological states, particularly how autonomic nervous system dysregulation might contribute to obsessive thinking",
+        "challenges": "Debate emerged about whether OCD and similar thought disorders are primarily cognitive issues or manifestations of physiological dysregulation",
+        "additionalContext": "Dr. Porges suggested measuring autonomic nervous system activity during thought control tasks could reveal important mediating factors in thought disorders"
+      },
+      "whyWatch": {
+        "targetAudience": "Psychologists, psychiatrists, neuroscientists, and anyone struggling with intrusive or repetitive thoughts",
+        "uniqueValue": "Provides a rare objective measurement approach to thought control that bridges cognitive psychology with clinical applications, offering new insights into why some people struggle with repetitive thoughts"
+      },
+      "summary": "In this groundbreaking presentation, clinical psychologist Isaac Fradkin reveals innovative research on how we control unwanted thoughts. Using free association tasks and computational modeling, Fradkin objectively measures thought control mechanisms without relying on subjective self-reporting. His findings reveal two critical insights: first, people primarily use reactive thought control (rejecting thoughts after they arise) rather than proactive control (preventing thoughts from occurring); second, thoughts are naturally self-reinforcing – thinking something once makes it more likely to recur in similar contexts. Most importantly, Fradkin discovered that people with better thought control can partially mitigate this self-reinforcing effect, explaining why some individuals experience fewer repetitive thoughts than others. The discussion expanded to explore connections between thought patterns and physiological states, with experts suggesting that autonomic nervous system dysregulation might contribute to obsessive thinking disorders. Fradkin hypothesizes that acceptance-based approaches may work better than deliberate suppression because they enhance natural proactive control mechanisms rather than interfering with them. This research offers promising new directions for understanding and treating conditions characterized by intrusive thoughts, including OCD, anxiety, and depression, by objectively measuring the mechanisms that make certain thoughts so difficult to control."
+    }
   }
-}
+]

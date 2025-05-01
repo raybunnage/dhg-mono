@@ -119,6 +119,29 @@ oogle table that need processing
 
 pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
 
+
+[
+  {
+    "title": "The Healing Power of Human Connection: Dr. Bernie Siegel on Compassionate Medicine"
+  },
+  {
+    "title": "The Power of Words: How Language Analysis Reveals Our Hidden Psychology"
+  },
+  {
+    "title": "The Corrosive Effects of Inequality: How Social Hierarchies Damage Health and Society"
+  },
+  {
+    "title": "Unlocking Chronic Pain: The Muscle Spindle-Vagal Connection"
+  },
+  {
+    "title": "The Healing Power of Safety: Dr. John Sarno's Revolutionary Approach to Chronic Pain"
+  },
+  {
+    "title": "Self-Induced Healing: How Exceptional Patients Take Control of Their Cancer Journey"
+  }
+]
+
+
 Okay I need a new ppage in my dhg-hub project
 So I need to turn the "Home" page into a dashboard that does the following.                                                                           │
 │                                                                                                                                                         │

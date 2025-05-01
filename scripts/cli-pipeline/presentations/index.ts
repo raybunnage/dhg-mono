@@ -352,6 +352,7 @@ program
   .option('-d, --document-id <id>', 'Specific expert document ID to process (for testing)')
   .option('-l, --limit <limit>', 'Maximum number of MP4 files to process (default: 5)', '5')
   .option('-b, --batch-size <size>', 'Number of files to process in each batch (default: 3)', '3')
+  .option('-c, --concurrency <num>', 'Number of files to process concurrently (default: 1)', '1')
   .option('--dry-run', 'Preview processing without saving to database', false)
   .option('--verbose', 'Show detailed logs during processing', false)
   .option('-f, --force', 'Force processing even if already processed', false)
@@ -362,6 +363,7 @@ program
       documentId: options.documentId,
       limit: options.limit,
       batchSize: options.batchSize,
+      concurrency: options.concurrency,
       dryRun: options.dryRun,
       verbose: options.verbose,
       force: options.force,
