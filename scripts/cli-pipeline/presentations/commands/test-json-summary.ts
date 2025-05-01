@@ -160,8 +160,15 @@ TRANSCRIPT:
     console.log("------------------------");
     console.log(summaryResponse);
     
-    // Save results to output file
-    const outputPath = path.resolve(`test-json-summary.json`);
+    // Save results to output file in debug-output directory
+    const debugOutputDir = path.resolve(__dirname, '../debug-output');
+    
+    // Ensure debug output directory exists
+    if (!fs.existsSync(debugOutputDir)) {
+      fs.mkdirSync(debugOutputDir, { recursive: true });
+    }
+    
+    const outputPath = path.resolve(debugOutputDir, 'test-json-summary.json');
     fs.writeFileSync(outputPath, summaryResponse);
     console.log(`Results saved to ${outputPath}`);
     

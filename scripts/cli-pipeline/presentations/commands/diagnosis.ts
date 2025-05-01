@@ -3,9 +3,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const DOCUMENT_ID = '7487db13-5979-430d-a4f4-d7b31c3d98f6';
-const OUTPUT_FILE = path.resolve('./diagnosis-result.json');
+// Use debug-output directory for all diagnostic files
+const DEBUG_OUTPUT_DIR = path.resolve(__dirname, '../debug-output');
+const OUTPUT_FILE = path.resolve(DEBUG_OUTPUT_DIR, 'diagnosis-result.json');
 
 async function diagnose() {
+  // Ensure debug output directory exists
+  if (!fs.existsSync(DEBUG_OUTPUT_DIR)) {
+    fs.mkdirSync(DEBUG_OUTPUT_DIR, { recursive: true });
+  }
   try {
     console.log('Starting diagnostic script');
     
@@ -31,12 +37,12 @@ async function diagnose() {
     console.log(`Processed content: ${document.processed_content ? 'EXISTS' : 'MISSING'}`);
     
     // Save raw content to a file for inspection
-    const rawContentPath = path.resolve('./diagnosis-raw-content.txt');
+    const rawContentPath = path.resolve(DEBUG_OUTPUT_DIR, 'diagnosis-raw-content.txt');
     fs.writeFileSync(rawContentPath, document.raw_content || 'No content');
     console.log(`Raw content saved to ${rawContentPath}`);
     
     if (document.processed_content) {
-      const processedContentPath = path.resolve('./diagnosis-processed-content.txt');
+      const processedContentPath = path.resolve(DEBUG_OUTPUT_DIR, 'diagnosis-processed-content.txt');
       fs.writeFileSync(processedContentPath, document.processed_content);
       console.log(`Processed content saved to ${processedContentPath}`);
     }
@@ -49,7 +55,7 @@ async function diagnose() {
       console.log(`Found prompt template (${promptTemplate.length} characters)`);
       
       // Save prompt to a file for inspection
-      const promptCopyPath = path.resolve('./diagnosis-prompt.md');
+      const promptCopyPath = path.resolve(DEBUG_OUTPUT_DIR, 'diagnosis-prompt.md');
       fs.writeFileSync(promptCopyPath, promptTemplate);
       console.log(`Prompt template saved to ${promptCopyPath}`);
       
@@ -58,7 +64,7 @@ async function diagnose() {
       console.log(`Customized prompt length: ${customizedPrompt.length} characters`);
       
       // Save customized prompt to a file
-      const customizedPromptPath = path.resolve('./diagnosis-customized-prompt.md');
+      const customizedPromptPath = path.resolve(DEBUG_OUTPUT_DIR, 'diagnosis-customized-prompt.md');
       fs.writeFileSync(customizedPromptPath, customizedPrompt);
       console.log(`Customized prompt saved to ${customizedPromptPath}`);
     } else {
@@ -115,10 +121,10 @@ async function diagnose() {
     console.log('5. Created a customized prompt and saved it to a file');
     console.log('6. Created a sample output file to demonstrate the expected format');
     console.log('\nNext steps:');
-    console.log('1. Review the document content in diagnosis-raw-content.txt');
-    console.log('2. Verify the prompt template in diagnosis-prompt.md');
-    console.log('3. Check that the customized prompt in diagnosis-customized-prompt.md correctly includes the transcript');
-    console.log('4. Use the sample output in diagnosis-result.json as a reference for the expected format');
+    console.log(`1. Review the document content in ${DEBUG_OUTPUT_DIR}/diagnosis-raw-content.txt`);
+    console.log(`2. Verify the prompt template in ${DEBUG_OUTPUT_DIR}/diagnosis-prompt.md`);
+    console.log(`3. Check the customized prompt in ${DEBUG_OUTPUT_DIR}/diagnosis-customized-prompt.md`);
+    console.log(`4. Use the sample output in ${DEBUG_OUTPUT_DIR}/diagnosis-result.json as a reference`);
     console.log('5. The problem appears to be in how process-mp4-files accesses the PromptQueryService');
     
   } catch (error) {
