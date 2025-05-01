@@ -161,7 +161,8 @@ export class FileService {
     excludeDirs: string[] = [
       'node_modules', 'dist', 'build', '.git',
       'file_types', 'backup', 'archive', '_archive',
-      'script-analysis-results', 'reports'
+      'script-analysis-results', 'reports', 'results_backup',
+      'debug-logs', 'document-analysis-results', 'logs', 'transcripts'
     ],
     includeHash: boolean = false
   ): FileMetadata[] {
@@ -179,17 +180,33 @@ export class FileService {
       
       for (const file of files) {
         const filePath = path.join(dir, file);
+        const relativePath = path.relative(this.rootDir, filePath);
+        
+        // Skip paths that contain excluded terms
+        if (
+          relativePath.includes('backup') ||
+          relativePath.includes('archive') ||
+          relativePath.includes('temp-') ||
+          relativePath.includes('node_modules') ||
+          relativePath.includes('dist') ||
+          relativePath.includes('.git')
+        ) {
+          continue;
+        }
         
         try {
           const stat = fs.statSync(filePath);
           
           // Handle directories (recursive scanning)
           if (stat.isDirectory()) {
+            // More strict directory exclusion logic
             if (
               !file.startsWith('.') &&
               !excludeDirs.includes(file) &&
-              !filePath.includes('backup') &&
-              !filePath.includes('archive')
+              !file.includes('archive') &&
+              !file.includes('backup') &&
+              !file.includes('script-') &&
+              !file.includes('temp')
             ) {
               // Recursively walk subdirectories
               const subDirFiles = this.walkDir(filePath, includePatterns, excludeDirs, includeHash);
@@ -198,10 +215,22 @@ export class FileService {
           } else if (stat.isFile()) {
             // Check if file matches include patterns
             const ext = path.extname(file).toLowerCase();
+            
+            // Skip files that match specific patterns
+            if (
+              file.startsWith('temp-') ||
+              file.includes('.archived_') ||
+              file.includes('.backup') ||
+              file.includes('.log') ||
+              file.includes('transcript.txt')
+            ) {
+              continue;
+            }
+            
             if (includePatterns.includes(ext)) {
               // Get file metadata
               const metadata: FileMetadata = {
-                path: path.relative(this.rootDir, filePath),
+                path: relativePath,
                 file_size: stat.size,
                 mtime: stat.mtime
               };
@@ -251,7 +280,8 @@ export class FileService {
       [
         'node_modules', 'dist', 'build', '.git',
         'file_types', 'backup', 'archive', '_archive',
-        'script-analysis-results', 'reports'
+        'script-analysis-results', 'reports', 'results_backup',
+        'debug-logs', 'document-analysis-results', 'logs', 'transcripts'
       ],
       includeHash
     );

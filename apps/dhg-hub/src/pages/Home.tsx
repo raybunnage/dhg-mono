@@ -1091,7 +1091,8 @@ export function Home() {
             </div>
             <div className="p-6 overflow-y-auto">
               <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
-                {formatExpertProfile(expertBioContent)}
+                {/* Use JsonFormatter for the expert metadata instead of the custom formatter */}
+                <JsonFormatter data={expertBioContent} fontSize="0.875rem" />
               </div>
             </div>
             <div className="px-6 py-3 bg-gray-50 rounded-b-lg">

@@ -9,6 +9,7 @@ import { ExpertDocumentList } from './ExpertDocumentList';
 import { Edit, RefreshCw, User, Briefcase, GraduationCap, Award, BookOpen, Globe } from 'lucide-react';
 import { format } from 'date-fns';
 import { expertServiceAdapter } from '@/services/expert-service-adapter';
+import JsonFormatter from '@/components/JsonFormatter';
 
 interface ExpertDetailViewProps {
   expert: ExpertInterface;
@@ -115,8 +116,8 @@ export function ExpertDetailView({
               {expert.metadata && (
                 <div className="col-span-2">
                   <div className="text-sm font-medium text-muted-foreground">Metadata</div>
-                  <div className="mt-1 text-sm font-mono bg-muted p-2 rounded">
-                    {JSON.stringify(expert.metadata, null, 2)}
+                  <div className="mt-1">
+                    <JsonFormatter data={expert.metadata} />
                   </div>
                 </div>
               )}

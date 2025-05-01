@@ -15,7 +15,8 @@ import { fileService } from '../../shared/file-service';
 import { databaseService } from '../../shared/services/database-service';
 import { logger } from '../../shared/services/logger-service';
 import { environmentService } from '../../shared/services/environment-service';
-import { claudeService } from '../../../../packages/shared/services/claude-service';
+// Claude service is now imported dynamically in the performHealthCheck method
+// to avoid the import error that was causing the health-check to fail
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 // Import types
@@ -236,6 +237,9 @@ export class DocumentService {
         
         if (claudeKey) {
           try {
+            // Import Claude service correctly
+            const { claudeService } = require('../../../../packages/shared/services/claude-service/claude-service');
+            
             // Very short test prompt with minimal token usage
             const response = await claudeService.sendPrompt('Say "healthy" if you can read this.', {
               maxTokens: 10
