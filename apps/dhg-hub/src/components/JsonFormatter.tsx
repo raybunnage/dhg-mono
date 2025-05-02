@@ -6,221 +6,440 @@ interface JsonFormatterProps {
   className?: string;
 }
 
-// Reusable JSON formatter component with consistent styling
+// Clean content formatter that renders JSON data as nicely formatted content
+// without JSON syntax (no braces, quotes, etc.)
 const JsonFormatter: React.FC<JsonFormatterProps> = ({ 
   data, 
   fontSize = '0.875rem', 
   className = '' 
 }) => {
-  const [isExpanded, setIsExpanded] = React.useState(false);
-  const [isCopied, setIsCopied] = React.useState(false);
-  
-  // Copy JSON to clipboard
-  const copyToClipboard = () => {
-    try {
-      const jsonStr = JSON.stringify(data, null, 2);
-      navigator.clipboard.writeText(jsonStr);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy:', error);
-    }
-  };
-  
-  // Detect if JSON is large
-  const isLargeJson = React.useMemo(() => {
-    const jsonSize = JSON.stringify(data).length;
-    return jsonSize > 5000; // Consider data over 5KB as "large"
-  }, [data]);
-  
-  return (
-    <div className={`${className} bg-gray-900 rounded-md overflow-hidden`}>
-      {/* Controls header for JSON */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-gray-800 border-b border-gray-700">
-        <div className="text-xs text-gray-400 font-mono">
-          {isLargeJson ? "Large JSON" : "JSON"} ({formatDataSize(getDataSize(data))})
-        </div>
-        <div className="flex space-x-2">
-          {isLargeJson && (
-            <button 
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-0.5 rounded transition-colors"
-            >
-              {isExpanded ? 'Collapse' : 'Expand'}
-            </button>
-          )}
-          <button 
-            onClick={copyToClipboard}
-            className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-0.5 rounded transition-colors"
-            title="Copy JSON to clipboard"
-          >
-            {isCopied ? 'Copied!' : 'Copy'}
-          </button>
-        </div>
-      </div>
-      
-      {/* JSON content with max height limit for large data unless expanded */}
-      <div 
-        className={`overflow-auto ${isLargeJson && !isExpanded ? 'max-h-64 relative' : ''}`}
-      >
-        {isLargeJson && !isExpanded && (
-          <div 
-            className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none"
-            style={{
-              background: 'linear-gradient(to bottom, transparent, rgba(17, 24, 39, 0.9))'
-            }}
-          />
-        )}
-        <pre 
-          className="p-4 text-blue-300 font-mono"
-          style={{ fontSize }}
-        >
-          {formatJsonWithSyntaxHighlighting(data)}
-        </pre>
-      </div>
-      
-      {/* Show expand prompt for large JSONs */}
-      {isLargeJson && !isExpanded && (
-        <div 
-          className="py-1.5 px-3 text-center text-xs text-gray-400 bg-gray-800 cursor-pointer hover:bg-gray-700 transition-colors border-t border-gray-700"
-          onClick={() => setIsExpanded(true)}
-        >
-          Click to view all content
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Get approximate size of data in bytes
-function getDataSize(data: any): number {
-  try {
-    return JSON.stringify(data).length;
-  } catch (error) {
-    return 0;
-  }
-}
-
-// Format byte size to human-readable format
-function formatDataSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B';
-  const units = ['KB', 'MB', 'GB'];
-  let size = bytes / 1024;
-  let unitIndex = 0;
-  
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-  
-  return size.toFixed(1) + ' ' + units[unitIndex];
-}
-
-// Helper function to format JSON with syntax highlighting using HTML
-function formatJsonWithSyntaxHighlighting(data: any): React.ReactNode {
-  try {
-    // Circular reference detection
-    const seen = new WeakSet();
-    const safeStringify = (obj: any, indent = 0): string => {
-      // Handle primitive values
-      if (obj === null) return 'null';
-      if (obj === undefined) return 'undefined';
-      if (typeof obj !== 'object') return JSON.stringify(obj);
-      
-      // Handle arrays and objects with circular reference check
-      if (seen.has(obj)) return '"[Circular Reference]"';
-      seen.add(obj);
-      
-      if (Array.isArray(obj)) {
-        // Empty array
-        if (obj.length === 0) return '[]';
-        
-        // Format array
-        const items: string = obj.map((item: any): string => 
-          ' '.repeat(indent + 2) + safeStringify(item, indent + 2)
-        ).join(',\n');
-        
-        return `[\n${items}\n${' '.repeat(indent)}]`;
-      } else {
-        // Empty object
-        const keys = Object.keys(obj);
-        if (keys.length === 0) return '{}';
-        
-        // Format object
-        const props: string = keys.map((key: string): string => 
-          ' '.repeat(indent + 2) + `"${key}": ${safeStringify(obj[key], indent + 2)}`
-        ).join(',\n');
-        
-        return `{\n${props}\n${' '.repeat(indent)}}`;
+  // Parse string data if needed
+  const jsonData = React.useMemo(() => {
+    if (typeof data === 'string') {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        return data; // If it can't be parsed as JSON, just use the string
       }
-    };
-    
-    // Convert data to pretty JSON string with circular reference handling
-    let jsonString: string;
-    try {
-      jsonString = JSON.stringify(data, null, 2);
-    } catch (err) {
-      // If standard stringify fails, use our custom version
-      jsonString = safeStringify(data);
     }
-    
-    // Handle empty or invalid data
-    if (!jsonString || jsonString === '{}' || jsonString === '[]') {
-      return <span className="text-gray-400 italic">Empty data</span>;
-    }
-    
-    // Use regular expressions to add spans with color classes
-    let highlightedJson = jsonString
-      // Highlight keys
-      .replace(/"([^"]+)":/g, '<span class="text-pink-500 font-bold">"$1"</span>:')
-      // Highlight string values (handle multi-line strings)
-      .replace(/: "([^"]*)"/g, (match, p1) => {
-        // If string contains newlines, handle specially
-        if (p1.includes('\n')) {
-          const formattedStr = p1.replace(/\n/g, '<br />');
-          return ': <span class="text-green-400">"' + formattedStr + '"</span>';
-        }
-        return ': <span class="text-green-400">"' + p1 + '"</span>';
-      })
-      // Highlight numbers
-      .replace(/: (-?\d+\.?\d*)/g, ': <span class="text-orange-400">$1</span>')
-      // Highlight booleans
-      .replace(/: (true|false)/g, ': <span class="text-purple-400">$1</span>')
-      // Highlight null and undefined
-      .replace(/: (null|"undefined"|"\\[Circular Reference\\]")/g, (match, p1) => {
-        if (p1 === '"[Circular Reference]"') {
-          return ': <span class="text-yellow-300 italic">[Circular Reference]</span>';
-        } else if (p1 === '"undefined"') {
-          return ': <span class="text-gray-500">undefined</span>';
-        }
-        return ': <span class="text-gray-500">null</span>';
-      });
-    
-    // Add line numbers for better readability of large JSON objects
-    const lines = highlightedJson.split('\n');
-    if (lines.length > 10) { // Only add line numbers for larger JSON objects
-      highlightedJson = lines.map((line, index) => {
-        const lineNumber = `<span class="text-gray-400 inline-block w-8 text-right pr-2 select-none">${index + 1}</span>`;
-        return `${lineNumber}${line}`;
-      }).join('\n');
-    }
-    
-    // Return the HTML with className for potential additional styling
-    return <div dangerouslySetInnerHTML={{ __html: highlightedJson }} className="json-content" />;
-  } catch (error) {
-    // Handle any JSON stringification errors
-    console.error('Error formatting JSON:', error);
+    return data;
+  }, [data]);
+
+  // Convert snake_case to Title Case
+  const formatKey = (key: string): string => {
+    return key
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, char => char.toUpperCase());
+  };
+
+  // Check if the data is empty
+  if (!jsonData || (typeof jsonData === 'object' && Object.keys(jsonData).length === 0)) {
+    return <div className="text-gray-500 italic">No content available</div>;
+  }
+
+  // If it's just a string, render it directly
+  if (typeof jsonData === 'string') {
+    return <div className="whitespace-pre-wrap">{jsonData}</div>;
+  }
+
+  // For non-object data
+  if (typeof jsonData !== 'object' || jsonData === null) {
+    return <div>{String(jsonData)}</div>;
+  }
+  
+  // Check if this is a summary with key points
+  const hasSummary = jsonData.summary || jsonData.overview;
+  const hasKeyPoints = jsonData.key_points || jsonData.highlights || jsonData.key_insights;
+  
+  if (hasSummary || hasKeyPoints) {
     return (
-      <div className="text-red-500">
-        <p className="font-bold">Error formatting data</p>
-        <p className="text-sm">{String(error)}</p>
-        <p className="text-xs mt-2">Raw data type: {typeof data}</p>
-        <pre className="text-xs mt-1 bg-gray-800 p-2 rounded overflow-auto">
-          {typeof data === 'object' ? (data === null ? 'null' : Object.keys(data).join(', ')) : String(data)}
-        </pre>
+      <div className={`${className} content-container bg-white rounded-lg text-gray-800`} style={{ fontSize }}>
+        {/* Summary Section */}
+        {hasSummary && (
+          <div className="mb-6">
+            <h2 className="font-bold text-xl text-blue-700 mb-4 pb-2 border-b border-blue-200">
+              {jsonData.summary ? "Summary" : "Overview"}
+            </h2>
+            <div>
+              {typeof (jsonData.summary || jsonData.overview) === 'string' ?
+                (jsonData.summary || jsonData.overview).split('\n\n').map((paragraph: string, index: number) => (
+                  <p key={index} className="mb-3">{paragraph}</p>
+                )) :
+                <div>Unable to display summary content</div>
+              }
+            </div>
+          </div>
+        )}
+        
+        {/* Key Points/Insights Section */}
+        {hasKeyPoints && (
+          <div className="mt-6 bg-blue-50 p-4 rounded-lg">
+            <h3 className="font-bold text-lg mb-3 text-blue-800">
+              {jsonData.key_points ? "Key Points" : 
+               jsonData.key_insights ? "Key Insights" : 
+               "Highlights"}
+            </h3>
+            <ul className="list-disc pl-5 space-y-2">
+              {(jsonData.key_points || jsonData.highlights || jsonData.key_insights || []).map((point: string, index: number) => (
+                <li key={index} className="text-gray-700">{point}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Other sections */}
+        {Object.entries(jsonData)
+          .filter(([key]) => !['summary', 'overview', 'key_points', 'highlights', 'key_insights'].includes(key))
+          .map(([key, value]) => {
+            if (value === null || value === undefined) return null;
+            
+            return (
+              <div key={key} className="mt-6">
+                <h3 className="font-bold text-lg text-blue-700 mb-3">{formatKey(key)}</h3>
+                
+                {typeof value === 'string' && (
+                  <p>{value}</p>
+                )}
+                
+                {typeof value === 'number' && (
+                  <p>{value}</p>
+                )}
+                
+                {typeof value === 'boolean' && (
+                  <p>{value ? 'Yes' : 'No'}</p>
+                )}
+                
+                {Array.isArray(value) && value.length > 0 && (
+                  <ul className="list-disc pl-5 space-y-2">
+                    {value.map((item, idx) => (
+                      <li key={idx}>
+                        {typeof item === 'object' ? 
+                          <div className="text-sm p-2">
+                            {Object.entries(item).map(([itemKey, itemValue]) => (
+                              <div key={itemKey} className="mb-2">
+                                <span className="font-semibold">{formatKey(itemKey)}: </span>
+                                <span>{String(itemValue)}</span>
+                              </div>
+                            ))}
+                          </div> : 
+                          String(item)
+                        }
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                
+                {typeof value === 'object' && !Array.isArray(value) && value !== null && (
+                  <div className="pl-4 mt-2">
+                    {Object.entries(value).map(([subKey, subValue]) => {
+                      if (subValue === null || subValue === undefined) return null;
+                      
+                      return (
+                        <div key={subKey} className="mb-3">
+                          <h4 className="font-semibold text-blue-600 mb-2">{formatKey(subKey)}</h4>
+                          
+                          {typeof subValue === 'string' && (
+                            <p className="ml-2">{subValue}</p>
+                          )}
+                          
+                          {typeof subValue === 'number' && (
+                            <p className="ml-2">{subValue}</p>
+                          )}
+                          
+                          {typeof subValue === 'boolean' && (
+                            <p className="ml-2">{subValue ? 'Yes' : 'No'}</p>
+                          )}
+                          
+                          {Array.isArray(subValue) && subValue.length > 0 && (
+                            <ul className="list-disc pl-7 space-y-1">
+                              {subValue.map((item, i) => (
+                                <li key={i} className="mb-1">{String(item)}</li>
+                              ))}
+                            </ul>
+                          )}
+                          
+                          {typeof subValue === 'object' && !Array.isArray(subValue) && subValue !== null && (
+                            <div className="ml-4 border-l-2 border-gray-200 pl-4">
+                              {Object.entries(subValue).map(([deepKey, deepValue]) => (
+                                <div key={deepKey} className="mb-2">
+                                  <span className="font-medium">{formatKey(deepKey)}: </span>
+                                  <span>{typeof deepValue === 'object' ? JSON.stringify(deepValue) : String(deepValue)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
       </div>
     );
   }
-}
+  
+  // For expert profiles (special case)
+  if (jsonData.name || jsonData.full_name) {
+    return (
+      <div className={`${className} expert-profile`} style={{ fontSize }}>
+        {/* Name and Title Section */}
+        {(jsonData.name || jsonData.full_name) && (
+          <h2 className="text-xl font-bold mb-3">{jsonData.name || jsonData.full_name}</h2>
+        )}
+        
+        {jsonData.title && (
+          <p className="text-lg text-gray-700 mb-4">{jsonData.title}</p>
+        )}
+        
+        {/* Short Bio */}
+        {(jsonData.short_bio || jsonData.bio) && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Biography</h3>
+            <p className="text-gray-800">{jsonData.short_bio || jsonData.bio}</p>
+          </div>
+        )}
+        
+        {/* Areas of Expertise */}
+        {jsonData.areas_of_expertise && jsonData.areas_of_expertise.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Areas of Expertise</h3>
+            <ul className="list-disc pl-5 space-y-1">
+              {jsonData.areas_of_expertise.map((area: string, index: number) => (
+                <li key={index} className="text-gray-800">{area}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Publications */}
+        {jsonData.publications && jsonData.publications.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Publications</h3>
+            <ul className="list-disc pl-5 space-y-2">
+              {jsonData.publications.map((pub: any, index: number) => (
+                <li key={index} className="text-gray-800">
+                  {typeof pub === 'string' ? pub : 
+                   pub.title ? (
+                     <div>
+                       <div className="font-medium">{pub.title}</div>
+                       {pub.journal && <div>{pub.journal}</div>}
+                       {pub.year && <div className="text-sm text-gray-600">{pub.year}</div>}
+                     </div>
+                   ) : JSON.stringify(pub)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Education */}
+        {jsonData.education && jsonData.education.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Education</h3>
+            <ul className="list-disc pl-5 space-y-1">
+              {jsonData.education.map((edu: any, index: number) => (
+                <li key={index} className="text-gray-800">
+                  {typeof edu === 'string' ? edu : 
+                   (edu.degree || edu.institution) ? (
+                     <div>
+                       {edu.degree && <span className="font-medium">{edu.degree}</span>}
+                       {edu.field && <span> in {edu.field}</span>}
+                       {edu.institution && <div>{edu.institution}</div>}
+                       {edu.year && <div className="text-sm text-gray-600">{edu.year}</div>}
+                     </div>
+                   ) : JSON.stringify(edu)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Contact Information */}
+        {((jsonData.email || (jsonData.contact && jsonData.contact.email)) || 
+          (jsonData.website || (jsonData.contact && jsonData.contact.website))) && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Contact</h3>
+            {(jsonData.email || (jsonData.contact && jsonData.contact.email)) && 
+              <div className="text-gray-800">Email: {jsonData.email || jsonData.contact.email}</div>}
+            {(jsonData.website || (jsonData.contact && jsonData.contact.website)) && (
+              <div className="text-gray-800">
+                Website: <a href={jsonData.website || jsonData.contact.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{jsonData.website || jsonData.contact.website}</a>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Other fields */}
+        {Object.entries(jsonData)
+          .filter(([key]) => ![
+            'name', 'full_name', 'title', 'short_bio', 'bio', 'areas_of_expertise', 
+            'publications', 'education', 'email', 'website', 'contact'
+          ].includes(key))
+          .map(([key, value]) => {
+            // Skip if value is null/undefined or empty array/string
+            if (value === null || value === undefined) return null;
+            if (Array.isArray(value) && value.length === 0) return null;
+            if (typeof value === 'string' && value.trim() === '') return null;
+            
+            const formattedKey = formatKey(key);
+            
+            // Format arrays as lists
+            if (Array.isArray(value)) {
+              return (
+                <div key={key} className="mb-6">
+                  <h3 className="text-lg font-semibold mb-2">{formattedKey}</h3>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {value.map((item: any, i: number) => (
+                      <li key={i} className="text-gray-800">
+                        {typeof item === 'object' && item !== null ? 
+                          Object.entries(item).map(([itemKey, itemValue]) => (
+                            <div key={itemKey}>
+                              <span className="font-medium">{formatKey(itemKey)}:</span> {String(itemValue)}
+                            </div>
+                          )) : 
+                          String(item)
+                        }
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            }
+            
+            // Format objects
+            if (typeof value === 'object' && value !== null) {
+              return (
+                <div key={key} className="mb-6">
+                  <h3 className="text-lg font-semibold mb-2">{formattedKey}</h3>
+                  <div className="pl-2">
+                    {Object.entries(value).map(([subKey, subValue]) => (
+                      <div key={subKey} className="mb-2">
+                        <span className="font-medium">{formatKey(subKey)}:</span>{' '}
+                        {typeof subValue === 'object' ? 
+                          (Array.isArray(subValue) ? 
+                            <ul className="list-disc pl-6 mt-1">
+                              {subValue.map((item, i) => <li key={i}>{String(item)}</li>)}
+                            </ul> : 
+                            JSON.stringify(subValue)
+                          ) : 
+                          String(subValue)
+                        }
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            
+            // Format primitives
+            return (
+              <div key={key} className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">{formattedKey}</h3>
+                <p className="text-gray-800">{String(value)}</p>
+              </div>
+            );
+          })
+        }
+      </div>
+    );
+  }
+  
+  // General case - render all properties in a clean format
+  return (
+    <div className={`${className} clean-json-content`} style={{ fontSize }}>
+      {Object.entries(jsonData).map(([key, value]) => {
+        const formattedKey = formatKey(key);
+        
+        // Skip null/undefined values
+        if (value === null || value === undefined) return null;
+        
+        return (
+          <div key={key} className="mb-6">
+            <h3 className="font-bold text-lg text-blue-700 mb-2">{formattedKey}</h3>
+            
+            {/* String values */}
+            {typeof value === 'string' && (
+              <div className="whitespace-pre-wrap">{value}</div>
+            )}
+            
+            {/* Number or boolean values */}
+            {(typeof value === 'number' || typeof value === 'boolean') && (
+              <div>{String(value)}</div>
+            )}
+            
+            {/* Arrays */}
+            {Array.isArray(value) && value.length > 0 && (
+              <ul className="list-disc pl-5 space-y-1">
+                {value.map((item, idx) => (
+                  <li key={idx}>
+                    {typeof item === 'object' && item !== null ? 
+                      <div className="mt-1">
+                        {Object.entries(item).map(([itemKey, itemValue]) => (
+                          <div key={itemKey} className="mb-1">
+                            <span className="font-medium">{formatKey(itemKey)}:</span>{' '}
+                            {typeof itemValue === 'object' ? JSON.stringify(itemValue) : String(itemValue)}
+                          </div>
+                        ))}
+                      </div> : 
+                      String(item)
+                    }
+                  </li>
+                ))}
+              </ul>
+            )}
+            
+            {/* Nested objects */}
+            {typeof value === 'object' && !Array.isArray(value) && value !== null && (
+              <div className="pl-4 border-l-2 border-gray-200">
+                {Object.entries(value).map(([subKey, subValue]) => {
+                  if (subValue === null || subValue === undefined) return null;
+                  
+                  return (
+                    <div key={subKey} className="mb-4">
+                      <h4 className="font-medium text-blue-600 mb-1">{formatKey(subKey)}</h4>
+                      
+                      {typeof subValue === 'string' && (
+                        <div className="ml-4">{subValue}</div>
+                      )}
+                      
+                      {(typeof subValue === 'number' || typeof subValue === 'boolean') && (
+                        <div className="ml-4">{String(subValue)}</div>
+                      )}
+                      
+                      {Array.isArray(subValue) && subValue.length > 0 && (
+                        <ul className="list-disc pl-8 space-y-1 ml-4">
+                          {subValue.map((item, i) => (
+                            <li key={i}>
+                              {typeof item === 'object' && item !== null ? 
+                                JSON.stringify(item) : String(item)}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      
+                      {typeof subValue === 'object' && !Array.isArray(subValue) && subValue !== null && (
+                        <div className="ml-4 mt-2">
+                          {Object.entries(subValue).map(([deepKey, deepValue]) => (
+                            <div key={deepKey} className="mb-2">
+                              <span className="font-medium">{formatKey(deepKey)}:</span>{' '}
+                              {typeof deepValue === 'object' ? 
+                                JSON.stringify(deepValue) : String(deepValue)}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 export default JsonFormatter;

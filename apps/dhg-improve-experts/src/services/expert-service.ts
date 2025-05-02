@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { ExpertInterface, ExpertDocument, expertUtils, EnhancedExpertProfile } from "@/types/expert";
+import { ExpertInterface, ExpertDocument, expertUtils } from "@/types/expert";
 import { Logger } from "@/utils/logger";
 
 export interface ExpertBasicInfo {
@@ -236,43 +236,7 @@ export class ExpertService {
     }
   }
   
-  /**
-   * Get the enhanced profile for an expert
-   */
-  async getEnhancedProfile(expertId: string): Promise<EnhancedExpertProfile | null> {
-    try {
-      Logger.debug(`Getting enhanced profile for expert ID: ${expertId}`);
-      
-      // Get the latest processed document with enhanced profile information
-      const { data, error } = await supabase
-        .from('expert_documents')
-        .select('*')
-        .eq('expert_id', expertId)
-        .eq('processing_status', 'completed')
-        .order('updated_at', { ascending: false })
-        .limit(1);
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0 && data[0].processed_content) {
-        try {
-          const processedContent = data[0].processed_content;
-          if (typeof processedContent === 'string') {
-            return JSON.parse(processedContent);
-          } else {
-            return processedContent as EnhancedExpertProfile;
-          }
-        } catch (parseError) {
-          Logger.error('Error parsing enhanced profile:', parseError);
-        }
-      }
-      
-      return null;
-    } catch (error) {
-      Logger.error(`Error getting enhanced profile for expert ID ${expertId}:`, error);
-      return null;
-    }
-  }
+  // Enhanced profile retrieval is no longer needed as we're using metadata directly
   
   /**
    * Get expert document by ID

@@ -1488,7 +1488,13 @@ export function Home() {
               </h2>
               <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
                 {selectedPresentation.expert_document?.processed_content ? (
-                  formatContent(selectedPresentation.expert_document.processed_content)
+                  <div className="p-1">
+                    {/* Direct use of enhanced JsonFormatter component instead of formatContent */}
+                    <JsonFormatter 
+                      data={selectedPresentation.expert_document.processed_content} 
+                      fontSize="0.875rem"
+                    />
+                  </div>
                 ) : (
                   <div className="bg-blue-50 p-4 rounded-md">
                     <p className="text-blue-700">No processed content available for this video.</p>
@@ -1568,7 +1574,12 @@ export function Home() {
               {!showAssetViewer && (
                 <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
                   {selectedAsset.expert_document?.processed_content ? (
-                    <div className="p-1">{formatContent(selectedAsset.expert_document.processed_content)}</div>
+                    <div className="p-1">
+                      <JsonFormatter 
+                        data={selectedAsset.expert_document.processed_content} 
+                        fontSize="0.875rem"
+                      />
+                    </div>
                   ) : (
                     <p>No content available for this asset</p>
                   )}

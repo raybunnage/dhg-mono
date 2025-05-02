@@ -10,7 +10,7 @@
  * 3. When migrating, update the implementation to use the shared service but
  *    maintain the same interface
  */
-import { Expert, ExpertDocument, EnhancedExpertProfile } from '@/types/expert';
+import { Expert, ExpertDocument } from '@/types/expert';
 import { Logger } from '@/utils/logger';
 import { expertService } from './expert-service';
 
@@ -197,18 +197,7 @@ export class ExpertServiceAdapter {
     }
   }
   
-  /**
-   * Get enhanced profile for an expert
-   */
-  async getEnhancedProfile(expertId: string): Promise<EnhancedExpertProfile | null> {
-    try {
-      Logger.debug(`Getting enhanced profile for expert: ${expertId}`);
-      return await expertService.getEnhancedProfile(expertId);
-    } catch (error) {
-      Logger.error(`Error getting enhanced profile for expert ${expertId}:`, error);
-      return null;
-    }
-  }
+  // Enhanced profile retrieval is no longer needed as we're using metadata directly
 }
 
 // Export singleton instance
