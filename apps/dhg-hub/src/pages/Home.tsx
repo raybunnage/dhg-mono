@@ -6,6 +6,74 @@ import ReactMarkdown from 'react-markdown';
 import JsonFormatter from '../components/JsonFormatter';
 
 // Utility function to get video duration, either from metadata or estimated from file size
+// Helper function to search within processed content objects or strings
+const searchInProcessedContent = (content: any, query: string): boolean => {
+  // For string content, do a simple includes check
+  if (typeof content === 'string') {
+    return content.toLowerCase().includes(query);
+  }
+  
+  // For object content, recursively check properties
+  if (typeof content === 'object' && content !== null) {
+    // Check common summary fields first
+    if (content.summary && typeof content.summary === 'string') {
+      if (content.summary.toLowerCase().includes(query)) return true;
+    }
+    
+    // Check key points, highlights, or insights
+    const keyPoints = content.key_points || content.highlights || content.key_insights;
+    if (Array.isArray(keyPoints)) {
+      for (const point of keyPoints) {
+        if (typeof point === 'string' && point.toLowerCase().includes(query)) {
+          return true;
+        }
+      }
+    }
+    
+    // Check markdown content
+    if (content.markdown && typeof content.markdown === 'string') {
+      if (content.markdown.toLowerCase().includes(query)) return true;
+    }
+    
+    // Check all string properties at top level
+    for (const key in content) {
+      const value = content[key];
+      
+      // Skip already checked properties
+      if (key === 'summary' || key === 'key_points' || key === 'highlights' || 
+          key === 'key_insights' || key === 'markdown') {
+        continue;
+      }
+      
+      // Check string properties
+      if (typeof value === 'string' && value.toLowerCase().includes(query)) {
+        return true;
+      }
+      
+      // Check arrays of strings
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (typeof item === 'string' && item.toLowerCase().includes(query)) {
+            return true;
+          }
+        }
+      }
+      
+      // Limit recursion depth to avoid performance issues on deeply nested objects
+      if (typeof value === 'object' && value !== null) {
+        for (const nestedKey in value) {
+          const nestedValue = value[nestedKey];
+          if (typeof nestedValue === 'string' && nestedValue.toLowerCase().includes(query)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  
+  return false;
+};
+
 const getVideoDuration = (videoSource: SourceGoogle | null | undefined): string => {
   if (!videoSource) return '';
   
@@ -170,7 +238,15 @@ export function Home() {
         }
 
         setSubjectClassifications(subjectsData || []);
-        setPresentations(presentationsData || []);
+        
+        // Sort presentations by modified date (newest first) before setting state
+        const sortedPresentations = [...(presentationsData || [])].sort((a, b) => {
+          const dateA = a.video_source?.modified_at ? new Date(a.video_source.modified_at).getTime() : 0;
+          const dateB = b.video_source?.modified_at ? new Date(b.video_source.modified_at).getTime() : 0;
+          return dateB - dateA;
+        });
+        
+        setPresentations(sortedPresentations);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error occurred');
         console.error(err);
@@ -297,7 +373,11 @@ export function Home() {
           (p.video_source?.name?.toLowerCase().includes(query)) ||
           // Search in expert name
           (p.expert?.full_name?.toLowerCase().includes(query) || 
-           p.expert?.expert_name?.toLowerCase().includes(query))
+           p.expert?.expert_name?.toLowerCase().includes(query)) ||
+          // Search in high level folder name
+          (p.high_level_folder?.name?.toLowerCase().includes(query)) ||
+          // Search in processed content (video summaries)
+          (p.expert_document?.processed_content && searchInProcessedContent(p.expert_document.processed_content, query))
       );
     }
     
@@ -315,6 +395,13 @@ export function Home() {
         );
       });
     }
+    
+    // Sort by modified date (most recent first)
+    filtered.sort((a, b) => {
+      const dateA = a.video_source?.modified_at ? new Date(a.video_source.modified_at).getTime() : 0;
+      const dateB = b.video_source?.modified_at ? new Date(b.video_source.modified_at).getTime() : 0;
+      return dateB - dateA; // Descending order (newest first)
+    });
     
     return filtered;
   }, [presentations, searchQuery, selectedSubjects, presentationClassifications]);
@@ -1572,7 +1659,13 @@ export function Home() {
                 <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-600">
                   {selectedPresentation.expert?.full_name && (
                     <button 
-                      onClick={() => fetchExpertBio(selectedPresentation.expert?.id)}
+                      onClick={() => {
+                        if (selectedPresentation.expert?.id) {
+                          openExpertProfile(selectedPresentation.expert.id);
+                        } else {
+                          fetchExpertBio(selectedPresentation.expert?.id);
+                        }
+                      }}
                       className="flex items-center gap-1 hover:text-blue-600 transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
