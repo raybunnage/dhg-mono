@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ExpertMetadataModal } from '@/components/ExpertMetadataModal';
 import { 
   Select, 
   SelectContent, 
@@ -127,9 +128,10 @@ const ActionButton: React.FC<ActionButtonProps> = ({
 
 // Dashboard Page Component
 function Dashboard() {
-  // State for folders
+  // State for folders and modal
   const [folderOptions, setFolderOptions] = useState<FolderOption[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string>('');
+  const [showMetadataModal, setShowMetadataModal] = useState(false);
 
   // Mock data
   const activeJobs = 12;
@@ -224,8 +226,21 @@ function Dashboard() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <button 
+          onClick={() => setShowMetadataModal(true)}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+        >
+          View Expert Metadata
+        </button>
+      </div>
       
+      {/* Expert Metadata Modal */}
+      <ExpertMetadataModal 
+        isOpen={showMetadataModal} 
+        onClose={() => setShowMetadataModal(false)} 
+      />
       
       {/* Status Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

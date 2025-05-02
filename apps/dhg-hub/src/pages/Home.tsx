@@ -873,10 +873,20 @@ export function Home() {
 
   // Toggle subject filter
   const toggleSubject = (subjectId: string) => {
+    // First, clear the search if it's active
+    if (isSearchFocused) {
+      setIsSearchFocused(false);
+    }
+    if (searchQuery) {
+      setSearchQuery('');
+    }
+
+    // Then toggle the subject, clearing any other selected subjects first
     if (selectedSubjects.includes(subjectId)) {
       setSelectedSubjects(selectedSubjects.filter(id => id !== subjectId));
     } else {
-      setSelectedSubjects([...selectedSubjects, subjectId]);
+      // Clear other subjects and set only this one
+      setSelectedSubjects([subjectId]);
     }
   };
 
@@ -1072,8 +1082,120 @@ export function Home() {
     setIsSearchFocused(false);
   };
   
+  // State for showing expert profile modal
+  const [showExpertProfileModal, setShowExpertProfileModal] = useState(false);
+  const [showDebugModal, setShowDebugModal] = useState(false); // Keep debug modal for testing
+  const [expertMetadata, setExpertMetadata] = useState<any>(null);
+  const [selectedExpertId, setSelectedExpertId] = useState<string | null>(null);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
+
+  // Function to fetch expert metadata by ID
+  const fetchExpertMetadata = async (expertId: string) => {
+    setLoadingMetadata(true);
+    setMetadataError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('experts')
+        .select('*')
+        .eq('id', expertId)
+        .single();
+      
+      if (error) throw error;
+      setExpertMetadata(data);
+    } catch (err) {
+      console.error('Error fetching expert metadata:', err);
+      setMetadataError(err instanceof Error ? err.message : 'Unknown error occurred');
+    } finally {
+      setLoadingMetadata(false);
+    }
+  };
+
+  // Handler for opening expert profile
+  const openExpertProfile = (expertId: string) => {
+    setSelectedExpertId(expertId);
+    setExpertMetadata(null); // Clear previous data
+    setShowExpertProfileModal(true);
+  };
+
+  // Handler for debug link
+  const openDebugExpert = () => {
+    const debugExpertId = '16bdcf4b-ad1a-445a-825b-e0f9a76db6af';
+    setSelectedExpertId(debugExpertId);
+    setExpertMetadata(null); // Clear previous data
+    setShowDebugModal(true);
+  };
+
+  // Fetch metadata when any modal opens
+  useEffect(() => {
+    if ((showExpertProfileModal || showDebugModal) && selectedExpertId && !loadingMetadata) {
+      fetchExpertMetadata(selectedExpertId);
+    }
+  }, [showExpertProfileModal, showDebugModal, selectedExpertId]);
+
   return (
     <div className="container mx-auto p-4">
+      {/* Expert Profile Modal - Used for both debug and regular viewing */}
+      {(showDebugModal || showExpertProfileModal) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[85vh] overflow-auto">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-semibold">
+                {expertMetadata ? `Expert Profile for ${expertMetadata.full_name || expertMetadata.expert_name}` : 'Expert Profile'}
+              </h2>
+              <button 
+                onClick={() => {
+                  setShowDebugModal(false);
+                  setShowExpertProfileModal(false);
+                }}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {loadingMetadata ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="mt-3 text-gray-600">Loading expert profile...</p>
+                </div>
+              ) : metadataError ? (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                  <p className="font-bold">Error</p>
+                  <p>{metadataError}</p>
+                </div>
+              ) : expertMetadata ? (
+                <div>
+                  {expertMetadata.metadata ? (
+                    <div className="border rounded p-4 bg-gray-50">
+                      <JsonFormatter data={expertMetadata.metadata} fontSize="1rem" />
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 italic">No profile data available for this expert.</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500">No expert found</p>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowDebugModal(false);
+                  setShowExpertProfileModal(false);
+                }}
+                className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-gray-800"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Expert Bio Modal */}
       {showExpertBio && expertBioContent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1107,6 +1229,21 @@ export function Home() {
         </div>
       )}
     
+      {/* Debug Link - Inconspicuous */}
+      <div className="mb-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Presentations</h1>
+        <a 
+          href="#" 
+          onClick={(e) => {
+            e.preventDefault();
+            openDebugExpert();
+          }}
+          className="text-xs text-gray-400 hover:text-blue-500"
+        >
+          [debug expert metadata]
+        </a>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left sidebar - Presentations and Filters */}
         <div className="lg:w-1/3 space-y-6">
@@ -1123,12 +1260,27 @@ export function Home() {
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Search titles, experts, or content..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    // Clear any selected subjects when entering a search query
+                    if (e.target.value && selectedSubjects.length > 0) {
+                      setSelectedSubjects([]);
+                    }
+                  }}
+                  onFocus={() => {
+                    setIsSearchFocused(true);
+                    // Also clear selected subjects when focusing on search
+                    if (selectedSubjects.length > 0) {
+                      setSelectedSubjects([]);
+                    }
+                  }}
                 />
                 {searchQuery && (
                   <button
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => {
+                      setSearchQuery('');
+                      setIsSearchFocused(false);
+                    }}
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -1333,7 +1485,11 @@ export function Home() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation(); // Prevent triggering parent's onClick
-                            fetchExpertBio(presentation.expert?.id);
+                            if (presentation.expert?.id) {
+                              openExpertProfile(presentation.expert.id);
+                            } else {
+                              fetchExpertBio(presentation.expert?.id);
+                            }
                           }}
                           className="truncate max-w-[120px] hover:text-blue-600 hover:underline"
                         >
