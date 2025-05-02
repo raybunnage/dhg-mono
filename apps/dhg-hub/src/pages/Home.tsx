@@ -183,8 +183,8 @@ export function Home() {
   
   // Collapsible section states - default all open except asset view mode
   const [videoSectionOpen, setVideoSectionOpen] = useState<boolean>(true);
-  const [videoSummaryOpen, setVideoSummaryOpen] = useState<boolean>(true);
   const [presentationAssetsOpen, setPresentationAssetsOpen] = useState<boolean>(true);
+  const [assetSectionOpen, setAssetSectionOpen] = useState<boolean>(true);
   const [assetViewMode, setAssetViewMode] = useState<boolean>(false);
 
   // Fetch presentations data
@@ -582,26 +582,9 @@ export function Home() {
   const formatContent = (content: any): React.ReactNode => {
     if (!content) return <p>No content available</p>;
     
-    // If we have an object, first show a nicely formatted JSON at the top for reference
+    // If we have an object, use the formatter directly
     if (typeof content === 'object') {
-      return (
-        <div className="space-y-6">
-          {/* JSON Formatter Display (Collapsible) */}
-          <details>
-            <summary className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium">
-              View Raw JSON Data
-            </summary>
-            <div className="mt-2">
-              <JsonFormatter data={content} fontSize="0.85rem" />
-            </div>
-          </details>
-          
-          {/* Regular formatted content below */}
-          <div className="mt-4">
-            {formatContentInternal(content)}
-          </div>
-        </div>
-      );
+      return <JsonFormatter data={content} fontSize="0.875rem" />;
     }
     
     // For strings or other types, just use the regular formatter
@@ -1150,8 +1133,8 @@ export function Home() {
     if (selectedPresentation?.id === presentation.id) {
       // If clicking the same presentation, just restore default section states
       setVideoSectionOpen(true);
-      setVideoSummaryOpen(true);
       setPresentationAssetsOpen(true);
+      setAssetSectionOpen(true);
       return;
     }
     
@@ -1161,8 +1144,8 @@ export function Home() {
     
     // Restore default section states when changing presentations
     setVideoSectionOpen(true);
-    setVideoSummaryOpen(true);
     setPresentationAssetsOpen(true);
+    setAssetSectionOpen(true);
     setAssetViewMode(false);
   };
 
@@ -1174,12 +1157,14 @@ export function Home() {
     setSelectedAsset(asset);
     setAssetViewMode(false);
     
+    // Make sure asset section is open and visible
+    setAssetSectionOpen(true);
+    
     // When selecting a new asset, make the presentation assets more prominent
     if (!isSelectingSameAsset) {
-      // Keep the current state of presentation assets section
-      // but collapse other sections to give more space to assets
+      // Keep the presentation assets section visible
+      // but collapse video section to give more space to assets
       setVideoSectionOpen(false);
-      setVideoSummaryOpen(false);
     }
   };
   
@@ -1676,7 +1661,7 @@ export function Home() {
         </div>
 
         {/* Right Content Area */}
-        <div className="lg:w-2/3 space-y-6">
+        <div className="lg:w-2/3 space-y-4">
           {/* Video Title and Player */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {selectedPresentation?.expert_document?.title ? (
@@ -1788,223 +1773,193 @@ export function Home() {
             )}
           </div>
 
-          {/* Video Summary */}
-          {selectedPresentation ? (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <Collapsible 
-                open={videoSummaryOpen} 
-                onOpenChange={(open) => {
-                  setVideoSummaryOpen(open);
-                  // If opening this section and asset is being viewed, collapse asset view
-                  if (open && assetViewMode) {
-                    setAssetViewMode(false);
-                  }
-                }}
-              >
-                <div className="px-4 py-3 bg-gray-50 border-b">
-                  <CollapsibleTrigger className="flex w-full">
-                    <div className="flex justify-between w-full items-center">
-                      <h2 className="text-xl font-semibold text-blue-700 flex items-center">
-                        {videoSummaryOpen ? <ChevronDown className="h-5 w-5 mr-2" /> : <ChevronRight className="h-5 w-5 mr-2" />}
-                        Video Summary
-                      </h2>
-                      {!videoSummaryOpen && (
-                        <span className="text-xs bg-blue-100 px-2 py-1 rounded-full text-blue-600">
-                          Summary
-                        </span>
-                      )}
-                    </div>
-                  </CollapsibleTrigger>
-                </div>
-                
-                <CollapsibleContent>
-                  <div className="p-4">
-                    <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
-                      {selectedPresentation.expert_document?.processed_content ? (
-                        <div className="p-1">
-                          {/* Direct use of enhanced JsonFormatter component instead of formatContent */}
-                          <JsonFormatter 
-                            data={selectedPresentation.expert_document.processed_content} 
-                            fontSize="0.875rem"
-                          />
-                        </div>
-                      ) : (
-                        <div className="bg-blue-50 p-4 rounded-md">
-                          <p className="text-blue-700">No processed content available for this video.</p>
-                          <p className="text-sm text-blue-600 mt-2">Video metadata:</p>
-                          {selectedPresentation.video_source?.metadata ? (
-                            <div className="mt-2">
-                              <JsonFormatter 
-                                data={selectedPresentation.video_source.metadata} 
-                                fontSize="0.75rem"
-                              />
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-500 italic mt-1">No metadata available</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
+          {/* Now we'll let the JsonFormatter handle the collapsible sections */}
+          {selectedPresentation?.expert_document?.processed_content ? (
+            <div className="bg-white rounded-lg shadow">
+              <JsonFormatter 
+                data={selectedPresentation.expert_document.processed_content} 
+                fontSize="0.875rem"
+              />
+            </div>
+          ) : selectedPresentation ? (
+            <div className="bg-white rounded-lg shadow p-4">
+              <h2 className="text-xl font-semibold text-blue-700 mb-3">
+                Video Summary
+              </h2>
+              <div className="bg-blue-50 p-4 rounded-md">
+                <p className="text-blue-700">No processed content available for this video.</p>
+                {selectedPresentation.video_source?.metadata ? (
+                  <div className="mt-4">
+                    <p className="text-sm text-blue-600 mb-2">Video metadata:</p>
+                    <JsonFormatter 
+                      data={selectedPresentation.video_source.metadata} 
+                      fontSize="0.75rem"
+                    />
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
+                ) : (
+                  <p className="text-sm text-gray-500 italic mt-1">No metadata available</p>
+                )}
+              </div>
             </div>
           ) : null}
 
           {/* Selected Asset Content or Viewer */}
           {selectedAsset && (
-            <div className={`bg-white rounded-lg shadow ${assetViewMode ? 'h-[550px] overflow-hidden' : ''}`}>
-              <div className="flex justify-between items-center p-4 bg-gray-50 border-b">
-                <h2 className="text-lg font-medium text-gray-900 flex items-center">
-                  {assetViewMode && (
-                    <button 
-                      onClick={() => setAssetViewMode(false)}
-                      className="inline-flex items-center justify-center mr-2 text-gray-500 hover:text-gray-700"
-                    >
-                      <ArrowLeft className="h-5 w-5" />
-                      <span className="sr-only">Back</span>
-                    </button>
-                  )}
-                  {selectedAsset.source_file?.name || 'Selected Asset'}
-                </h2>
-                {selectedAsset.source_file?.web_view_link && (
-                  <button
-                    onClick={() => {
-                      // Toggle asset view mode
-                      if (!assetViewMode) {
-                        // When entering view mode, collapse other sections
-                        setVideoSectionOpen(false);
-                        setVideoSummaryOpen(false);
-                        setAssetViewMode(true);
-                      } else {
-                        // When exiting view mode, keep sections collapsed
-                        setAssetViewMode(false);
-                      }
-                    }}
-                    className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
-                  >
-                    {assetViewMode ? 'Return to Summary' : 'View File'}
-                  </button>
-                )}
-              </div>
-              
-              {/* Asset viewer (expanded in the same panel) */}
-              {assetViewMode && selectedAsset.source_file?.web_view_link ? (
-                <div className="h-full">
-                  <iframe 
-                    src={`https://drive.google.com/file/d/${extractDriveId(selectedAsset.source_file.web_view_link)}/preview`}
-                    className="w-full h-full"
-                    title={selectedAsset.source_file.name || 'Asset Preview'}
-                    allow="autoplay"
-                  />
-                </div>
-              ) : (
-                <div className="p-4">
-                  <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
-                    {selectedAsset.expert_document?.processed_content ? (
-                      <div className="p-1">
-                        <JsonFormatter 
-                          data={selectedAsset.expert_document.processed_content} 
-                          fontSize="0.875rem"
-                        />
-                      </div>
-                    ) : (
-                      <p>No content available for this asset</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Presentation Assets */}
-          {selectedPresentation && (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className={`bg-white rounded-lg shadow mb-4 ${assetViewMode ? 'h-[750px] overflow-hidden' : ''}`}>
               <Collapsible 
-                open={presentationAssetsOpen} 
-                onOpenChange={setPresentationAssetsOpen}
+                open={assetSectionOpen} 
+                onOpenChange={(open) => {
+                  setAssetSectionOpen(open);
+                }}
               >
                 <div className="px-4 py-3 bg-gray-50 border-b">
-                  <CollapsibleTrigger className="flex w-full">
-                    <div className="flex justify-between w-full items-center">
-                      <h2 className="text-lg font-medium text-gray-900 flex items-center">
-                        {presentationAssetsOpen ? <ChevronDown className="h-5 w-5 mr-2" /> : <ChevronRight className="h-5 w-5 mr-2" />}
-                        Presentation Assets
-                      </h2>
-                      {!presentationAssetsOpen && (
-                        <span className="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-600">
-                          {presentationAssets.length} assets
-                        </span>
+                  <div className="flex justify-between items-center w-full">
+                    <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                      {assetViewMode && (
+                        <button 
+                          onClick={() => setAssetViewMode(false)}
+                          className="inline-flex items-center justify-center mr-2 text-gray-500 hover:text-gray-700"
+                        >
+                          <ArrowLeft className="h-5 w-5" />
+                          <span className="sr-only">Back</span>
+                        </button>
                       )}
-                    </div>
-                  </CollapsibleTrigger>
+                      <CollapsibleTrigger className="flex items-center focus:outline-none">
+                        {!assetViewMode && (
+                          <>
+                            {assetSectionOpen ? <ChevronDown className="h-5 w-5 mr-2" /> : <ChevronRight className="h-5 w-5 mr-2" />}
+                          </>
+                        )}
+                        {selectedAsset.source_file?.name || 'Selected Asset'}
+                      </CollapsibleTrigger>
+                    </h2>
+                    {selectedAsset.source_file?.web_view_link && (
+                      <button
+                        onClick={() => {
+                          // Toggle asset view mode
+                          if (!assetViewMode) {
+                            // When entering view mode, collapse all other sections
+                            setVideoSectionOpen(false);
+                            // Make the asset viewer very prominent
+                            setAssetViewMode(true);
+                          } else {
+                            // When exiting view mode, keep other sections collapsed
+                            setAssetViewMode(false);
+                          }
+                        }}
+                        className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
+                      >
+                        {assetViewMode ? 'Return to Summary' : 'View File'}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 <CollapsibleContent>
-                  <div className="p-4">
-                    {presentationAssets.length === 0 ? (
-                      <p className="text-gray-500">No assets available for this presentation</p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {presentationAssets.map((asset) => (
-                          <div
-                            key={asset.id}
-                            onClick={() => {
-                              // When selecting an asset, collapse other sections if not already collapsed
-                              if (!selectedAsset || selectedAsset.id !== asset.id) {
-                                setVideoSectionOpen(false);
-                                setVideoSummaryOpen(false);
-                              }
-                              
-                              handleAssetSelect(asset);
-                            }}
-                            onDoubleClick={() => {
-                              // Double-click behavior goes directly to asset view
-                              setVideoSectionOpen(false);
-                              setVideoSummaryOpen(false);
-                              handleAssetSelect(asset);
-                              setAssetViewMode(true);
-                            }}
-                            className={`p-3 rounded-lg cursor-pointer border transition-colors ${
-                              selectedAsset?.id === asset.id
-                                ? 'bg-blue-50 border-blue-200'
-                                : 'hover:bg-gray-50 border-gray-100'
-                            }`}
-                            title="Click to see summary, double-click to view file"
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="bg-blue-100 text-blue-800 p-2 rounded">
-                                {asset.asset_type === 'document' ? '📄' : 
-                                 asset.asset_type === 'image' ? '🖼️' : 
-                                 asset.asset_type === 'video' ? '🎬' : 
-                                 asset.asset_type === 'audio' ? '🔊' : 
-                                 asset.asset_type === 'presentation' ? '📊' : 
-                                 '📎'}
-                              </div>
-                              <div>
-                                <h3 className="font-medium text-gray-900 line-clamp-1">
-                                  {asset.source_file?.name || 'Unknown Asset'}
-                                </h3>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {asset.asset_role && (
-                                    <span className="capitalize">{asset.asset_role} • </span>
-                                  )}
-                                  {asset.source_file?.mime_type || 'Unknown type'}
-                                </p>
-                                {asset.user_notes && (
-                                  <p className="text-xs italic text-gray-600 mt-1">
-                                    "{asset.user_notes}"
-                                  </p>
-                                )}
-                              </div>
-                            </div>
+                  {/* Asset viewer (expanded in the same panel) */}
+                  {assetViewMode && selectedAsset.source_file?.web_view_link ? (
+                    <div className="h-[700px]">
+                      <iframe 
+                        src={`https://drive.google.com/file/d/${extractDriveId(selectedAsset.source_file.web_view_link)}/preview`}
+                        className="w-full h-full"
+                        title={selectedAsset.source_file.name || 'Asset Preview'}
+                        allow="autoplay"
+                      />
+                    </div>
+                  ) : (
+                    <div className="p-4">
+                      <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
+                        {selectedAsset.expert_document?.processed_content ? (
+                          <div className="p-1">
+                            <JsonFormatter 
+                              data={selectedAsset.expert_document.processed_content} 
+                              fontSize="0.875rem"
+                            />
                           </div>
-                        ))}
+                        ) : (
+                          <p>No content available for this asset</p>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </CollapsibleContent>
               </Collapsible>
+            </div>
+          )}
+
+          {/* Presentation Assets - Always visible (non-collapsible) */}
+          {selectedPresentation && (
+            <div className="bg-white rounded-lg shadow">
+              <div className="px-4 py-3 bg-gray-50 border-b">
+                <h2 className="text-lg font-medium text-gray-900">
+                  Presentation Assets 
+                  <span className="ml-2 text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-600">
+                    {presentationAssets.length} assets
+                  </span>
+                </h2>
+              </div>
+              
+              <div className="p-4">
+                {presentationAssets.length === 0 ? (
+                  <p className="text-gray-500">No assets available for this presentation</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {presentationAssets.map((asset) => (
+                      <div
+                        key={asset.id}
+                        onClick={() => {
+                          // When selecting an asset, collapse other sections if not already collapsed
+                          if (!selectedAsset || selectedAsset.id !== asset.id) {
+                            setVideoSectionOpen(false);
+                          }
+                          
+                          // Make sure the asset is selected and visible
+                          handleAssetSelect(asset);
+                        }}
+                        onDoubleClick={() => {
+                          // Double-click behavior goes directly to asset view
+                          setVideoSectionOpen(false);
+                          handleAssetSelect(asset);
+                          setAssetViewMode(true);
+                        }}
+                        className={`p-3 rounded-lg cursor-pointer border transition-colors ${
+                          selectedAsset?.id === asset.id
+                            ? 'bg-blue-50 border-blue-200'
+                            : 'hover:bg-gray-50 border-gray-100'
+                        }`}
+                        title="Click to see summary, double-click to view file"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="bg-blue-100 text-blue-800 p-2 rounded">
+                            {asset.asset_type === 'document' ? '📄' : 
+                             asset.asset_type === 'image' ? '🖼️' : 
+                             asset.asset_type === 'video' ? '🎬' : 
+                             asset.asset_type === 'audio' ? '🔊' : 
+                             asset.asset_type === 'presentation' ? '📊' : 
+                             '📎'}
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-gray-900 line-clamp-1">
+                              {asset.source_file?.name || 'Unknown Asset'}
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {asset.asset_role && (
+                                <span className="capitalize">{asset.asset_role} • </span>
+                              )}
+                              {asset.source_file?.mime_type || 'Unknown type'}
+                            </p>
+                            {asset.user_notes && (
+                              <p className="text-xs italic text-gray-600 mt-1">
+                                "{asset.user_notes}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
