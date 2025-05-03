@@ -372,20 +372,36 @@ export const createPresentationsFromMp4Command = async (options: {
       Logger.error('Error fetching experts information:', expertsError);
     }
     
-    // Create a map of source_id (folder) to expert_id
-    const expertMap: Record<string, { expertId: string, expertName: string }> = {};
+    // Create a map of source_id (folder) to array of experts
+    const expertMap: Record<string, Array<{ expertId: string, expertName: string }>> = {};
     if (expertsData) {
       for (const record of expertsData) {
         if (record.source_id && record.expert_id && record.experts) {
-          expertMap[record.source_id] = { 
+          // Create the expert data object
+          const expertData = { 
             expertId: record.expert_id,
             expertName: (record.experts as any).expert_name || (record.experts as any).full_name || 'Unknown'
           };
+          
+          // Initialize array if it doesn't exist for this source
+          if (!expertMap[record.source_id]) {
+            expertMap[record.source_id] = [];
+          }
+          
+          // Add this expert to the array
+          expertMap[record.source_id].push(expertData);
         }
       }
       
       if (verbose) {
         Logger.info(`Found expert mappings for ${Object.keys(expertMap).length} high-level folders`);
+        
+        // Log any folders with multiple experts
+        for (const [folderId, experts] of Object.entries(expertMap)) {
+          if (experts.length > 1) {
+            Logger.info(`Folder ${folderId} has ${experts.length} experts: ${experts.map(e => e.expertName).join(', ')}`);
+          }
+        }
       }
     }
     

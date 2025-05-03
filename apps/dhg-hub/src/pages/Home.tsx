@@ -145,6 +145,8 @@ type Presentation = Database['public']['Tables']['presentations']['Row'] & {
     full_name: string;
     expert_name: string;
   } | null;
+  expert_names?: string; // String for multiple experts
+  experts?: Array<{id: string, name: string}>; // Array of expert objects
   created_at?: string | null;
 };
 
@@ -1614,7 +1616,11 @@ export function Home() {
                     
                     {/* Author and date info */}
                     <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                      {presentation.expert?.full_name && (
+                      {presentation.expert_names ? (
+                        <span className="truncate max-w-[160px] text-blue-600">
+                          {presentation.expert_names}
+                        </span>
+                      ) : presentation.expert?.full_name && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation(); // Prevent triggering parent's onClick
@@ -1726,7 +1732,14 @@ export function Home() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-600">
-                      {selectedPresentation.expert?.full_name && (
+                      {selectedPresentation.expert_names ? (
+                        <div className="flex items-center gap-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="text-blue-600">{selectedPresentation.expert_names}</span>
+                        </div>
+                      ) : selectedPresentation.expert?.full_name && (
                         <button 
                           onClick={() => {
                             if (selectedPresentation.expert?.id) {

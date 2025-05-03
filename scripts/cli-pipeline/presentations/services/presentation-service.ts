@@ -638,29 +638,35 @@ export class PresentationService {
             Logger.error('Error fetching assets for presentation:', assetsError);
           }
           
-          // Get linked source_google info to find the expert
+          // Get linked source_google info to find all associated experts
           let expertId = null;
           let expertName = null;
+          let experts: { id: string, name: string }[] = [];
           
           if (presentation.main_video_id) {
-            const { data: source, error: sourceError } = await this.supabaseClient
+            // Get all experts associated with this source
+            const { data: sourceExperts, error: sourceError } = await this.supabaseClient
               .from('sources_google_experts')
-              .select('expert_id')
-              .eq('source_id', presentation.main_video_id)
-              .single();
+              .select(`
+                expert_id, 
+                experts(id, expert_name, full_name)
+              `)
+              .eq('source_id', presentation.main_video_id);
               
-            if (!sourceError && source && source.expert_id) {
-              expertId = source.expert_id;
+            if (!sourceError && sourceExperts && sourceExperts.length > 0) {
+              // Extract expert info from each record
+              experts = sourceExperts.map(record => {
+                const expertRecord = record.experts as any;
+                return {
+                  id: record.expert_id,
+                  name: expertRecord?.expert_name || expertRecord?.full_name || 'Unknown'
+                };
+              }).filter(e => e.id); // Filter out any without IDs
               
-              // Now get the expert name
-              const { data: expert, error: expertError } = await this.supabaseClient
-                .from('experts')
-                .select('expert_name')
-                .eq('id', expertId)
-                .single();
-                
-              if (!expertError && expert) {
-                expertName = expert.expert_name;
+              // For backward compatibility, use the first expert for existing fields
+              if (experts.length > 0) {
+                expertId = experts[0].id;
+                expertName = experts[0].name;
               }
             }
           }
@@ -839,11 +845,18 @@ export class PresentationService {
           // Determine next steps
           const nextSteps = this.determineNextSteps(status, transformedAssets, transformedDocs);
           
+          // Create a list of expert names for display
+          const expertNamesList = experts.length > 1 
+            ? experts.map(e => e.name).join(', ')
+            : expertName || '';
+          
           return {
             id: presentation.id,
             title: presentation.title,
             expert_id: expertId,
             expert_name: expertName,
+            expert_names: expertNamesList, // Added for multi-expert support
+            experts: experts, // Full experts array for more detailed access
             created_at: presentation.created_at,
             updated_at: presentation.updated_at,
             status,
