@@ -92,9 +92,7 @@ export class FilterService {
   public async loadActiveProfile(): Promise<FilterProfile | null> {
     const { data, error } = await this.supabase
       .from('user_filter_profiles')
-      .select(`
-        *
-      `)
+      .select('*')
       .eq('is_active', true)
       .single();
 
@@ -252,11 +250,10 @@ export class FilterService {
    * @returns Array of filter profiles or empty array if none found
    */
   public async listProfiles(): Promise<FilterProfile[]> {
+    // Use a simple query without the join 
     const { data, error } = await this.supabase
       .from('user_filter_profiles')
-      .select(`
-        *
-      `)
+      .select('*')
       .order('name');
 
     if (error) {
