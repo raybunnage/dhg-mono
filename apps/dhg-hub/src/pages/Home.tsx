@@ -8,6 +8,25 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../componen
 import { ChevronDown, ChevronRight, ArrowLeft, RefreshCcw } from 'lucide-react';
 import { FilterProfile, filterService } from '../../../packages/shared/services/filter-service/filter-service';
 
+// Debug function to check the database directly
+async function debugCheckFilterProfiles() {
+  try {
+    // Direct database query to check what profiles exist
+    const { data, error } = await supabase
+      .from('user_filter_profiles')
+      .select('*');
+      
+    console.log('Debug: Direct database check for profiles');
+    console.log('Results:', data);
+    console.log('Error:', error);
+    
+    return data;
+  } catch (err) {
+    console.error('Error in debug check:', err);
+    return null;
+  }
+}
+
 // Utility function to get video duration, either from metadata or estimated from file size
 // Helper function to search within processed content objects or strings
 const searchInProcessedContent = (content: any, query: string): boolean => {
@@ -193,25 +212,6 @@ export function Home() {
   const [assetSectionOpen, setAssetSectionOpen] = useState<boolean>(true);
   const [assetViewMode, setAssetViewMode] = useState<boolean>(false);
 
-  // Debug function to check the database directly for filter profiles
-  async function debugCheckFilterProfiles() {
-    try {
-      // Direct database query to check what profiles exist
-      const { data, error } = await supabase
-        .from('user_filter_profiles')
-        .select('*');
-        
-      console.log('Debug: Direct database check for profiles');
-      console.log('Results:', data);
-      console.log('Error:', error);
-      
-      return data;
-    } catch (err) {
-      console.error('Error in debug check:', err);
-      return null;
-    }
-  }
-  
   // Fetch filter profiles
   useEffect(() => {
     async function fetchFilterProfiles() {
@@ -1417,11 +1417,15 @@ export function Home() {
             <option value="" disabled>
               {loadingProfiles ? 'Loading profiles...' : 'Select a filter profile'}
             </option>
-            {filterProfiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.name} {profile.is_active ? '(Active)' : ''}
-              </option>
-            ))}
+            {filterProfiles && filterProfiles.length > 0 ? (
+              filterProfiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name} {profile.is_active ? '(Active)' : ''}
+                </option>
+              ))
+            ) : (
+              <option value="" disabled>No profiles available</option>
+            )}
           </select>
         </div>
         
