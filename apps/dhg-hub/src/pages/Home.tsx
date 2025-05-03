@@ -5,7 +5,8 @@ import { Database } from '../../../supabase/types';
 import ReactMarkdown from 'react-markdown';
 import JsonFormatter from '../components/JsonFormatter';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../components/ui/collapsible';
-import { ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
+import { ChevronDown, ChevronRight, ArrowLeft, RefreshCcw } from 'lucide-react';
+import { FilterProfile, filterService } from '../../../packages/shared/services/filter-service/filter-service';
 
 // Utility function to get video duration, either from metadata or estimated from file size
 // Helper function to search within processed content objects or strings
@@ -182,6 +183,9 @@ export function Home() {
   const [presentationAssets, setPresentationAssets] = useState<PresentationAsset[]>([]);
   const [showExpertBio, setShowExpertBio] = useState<boolean>(false);
   const [expertBioContent, setExpertBioContent] = useState<any>(null);
+  const [filterProfiles, setFilterProfiles] = useState<FilterProfile[]>([]);
+  const [activeFilterProfile, setActiveFilterProfile] = useState<FilterProfile | null>(null);
+  const [loadingProfiles, setLoadingProfiles] = useState<boolean>(false);
   
   // Collapsible section states - default all open except asset view mode
   const [videoSectionOpen, setVideoSectionOpen] = useState<boolean>(true);
@@ -189,53 +193,101 @@ export function Home() {
   const [assetSectionOpen, setAssetSectionOpen] = useState<boolean>(true);
   const [assetViewMode, setAssetViewMode] = useState<boolean>(false);
 
+  // Fetch filter profiles
+  useEffect(() => {
+    async function fetchFilterProfiles() {
+      setLoadingProfiles(true);
+      try {
+        // Fetch all available profiles
+        const profiles = await filterService.listProfiles();
+        setFilterProfiles(profiles);
+        
+        // Then get the active profile
+        const active = await filterService.loadActiveProfile();
+        setActiveFilterProfile(active);
+      } catch (err) {
+        console.error('Error fetching filter profiles:', err);
+      } finally {
+        setLoadingProfiles(false);
+      }
+    }
+    
+    fetchFilterProfiles();
+  }, []);
+
+  // Handler for profile selection change
+  const handleProfileSelect = async (profileId: string) => {
+    try {
+      await filterService.setActiveProfile(profileId);
+      // Reload the active profile
+      const active = await filterService.loadActiveProfile();
+      setActiveFilterProfile(active);
+      
+      // Reload the presentations with the new filter
+      fetchData();
+    } catch (err) {
+      console.error('Error setting active filter profile:', err);
+    }
+  };
+
   // Fetch presentations data
   useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        // Fetch presentations with their video sources and expert documents
-        const { data: presentationsData, error: presentationsError } = await supabase
-          .from('presentations')
-          .select(`
-            id, 
-            video_source_id,
-            expert_document_id,
-            expert_id,
-            high_level_folder_source_id,
-            web_view_link,
-            created_at,
-            expert:expert_id(
-              id,
-              full_name,
-              expert_name
-            ),
-            expert_document:expert_document_id(
-              id, 
-              title, 
-              processed_content
-            ),
-            video_source:video_source_id(
-              id, 
-              name, 
-              mime_type, 
-              web_view_link,
-              document_type_id,
-              created_at,
-              modified_at,
-              size,
-              metadata
-            ),
-            high_level_folder:high_level_folder_source_id(
-              id,
-              name
-            )
-          `)
-          .not('video_source_id', 'is', null);
+    fetchData();
+  }, []);
 
-        if (presentationsError) {
-          throw new Error(`Error fetching presentations: ${presentationsError.message}`);
-        }
+  // Function to fetch presentations data
+  async function fetchData() {
+    try {
+      setLoading(true);
+      // Fetch presentations with their video sources and expert documents
+      let query = supabase
+        .from('presentations')
+        .select(`
+          id, 
+          video_source_id,
+          expert_document_id,
+          expert_id,
+          high_level_folder_source_id,
+          web_view_link,
+          created_at,
+          expert:expert_id(
+            id,
+            full_name,
+            expert_name
+          ),
+          expert_document:expert_document_id(
+            id, 
+            title, 
+            processed_content
+          ),
+          video_source:video_source_id(
+            id, 
+            name, 
+            mime_type, 
+            web_view_link,
+            document_type_id,
+            created_at,
+            modified_at,
+            size,
+            metadata
+          ),
+          high_level_folder:high_level_folder_source_id(
+            id,
+            name
+          )
+        `)
+        .not('video_source_id', 'is', null);
+        
+      // Apply active filter profile if available
+      if (activeFilterProfile) {
+        query = filterService.applyFilterToQuery(query);
+      }
+
+      const { data: presentationsData, error: presentationsError } = await query;
+
+      if (presentationsError) {
+        throw new Error(`Error fetching presentations: ${presentationsError.message}`);
+      }
 
         // Fetch all subject classifications for the filter
         const { data: subjectsData, error: subjectsError } = await supabase
@@ -1329,21 +1381,51 @@ export function Home() {
         </div>
       )}
     
-      {/* Root drive dropdown */}
+      {/* Filter profiles dropdown */}
       <div className="mb-4 flex justify-between items-center">
         <div className="flex items-center">
           <select 
             className="px-4 py-3 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-lg font-semibold"
-            onChange={(e) => {
-              // Find presentations with this drive ID
-              const driveId = e.target.value;
-              // If future code needs to filter by this drive ID, it would go here
-            }}
-            defaultValue="1wriOM2j2IglnMcejplqG_XcCxSIfoRMV"
+            onChange={(e) => handleProfileSelect(e.target.value)}
+            value={activeFilterProfile?.id || ''}
+            disabled={loadingProfiles}
           >
-            <option value="1wriOM2j2IglnMcejplqG_XcCxSIfoRMV">Dynamic Healing Discussion Group</option>
+            <option value="" disabled>
+              {loadingProfiles ? 'Loading profiles...' : 'Select a filter profile'}
+            </option>
+            {filterProfiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.name} {profile.is_active ? '(Active)' : ''}
+              </option>
+            ))}
           </select>
         </div>
+        
+        {/* Refresh button */}
+        <button 
+          onClick={() => {
+            async function refreshProfiles() {
+              setLoadingProfiles(true);
+              try {
+                const profiles = await filterService.listProfiles();
+                setFilterProfiles(profiles);
+                const active = await filterService.loadActiveProfile();
+                setActiveFilterProfile(active);
+                fetchData();
+              } catch (err) {
+                console.error('Error refreshing profiles:', err);
+              } finally {
+                setLoadingProfiles(false);
+              }
+            }
+            refreshProfiles();
+          }}
+          className="ml-2 p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
+          title="Refresh profiles"
+          disabled={loadingProfiles}
+        >
+          <RefreshCcw className="h-5 w-5" />
+        </button>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
