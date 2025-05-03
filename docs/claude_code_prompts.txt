@@ -1,32 +1,91 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
+ai_processing_attempts                        | 0
+app_state                                     | 0
+audio_processing_configs                      | 0
+audio_processing_stages                       | 0
+audio_processor_steps                         | 0
+audio_segments                                | 0
+documentation_relations                       | 0
+favorite_commands                             | 0
+google_auth_tokens                            | 0
+page_dependencies                             | 0
+page_function_usage                           | 0
+page_table_usage                              | 0
+presentation_collection_items                 | 0
+presentation_collections                      | 0
+presentation_relationships                    | 0
+presentation_search_index                     | 0
+presentation_tag_links                        | 0
+presentation_tags                             | 0
+presentation_theme_links                      | 0
+presentation_themes                           | 0
+processing_templates                          | 0
+prompt_relationships_backup_20250309_205247   | 0
+prompt_usage                                  | 0
+speaker_profiles                              | 0
+sql_query_tag_mappings                        | 0
+sql_query_tags                                | 0
+sync_history                                  | 0
+sync_statistics                               | 0
+temp_sources                                  | 0
+transcription_feedback                        | 0
+user_annotations                              | 0
 
 
-⏺ Perfect! The script is working correctly and handles both initial population and subsequent
-  synchronization correctly. The following key points have been addressed:
 
-  1. Follows CLAUDE.md requirements:
-    - Uses the singleton pattern for Supabase client
-    - No mock/simulated data
-    - Proper error handling and validation
-    - Proper command integration with tracking
-  2. Created a complete mime_types table:
-    - Follows UUID standards for the primary key
-    - Categorizes MIME types (Document, Presentation, Image, etc.)
-    - Flags which MIME types are supported for processing
-    - Maps extensions to MIME types
-  3. Provides useful statistics:
-    - Top MIME types by usage count
-    - Breakdown by category
-    - Only adds new MIME types not already in the table
-  4. Integration with CLI pipeline:
-    - Proper shell script wrapper
-    - Environment variable handling
-    - Command tracking integration
-    - Dry-run option for testing
+Anderson ? there is Paul and sommer
+620fd537-90d6-42f7-b453-5b5fdab669cb  Sommer
 
-  This implementation will be very useful for tracking new MIME types that show up in the
-  system over time and understanding your file type distribution.
+
+
+multiple
+d2352365-3403-49af-9dcf-f9c6e287e2df   Aria, Carter, Patterson      NOT NUSED   DELETED
+
+89fd1b29-b17c-4c09-938e-931ef0043300  Carter Clawson Hanscom      NOT USED      DELETE
+704b4c19-1fdc-4717-b777-0bf5f8d702d7  Carter, Clawson             NOT USED      DEELTED
+d2b8d726-e05c-40fe-a73d-916b9af9eda9  Carter, Horn                NOT USED    DEELTED
+
+a25fadde-142a-4374-a6a8-5e0462316efe  Eagle Armster               NOT USED    DELETED
+
+58663fc0-29e0-47da-97a8-b6ca603b9f88  Hanscom, Clawson             NOT USED   DELETED
+b3c35594-671b-4ebf-bcea-024d6a93c8fa  Horn, Carter                 NOT USED   DELETED
+
+1b7bb714-8a64-4d92-bd10-1c451de5581f   Kovacic, Porges            USED
+add Katza Kovacic, Stephen Porges         
+
+
+f9eb0dd8-686f-4310-b27c-4ca7e8b089bd  Porges, Clawson             USED     switched to porges       
+
+
+
+aeb2c561-2036-41a3-b824-91bdffd98096  Porges, Lederman            NOT USED    DELETED
+
+7a051328-4e1a-4aa5-ae27-56a0a34de80f   Naviaux, Clawson         NOT USED      DELETED
+
+1a47b25e-e991-4873-bf0b-b6248ab3c923  Seigel                     USED 
+ded00f85-2c02-4c18-b847-e00c3ca78710  Bernie Siegel              NOT USED      DELETED
+
+
+24b90411-ce2d-49bf-852b-6c467ffd1854  Peper right name        USED
+9a62086d-a52b-4af1-8ce7-afbb6318ef1f  Pepper wrong name       NOT USED    deleted 
+
+
+4f666f14-d8cf-4275-8485-c916970bace9   Kjaervik   RIGHT SPELLING    NOT USED    DELETED
+f948c2b9-e183-4119-ab6d-14dde1d8ec4f  Kjearvik  BAD SPELLIN         USED 
+
+
+
+0188ba75-dab0-4dc8-a33e-9e8add3537f6   Richard Gervitz        NOT USED  DELETED
+492ae25d-8704-42b7-aa3c-36c61d19744c  Richard Gevirtz       USED
+
+
+
+add Jane Valentine
+add Paul Anderson
+
+
+f7958109-626e-4ee0-bf9f-0bedbbf5b06f   Vagus Nerve 
 
 
 Abandoning deletion operation to prevent accidentally marking existing files as deleted.

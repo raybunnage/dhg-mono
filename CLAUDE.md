@@ -938,3 +938,256 @@ This is essential to understand when working with recursive searching in the sou
 
 When implementing recursive folder traversal or searching operations, always use the drive_id and parent_folder_id fields to navigate the hierarchy, not the Supabase UUIDs.
 
+## Commander.js CLI Troubleshooting Guide
+
+When implementing CLI commands with commander.js, be aware of these common issues and solutions:
+
+### 1. Shell Script Argument Handling
+
+**Issue**: Arguments with spaces in shell scripts get split incorrectly when passed to TypeScript commands.
+
+**Solution**: Properly quote arguments in shell wrapper scripts:
+```bash
+create_profile() {
+  # Properly quote arguments to prevent word splitting
+  ARGS=""
+  for ARG in "$@"; do
+    ARGS="$ARGS \"$ARG\""
+  done
+  track_command "create-profile" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/commands/create-profile.ts $ARGS"
+}
+```
+
+### 2. Option Parameter Naming
+
+**Issue**: Commander.js option parameter names must match the corresponding interface property names.
+
+**Correct**:
+```typescript
+interface CommandOptions {
+  name: string;  // This property name must match
+}
+
+command
+  .option('-n, --name <name>', 'Name parameter')  // <name> matches property name
+```
+
+**Incorrect**:
+```typescript
+interface CommandOptions {
+  name: string;  // Mismatch between property and parameter
+}
+
+command
+  .option('-n, --name <n>', 'Name parameter')  // <n> doesn't match property name
+```
+
+### 3. Module Compatibility Issues
+
+**Issue**: ES modules vs CommonJS conflicts with libraries like chalk.
+
+**Solution**: Use require() syntax for problematic dependencies in CommonJS modules:
+```typescript
+// Use this approach for compatibility
+const chalk = require('chalk');
+
+// Instead of ES module syntax that might cause errors
+// import chalk from 'chalk';
+```
+
+### 4. Profile Activation Settings
+
+**Issue**: Profile activation state is controlled by the `is_active` flag.
+
+**Usage**:
+- Set `-a, --active` flag during creation to make a profile active immediately
+- Only one profile should be active at a time (used by filtering functions)
+- Without this flag, profiles are created with `is_active: false`
+- Use the `set-active-profile` command to change which profile is active
+
+## CLI Integration Troubleshooting
+
+Troubleshooting integration issues in CLI commands is crucial for a smooth user experience. The following issues and solutions address common challenges:
+
+### 1. Shell Script Argument Handling with Spaces
+
+**Issue**: Arguments with spaces passed through shell scripts get split incorrectly, causing command failures.
+
+**Solution**: Properly quote arguments in shell wrapper functions:
+```bash
+command_function() {
+  # Properly handle arguments with spaces
+  ARGS=""
+  for ARG in "$@"; do
+    ARGS="$ARGS \"$ARG\""
+  done
+  track_command "command-name" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/command-file.ts $ARGS"
+}
+```
+
+### 2. Module Compatibility Issues
+
+**Issue**: ES modules vs CommonJS conflicts with libraries like chalk cause TypeScript compilation errors.
+
+**Solution**: Use require() syntax consistently, especially for problematic dependencies in CommonJS modules:
+```typescript
+// Use this approach for compatibility
+const chalk = require('chalk');
+
+// Instead of ES module imports that might cause errors
+// import chalk from 'chalk';
+```
+
+### 3. Command Output Visibility
+
+**Issue**: Console output from commands is swallowed by tracking middleware or subprocess execution.
+
+**Solution**: 
+1. Ensure command tracking passes through stdout and stderr:
+```bash
+track_command() {
+  # Explicitly pass through stdout/stderr with 2>&1
+  npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command" 2>&1
+}
+```
+
+2. Use process.stdout.write for critical output:
+```typescript
+process.stdout.write('Critical message that must be seen\n');
+```
+
+### 4. TypeScript Type Safety in Commander.js
+
+**Issue**: Type errors with Commander.js option parsing and action handlers.
+
+**Solution**: Create explicit interfaces for command options and use them in action handlers:
+```typescript
+interface CommandOptions {
+  name: string;  // Required option
+  verbose?: boolean;  // Optional flag
+  count?: number;  // Optional with value
+}
+
+command
+  .option('-n, --name <name>', 'Name parameter (required)')
+  .option('-v, --verbose', 'Verbose output')
+  .option('-c, --count <number>', 'Count parameter')
+  .action((options: CommandOptions) => {
+    // Safely access options with proper typing
+    if (!options.name) {
+      console.error('Name is required');
+      process.exit(1);
+    }
+  });
+```
+
+### 5. Running Commands Directly During Development
+
+**Issue**: CLI command wrappers can make debugging difficult during development.
+
+**Solution**: Enable direct execution of command files with proper shebang and executable permissions:
+```typescript
+#!/usr/bin/env ts-node
+// Command implementation
+
+// Run the command if this script is executed directly
+if (require.main === module) {
+  command.parse(process.argv);
+}
+
+export default command;
+```
+
+Then make the file executable and run it directly:
+```bash
+chmod +x ./scripts/cli-pipeline/domain/commands/command-file.ts
+./scripts/cli-pipeline/domain/commands/command-file.ts --option value
+```
+
+## CLI Pipeline Development Best Practices
+
+When developing new CLI pipelines, follow these practices to avoid common pitfalls and ensure smooth functionality:
+
+### CLI Command Debugging Process
+
+1. **Incremental Testing**:
+   - Test each command file individually before integrating into CLI wrappers
+   - Create a direct execution version for quicker testing cycles
+   - Focus on core functionality first, then add option parsing and validation
+
+2. **Debug Logging Strategy**:
+   - Add explicit debug statements with process-level information (e.g., "Starting profile creation...")
+   - Show parameter values to verify what is being received (e.g., "Creating profile with options:", options)
+   - Log each critical step of the process (e.g., "Deactivating other profiles", "Activating selected profile")
+   - Provide clear success indicators (e.g., "✅ Profile set as active")
+
+3. **Command Chain Testing**:
+   - Test related commands together to verify state changes (e.g., create, list, set-active, get-active)
+   - Verify database state after each operation to confirm changes were applied correctly
+   - Ensure complementary operations (e.g., activate/deactivate) correctly maintain constraints
+
+### Integration Checklist for New CLI Commands
+
+1. **Standalone Command File Development**:
+   - Create the TypeScript command file with proper imports and error handling
+   - Add detailed interface for command options with all possible parameters
+   - Implement thorough validation for parameters and fail fast with helpful messages
+   - Use direct database interactions rather than additional service layers when debugging
+
+2. **Executable Direct Version**:
+   - Create a simplified direct version of the command for testing without CLI wrapper overhead
+   - Add shebang line `#!/usr/bin/env ts-node` and make executable with `chmod +x`
+   - Include main block that runs when invoked directly: `if (require.main === module)`
+   - Implement simplified argument parsing for direct execution when needed
+
+3. **CLI Wrapper Integration**:
+   - Add command to drive-filter-cli.sh with proper argument quoting
+   - Update track_command call to pass stdout/stderr through with `2>&1`
+   - Register command in cli.ts using program.addCommand()
+   - Add help text in shell script's show_help function
+
+4. **Cross-Command Verification**:
+   - Use existing commands (like list-profiles) to verify the effects of new commands
+   - Create complementary "get" commands for every "set" command
+   - Ensure all commands properly handle edge cases and errors
+
+### Command Design Patterns
+
+1. **Subcommand Naming Conventions**:
+   - Use verb-noun format for commands (e.g., create-profile, list-profiles, set-active-profile)
+   - Use consistent flag naming across commands (e.g., -n/--name, -d/--description)
+   - Provide short and long option forms for common parameters
+   - Clearly indicate required vs optional parameters in help text
+
+2. **Output Management**:
+   - Implement multiple output formats (table, JSON, compact)
+   - Include count summary for list operations (e.g., "Total profiles: 2")
+   - Provide identifiers in output messages to correlate actions (e.g., "Profile XYZ set as active")
+   - Offer filtering and sorting options for list commands
+
+3. **Error Handling and Reporting**:
+   - Fail fast with clear error messages when parameters are invalid
+   - Include table/record identifiers in error messages 
+   - Separate user errors vs system errors in reporting
+   - Exit with appropriate code (0 for success, 1 for failure)
+
+### Database Integration Best Practices
+
+1. **State Validation**:
+   - Always verify database state before and after operations
+   - Include a validation step to ensure references (like IDs) are valid before mutations
+   - Implement appropriate constraints in the database (unique columns, NOT NULL, etc.)
+   - Use transactions for multi-step operations that need to be atomic
+
+2. **Active Record Pattern**:
+   - For fields like is_active where only one record should be true at a time:
+      - Deactivate all records first: `UPDATE table SET is_active = false`
+      - Then activate the specific record: `UPDATE table SET is_active = true WHERE id = ?`
+      - This pattern ensures application-level constraints are maintained
+   
+3. **Record Selection Best Practices**:
+   - Support selection by both ID and name for flexibility
+   - For name-based lookups, include exact match validation
+   - Always include error handling for "not found" cases
+   - Return the updated record with `.select()` after mutations to confirm changes
+

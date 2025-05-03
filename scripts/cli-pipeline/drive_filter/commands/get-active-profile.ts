@@ -1,57 +1,76 @@
+#!/usr/bin/env ts-node
 import { Command } from 'commander';
-import { filterService } from '../../../../packages/shared/services/filter-service';
-import chalk from 'chalk';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 const command = new Command('get-active-profile');
+
+interface FilterProfile {
+  id: string;
+  name: string;
+  description?: string;
+  is_active: boolean;
+  created_at?: string;
+}
 
 command
   .description('Get the currently active filter profile')
   .option('--json', 'Output as JSON')
-  .action(async (options) => {
+  .option('--id-only', 'Output only the profile ID')
+  .option('--name-only', 'Output only the profile name')
+  .action(async (options: { json?: boolean, idOnly?: boolean, nameOnly?: boolean }) => {
     try {
-      const profile = await filterService.loadActiveProfile();
+      const supabase = SupabaseClientService.getInstance().getClient();
+      const { data, error } = await supabase
+        .from('user_filter_profiles')
+        .select('*')
+        .eq('is_active', true)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No active profile found (not a real error)
+          console.log('No active profile set');
+          process.exit(0);
+        } else {
+          console.error('Error getting active profile:', error);
+          process.exit(1);
+        }
+      }
+      
+      const profile = data as FilterProfile;
       
       if (!profile) {
-        console.log(chalk.yellow('⚠️ No active filter profile set'));
-        return;
+        console.log('No active profile set');
+        process.exit(0);
       }
-      
-      // If JSON output is requested
+
+      // Different output formats
       if (options.json) {
         console.log(JSON.stringify(profile, null, 2));
-        return;
-      }
-      
-      // Print profile details in a nice format
-      console.log(chalk.green('Active Filter Profile:'));
-      console.log(chalk.cyan('ID:          ') + profile.id);
-      console.log(chalk.cyan('Name:        ') + profile.name);
-      
-      if (profile.description) {
-        console.log(chalk.cyan('Description: ') + profile.description);
-      }
-      
-      console.log(chalk.cyan('Created At:  ') + profile.created_at);
-      console.log(chalk.cyan('Updated At:  ') + profile.updated_at);
-      
-      // Show filter criteria if defined
-      if (profile.filter_criteria && Object.keys(profile.filter_criteria).length > 0) {
-        console.log(chalk.cyan('\nFilter Criteria:'));
-        
-        for (const [key, value] of Object.entries(profile.filter_criteria)) {
-          if (Array.isArray(value) && value.length > 0) {
-            console.log(chalk.cyan(`  ${key}: `) + value.join(', '));
-          } else if (typeof value === 'object' && value !== null) {
-            console.log(chalk.cyan(`  ${key}: `) + JSON.stringify(value, null, 2));
-          }
-        }
+      } else if (options.idOnly) {
+        console.log(profile.id);
+      } else if (options.nameOnly) {
+        console.log(profile.name);
       } else {
-        console.log(chalk.yellow('\nNo filter criteria defined'));
+        console.log('Active Filter Profile:');
+        console.log('ID:          ' + profile.id);
+        console.log('Name:        ' + profile.name);
+        
+        if (profile.description) {
+          console.log('Description: ' + profile.description);
+        }
+        
+        console.log('Created At:  ' + new Date(profile.created_at || '').toLocaleString());
       }
     } catch (error) {
-      console.error(chalk.red('Error getting active profile:'), error);
+      console.error('Error getting active profile:', error);
       process.exit(1);
     }
   });
+
+// Run the command if this script is executed directly
+if (require.main === module) {
+  command.parse(process.argv);
+}
 
 export default command;

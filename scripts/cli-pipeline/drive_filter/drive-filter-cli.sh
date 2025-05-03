@@ -20,7 +20,8 @@ track_command() {
   
   local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    # Run command through tracking service but allow console output to be seen
+    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command" 2>&1
   else
     echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"
@@ -51,7 +52,12 @@ show_help() {
 
 # Command handlers
 create_profile() {
-  track_command "create-profile" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/commands/create-profile.ts $@"
+  # Properly quote arguments to prevent word splitting
+  ARGS=""
+  for ARG in "$@"; do
+    ARGS="$ARGS \"$ARG\""
+  done
+  track_command "create-profile" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/commands/create-profile.ts $ARGS"
 }
 
 update_profile() {
