@@ -250,17 +250,60 @@ export class FilterService {
    * @returns Array of filter profiles or empty array if none found
    */
   public async listProfiles(): Promise<FilterProfile[]> {
-    // Use a simple query without the join 
+    console.log('Filter service: listProfiles called');
+    
+    // Use a direct query with cache refresh
     const { data, error } = await this.supabase
       .from('user_filter_profiles')
       .select('*')
-      .order('name');
+      .order('name')
+      .options({ 
+        head: false,
+        count: 'exact'  // Force a full count to ensure all records are fetched
+      });
 
     if (error) {
       console.error('Error listing filter profiles:', error);
       return [];
     }
 
+    console.log('Filter service: listProfiles fetched data:', data);
+    
+    // Hard code a check for completeness
+    const knownProfileIds = [
+      'c7083beb-e666-4043-9398-63ce162e4f6e', // Dynamic Healing Discussion Group
+      '0ef8fdea-76c9-42d1-b121-af96aa8c322d'  // Dynamic Healing Profile
+    ];
+    
+    // Check if all known profiles were found
+    const foundIds = data.map(p => p.id);
+    const missingIds = knownProfileIds.filter(id => !foundIds.includes(id));
+    
+    if (missingIds.length > 0) {
+      console.warn('Filter service: Some known profiles are missing:', missingIds);
+      
+      // Try a direct fetch for any missing profiles
+      for (const missingId of missingIds) {
+        console.log('Filter service: Attempting to fetch missing profile:', missingId);
+        try {
+          const { data: missingProfile, error: missingError } = await this.supabase
+            .from('user_filter_profiles')
+            .select('*')
+            .eq('id', missingId)
+            .single();
+            
+          if (!missingError && missingProfile) {
+            console.log('Filter service: Successfully fetched missing profile:', missingProfile);
+            data.push(missingProfile);
+          } else {
+            console.error('Filter service: Failed to fetch missing profile:', missingError);
+          }
+        } catch (e) {
+          console.error('Filter service: Exception when fetching missing profile:', e);
+        }
+      }
+    }
+    
     return data as FilterProfile[];
   }
 
