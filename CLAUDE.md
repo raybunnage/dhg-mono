@@ -5,6 +5,7 @@
 - `converterService` - Use for file conversions and format transformations (packages/shared/services/converter-service)
 - `documentClassificationService` - Use for classifying document content with Claude AI (packages/shared/services/document-classification-service)
 - `pdfProcessorService` - Use for processing and extracting text from PDF files (packages/shared/services/pdf-processor-service)
+- `filterService` - Use for applying consistent filters to database queries (packages/shared/services/filter-service)
 - Health check tools available: `./scripts/cli-pipeline/maintenance-cli.sh health-check`
 
 ⚠️ **CRITICAL: CODE REVIEW CHECKLIST**

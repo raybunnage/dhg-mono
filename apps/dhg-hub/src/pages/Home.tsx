@@ -1327,19 +1327,21 @@ export function Home() {
         </div>
       )}
     
-      {/* Debug Link - Inconspicuous */}
+      {/* Root drive dropdown */}
       <div className="mb-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Presentations</h1>
-        <a 
-          href="#" 
-          onClick={(e) => {
-            e.preventDefault();
-            openDebugExpert();
-          }}
-          className="text-xs text-gray-400 hover:text-blue-500"
-        >
-          [debug expert metadata]
-        </a>
+        <div className="flex items-center">
+          <select 
+            className="px-4 py-3 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-lg font-semibold"
+            onChange={(e) => {
+              // Find presentations with this drive ID
+              const driveId = e.target.value;
+              // If future code needs to filter by this drive ID, it would go here
+            }}
+            defaultValue="1wriOM2j2IglnMcejplqG_XcCxSIfoRMV"
+          >
+            <option value="1wriOM2j2IglnMcejplqG_XcCxSIfoRMV">Dynamic Healing Discussion Group</option>
+          </select>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -1461,6 +1463,37 @@ export function Home() {
           <div className="bg-white rounded-lg shadow p-4">
             <h2 className="text-lg font-medium text-gray-900 mb-3">Filter by Subject</h2>
             <div className="flex flex-wrap gap-2">
+              {/* "All" pill as the first item */}
+              <div className="relative group">
+                <button
+                  onClick={() => setSelectedSubjects([])}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                    selectedSubjects.length === 0
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  }`}
+                  title={`All presentations (${presentations.length})`}
+                >
+                  All
+                </button>
+                
+                {/* Custom Tooltip for All pill */}
+                <div className="absolute z-10 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white p-2 rounded shadow-lg mt-2 min-w-[200px] max-w-xs text-left text-xs">
+                  <div className="font-semibold text-white mb-1">
+                    All Presentations
+                  </div>
+                  <div className="text-gray-300 mb-1">{presentations.length} presentations</div>
+                  
+                  {/* Add a hint about clicking */}
+                  <div className="mt-1 pt-1 border-t border-gray-600 italic text-gray-400">
+                    Click to show all presentations
+                  </div>
+                  
+                  {/* Tooltip arrow */}
+                  <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+                </div>
+              </div>
+              
               {subjectClassifications
                 .map((subject) => {
                   // Count how many videos have this subject tag
@@ -1530,7 +1563,9 @@ export function Home() {
 
           {/* Presentations List */}
           <div className="bg-white rounded-lg shadow p-4">
-            <h2 className="text-lg font-medium text-gray-900 mb-3">Presentations</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-3">
+              {filteredPresentations.length > 0 ? `${filteredPresentations.length} ` : ""}Presentations
+            </h2>
             {loading ? (
               <div className="flex flex-col items-center justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>

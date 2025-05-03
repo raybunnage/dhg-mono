@@ -523,7 +523,6 @@ export type Database = {
           id: string
           is_ai_generated: boolean
           legacy_document_type_id: number | null
-          mime_type: string | null
           required_fields: Json | null
           updated_at: string
           validation_rules: Json | null
@@ -542,7 +541,6 @@ export type Database = {
           id?: string
           is_ai_generated?: boolean
           legacy_document_type_id?: number | null
-          mime_type?: string | null
           required_fields?: Json | null
           updated_at?: string
           validation_rules?: Json | null
@@ -561,7 +559,6 @@ export type Database = {
           id?: string
           is_ai_generated?: boolean
           legacy_document_type_id?: number | null
-          mime_type?: string | null
           required_fields?: Json | null
           updated_at?: string
           validation_rules?: Json | null
@@ -2449,6 +2446,42 @@ export type Database = {
           email_address?: string | null
           email_count?: number | null
           id?: string
+        }
+        Relationships: []
+      }
+      mime_types: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          extension: string | null
+          icon: string | null
+          id: string
+          is_supported: boolean | null
+          mime_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          extension?: string | null
+          icon?: string | null
+          id?: string
+          is_supported?: boolean | null
+          mime_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          extension?: string | null
+          icon?: string | null
+          id?: string
+          is_supported?: boolean | null
+          mime_type?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -5207,6 +5240,59 @@ export type Database = {
           timestamp?: number | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_filter_profile_drives: {
+        Row: {
+          id: string
+          include_children: boolean | null
+          profile_id: string | null
+          root_drive_id: string
+        }
+        Insert: {
+          id?: string
+          include_children?: boolean | null
+          profile_id?: string | null
+          root_drive_id: string
+        }
+        Update: {
+          id?: string
+          include_children?: boolean | null
+          profile_id?: string | null
+          root_drive_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_filter_profile_drives_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_filter_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_filter_profiles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
         }
         Relationships: []
       }

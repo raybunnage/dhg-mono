@@ -16,7 +16,6 @@ export interface DocumentTypeAIResponse {
   document_type: string;
   category: string;
   description?: string;
-  mime_type?: string | null;
   file_extension?: string | null;
   required_fields?: Record<string, string>;
   validation_rules?: Record<string, any>;
@@ -122,7 +121,6 @@ export class DocumentTypeAIService {
           "document_type": string, // A concise name for this document type
           "category": string, // One of these categories: "Research", "Communication", "Documentation", "Legal", or create a new appropriate category
           "description": string, // Detailed description of what this document type represents
-          "mime_type": string | null, // Preferred MIME type, or null if not specific
           "file_extension": string | null, // Preferred file extension, or null if not specific
           "is_ai_generated": boolean, // Whether this document type was created via AI
           "required_fields": {
@@ -252,7 +250,6 @@ export class DocumentTypeAIService {
         document_type: docTypeData.document_type,
         description: docTypeData.description || null,
         category: docTypeData.category,
-        mime_type: docTypeData.mime_type || null,
         file_extension: docTypeData.file_extension || null,
         is_ai_generated: true,
         required_fields: docTypeData.required_fields || null,

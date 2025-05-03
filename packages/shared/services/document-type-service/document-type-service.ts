@@ -16,7 +16,6 @@ export interface DocumentType {
   document_type: string;
   category: string;
   description?: string | null;
-  mime_type?: string | null;
   file_extension?: string | null;
   is_ai_generated?: boolean;
   classifier?: 'pdf' | 'powerpoint' | 'docx' | 'expert' | null;
@@ -34,7 +33,6 @@ export interface CreateDocumentTypeParams {
   document_type: string;
   category: string;
   description?: string | null;
-  mime_type?: string | null;
   file_extension?: string | null;
   is_ai_generated?: boolean;
   classifier?: 'pdf' | 'powerpoint' | 'docx' | 'expert' | null;
@@ -194,7 +192,6 @@ export class DocumentTypeService {
         document_type: params.document_type,
         category: params.category,
         description: params.description || null,
-        mime_type: params.mime_type || null,
         file_extension: params.file_extension || null,
         is_ai_generated: params.is_ai_generated || false,
         classifier: params.classifier || null,
@@ -403,42 +400,7 @@ export class DocumentTypeService {
     }
   }
 
-  /**
-   * Get unique MIME types from document types
-   * @returns Array of unique MIME types
-   */
-  public async getUniqueMimeTypes(): Promise<string[]> {
-    try {
-      Logger.debug('Fetching unique document MIME types');
-      const supabase = this.supabaseService.getClient();
-      
-      const { data, error } = await supabase
-        .from('document_types')
-        .select('mime_type')
-        .not('mime_type', 'is', null);
-      
-      if (error) {
-        Logger.error(`Error fetching MIME types: ${error.message}`);
-        throw error;
-      }
-      
-      // Extract unique values
-      const uniqueMimeTypes = Array.from(
-        new Set(data?.map(item => item.mime_type) || [])
-      ).filter(Boolean).sort();
-      
-      Logger.debug(`Retrieved ${uniqueMimeTypes.length} unique MIME types`);
-      return uniqueMimeTypes;
-    } catch (error) {
-      Logger.error(`Exception in getUniqueMimeTypes: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      // Return default MIME types as fallback
-      return [
-        "application/pdf", 
-        "text/plain", 
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      ];
-    }
-  }
+  // Method getUniqueMimeTypes removed as mime_type field is no longer in document_types table
   
   /**
    * Get statistics about document types and their usage

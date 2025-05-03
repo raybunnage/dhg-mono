@@ -10,3 +10,4 @@ export * from "./formatter-service"; // Formatter service for consistent formatt
 export * from "./converter-service"; // Converter service for file and format conversions
 export * from "./document-classification-service"; // Document classification service for content classification
 export * from "./pdf-processor-service"; // PDF processor service for PDF file handling
+export * from "./filter-service"; // Filter service for query filtering
