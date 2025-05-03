@@ -200,26 +200,10 @@ export function Home() {
       try {
         // Fetch all available profiles
         const profiles = await filterService.listProfiles();
-        console.log('DEBUG: Profiles fetched from service:', JSON.stringify(profiles, null, 2));
-        
-        // Log each profile individually for clarity
-        if (profiles && profiles.length > 0) {
-          profiles.forEach((profile, index) => {
-            console.log(`DEBUG: Profile ${index}:`, {
-              id: profile.id,
-              name: profile.name,
-              is_active: profile.is_active,
-              description: profile.description
-            });
-          });
-        }
-        
-        // Create a new array to ensure React detects the state change
-        setFilterProfiles([...profiles]);
+        setFilterProfiles(profiles);
         
         // Then get the active profile
         const active = await filterService.loadActiveProfile();
-        console.log('DEBUG: Active profile:', active);
         setActiveFilterProfile(active);
       } catch (err) {
         console.error('Error fetching filter profiles:', err);
@@ -230,12 +214,6 @@ export function Home() {
     
     fetchFilterProfiles();
   }, []);
-  
-  // Monitor filterProfiles state changes
-  useEffect(() => {
-    console.log('DEBUG: filterProfiles state changed:', filterProfiles);
-    console.log('DEBUG: filterProfiles length:', filterProfiles.length);
-  }, [filterProfiles]);
 
   // Handler for profile selection change
   const handleProfileSelect = async (profileId: string) => {
@@ -1415,16 +1393,12 @@ export function Home() {
             <option value="" disabled>
               {loadingProfiles ? 'Loading profiles...' : 'Select a filter profile'}
             </option>
-            {console.log('DEBUG: Rendering dropdown with filterProfiles:', filterProfiles)}
             {filterProfiles && filterProfiles.length > 0 ? (
-              filterProfiles.map((profile) => {
-                console.log('DEBUG: Rendering option for profile:', profile.id, profile.name);
-                return (
-                  <option key={profile.id} value={profile.id}>
-                    {profile.name} {profile.is_active ? '(Active)' : ''}
-                  </option>
-                );
-              })
+              filterProfiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name} {profile.is_active ? '(Active)' : ''}
+                </option>
+              ))
             ) : (
               <option value="" disabled>No profiles available</option>
             )}
@@ -1437,17 +1411,10 @@ export function Home() {
             async function refreshProfiles() {
               setLoadingProfiles(true);
               try {
-                console.log('DEBUG: Refreshing profiles...');
                 const profiles = await filterService.listProfiles();
-                console.log('DEBUG: Refresh returned profiles:', profiles);
-                
-                // ⚠️ Important: Immediately use the profiles directly 
-                // rather than relying on state update
-                setFilterProfiles([...profiles]);
-                console.log('DEBUG: Set filterProfiles to:', [...profiles]);
+                setFilterProfiles(profiles);
                 
                 const active = await filterService.loadActiveProfile();
-                console.log('DEBUG: Refresh returned active profile:', active);
                 setActiveFilterProfile(active);
                 fetchData();
               } catch (err) {
