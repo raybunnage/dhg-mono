@@ -90,31 +90,25 @@ export class FilterService {
    * @returns The active profile or null if none is active
    */
   public async loadActiveProfile(): Promise<FilterProfile | null> {
-    // Try to get the active profile from the database
-    const { data, error } = await this.supabase
-      .from('user_filter_profiles')
-      .select('*')
-      .eq('is_active', true)
-      .single();
+    try {
+      // Use the proper Supabase client singleton
+      const { data, error } = await this.supabase
+        .from('user_filter_profiles')
+        .select('*')
+        .eq('is_active', true)
+        .single();
 
-    if (error) {
-      // Return the default active profile
-      const defaultProfile = {
-        id: 'c7083beb-e666-4043-9398-63ce162e4f6e',
-        name: 'Dynamic Healing Discussion Group',
-        description: 'The root drive that contains all the presentations',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        filter_criteria: null
-      };
-      
-      this.activeProfile = defaultProfile as FilterProfile;
+      if (error) {
+        console.error('Error loading active filter profile:', error);
+        return null;
+      }
+
+      this.activeProfile = data as FilterProfile;
       return this.activeProfile;
+    } catch (err) {
+      console.error('Unexpected error in loadActiveProfile:', err);
+      return null;
     }
-
-    this.activeProfile = data as FilterProfile;
-    return this.activeProfile;
   }
 
   /**
@@ -262,38 +256,23 @@ export class FilterService {
    * @returns Array of filter profiles or empty array if none found
    */
   public async listProfiles(): Promise<FilterProfile[]> {
-    // Simple direct query with no options that might cause errors
-    const { data, error } = await this.supabase
-      .from('user_filter_profiles')
-      .select('*')
-      .order('name');
+    try {
+      // Use the proper Supabase client singleton with a simple query
+      const { data, error } = await this.supabase
+        .from('user_filter_profiles')
+        .select('*')
+        .order('name');
 
-    if (error) {
-      console.error('Error listing filter profiles:', error);
+      if (error) {
+        console.error('Error listing filter profiles:', error);
+        return [];
+      }
+      
+      return data as FilterProfile[];
+    } catch (err) {
+      console.error('Unexpected error in listProfiles:', err);
       return [];
     }
-    
-    // Return the hardcoded profiles to ensure we have both
-    return [
-      {
-        id: 'c7083beb-e666-4043-9398-63ce162e4f6e',
-        name: 'Dynamic Healing Discussion Group',
-        description: 'The root drive that contains all the presentations',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        filter_criteria: null
-      },
-      {
-        id: '0ef8fdea-76c9-42d1-b121-af96aa8c322d',
-        name: 'Dynamic Healing Profile',
-        description: 'Main profile for DHG',
-        is_active: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        filter_criteria: null
-      }
-    ];
   }
 
   /**
