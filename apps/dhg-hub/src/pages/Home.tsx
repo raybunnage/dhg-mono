@@ -200,13 +200,70 @@ export function Home() {
       try {
         // Fetch all available profiles
         const profiles = await filterService.listProfiles();
-        setFilterProfiles(profiles);
         
-        // Then get the active profile
-        const active = await filterService.loadActiveProfile();
-        setActiveFilterProfile(active);
+        // Use a fallback if no profiles are returned
+        if (!profiles || profiles.length === 0) {
+          console.warn('No filter profiles returned, using fallback profiles');
+          // Set default fallback profiles to prevent app crash
+          setFilterProfiles([
+            {
+              id: 'c7083beb-e666-4043-9398-63ce162e4f6e',
+              name: 'Dynamic Healing Discussion Group',
+              description: 'The root drive that contains all the presentations',
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            },
+            {
+              id: '0ef8fdea-76c9-42d1-b121-af96aa8c322d',
+              name: 'Dynamic Healing Profile',
+              description: 'Main profile for DHG',
+              is_active: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          ]);
+        } else {
+          setFilterProfiles(profiles);
+        }
+        
+        // Try to get the active profile
+        try {
+          const active = await filterService.loadActiveProfile();
+          // If no active profile is found, use the first profile as active
+          if (!active && profiles && profiles.length > 0) {
+            setActiveFilterProfile(profiles[0]);
+          } else {
+            setActiveFilterProfile(active);
+          }
+        } catch (activeError) {
+          console.error('Error loading active profile:', activeError);
+          // Use first profile as fallback if available
+          if (profiles && profiles.length > 0) {
+            setActiveFilterProfile(profiles[0]);
+          }
+        }
       } catch (err) {
         console.error('Error fetching filter profiles:', err);
+        // Set default fallback profiles to prevent app crash
+        setFilterProfiles([
+          {
+            id: 'c7083beb-e666-4043-9398-63ce162e4f6e',
+            name: 'Dynamic Healing Discussion Group',
+            description: 'The root drive that contains all the presentations',
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ]);
+        setActiveFilterProfile({
+          id: 'c7083beb-e666-4043-9398-63ce162e4f6e',
+          name: 'Dynamic Healing Discussion Group',
+          description: 'The root drive that contains all the presentations',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
       } finally {
         setLoadingProfiles(false);
       }
@@ -1411,11 +1468,53 @@ export function Home() {
             async function refreshProfiles() {
               setLoadingProfiles(true);
               try {
+                // Fetch all available profiles
                 const profiles = await filterService.listProfiles();
-                setFilterProfiles(profiles);
                 
-                const active = await filterService.loadActiveProfile();
-                setActiveFilterProfile(active);
+                // Use a fallback if no profiles are returned
+                if (!profiles || profiles.length === 0) {
+                  console.warn('No filter profiles returned on refresh, using fallback profiles');
+                  // Set default fallback profiles to prevent app crash
+                  setFilterProfiles([
+                    {
+                      id: 'c7083beb-e666-4043-9398-63ce162e4f6e',
+                      name: 'Dynamic Healing Discussion Group',
+                      description: 'The root drive that contains all the presentations',
+                      is_active: true,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString()
+                    },
+                    {
+                      id: '0ef8fdea-76c9-42d1-b121-af96aa8c322d',
+                      name: 'Dynamic Healing Profile',
+                      description: 'Main profile for DHG',
+                      is_active: false,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString()
+                    }
+                  ]);
+                } else {
+                  setFilterProfiles(profiles);
+                }
+                
+                // Try to get the active profile
+                try {
+                  const active = await filterService.loadActiveProfile();
+                  // If no active profile is found, use the first profile as active
+                  if (!active && profiles && profiles.length > 0) {
+                    setActiveFilterProfile(profiles[0]);
+                  } else {
+                    setActiveFilterProfile(active);
+                  }
+                } catch (activeError) {
+                  console.error('Error loading active profile on refresh:', activeError);
+                  // Use first profile as fallback if available
+                  if (profiles && profiles.length > 0) {
+                    setActiveFilterProfile(profiles[0]);
+                  }
+                }
+                
+                // Refresh the presentation data
                 fetchData();
               } catch (err) {
                 console.error('Error refreshing profiles:', err);
