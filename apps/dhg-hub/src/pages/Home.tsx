@@ -193,13 +193,37 @@ export function Home() {
   const [assetSectionOpen, setAssetSectionOpen] = useState<boolean>(true);
   const [assetViewMode, setAssetViewMode] = useState<boolean>(false);
 
+  // Debug function to check the database directly
+  async function debugCheckFilterProfiles() {
+    try {
+      // Direct database query to check what profiles exist
+      const { data, error } = await supabase
+        .from('user_filter_profiles')
+        .select('*');
+        
+      console.log('Debug: Direct database check for profiles');
+      console.log('Results:', data);
+      console.log('Error:', error);
+      
+      return data;
+    } catch (err) {
+      console.error('Error in debug check:', err);
+      return null;
+    }
+  }
+  
   // Fetch filter profiles
   useEffect(() => {
     async function fetchFilterProfiles() {
       setLoadingProfiles(true);
       try {
+        // Debug check first
+        const directProfiles = await debugCheckFilterProfiles();
+        console.log('Direct database check found', directProfiles?.length || 0, 'profiles');
+        
         // Fetch all available profiles
         const profiles = await filterService.listProfiles();
+        console.log('Filter service returned', profiles.length, 'profiles');
         setFilterProfiles(profiles);
         
         // Then get the active profile
@@ -1407,8 +1431,16 @@ export function Home() {
             async function refreshProfiles() {
               setLoadingProfiles(true);
               try {
+                // Debug check first
+                const directProfiles = await debugCheckFilterProfiles();
+                console.log('Refresh - Direct database check found', directProfiles?.length || 0, 'profiles');
+                
+                // If we found profiles directly but filter service doesn't return them,
+                // there might be an issue with the filter service
                 const profiles = await filterService.listProfiles();
+                console.log('Refresh - Filter service returned', profiles.length, 'profiles');
                 setFilterProfiles(profiles);
+                
                 const active = await filterService.loadActiveProfile();
                 setActiveFilterProfile(active);
                 fetchData();

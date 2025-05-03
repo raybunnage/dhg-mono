@@ -252,19 +252,32 @@ export class FilterService {
    * @returns Array of filter profiles or empty array if none found
    */
   public async listProfiles(): Promise<FilterProfile[]> {
-    const { data, error } = await this.supabase
-      .from('user_filter_profiles')
-      .select(`
-        *
-      `)
-      .order('name');
+    try {
+      console.log('FilterService: Fetching filter profiles from database');
+      
+      const { data, error } = await this.supabase
+        .from('user_filter_profiles')
+        .select('*')
+        .order('name');
 
-    if (error) {
-      console.error('Error listing filter profiles:', error);
+      if (error) {
+        console.error('FilterService: Error listing filter profiles:', error);
+        return [];
+      }
+
+      console.log('FilterService: Found', data?.length || 0, 'profiles in database');
+      
+      if (!data || data.length === 0) {
+        console.warn('FilterService: No filter profiles found in database');
+      } else {
+        console.log('FilterService: Profile IDs found:', data.map(p => p.id).join(', '));
+      }
+      
+      return data as FilterProfile[];
+    } catch (err) {
+      console.error('FilterService: Unexpected error in listProfiles:', err);
       return [];
     }
-
-    return data as FilterProfile[];
   }
 
   /**
