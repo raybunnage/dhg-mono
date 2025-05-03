@@ -68,8 +68,7 @@ export class FilterService {
     const { data, error } = await this.supabase
       .from('user_filter_profiles')
       .select(`
-        *,
-        user_filter_profile_drives(drive_id)
+        *
       `)
       .eq('id', profileId)
       .single();
@@ -94,8 +93,7 @@ export class FilterService {
     const { data, error } = await this.supabase
       .from('user_filter_profiles')
       .select(`
-        *,
-        user_filter_profile_drives(drive_id)
+        *
       `)
       .eq('is_active', true)
       .single();
@@ -257,8 +255,7 @@ export class FilterService {
     const { data, error } = await this.supabase
       .from('user_filter_profiles')
       .select(`
-        *,
-        user_filter_profile_drives(drive_id)
+        *
       `)
       .order('name');
 
