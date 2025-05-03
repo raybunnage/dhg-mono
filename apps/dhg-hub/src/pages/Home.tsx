@@ -193,7 +193,7 @@ export function Home() {
   const [assetSectionOpen, setAssetSectionOpen] = useState<boolean>(true);
   const [assetViewMode, setAssetViewMode] = useState<boolean>(false);
 
-  // Debug function to check the database directly
+  // Debug function to check the database directly for filter profiles
   async function debugCheckFilterProfiles() {
     try {
       // Direct database query to check what profiles exist
