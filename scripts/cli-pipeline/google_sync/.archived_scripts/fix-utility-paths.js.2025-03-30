@@ -1,0 +1,54 @@
+#!/usr/bin/env node
+/**
+ * Fix utility script paths
+ * 
+ * This script finds and replaces all import and file path references 
+ * in the utility TypeScript files to make them compatible with 
+ * their new location in the Google Drive CLI pipeline
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const UTILITY_DIR = path.resolve(__dirname, 'ts/utility');
+const FILES = fs.readdirSync(UTILITY_DIR)
+  .filter(file => file.endsWith('.ts'))
+  .map(file => path.join(UTILITY_DIR, file));
+
+const REPLACEMENTS = [
+  // Import paths
+  { from: 'from "../supabase/types"', to: 'from "../../../../../../supabase/types"' },
+  { from: 'from "../packages/shared', to: 'from "../../../../../../packages/shared' },
+  { from: 'import type { Database } from "../supabase/types"', to: 'import type { Database } from "../../../../../../supabase/types"' },
+  { from: 'import { defaultGoogleAuth } from "../packages/shared/services/google-drive"', to: 'import { defaultGoogleAuth } from "../../../../../../packages/shared/services/google-drive"' },
+  
+  // Config paths
+  { from: 'path.resolve(__dirname, "../.env', to: 'path.resolve(__dirname, "../../../../../../.env' },
+  { from: 'path.resolve(__dirname, "../.service-account.json")', to: 'path.resolve(__dirname, "../../../../../../.service-account.json")' },
+];
+
+// Process each file
+FILES.forEach(file => {
+  console.log(`Processing ${path.basename(file)}...`);
+  
+  let content = fs.readFileSync(file, 'utf8');
+  let hasChanges = false;
+  
+  // Apply all replacements
+  REPLACEMENTS.forEach(({ from, to }) => {
+    if (content.includes(from)) {
+      content = content.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), to);
+      hasChanges = true;
+    }
+  });
+  
+  // Save changes
+  if (hasChanges) {
+    fs.writeFileSync(file, content);
+    console.log(`  ✅ Updated paths in ${path.basename(file)}`);
+  } else {
+    console.log(`  ⚠️ No changes needed in ${path.basename(file)}`);
+  }
+});
+
+console.log('\nAll files processed. Run TypeScript checks to verify fixes.');

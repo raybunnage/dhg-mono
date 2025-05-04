@@ -1,0 +1,109 @@
+/* Special formatting for research summary */
+.research-summary {
+  white-space: normal;
+  line-height: 1.6;
+  margin: 1rem 0;
+  padding: 1.5rem;
+  background: #1e1e1e;
+  border-radius: 0.5rem;
+  border-left: 4px solid #3b82f6;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 1rem;
+  color: #e0e0e0;
+  text-align: justify;
+}
+
+/* JSON Viewer base styles */
+.json-viewer {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e0e0e0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: 1.5rem;
+  background: #1e1e1e;
+}
+
+/* Markdown container dark theme */
+.markdown-container {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+}
+
+/* Enhance contrast for links in dark mode */
+.prose-invert a {
+  color: #58a6ff !important;
+}
+
+/* Make code blocks stand out in dark mode */
+.prose-invert code {
+  background-color: #2d2d2d;
+  color: #d7ba7d;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+}
+
+/* Code blocks with syntax highlighting */
+.prose-invert pre {
+  background-color: #252526 !important;
+  border: 1px solid #3e3e3e;
+}
+
+/* Headings in dark mode */
+.prose-invert h1, 
+.prose-invert h2, 
+.prose-invert h3, 
+.prose-invert h4, 
+.prose-invert h5, 
+.prose-invert h6 {
+  color: #e0e0e0 !important;
+}
+
+/* Blockquotes in dark mode */
+.prose-invert blockquote {
+  border-left-color: #3e3e3e;
+  color: #b0b0b0;
+}
+
+/* Table styles for dark mode */
+.prose-invert table {
+  border-color: #3e3e3e;
+}
+
+.prose-invert thead {
+  background-color: #252526;
+  color: #e0e0e0;
+}
+
+.prose-invert tbody tr {
+  border-bottom-color: #3e3e3e;
+}
+
+.prose-invert tbody tr:nth-child(even) {
+  background-color: #252526;
+}
+
+/* Keys */
+.json-key {
+  color: #0550ae;
+  font-weight: 600;
+}
+
+/* Strings */
+.json-string {
+  color: #24292e;
+}
+
+/* Numbers */
+.json-number {
+  color: #098658;
+}
+
+/* Arrays and Objects */
+.json-array,
+.json-object {
+  margin-left: 1rem;
+} 

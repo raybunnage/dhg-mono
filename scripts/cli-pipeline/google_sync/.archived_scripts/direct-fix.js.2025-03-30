@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+
+const UTILITY_DIR = path.resolve(__dirname, 'ts/utility');
+
+console.log(`Processing files in ${UTILITY_DIR}`);
+
+// Process each TypeScript file in the directory
+fs.readdirSync(UTILITY_DIR)
+  .filter(file => file.endsWith('.ts'))
+  .forEach(file => {
+    const filePath = path.join(UTILITY_DIR, file);
+    console.log(`Processing ${file}`);
+
+    // Read file content
+    let content = fs.readFileSync(filePath, 'utf8');
+
+    // Check if the file needs path updating
+    if (content.includes("from '../supabase/types'") || 
+        content.includes("from '../packages/shared")) {
+      // Fix import paths
+      content = content.replace(
+        /from '\.\.\/supabase\/types'/g, 
+        "from '../../../../../../supabase/types'"
+      );
+      
+      content = content.replace(
+        /from '\.\.\/packages\/shared/g, 
+        "from '../../../../../../packages/shared"
+      );
+      
+      // Fix environment paths
+      content = content.replace(
+        /path\.resolve\(__dirname, '\.\.\/\.env/g,
+        "path.resolve(__dirname, '../../../../../../.env"
+      );
+      
+      content = content.replace(
+        /path\.resolve\(__dirname, '\.\.\/\.service-account\.json/g,
+        "path.resolve(__dirname, '../../../../../../.service-account.json"
+      );
+      
+      // Write the updated content back
+      fs.writeFileSync(filePath, content);
+      console.log(`  Fixed paths in ${file}`);
+    } else {
+      console.log(`  No paths to fix in ${file}`);
+    }
+  });
+
+console.log('Done processing files.');

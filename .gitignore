@@ -1,3 +1,13 @@
+# Scripts with secrets
+scripts/reset-sources-google.sh
+scripts/reset-sources-google.sh.example
+scripts/*-local.sh
+scripts/**/*-secrets.sh
+scripts/**/*.secret.*
+scripts/**/*credentials*
+scripts/**/reset-*.sh
+scripts/**/*.example
+
 # Dependencies
 node_modules/
 .pnpm-store/
@@ -14,13 +24,23 @@ out/
 
 # Environment files
 .env
-.env.local
-.env.*.local
-.env.development
-.env.production
-.env.development.local
-.env.production.local
+.env.*
 !.env.example
+**/file_types/google-credentials/
+**/file_types/**/.env*
+**/.env*
+**/.env.*.backup
+**/.env.development*
+**/.env.production*
+**/.env.local*
+**/.env.test*
+**/.env.staging*
+
+**/apps/**/.env*
+**/apps/**/.env.development
+**/apps/**/.env.production
+
+
 
 # Vercel
 .vercel/
@@ -31,6 +51,8 @@ out/
 
 # Backups
 .backups/
+**/backups/
+**/configs/
 
 # Turbo daemon logs
 .turbo/daemon/
@@ -58,9 +80,117 @@ file_types/**/*
 
 # OS specific
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
 # Local Netlify folder
 .netlify
 .netlify/
 **/netlify/
 **/netlify/state.json
+
+# Logs and databases
+*.sqlite
+
+# Sensitive files
+patterns.txt
+
+# API Keys
+*.env.local
+*.env.development
+
+# JWT tokens and API keys
+**/supabase-key*.ts
+**/supabase-key*.js
+**/supabase-key*.json
+**/*credentials*.ts
+**/*credentials*.js
+**/*credentials*.json
+**/*-key*.ts
+**/*-key*.js
+**/*-key*.json
+
+# Python
+.venv*
+__pycache__/
+*.pyc
+.models/
+transcripts/
+
+# Python virtual environment
+scripts/whisper/.venv-whisper/
+
+# Schema temporary files
+supabase/schema-info.tmp.json
+
+# Archive directories
+**/_archive/
+**/._archive/ # Also catch potential typos/variants
+scripts/.archived_scripts/
+scripts/.archived_scripts/**/*
+**/scripts/.archived_scripts/
+scripts/cli-pipeline/.backup_scripts/
+scripts/cli-pipeline/.backup_scripts/**/*
+**/scripts/cli-pipeline/.backup_scripts/
+
+# Ensure all nested backup script folders are caught
+scripts/**/.backup_scripts/
+scripts/**/.backup_scripts/**/*
+
+# Env backups
+.backups/env/
+
+# Comprehensive backup patterns
+.backups/
+**/.backups/
+**/backups/
+**/*.backup
+**/*.bak
+**/*-backup.*
+**/*_backup.*
+
+# Environment backups specifically
+**/.env.*.backup
+**/.env.*.bak
+**/.env-backup*
+**/.env_backup*
+**/env-backups/
+**/.env-archives/
+**/.env.archive.*
+
+# Timestamp-based backup patterns (matching our backup script)
+**/.env.*.[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].backup
+**/dhg-improve-experts.env.*.[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].backup
+
+# Additional safety patterns
+**/*.secret.*
+**/*.sensitive.*
+**/*-secrets.*
+**/*_secrets.*
+script-analysis-results/
+script-analysis-results/**
+document-analysis-results/
+document-analysis-results/**
+
+# Google service account key
+.service-account.json
+**/.service-account.json
+
+# Archive documentation directories
+docs/**/.archive_docs/
+docs/**/.archive_docs/**/*
+docs/**/.archive-docs/
+docs/**/.archive-docs/**/*
+
+# Specific archive paths
+docs/technical-specs/.archive_docs/
+docs/technical-specs/.archive_docs/**/*
+docs/technical-specs/.archive-docs/
+docs/technical-specs/.archive-docs/**/*
+
+logs/
+*.log
+
+# Debug output directories
+**/debug-output/
+scripts/cli-pipeline/**/debug-output/
+scripts/cli-pipeline/presentations/debug-output/

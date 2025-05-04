@@ -1,0 +1,19 @@
+I'll analyze this content for you.
+
+This is a shell command to update a prompt service with a new prompt definition, followed by the prompt content itself. The command is:
+
+```bash
+./scripts/cli-pipeline/prompt_service/prompt-service-cli.sh update --prompt-name "final_video-summary-prompt" --file-path "prompts/final_video-summary-prompt.md"
+```
+
+The prompt being updated is called "final_video-summary-prompt" and it defines an AI task for generating summaries of expert video presentations based on transcripts.
+
+The prompt instructs the AI to:
+1. Create a structured JSON summary of an expert presentation video
+2. Extract key information about the speaker, presentation content, and discussion
+3. Format the output in a specific JSON structure with fields for speaker profile, presentation essence, key takeaways, memorable quotes, discussion highlights, and more
+4. Create an engaging 200-300 word narrative summary that captures the presentation's value
+
+The prompt includes detailed style guidelines for creating summaries that are enthusiastic, specific, and convey the unique value of the presentation while maintaining accurate JSON formatting.
+
+This appears to be part of a system for processing video content and generating structured, informative summaries to help users decide which videos to watch from a collection.

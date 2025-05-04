@@ -1,0 +1,37 @@
+{
+  "name": "experts-cli",
+  "version": "1.0.0",
+  "description": "CLI tool for managing experts and their associations",
+  "main": "experts-cli.sh",
+  "bin": {
+    "experts": "experts-cli.sh"
+  },
+  "scripts": {
+    "start": "bash experts-cli.sh",
+    "dev": "bash experts-cli.sh",
+    "build": "tsc --skipLibCheck",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "commander": "^11.0.0",
+    "dotenv": "^16.3.1",
+    "inquirer": "^8.2.5"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^8.2.6",
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "experts",
+    "associations",
+    "cli"
+  ],
+  "license": "MIT",
+  "type": "commonjs"
+}

@@ -328,6 +328,430 @@
           }
         }
       }
+    },
+    {
+      "type": "SupabaseOperations",
+      "scope": "monorepo",
+      "description": "Safety rules for Supabase operations across all apps",
+      "databaseOperations": {
+        "riskLevels": {
+          "read": "low",
+          "targetedWrite": "medium",
+          "globalWrite": "high",
+          "schemaChanges": "high",
+          "reset": "extreme"
+        },
+        "requirements": [
+          "Always prefer targeted operations over global ones",
+          "Explicitly warn about potential data loss",
+          "Never suggest resets without clear warnings",
+          "Preserve existing working systems",
+          "Provide rollback steps for risky operations",
+          "Default to most conservative approach"
+        ],
+        "monorepoConsiderations": [
+          "Consider impact across all apps using shared database",
+          "Check for cross-app dependencies before modifications",
+          "Document changes that affect multiple apps"
+        ]
+      },
+      "migrations": {
+        "principles": [
+          "Never modify existing remote migrations",
+          "Always check both local and remote state before creating new migrations",
+          "Keep migrations atomic and focused"
+        ],
+        "naming": {
+          "pattern": "YYYYMMDDHHMMSS_descriptive_name.sql",
+          "examples": {
+            "correct": "20250211123001_rename_document_types.sql",
+            "incorrect": "[timestamp]_rename_document_types.sql"
+          },
+          "rules": [
+            "Always use actual timestamps, never placeholders",
+            "Timestamp must be current or future date/time",
+            "Must be after latest existing migration timestamp",
+            "Each migration needs matching _down.sql file",
+            "Timestamps must be unique across all migrations"
+          ]
+        },
+        "stateChecks": {
+          "beforeCreating": [
+            "Run pnpm db:check to see LOCAL vs REMOTE state",
+            "Verify no duplicate timestamps exist locally",
+            "Ensure new timestamp is after latest remote migration"
+          ],
+          "commands": {
+            "checkState": "pnpm db:check",
+            "pullRemote": "pnpm db:pull",
+            "createNew": "pnpm supabase migration new migration_name"
+          }
+        },
+        "troubleshooting": {
+          "checkOutput": {
+            "description": "When db:check shows mismatched LOCAL vs REMOTE:",
+            "steps": [
+              "Remove duplicate local migrations (same timestamp)",
+              "Get missing remote migrations using db:pull",
+              "Ensure new migrations use timestamps after latest remote",
+              "Never modify migrations that exist in REMOTE"
+            ]
+          },
+          "commonIssues": {
+            "duplicateLocal": "Remove duplicate timestamp files",
+            "missingRemote": "Use db:pull to get missing migrations",
+            "outOfSequence": "Use timestamp after latest remote migration"
+          }
+        },
+        "template": {
+          "location": "supabase/templates/migration.sql",
+          "usage": [
+            "Copy template content, don't use placeholder timestamp",
+            "Generate actual timestamp for filename",
+            "Create both up and down migration files"
+          ]
+        }
+      }
+    },
+    {
+      "type": "ProgressiveDevelopment",
+      "description": "Rules for safe, incremental development",
+      "principles": {
+        "preserveExisting": {
+          "requirement": "Always preserve existing working functionality",
+          "steps": [
+            "Document current working features",
+            "Test existing functionality before changes",
+            "Make incremental changes only",
+            "Verify no regression after each change"
+          ]
+        },
+        "changeProcess": {
+          "steps": [
+            "List current working features",
+            "Document proposed changes",
+            "Identify potential impacts",
+            "Make smallest possible change",
+            "Test all existing features",
+            "Only commit when everything works"
+          ]
+        },
+        "regressionPrevention": {
+          "requirements": [
+            "Never remove working code without explicit request",
+            "Keep existing event handlers and state",
+            "Maintain all current UI elements",
+            "Preserve current styling and layout"
+          ]
+        }
+      },
+      "warnings": {
+        "required": true,
+        "checkpoints": [
+          "Are all existing buttons still present?",
+          "Do all current features still work?",
+          "Is existing state management preserved?",
+          "Are all event handlers intact?"
+        ]
+      }
+    },
+    {
+      "type": "SupabaseStructure",
+      "description": "Centralized Supabase configuration in root directory",
+      "structure": {
+        "root": {
+          "path": "/supabase",
+          "purpose": "Central location for all Supabase-related code and configuration",
+          "contents": {
+            "migrations": "Database migrations",
+            "types": "Shared TypeScript types",
+            "client": "Shared Supabase client configuration"
+          }
+        }
+      },
+      "requirements": [
+        "All Supabase files must be in root /supabase directory",
+        "No local Supabase configurations in app directories",
+        "Import types and clients from root /supabase",
+        "All migrations must be in /supabase/migrations",
+        "Use relative imports (../../../../../supabase) to access root Supabase files"
+      ],
+      "imports": {
+        "types": {
+          "correct": "import type { Database } from '../../../../../supabase/types'",
+          "incorrect": "import type { Database } from './types'"
+        },
+        "client": {
+          "correct": "import { supabase } from '@/integrations/supabase/client'",
+          "incorrect": "import { supabase } from './supabase/client'"
+        }
+      },
+      "migrations": {
+        "location": "/supabase/migrations only",
+        "naming": "YYYYMMDDHHMMSS_descriptive_name.sql",
+        "command": "pnpm supabase migration new",
+        "runFrom": "root directory only"
+      }
+    },
+    {
+      "name": "no-secrets-in-scripts",
+      "description": "Prevent secrets from being added to script files",
+      "pattern": {
+        "forbidden": [
+          {
+            "match": "postgresql://postgres:[^${}][^@]*@",
+            "message": "Do not hardcode database passwords. Use environment variables like ${SUPABASE_DB_PASSWORD}"
+          },
+          {
+            "match": "password=|secret=|token=|key=",
+            "message": "Do not hardcode secrets. Use environment variables"
+          }
+        ],
+        "required": [
+          {
+            "match": "\\${[A-Z_]+}",
+            "in": "DB_URL=|password=|token=|key=",
+            "message": "Secrets must use environment variables"
+          }
+        ]
+      },
+      "files": ["**/*.sh", "**/*.bash", "**/*.zsh"]
+    },
+    {
+      "databaseSchema": {
+        "tables": {
+          // ... existing table definitions ...
+        },
+        "relationships": {
+          // ... existing relationships ...
+        }
+      },
+      "safetyGuidelines": {
+        "databaseOperations": {
+          "riskLevels": {
+            "read": "low",
+            "targetedWrite": "medium",
+            "globalWrite": "high",
+            "schemaChanges": "high",
+            "reset": "extreme"
+          },
+          "requirements": [
+            "Always prefer targeted operations over global ones",
+            "Explicitly warn about potential data loss",
+            "Never suggest resets without clear warnings",
+            "Preserve existing working systems",
+            "Provide rollback steps for risky operations",
+            "Default to most conservative approach"
+          ]
+        },
+        "systemChanges": {
+          "principles": [
+            "Preserve working functionality",
+            "Make incremental changes",
+            "Backup before modifications",
+            "Test in isolation first"
+          ],
+          "warnings": {
+            "required": true,
+            "format": "Explicit warning about risks and consequences",
+            "includeRollback": true
+          }
+        }
+      },
+      "migrations": {
+        "safetyChecks": {
+          "preChecks": [
+            "Verify table existence",
+            "Check for data conflicts",
+            "Validate foreign key integrity",
+            "Ensure backup exists for risky changes"
+          ],
+          "postChecks": [
+            "Verify data integrity",
+            "Check constraint enforcement",
+            "Validate index creation",
+            "Confirm triggers are active"
+          ],
+          "rollbackPlan": {
+            "required": true,
+            "mustInclude": [
+              "Step by step reversion commands",
+              "Data restoration process",
+              "Verification queries"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "pattern": "claude-3-sonnet-20240229",
+      "message": "Must use model claude-3-5-sonnet-20241022",
+      "severity": "error"
+    },
+    {
+      "pattern": "model: ['\"]((?!claude-3-5-sonnet-20241022).)*['\"]",
+      "message": "Must use model claude-3-5-sonnet-20241022",
+      "severity": "error"
+    },
+    {
+      "type": "RouterFramework",
+      "pattern": "next/",
+      "message": "This is a Vite app - use react-router-dom instead of Next.js components",
+      "severity": "error",
+      "replacements": {
+        "next/link": {
+          "import": "import { Link } from 'react-router-dom'",
+          "props": {
+            "href": "to"
+          }
+        },
+        "next/router": {
+          "import": "import { useNavigate, useLocation } from 'react-router-dom'"
+        }
+      }
+    },
+    {
+      "type": "FileManagement",
+      "description": "Rules for managing file versions and locations",
+      "rules": [
+        {
+          "pattern": "^(import|export).*from.*_archive",
+          "message": "Do not import from archive directories in active code",
+          "severity": "error"
+        },
+        {
+          "pattern": "duplicate|copy of|old version",
+          "message": "Avoid duplicate implementations. Check for existing versions",
+          "severity": "warning"
+        }
+      ],
+      "fileLocations": {
+        "components": {
+          "active": "src/components/",
+          "archived": "src/_archive/components/",
+          "naming": {
+            "archive": "{filename}.{YYYY-MM-DD}.{tsx|ts}",
+            "active": "{filename}.{tsx|ts}"
+          }
+        },
+        "pages": {
+          "active": ["src/app/", "src/pages/"],
+          "archived": "src/_archive/pages/",
+          "naming": {
+            "archive": "{filename}.{YYYY-MM-DD}.{tsx|ts}",
+            "active": "{filename}.{tsx|ts}"
+          }
+        }
+      },
+      "preCheck": {
+        "requireTreeReview": true,
+        "treeCommand": "pnpm tree",
+        "checkLocations": [
+          "Check current directory",
+          "Check _archive directories",
+          "Search for similar component names",
+          "Review import statements"
+        ]
+      }
+    },
+    {
+      "type": "DateHandling",
+      "description": "Rules for handling dates in code and filenames",
+      "rules": [
+        {
+          "pattern": "2024-04-17|2024-\\d{2}-\\d{2}",
+          "message": "Using hardcoded past date. Use current date from new Date().toISOString()",
+          "severity": "error"
+        },
+        {
+          "pattern": "\\.\\d{4}-\\d{2}-\\d{2}\\.",
+          "requireDynamicDate": true,
+          "message": "Archive filenames must use current date",
+          "correctExample": "FileTree.${new Date().toISOString().split('T')[0]}.tsx",
+          "incorrectExample": "FileTree.2024-04-17.tsx"
+        }
+      ],
+      "dateHelpers": {
+        "getCurrentDate": {
+          "code": "new Date().toISOString().split('T')[0]",
+          "description": "Gets current date in YYYY-MM-DD format"
+        },
+        "archiveFormat": {
+          "pattern": "${filename}.${getCurrentDate()}.${extension}",
+          "example": "FileTree.2025-02-16.tsx"
+        }
+      },
+      "archiveCommands": {
+        "shell": "cp $SOURCE $DEST.$(date +%Y-%m-%d).$EXT",
+        "node": "const date = new Date().toISOString().split('T')[0];"
+      }
+    },
+    {
+      "type": "CLIPipelineOrganization",
+      "description": "Rules for organizing CLI pipeline services in the monorepo",
+      "structure": {
+        "central": {
+          "path": "/packages/cli",
+          "purpose": "Central location for all shared CLI pipeline services",
+          "contents": {
+            "services": "Reusable service modules (Supabase, AI, file processing)",
+            "commands": "CLI command implementations",
+            "utils": "Shared utilities and helpers"
+          }
+        },
+        "apps": {
+          "path": "apps/*/scripts",
+          "purpose": "App-specific scripts only, not shared services",
+          "restrictions": [
+            "No duplicate implementations of services in packages/cli",
+            "No app-specific versions of common services",
+            "No standalone pipelines that duplicate functionality"
+          ]
+        }
+      },
+      "requirements": [
+        "All common services must be in packages/cli directory",
+        "No duplicate implementations of services in app directories",
+        "Apps must import and use services from packages/cli",
+        "New common functionality should be added to packages/cli, not app directories"
+      ],
+      "services": {
+        "common": [
+          "Supabase database operations",
+          "AI service calls (Claude, OpenAI)",
+          "File processing and analysis",
+          "Document type classification",
+          "Report generation"
+        ]
+      },
+      "imports": {
+        "correct": "import { someService } from '@dhg/cli/services'",
+        "incorrect": "import { someService } from '../../../scripts/services'"
+      },
+      "bestPractices": {
+        "newFeatures": "Check packages/cli first for existing services before implementing",
+        "improvements": "Contribute improvements to packages/cli rather than creating app-specific versions",
+        "appSpecific": "Only implement in apps what is truly unique to that application"
+      },
+      "pattern": {
+        "forbidden": [
+          {
+            "match": "apps/.*/src/services/(supabase|claude|openai|file)",
+            "message": "Common services should be in packages/cli, not in app-specific directories"
+          },
+          {
+            "match": "apps/.*/scripts/cli",
+            "message": "CLI pipeline code should be in packages/cli, not in app-specific directories"
+          }
+        ],
+        "required": [
+          {
+            "match": "packages/cli/src/services",
+            "message": "Common services should be implemented in packages/cli/src/services"
+          }
+        ]
+      },
+      "severity": "warning"
     }
   ]
-} 
+}

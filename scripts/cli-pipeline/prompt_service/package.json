@@ -1,0 +1,36 @@
+{
+  "name": "prompt-service-cli",
+  "version": "1.0.0",
+  "description": "CLI tool for managing prompts across the application",
+  "main": "prompt-service-cli.sh",
+  "bin": {
+    "prompt-service": "prompt-service-cli.sh"
+  },
+  "scripts": {
+    "start": "bash prompt-service-cli.sh",
+    "dev": "bash prompt-service-cli.sh",
+    "build": "tsc --skipLibCheck",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "prompt",
+    "management",
+    "claude",
+    "ai",
+    "cli"
+  ],
+  "license": "MIT",
+  "type": "commonjs"
+}

@@ -1,0 +1,23 @@
+Usage: index roots [options] [command]
+
+Manage root folders for syncing
+
+Options:
+  -h, --help        display help for command
+
+Commands:
+  list [options]    List all registered root folders
+  add [options]     Add a new root folder for syncing
+  remove [options]  Remove a root folder
+  help [command]    display help for command
+
+For add command:
+  -i, --id <folder-id>      Google Drive folder ID to add as root
+  -n, --name <name>         Custom name for this root folder
+  -v, --verbose             Enable verbose logging
+  --no-color                Disable color output
+
+For remove command:
+  -i, --id <folder-id>      Google Drive folder ID to remove
+  -v, --verbose             Enable verbose logging
+  --no-color                Disable color output
