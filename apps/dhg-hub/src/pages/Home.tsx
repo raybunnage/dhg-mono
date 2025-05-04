@@ -2340,13 +2340,17 @@ export function Home() {
                       <div
                         key={asset.id}
                         onClick={() => {
-                          // When selecting an asset, collapse other sections if not already collapsed
+                          // When selecting an asset for the first time, don't show the AI summary immediately
+                          // Just select it and wait for another click to show summary
                           if (!selectedAsset || selectedAsset.id !== asset.id) {
                             setVideoSectionOpen(false);
+                            setSelectedAsset(asset);
+                            // Don't immediately open the asset section on first click
+                            setAssetSectionOpen(false);
+                          } else {
+                            // On second click of the same asset, show the AI summary
+                            handleAssetSelect(asset);
                           }
-                          
-                          // Make sure the asset is selected and visible
-                          handleAssetSelect(asset);
                         }}
                         onDoubleClick={() => {
                           // Double-click behavior goes directly to asset view
