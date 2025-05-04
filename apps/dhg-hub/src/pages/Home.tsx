@@ -1565,7 +1565,7 @@ export function Home() {
     setSelectedAsset(asset);
     setAssetViewMode(false);
     
-    // Make sure asset section is open and visible
+    // Explicitly show AI summary by opening asset section
     setAssetSectionOpen(true);
     
     // When selecting a new asset, make the presentation assets more prominent
@@ -2340,22 +2340,18 @@ export function Home() {
                       <div
                         key={asset.id}
                         onClick={() => {
-                          // When selecting an asset for the first time, don't show the AI summary immediately
-                          // Just select it and wait for another click to show summary
-                          if (!selectedAsset || selectedAsset.id !== asset.id) {
-                            setVideoSectionOpen(false);
-                            setSelectedAsset(asset);
-                            // Don't immediately open the asset section on first click
-                            setAssetSectionOpen(false);
-                          } else {
-                            // On second click of the same asset, show the AI summary
-                            handleAssetSelect(asset);
-                          }
+                          // Select the asset but don't jump to the AI summary view
+                          setSelectedAsset(asset);
+                          // Don't auto-expand the asset section on any click
+                          setAssetSectionOpen(false);
+                          // Keep focus on the presentation assets section
+                          setVideoSectionOpen(false);
                         }}
                         onDoubleClick={() => {
                           // Double-click behavior goes directly to asset view
                           setVideoSectionOpen(false);
-                          handleAssetSelect(asset);
+                          setSelectedAsset(asset);
+                          setAssetSectionOpen(true);
                           setAssetViewMode(true);
                         }}
                         className={`p-3 rounded-lg cursor-pointer border transition-colors ${
@@ -2363,7 +2359,7 @@ export function Home() {
                             ? 'bg-blue-50 border-blue-200'
                             : 'hover:bg-gray-50 border-gray-100'
                         }`}
-                        title="Click to see summary, double-click to view file"
+                        title="Click to select, double-click to view file"
                       >
                         <div className="flex items-start gap-3">
                           <div className="bg-blue-100 text-blue-800 p-2 rounded">
