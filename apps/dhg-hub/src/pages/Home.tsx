@@ -8,31 +8,81 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../componen
 import { ChevronDown, ChevronRight, ArrowLeft, RefreshCcw } from 'lucide-react';
 import { filterService } from '@/utils/filter-service-adapter';
 
-// Interface for FilterProfile
-interface FilterProfile {
-  id: string;
-  name: string;
-  description?: string;
-  filter_config: any;
-  is_active: boolean;
-  created_at?: string;
-}
+// Verify Supabase connection on page load
+(async () => {
+  try {
+    // Check environment variables
+    console.log('Environment variables in browser:');
+    console.log('- VITE_SUPABASE_URL exists:', !!import.meta.env.VITE_SUPABASE_URL);
+    console.log('- VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+    console.log('- VITE_SUPABASE_SERVICE_ROLE_KEY exists:', !!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY);
+    
+    // Use supabaseAdapter diagnostics
+    console.log('Getting Supabase adapter diagnostics...');
+    const diagnostics = await supabaseAdapter.getDiagnostics();
+    console.log('Supabase diagnostics:', diagnostics);
+    
+    // Test connection with direct test query
+    console.log('Testing Supabase connection with direct query...');
+    const { data, error } = await supabase.from('user_filter_profiles').select('count(*)', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('Supabase connection test failed:', error);
+    } else {
+      console.log('Supabase connection test succeeded, profile count:', data?.count);
+    }
+  } catch (e) {
+    console.error('Error testing Supabase connection:', e);
+  }
+})();
+
+// Import FilterProfile interface from adapter
+import { FilterProfile } from '@/utils/filter-service-adapter';
 
 // Debug function to check the database directly
 async function debugCheckFilterProfiles() {
   try {
-    // Direct database query to check what profiles exist
+    // Direct database query to check what profiles exist - USING THE EXACT QUERY THAT WORKS IN SUPABASE
+    console.log('Debug: Running exact query that works in Supabase: select id, name, is_active from user_filter_profiles');
+    
     const { data, error } = await supabase
       .from('user_filter_profiles')
-      .select('*');
+      .select('id, name, is_active');
       
     console.log('Debug: Direct database check for profiles');
     console.log('Results:', data);
-    console.log('Error:', error);
+    
+    // Check available fields in first profile
+    if (data && data.length > 0) {
+      console.log('Debug: Available fields in first profile:', Object.keys(data[0]).join(', '));
+      console.log('Debug: Found', data.length, 'profiles with these IDs:', data.map(p => p.id).join(', '));
+      
+      data.forEach(profile => {
+        console.log(`Debug: Profile ${profile.id}: Name="${profile.name}", IsActive=${profile.is_active}`);
+      });
+    } else {
+      console.log('Debug: No profiles found in direct database check');
+      
+      // Additional error checking
+      console.log('Debug: Trying to diagnose connection issues...');
+      // Check if supabase object is properly configured
+      if (!supabase) {
+        console.error('Debug: supabase client is null or undefined!');
+      }
+      
+      if (error) {
+        console.error('Debug: SQL Error details:', JSON.stringify(error, null, 2));
+      }
+    }
     
     return data;
   } catch (err) {
     console.error('Error in debug check:', err);
+    // Log full error details
+    if (err instanceof Error) {
+      console.error('Error details:', err.message);
+      console.error('Error stack:', err.stack);
+    }
     return null;
   }
 }
@@ -227,17 +277,40 @@ export function Home() {
     async function fetchFilterProfiles() {
       setLoadingProfiles(true);
       try {
-        // Debug check first
-        const directProfiles = await debugCheckFilterProfiles();
-        console.log('Direct database check found', directProfiles?.length || 0, 'profiles');
+        console.log('======== INITIAL PROFILE LOADING ========');
         
-        // Fetch all available profiles
+        // Debug check first using direct Supabase query
+        const directProfiles = await debugCheckFilterProfiles();
+        console.log('Initial load: Direct database check found', directProfiles?.length || 0, 'profiles');
+        
+        if (directProfiles?.length > 0) {
+          console.log('Initial load: Direct database check profile names:', directProfiles.map(p => p.name).join(', '));
+          console.log('Initial load: First profile structure:', Object.keys(directProfiles[0]).join(', '));
+        }
+        
+        // Fetch all available profiles using the filter service
+        console.log('Initial load: Now retrieving profiles with filterService.listProfiles()...');
         const profiles = await filterService.listProfiles();
-        console.log('Filter service returned', profiles.length, 'profiles');
-        setFilterProfiles(profiles);
+        console.log('Initial load: Filter service returned', profiles.length, 'profiles');
+        
+        if (profiles.length > 0) {
+          console.log('Initial load: Profile names from filterService:', profiles.map(p => p.name).join(', '));
+          console.log('Initial load: Profile data structure from service:', 
+            Object.keys(profiles[0]).join(', '));
+          setFilterProfiles(profiles);
+        } else {
+          console.warn('Initial load: No profiles returned from filterService');
+        }
         
         // Then get the active profile
+        console.log('Initial load: Retrieving active profile...');
         const active = await filterService.loadActiveProfile();
+        if (active) {
+          console.log('Initial load: Found active profile:', active.name);
+          console.log('Initial load: Active profile structure:', Object.keys(active).join(', '));
+        } else {
+          console.log('Initial load: No active profile found');
+        }
         setActiveFilterProfile(active);
       } catch (err) {
         console.error('Error fetching filter profiles:', err);
@@ -252,15 +325,48 @@ export function Home() {
   // Handler for profile selection change
   const handleProfileSelect = async (profileId: string) => {
     try {
-      await filterService.setActiveProfile(profileId);
-      // Reload the active profile
-      const active = await filterService.loadActiveProfile();
-      setActiveFilterProfile(active);
+      console.log('handleProfileSelect called with profileId:', profileId);
       
-      // Reload the presentations with the new filter
-      fetchData();
+      if (!profileId) {
+        console.warn('Empty profileId passed to handleProfileSelect');
+        return;
+      }
+      
+      // Show loading state
+      setLoading(true);
+      
+      console.log('Setting active profile...');
+      const success = await filterService.setActiveProfile(profileId);
+      
+      if (!success) {
+        console.error('Failed to set profile as active');
+        setLoading(false);
+        return;
+      }
+      
+      // Reload the active profile - this will also load the drive IDs
+      console.log('Reloading active profile...');
+      const active = await filterService.loadActiveProfile();
+      console.log('Active profile loaded:', active);
+      
+      if (active) {
+        // Update the UI with the new active profile
+        setActiveFilterProfile(active);
+        
+        // Clear any search or subject filters
+        setSearchQuery('');
+        setSelectedSubjects([]);
+        
+        // Reload the presentations with the new filter
+        console.log('Reloading presentations with new filter...');
+        await fetchData();
+      } else {
+        console.warn('No active profile found after setting active');
+        setLoading(false);
+      }
     } catch (err) {
       console.error('Error setting active filter profile:', err);
+      setLoading(false);
     }
   };
 
@@ -273,6 +379,8 @@ export function Home() {
   async function fetchData() {
     try {
       setLoading(true);
+      console.log('Home: Fetching presentations data');
+      
       // Fetch presentations with their video sources and expert documents
       let query = supabase
         .from('presentations')
@@ -301,14 +409,18 @@ export function Home() {
           ),
           high_level_folder:high_level_folder_source_id(
             id,
-            name
+            name,
+            drive_id
           )
         `)
         .not('video_source_id', 'is', null);
         
       // Apply active filter profile if available
       if (activeFilterProfile) {
-        query = filterService.applyFilterToQuery(query);
+        console.log(`Home: Applying filter for profile: ${activeFilterProfile.name} (${activeFilterProfile.id})`);
+        query = await filterService.applyFilterToQuery(query, activeFilterProfile.id);
+      } else {
+        console.log('Home: No active filter profile to apply');
       }
 
       const { data: presentationsData, error: presentationsError } = await query;
@@ -1453,12 +1565,18 @@ export function Home() {
         </div>
       )}
     
-      {/* Filter profiles dropdown */}
-      <div className="mb-4 flex justify-between items-center">
-        <div className="flex items-center">
+      {/* Main content area with everything side by side */}
+      <div className="flex lg:flex-row gap-6">
+        {/* Left column with filter dropdown and left sidebar content */}
+        <div className="lg:w-1/3 space-y-4">
+          {/* Filter profiles dropdown */}
           <select 
-            className="px-4 py-3 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-lg font-semibold"
-            onChange={(e) => handleProfileSelect(e.target.value)}
+            className="px-4 py-2 w-full bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-lg font-semibold"
+            onChange={(e) => {
+              if (e.target.value) {
+                handleProfileSelect(e.target.value);
+              }
+            }}
             value={activeFilterProfile?.id || ''}
             disabled={loadingProfiles}
           >
@@ -1466,56 +1584,23 @@ export function Home() {
               {loadingProfiles ? 'Loading profiles...' : 'Select a filter profile'}
             </option>
             {filterProfiles && filterProfiles.length > 0 ? (
-              filterProfiles.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.name} {profile.is_active ? '(Active)' : ''}
-                </option>
-              ))
+              filterProfiles
+                .filter(profile => profile && profile.id && profile.name)
+                .map((profile) => {
+                  const id = String(profile.id);
+                  const name = String(profile.name);
+                  return (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  );
+                })
             ) : (
               <option value="" disabled>No profiles available</option>
             )}
           </select>
-        </div>
-        
-        {/* Refresh button */}
-        <button 
-          onClick={() => {
-            async function refreshProfiles() {
-              setLoadingProfiles(true);
-              try {
-                // Debug check first
-                const directProfiles = await debugCheckFilterProfiles();
-                console.log('Refresh - Direct database check found', directProfiles?.length || 0, 'profiles');
-                
-                // If we found profiles directly but filter service doesn't return them,
-                // there might be an issue with the filter service
-                const profiles = await filterService.listProfiles();
-                console.log('Refresh - Filter service returned', profiles.length, 'profiles');
-                setFilterProfiles(profiles);
-                
-                const active = await filterService.loadActiveProfile();
-                setActiveFilterProfile(active);
-                fetchData();
-              } catch (err) {
-                console.error('Error refreshing profiles:', err);
-              } finally {
-                setLoadingProfiles(false);
-              }
-            }
-            refreshProfiles();
-          }}
-          className="ml-2 p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
-          title="Refresh profiles"
-          disabled={loadingProfiles}
-        >
-          <RefreshCcw className="h-5 w-5" />
-        </button>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left sidebar - Presentations and Filters */}
-        <div className="lg:w-1/3 space-y-6">
-          {/* Search Box */}
+          
+          {/* Search Box - Moved up */}
           <div className="bg-white rounded-lg shadow p-4">
             <div className="mb-4">
               <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1626,8 +1711,8 @@ export function Home() {
               ) : null}
             </div>
           </div>
-
-          {/* Subject Classification Pills */}
+          
+          {/* Subject Classification Pills - Moved up */}
           <div className="bg-white rounded-lg shadow p-4">
             <h2 className="text-lg font-medium text-gray-900 mb-3">Filter by Subject</h2>
             <div className="flex flex-wrap gap-2">
@@ -1728,8 +1813,8 @@ export function Home() {
               }
             </div>
           </div>
-
-          {/* Presentations List */}
+          
+          {/* Presentations List - Moved up */}
           <div className="bg-white rounded-lg shadow p-4">
             <h2 className="text-lg font-medium text-gray-900 mb-3">
               {filteredPresentations.length > 0 ? `${filteredPresentations.length} ` : ""}Presentations
@@ -1880,9 +1965,9 @@ export function Home() {
             )}
           </div>
         </div>
-
+      
         {/* Right Content Area */}
-        <div className="lg:w-2/3 space-y-4">
+        <div className="lg:w-2/3">
           {/* Video Title and Player */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {selectedPresentation?.expert_document?.title ? (
@@ -2013,17 +2098,17 @@ export function Home() {
               </div>
             )}
           </div>
-
-          {/* Now we'll let the JsonFormatter handle the collapsible sections */}
+          
+          {/* Content moved up - Now part of the right area */}
           {selectedPresentation?.expert_document?.processed_content ? (
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-white rounded-lg shadow mt-4">
               <JsonFormatter 
                 data={selectedPresentation.expert_document.processed_content} 
                 fontSize="0.875rem"
               />
             </div>
           ) : selectedPresentation ? (
-            <div className="bg-white rounded-lg shadow p-4">
+            <div className="bg-white rounded-lg shadow p-4 mt-4">
               <h2 className="text-xl font-semibold text-blue-700 mb-3">
                 Video Summary
               </h2>
@@ -2043,94 +2128,10 @@ export function Home() {
               </div>
             </div>
           ) : null}
-
-          {/* Selected Asset Content or Viewer */}
-          {selectedAsset && (
-            <div className={`bg-white rounded-lg shadow mb-4 ${assetViewMode ? 'h-[750px] overflow-hidden' : ''}`}>
-              <Collapsible 
-                open={assetSectionOpen} 
-                onOpenChange={(open) => {
-                  setAssetSectionOpen(open);
-                }}
-              >
-                <div className="px-4 py-3 bg-gray-50 border-b">
-                  <div className="flex justify-between items-center w-full">
-                    <h2 className="text-lg font-medium text-gray-900 flex items-center">
-                      {assetViewMode && (
-                        <button 
-                          onClick={() => setAssetViewMode(false)}
-                          className="inline-flex items-center justify-center mr-2 text-gray-500 hover:text-gray-700"
-                        >
-                          <ArrowLeft className="h-5 w-5" />
-                          <span className="sr-only">Back</span>
-                        </button>
-                      )}
-                      <CollapsibleTrigger className="flex items-center focus:outline-none">
-                        {!assetViewMode && (
-                          <>
-                            {assetSectionOpen ? <ChevronDown className="h-5 w-5 mr-2" /> : <ChevronRight className="h-5 w-5 mr-2" />}
-                          </>
-                        )}
-                        {selectedAsset.source_file?.name || 'Selected Asset'}
-                      </CollapsibleTrigger>
-                    </h2>
-                    {selectedAsset.source_file?.web_view_link && (
-                      <button
-                        onClick={() => {
-                          // Toggle asset view mode
-                          if (!assetViewMode) {
-                            // When entering view mode, collapse all other sections
-                            setVideoSectionOpen(false);
-                            // Make the asset viewer very prominent
-                            setAssetViewMode(true);
-                          } else {
-                            // When exiting view mode, keep other sections collapsed
-                            setAssetViewMode(false);
-                          }
-                        }}
-                        className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
-                      >
-                        {assetViewMode ? 'Return to Summary' : 'View File'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                
-                <CollapsibleContent>
-                  {/* Asset viewer (expanded in the same panel) */}
-                  {assetViewMode && selectedAsset.source_file?.web_view_link ? (
-                    <div className="h-[700px]">
-                      <iframe 
-                        src={`https://drive.google.com/file/d/${extractDriveId(selectedAsset.source_file.web_view_link)}/preview`}
-                        className="w-full h-full"
-                        title={selectedAsset.source_file.name || 'Asset Preview'}
-                        allow="autoplay"
-                      />
-                    </div>
-                  ) : (
-                    <div className="p-4">
-                      <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
-                        {selectedAsset.expert_document?.processed_content ? (
-                          <div className="p-1">
-                            <JsonFormatter 
-                              data={selectedAsset.expert_document.processed_content} 
-                              fontSize="0.875rem"
-                            />
-                          </div>
-                        ) : (
-                          <p>No content available for this asset</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-          )}
-
-          {/* Presentation Assets - Always visible (non-collapsible) */}
+          
+          {/* Presentation Assets - Moved to the top section */}
           {selectedPresentation && (
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-white rounded-lg shadow mt-4">
               <div className="px-4 py-3 bg-gray-50 border-b">
                 <h2 className="text-lg font-medium text-gray-900">
                   Presentation Assets 

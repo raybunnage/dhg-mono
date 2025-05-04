@@ -1,5 +1,8 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
+CLI commands could then include a --profile flag or automatically use the active profile.
+
+
 ai_processing_attempts                        | 0
 app_state                                     | 0
 audio_processing_configs                      | 0

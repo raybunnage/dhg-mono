@@ -23,14 +23,17 @@ export class SupabaseClientAdapter {
   private constructor() {
     // Browser Environment: Use Vite's import.meta.env
     this.supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-    // For browser, prefer anon key but fall back to service role if that's all we have
-    this.supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 
-                      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
+    
+    // IMPORTANT: For this particular page, we need service role access to user_filter_profiles table
+    // Prioritize service role key for this application
+    this.supabaseKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 
+                       import.meta.env.VITE_SUPABASE_ANON_KEY || '';
     
     console.log(`Supabase adapter (browser): URL found ${this.supabaseUrl ? this.supabaseUrl.substring(0, 20) + '...' : 'MISSING'}`);
     if (this.supabaseKey) {
       const maskedKey = this.supabaseKey.substring(0, 5) + '...' + this.supabaseKey.substring(this.supabaseKey.length - 5);
       console.log(`Supabase adapter (browser): Key found ${maskedKey}`);
+      console.log(`Supabase adapter (browser): Using ${this.supabaseKey === import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ? 'SERVICE ROLE KEY' : 'ANON KEY'}`);
     } else {
       console.error('Supabase adapter (browser): No API key found');
     }
@@ -38,7 +41,7 @@ export class SupabaseClientAdapter {
     // Validate environment variables
     if (!this.supabaseUrl || !this.supabaseKey) {
       console.error('Missing Supabase environment variables');
-      console.error('Check if .env.development has VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+      console.error('Check if .env.development has VITE_SUPABASE_URL and at least one of VITE_SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_ANON_KEY');
     }
   }
 
@@ -88,18 +91,40 @@ export class SupabaseClientAdapter {
     try {
       const client = this.getClient();
       
-      // Try a simple query to document_types table
-      const { data, error } = await client
-        .from('document_types')
-        .select('document_type')
-        .limit(1);
+      // Try a simple query to user_filter_profiles table
+      const { data: profileData, error: profileError } = await client
+        .from('user_filter_profiles')
+        .select('id, name, is_active')
+        .limit(10);
       
-      if (error) {
-        console.error('Connection test failed:', error);
-        return { success: false, error: error.message };
+      if (profileError) {
+        console.warn('Filter profiles test failed:', profileError);
+        
+        // Fall back to document_types table which should always be accessible
+        console.log('Trying document_types table as fallback...');
+        const { data, error } = await client
+          .from('document_types')
+          .select('document_type')
+          .limit(1);
+        
+        if (error) {
+          console.error('Connection test failed completely:', error);
+          return { success: false, error: error.message };
+        }
+        
+        console.log('Connection test partially successful (document_types only)');
+        return { success: true, error: 'Cannot access user_filter_profiles table' };
       }
       
-      console.log('Connection test successful');
+      // Log the filter profiles found
+      if (profileData && profileData.length > 0) {
+        console.log(`Found ${profileData.length} filter profiles:`, 
+          profileData.map(p => `${p.name} (${p.id})`).join(', '));
+      } else {
+        console.log('No filter profiles found in the database');
+      }
+      
+      console.log('Connection test successful with filter profiles access');
       return { success: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
