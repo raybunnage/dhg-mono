@@ -1091,7 +1091,13 @@ export function Home() {
   // Fetch expert bio
   const fetchExpertBio = async (expertId?: string) => {
     if (!expertId) {
-      console.log("No expert ID provided");
+      console.log("No expert ID provided, using fallback");
+      // Create a fallback profile for when no expert ID is provided
+      setExpertBioContent({ 
+        name: selectedPresentation?.expert_names || selectedPresentation?.expert?.full_name || "Expert Profile",
+        short_bio: "Detailed profile information is not available for this expert."
+      });
+      setShowExpertBio(true);
       return;
     }
     
@@ -1107,7 +1113,7 @@ export function Home() {
         console.error('Error fetching expert:', expertError);
         // Create a fallback profile to display
         setExpertBioContent({ 
-          name: "Expert Profile",
+          name: selectedPresentation?.expert_names || selectedPresentation?.expert?.full_name || "Expert Profile",
           short_bio: "Unable to load expert profile information."
         });
         setShowExpertBio(true);
@@ -1777,9 +1783,23 @@ export function Home() {
                     {/* Author and date info */}
                     <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                       {presentation.expert_names ? (
-                        <span className="truncate max-w-[160px] text-blue-600">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent triggering parent's onClick
+                            // If we have multiple experts, show the bio of the primary one
+                            if (presentation.expert?.id) {
+                              openExpertProfile(presentation.expert.id);
+                            } else if (presentation.experts && presentation.experts.length > 0 && presentation.experts[0].id) {
+                              openExpertProfile(presentation.experts[0].id);
+                            } else {
+                              // If no expert ID is available, just show the bio with the name
+                              fetchExpertBio();
+                            }
+                          }}
+                          className="truncate max-w-[160px] text-blue-600 hover:underline"
+                        >
                           {presentation.expert_names}
-                        </span>
+                        </button>
                       ) : presentation.expert?.full_name && (
                         <button
                           onClick={(e) => {
@@ -1893,12 +1913,25 @@ export function Home() {
                   <CollapsibleContent>
                     <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-600">
                       {selectedPresentation.expert_names ? (
-                        <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            // If we have multiple experts, show the bio of the primary one
+                            if (selectedPresentation.expert?.id) {
+                              openExpertProfile(selectedPresentation.expert.id);
+                            } else if (selectedPresentation.experts && selectedPresentation.experts.length > 0 && selectedPresentation.experts[0].id) {
+                              openExpertProfile(selectedPresentation.experts[0].id);
+                            } else {
+                              // If no expert ID is available, just show the bio with the name
+                              fetchExpertBio();
+                            }
+                          }}
+                          className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                        >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
-                          <span className="text-blue-600">{selectedPresentation.expert_names}</span>
-                        </div>
+                          <span className="text-blue-600 hover:underline">{selectedPresentation.expert_names}</span>
+                        </button>
                       ) : selectedPresentation.expert?.full_name && (
                         <button 
                           onClick={() => {
