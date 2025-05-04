@@ -322,9 +322,8 @@ export function Home() {
         } else {
           console.warn('Initial load: No profiles returned from filterService');
           
-          // Create a default profile if none exists
-          console.log('Initial load: Checking if we need to create a default profile');
-          // We'll trigger the fetch data without filters
+          // No profiles exist yet - just proceed without a filter
+          console.log('Initial load: No profiles found, proceeding without filtering');
           setActiveFilterProfile(null);
         }
       } catch (err) {
@@ -397,64 +396,125 @@ export function Home() {
     try {
       setLoading(true);
       console.log('Home: Fetching presentations data');
+      console.log('Home: Current active profile:', activeFilterProfile);
       
-      // Fetch presentations with their video sources and expert documents
-      let query = supabase
-        .from('presentations')
-        .select(`
-          id, 
-          video_source_id,
-          expert_document_id,
-          high_level_folder_source_id,
-          web_view_link,
-          created_at,
-          expert_document:expert_document_id(
-            id, 
-            title, 
-            processed_content
-          ),
-          video_source:video_source_id(
-            id, 
-            name, 
-            mime_type, 
-            web_view_link,
-            document_type_id,
-            created_at,
-            modified_at,
-            size,
-            metadata
-          ),
-          high_level_folder:high_level_folder_source_id(
-            id,
-            name,
-            drive_id
-          )
-        `)
-        .not('video_source_id', 'is', null);
+      // DEBUG: Let's directly verify if there are profiles in the user_filter_profiles table
+      try {
+        console.log('Home: DEBUG - Checking available profiles directly');
+        const { data: profilesDebug, error: profilesError } = await supabase
+          .from('user_filter_profiles')
+          .select('*')
+          .order('name');
         
-      // Apply active filter profile if available
-      if (activeFilterProfile) {
-        try {
-          console.log(`Home: Applying filter for profile: ${activeFilterProfile.name} (${activeFilterProfile.id})`);
-          query = await filterService.applyFilterToQuery(query, activeFilterProfile.id);
-        } catch (filterError) {
-          console.error('Home: Error applying filter:', filterError);
-          // Continue without filtering rather than breaking the entire query
+        if (profilesError) {
+          console.error('Home: Error directly querying profiles:', profilesError);
+        } else {
+          console.log(`Home: Found ${profilesDebug?.length || 0} profiles directly from DB`);
+          if (profilesDebug && profilesDebug.length > 0) {
+            console.log('Home: Profile names:', profilesDebug.map(p => p.name).join(', '));
+          }
         }
-      } else {
-        console.log('Home: No active filter profile to apply');
-      }
-
-      const { data: presentationsData, error: presentationsError } = await query;
-
-      if (presentationsError) {
-        throw new Error(`Error fetching presentations: ${presentationsError.message}`);
+      } catch (e) {
+        console.error('Home: Error in direct profile check:', e);
       }
       
-      // Fetch expert information separately for each presentation using sources_google_experts
-      const presentationsWithExperts = await Promise.all(
-        (presentationsData || []).map(async (presentation) => {
-          if (!presentation.video_source_id) return presentation;
+      // DEBUG: Let's check profile drives directly
+      try {
+        console.log('Home: DEBUG - Checking profile drives directly');
+        const { data: drivesDebug, error: drivesError } = await supabase
+          .from('user_filter_profile_drives')
+          .select('*');
+        
+        if (drivesError) {
+          console.error('Home: Error directly querying profile drives:', drivesError);
+        } else {
+          console.log(`Home: Found ${drivesDebug?.length || 0} profile drives directly from DB`);
+          if (drivesDebug && drivesDebug.length > 0) {
+            console.log('Home: Sample profile drive fields:', Object.keys(drivesDebug[0]).join(', '));
+          }
+        }
+      } catch (e) {
+        console.error('Home: Error in direct drives check:', e);
+      }
+      
+      try {
+        // Fetch presentations with their video sources and expert documents
+        let query = supabase
+          .from('presentations')
+          .select(`
+            id, 
+            video_source_id,
+            expert_document_id,
+            high_level_folder_source_id,
+            web_view_link,
+            created_at,
+            expert_document:expert_document_id(
+              id, 
+              title, 
+              processed_content
+            ),
+            video_source:video_source_id(
+              id, 
+              name, 
+              mime_type, 
+              web_view_link,
+              document_type_id,
+              created_at,
+              modified_at,
+              size,
+              metadata
+            ),
+            high_level_folder:high_level_folder_source_id(
+              id,
+              name,
+              drive_id
+            )
+          `)
+          .not('video_source_id', 'is', null);
+        
+        // DEBUG: Let's check total presentations before filtering
+        const { count: totalBeforeFilter, error: countError } = await supabase
+          .from('presentations')
+          .select('id', { count: 'exact', head: true })
+          .not('video_source_id', 'is', null);
+        
+        if (!countError) {
+          console.log(`Home: Total presentations before filtering: ${totalBeforeFilter}`);
+        }
+          
+        // Apply active filter profile if available
+        if (activeFilterProfile) {
+          try {
+            console.log(`Home: Applying filter for profile: ${activeFilterProfile.name} (${activeFilterProfile.id})`);
+            query = await filterService.applyFilterToQuery(query, activeFilterProfile.id);
+          } catch (filterError) {
+            console.error('Home: Error applying filter:', filterError);
+            // Log error but continue with unfiltered query instead of failing
+            console.log('Home: Continuing with unfiltered query due to filter error');
+          }
+        } else {
+          console.log('Home: No active filter profile to apply');
+        }
+
+        // Add a timeout to the query to prevent hanging
+        const queryPromise = query;
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Query timeout - request took too long')), 30000);
+        });
+        
+        const { data: presentationsData, error: presentationsError } = await Promise.race([
+          queryPromise,
+          timeoutPromise
+        ]) as any;
+
+        if (presentationsError) {
+          throw new Error(`Error fetching presentations: ${presentationsError.message}`);
+        }
+      
+        // Fetch expert information separately for each presentation using sources_google_experts
+        const presentationsWithExperts = await Promise.all(
+          (presentationsData || []).map(async (presentation) => {
+            if (!presentation.video_source_id) return presentation;
           
           // Get experts associated with this video source
           const { data: expertsData, error: expertsError } = await supabase
@@ -492,29 +552,38 @@ export function Home() {
         })
       );
       
-      // Use the presentations with experts data
-      const sortedPresentations = [...(presentationsWithExperts || [])].sort((a, b) => {
-        const dateA = a.video_source?.modified_at ? new Date(a.video_source.modified_at).getTime() : 0;
-        const dateB = b.video_source?.modified_at ? new Date(b.video_source.modified_at).getTime() : 0;
-        return dateB - dateA;
-      });
-      
-      setPresentations(sortedPresentations);
+        // Use the presentations with experts data
+        const sortedPresentations = [...(presentationsWithExperts || [])].sort((a, b) => {
+          const dateA = a.video_source?.modified_at ? new Date(a.video_source.modified_at).getTime() : 0;
+          const dateB = b.video_source?.modified_at ? new Date(b.video_source.modified_at).getTime() : 0;
+          return dateB - dateA;
+        });
+        
+        setPresentations(sortedPresentations);
 
-      // Fetch all subject classifications for the filter
-      const { data: subjectsData, error: subjectsError } = await supabase
-        .from('subject_classifications')
-        .select('*')
-        .order('subject');
+        // Fetch all subject classifications for the filter
+        const { data: subjectsData, error: subjectsError } = await supabase
+          .from('subject_classifications')
+          .select('*')
+          .order('subject');
 
-      if (subjectsError) {
-        throw new Error(`Error fetching subject classifications: ${subjectsError.message}`);
+        if (subjectsError) {
+          throw new Error(`Error fetching subject classifications: ${subjectsError.message}`);
+        }
+
+        setSubjectClassifications(subjectsData || []);
+      } catch (queryError) {
+        // Handle errors from the inner try block (query execution)
+        console.error('Error executing presentation query:', queryError);
+        setError(queryError instanceof Error ? 
+          queryError.message : 
+          'Error loading presentations. The request may have timed out due to the large filter size.'
+        );
       }
-
-      setSubjectClassifications(subjectsData || []);
     } catch (err) {
+      // Handle errors from the outer try block
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      console.error(err);
+      console.error('Error in fetchData:', err);
     } finally {
       setLoading(false);
     }
@@ -1850,12 +1919,32 @@ export function Home() {
               <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded">
                 <div className="font-semibold mb-1">Error loading presentations</div>
                 <div className="text-sm">{error}</div>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="mt-3 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-sm transition-colors"
-                >
-                  Retry
-                </button>
+                <div className="flex mt-3 gap-3">
+                  <button 
+                    onClick={() => {
+                      setError(null);
+                      fetchData();
+                    }}
+                    className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-sm transition-colors flex items-center"
+                  >
+                    <RefreshCcw className="h-3 w-3 mr-1" />
+                    Retry
+                  </button>
+                  
+                  <button
+                    onClick={async () => {
+                      // Reset active profile to null (no filtering)
+                      setActiveFilterProfile(null);
+                      // Clear error
+                      setError(null);
+                      // Refetch data with a slight delay to ensure state update
+                      setTimeout(() => fetchData(), 100);
+                    }}
+                    className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm transition-colors"
+                  >
+                    Show All (No Filter)
+                  </button>
+                </div>
               </div>
             ) : filteredPresentations.length === 0 ? (
               <div className="text-gray-500 text-center py-6 bg-gray-50 rounded-md">

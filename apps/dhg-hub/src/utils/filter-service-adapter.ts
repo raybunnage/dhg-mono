@@ -165,71 +165,52 @@ class FilterService {
       
       console.log(`FilterServiceAdapter: Fetching drives for profile ${profileId}`);
       
-      // First check if the table exists by getting a sample row
-      console.log('FilterServiceAdapter: Checking user_filter_profile_drives table structure...');
-      const { data: sampleData, error: sampleError } = await supabase
-        .from('user_filter_profile_drives')
-        .select('*')
-        .limit(1);
-      
-      if (sampleError) {
-        console.error('FilterServiceAdapter: Error checking profile drives table:', sampleError);
-        console.error('FilterServiceAdapter: Error details:', JSON.stringify(sampleError, null, 2));
+      // First verify the profile exists
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_filter_profiles')
+        .select('name, is_active')
+        .eq('id', profileId)
+        .single();
         
-        // If the table doesn't exist, we need to handle that case
-        // We'll return an empty array
-        if (sampleError.code === 'PGRST116') {
-          console.log('FilterServiceAdapter: Table user_filter_profile_drives does not exist, returning all drives');
-          
-          // In this case, return all drives (no filtering)
-          return [];
-        }
-        
+      if (profileError) {
+        console.error(`FilterServiceAdapter: Error fetching profile ${profileId}:`, profileError);
+        // Instead of throwing, return empty array
         return [];
       }
       
-      // Debug output to see the actual structure of the table
-      if (sampleData && sampleData.length > 0) {
-        console.log('FilterServiceAdapter: Sample drive profile data:', sampleData[0]);
-        console.log('FilterServiceAdapter: Available fields:', Object.keys(sampleData[0]));
-      } else {
-        console.log('FilterServiceAdapter: No sample data found in user_filter_profile_drives table');
+      if (!profileData) {
+        console.error(`FilterServiceAdapter: Profile ${profileId} not found in database!`);
+        return [];
       }
       
-      // Now fetch the actual drives for this profile
-      // Dynamically determine which field to use based on what's available
-      let driveField = 'root_drive_id'; // Default field name
-      if (sampleData && sampleData.length > 0) {
-        const fields = Object.keys(sampleData[0]);
-        console.log('FilterServiceAdapter: Available fields in drive profile:', fields);
-        
-        if (fields.includes('drive_id')) {
-          driveField = 'drive_id';
-        }
-      }
+      console.log(`FilterServiceAdapter: Found profile ${profileId} - Name: ${profileData.name}, Is Active: ${profileData.is_active}`);
       
-      console.log(`FilterServiceAdapter: Using field '${driveField}' for drive ID`);
+      // Now get all the root_drive_ids for this profile
+      console.log(`FilterServiceAdapter: Retrieving root_drive_ids for profile ${profileId}`);
       
+      // Direct query - we know the field is root_drive_id
       const { data, error } = await supabase
         .from('user_filter_profile_drives')
-        .select(driveField)
+        .select('root_drive_id')  // Using the correct field name
         .eq('profile_id', profileId);
       
       if (error) {
         console.error('FilterServiceAdapter: Error fetching profile drives:', error);
-        console.error('FilterServiceAdapter: Error details:', JSON.stringify(error, null, 2));
         return [];
       }
       
       if (!data || data.length === 0) {
-        console.log(`FilterServiceAdapter: No drives found for profile ${profileId}`);
-        
-        // No drives found for this profile, disable filtering
+        console.log(`FilterServiceAdapter: No drives found for profile ${profileId} (${profileData.name})`);
+        // Return empty array instead of throwing
         return [];
       }
       
-      const driveIds = data.map(item => item[driveField]).filter(id => id !== null && id !== undefined);
-      console.log(`FilterServiceAdapter: Found ${driveIds.length} drives for profile ${profileId} using field '${driveField}':`, driveIds);
+      // Extract the root_drive_ids
+      const driveIds = data
+        .map(item => item.root_drive_id)
+        .filter(id => id !== null && id !== undefined);
+      
+      console.log(`FilterServiceAdapter: Found ${driveIds.length} root_drive_ids for profile ${profileId}:`, driveIds);
       
       // Cache the results
       this.profileDrivesCache.set(profileId, driveIds);
@@ -237,9 +218,7 @@ class FilterService {
       return driveIds;
     } catch (err) {
       console.error('FilterServiceAdapter: Error in getProfileDriveIds:', err);
-      if (err instanceof Error) {
-        console.error('FilterServiceAdapter: Error details:', err.message, err.stack);
-      }
+      // Return empty array instead of throwing
       return [];
     }
   }
@@ -251,103 +230,95 @@ class FilterService {
   
   // Apply filter to a query based on active profile
   async applyFilterToQuery(query: any, activeProfileId?: string): Promise<any> {
-    if (!activeProfileId) {
-      const activeProfile = await this.loadActiveProfile();
-      if (!activeProfile) {
-        console.log('FilterServiceAdapter: No active profile found for filtering');
-        return query;
-      }
-      activeProfileId = activeProfile.id;
-    }
-    
     try {
-      // Get drive IDs for this profile
-      const driveIds = await this.getProfileDriveIds(activeProfileId);
+      if (!activeProfileId) {
+        const activeProfile = await this.loadActiveProfile();
+        if (!activeProfile) {
+          console.log('FilterServiceAdapter: No active profile found for filtering');
+          return query;
+        }
+        activeProfileId = activeProfile.id;
+      }
       
-      // If no drive IDs are found, don't apply any filter - show all presentations
-      if (!driveIds || driveIds.length === 0) {
-        console.log('FilterServiceAdapter: No drive IDs found for this profile, showing all presentations');
+      console.log(`FilterServiceAdapter: Applying filter for profile ${activeProfileId}`);
+      
+      // Get root_drive_ids for this profile from user_filter_profile_drives
+      const rootDriveIds = await this.getProfileDriveIds(activeProfileId);
+      
+      // If no drive IDs found, return unfiltered query
+      if (!rootDriveIds || rootDriveIds.length === 0) {
+        console.log('FilterServiceAdapter: No root_drive_ids found for this profile, returning unfiltered query');
         return query;
       }
       
-      console.log(`FilterServiceAdapter: Applying filter with ${driveIds.length} drive IDs:`, driveIds);
+      console.log(`FilterServiceAdapter: Using ${rootDriveIds.length} root_drive_ids for filtering:`, rootDriveIds);
       
-      // Approach 1: Try to filter by drive_id if available in high_level_folder
       try {
-        // First try to get a sample row to see if we have the high_level_folder and what fields it has
-        const testQuery = query.limit(1);
-        const { data: testData, error: testError } = await testQuery;
+        // First count how many total presentations and sources we have for reference
+        const { count: totalPresentations } = await supabase
+          .from('presentations')
+          .select('id', { count: 'exact', head: true });
         
-        if (!testError && testData && testData.length > 0) {
-          const samplePresentation = testData[0];
-          
-          console.log('FilterServiceAdapter: Sample presentation structure:', 
-            Object.keys(samplePresentation).join(', '));
-          
-          // First check if we have high_level_folder
-          if (samplePresentation.high_level_folder) {
-            console.log('FilterServiceAdapter: high_level_folder is available in presentations');
-            
-            if (samplePresentation.high_level_folder.drive_id) {
-              console.log('FilterServiceAdapter: drive_id is available in high_level_folder');
-              
-              // Use the foreign key relation to filter directly
-              return query.in('high_level_folder.drive_id', driveIds);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('FilterServiceAdapter: Error testing high_level_folder structure:', err);
-        // Continue to fallback method
+        console.log(`FilterServiceAdapter: Total presentations before filtering: ${totalPresentations}`);
+      } catch (countErr) {
+        console.error('FilterServiceAdapter: Error counting presentations:', countErr);
+        // Continue despite counting error
       }
       
-      // Fallback approach: Get the source IDs from sources_google that match our drive IDs
       try {
-        console.log('FilterServiceAdapter: Using fallback filtering method with source IDs');
-        
+        // Get all sources where root_drive_id matches one of our allowed drive IDs
+        console.log('FilterServiceAdapter: Finding sources with matching root_drive_id...');
         const { data: matchingSources, error: sourcesError } = await supabase
           .from('sources_google')
-          .select('id')
-          .in('drive_id', driveIds);
+          .select('id, name, root_drive_id')
+          .in('root_drive_id', rootDriveIds);
         
         if (sourcesError) {
-          console.error('FilterServiceAdapter: Error finding source IDs for drive filter:', sourcesError);
-          console.error('FilterServiceAdapter: Error details:', JSON.stringify(sourcesError, null, 2));
-          // If we fail at this point, don't apply any filter
+          console.error('FilterServiceAdapter: Error querying sources with root_drive_id:', sourcesError);
+          return query; // Return unfiltered query on error
+        }
+        
+        if (!matchingSources || matchingSources.length === 0) {
+          console.log('FilterServiceAdapter: No sources found with matching root_drive_id');
+          // Return unmodified query instead of empty result
           return query;
         }
         
-        // If we have matching sources, filter presentations by high_level_folder_source_id
-        if (matchingSources && matchingSources.length > 0) {
-          const sourceIds = matchingSources.map(src => src.id);
-          console.log(`FilterServiceAdapter: Found ${sourceIds.length} matching source IDs`);
-          
-          // Apply the filter to the query
-          return query.in('high_level_folder_source_id', sourceIds);
-        } else {
-          console.log('FilterServiceAdapter: No matching sources found for the given drive IDs');
-          
-          // If we don't find any matching sources but have drive IDs, return empty result
-          // This indicates a configuration issue
-          console.log('FilterServiceAdapter: Configuration issue - no sources match the configured drive IDs');
-          
-          // Return a query that will return no results (using an impossible condition)
-          return query.eq('id', 'no-match-force-empty-results');
+        // We have matching sources with our root_drive_ids
+        console.log(`FilterServiceAdapter: Found ${matchingSources.length} sources with matching root_drive_id`);
+        
+        // Show a few examples for diagnostics
+        if (matchingSources.length > 0) {
+          console.log('FilterServiceAdapter: Sample matches:');
+          matchingSources.slice(0, 3).forEach(src => {
+            console.log(`- ${src.name} (root_drive_id: ${src.root_drive_id}, id: ${src.id})`);
+          });
         }
-      } catch (err) {
-        console.error('FilterServiceAdapter: Error in fallback filter method:', err);
-        if (err instanceof Error) {
-          console.error('FilterServiceAdapter: Error details:', err.message, err.stack);
+        
+        // Get the source IDs to use in our presentation filter
+        const sourceIds = matchingSources.map(src => src.id);
+        
+        // Always use the array parameter form of in() for better stability with large arrays
+        console.log(`FilterServiceAdapter: Using stable array form with ${sourceIds.length} source IDs`);
+        
+        // Extract a smaller batch if there are too many IDs (Supabase has URL length limits)
+        const maxSourceIds = 500;
+        if (sourceIds.length > maxSourceIds) {
+          console.log(`FilterServiceAdapter: Limiting to ${maxSourceIds} source IDs due to URL length constraints`);
+          const limitedSourceIds = sourceIds.slice(0, maxSourceIds);
+          return query.in('video_source_id', limitedSourceIds);
         }
-        // If all attempts fail, don't apply any filter
+        
+        // Use array parameter form instead of string interpolation for better stability
+        return query.in('video_source_id', sourceIds);
+      } catch (innerError) {
+        console.error('FilterServiceAdapter: Inner error in filtering:', innerError);
+        // Return original query if anything fails
         return query;
       }
     } catch (err) {
       console.error('FilterServiceAdapter: Error in applyFilterToQuery:', err);
-      if (err instanceof Error) {
-        console.error('FilterServiceAdapter: Error details:', err.message, err.stack);
-      }
-      // If all attempts fail, don't apply any filter
+      // Return unfiltered query on any error
       return query;
     }
   }
