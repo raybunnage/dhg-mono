@@ -298,22 +298,39 @@ export function Home() {
           console.log('Initial load: Profile data structure from service:', 
             Object.keys(profiles[0]).join(', '));
           setFilterProfiles(profiles);
+          
+          // Then get the active profile
+          console.log('Initial load: Retrieving active profile...');
+          const active = await filterService.loadActiveProfile();
+          if (active) {
+            console.log('Initial load: Found active profile:', active.name);
+            console.log('Initial load: Active profile structure:', Object.keys(active).join(', '));
+            setActiveFilterProfile(active);
+          } else {
+            console.log('Initial load: No active profile found, using first available profile');
+            // If no active profile, use the first one
+            if (profiles.length > 0) {
+              // Set the first profile as active
+              const success = await filterService.setActiveProfile(profiles[0].id);
+              if (success) {
+                console.log(`Initial load: Set profile ${profiles[0].name} as active`);
+                const active = await filterService.loadActiveProfile();
+                setActiveFilterProfile(active);
+              }
+            }
+          }
         } else {
           console.warn('Initial load: No profiles returned from filterService');
+          
+          // Create a default profile if none exists
+          console.log('Initial load: Checking if we need to create a default profile');
+          // We'll trigger the fetch data without filters
+          setActiveFilterProfile(null);
         }
-        
-        // Then get the active profile
-        console.log('Initial load: Retrieving active profile...');
-        const active = await filterService.loadActiveProfile();
-        if (active) {
-          console.log('Initial load: Found active profile:', active.name);
-          console.log('Initial load: Active profile structure:', Object.keys(active).join(', '));
-        } else {
-          console.log('Initial load: No active profile found');
-        }
-        setActiveFilterProfile(active);
       } catch (err) {
         console.error('Error fetching filter profiles:', err);
+        // If there's an error, still allow showing the data
+        setActiveFilterProfile(null);
       } finally {
         setLoadingProfiles(false);
       }
@@ -417,8 +434,13 @@ export function Home() {
         
       // Apply active filter profile if available
       if (activeFilterProfile) {
-        console.log(`Home: Applying filter for profile: ${activeFilterProfile.name} (${activeFilterProfile.id})`);
-        query = await filterService.applyFilterToQuery(query, activeFilterProfile.id);
+        try {
+          console.log(`Home: Applying filter for profile: ${activeFilterProfile.name} (${activeFilterProfile.id})`);
+          query = await filterService.applyFilterToQuery(query, activeFilterProfile.id);
+        } catch (filterError) {
+          console.error('Home: Error applying filter:', filterError);
+          // Continue without filtering rather than breaking the entire query
+        }
       } else {
         console.log('Home: No active filter profile to apply');
       }
@@ -2202,6 +2224,90 @@ export function Home() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          
+          {/* Selected Asset Content or Viewer */}
+          {selectedAsset && (
+            <div className={`bg-white rounded-lg shadow mt-4 ${assetViewMode ? 'h-[750px] overflow-hidden' : ''}`}>
+              <Collapsible 
+                open={assetSectionOpen} 
+                onOpenChange={(open) => {
+                  setAssetSectionOpen(open);
+                }}
+              >
+                <div className="px-4 py-3 bg-gray-50 border-b">
+                  <div className="flex justify-between items-center w-full">
+                    <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                      {assetViewMode && (
+                        <button 
+                          onClick={() => setAssetViewMode(false)}
+                          className="inline-flex items-center justify-center mr-2 text-gray-500 hover:text-gray-700"
+                        >
+                          <ArrowLeft className="h-5 w-5" />
+                          <span className="sr-only">Back</span>
+                        </button>
+                      )}
+                      <CollapsibleTrigger className="flex items-center focus:outline-none">
+                        {!assetViewMode && (
+                          <>
+                            {assetSectionOpen ? <ChevronDown className="h-5 w-5 mr-2" /> : <ChevronRight className="h-5 w-5 mr-2" />}
+                          </>
+                        )}
+                        {selectedAsset.source_file?.name || 'Selected Asset'}
+                      </CollapsibleTrigger>
+                    </h2>
+                    {selectedAsset.source_file?.web_view_link && (
+                      <button
+                        onClick={() => {
+                          // Toggle asset view mode
+                          if (!assetViewMode) {
+                            // When entering view mode, collapse all other sections
+                            setVideoSectionOpen(false);
+                            // Make the asset viewer very prominent
+                            setAssetViewMode(true);
+                          } else {
+                            // When exiting view mode, keep other sections collapsed
+                            setAssetViewMode(false);
+                          }
+                        }}
+                        className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
+                      >
+                        {assetViewMode ? 'Return to Summary' : 'View File'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                <CollapsibleContent>
+                  {/* Asset viewer (expanded in the same panel) */}
+                  {assetViewMode && selectedAsset.source_file?.web_view_link ? (
+                    <div className="h-[700px]">
+                      <iframe 
+                        src={`https://drive.google.com/file/d/${extractDriveId(selectedAsset.source_file.web_view_link)}/preview`}
+                        className="w-full h-full"
+                        title={selectedAsset.source_file.name || 'Asset Preview'}
+                        allow="autoplay"
+                      />
+                    </div>
+                  ) : (
+                    <div className="p-4">
+                      <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-li:my-1 prose-ul:ml-4 prose-ul:list-disc prose-ol:ml-4 prose-ol:list-decimal">
+                        {selectedAsset.expert_document?.processed_content ? (
+                          <div className="p-1">
+                            <JsonFormatter 
+                              data={selectedAsset.expert_document.processed_content} 
+                              fontSize="0.875rem"
+                            />
+                          </div>
+                        ) : (
+                          <p>No content available for this asset</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           )}
         </div>
