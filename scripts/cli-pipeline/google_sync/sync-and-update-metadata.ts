@@ -132,8 +132,9 @@ async function listFilesInFolder(
   } = {}
 ): Promise<any[]> {
   // Use the listFiles method instead, which is available in GoogleDriveService
+  // Fix the fields parameter format - it needs to be correctly formatted for the API
   const listResult = await driveService.listFiles(folderId, {
-    fields: options.fields || 'nextPageToken, files(id, name, mimeType, webViewLink, parents, modifiedTime, size, thumbnailLink)'
+    fields: 'nextPageToken, files(id, name, mimeType, webViewLink, parents, modifiedTime, size, thumbnailLink)'
   });
   
   return listResult.files;
@@ -158,9 +159,8 @@ async function listFilesRecursively(
   
   try {
     // Get files in the folder using our helper method
-    const files = await listFilesInFolder(driveService, folderId, {
-      fields: 'id,name,mimeType,parents,modifiedTime,size,thumbnailLink,webViewLink'
-    });
+    // Fix the API request by not passing explicit fields parameter - let the helper use the correct format
+    const files = await listFilesInFolder(driveService, folderId);
       
       // Process files
       const enhancedFiles = files.map((file: GoogleDriveFile) => {
@@ -1503,10 +1503,10 @@ export async function syncAndUpdateMetadata(
       console.log('\n=== TESTING DIRECT FILE LOOKUP ===');
       const testFileId = '1_2vt2t954u8PeoYbTgIyVrNtxN-uZqMhjGFCI5auBvM';
       try {
-        // Use GoogleDriveService to get file
+        // Use GoogleDriveService to get file with proper spacing in the fields parameter
         const fileData = await driveService.getFile(
           testFileId,
-          'id,name,mimeType,parents,modifiedTime'
+          'id, name, mimeType, parents, modifiedTime'
         );
         
         console.log('TEST FILE FOUND:', fileData);
@@ -1520,10 +1520,10 @@ export async function syncAndUpdateMetadata(
         // Also try to list files directly in the root folder
         console.log('\nDirect file listing in root folder:');
         // Use our helper function for listing files
+        // Fix direct file listing by using the helper without custom fields
         const files = await listFilesInFolder(
           driveService,
-          DYNAMIC_HEALING_FOLDER_ID, 
-          { fields: 'id,name,mimeType' }
+          DYNAMIC_HEALING_FOLDER_ID
         );
         
         console.log(`Found ${files.length} files directly in root folder`);
@@ -1552,7 +1552,7 @@ export async function syncAndUpdateMetadata(
       // Use GoogleDriveService to get folder
       const folder = await driveService.getFile(
         DYNAMIC_HEALING_FOLDER_ID,
-        'id,name,mimeType'
+        'id, name, mimeType'
       );
       
       console.log(`✅ Folder exists: "${folder.name}"`);
@@ -1581,6 +1581,87 @@ export async function syncAndUpdateMetadata(
     if (syncResult.filesInserted > 0) {
       console.log('\n📋 NOTE: New files were added and marked as "needs_reprocessing".');
       console.log('   Details of these files will be shown at the end of the sync process.');
+    }
+    
+    // Create a report of sync changes if not in dry run mode
+    if (!isDryRun) {
+      // Generate a report file with changes
+      const reportDate = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+      const reportFilePath = `${process.cwd()}/docs/script-reports/sync-report-${reportDate}.md`;
+      
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Ensure directory exists
+        const reportDir = path.dirname(reportFilePath);
+        if (!fs.existsSync(reportDir)) {
+          fs.mkdirSync(reportDir, { recursive: true });
+        }
+        
+        // Build the report content
+        let reportContent = `# Google Drive Sync Report - ${new Date().toLocaleString()}\n\n`;
+        
+        // Add summary section
+        reportContent += `## Summary\n\n`;
+        reportContent += `- Files found: ${syncResult.filesFound}\n`;
+        reportContent += `- Files inserted: ${syncResult.filesInserted}\n`;
+        reportContent += `- Files updated: ${syncResult.filesUpdated}\n`;
+        reportContent += `- Files marked deleted: ${syncResult.filesMarkedDeleted}\n\n`;
+        
+        // Add new files section if any were inserted
+        if (syncResult.filesInserted > 0) {
+          reportContent += `## New Files (${syncResult.filesInserted})\n\n`;
+          
+          // Fetch details of newly inserted files
+          const supabase = SupabaseClientService.getInstance().getClient();
+          const { data: newFiles } = await supabase
+            .from('sources_google')
+            .select('id, name, mime_type, path, created_at')
+            .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+            .order('created_at', { ascending: false })
+            .limit(Math.min(syncResult.filesInserted, 50));
+            
+          if (newFiles && newFiles.length > 0) {
+            reportContent += `| Name | Type | Path | Created |\n`;
+            reportContent += `|------|------|------|--------|\n`;
+            
+            for (const file of newFiles) {
+              const fileType = file.mime_type ? file.mime_type.split('/').pop() : 'unknown';
+              const createdDate = new Date(file.created_at).toLocaleString();
+              reportContent += `| ${file.name} | ${fileType} | ${file.path || 'N/A'} | ${createdDate} |\n`;
+            }
+            
+            if (newFiles.length < syncResult.filesInserted) {
+              reportContent += `\n*...and ${syncResult.filesInserted - newFiles.length} more files*\n`;
+            }
+          } else {
+            reportContent += `*Details of new files could not be retrieved*\n\n`;
+          }
+        }
+        
+        // Add renamed files section if any were detected
+        // Since we don't directly track renamed files, we can note this is a feature for future development
+        reportContent += `## Likely Renamed Files\n\n`;
+        reportContent += `Changes to file names are preserved by updating the name while keeping the same ID and document information.\n`;
+        reportContent += `Manual verification is recommended for any renamed files.\n\n`;
+        
+        // Add deleted files section if any
+        if (syncResult.filesMarkedDeleted > 0) {
+          reportContent += `## Deleted Files (${syncResult.filesMarkedDeleted})\n\n`;
+          reportContent += `Files marked as deleted are not removed from the database but flagged with \`is_deleted = true\`.\n`;
+          reportContent += `These files can be restored using the \`reset-deleted-files\` command if needed.\n\n`;
+          
+          // We could fetch details of deleted files here, but this might be resource-intensive
+          // so we'll just note that they've been marked as deleted
+        }
+        
+        // Write the report to file
+        fs.writeFileSync(reportFilePath, reportContent);
+        console.log(`\n✅ Sync report written to: ${reportFilePath}`);
+      } catch (error) {
+        console.error(`Error creating sync report: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
     
     if (syncResult.errors.length > 0) {

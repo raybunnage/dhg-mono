@@ -154,9 +154,21 @@ export class GoogleDriveService {
     files: any[];
     nextPageToken?: string;
   }> {
+    // Use default fields if not provided, ensuring proper formatting
+    const defaultFields = 'nextPageToken, files(id, name, mimeType, webViewLink, parents, modifiedTime, size, thumbnailLink)';
+    
+    // Format fields parameter correctly - critical for the API to work
+    let formattedFields = defaultFields;
+    if (options.fields) {
+      formattedFields = options.fields
+        .split(',')
+        .map(field => field.trim())
+        .join(', ');
+    }
+    
     const params = new URLSearchParams({
       pageSize: (options.pageSize || 100).toString(),
-      fields: options.fields || 'nextPageToken, files(id, name, mimeType, webViewLink, parents, modifiedTime, size, thumbnailLink)',
+      fields: formattedFields,
       orderBy: options.orderBy || 'name',
       q: options.q || `'${folderId}' in parents and trashed = false`,
     });
@@ -183,9 +195,21 @@ export class GoogleDriveService {
       orderBy?: string;
     } = {}
   ): Promise<any[]> {
+    // Default fields with proper formatting
+    const defaultFields = 'nextPageToken, files(id, name, mimeType, webViewLink, parents)';
+    
+    // Format fields parameter correctly
+    let formattedFields = defaultFields;
+    if (options.fields) {
+      formattedFields = options.fields
+        .split(',')
+        .map(field => field.trim())
+        .join(', ');
+    }
+    
     const params = new URLSearchParams({
       pageSize: (options.pageSize || 100).toString(),
-      fields: options.fields || 'nextPageToken, files(id, name, mimeType, webViewLink, parents)',
+      fields: formattedFields,
       orderBy: options.orderBy || 'name',
       q: `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
     });
@@ -219,8 +243,14 @@ export class GoogleDriveService {
     fileId: string,
     fields = 'id, name, mimeType, webViewLink, parents, modifiedTime, size, thumbnailLink'
   ): Promise<any> {
+    // Ensure fields parameter is properly formatted with spaces after commas
+    const formattedFields = fields
+      .split(',')
+      .map(field => field.trim())
+      .join(', ');
+      
     const params = new URLSearchParams({
-      fields,
+      fields: formattedFields,
     });
 
     return this.fetchWithAuth(`/files/${fileId}?${params.toString()}`);
