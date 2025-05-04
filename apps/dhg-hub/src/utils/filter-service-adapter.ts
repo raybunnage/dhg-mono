@@ -301,8 +301,8 @@ class FilterService {
         // Always use the array parameter form of in() for better stability with large arrays
         console.log(`FilterServiceAdapter: Using stable array form with ${sourceIds.length} source IDs`);
         
-        // Extract a smaller batch if there are too many IDs (Supabase has URL length limits)
-        const maxSourceIds = 500;
+        // Increased limit from 500 to 1500 to handle all presentations
+        const maxSourceIds = 1500;
         if (sourceIds.length > maxSourceIds) {
           console.log(`FilterServiceAdapter: Limiting to ${maxSourceIds} source IDs due to URL length constraints`);
           const limitedSourceIds = sourceIds.slice(0, maxSourceIds);

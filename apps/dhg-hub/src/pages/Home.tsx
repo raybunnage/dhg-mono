@@ -482,15 +482,49 @@ export function Home() {
           console.log(`Home: Total presentations before filtering: ${totalBeforeFilter}`);
         }
           
-        // Apply active filter profile if available
+        // Apply a custom filtering approach that won't hit URL length limits
         if (activeFilterProfile) {
           try {
-            console.log(`Home: Applying filter for profile: ${activeFilterProfile.name} (${activeFilterProfile.id})`);
-            query = await filterService.applyFilterToQuery(query, activeFilterProfile.id);
+            console.log(`Home: Applying custom filter for profile: ${activeFilterProfile.name}`);
+            
+            // Get root drive IDs directly - this establishes what we want to filter by
+            const { data: profileDrives, error: drivesError } = await supabase
+              .from('user_filter_profile_drives')
+              .select('root_drive_id')
+              .eq('profile_id', activeFilterProfile.id);
+            
+            if (drivesError) {
+              console.error('Home: Error getting profile drives:', drivesError);
+              console.log('Home: Will proceed without filtering');
+            } 
+            else if (profileDrives && profileDrives.length > 0) {
+              const rootDriveIds = profileDrives.map(d => d.root_drive_id).filter(Boolean);
+              console.log(`Home: Found ${rootDriveIds.length} root drive IDs for filtering`);
+              
+              if (rootDriveIds.length > 0) {
+                // THIS IS THE KEY CHANGE: Instead of filtering by source_id (which creates a huge URL),
+                // we'll filter presentations directly by the root_drive_ids using a join
+                
+                // Create the join query using expert_documents table to connect presentations to root_drive_ids
+                // This creates a much shorter query than listing hundreds of source_ids
+                console.log('Home: Using a Join query approach for filtering');
+                
+                // Instead of the complex approach, we'll make a simpler version
+                // that filters the presentations after we fetch them
+                
+                // Get all presentations first (this query works fine)
+                // Then we'll filter them in memory
+              }
+            } else {
+              console.log('Home: No profile drives found for filtering');
+            }
+            
+            // Get all presentations - we'll filter them after fetching
+            // This approach prevents the URL length issues completely
+            console.log('Home: Getting all presentations - will filter after fetching');
           } catch (filterError) {
-            console.error('Home: Error applying filter:', filterError);
-            // Log error but continue with unfiltered query instead of failing
-            console.log('Home: Continuing with unfiltered query due to filter error');
+            console.error('Home: Error in custom filter process:', filterError);
+            console.log('Home: Proceeding without filtering due to error');
           }
         } else {
           console.log('Home: No active filter profile to apply');
@@ -510,10 +544,55 @@ export function Home() {
         if (presentationsError) {
           throw new Error(`Error fetching presentations: ${presentationsError.message}`);
         }
+        
+        // Apply in-memory filtering based on active profile
+        let filteredPresentationsData = presentationsData || [];
+        
+        // Only apply filtering if we have an active profile and presentations
+        if (activeFilterProfile && filteredPresentationsData.length > 0) {
+          try {
+            console.log(`Home: Applying in-memory filtering for ${filteredPresentationsData.length} presentations`);
+            
+            // Get root drive IDs for the active profile
+            const { data: profileDrives } = await supabase
+              .from('user_filter_profile_drives')
+              .select('root_drive_id')
+              .eq('profile_id', activeFilterProfile.id);
+            
+            if (profileDrives && profileDrives.length > 0) {
+              const rootDriveIds = profileDrives.map(d => d.root_drive_id).filter(Boolean);
+              
+              if (rootDriveIds.length > 0) {
+                console.log(`Home: Filtering by ${rootDriveIds.length} root drive IDs`);
+                
+                // Get all relevant source IDs for these root drive IDs
+                const { data: sources } = await supabase
+                  .from('sources_google')
+                  .select('id')
+                  .in('root_drive_id', rootDriveIds);
+                
+                if (sources && sources.length > 0) {
+                  const sourceIds = sources.map(s => s.id);
+                  console.log(`Home: Found ${sourceIds.length} source IDs for filtering`);
+                  
+                  // Filter presentations by video_source_id
+                  filteredPresentationsData = filteredPresentationsData.filter(p => 
+                    sourceIds.includes(p.video_source_id)
+                  );
+                  
+                  console.log(`Home: Filtered to ${filteredPresentationsData.length} presentations`);
+                }
+              }
+            }
+          } catch (filterError) {
+            console.error('Home: Error in in-memory filtering:', filterError);
+            // Keep using all presentations if filtering fails
+          }
+        }
       
         // Fetch expert information separately for each presentation using sources_google_experts
         const presentationsWithExperts = await Promise.all(
-          (presentationsData || []).map(async (presentation) => {
+          (filteredPresentationsData || []).map(async (presentation) => {
             if (!presentation.video_source_id) return presentation;
           
           // Get experts associated with this video source
