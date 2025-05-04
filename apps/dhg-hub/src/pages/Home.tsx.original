@@ -6,36 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import JsonFormatter from '../components/JsonFormatter';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../components/ui/collapsible';
 import { ChevronDown, ChevronRight, ArrowLeft, RefreshCcw } from 'lucide-react';
-import { filterService } from '@/utils/filter-service-adapter';
-
-// Interface for FilterProfile
-interface FilterProfile {
-  id: string;
-  name: string;
-  description?: string;
-  filter_config: any;
-  is_active: boolean;
-  created_at?: string;
-}
-
-// Debug function to check the database directly
-async function debugCheckFilterProfiles() {
-  try {
-    // Direct database query to check what profiles exist
-    const { data, error } = await supabase
-      .from('user_filter_profiles')
-      .select('*');
-      
-    console.log('Debug: Direct database check for profiles');
-    console.log('Results:', data);
-    console.log('Error:', error);
-    
-    return data;
-  } catch (err) {
-    console.error('Error in debug check:', err);
-    return null;
-  }
-}
+import { FilterProfile, filterService } from '../../../packages/shared/services/filter-service/filter-service';
 
 // Utility function to get video duration, either from metadata or estimated from file size
 // Helper function to search within processed content objects or strings
@@ -227,13 +198,8 @@ export function Home() {
     async function fetchFilterProfiles() {
       setLoadingProfiles(true);
       try {
-        // Debug check first
-        const directProfiles = await debugCheckFilterProfiles();
-        console.log('Direct database check found', directProfiles?.length || 0, 'profiles');
-        
         // Fetch all available profiles
         const profiles = await filterService.listProfiles();
-        console.log('Filter service returned', profiles.length, 'profiles');
         setFilterProfiles(profiles);
         
         // Then get the active profile
@@ -267,7 +233,7 @@ export function Home() {
   // Fetch presentations data
   useEffect(() => {
     fetchData();
-  }, [activeFilterProfile]);
+  }, []);
 
   // Function to fetch presentations data
   async function fetchData() {
@@ -280,9 +246,15 @@ export function Home() {
           id, 
           video_source_id,
           expert_document_id,
+          expert_id,
           high_level_folder_source_id,
           web_view_link,
           created_at,
+          expert:expert_id(
+            id,
+            full_name,
+            expert_name
+          ),
           expert_document:expert_document_id(
             id, 
             title, 
@@ -316,75 +288,37 @@ export function Home() {
       if (presentationsError) {
         throw new Error(`Error fetching presentations: ${presentationsError.message}`);
       }
-      
-      // Fetch expert information separately for each presentation using sources_google_experts
-      const presentationsWithExperts = await Promise.all(
-        (presentationsData || []).map(async (presentation) => {
-          if (!presentation.video_source_id) return presentation;
-          
-          // Get experts associated with this video source
-          const { data: expertsData, error: expertsError } = await supabase
-            .from('sources_google_experts')
-            .select(`
-              expert_id,
-              is_primary,
-              expert:expert_id(
-                id,
-                full_name,
-                expert_name
-              )
-            `)
-            .eq('source_id', presentation.video_source_id);
-            
-          if (expertsError) {
-            console.error(`Error fetching experts for presentation ${presentation.id}:`, expertsError);
-            return presentation;
-          }
-          
-          // If we found experts, add them to the presentation
-          if (expertsData && expertsData.length > 0) {
-            // Find primary expert (if any) or use the first one
-            const primaryExpert = expertsData.find(e => e.is_primary) || expertsData[0];
-            
-            return {
-              ...presentation,
-              expert: primaryExpert.expert,
-              experts: expertsData.map(e => e.expert), // All experts
-              expert_names: expertsData.map(e => e.expert?.full_name || e.expert?.expert_name || '').join(', ')
-            };
-          }
-          
-          return presentation;
-        })
-      );
-      
-      // Use the presentations with experts data
-      const sortedPresentations = [...(presentationsWithExperts || [])].sort((a, b) => {
-        const dateA = a.video_source?.modified_at ? new Date(a.video_source.modified_at).getTime() : 0;
-        const dateB = b.video_source?.modified_at ? new Date(b.video_source.modified_at).getTime() : 0;
-        return dateB - dateA;
-      });
-      
-      setPresentations(sortedPresentations);
 
-      // Fetch all subject classifications for the filter
-      const { data: subjectsData, error: subjectsError } = await supabase
-        .from('subject_classifications')
-        .select('*')
-        .order('subject');
+        // Fetch all subject classifications for the filter
+        const { data: subjectsData, error: subjectsError } = await supabase
+          .from('subject_classifications')
+          .select('*')
+          .order('subject');
 
-      if (subjectsError) {
-        throw new Error(`Error fetching subject classifications: ${subjectsError.message}`);
+        if (subjectsError) {
+          throw new Error(`Error fetching subject classifications: ${subjectsError.message}`);
+        }
+
+        setSubjectClassifications(subjectsData || []);
+        
+        // Sort presentations by modified date (newest first) before setting state
+        const sortedPresentations = [...(presentationsData || [])].sort((a, b) => {
+          const dateA = a.video_source?.modified_at ? new Date(a.video_source.modified_at).getTime() : 0;
+          const dateB = b.video_source?.modified_at ? new Date(b.video_source.modified_at).getTime() : 0;
+          return dateB - dateA;
+        });
+        
+        setPresentations(sortedPresentations);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error occurred');
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-
-      setSubjectClassifications(subjectsData || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
-  }
+
+    fetchData();
+  }, []);
 
   // Fetch presentation assets when a presentation is selected
   useEffect(() => {
@@ -1459,15 +1393,11 @@ export function Home() {
             <option value="" disabled>
               {loadingProfiles ? 'Loading profiles...' : 'Select a filter profile'}
             </option>
-            {filterProfiles && filterProfiles.length > 0 ? (
-              filterProfiles.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.name} {profile.is_active ? '(Active)' : ''}
-                </option>
-              ))
-            ) : (
-              <option value="" disabled>No profiles available</option>
-            )}
+            {filterProfiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.name} {profile.is_active ? '(Active)' : ''}
+              </option>
+            ))}
           </select>
         </div>
         
@@ -1477,16 +1407,8 @@ export function Home() {
             async function refreshProfiles() {
               setLoadingProfiles(true);
               try {
-                // Debug check first
-                const directProfiles = await debugCheckFilterProfiles();
-                console.log('Refresh - Direct database check found', directProfiles?.length || 0, 'profiles');
-                
-                // If we found profiles directly but filter service doesn't return them,
-                // there might be an issue with the filter service
                 const profiles = await filterService.listProfiles();
-                console.log('Refresh - Filter service returned', profiles.length, 'profiles');
                 setFilterProfiles(profiles);
-                
                 const active = await filterService.loadActiveProfile();
                 setActiveFilterProfile(active);
                 fetchData();
