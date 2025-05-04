@@ -2340,15 +2340,18 @@ export function Home() {
                       <div
                         key={asset.id}
                         onClick={() => {
-                          // Select the asset but don't jump to the AI summary view
+                          // First click: Select asset and open AI summary in viewer below
+                          // but keep focus on the presentation assets section
                           setSelectedAsset(asset);
-                          // Don't auto-expand the asset section on any click
-                          setAssetSectionOpen(false);
+                          // Open the asset section to show AI summary
+                          setAssetSectionOpen(true);
+                          // Ensure we're not in asset view mode (showing AI summary)
+                          setAssetViewMode(false);
                           // Keep focus on the presentation assets section
                           setVideoSectionOpen(false);
                         }}
                         onDoubleClick={() => {
-                          // Double-click behavior goes directly to asset view
+                          // Double-click: Go directly to asset view with web_view_link
                           setVideoSectionOpen(false);
                           setSelectedAsset(asset);
                           setAssetSectionOpen(true);
@@ -2359,7 +2362,7 @@ export function Home() {
                             ? 'bg-blue-50 border-blue-200'
                             : 'hover:bg-gray-50 border-gray-100'
                         }`}
-                        title="Click to select, double-click to view file"
+                        title="Click to see AI summary, double-click to view file"
                       >
                         <div className="flex items-start gap-3">
                           <div className="bg-blue-100 text-blue-800 p-2 rounded">
