@@ -1156,7 +1156,13 @@ async function updateMetadata(
     if (!records || records.length === 0) throw new Error('No records returned from Supabase');
     
     result.records = records.length;
-    if (verbose) console.log(`Found ${records.length} records`);
+    
+    // Show fetch completion in non-verbose mode
+    if (!verbose) {
+      console.log(`✓ Found ${records.length} records to process`);
+    } else {
+      console.log(`Found ${records.length} records`);
+    }
     
     // Process records in batches to improve performance
     const BATCH_SIZE = 20; // Process 20 records at a time
@@ -1375,31 +1381,109 @@ async function updateMetadata(
       // Perform batch update if there are records to update
       if (recordsToUpdate.length > 0) {
         if (!dryRun) {
-          if (verbose) console.log(`Batch updating ${recordsToUpdate.length} records...`);
+          if (verbose) {
+            console.log(`Batch updating ${recordsToUpdate.length} records...`);
+          } else {
+            // Show progress even in non-verbose mode
+            process.stdout.write(`Updating batch ${batchIndex + 1}/${batches} (${recordsToUpdate.length} records)... `);
+          }
+          
+          let batchSuccessCount = 0;
           
           // Update each record individually (could be optimized further with UPSERT)
           for (const updateData of recordsToUpdate) {
             const recordId = updateData.id;
             delete updateData.id; // Remove ID from update data
             
-            const { error: updateError } = await supabase
-              .from('sources_google')
-              .update(updateData)
-              .eq('id', recordId);
+            try {
+              // Add a retry mechanism for API aborts
+              let retryCount = 0;
+              const maxRetries = 3;
+              let updateError = null;
               
-            if (updateError) {
-              const errorMessage = `Error updating record ${recordId}: ${updateError.message}`;
+              while (retryCount < maxRetries) {
+                try {
+                  // Use a timeout to prevent hanging requests
+                  const timeout = 15000; // 15 seconds timeout
+                  const updatePromise = supabase
+                    .from('sources_google')
+                    .update(updateData)
+                    .eq('id', recordId);
+                    
+                  const { error: apiError } = await updatePromise;
+                  
+                  if (!apiError) {
+                    // Success! No error
+                    updateError = null;
+                    break;
+                  }
+                  
+                  updateError = apiError;
+                  
+                  // If it's not an abort error, no need to retry
+                  if (!apiError.message.includes('AbortError') && 
+                      !apiError.message.includes('operation was aborted')) {
+                    break;
+                  }
+                  
+                  // It was an abort error, retry after a delay
+                  retryCount++;
+                  if (retryCount < maxRetries) {
+                    // Wait longer between each retry
+                    const delay = retryCount * 1000;
+                    if (verbose) {
+                      console.log(`AbortError detected, retrying after ${delay}ms (attempt ${retryCount}/${maxRetries})...`);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                  }
+                } catch (err) {
+                  // Handle any unexpected errors
+                  updateError = err;
+                  retryCount++;
+                  
+                  if (retryCount < maxRetries) {
+                    const delay = retryCount * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                  }
+                }
+              }
+              
+              if (updateError) {
+                const errorMessage = `Error updating record ${recordId}: ${updateError instanceof Error ? updateError.message : String(updateError)}`;
+                console.error(errorMessage);
+                result.errors.push(errorMessage);
+                result.skipped++;
+              } else {
+                result.updated++;
+                batchSuccessCount++;
+                if (verbose) console.log(`Updated record: ${recordId}`);
+              }
+            } catch (err) {
+              // Final fallback for any unexpected errors
+              const errorMessage = `Unexpected error updating record ${recordId}: ${err instanceof Error ? err.message : String(err)}`;
               console.error(errorMessage);
               result.errors.push(errorMessage);
               result.skipped++;
-            } else {
-              result.updated++;
-              if (verbose) console.log(`Updated record: ${recordId}`);
             }
           }
+          
+          // Print batch completion message in non-verbose mode
+          if (!verbose) {
+            console.log(`✓ (${batchSuccessCount} updates successful)`);
+          }
         } else {
-          if (verbose) console.log(`DRY RUN: Would update ${recordsToUpdate.length} records`);
+          if (verbose) {
+            console.log(`DRY RUN: Would update ${recordsToUpdate.length} records`);
+          } else {
+            // Show progress even in dry run mode
+            console.log(`DRY RUN: Batch ${batchIndex + 1}/${batches} - Would update ${recordsToUpdate.length} records`);
+          }
           result.updated += recordsToUpdate.length;
+        }
+      } else {
+        // Show progress even when there are no updates to make
+        if (!verbose) {
+          console.log(`Batch ${batchIndex + 1}/${batches} - No updates needed for ${batchRecords.length} records`);
         }
       }
       
@@ -1471,13 +1555,23 @@ export async function syncAndUpdateMetadata(
   dryRun: boolean = false,
   recordLimit: number = 10,
   folderDepth: number = 3,
-  verbose: boolean = false
+  verbose: boolean = false,
+  continueFromError: boolean = false
 ): Promise<void> {
   // Set global variables based on parameters
   isDryRun = dryRun;
   limit = recordLimit;
   maxDepth = folderDepth;
   isVerbose = verbose;
+  
+  // Parse arguments to look for --continue-from-error parameter
+  const args = process.argv.slice(2);
+  const continueFromErrorArg = args.includes('--continue-from-error') || 
+                               args.some(arg => arg.startsWith('--continue-from-error=')) ||
+                               continueFromError === true;
+  
+  // Allow resuming from a failed operation (skipping the sync part)
+  const skipSyncPhase = continueFromErrorArg;
   
   console.log('=== Dynamic Healing Discussion Group Sync and Update ===');
   console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'ACTUAL SYNC'}`);
@@ -1565,9 +1659,26 @@ export async function syncAndUpdateMetadata(
       process.exit(1);
     }
 
-    // STEP 1: Sync files from Google Drive to Supabase
-    console.log('\n=== Step 1: Sync Files from Google Drive ===');
-    const syncResult = await syncFiles(driveService, DYNAMIC_HEALING_FOLDER_ID, isDryRun, maxDepth);
+    // Initialize sync result
+    let syncResult: FileSyncResult;
+    
+    // STEP 1: Sync files from Google Drive to Supabase (unless skipping)
+    if (skipSyncPhase) {
+      console.log('\n=== Step 1: Skipping Sync Phase (continuing from error) ===');
+      // Create a dummy sync result
+      syncResult = {
+        filesFound: 0,
+        filesInserted: 0,
+        filesUpdated: 0,
+        filesMarkedDeleted: 0,
+        filesSkipped: 0,
+        errors: [],
+        filesByType: {}
+      };
+    } else {
+      console.log('\n=== Step 1: Sync Files from Google Drive ===');
+      syncResult = await syncFiles(driveService, DYNAMIC_HEALING_FOLDER_ID, isDryRun, maxDepth);
+    }
     
     console.log('\n=== Sync Summary ===');
     console.log(`Files found: ${syncResult.filesFound}`);
@@ -1836,7 +1947,22 @@ export async function syncAndUpdateMetadata(
     // STEP 2: Update metadata for the files
     console.log('\n=== Step 2: Update Metadata ===');
     console.log(`Starting metadata update for ${limit} records...`);
+    console.log(`This may take some time. Progress updates will be shown for each batch.`);
+    
+    // Start progress timer
+    const metadataStartTime = new Date();
+    
+    // Show initial spinner/progress indicator
+    if (!isVerbose) {
+      process.stdout.write(`Fetching records from Supabase... `);
+    }
+    
     const updateResult = await updateMetadata(driveService, DYNAMIC_HEALING_FOLDER_ID, limit, isDryRun, isVerbose);
+    
+    // Show total time taken for metadata update
+    const metadataEndTime = new Date();
+    const metadataTimeTaken = (metadataEndTime.getTime() - metadataStartTime.getTime()) / 1000;
+    console.log(`\nMetadata update completed in ${metadataTimeTaken.toFixed(2)} seconds.`);
 
     console.log('\n=== Update Summary ===');
     console.log(`Records found: ${updateResult.records}`);

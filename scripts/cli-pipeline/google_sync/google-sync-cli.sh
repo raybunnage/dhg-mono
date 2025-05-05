@@ -774,7 +774,14 @@ fi
 
 if [ "$1" = "sync" ]; then
   shift
-  track_command "sync-and-update-metadata" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $*"
+  
+  # Check for special parameter --continue-from-error
+  if [[ "$*" == *"--continue-from-error"* ]]; then
+    echo "Special mode: Continuing from previous error (skipping sync phase)"
+    track_command "sync-and-update-metadata-continue" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $* --continue-from-error true"
+  else
+    track_command "sync-and-update-metadata" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $*"
+  fi
   exit $?
 fi
 
