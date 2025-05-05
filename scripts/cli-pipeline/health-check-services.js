@@ -39,10 +39,11 @@ const SERVICE_PATTERNS = [
   },
   {
     name: 'Google Drive',
-    correctPattern: "googleDriveService",
+    correctPattern: "getGoogleDriveService",
     incorrectPatterns: [
       "new google.auth.JWT(",
-      "new GoogleDriveClient("
+      "new GoogleDriveClient(",
+      "new GoogleDriveService("
     ],
     sharedServicePath: 'packages/shared/services/google-drive'
   },
@@ -73,6 +74,26 @@ const SERVICE_PATTERNS = [
       "processPDFFromFile("
     ],
     sharedServicePath: 'packages/shared/services/pdf-processor-service'
+  },
+  {
+    name: 'Converter Service',
+    correctPattern: "converterService",
+    incorrectPatterns: [
+      "convertPdfToText(",
+      "extractVideoMetadata(",
+      "convertFileFormat("
+    ],
+    sharedServicePath: 'packages/shared/services/converter-service'
+  },
+  {
+    name: 'Filter Service',
+    correctPattern: "filterService",
+    incorrectPatterns: [
+      "applyFilters(",
+      "filterResults(",
+      "queryWithFilters("
+    ],
+    sharedServicePath: 'packages/shared/services/filter-service'
   }
 ];
 

@@ -35,6 +35,8 @@ show_help() {
   echo "MAINTENANCE:"
   echo "  * health-check        Run a health check on the CLI pipeline code (10 uses)"
   echo "    singleton-usage     Check for correct usage of singleton services"
+  echo "    check-google-sync   Check sync-and-update-metadata implementation"
+  echo "    check-find-folder   Check find-folder implementation"
   echo ""
   echo "SYSTEM:"
   echo "    help                Show this help message"
@@ -65,12 +67,30 @@ singleton_usage() {
 }
 
 # Main command router
+# New commands
+check_google_sync() {
+  echo "Checking Google Drive sync implementation..."
+  track_command "check-google-sync" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/check-google-sync.ts $@"
+}
+
+check_find_folder() {
+  echo "Checking find-folder implementation..."
+  track_command "check-find-folder" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/check-find-folder.ts $@"
+}
+
+# Main command router
 case "$1" in
   "health-check")
     health_check "${@:2}"
     ;;
   "singleton-usage")
     singleton_usage "${@:2}"
+    ;;
+  "check-google-sync")
+    check_google_sync "${@:2}"
+    ;;
+  "check-find-folder")
+    check_find_folder "${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

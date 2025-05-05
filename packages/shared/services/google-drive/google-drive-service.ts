@@ -233,6 +233,60 @@ export class GoogleDriveService {
     
     return allFolders;
   }
+  
+  /**
+   * Search for files across all of Google Drive using a query string
+   * @param query Search query in Google Drive query format
+   * @param options Options for searching
+   */
+  public async searchFiles(
+    query: string,
+    options: {
+      pageSize?: number;
+      pageToken?: string;
+      fields?: string;
+      orderBy?: string;
+      spaces?: string;
+      includeItemsFromAllDrives?: boolean;
+      supportsAllDrives?: boolean;
+    } = {}
+  ): Promise<{ 
+    files: any[];
+    nextPageToken?: string;
+  }> {
+    // Default fields with proper formatting
+    const defaultFields = 'nextPageToken, files(id, name, mimeType, webViewLink, parents, modifiedTime)';
+    
+    // Format fields parameter correctly
+    let formattedFields = defaultFields;
+    if (options.fields) {
+      formattedFields = options.fields
+        .split(',')
+        .map(field => field.trim())
+        .join(', ');
+    }
+    
+    const params = new URLSearchParams({
+      pageSize: (options.pageSize || 100).toString(),
+      fields: formattedFields,
+      orderBy: options.orderBy || 'modifiedTime desc',
+      q: query,
+      spaces: options.spaces || 'drive',
+      includeItemsFromAllDrives: (options.includeItemsFromAllDrives !== false).toString(),
+      supportsAllDrives: (options.supportsAllDrives !== false).toString(),
+    });
+
+    if (options.pageToken) {
+      params.append('pageToken', options.pageToken);
+    }
+
+    // Execute search
+    const result = await this.fetchWithAuth(`/files?${params.toString()}`);
+    
+    // If recursive searching is needed, we could implement pagination here
+    // For now, return the first page of results
+    return result;
+  }
 
   /**
    * Get file metadata

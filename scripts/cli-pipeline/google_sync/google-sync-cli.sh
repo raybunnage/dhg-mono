@@ -365,6 +365,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "CORE OPERATIONS:"
   echo "  * sync                         Sync files from Google Drive to the database with intelligent file categorization"
+  echo "    find-folder                  Find a specific folder or file by name pattern in Google Drive"
   echo "  * health-check                 Check the health of Google Drive API connection"
   echo ""
   echo "DOCUMENT CLASSIFICATION:"
@@ -428,6 +429,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Run sync in preview mode (no changes) with limited depth"
   echo "  ./google-sync-cli.sh sync --dry-run --max-depth 3"
+  echo ""
+  echo "  # Check only for new folders (faster operation)"
+  echo "  ./google-sync-cli.sh sync --new-folder-only --verbose"
+  echo ""
+  echo "  # Find a specific folder by name"
+  echo "  ./google-sync-cli.sh find-folder \"folder-name-pattern\""
   echo ""
   echo "  # Check if Google Drive API connection is working"
   echo "  ./google-sync-cli.sh health-check"
@@ -775,13 +782,34 @@ fi
 if [ "$1" = "sync" ]; then
   shift
   
-  # Check for special parameter --continue-from-error
+  # Check for special parameter --continue-from-error or --continue-update-only
   if [[ "$*" == *"--continue-from-error"* ]]; then
     echo "Special mode: Continuing from previous error (skipping sync phase)"
     track_command "sync-and-update-metadata-continue" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $* --continue-from-error true"
+  elif [[ "$*" == *"--continue-update-only"* ]]; then
+    echo "Special mode: Continuing update phase only (skipping sync phase)"
+    track_command "sync-and-update-metadata-update-only" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $* --continue-update-only true"
+  elif [[ "$*" == *"--new-folder-only"* ]]; then
+    # New option to specifically check for new folders
+    echo "Special mode: Checking for new folders and files only"
+    track_command "sync-check-new-folders" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $* --new-folder-only true"
   else
     track_command "sync-and-update-metadata" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $*"
   fi
+  exit $?
+fi
+
+# Add a specific command to look for a folder by name
+if [ "$1" = "find-folder" ]; then
+  shift
+  if [ -z "$1" ]; then
+    echo "Error: Folder name is required"
+    echo "Usage: ./google-sync-cli.sh find-folder <folder-name>"
+    exit 1
+  fi
+  FOLDER_NAME="$1"
+  shift
+  track_command "find-folder" "ts-node $SCRIPT_DIR/find-folder.ts \"$FOLDER_NAME\" $*"
   exit $?
 fi
 

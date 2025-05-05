@@ -128,15 +128,28 @@ async function listFilesInFolder(
   folderId: string,
   options: { 
     fields?: string,
-    includeSubfolders?: boolean 
+    includeSubfolders?: boolean,
+    pageSize?: number
   } = {}
 ): Promise<any[]> {
   // Use the listFiles method instead, which is available in GoogleDriveService
   // Fix the fields parameter format - it needs to be correctly formatted for the API
+  // Use a larger page size to ensure we get all files in one request if possible
   const listResult = await driveService.listFiles(folderId, {
-    fields: 'nextPageToken, files(id, name, mimeType, webViewLink, parents, modifiedTime, size, thumbnailLink)'
+    fields: 'nextPageToken, files(id, name, mimeType, webViewLink, parents, modifiedTime, size, thumbnailLink)',
+    pageSize: options.pageSize || 1000 // Increase default page size to 1000 to get more files
   });
   
+  // Display the file count for debugging
+  if (isVerbose) {
+    console.log(`Retrieved ${listResult.files.length} files from folder ${folderId} in listFilesInFolder`);
+  }
+  
+  // Check if we have a nextPageToken, which means there are more files
+  if (listResult.nextPageToken && isVerbose) {
+    console.log(`More files exist beyond the current page size! Consider increasing pageSize or implement pagination.`);
+  }
+
   return listResult.files;
 }
 
@@ -1556,7 +1569,8 @@ export async function syncAndUpdateMetadata(
   recordLimit: number = 10,
   folderDepth: number = 3,
   verbose: boolean = false,
-  continueFromError: boolean = false
+  continueFromError: boolean = false,
+  continueUpdateOnly: boolean = false
 ): Promise<void> {
   // Set global variables based on parameters
   isDryRun = dryRun;
@@ -1564,14 +1578,21 @@ export async function syncAndUpdateMetadata(
   maxDepth = folderDepth;
   isVerbose = verbose;
   
-  // Parse arguments to look for --continue-from-error parameter
+  // Parse arguments to look for continuation parameters
   const args = process.argv.slice(2);
+  
+  // Check for error continuation flag (skips sync phase)
   const continueFromErrorArg = args.includes('--continue-from-error') || 
                                args.some(arg => arg.startsWith('--continue-from-error=')) ||
                                continueFromError === true;
   
+  // Check for update-only flag (skips sync phase)
+  const continueUpdateOnlyArg = args.includes('--continue-update-only') || 
+                                args.some(arg => arg.startsWith('--continue-update-only=')) ||
+                                continueUpdateOnly === true;
+  
   // Allow resuming from a failed operation (skipping the sync part)
-  const skipSyncPhase = continueFromErrorArg;
+  const skipSyncPhase = continueFromErrorArg || continueUpdateOnlyArg;
   
   console.log('=== Dynamic Healing Discussion Group Sync and Update ===');
   console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'ACTUAL SYNC'}`);
@@ -1749,22 +1770,97 @@ export async function syncAndUpdateMetadata(
           } else {
             reportContent += `*Details of new files could not be retrieved*\n\n`;
           }
+        } else {
+          // Show note that no new files were found, but include search for recent files anyway
+          reportContent += `## New Files\n\n`;
+          reportContent += `No new files were inserted in this sync run.\n\n`;
+          
+          // Even if no new files were inserted in this run, fetch the most recent files from the database
+          // to show files that might have been added recently
+          const supabase = SupabaseClientService.getInstance().getClient();
+          const { data: recentFiles } = await supabase
+            .from('sources_google')
+            .select('id, name, mime_type, path, created_at')
+            .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false })
+            .limit(10);
+          
+          if (recentFiles && recentFiles.length > 0) {
+            reportContent += `### Most Recently Added Files\n\n`;
+            reportContent += `| Name | Type | Path | Created |\n`;
+            reportContent += `|------|------|------|--------|\n`;
+            
+            for (const file of recentFiles) {
+              const fileType = file.mime_type ? file.mime_type.split('/').pop() : 'unknown';
+              const createdDate = new Date(file.created_at).toLocaleString();
+              reportContent += `| ${file.name} | ${fileType} | ${file.path || 'N/A'} | ${createdDate} |\n`;
+            }
+          }
         }
         
         // Add renamed files section if any were detected
-        // Since we don't directly track renamed files, we can note this is a feature for future development
-        reportContent += `## Likely Renamed Files\n\n`;
-        reportContent += `Changes to file names are preserved by updating the name while keeping the same ID and document information.\n`;
-        reportContent += `Manual verification is recommended for any renamed files.\n\n`;
+        const { data: possiblyRenamedFiles } = await supabase
+          .from('sources_google')
+          .select('id, name, path, updated_at')
+          .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+          .eq('is_deleted', false)
+          .gt('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
+          .order('updated_at', { ascending: false })
+          .limit(20);
+            
+        if (possiblyRenamedFiles && possiblyRenamedFiles.length > 0) {
+          reportContent += `## Likely Renamed Files\n\n`;
+          reportContent += `These files were updated in the last 24 hours and might have been renamed:\n\n`;
+          reportContent += `| Name | Path | Last Updated |\n`;
+          reportContent += `|------|------|-------------|\n`;
+          
+          for (const file of possiblyRenamedFiles) {
+            const updatedDate = new Date(file.updated_at).toLocaleString();
+            reportContent += `| ${file.name} | ${file.path || 'N/A'} | ${updatedDate} |\n`;
+          }
+          
+          reportContent += `\nChanges to file names are preserved by updating the name while keeping the same ID and document information.\n`;
+          reportContent += `Manual verification is recommended for any renamed files.\n\n`;
+        } else {
+          reportContent += `## Likely Renamed Files\n\n`;
+          reportContent += `No files appear to have been renamed in the last 24 hours.\n\n`;
+          reportContent += `Changes to file names are preserved by updating the name while keeping the same ID and document information.\n`;
+          reportContent += `Manual verification is recommended for any renamed files.\n\n`;
+        }
         
         // Add deleted files section if any
         if (syncResult.filesMarkedDeleted > 0) {
           reportContent += `## Deleted Files (${syncResult.filesMarkedDeleted})\n\n`;
+          
+          // Try to fetch recently deleted files
+          const { data: deletedFiles } = await supabase
+            .from('sources_google')
+            .select('id, name, path, updated_at')
+            .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+            .eq('is_deleted', true)
+            .gt('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
+            .order('updated_at', { ascending: false })
+            .limit(20);
+            
+          if (deletedFiles && deletedFiles.length > 0) {
+            reportContent += `Recently deleted files:\n\n`;
+            reportContent += `| Name | Path | Deletion Time |\n`;
+            reportContent += `|------|------|--------------|\\n`;
+            
+            for (const file of deletedFiles) {
+              const deletedDate = new Date(file.updated_at).toLocaleString();
+              reportContent += `| ${file.name} | ${file.path || 'N/A'} | ${deletedDate} |\n`;
+            }
+            
+            reportContent += `\n`;
+          }
+          
           reportContent += `Files marked as deleted are not removed from the database but flagged with \`is_deleted = true\`.\n`;
           reportContent += `These files can be restored using the \`reset-deleted-files\` command if needed.\n\n`;
-          
-          // We could fetch details of deleted files here, but this might be resource-intensive
-          // so we'll just note that they've been marked as deleted
+        } else {
+          reportContent += `## Deleted Files\n\n`;
+          reportContent += `No files were marked as deleted in this sync run.\n\n`;
         }
         
         // Write the report to file
