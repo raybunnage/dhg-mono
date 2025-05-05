@@ -2,6 +2,491 @@
  
 CLI commands could then include a --profile flag or automatically use the active profile.
 
+Narrative Summary
+Interview		Interview	Question-answer format
+
+ Adding "version" and "topics" fields would provide significant value to your document processing system. Let's
+  explore both:
+
+  Adding "version" Field
+
+  Purpose and Value
+
+  The "version" field helps track document revisions and processing iterations, essential for:
+  - Identifying the most current document version
+  - Maintaining processing history
+  - Supporting A/B testing of different AI processing approaches
+  - Managing content updates while preserving history
+
+  Implementation Options
+
+  Option 1: Simple Version Number
+
+  ALTER TABLE expert_documents
+    ADD COLUMN version INTEGER DEFAULT 1;
+
+  Option 2: Semantic Versioning
+
+  ALTER TABLE expert_documents
+    ADD COLUMN version TEXT DEFAULT '1.0.0';
+
+  Option 3: Comprehensive Versioning
+
+  ALTER TABLE expert_documents
+    ADD COLUMN version_info JSONB DEFAULT '{"major": 1, "minor": 0, "patch": 0, "timestamp": null, "created_by": 
+  null}';
+
+  Versioning Strategy
+
+  1. Increment on Content Change: When raw_content or processed_content changes
+  2. Increment on Classification Change: When document_type_id changes
+  3. Maintain Version History: Either through:
+    - Separate history table with document_id-version composite key
+    - Array of version entries in version_history JSONB field
+
+  Versioning Use Cases
+
+  - Comparing processing results across versions
+  - Restoring previous processing results
+  - Tracking quality improvements over time
+  - Audit trail for content changes
+
+  Adding "topics" Field
+
+  Purpose and Value
+
+  The "topics" field captures key subjects within a document, enabling:
+  - Advanced search and filtering
+  - Content categorization beyond document type
+  - Content recommendation based on topic similarity
+  - Aggregation of related documents across different types
+
+  Implementation Options
+
+  Option 1: Simple Array
+
+  ALTER TABLE expert_documents
+    ADD COLUMN topics TEXT[] DEFAULT '{}';
+
+  Option 2: Weighted Topics
+
+  ALTER TABLE expert_documents
+    ADD COLUMN topics JSONB DEFAULT '[]';
+  Example value:
+  [
+    {"name": "Autonomic Nervous System", "weight": 0.85},
+    {"name": "Chronic Pain", "weight": 0.72},
+    {"name": "Mental Health", "weight": 0.53}
+  ]
+
+  Option 3: Hierarchical Topics
+
+  ALTER TABLE expert_documents
+    ADD COLUMN topics JSONB DEFAULT '[]';
+  Example value:
+  [
+    {
+      "primary": "Neuroscience",
+      "secondary": "Autonomic Nervous System",
+      "tertiary": "Vagal Tone",
+      "confidence": 0.87
+    },
+    {
+      "primary": "Medicine",
+      "secondary": "Pain Management",
+      "tertiary": "Chronic Pain",
+      "confidence": 0.75
+    }
+  ]
+
+  Topics Integration
+
+  1. AI-Generated: Have AI extract topics during classification
+  2. Standardized Vocabulary: Consider using a controlled vocabulary
+  3. Topic Network: Build relationships between topics
+  4. Topic Extraction Prompt: Include in AI prompt specifically for topic extraction
+
+  Topics Use Cases
+
+  - Grouping related documents across different document types
+  - Building topic-based navigation
+  - Creating subject matter indexes
+  - Identifying experts on specific topics
+
+  Recommended Implementation
+
+  I recommend implementing both fields with these specific approaches:
+
+  -- Add version tracking
+  ALTER TABLE expert_documents
+    ADD COLUMN version INTEGER DEFAULT 1,
+    ADD COLUMN version_history JSONB DEFAULT '[]';
+
+  -- Add topics with weights
+  ALTER TABLE expert_documents
+    ADD COLUMN topics JSONB DEFAULT '[]';
+
+  Version history example:
+  [
+    {
+      "version": 1,
+      "timestamp": "2025-05-01T14:30:00Z",
+      "changes": ["Initial processing"],
+      "processing_method": "claude-3-sonnet-20250301"
+    },
+    {
+      "version": 2,
+      "timestamp": "2025-05-08T09:15:00Z",
+      "changes": ["Improved classification", "Added topic extraction"],
+      "processing_method": "claude-3-opus-20250505"
+    }
+  ]
+
+  Topics example:
+  [
+    {"name": "Polyvagal Theory", "weight": 0.92, "extracted_confidence": 0.95},
+    {"name": "Autonomic Regulation", "weight": 0.78, "extracted_confidence": 0.88},
+    {"name": "Trauma Response", "weight": 0.65, "extracted_confidence": 0.72}
+  ]
+
+  These additions will substantially enhance your system's ability to track document evolution and enable
+  sophisticated content discovery while maintaining backward compatibility with your existing structure.
+
+
+
+ My Recommendation
+
+  For your specific needs (AI classification and UI organization), Option 1 
+  (Dedicated Subcategory Field) offers the best balance:
+
+  1. AI Classification Benefits:
+    - Structured fields make AI classification more reliable
+    - Clear fields for both category and subcategory give AI more context
+    - Easier to use in training data for classification models
+  2. Implementation Simplicity:
+    - Simpler than Option 3 (no additional table)
+    - More structured than Option 2 (explicit fields)
+    - Easy to migrate by updating two text fields
+  3. Query Performance:
+    - Direct field access is faster than text parsing
+    - Can create indexes on category and subcategory fields
+    - Simple WHERE clauses for filtering
+  4. Future Flexibility:
+    - Can still enhance descriptions independently
+    - Could add a categories table later if needed
+    - Works well with UI filtering and navigation
+
+  This approach gives you the hierarchical organization you need while
+  keeping your database schema manageable and your AI classification process
+  straightforward.
+
+
+
+
+ expert_documents: {
+        Row: {
+  ai_summary_status:
+    | Database["public"]["Enums"]["ai_summary_status_type"]
+    | null
+          batch_id: string | null
+          classification_confidence: number | null
+          classification_metadata: Json | null
+          confidence_score: number | null
+         
+         
+          content_type: string | null
+          created_at: string
+     diarization_complete: boolean | null
+  document_processing_status:
+    | Database["public"]["Enums"]["document_processing_status"]
+    | null
+  document_processing_status_updated_at: string | null
+          document_type_id: string | null
+          id: string
+    is_latest: boolean | null
+    key_insights: string[] | null
+    language: string | null
+    last_processed_at: string | null
+    processed_at: string | null
+          processed_content: Json | null
+          processing_completed_at: string | null
+          processing_error: string | null
+          processing_skip_reason: string | null
+    processing_started_at: string | null
+    processing_stats: Json | null
+          processing_status: string | null
+          processing_status_updated_at: string | null
+          raw_content: string | null
+          retry_count: number | null
+          source_id: string
+    status: string | null
+    summary_complete: boolean | null
+          title: string | null
+      topics: string[] | null
+      transcription_complete: boolean | null
+          updated_at: string
+      version: number | null
+          whisper_model_used: string | null
+      word_count: number | null
+
+ │
+new  fields                       │
+│       ADD COLUMN processing_history JSONB,          -- History of status changes                                  │
+│       ADD COLUMN extraction_metadata JSONB,         -- Details about extraction process                           │
+│       ADD COLUMN processing_updated_at TIMESTAMP,   -- When processing status last changed                        │
+│       ADD COLUMN intermediate_files JSONB;          -- Paths to temporary files                                   │
+│                                                                                                                   │
+│
+EXISTING FIELDS expert_documents                                                                                  │
+│       ADD COLUMN processing_status TEXT,            -- Current processing state   
+│       ADD COLUMN processing_error TEXT,             -- Last error message if any                                  │
+        ADD COLUMN raw_content TEXT,                  -- Extracted/transcribed content                              │
+│       ADD COLUMN processed_content JSONB,           -- AI-processed structured content                            │
+
+
+Looking at the current fields and proposed new structure, here's my recommendation:
+
+  Fields to Keep
+
+  1. Core identifiers/metadata: id, source_id, created_at, updated_at, title, document_type_id
+  2. Content storage: raw_content, processed_content
+  3. Classification data: classification_confidence, classification_metadata
+  4. Content metadata: language, word_count
+
+  Consolidate Under New Fields
+
+  The proposed processing_status enum with detailed stages is excellent and should replace several existing
+  status fields. Using this with the new fields would clean up the schema significantly:
+
+  1. processing_status: Replace all current status fields (ai_summary_status, document_processing_status, status,
+   etc.)
+  2. processing_history: Store history of all status changes, errors, and timestamps
+  3. extraction_metadata: Store whisper_model_used and other extraction details
+  4. processing_updated_at: Replace multiple timestamp fields
+
+  Fields to Remove/Consolidate
+
+  Several fields capture the same information in slightly different ways:
+  - Remove redundant status fields: diarization_complete, transcription_complete, summary_complete
+  - Consolidate timestamps: processed_at, last_processed_at, processing_started_at, processing_completed_at
+  - Merge error tracking: processing_error, processing_skip_reason
+
+  The new processing_status values provide a much clearer progression through the document pipeline and eliminate
+   the need for multiple boolean flags.
+
+
+
+
+Let's evaluate the options for identifying specific types within a
+  category:
+
+  Option 1: Add a Dedicated Field for Subcategories
+
+  Implementation:
+
+  ALTER TABLE document_types
+    ADD COLUMN category TEXT,
+    ADD COLUMN subcategory TEXT; -- New field specifically for the 
+  subcategory
+
+  Pros:
+
+  - Clear Structure: Explicit field makes relationships obvious
+  - Easy Querying: Simple to filter by subcategory (WHERE subcategory = 
+  'journal article')
+  - Programmatic Access: Direct access to the subcategory without parsing
+  - Better for AI: Structured fields are easier for AI to use in
+  classification
+  - UI Friendly: Simple to build hierarchical navigation and filtering
+
+  Cons:
+
+  - Schema Complexity: Additional field to maintain
+  - Migration Effort: Need to populate this field for all records
+  - Potential Inconsistency: Risk of mismatched category/subcategory pairs
+
+
+The expected_json_schema field serves a powerful purpose in your document
+  types system. Let me explain its function and implementation:
+
+  Purpose of expected_json_schema
+
+  This field defines the expected structure of JSON data associated with
+  documents of a particular type. It's especially valuable for:
+
+  1. AI Output Validation: Ensuring that AI-generated content follows the
+  expected structure
+  2. UI Rendering: Guiding the UI on how to display document data
+  3. API Contracts: Establishing clear expectations for data interchange
+  4. Processing Logic: Enabling type-specific processing based on known field
+   names
+
+  How It's Populated
+
+  The expected_json_schema stores a JSON Schema definition that describes:
+  - Required fields
+  - Field types
+  - Field descriptions
+  - Validation rules
+
+  Example JSON Schema for an Expert Summary
+
+  {
+    "type": "object",
+    "required": ["expert_name", "key_topics", "specialty_areas",
+  "notable_achievements"],
+    "properties": {
+      "expert_name": {
+        "type": "string",
+        "description": "Full name of the expert"
+      },
+      "key_topics": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Primary topics/subjects the expert specializes in"
+      },
+      "specialty_areas": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Specific areas of expertise"
+      },
+      "notable_achievements": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "year": {
+              "type": "number"
+            }
+          }
+        },
+        "description": "Key accomplishments and contributions"
+      }
+    }
+  }
+
+  Population Methods
+
+  There are several ways to populate this field:
+
+  1. Manual Definition
+
+  For each document type, you define its expected JSON structure based on the
+   AI prompts that generate content for it.
+
+  2. Extraction from Example Data
+
+  Analyze existing output from your AI processes and derive the schema:
+
+  function deriveSchemaFromSamples(samples) {
+    // Combine all unique fields from samples
+    // Determine types based on values
+    // Mark fields as required if they appear in all samples
+    return generatedSchema;
+  }
+
+  3. Extraction from AI Prompts
+
+  When your AI prompts specify the output format, extract the schema
+  directly:
+
+  function extractSchemaFromPrompt(prompt) {
+    // Parse the prompt
+    // Look for sections describing expected output format
+    // Convert to formal JSON Schema
+    return extractedSchema;
+  }
+
+  4. Linking to ai_prompt_template_id
+
+  Most effectively, derive it directly from the AI prompt template:
+
+  async function getSchemaForDocumentType(documentTypeId) {
+    const { data } = await supabase
+      .from('document_types')
+      .select('ai_prompt_template_id')
+      .eq('id', documentTypeId)
+      .single();
+
+    if (data?.ai_prompt_template_id) {
+      const { data: promptTemplate } = await supabase
+        .from('ai_prompt_templates')
+        .select('output_schema')
+        .eq('id', data.ai_prompt_template_id)
+        .single();
+
+      return promptTemplate?.output_schema;
+    }
+
+    return null;
+  }
+
+  Use Cases
+
+  1. Validating AI Outputs
+
+  function validateOutput(output, documentTypeId) {
+    const schema = getSchemaForDocumentType(documentTypeId);
+    const validator = new JSONSchemaValidator(schema);
+    const isValid = validator.validate(output);
+
+    if (!isValid) {
+      console.error('Validation errors:', validator.errors);
+      // Handle invalid output
+    }
+
+    return isValid;
+  }
+
+  2. Generating UI Components
+
+  function renderDynamicForm(documentTypeId) {
+    const schema = getSchemaForDocumentType(documentTypeId);
+
+    // Generate form fields based on schema properties
+    return schema.properties.map(property => {
+      switch(property.type) {
+        case 'string': return <TextField name={property.name} />;
+        case 'array': return <MultiSelect name={property.name} />;
+        // etc.
+      }
+    });
+  }
+
+  3. Type-Specific Processing
+
+  async function processDocument(documentId) {
+    const { data: document } = await getDocument(documentId);
+    const schema = getSchemaForDocumentType(document.document_type_id);
+
+    // Extract specific fields based on schema
+    if (schema.properties.key_topics) {
+      // Process topics specifically
+    }
+  }
+
+  Recommended Implementation
+
+  I recommend implementing this field as a JSONB column that stores the
+  complete JSON Schema definition. This provides maximum flexibility while
+  enabling database-level validation and querying capabilities.
+
+  For document types that always produce the same JSON structure, define the
+  schema explicitly. For more dynamic types, link to the AI prompt template
+  and derive the schema from there.
+
+  This approach gives you powerful data validation, UI adaptability, and
+  processing intelligence based on document type.
 
 The updates I've made should fix the issue with presentations not showing up. Here's a summary of the changes:
 

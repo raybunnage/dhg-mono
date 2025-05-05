@@ -217,58 +217,40 @@ export type Database = {
       }
       document_types: {
         Row: {
-          ai_processing_rules: Json | null
-          category: string
-          classifier: Database["public"]["Enums"]["document_classifier"] | null
-          content_schema: Json | null
-          created_at: string
-          current_num_of_type: number | null
+          category: string | null
+          created_at: string | null
           description: string | null
-          document_type: string
-          document_type_counts: number | null
-          file_extension: string | null
+          expected_json_schema: Json | null
           id: string
-          is_ai_generated: boolean
-          legacy_document_type_id: number | null
-          required_fields: Json | null
-          updated_at: string
-          validation_rules: Json | null
+          is_ai_generated: boolean | null
+          is_general_type: boolean | null
+          name: string
+          prompt_id: string | null
+          updated_at: string | null
         }
         Insert: {
-          ai_processing_rules?: Json | null
-          category: string
-          classifier?: Database["public"]["Enums"]["document_classifier"] | null
-          content_schema?: Json | null
-          created_at?: string
-          current_num_of_type?: number | null
+          category?: string | null
+          created_at?: string | null
           description?: string | null
-          document_type: string
-          document_type_counts?: number | null
-          file_extension?: string | null
+          expected_json_schema?: Json | null
           id?: string
-          is_ai_generated?: boolean
-          legacy_document_type_id?: number | null
-          required_fields?: Json | null
-          updated_at?: string
-          validation_rules?: Json | null
+          is_ai_generated?: boolean | null
+          is_general_type?: boolean | null
+          name: string
+          prompt_id?: string | null
+          updated_at?: string | null
         }
         Update: {
-          ai_processing_rules?: Json | null
-          category?: string
-          classifier?: Database["public"]["Enums"]["document_classifier"] | null
-          content_schema?: Json | null
-          created_at?: string
-          current_num_of_type?: number | null
+          category?: string | null
+          created_at?: string | null
           description?: string | null
-          document_type?: string
-          document_type_counts?: number | null
-          file_extension?: string | null
+          expected_json_schema?: Json | null
           id?: string
-          is_ai_generated?: boolean
-          legacy_document_type_id?: number | null
-          required_fields?: Json | null
-          updated_at?: string
-          validation_rules?: Json | null
+          is_ai_generated?: boolean | null
+          is_general_type?: boolean | null
+          name?: string
+          prompt_id?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -325,6 +307,63 @@ export type Database = {
           legacy_document_type_id?: number | null
           required_fields?: Json | null
           updated_at?: string | null
+          validation_rules?: Json | null
+        }
+        Relationships: []
+      }
+      document_types_original: {
+        Row: {
+          ai_processing_rules: Json | null
+          category: string
+          classifier: Database["public"]["Enums"]["document_classifier"] | null
+          content_schema: Json | null
+          created_at: string
+          current_num_of_type: number | null
+          description: string | null
+          document_type: string
+          document_type_counts: number | null
+          file_extension: string | null
+          id: string
+          is_ai_generated: boolean
+          legacy_document_type_id: number | null
+          required_fields: Json | null
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          ai_processing_rules?: Json | null
+          category: string
+          classifier?: Database["public"]["Enums"]["document_classifier"] | null
+          content_schema?: Json | null
+          created_at?: string
+          current_num_of_type?: number | null
+          description?: string | null
+          document_type: string
+          document_type_counts?: number | null
+          file_extension?: string | null
+          id?: string
+          is_ai_generated?: boolean
+          legacy_document_type_id?: number | null
+          required_fields?: Json | null
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          ai_processing_rules?: Json | null
+          category?: string
+          classifier?: Database["public"]["Enums"]["document_classifier"] | null
+          content_schema?: Json | null
+          created_at?: string
+          current_num_of_type?: number | null
+          description?: string | null
+          document_type?: string
+          document_type_counts?: number | null
+          file_extension?: string | null
+          id?: string
+          is_ai_generated?: boolean
+          legacy_document_type_id?: number | null
+          required_fields?: Json | null
+          updated_at?: string
           validation_rules?: Json | null
         }
         Relationships: []
@@ -554,7 +593,7 @@ export type Database = {
             foreignKeyName: "fk_documentation_files_type"
             columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "document_types"
+            referencedRelation: "document_types_original"
             referencedColumns: ["id"]
           },
         ]
@@ -931,7 +970,7 @@ export type Database = {
             foreignKeyName: "expert_documents_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "document_types"
+            referencedRelation: "document_types_original"
             referencedColumns: ["id"]
           },
           {
@@ -1068,6 +1107,243 @@ export type Database = {
           title?: string | null
           topics?: string[] | null
           transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Relationships: []
+      }
+      expert_documents_backup_2025_05_05: {
+        Row: {
+          ai_summary_status:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id: string | null
+          classification_confidence: number | null
+          classification_metadata: Json | null
+          confidence_score: number | null
+          content_type: string | null
+          created_at: string | null
+          diarization_complete: boolean | null
+          document_processing_status:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at: string | null
+          document_type_id: string | null
+          id: string | null
+          is_latest: boolean | null
+          key_insights: string[] | null
+          language: string | null
+          last_processed_at: string | null
+          processed_at: string | null
+          processed_content: Json | null
+          processing_completed_at: string | null
+          processing_error: string | null
+          processing_skip_reason: string | null
+          processing_started_at: string | null
+          processing_stats: Json | null
+          processing_status: string | null
+          processing_status_updated_at: string | null
+          raw_content: string | null
+          retry_count: number | null
+          source_id: string | null
+          status: string | null
+          summary_complete: boolean | null
+          title: string | null
+          topics: string[] | null
+          transcription_complete: boolean | null
+          updated_at: string | null
+          version: number | null
+          whisper_model_used: string | null
+          word_count: number | null
+        }
+        Insert: {
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_processed_at?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          status?: string | null
+          summary_complete?: boolean | null
+          title?: string | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Update: {
+          ai_summary_status?:
+            | Database["public"]["Enums"]["ai_summary_status_type"]
+            | null
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          diarization_complete?: boolean | null
+          document_processing_status?:
+            | Database["public"]["Enums"]["document_processing_status"]
+            | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          last_processed_at?: string | null
+          processed_at?: string | null
+          processed_content?: Json | null
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_skip_reason?: string | null
+          processing_started_at?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          status?: string | null
+          summary_complete?: boolean | null
+          title?: string | null
+          topics?: string[] | null
+          transcription_complete?: boolean | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Relationships: []
+      }
+      expert_documents2: {
+        Row: {
+          batch_id: string | null
+          classification_confidence: number | null
+          classification_metadata: Json | null
+          confidence_score: number | null
+          content_type: string | null
+          created_at: string | null
+          document_processing_status_updated_at: string | null
+          document_type_id: string | null
+          extraction_metadata: Json | null
+          id: string | null
+          is_latest: boolean | null
+          key_insights: string[] | null
+          language: string | null
+          processed_content: Json | null
+          processing_history: Json | null
+          processing_skip_reason: string | null
+          processing_stats: Json | null
+          processing_status: string | null
+          processing_status_updated_at: string | null
+          processing_status_v2:
+            | Database["public"]["Enums"]["processing_status_v2"]
+            | null
+          processing_updated_at: string | null
+          raw_content: string | null
+          retry_count: number | null
+          source_id: string | null
+          title: string | null
+          topics: string[] | null
+          updated_at: string | null
+          version: number | null
+          whisper_model_used: string | null
+          word_count: number | null
+        }
+        Insert: {
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          extraction_metadata?: Json | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          processed_content?: Json | null
+          processing_history?: Json | null
+          processing_skip_reason?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          processing_status_v2?:
+            | Database["public"]["Enums"]["processing_status_v2"]
+            | null
+          processing_updated_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          title?: string | null
+          topics?: string[] | null
+          updated_at?: string | null
+          version?: number | null
+          whisper_model_used?: string | null
+          word_count?: number | null
+        }
+        Update: {
+          batch_id?: string | null
+          classification_confidence?: number | null
+          classification_metadata?: Json | null
+          confidence_score?: number | null
+          content_type?: string | null
+          created_at?: string | null
+          document_processing_status_updated_at?: string | null
+          document_type_id?: string | null
+          extraction_metadata?: Json | null
+          id?: string | null
+          is_latest?: boolean | null
+          key_insights?: string[] | null
+          language?: string | null
+          processed_content?: Json | null
+          processing_history?: Json | null
+          processing_skip_reason?: string | null
+          processing_stats?: Json | null
+          processing_status?: string | null
+          processing_status_updated_at?: string | null
+          processing_status_v2?:
+            | Database["public"]["Enums"]["processing_status_v2"]
+            | null
+          processing_updated_at?: string | null
+          raw_content?: string | null
+          retry_count?: number | null
+          source_id?: string | null
+          title?: string | null
+          topics?: string[] | null
           updated_at?: string | null
           version?: number | null
           whisper_model_used?: string | null
@@ -1727,7 +2003,7 @@ export type Database = {
             foreignKeyName: "fk_prompt_relationships_document_type"
             columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "document_types"
+            referencedRelation: "document_types_original"
             referencedColumns: ["id"]
           },
           {
@@ -1807,7 +2083,7 @@ export type Database = {
             foreignKeyName: "prompts_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "document_types"
+            referencedRelation: "document_types_original"
             referencedColumns: ["id"]
           },
         ]
@@ -1944,7 +2220,7 @@ export type Database = {
             foreignKeyName: "scripts_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "document_types"
+            referencedRelation: "document_types_original"
             referencedColumns: ["id"]
           },
         ]
@@ -3444,6 +3720,21 @@ export type Database = {
         | "completed"
         | "failed"
         | "retrying"
+      processing_status_v2:
+        | "unprocessed"
+        | "needs_audio_extraction"
+        | "needs_text_extraction"
+        | "extraction_in_progress"
+        | "extraction_failed"
+        | "needs_transcription"
+        | "transcription_in_progress"
+        | "transcription_failed"
+        | "needs_classification"
+        | "classification_in_progress"
+        | "classification_failed"
+        | "processed"
+        | "skip_processing"
+        | "needs_manual_review"
       prompt_status: "draft" | "active" | "deprecated" | "archived"
       relationship_type:
         | "extends"
@@ -3642,6 +3933,22 @@ export const Constants = {
         "completed",
         "failed",
         "retrying",
+      ],
+      processing_status_v2: [
+        "unprocessed",
+        "needs_audio_extraction",
+        "needs_text_extraction",
+        "extraction_in_progress",
+        "extraction_failed",
+        "needs_transcription",
+        "transcription_in_progress",
+        "transcription_failed",
+        "needs_classification",
+        "classification_in_progress",
+        "classification_failed",
+        "processed",
+        "skip_processing",
+        "needs_manual_review",
       ],
       prompt_status: ["draft", "active", "deprecated", "archived"],
       relationship_type: [

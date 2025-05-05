@@ -13,7 +13,7 @@ import { Logger } from '../../utils/logger';
  */
 export interface DocumentType {
   id: string;
-  document_type: string;
+  name: string;  // Renamed from document_type to name
   category: string;
   description?: string | null;
   file_extension?: string | null;
@@ -24,13 +24,17 @@ export interface DocumentType {
   ai_processing_rules?: Record<string, any> | null;
   created_at?: string;
   updated_at?: string;
+  // New fields for hierarchical structure
+  is_general_type?: boolean | null;
+  prompt_id?: string | null;
+  expected_json_schema?: Record<string, any> | null;
 }
 
 /**
  * Interface for document type creation
  */
 export interface CreateDocumentTypeParams {
-  document_type: string;
+  name: string;  // Renamed from document_type to name
   category: string;
   description?: string | null;
   file_extension?: string | null;
@@ -39,6 +43,10 @@ export interface CreateDocumentTypeParams {
   required_fields?: Record<string, any> | null;
   validation_rules?: Record<string, any> | null;
   ai_processing_rules?: Record<string, any> | null;
+  // New fields for hierarchical structure
+  is_general_type?: boolean | null;
+  prompt_id?: string | null;
+  expected_json_schema?: Record<string, any> | null;
 }
 
 /**
@@ -162,14 +170,14 @@ export class DocumentTypeService {
    */
   public async createDocumentType(params: CreateDocumentTypeParams): Promise<DocumentType> {
     try {
-      Logger.debug(`Creating new document type: ${params.document_type}`);
+      Logger.debug(`Creating new document type: ${params.name}`);
       const supabase = this.supabaseService.getClient();
       
       // Check if document type already exists
       const { data: existingTypes, error: checkError } = await supabase
         .from('document_types')
-        .select('id, document_type')
-        .eq('document_type', params.document_type);
+        .select('id, name')
+        .eq('name', params.name);
       
       if (checkError) {
         Logger.error(`Error checking for existing document type: ${checkError.message}`);
@@ -177,7 +185,7 @@ export class DocumentTypeService {
       }
       
       if (existingTypes && existingTypes.length > 0) {
-        const error = new Error(`Document type "${params.document_type}" already exists`);
+        const error = new Error(`Document type "${params.name}" already exists`);
         Logger.error(error.message);
         throw error;
       }
@@ -189,7 +197,7 @@ export class DocumentTypeService {
       // Create the full document type object
       const documentType: DocumentType = {
         id: newId,
-        document_type: params.document_type,
+        name: params.name,
         category: params.category,
         description: params.description || null,
         file_extension: params.file_extension || null,
@@ -199,7 +207,10 @@ export class DocumentTypeService {
         validation_rules: params.validation_rules || null,
         ai_processing_rules: params.ai_processing_rules || null,
         created_at: now,
-        updated_at: now
+        updated_at: now,
+        is_general_type: params.is_general_type || false,
+        prompt_id: params.prompt_id || null,
+        expected_json_schema: params.expected_json_schema || null
       };
       
       // Insert into database
@@ -212,7 +223,7 @@ export class DocumentTypeService {
         throw insertError;
       }
       
-      Logger.debug(`Created document type ${params.document_type} with ID ${newId}`);
+      Logger.debug(`Created document type ${params.name} with ID ${newId}`);
       return documentType;
     } catch (error) {
       Logger.error(`Exception in createDocumentType: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -249,12 +260,12 @@ export class DocumentTypeService {
         throw error;
       }
       
-      // If document_type is changing, check that the new name doesn't conflict
-      if (params.document_type && params.document_type !== existingType.document_type) {
+      // If name is changing, check that the new name doesn't conflict
+      if (params.name && params.name !== existingType.name) {
         const { data: nameCheck, error: nameCheckError } = await supabase
           .from('document_types')
           .select('id')
-          .eq('document_type', params.document_type);
+          .eq('name', params.name);
         
         if (nameCheckError) {
           Logger.error(`Error checking for name conflicts: ${nameCheckError.message}`);
@@ -262,7 +273,7 @@ export class DocumentTypeService {
         }
         
         if (nameCheck && nameCheck.length > 0) {
-          const error = new Error(`Document type "${params.document_type}" already exists`);
+          const error = new Error(`Document type "${params.name}" already exists`);
           Logger.error(error.message);
           throw error;
         }

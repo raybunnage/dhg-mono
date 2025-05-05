@@ -40,6 +40,7 @@ interface CreateOptions {
   mimeType?: string;
   fileExtension?: string;
   aiGenerated?: boolean;
+  generalType?: boolean;
 }
 
 interface UpdateOptions {
@@ -50,7 +51,10 @@ interface UpdateOptions {
   mimeType?: string;
   fileExtension?: string;
   aiGenerated?: boolean;
+  generalType?: boolean;
   classifier?: 'pdf' | 'powerpoint' | 'docx' | 'expert';
+  promptId?: string;
+  expectedJsonSchema?: Record<string, any>;
 }
 
 interface DeleteOptions {
@@ -94,16 +98,16 @@ program
         // Output as formatted JSON
         console.log(JSON.stringify(documentTypes, null, 2));
       } else {
-        // Sort by category first (alphabetically), then by document_type
+        // Sort by category first (alphabetically), then by name
         documentTypes.sort((a, b) => {
           // First sort by category alphabetically
           const categoryA = a.category || '';
           const categoryB = b.category || '';
           const categoryCompare = categoryA.localeCompare(categoryB);
           
-          // If categories are the same, sort by document_type
+          // If categories are the same, sort by name
           if (categoryCompare === 0) {
-            return a.document_type.localeCompare(b.document_type);
+            return a.name.localeCompare(b.name);
           }
           
           return categoryCompare;
@@ -113,7 +117,7 @@ program
         console.log('\nDocument Types:');
         console.log('=================================================================================================================================');
         console.log('ID'.padEnd(36) + ' | ' + 
-                   'Document Type'.padEnd(30) + ' | ' + 
+                   'Name'.padEnd(30) + ' | ' + 
                    'Category'.padEnd(15) + ' | ' + 
                    'MIME Type'.padEnd(35) + ' | ' +
                    'Classifier'.padEnd(12) + ' | ' +
@@ -126,7 +130,7 @@ program
           
           console.log(
             type.id.padEnd(36) + ' | ' +
-            type.document_type.substring(0, 28).padEnd(30) + ' | ' +
+            type.name.substring(0, 28).padEnd(30) + ' | ' +
             (type.category || '').substring(0, 13).padEnd(15) + ' | ' +
             (type.mime_type || '').substring(0, 33).padEnd(35) + ' | ' +
             classifier.padEnd(12) + ' | ' +
@@ -185,11 +189,12 @@ program
         console.log('\nDocument Type Details:');
         console.log('==============================================================');
         console.log(`ID:              ${documentType.id}`);
-        console.log(`Name:            ${documentType.document_type}`);
+        console.log(`Name:            ${documentType.name}`);
         console.log(`Category:        ${documentType.category || 'N/A'}`);
         console.log(`Description:     ${documentType.description || 'N/A'}`);
         console.log(`MIME Type:       ${documentType.mime_type || 'N/A'}`);
         console.log(`File Extension:  ${documentType.file_extension || 'N/A'}`);
+        console.log(`General Type:    ${documentType.is_general_type ? 'Yes' : 'No'}`);
         console.log(`Classifier:      ${(documentType as any).classifier || 'Not set'}`);
         console.log(`AI Generated:    ${documentType.is_ai_generated ? 'Yes' : 'No'}`);
         console.log(`Created At:      ${documentType.created_at || 'N/A'}`);
@@ -248,6 +253,7 @@ program
   .option('--mime-type <mimeType>', 'Preferred MIME type')
   .option('--file-extension <extension>', 'Preferred file extension')
   .option('--ai-generated', 'Mark as AI generated', false)
+  .option('--general-type', 'Mark as a general type (vs. specific subtype)', false)
   .action(async (options: CreateOptions) => {
     const trackingId = await commandTrackingService.startTracking('document_types', 'create');
     
@@ -255,23 +261,25 @@ program
       console.log('Creating new document type...');
       
       const documentType = await documentTypeService.createDocumentType({
-        document_type: options.name,
+        name: options.name,
         category: options.category,
         description: options.description || null,
         mime_type: options.mimeType || null,
         file_extension: options.fileExtension || null,
-        is_ai_generated: options.aiGenerated
+        is_ai_generated: options.aiGenerated,
+        is_general_type: options.generalType || false
       });
       
       console.log('\nDocument Type Created:');
       console.log('==============================================================');
       console.log(`ID:              ${documentType.id}`);
-      console.log(`Name:            ${documentType.document_type}`);
+      console.log(`Name:            ${documentType.name}`);
       console.log(`Category:        ${documentType.category}`);
+      console.log(`General Type:    ${documentType.is_general_type ? 'Yes' : 'No'}`);
       
       await commandTrackingService.completeTracking(trackingId, {
         recordsAffected: 1,
-        summary: `Created document type ${documentType.document_type} (${documentType.id})`
+        summary: `Created document type ${documentType.name} (${documentType.id})`
       });
     } catch (error) {
       console.error('Error creating document type:', error instanceof Error ? error.message : error);
@@ -291,7 +299,9 @@ program
   .option('--mime-type <mimeType>', 'Preferred MIME type')
   .option('--file-extension <extension>', 'Preferred file extension')
   .option('--ai-generated <boolean>', 'Mark as AI generated', (val: string) => val === 'true')
+  .option('--general-type <boolean>', 'Mark as a general type (true/false)', (val: string) => val === 'true')
   .option('--classifier <classifier>', 'Set document classifier (pdf, powerpoint, docx, expert, none)')
+  .option('--prompt-id <promptId>', 'Set the associated prompt ID')
   .action(async (options: UpdateOptions) => {
     const trackingId = await commandTrackingService.startTracking('document_types', 'update');
     
@@ -307,12 +317,14 @@ program
       
       // Prepare update data
       const updateData: Record<string, any> = {};
-      if (options.name) updateData.document_type = options.name;
+      if (options.name) updateData.name = options.name;
       if (options.category) updateData.category = options.category;
       if (options.description !== undefined) updateData.description = options.description;
       if (options.mimeType !== undefined) updateData.mime_type = options.mimeType;
       if (options.fileExtension !== undefined) updateData.file_extension = options.fileExtension;
       if (options.aiGenerated !== undefined) updateData.is_ai_generated = options.aiGenerated;
+      if (options.generalType !== undefined) updateData.is_general_type = options.generalType;
+      if (options.promptId !== undefined) updateData.prompt_id = options.promptId;
       if (options.classifier !== undefined) {
         if (options.classifier.toLowerCase() === 'none') {
           updateData.classifier = null;
@@ -331,17 +343,19 @@ program
       console.log('\nDocument Type Updated:');
       console.log('==============================================================');
       console.log(`ID:              ${documentType.id}`);
-      console.log(`Name:            ${documentType.document_type}`);
+      console.log(`Name:            ${documentType.name}`);
       console.log(`Category:        ${documentType.category}`);
       console.log(`Description:     ${documentType.description || 'N/A'}`);
       console.log(`MIME Type:       ${documentType.mime_type || 'N/A'}`);
       console.log(`File Extension:  ${documentType.file_extension || 'N/A'}`);
+      console.log(`General Type:    ${documentType.is_general_type ? 'Yes' : 'No'}`);
       console.log(`Classifier:      ${(documentType as any).classifier || 'Not set'}`);
       console.log(`AI Generated:    ${documentType.is_ai_generated ? 'Yes' : 'No'}`);
+      console.log(`Prompt ID:       ${documentType.prompt_id || 'N/A'}`);
       
       await commandTrackingService.completeTracking(trackingId, {
         recordsAffected: 1,
-        summary: `Updated document type ${documentType.document_type} (${documentType.id})`
+        summary: `Updated document type ${documentType.name} (${documentType.id})`
       });
     } catch (error) {
       console.error('Error updating document type:', error instanceof Error ? error.message : error);

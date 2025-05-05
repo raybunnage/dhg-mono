@@ -13,13 +13,15 @@ import { SupabaseClientService } from '../supabase-client';
  * Interface for AI response content
  */
 export interface DocumentTypeAIResponse {
-  document_type: string;
+  name: string; // Renamed from document_type to name
   category: string;
   description?: string;
   file_extension?: string | null;
   required_fields?: Record<string, string>;
   validation_rules?: Record<string, any>;
   ai_processing_rules?: Record<string, any>;
+  is_general_type?: boolean;
+  expected_json_schema?: Record<string, any>;
   [key: string]: any; // Allow for additional fields
 }
 
@@ -118,11 +120,12 @@ export class DocumentTypeAIService {
         Then, create a JSON object that defines the document type with all required fields. The schema must follow this structure:
         
         {
-          "document_type": string, // A concise name for this document type
-          "category": string, // One of these categories: "Research", "Communication", "Documentation", "Legal", or create a new appropriate category
+          "name": string, // A concise name for this document type
+          "category": string, // One of these categories: "Academic", "Documentation", "Media", "Correspondence", "Transcripts", "Analysis", "Scripts", "Other"
           "description": string, // Detailed description of what this document type represents
           "file_extension": string | null, // Preferred file extension, or null if not specific
-          "is_ai_generated": boolean, // Whether this document type was created via AI
+          "is_ai_generated": boolean, // Whether this document type was created via AI (true for this case)
+          "is_general_type": boolean, // Whether this is a general category type (true) or specific subtype (false)
           "required_fields": {
             // Define fields that must be present in this document type
             "field_name": "field_type", // Types can be: string, number, boolean, date, array
@@ -144,6 +147,13 @@ export class DocumentTypeAIService {
             "extractFields": [string], // List of fields to extract
             "confidenceThreshold": number, // Minimum confidence score (0-1)
             // Add other processing rules as needed
+          },
+          "expected_json_schema": {
+            // Optional JSON schema that defines the expected structure for content of this type
+            "type": "object",
+            "properties": {
+              // Define properties as needed
+            }
           }
         }
         
@@ -241,23 +251,25 @@ export class DocumentTypeAIService {
       }
       
       // Validate required fields
-      if (!docTypeData.document_type || !docTypeData.category) {
-        throw new Error('Document type and category are required');
+      if (!docTypeData.name || !docTypeData.category) {
+        throw new Error('Document type name and category are required');
       }
 
       // Create new document type using the service
       const newDocumentType = await documentTypeService.createDocumentType({
-        document_type: docTypeData.document_type,
+        name: docTypeData.name,
         description: docTypeData.description || null,
         category: docTypeData.category,
         file_extension: docTypeData.file_extension || null,
         is_ai_generated: true,
         required_fields: docTypeData.required_fields || null,
         validation_rules: docTypeData.validation_rules || null,
-        ai_processing_rules: docTypeData.ai_processing_rules || null
+        ai_processing_rules: docTypeData.ai_processing_rules || null,
+        is_general_type: docTypeData.is_general_type || false,
+        expected_json_schema: docTypeData.expected_json_schema || null
       });
       
-      Logger.debug(`Successfully created AI-generated document type: ${docTypeData.document_type}`);
+      Logger.debug(`Successfully created AI-generated document type: ${docTypeData.name}`);
       return newDocumentType;
     } catch (error) {
       Logger.error(`Exception in createFromAIResponse: ${error instanceof Error ? error.message : 'Unknown error'}`);

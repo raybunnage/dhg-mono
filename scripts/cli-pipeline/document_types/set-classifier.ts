@@ -42,9 +42,9 @@ program
         const categoryB = b.category || '';
         const categoryCompare = categoryA.localeCompare(categoryB);
         
-        // If categories are the same, sort by document_type name
+        // If categories are the same, sort by name
         if (categoryCompare === 0) {
-          return a.document_type.localeCompare(b.document_type);
+          return a.name.localeCompare(b.name);
         }
         
         return categoryCompare;
@@ -95,8 +95,9 @@ program
         // Check if classifier exists in the type or as a property
         const currentClassifier = (documentType as any).classifier || 'Not set';
         
-        console.log(`\n[${index + 1}/${documentTypes.length}] Document Type: ${documentType.document_type}`);
+        console.log(`\n[${index + 1}/${documentTypes.length}] Document Type: ${documentType.name}`);
         console.log(`Category: ${documentType.category || 'N/A'}`);
+        console.log(`General Type: ${documentType.is_general_type ? 'Yes' : 'No'}`);
         console.log(`Current classifier: ${currentClassifier}`);
         console.log('\nClassifier options:');
         classifierOptions.forEach((option, i) => {
@@ -108,7 +109,7 @@ program
         rl.question('Enter classifier number: ', async (answer) => {
           // Check if user entered the skip number option
           if (answer === String(classifierOptions.length + 1) || answer.toLowerCase() === 'skip') {
-            console.log(`Skipping ${documentType.document_type}`);
+            console.log(`Skipping ${documentType.name}`);
             processDocumentType(index + 1);
             return;
           }
@@ -133,7 +134,7 @@ program
               throw error;
             }
             
-            console.log(`Set classifier for ${documentType.document_type} to ${selectedClassifier}`);
+            console.log(`Set classifier for ${documentType.name} to ${selectedClassifier}`);
             processedCount++;
             
             // Process the next document type

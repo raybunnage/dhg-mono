@@ -12,7 +12,7 @@ import { promptService } from '../prompt-service';
 
 // Classification result interface
 export interface DocumentClassificationResult {
-  document_type: string;
+  name: string; // Previously document_type
   document_type_id: string;
   classification_confidence: number; 
   classification_reasoning: string;
@@ -72,33 +72,33 @@ export class DocumentClassificationService {
     const mimeType = file.mime_type || '';
     
     // Determine document type based on file extension and name
-    let documentType = 'unknown document type';
+    let documentTypeName = 'unknown document type';
     let documentTypeId = this.unknownDocTypeId;
     
     // Basic file type detection from extension and name patterns
     if (extension === 'docx' || extension === 'doc' || mimeType.includes('wordprocessingml')) {
-      documentType = 'word document';
+      documentTypeName = 'word document';
       documentTypeId = 'bb90f01f-b6c4-4030-a3ea-db9dd8c4b55a';
     } else if (extension === 'txt' || mimeType === 'text/plain') {
-      documentType = 'text document';
+      documentTypeName = 'text document';
       documentTypeId = '99db0af9-0e09-49a7-8405-899849b8a86c';
     } else if (extension === 'pdf' || mimeType === 'application/pdf') {
-      documentType = 'scientific pdf';
+      documentTypeName = 'scientific pdf';
       documentTypeId = '8aa50d2a-6e35-45a0-896d-29d81f6d2c91';
     } else if (extension === 'ppt' || extension === 'pptx' || mimeType.includes('presentationml')) {
-      documentType = 'powerpoint presentation';
+      documentTypeName = 'powerpoint presentation';
       documentTypeId = '0e0c4e20-1f33-42f9-83d0-11db7de35f8f';
     }
     
     // Check if it's a transcript based on filename patterns
     if (fileName.toLowerCase().includes('transcript')) {
-      documentType = 'presentation transcript';
+      documentTypeName = 'presentation transcript';
       documentTypeId = 'c1a7b78b-c61e-44a4-8b77-a27a38cbba7e';
     }
     
     // Return a basic classification structure
     return {
-      document_type: documentType,
+      name: documentTypeName,
       document_type_id: documentTypeId,
       classification_confidence: 0.6, // Lower confidence for fallback
       classification_reasoning: `Fallback classification created automatically. Determined type based on filename "${fileName}" and type "${mimeType || extension}".`,
@@ -182,7 +182,7 @@ export class DocumentClassificationService {
             }
             
             // Validate the classification result
-            if (!classificationResult || !classificationResult.document_type) {
+            if (!classificationResult || !classificationResult.name) {
               throw new Error(`Invalid classification result returned from Claude`);
             }
             
@@ -231,7 +231,7 @@ export class DocumentClassificationService {
   ): Promise<boolean> {
     try {
       if (dryRun) {
-        console.log(`[DRY RUN] Would save classification for source ${sourceId} with type ${classification.document_type}`);
+        console.log(`[DRY RUN] Would save classification for source ${sourceId} with type ${classification.name}`);
         return true;
       }
       
@@ -265,7 +265,7 @@ export class DocumentClassificationService {
               key_topics: classification.key_topics || [],
               target_audience: classification.target_audience || "",
               unique_insights: classification.unique_insights || [],
-              document_type: classification.document_type || "",
+              document_type: classification.name || "", // Using name instead of document_type
               classification_confidence: classification.classification_confidence || 0.75,
               classification_reasoning: classification.classification_reasoning || ""
             }
@@ -294,7 +294,7 @@ export class DocumentClassificationService {
             key_topics: classification.key_topics || [],
             target_audience: classification.target_audience || "",
             unique_insights: classification.unique_insights || [],
-            document_type: classification.document_type || "",
+            document_type: classification.name || "", // Using name instead of document_type
             classification_confidence: classification.classification_confidence || 0.75,
             classification_reasoning: classification.classification_reasoning || "",
             classification_metadata: classification,
