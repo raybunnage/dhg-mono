@@ -113,32 +113,36 @@ program
           return categoryCompare;
         });
         
-        // Output as table
+        // Output as table with updated fields and widths (up to 160 chars wide)
         console.log('\nDocument Types:');
-        console.log('=================================================================================================================================');
-        console.log('ID'.padEnd(36) + ' | ' + 
-                   'Name'.padEnd(30) + ' | ' + 
-                   'Category'.padEnd(15) + ' | ' + 
-                   'MIME Type'.padEnd(35) + ' | ' +
-                   'Classifier'.padEnd(12) + ' | ' +
-                   'AI Generated');
-        console.log('---------------------------------------------------------------------------------------------------------------------------------');
+        console.log('='.repeat(160));
+        console.log(
+          'ID'.padEnd(38) + ' | ' + 
+          'Category'.padEnd(20) + ' | ' + 
+          'General'.padEnd(10) + ' | ' + 
+          'Name'.padEnd(30) + ' | ' + 
+          'AI Gen'.padEnd(8) + ' | ' + 
+          'Description'
+        );
+        console.log('-'.repeat(160));
         
         documentTypes.forEach(type => {
-          // Access classifier using type assertion since it might not be in the type definition yet
-          const classifier = (type as any).classifier || '';
+          // Get general type status
+          const isGeneralType = type.is_general_type ? 'Yes' : 'No';
+          // Truncate description to fit within the table
+          const description = type.description ? type.description.substring(0, 45) : '';
           
           console.log(
-            type.id.padEnd(36) + ' | ' +
+            type.id.padEnd(38) + ' | ' +
+            (type.category || '').substring(0, 18).padEnd(20) + ' | ' +
+            isGeneralType.padEnd(10) + ' | ' +
             type.name.substring(0, 28).padEnd(30) + ' | ' +
-            (type.category || '').substring(0, 13).padEnd(15) + ' | ' +
-            (type.mime_type || '').substring(0, 33).padEnd(35) + ' | ' +
-            classifier.padEnd(12) + ' | ' +
-            (type.is_ai_generated ? 'Yes' : 'No')
+            (type.is_ai_generated ? 'Yes' : 'No').padEnd(8) + ' | ' +
+            description
           );
         });
         
-        console.log('---------------------------------------------------------------------------------------------------------------------------------');
+        console.log('-'.repeat(160));
         console.log(`Total: ${documentTypes.length} document types`);
       }
       
@@ -192,7 +196,8 @@ program
         console.log(`Name:            ${documentType.name}`);
         console.log(`Category:        ${documentType.category || 'N/A'}`);
         console.log(`Description:     ${documentType.description || 'N/A'}`);
-        console.log(`MIME Type:       ${documentType.mime_type || 'N/A'}`);
+        // Field no longer exists
+        // console.log(`MIME Type:       ${documentType.mime_type || 'N/A'}`);
         console.log(`File Extension:  ${documentType.file_extension || 'N/A'}`);
         console.log(`General Type:    ${documentType.is_general_type ? 'Yes' : 'No'}`);
         console.log(`Classifier:      ${(documentType as any).classifier || 'Not set'}`);
@@ -234,7 +239,7 @@ program
       
       await commandTrackingService.completeTracking(trackingId, {
         recordsAffected: 1,
-        summary: `Retrieved document type ${documentType.document_type} (${options.id})`
+        summary: `Retrieved document type ${documentType.name} (${options.id})`
       });
     } catch (error) {
       console.error('Error getting document type:', error instanceof Error ? error.message : error);
@@ -264,7 +269,7 @@ program
         name: options.name,
         category: options.category,
         description: options.description || null,
-        mime_type: options.mimeType || null,
+        // mime_type: options.mimeType || null, // Field removed
         file_extension: options.fileExtension || null,
         is_ai_generated: options.aiGenerated,
         is_general_type: options.generalType || false
@@ -320,7 +325,7 @@ program
       if (options.name) updateData.name = options.name;
       if (options.category) updateData.category = options.category;
       if (options.description !== undefined) updateData.description = options.description;
-      if (options.mimeType !== undefined) updateData.mime_type = options.mimeType;
+      // if (options.mimeType !== undefined) updateData.mime_type = options.mimeType; // Field removed
       if (options.fileExtension !== undefined) updateData.file_extension = options.fileExtension;
       if (options.aiGenerated !== undefined) updateData.is_ai_generated = options.aiGenerated;
       if (options.generalType !== undefined) updateData.is_general_type = options.generalType;
@@ -346,7 +351,8 @@ program
       console.log(`Name:            ${documentType.name}`);
       console.log(`Category:        ${documentType.category}`);
       console.log(`Description:     ${documentType.description || 'N/A'}`);
-      console.log(`MIME Type:       ${documentType.mime_type || 'N/A'}`);
+      // Field no longer exists
+      // console.log(`MIME Type:       ${documentType.mime_type || 'N/A'}`);
       console.log(`File Extension:  ${documentType.file_extension || 'N/A'}`);
       console.log(`General Type:    ${documentType.is_general_type ? 'Yes' : 'No'}`);
       console.log(`Classifier:      ${(documentType as any).classifier || 'Not set'}`);
@@ -385,7 +391,7 @@ program
       
       // Confirm deletion if not using --force
       if (!options.force) {
-        console.log(`WARNING: This will permanently delete document type "${documentType.document_type}" (${options.id})`);
+        console.log(`WARNING: This will permanently delete document type "${documentType.name}" (${options.id})`);
         console.log('This operation cannot be undone.');
         console.log('Use --force to skip this confirmation.');
         
@@ -402,7 +408,7 @@ program
           console.log('Deletion cancelled.');
           await commandTrackingService.completeTracking(trackingId, {
             recordsAffected: 0,
-            summary: `Deletion of document type ${documentType.document_type} (${options.id}) cancelled by user`
+            summary: `Deletion of document type ${documentType.name} (${options.id}) cancelled by user`
           });
           return;
         }
@@ -410,11 +416,11 @@ program
       
       await documentTypeService.deleteDocumentType(options.id);
       
-      console.log(`Document type "${documentType.document_type}" (${options.id}) deleted successfully.`);
+      console.log(`Document type "${documentType.name}" (${options.id}) deleted successfully.`);
       
       await commandTrackingService.completeTracking(trackingId, {
         recordsAffected: 1,
-        summary: `Deleted document type ${documentType.document_type} (${options.id})`
+        summary: `Deleted document type ${documentType.name} (${options.id})`
       });
     } catch (error) {
       console.error('Error deleting document type:', error instanceof Error ? error.message : error);
@@ -455,7 +461,7 @@ program
         console.log('\nTop Used Document Types:');
         console.log('--------------------------------------------------------------');
         stats.topUsedTypes.forEach((type, index) => {
-          console.log(`  ${index + 1}. ${type.document_type} (${type.count} uses)`);
+          console.log(`  ${index + 1}. ${type.name} (${type.count} uses)`);
         });
       }
       
@@ -506,12 +512,12 @@ program
           console.log('\nDocument Type Created:');
           console.log('==============================================================');
           console.log(`ID:              ${documentType.id}`);
-          console.log(`Name:            ${documentType.document_type}`);
+          console.log(`Name:            ${documentType.name}`);
           console.log(`Category:        ${documentType.category}`);
           
           await commandTrackingService.completeTracking(trackingId, {
             recordsAffected: 1,
-            summary: `Generated and created document type ${documentType.document_type} (${documentType.id}) with AI`
+            summary: `Generated and created document type ${documentType.name} (${documentType.id}) with AI`
           });
         } else {
           console.log('\nTo create this document type, run:');
@@ -583,7 +589,7 @@ program
       // Try to fetch a single document type
       const { data, error } = await supabase
         .from('document_types')
-        .select('id, document_type')
+        .select('id, name')
         .limit(1);
       
       if (error) {

@@ -86,7 +86,7 @@ export class DocumentTypeService {
       const { data, error } = await supabase
         .from('document_types')
         .select('*')
-        .order('document_type', { ascending: true });
+        .order('name', { ascending: true });
       
       if (error) {
         Logger.error(`Error fetching document types: ${error.message}`);
@@ -421,7 +421,7 @@ export class DocumentTypeService {
     totalDocumentTypes: number;
     documentTypesInUse: number;
     categoryCounts: Record<string, number>;
-    topUsedTypes: Array<{id: string, document_type: string, count: number}>;
+    topUsedTypes: Array<{id: string, name: string, count: number}>;
   }> {
     try {
       Logger.debug('Gathering document type statistics');
@@ -430,7 +430,7 @@ export class DocumentTypeService {
       // Get all document types
       const { data: documentTypes, error: typesError } = await supabase
         .from('document_types')
-        .select('id, document_type, category');
+        .select('id, name, category');
       
       if (typesError) {
         Logger.error(`Error fetching document types: ${typesError.message}`);
@@ -480,7 +480,7 @@ export class DocumentTypeService {
       // Get top used types
       const typeUsage = documentTypes?.map(type => ({
         id: type.id,
-        document_type: type.document_type,
+        name: type.name,
         count: typeCounts[type.id] || 0
       })) || [];
       
