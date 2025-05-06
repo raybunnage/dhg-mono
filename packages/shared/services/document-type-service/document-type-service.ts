@@ -16,12 +16,13 @@ export interface DocumentType {
   name: string;  // Renamed from document_type to name
   category: string;
   description?: string | null;
-  file_extension?: string | null;
+  // file_extension?: string | null; // Not in database
   is_ai_generated?: boolean;
-  classifier?: 'pdf' | 'powerpoint' | 'docx' | 'expert' | null;
-  required_fields?: Record<string, any> | null;
-  validation_rules?: Record<string, any> | null;
-  ai_processing_rules?: Record<string, any> | null;
+  // classifier?: 'pdf' | 'powerpoint' | 'docx' | 'expert' | null; // Not in database
+  // Fields below are obsolete and no longer in the database schema
+  // required_fields?: Record<string, any> | null;
+  // validation_rules?: Record<string, any> | null;
+  // ai_processing_rules?: Record<string, any> | null;
   created_at?: string;
   updated_at?: string;
   // New fields for hierarchical structure
@@ -37,12 +38,13 @@ export interface CreateDocumentTypeParams {
   name: string;  // Renamed from document_type to name
   category: string;
   description?: string | null;
-  file_extension?: string | null;
+  // file_extension?: string | null; // Not in database
   is_ai_generated?: boolean;
-  classifier?: 'pdf' | 'powerpoint' | 'docx' | 'expert' | null;
-  required_fields?: Record<string, any> | null;
-  validation_rules?: Record<string, any> | null;
-  ai_processing_rules?: Record<string, any> | null;
+  // classifier?: 'pdf' | 'powerpoint' | 'docx' | 'expert' | null; // Not in database
+  // Fields below are obsolete and no longer in the database schema
+  // required_fields?: Record<string, any> | null;
+  // validation_rules?: Record<string, any> | null;
+  // ai_processing_rules?: Record<string, any> | null;
   // New fields for hierarchical structure
   is_general_type?: boolean | null;
   prompt_id?: string | null;
@@ -148,7 +150,7 @@ export class DocumentTypeService {
         .from('document_types')
         .select('*')
         .eq('category', category)
-        .order('document_type', { ascending: true });
+        .order('name', { ascending: true }); // Changed from document_type to name
       
       if (error) {
         Logger.error(`Error fetching document types by category: ${error.message}`);
@@ -200,12 +202,13 @@ export class DocumentTypeService {
         name: params.name,
         category: params.category,
         description: params.description || null,
-        file_extension: params.file_extension || null,
+        // file_extension: params.file_extension || null, // Not in database
         is_ai_generated: params.is_ai_generated || false,
-        classifier: params.classifier || null,
-        required_fields: params.required_fields || null,
-        validation_rules: params.validation_rules || null,
-        ai_processing_rules: params.ai_processing_rules || null,
+        // classifier: params.classifier || null, // Not in database
+        // Removed obsolete fields:
+        // required_fields: params.required_fields || null,
+        // validation_rules: params.validation_rules || null,
+        // ai_processing_rules: params.ai_processing_rules || null,
         created_at: now,
         updated_at: now,
         is_general_type: params.is_general_type || false,

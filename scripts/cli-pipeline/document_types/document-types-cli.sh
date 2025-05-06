@@ -66,7 +66,12 @@ fi
 
 if [ "$1" = "create" ]; then
   shift
-  track_command "create" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts create $*"
+  # Properly handle arguments with spaces
+  ARGS=""
+  for ARG in "$@"; do
+    ARGS="$ARGS \"$ARG\""
+  done
+  track_command "create" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts create $ARGS"
   exit $?
 fi
 

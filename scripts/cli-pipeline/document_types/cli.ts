@@ -37,10 +37,10 @@ interface CreateOptions {
   name: string;
   category: string;
   description?: string;
-  mimeType?: string;
   fileExtension?: string;
   aiGenerated?: boolean;
   generalType?: boolean;
+  dryRun?: boolean;
 }
 
 interface UpdateOptions {
@@ -198,43 +198,15 @@ program
         console.log(`Description:     ${documentType.description || 'N/A'}`);
         // Field no longer exists
         // console.log(`MIME Type:       ${documentType.mime_type || 'N/A'}`);
-        console.log(`File Extension:  ${documentType.file_extension || 'N/A'}`);
+        // console.log(`File Extension:  N/A`); // Field removed from database
         console.log(`General Type:    ${documentType.is_general_type ? 'Yes' : 'No'}`);
-        console.log(`Classifier:      ${(documentType as any).classifier || 'Not set'}`);
+        // console.log(`Classifier:      ${(documentType as any).classifier || 'Not set'}`); // Field removed from database
         console.log(`AI Generated:    ${documentType.is_ai_generated ? 'Yes' : 'No'}`);
         console.log(`Created At:      ${documentType.created_at || 'N/A'}`);
         console.log(`Updated At:      ${documentType.updated_at || 'N/A'}`);
         
-        if (documentType.required_fields) {
-          console.log('\nRequired Fields:');
-          console.log('--------------------------------------------------------------');
-          Object.entries(documentType.required_fields).forEach(([field, type]) => {
-            console.log(`  ${field}: ${type}`);
-          });
-        }
-        
-        if (documentType.validation_rules) {
-          console.log('\nValidation Rules:');
-          console.log('--------------------------------------------------------------');
-          Object.entries(documentType.validation_rules).forEach(([field, rules]) => {
-            console.log(`  ${field}:`);
-            Object.entries(rules as Record<string, any>).forEach(([rule, value]) => {
-              console.log(`    ${rule}: ${value}`);
-            });
-          });
-        }
-        
-        if (documentType.ai_processing_rules) {
-          console.log('\nAI Processing Rules:');
-          console.log('--------------------------------------------------------------');
-          Object.entries(documentType.ai_processing_rules).forEach(([rule, value]) => {
-            if (Array.isArray(value)) {
-              console.log(`  ${rule}: [${value.join(', ')}]`);
-            } else {
-              console.log(`  ${rule}: ${value}`);
-            }
-          });
-        }
+        // Removed output for obsolete fields (required_fields, validation_rules, ai_processing_rules)
+        // These fields are no longer in the database schema
       }
       
       await commandTrackingService.completeTracking(trackingId, {
@@ -255,25 +227,54 @@ program
   .requiredOption('--name <name>', 'Document type name')
   .requiredOption('--category <category>', 'Document type category')
   .option('--description <description>', 'Document type description')
-  .option('--mime-type <mimeType>', 'Preferred MIME type')
-  .option('--file-extension <extension>', 'Preferred file extension')
+  // .option('--mime-type <mimeType>', 'Preferred MIME type') // Not in database
+  // .option('--file-extension <extension>', 'Preferred file extension') // Not in database
   .option('--ai-generated', 'Mark as AI generated', false)
   .option('--general-type', 'Mark as a general type (vs. specific subtype)', false)
+  .option('--dry-run', 'Simulate the creation without actually writing to the database', false)
   .action(async (options: CreateOptions) => {
     const trackingId = await commandTrackingService.startTracking('document_types', 'create');
     
     try {
       console.log('Creating new document type...');
       
-      const documentType = await documentTypeService.createDocumentType({
+      // Prepare the document type data
+      const documentTypeData = {
         name: options.name,
         category: options.category,
         description: options.description || null,
         // mime_type: options.mimeType || null, // Field removed
-        file_extension: options.fileExtension || null,
+        // file_extension: options.fileExtension || null, // Not in database
         is_ai_generated: options.aiGenerated,
         is_general_type: options.generalType || false
-      });
+      };
+      
+      // Check if this is a dry run
+      if (options.dryRun) {
+        console.log('\nDRY RUN - No changes will be made to the database');
+        console.log('\nDocument Type that would be created:');
+        console.log('==============================================================');
+        console.log(`Name:            ${options.name}`);
+        console.log(`Category:        ${documentTypeData.category}`);
+        console.log(`Description:     ${documentTypeData.description || 'N/A'}`);
+        console.log(`AI Generated:    ${documentTypeData.is_ai_generated ? 'Yes' : 'No'}`);
+        console.log(`General Type:    ${documentTypeData.is_general_type ? 'Yes' : 'No'}`);
+        
+        // Log the command to run without dry-run
+        const dryRunArgs = process.argv.filter(arg => arg !== '--dry-run');
+        console.log('\nTo create this document type for real, run the same command without --dry-run:');
+        console.log(`${dryRunArgs.join(' ')}`);
+        
+        await commandTrackingService.completeTracking(trackingId, {
+          recordsAffected: 0,
+          summary: `Dry run: Would create document type ${documentTypeData.name}`
+        });
+        
+        return;
+      }
+      
+      // Actually create the document type
+      const documentType = await documentTypeService.createDocumentType(documentTypeData);
       
       console.log('\nDocument Type Created:');
       console.log('==============================================================');
@@ -301,8 +302,8 @@ program
   .option('--name <n>', 'Document type name')
   .option('--category <category>', 'Document type category')
   .option('--description <description>', 'Document type description')
-  .option('--mime-type <mimeType>', 'Preferred MIME type')
-  .option('--file-extension <extension>', 'Preferred file extension')
+  // .option('--mime-type <mimeType>', 'Preferred MIME type') // Not in database
+  // .option('--file-extension <extension>', 'Preferred file extension') // Not in database
   .option('--ai-generated <boolean>', 'Mark as AI generated', (val: string) => val === 'true')
   .option('--general-type <boolean>', 'Mark as a general type (true/false)', (val: string) => val === 'true')
   .option('--classifier <classifier>', 'Set document classifier (pdf, powerpoint, docx, expert, none)')
@@ -326,7 +327,7 @@ program
       if (options.category) updateData.category = options.category;
       if (options.description !== undefined) updateData.description = options.description;
       // if (options.mimeType !== undefined) updateData.mime_type = options.mimeType; // Field removed
-      if (options.fileExtension !== undefined) updateData.file_extension = options.fileExtension;
+      // if (options.fileExtension !== undefined) updateData.file_extension = options.fileExtension; // Field removed from database
       if (options.aiGenerated !== undefined) updateData.is_ai_generated = options.aiGenerated;
       if (options.generalType !== undefined) updateData.is_general_type = options.generalType;
       if (options.promptId !== undefined) updateData.prompt_id = options.promptId;
@@ -353,9 +354,9 @@ program
       console.log(`Description:     ${documentType.description || 'N/A'}`);
       // Field no longer exists
       // console.log(`MIME Type:       ${documentType.mime_type || 'N/A'}`);
-      console.log(`File Extension:  ${documentType.file_extension || 'N/A'}`);
+      // console.log(`File Extension:  N/A`); // Field removed from database
       console.log(`General Type:    ${documentType.is_general_type ? 'Yes' : 'No'}`);
-      console.log(`Classifier:      ${(documentType as any).classifier || 'Not set'}`);
+      // console.log(`Classifier:      ${(documentType as any).classifier || 'Not set'}`); // Field removed from database
       console.log(`AI Generated:    ${documentType.is_ai_generated ? 'Yes' : 'No'}`);
       console.log(`Prompt ID:       ${documentType.prompt_id || 'N/A'}`);
       

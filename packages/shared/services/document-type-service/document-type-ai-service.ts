@@ -260,11 +260,12 @@ export class DocumentTypeAIService {
         name: docTypeData.name,
         description: docTypeData.description || null,
         category: docTypeData.category,
-        file_extension: docTypeData.file_extension || null,
+        // file_extension: docTypeData.file_extension || null, // Not in database
         is_ai_generated: true,
-        required_fields: docTypeData.required_fields || null,
-        validation_rules: docTypeData.validation_rules || null,
-        ai_processing_rules: docTypeData.ai_processing_rules || null,
+        // Removed obsolete fields:
+        // required_fields: docTypeData.required_fields || null,
+        // validation_rules: docTypeData.validation_rules || null,
+        // ai_processing_rules: docTypeData.ai_processing_rules || null,
         is_general_type: docTypeData.is_general_type || false,
         expected_json_schema: docTypeData.expected_json_schema || null
       });
