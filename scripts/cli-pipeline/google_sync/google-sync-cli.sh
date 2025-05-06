@@ -74,6 +74,7 @@ fi
 
 if [ "$1" = "classify-docs-service" ]; then
   shift
+  echo "Classifying documents with service (only updates sources_google document_type_id)"
   track_command "classify-docs-service" "ts-node $SCRIPT_DIR/classify-missing-docs-with-service.ts $*"
   exit $?
 fi
@@ -371,7 +372,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "DOCUMENT CLASSIFICATION:"
   echo "  * update-media-document-types  Update document_type_id for media files and create expert_documents (191 uses)"
   echo "  * classify-powerpoints         Classify PowerPoint files missing document types using Claude AI (65 uses)"
-  echo "  * classify-docs-service        Classify .docx and .txt files missing document types (64 uses)"
+  echo "  * classify-docs-service        Classify .docx and .txt files missing document types (only updates sources_google table) (64 uses)"
   echo "    force-classify-docs          Force classify documents using the document-classification-prompt-new"
   echo "    find-documents-with-content Find documents with content that can be used for classification"
   echo "    check-concepts            Check concepts stored for a document (by source ID)"
@@ -449,8 +450,8 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Classify PowerPoint files and extract their content"
   echo "  ./google-sync-cli.sh classify-powerpoints --limit 3 --verbose"
   echo ""
-  echo "  # Classify .docx and .txt files"
-  echo "  ./google-sync-cli.sh classify-docs-service --limit 5"
+  echo "  # Classify .docx and .txt files (only updates sources_google table)"
+  echo "  ./google-sync-cli.sh classify-docs-service --limit 5 --concurrency 2"
   echo ""
   echo "LISTING & REPORTING:"
   echo "  # Generate a report of expert documents in the database"
