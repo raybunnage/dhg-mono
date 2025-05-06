@@ -359,15 +359,6 @@ Return your classification as a complete, valid JSON object with all of these fi
               }
             }
             
-            // Return successful result
-            return {
-              file,
-              classificationResult: classificationResponse,
-              success: true
-            };
-              };
-            }
-            
             console.log(`✅ Successfully updated records for ${file.name}`);
           } else {
             console.log(`🔍 DRY RUN: Would update sources_google.document_type_id to ${classificationResponse.document_type_id}`);
