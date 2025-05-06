@@ -76,6 +76,71 @@ program
         console.log('\nDatabase Queries Results:');
         console.log('---------------------------------');
         
+        // Get detailed counts of document types and categories
+        let generalCategoriesCount = 0;
+        let generalCategories: Record<string, number> = {};
+        let specificTypesCount = 0;
+        let specificTypes: Record<string, number> = {};
+        
+        for (const query of promptResult.databaseQueries) {
+          if (query.queryText.includes('is_general_type = true')) {
+            // Count general categories
+            if (query.queryResults && Array.isArray(query.queryResults)) {
+              generalCategoriesCount = query.queryResults.length;
+              
+              // Count by category
+              query.queryResults.forEach(result => {
+                if (result.category) {
+                  generalCategories[result.category] = (generalCategories[result.category] || 0) + 1;
+                }
+              });
+            }
+          } else if (query.queryText.includes('is_general_type = false')) {
+            // Count specific document types
+            if (query.queryResults && Array.isArray(query.queryResults)) {
+              specificTypesCount = query.queryResults.length;
+              
+              // Count by name
+              query.queryResults.forEach(result => {
+                if (result.name) {
+                  specificTypes[result.name] = (specificTypes[result.name] || 0) + 1;
+                }
+              });
+            }
+          }
+        }
+        
+        // Display document type statistics
+        console.log('\nDocument Type Statistics:');
+        console.log(`- Total general categories: ${generalCategoriesCount}`);
+        console.log(`- Total specific document types: ${specificTypesCount}`);
+        
+        // Display category breakdown
+        console.log('\nGeneral categories:');
+        Object.entries(generalCategories)
+          .sort((a, b) => b[1] - a[1]) // Sort by count descending
+          .slice(0, 10) // Show top 10
+          .forEach(([category, count]) => {
+            console.log(`  - ${category}: ${count}`);
+          });
+        
+        if (Object.keys(generalCategories).length > 10) {
+          console.log(`  - ...and ${Object.keys(generalCategories).length - 10} more`);
+        }
+        
+        // Display document type breakdown
+        console.log('\nTop 10 specific document types:');
+        Object.entries(specificTypes)
+          .sort((a, b) => b[1] - a[1]) // Sort by count descending
+          .slice(0, 10) // Show top 10
+          .forEach(([type, count]) => {
+            console.log(`  - ${type}: ${count}`);
+          });
+          
+        if (Object.keys(specificTypes).length > 10) {
+          console.log(`  - ...and ${Object.keys(specificTypes).length - 10} more`);
+        }
+        
         // Show the first 3 records from the first 2 queries (if available)
         const queriesToShow = Math.min(2, promptResult.databaseQueries.length);
         
@@ -192,13 +257,90 @@ program
               
               // Process the content through Claude API for classification
               console.log('Sending to Claude API for classification...');
-              const classificationResponse = await claudeService.getJsonResponse<ClassificationResult>(
-                promptResult.combinedContent + '\n\n### Document Content:\n' + documentContent + '\n\nProvide your classification in JSON format.'
-              );
+              
+              // Add specific instructions to ensure complete JSON response
+              const fullPrompt = `${promptResult.combinedContent}
+
+### Document Content:
+${documentContent}
+
+Please analyze this document and provide a complete classification with the following fields:
+1. category - The general document category (must be one of the categories from the provided list)
+2. name - The specific document type (must be one of the document types from the provided list)
+3. classification_confidence - A number between 0 and 1 representing your confidence
+4. classification_reasoning - Detailed explanation of why you chose this classification
+5. concepts - An array of key concepts from the document, each with a name and weight
+
+Return your classification as a complete, valid JSON object with all of these fields.`;
+              
+              // Log the prompt length for debugging
+              console.log(`Prompt length: ${fullPrompt.length} characters`);
+              
+              const classificationResponse = await claudeService.getJsonResponse<ClassificationResult>(fullPrompt);
               
               if (classificationResponse) {
                 console.log('\n✅ Classification complete!');
-                console.log('\nClassification Result:');
+                
+                // Display detailed assessment of the response
+                console.log('\nClassification Analysis:');
+                console.log('---------------------------------');
+                
+                // Check for expected fields
+                const expectedFields = [
+                  'category', 
+                  'name',
+                  'classification_confidence',
+                  'classification_reasoning',
+                  'concepts'
+                ];
+                
+                const legacyFields = [
+                  'generalCategory',
+                  'specificDocumentType',
+                  'confidence',
+                  'reasoning',
+                  'keyConcepts'
+                ];
+                
+                // Display fields and check for existence
+                expectedFields.forEach(field => {
+                  const value = classificationResponse[field as keyof ClassificationResult];
+                  const legacyField = legacyFields[expectedFields.indexOf(field)];
+                  const legacyValue = classificationResponse[legacyField as keyof ClassificationResult];
+                  
+                  console.log(`${field}: ${value !== undefined ? '✅ Present' : '❌ Missing'}${legacyValue !== undefined ? ' (found in legacy field)' : ''}`);
+                  
+                  // Show field value
+                  if (value !== undefined) {
+                    if (typeof value === 'object' && value !== null) {
+                      if (Array.isArray(value)) {
+                        console.log(`  Value: Array with ${value.length} items`);
+                        if (value.length > 0) {
+                          console.log(`  First item: ${JSON.stringify(value[0])}`);
+                        }
+                      } else {
+                        console.log(`  Value: ${JSON.stringify(value).substring(0, 100)}...`);
+                      }
+                    } else {
+                      console.log(`  Value: ${value}`);
+                    }
+                  } else if (legacyValue !== undefined) {
+                    if (typeof legacyValue === 'object' && legacyValue !== null) {
+                      if (Array.isArray(legacyValue)) {
+                        console.log(`  Legacy value: Array with ${legacyValue.length} items`);
+                        if (legacyValue.length > 0) {
+                          console.log(`  First item: ${JSON.stringify(legacyValue[0])}`);
+                        }
+                      } else {
+                        console.log(`  Legacy value: ${JSON.stringify(legacyValue).substring(0, 100)}...`);
+                      }
+                    } else {
+                      console.log(`  Legacy value: ${legacyValue}`);
+                    }
+                  }
+                });
+                
+                console.log('\nComplete Classification Result:');
                 console.log('---------------------------------');
                 console.log(JSON.stringify(classificationResponse, null, 2));
                 console.log('---------------------------------');

@@ -7,6 +7,25 @@ import { commandTrackingService } from '../../../packages/shared/services/tracki
 const supabaseService = SupabaseClientService.getInstance();
 const supabaseClient = supabaseService.getClient();
 
+// Define interfaces for our data types
+interface SourceGoogle {
+  id: string;
+  name: string;
+  mime_type: string | null;
+  document_type_id: string | null;
+}
+
+interface ExpertDocument {
+  id: string;
+  document_type_id: string | null;
+  document_processing_status: string | null;
+  document_processing_status_updated_at: string | null;
+  source_id: string | null;
+  raw_content: string | null;
+  processed_content: any;
+  sources_google?: SourceGoogle[];
+}
+
 /**
  * Lists all expert_documents with document_processing_status = "needs_reprocessing"
  * Displays them in a console table format similar to the list command
@@ -57,8 +76,8 @@ export async function listNeedsReprocessing(options: {
       }
     }
 
-    // Build the query to find expert documents with needs_reprocessing status
-    let query = supabaseClient
+    // First, get all expert documents that need reprocessing
+    const { data: docsNeedingReprocessing, error: docsError } = await supabaseClient
       .from('expert_documents')
       .select(`
         id,
@@ -67,52 +86,88 @@ export async function listNeedsReprocessing(options: {
         document_processing_status_updated_at,
         source_id,
         raw_content,
-        processed_content,
-        sources_google (
-          id,
-          name,
-          mime_type,
-          document_type_id
-        )
+        processed_content
       `)
       .eq('document_processing_status', 'needs_reprocessing')
       .order('document_processing_status_updated_at', { ascending: false })
-      .limit(limit);
-    
-    // Add mime type filter if provided
-    if (mimeType) {
-      console.log(`Filtering by MIME type: ${mimeType}`);
-      query = query.eq('sources_google.mime_type', mimeType);
-    }
-
-    // Execute the query
-    const { data: docsNeedingReprocessing, error } = await query;
-
-    if (error) {
-      console.error(`Error fetching documents: ${error.message}`);
+      .limit(limit) as { data: ExpertDocument[] | null, error: any };
+      
+    if (docsError) {
+      console.error(`Error fetching documents: ${docsError.message}`);
       return;
     }
-
+    
     if (!docsNeedingReprocessing || docsNeedingReprocessing.length === 0) {
       console.log('No documents found with needs_reprocessing status.');
       return;
     }
+    
+    console.log(`Found ${docsNeedingReprocessing.length} documents with needs_reprocessing status.`);
+    
+    // Get all source_ids from the documents
+    const sourceIds = docsNeedingReprocessing.map(doc => doc.source_id).filter(id => id !== null);
+    
+    // Get source details for each document
+    const { data: sourcesData, error: sourcesError } = await supabaseClient
+      .from('sources_google')
+      .select('id, name, mime_type, document_type_id')
+      .in('id', sourceIds) as { data: SourceGoogle[] | null, error: any };
+      
+    if (sourcesError) {
+      console.error(`Error fetching sources: ${sourcesError.message}`);
+    }
+    
+    // Create a map of source_id to source data for quick lookup
+    const sourcesMap = new Map();
+    if (sourcesData) {
+      for (const source of sourcesData) {
+        sourcesMap.set(source.id, source);
+      }
+    }
+    
+    // Create a new array with documents that have source info attached
+    const docsWithSources: ExpertDocument[] = docsNeedingReprocessing.map(doc => {
+      // Create a new object with all properties from the original document
+      const docWithSource: ExpertDocument = { ...doc };
+      
+      // Add sources_google property
+      if (doc.source_id && sourcesMap.has(doc.source_id)) {
+        docWithSource.sources_google = [sourcesMap.get(doc.source_id) as SourceGoogle];
+      } else {
+        docWithSource.sources_google = [];
+      }
+      
+      return docWithSource;
+    });
+    
+    // Apply mime type filter if provided
+    let filteredDocs = docsWithSources;
+    if (mimeType && sourcesData && sourcesData.length > 0) {
+      console.log(`Filtering by MIME type: ${mimeType}`);
+      // Filter the documents to only include those with matching source mime_type
+      filteredDocs = docsWithSources.filter(doc => {
+        if (doc.sources_google && doc.sources_google.length > 0) {
+          return doc.sources_google[0].mime_type === mimeType;
+        }
+        return false;
+      });
+      
+      console.log(`After mime type filtering: ${filteredDocs.length} documents remaining`);
+    }
 
     // Display the results in a table
     console.log(`\nExpert Documents with needs_reprocessing status:`);
-    console.log('='.repeat(180));
+    console.log('='.repeat(150));
     console.log(
       'ID'.padEnd(38) + ' | ' + 
       'File Name'.padEnd(60) + ' | ' + 
       'Sources Type'.padEnd(25) + ' | ' + 
       'Expert Doc Type'.padEnd(25) + ' | ' +
-      'Raw'.padEnd(7) + ' | ' +
-      'JSON'.padEnd(7) + ' | ' +
-      'Status'.padEnd(15)
+      'Status'.padEnd(10)
     );
-    console.log('-'.repeat(180));
+    console.log('-'.repeat(150));
     
-    for (const doc of docsNeedingReprocessing) {
+    for (const doc of filteredDocs) {
       // sources_google is returned as an array from Supabase's join
       const sourceGoogle = Array.isArray(doc.sources_google) && doc.sources_google.length > 0
         ? doc.sources_google[0]
@@ -146,21 +201,19 @@ export async function listNeedsReprocessing(options: {
         fileName.substring(0, 58).padEnd(60) + ' | ' +
         sourceType.substring(0, 23).padEnd(25) + ' | ' +
         expertDocType.substring(0, 23).padEnd(25) + ' | ' +
-        (hasRawContent ? 'Yes' : 'No').padEnd(7) + ' | ' +
-        (hasJsonContent ? 'Yes' : 'No').padEnd(7) + ' | ' +
-        'Need'.padEnd(15)  // Always "Need" since we're filtering for needs_reprocessing
+        'Need'.padEnd(10)  // Always "Need" since we're filtering for needs_reprocessing
       );
     }
     
-    console.log('-'.repeat(180));
-    console.log(`Total documents needing reprocessing: ${docsNeedingReprocessing.length}`);
+    console.log('-'.repeat(150));
+    console.log(`Total documents needing reprocessing: ${filteredDocs.length}`);
 
     // Complete tracking
     if (trackingId !== 'tracking-unavailable') {
       try {
         await commandTrackingService.completeTracking(trackingId, {
-          recordsAffected: docsNeedingReprocessing.length,
-          summary: `Found ${docsNeedingReprocessing.length} documents that need reprocessing`
+          recordsAffected: filteredDocs.length,
+          summary: `Found ${filteredDocs.length} documents that need reprocessing`
         });
       } catch (error) {
         console.warn(`Warning: Unable to complete command tracking: ${error instanceof Error ? error.message : String(error)}`);
@@ -168,8 +221,8 @@ export async function listNeedsReprocessing(options: {
     }
 
     return {
-      total: docsNeedingReprocessing.length,
-      documents: docsNeedingReprocessing
+      total: filteredDocs.length,
+      documents: filteredDocs
     };
   } catch (error) {
     console.error(`Error finding documents that need reprocessing: ${error instanceof Error ? error.message : String(error)}`);

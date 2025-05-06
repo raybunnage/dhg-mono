@@ -7,9 +7,17 @@ CLI commands could then include a --profile flag or automatically use the active
 
 
 
+ ./scripts/cli-pipeline/document_types/document-types-cli.sh create --name "AI Narrative Summary" --category "Expert Summary" --ai-generated   --description "DIFFERENTIATING FEATURES: These documents capture essential insights from expert-guided AI conversations, distilling complex discussions into concise executive summaries that present collaborative knowledge synthesis between human expertise and AI capabilities."
+
+DIFFERENTIATING FEATURES: These documents capture essential insights from expert-guided AI conversations, distilling complex discussions into concise executive summaries that present collaborative knowledge synthesis between human expertise and AI capabilities.
 
 
 
+3. Create as general type:
+  ./scripts/cli-pipeline/document_types/document-types-cli.sh create --name "Presentation" --category "Media" --general-type
+
+  4. Create as AI generated:
+  ./scripts/cli-pipeline/document_types/document-types-cli.sh create --name "AI Summary" --category "Analysis" --ai-generated
 
 
 
