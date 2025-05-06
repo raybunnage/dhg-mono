@@ -456,37 +456,25 @@ Return your classification as a complete, valid JSON object with all of these fi
                     classificationResponse.confidence || 
                     0;
                   
-                  // Use the document_type_id directly from the AI response
-                  let documentTypeId: string | null = null;
+                  // CRITICAL: Use ONLY the document_type_id directly from the AI response
+                  // No fallbacks, no lookups by name, exactly what Claude returns
                   
-                  if (classificationResponse.document_type_id && classificationResponse.document_type_id !== 'uuid-1') {
-                    // Use the ID directly from the AI response
-                    documentTypeId = classificationResponse.document_type_id;
-                    console.log(`✅ Using document type ID directly from AI response: ${documentTypeId}`);
-                  } else {
-                    // Fall back to looking up by name if document_type_id is not available or is a placeholder
-                    console.log('⚠️ No valid document_type_id in AI response, falling back to name lookup');
-                    
-                    const { data: docTypeMatchData, error: docTypeMatchError } = await supabase
-                      .from('document_types')
-                      .select('id, name')
-                      .eq('name', documentTypeName)
-                      .limit(1);
-                    
-                    if (docTypeMatchError) {
-                      console.error('❌ Error finding matching document type:', docTypeMatchError.message);
-                      return;
-                    }
-                    
-                    if (docTypeMatchData && docTypeMatchData.length > 0) {
-                      documentTypeId = docTypeMatchData[0].id;
-                      console.log(`✅ Found matching document type ID via name lookup: ${documentTypeId}`);
-                    } else {
-                      console.log(`⚠️ No matching document type found for "${documentTypeName}"`);
-                      console.log('Cannot update without a valid document type ID');
-                      return;
-                    }
+                  console.log('\n--- DOCUMENT TYPE ID VERIFICATION ---');
+                  console.log(`Raw document_type_id from Claude: ${JSON.stringify(classificationResponse.document_type_id)}`);
+                  console.log(`Type of document_type_id: ${typeof classificationResponse.document_type_id}`);
+                  console.log(`Raw category from Claude: ${JSON.stringify(classificationResponse.category)}`);
+                  console.log(`Raw name from Claude: ${JSON.stringify(classificationResponse.name)}`);
+                  console.log('-----------------------------------\n');
+                  
+                  // Use the document_type_id directly from the AI response with no modifications
+                  if (!classificationResponse.document_type_id) {
+                    console.error('❌ No document_type_id returned from Claude AI');
+                    console.error('Cannot update without a valid document_type_id');
+                    return;
                   }
+                  
+                  // No lookups by name, no fallback, just use what Claude returned
+                  const documentTypeId = classificationResponse.document_type_id;
                   
                   // Prepare classification metadata
                   const classificationMetadata = {
@@ -500,11 +488,13 @@ Return your classification as a complete, valid JSON object with all of these fi
                     concepts: classificationResponse.concepts || keyConceptsArray.map(name => ({ name, weight: 1.0 }))
                   };
                   
-                  // Update the expert document with all fields including document_type_id
+                  // We're not updating the expert_document with the document_type_id as requested
+                  // Only updating metadata and other fields in the expert_document
+
                   const { data: updateData, error: updateError } = await supabase
                     .from('expert_documents')
                     .update({
-                      document_type_id: documentTypeId, // Include document_type_id now that we're sure of its value
+                      // document_type_id is intentionally NOT included here per requirements
                       classification_confidence: confidence,
                       classification_metadata: classificationMetadata,
                       key_insights: keyConceptsArray,
@@ -520,8 +510,7 @@ Return your classification as a complete, valid JSON object with all of these fi
                     console.error('❌ Error updating expert document:', updateError.message);
                     return;
                   } else {
-                    console.log('✅ Successfully updated expert document with new classification');
-                    console.log(`- Document type set to: ${documentTypeName} (${documentTypeId})`);
+                    console.log('✅ Successfully updated expert document with classification metadata');
                     console.log(`- Classification confidence: ${confidence}`);
                     console.log(`- Key concepts added: ${keyConceptsArray.length}`);
                     console.log(`- Title updated: ${classificationResponse.suggested_title || 'No suggested title'}`);
@@ -569,12 +558,16 @@ Return your classification as a complete, valid JSON object with all of these fi
                       }
                     }
                     
-                    // Update the document_type_id in sources_google using the ID directly from the AI response
+                    // Update the document_type_id in sources_google using EXACTLY what Claude returned
                     console.log('\nUpdating document_type_id in sources_google record...');
+                    console.log(`About to update sources_google with document_type_id: ${classificationResponse.document_type_id}`);
+                    console.log(`Category in classification: ${classificationResponse.category}`);
+                    console.log(`Name in classification: ${classificationResponse.name}`);
+                    
                     const { data: updateSourceData, error: updateSourceError } = await supabase
                       .from('sources_google')
                       .update({
-                        document_type_id: classificationResponse.document_type_id,
+                        document_type_id: classificationResponse.document_type_id, // Use exactly what Claude returned
                         updated_at: new Date().toISOString()
                       })
                       .eq('id', options.id)
@@ -583,7 +576,7 @@ Return your classification as a complete, valid JSON object with all of these fi
                     if (updateSourceError) {
                       console.error(`❌ Error updating sources_google: ${updateSourceError.message}`);
                     } else {
-                      console.log(`✅ Successfully updated document_type_id in sources_google record with ID: ${classificationResponse.document_type_id}`);
+                      console.log(`✅ Successfully updated sources_google record with document_type_id: ${classificationResponse.document_type_id}`);
                     }
                   }
                 }
