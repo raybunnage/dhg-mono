@@ -890,6 +890,12 @@ if [ "$1" = "reset-deleted-files" ]; then
   exit $?
 fi
 
+if [ "$1" = "check-document-ids" ]; then
+  shift
+  track_command "check-document-ids" "ts-node $SCRIPT_DIR/check-document-ids.ts $*"
+  exit $?
+fi
+
 if [ "$1" = "renamed-file" ]; then
   shift
   
