@@ -6,7 +6,7 @@ import * as fs from 'fs';
 // Define a type for document type record
 interface DocumentType {
   id: string;
-  document_type: string;
+  name: string;
 }
 
 interface ExpertDocument {
@@ -328,7 +328,7 @@ async function saveStatsToMarkdown(
       for (let i = 0; i < orphanSamples.length; i++) {
         const doc = orphanSamples[i];
         const typeId = doc.document_type_id;
-        const typeName = typeId ? (documentTypesList.find((dt: DocumentType) => dt.id === typeId)?.document_type || typeId) : 'No Document Type';
+        const typeName = typeId ? (documentTypesList.find((dt: DocumentType) => dt.id === typeId)?.name || typeId) : 'No Document Type';
         const docType = `${i + 1}. Document Type: ${typeName}`;
         
         markdown += `### ${docType}\n\n`;
@@ -408,7 +408,7 @@ async function showExpertDocuments() {
     
     // First get all document types in one query to use as lookup with retry
     const documentTypesResult = await safeQuery(
-      () => supabase.from('document_types').select('id, document_type'),
+      () => supabase.from('document_types').select('id, name'),
       'Fetch document types'
     );
     
@@ -419,7 +419,7 @@ async function showExpertDocuments() {
     const documentTypeMap = new Map<string, string>();
     if (documentTypes) {
       documentTypes.forEach((dt: DocumentType) => {
-        documentTypeMap.set(dt.id, dt.document_type);
+        documentTypeMap.set(dt.id, dt.name);
       });
     }
     
@@ -875,7 +875,7 @@ async function showExpertDocuments() {
       for (let i = 0; i < orphanSamples.length; i++) {
         const doc = orphanSamples[i];
         const typeId = doc.document_type_id;
-        const typeName = typeId ? (documentTypes?.find((dt: DocumentType) => dt.id === typeId)?.document_type || 'Unknown') : 'None';
+        const typeName = typeId ? (documentTypes?.find((dt: DocumentType) => dt.id === typeId)?.name || 'Unknown') : 'None';
         console.log(`\n[${i+1}] Document Type: ${typeName}`);
         console.log(`    ID: ${doc.id}`);
         console.log(`    Content Sample: ${getContentSentences(doc.raw_content || doc.processed_content, 1)}`);

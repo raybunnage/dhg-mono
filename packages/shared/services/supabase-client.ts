@@ -199,7 +199,7 @@ export class SupabaseClientService {
         console.log('Testing connection with document_types table...');
         const { data, error } = await client
           .from('document_types')
-          .select('document_type')
+          .select('name')
           .limit(1);
         
         if (error) {

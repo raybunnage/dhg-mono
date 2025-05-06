@@ -372,6 +372,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * update-media-document-types  Update document_type_id for media files and create expert_documents (191 uses)"
   echo "  * classify-powerpoints         Classify PowerPoint files missing document types using Claude AI (65 uses)"
   echo "  * classify-docs-service        Classify .docx and .txt files missing document types (64 uses)"
+  echo "    force-classify-docs          Force classify documents using the document-classification-prompt-new"
   echo "    classify-pdfs                Classify PDF files missing document types or marked as needs_reprocessing using Claude AI"
   echo "    direct-classify-pdfs         Process PDF files with needs_reprocessing status directly (more reliable)"
   echo "    fix-classify-pdfs            Mark PDF files with needs_reprocessing status as processed (without analyzing)"
@@ -495,6 +496,12 @@ fi
 if [ "$1" = "test-prompt-service" ]; then
   shift
   track_command "test-prompt-service" "ts-node $SCRIPT_DIR/test-prompt-service.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "force-classify-docs" ]; then
+  shift
+  track_command "force-classify-docs" "ts-node $SCRIPT_DIR/force-classify-docs.ts $*"
   exit $?
 fi
 

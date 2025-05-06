@@ -2,8 +2,34 @@
  
 CLI commands could then include a --profile flag or automatically use the active profile.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Narrative Summary
 Interview		Interview	Question-answer format
+
+
+
+  ./scripts/cli-pipeline/prompt_service/prompt-service-cli.sh add-query "markdown-document-classification-prompt" "select category, description from document_types where is_general_type = true;"
+
+  ./scripts/cli-pipeline/prompt_service/prompt-service-cli.sh add-query "markdown-document-classification-prompt" "select name, description from document_types where is_general_type = false;" --query2
+
+
+
+
+
+
 
  Adding "version" and "topics" fields would provide significant value to your document processing system. Let's
   explore both:
@@ -180,6 +206,12 @@ Interview		Interview	Question-answer format
   keeping your database schema manageable and your AI classification process
   straightforward.
 
+
+Query Performance:
+    - Direct field access is faster than text parsing
+    - Can create indexes on category and subcategory fields
+    - Simple WHERE clauses for filtering
+  4. 
 
 
 

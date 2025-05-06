@@ -133,7 +133,7 @@ async function listGoogleSources(options: {
     // Get all the document types to map IDs to names
     const { data: documentTypes, error: docTypesError } = await supabase
       .from('document_types')
-      .select('id, document_type');
+      .select('id, name');
       
     if (docTypesError) {
       console.error(`Error fetching document types: ${docTypesError.message}`);
@@ -144,7 +144,7 @@ async function listGoogleSources(options: {
     const documentTypeMap = new Map();
     if (documentTypes) {
       for (const dt of documentTypes) {
-        documentTypeMap.set(dt.id, dt.document_type);
+        documentTypeMap.set(dt.id, dt.name);
       }
     }
     
