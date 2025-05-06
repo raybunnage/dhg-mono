@@ -194,6 +194,44 @@ export type Database = {
         }
         Relationships: []
       }
+      document_concepts: {
+        Row: {
+          concept: string
+          created_at: string | null
+          document_id: string
+          id: string
+          metadata: Json | null
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          concept: string
+          created_at?: string | null
+          document_id: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          concept?: string
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_concepts_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "expert_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_type_aliases: {
         Row: {
           alias_name: string
@@ -836,6 +874,7 @@ export type Database = {
           batch_id: string | null
           classification_confidence: number | null
           classification_metadata: Json | null
+          classification_reasoning: string | null
           confidence_score: number | null
           content_type: string | null
           created_at: string
@@ -879,6 +918,7 @@ export type Database = {
           batch_id?: string | null
           classification_confidence?: number | null
           classification_metadata?: Json | null
+          classification_reasoning?: string | null
           confidence_score?: number | null
           content_type?: string | null
           created_at?: string
@@ -922,6 +962,7 @@ export type Database = {
           batch_id?: string | null
           classification_confidence?: number | null
           classification_metadata?: Json | null
+          classification_reasoning?: string | null
           confidence_score?: number | null
           content_type?: string | null
           created_at?: string
@@ -1590,6 +1631,41 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      mime_type_processing: {
+        Row: {
+          default_processing_steps: Json | null
+          extraction_method: string | null
+          id: string
+          mime_type_id: string
+          processing_priority: number | null
+          requires_transcription: boolean | null
+        }
+        Insert: {
+          default_processing_steps?: Json | null
+          extraction_method?: string | null
+          id?: string
+          mime_type_id: string
+          processing_priority?: number | null
+          requires_transcription?: boolean | null
+        }
+        Update: {
+          default_processing_steps?: Json | null
+          extraction_method?: string | null
+          id?: string
+          mime_type_id?: string
+          processing_priority?: number | null
+          requires_transcription?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_mime_type_id"
+            columns: ["mime_type_id"]
+            isOneToOne: false
+            referencedRelation: "mime_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mime_types: {
         Row: {

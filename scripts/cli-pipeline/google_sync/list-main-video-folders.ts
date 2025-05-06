@@ -57,7 +57,7 @@ export const listMainVideoFolders = async (): Promise<void> => {
     // Second query to get document types
     const { data: documentTypeData, error: documentTypeError } = await supabase
       .from('document_types')
-      .select('id, document_type');
+      .select('id, name');
     
     if (documentTypeError) {
       console.error('Error fetching document types:', documentTypeError);
@@ -67,7 +67,7 @@ export const listMainVideoFolders = async (): Promise<void> => {
     // Create a lookup map for document types
     const documentTypeMap = new Map<string, string>();
     documentTypeData?.forEach(docType => {
-      documentTypeMap.set(docType.id, docType.document_type);
+      documentTypeMap.set(docType.id, docType.name);
     });
 
     // Prepare the folder info array

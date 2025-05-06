@@ -258,18 +258,22 @@ program
               // Process the content through Claude API for classification
               console.log('Sending to Claude API for classification...');
               
-              // Add specific instructions to ensure complete JSON response
+              // Add specific instructions to ensure complete JSON response with document_type_id
               const fullPrompt = `${promptResult.combinedContent}
 
 ### Document Content:
 ${documentContent}
 
 Please analyze this document and provide a complete classification with the following fields:
-1. category - The general document category (must be one of the categories from the provided list)
-2. name - The specific document type (must be one of the document types from the provided list)
-3. classification_confidence - A number between 0 and 1 representing your confidence
-4. classification_reasoning - Detailed explanation of why you chose this classification
-5. concepts - An array of key concepts from the document, each with a name and weight
+1. document_type_id - The UUID of the specific document type (must be one from the provided list)
+2. category - The general document category (must be one of the categories from the provided list)
+3. name - The specific document type name (must be one of the document types from the provided list)
+4. classification_confidence - A number between 0 and 1 representing your confidence
+5. classification_reasoning - Detailed explanation of why you chose this classification
+6. concepts - An array of key concepts from the document, each with a name and weight
+
+It is CRITICAL that you include the document_type_id field with the actual UUID from the database queries.
+Do NOT use placeholder IDs like "uuid-1" - use the actual UUIDs from the document_types table.
 
 Return your classification as a complete, valid JSON object with all of these fields.`;
               
@@ -388,8 +392,10 @@ Return your classification as a complete, valid JSON object with all of these fi
                     0;
                   
                   console.log(`- Setting document_type_id to match "${documentTypeName}"`);
+                  console.log(`- Setting title to: "${classificationResponse.suggested_title || 'No suggested title'}"`);
                   console.log(`- Adding key concepts: ${conceptsList}`);
                   console.log(`- Setting classification confidence: ${confidence}`);
+                  console.log(`- Setting classification reasoning: ${(classificationResponse.classification_reasoning || '').substring(0, 100)}...`);
                   console.log(`- Adding classification metadata with reasoning`);
                   
                   // Look up the document type ID for the classified type
@@ -404,7 +410,7 @@ Return your classification as a complete, valid JSON object with all of these fi
                   } else if (docTypeMatchData && docTypeMatchData.length > 0) {
                     console.log(`✅ Found matching document type ID: ${docTypeMatchData[0].id}`);
                   } else {
-                    console.log(`⚠️ No matching document type found for "${classificationResponse.specificDocumentType}"`);
+                    console.log(`⚠️ No matching document type found for "${documentTypeName}"`);
                     
                     // Find similar document types to suggest alternatives
                     console.log('Searching for similar document types...');
@@ -418,6 +424,16 @@ Return your classification as a complete, valid JSON object with all of these fi
                       console.log('Similar document types you might consider:');
                       similarTypes.forEach(type => console.log(`- ${type.name} (${type.id})`));
                     }
+                  }
+                  
+                  // Show what would be added to document_concepts table
+                  if (classificationResponse.concepts && classificationResponse.concepts.length > 0) {
+                    console.log('\n🔍 DRY RUN: Would save the following concepts to document_concepts table:');
+                    classificationResponse.concepts.forEach((concept, index) => {
+                      console.log(`  ${index+1}. ${concept.name} (weight: ${concept.weight})`);
+                    });
+                    console.log(`- First, would delete any existing concepts for document_id: ${expertDoc.id}`);
+                    console.log(`- Then, would insert ${classificationResponse.concepts.length} new concept records`);
                   }
                 } else {
                   console.log('\nPerforming database update...');
@@ -440,26 +456,36 @@ Return your classification as a complete, valid JSON object with all of these fi
                     classificationResponse.confidence || 
                     0;
                   
-                  // Look up the document type ID for the classified type
-                  const { data: docTypeMatchData, error: docTypeMatchError } = await supabase
-                    .from('document_types')
-                    .select('id, name')
-                    .eq('name', documentTypeName)
-                    .limit(1);
-                  
-                  if (docTypeMatchError) {
-                    console.error('❌ Error finding matching document type:', docTypeMatchError.message);
-                    return;
-                  }
-                  
+                  // Use the document_type_id directly from the AI response
                   let documentTypeId: string | null = null;
-                  if (docTypeMatchData && docTypeMatchData.length > 0) {
-                    documentTypeId = docTypeMatchData[0].id;
-                    console.log(`✅ Found matching document type ID: ${documentTypeId}`);
+                  
+                  if (classificationResponse.document_type_id && classificationResponse.document_type_id !== 'uuid-1') {
+                    // Use the ID directly from the AI response
+                    documentTypeId = classificationResponse.document_type_id;
+                    console.log(`✅ Using document type ID directly from AI response: ${documentTypeId}`);
                   } else {
-                    console.log(`⚠️ No matching document type found for "${documentTypeName}"`);
-                    console.log('Cannot update without a valid document type ID');
-                    return;
+                    // Fall back to looking up by name if document_type_id is not available or is a placeholder
+                    console.log('⚠️ No valid document_type_id in AI response, falling back to name lookup');
+                    
+                    const { data: docTypeMatchData, error: docTypeMatchError } = await supabase
+                      .from('document_types')
+                      .select('id, name')
+                      .eq('name', documentTypeName)
+                      .limit(1);
+                    
+                    if (docTypeMatchError) {
+                      console.error('❌ Error finding matching document type:', docTypeMatchError.message);
+                      return;
+                    }
+                    
+                    if (docTypeMatchData && docTypeMatchData.length > 0) {
+                      documentTypeId = docTypeMatchData[0].id;
+                      console.log(`✅ Found matching document type ID via name lookup: ${documentTypeId}`);
+                    } else {
+                      console.log(`⚠️ No matching document type found for "${documentTypeName}"`);
+                      console.log('Cannot update without a valid document type ID');
+                      return;
+                    }
                   }
                   
                   // Prepare classification metadata
@@ -474,14 +500,16 @@ Return your classification as a complete, valid JSON object with all of these fi
                     concepts: classificationResponse.concepts || keyConceptsArray.map(name => ({ name, weight: 1.0 }))
                   };
                   
-                  // Update the expert document with the new document type and metadata
+                  // For now, let's split the update into two parts to avoid the foreign key constraint
+                  // First, update everything except the document_type_id
                   const { data: updateData, error: updateError } = await supabase
                     .from('expert_documents')
                     .update({
-                      document_type_id: documentTypeId,
                       classification_confidence: confidence,
                       classification_metadata: classificationMetadata,
                       key_insights: keyConceptsArray,
+                      title: classificationResponse.suggested_title || expertDoc.title, // Use suggested title if available
+                      classification_reasoning: classificationResponse.classification_reasoning || classificationResponse.reasoning || '',
                       document_processing_status: 'reprocessing_done',
                       document_processing_status_updated_at: new Date().toISOString()
                     })
@@ -490,12 +518,56 @@ Return your classification as a complete, valid JSON object with all of these fi
                   
                   if (updateError) {
                     console.error('❌ Error updating expert document:', updateError.message);
+                    return;
                   } else {
                     console.log('✅ Successfully updated expert document with new classification');
                     console.log(`- Document type set to: ${documentTypeName} (${documentTypeId})`);
                     console.log(`- Classification confidence: ${confidence}`);
                     console.log(`- Key concepts added: ${keyConceptsArray.length}`);
+                    console.log(`- Title updated: ${classificationResponse.suggested_title || 'No suggested title'}`);
+                    console.log(`- Classification reasoning added: ${(classificationResponse.classification_reasoning || '').substring(0, 50)}...`);
                     console.log(`- Processing status updated to: reprocessing_done`);
+                    
+                    // Now save concepts to document_concepts table
+                    if (classificationResponse.concepts && classificationResponse.concepts.length > 0) {
+                      console.log('\nSaving concepts to document_concepts table...');
+                      
+                      // First, delete any existing concepts for this document to avoid duplicates
+                      const { error: deleteError } = await supabase
+                        .from('document_concepts')
+                        .delete()
+                        .eq('document_id', expertDoc.id);
+                        
+                      if (deleteError) {
+                        console.error('❌ Error deleting existing concepts:', deleteError.message);
+                        return;
+                      }
+                      
+                      // Prepare concept records for insertion
+                      const conceptRecords = classificationResponse.concepts.map(concept => ({
+                        document_id: expertDoc.id,
+                        concept: concept.name,
+                        weight: concept.weight,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                      }));
+                      
+                      // Insert all concepts
+                      const { data: conceptsData, error: conceptsError } = await supabase
+                        .from('document_concepts')
+                        .insert(conceptRecords)
+                        .select();
+                        
+                      if (conceptsError) {
+                        console.error('❌ Error saving concepts:', conceptsError.message);
+                      } else {
+                        console.log(`✅ Successfully saved ${conceptRecords.length} concepts to document_concepts table`);
+                        console.log('Concept details:');
+                        classificationResponse.concepts.forEach((concept, index) => {
+                          console.log(`  ${index+1}. ${concept.name} (weight: ${concept.weight})`);
+                        });
+                      }
+                    }
                   }
                 }
               } else {

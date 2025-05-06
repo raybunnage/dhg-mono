@@ -47,7 +47,7 @@ async function checkSourceAndDocument(sourceId: string): Promise<void> {
     if (source.document_type_id) {
       const { data: docType, error: docTypeError } = await supabase
         .from("document_types")
-        .select("id, document_type, category")
+        .select("id, name, category")
         .eq("id", source.document_type_id)
         .single();
         
@@ -56,7 +56,7 @@ async function checkSourceAndDocument(sourceId: string): Promise<void> {
       } else if (docType) {
         console.log("\nSource Document Type:");
         console.log(`ID: ${docType.id}`);
-        console.log(`Type: ${docType.document_type}`);
+        console.log(`Type: ${docType.name}`);
         console.log(`Category: ${docType.category || "N/A"}`);
       }
     } else {
@@ -111,14 +111,14 @@ async function checkSourceAndDocument(sourceId: string): Promise<void> {
       if (doc.document_type_id) {
         const { data: docType, error: docTypeError } = await supabase
           .from("document_types")
-          .select("id, document_type, category")
+          .select("id, name, category")
           .eq("id", doc.document_type_id)
           .single();
           
         if (docTypeError) {
           console.error(`Error fetching document type: ${docTypeError.message}`);
         } else if (docType) {
-          console.log(`Document Type: ${docType.document_type} (${docType.category || "N/A"})`);
+          console.log(`Document Type: ${docType.name} (${docType.category || "N/A"})`);
         }
       } else {
         console.log("Document Type: None");

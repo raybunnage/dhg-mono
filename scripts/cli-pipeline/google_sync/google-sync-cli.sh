@@ -373,6 +373,8 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * classify-powerpoints         Classify PowerPoint files missing document types using Claude AI (65 uses)"
   echo "  * classify-docs-service        Classify .docx and .txt files missing document types (64 uses)"
   echo "    force-classify-docs          Force classify documents using the document-classification-prompt-new"
+  echo "    find-documents-with-content Find documents with content that can be used for classification"
+  echo "    check-concepts            Check concepts stored for a document (by source ID)"
   echo "    classify-pdfs                Classify PDF files missing document types or marked as needs_reprocessing using Claude AI"
   echo "    direct-classify-pdfs         Process PDF files with needs_reprocessing status directly (more reliable)"
   echo "    fix-classify-pdfs            Mark PDF files with needs_reprocessing status as processed (without analyzing)"
@@ -502,6 +504,24 @@ fi
 if [ "$1" = "force-classify-docs" ]; then
   shift
   track_command "force-classify-docs" "ts-node $SCRIPT_DIR/force-classify-docs.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "find-documents-with-content" ]; then
+  shift
+  track_command "find-documents-with-content" "ts-node $SCRIPT_DIR/find-documents-with-content.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "check-concepts" ]; then
+  shift
+  track_command "check-concepts" "ts-node $SCRIPT_DIR/check-concepts.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "update-document-type-id" ]; then
+  shift
+  track_command "update-document-type-id" "ts-node $SCRIPT_DIR/update-document-type-id.ts $*"
   exit $?
 fi
 

@@ -33,7 +33,7 @@ interface PathDepthCount {
 
 interface DocTypePathDepthCount {
   document_types: {
-    document_type: string;
+    name: string;
   };
   path_depth: number;
   count: string;
@@ -45,7 +45,7 @@ interface FolderExample {
   path: string;
   path_depth: number;
   document_types: {
-    document_type: string;
+    name: string;
   };
 }
 
@@ -123,7 +123,7 @@ async function analyzeDocumentTypesByPathDepth(): Promise<void> {
       // Group by document type for better readability
       const groupedByDocType = (docTypeDepthCounts as DocTypePathDepthCount[]).reduce(
         (acc: Record<string, { path_depth: number, count: string }[]>, item: DocTypePathDepthCount) => {
-          const docType = item.document_types?.document_type || 'unknown';
+          const docType = item.document_types?.name || 'unknown';
           if (!acc[docType]) {
             acc[docType] = [];
           }
@@ -154,7 +154,7 @@ async function analyzeDocumentTypesByPathDepth(): Promise<void> {
     
     const { data: examples, error: examplesError } = await supabase
       .from('sources_google')
-      .select('id, name, path, path_depth, document_types!inner(document_type)')
+      .select('id, name, path, path_depth, document_types!inner(name)')
       .eq('is_deleted', false)
       .eq('mime_type', 'application/vnd.google-apps.folder')
       .not('document_type_id', 'is', null)
@@ -171,7 +171,7 @@ async function analyzeDocumentTypesByPathDepth(): Promise<void> {
       (examples as FolderExample[]).forEach((folder: FolderExample, index: number) => {
         console.log(`${index + 1}. "${folder.name}" (path_depth=${folder.path_depth})`);
         console.log(`   Path: ${folder.path}`);
-        console.log(`   Document Type: ${folder.document_types.document_type || 'unknown'}`);
+        console.log(`   Document Type: ${folder.document_types.name || 'unknown'}`);
         console.log('');
       });
     } else {
