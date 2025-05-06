@@ -9,6 +9,7 @@
 #   classify-powerpoints         Classify PowerPoint files missing document types using local extraction and Claude AI
 #   reclassify-docs              Re-classify documents with temperature=0 for deterministic results
 #   classify-docs-service        Classify .docx and .txt files missing document types
+#   reprocess-docx-files         Reprocess DOCX files with needs_reprocessing status
 #   check-duplicates             Check for duplicate files in sources_google
 #   check-document-types         Check for files missing document types
 #   renamed-file                 Update sources_google record when a file has been renamed in Google Drive (by source ID)
@@ -76,6 +77,13 @@ if [ "$1" = "classify-docs-service" ]; then
   shift
   echo "Classifying documents with service (only updates sources_google document_type_id)"
   track_command "classify-docs-service" "ts-node $SCRIPT_DIR/classify-missing-docs-with-service.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "reprocess-docx-files" ]; then
+  shift
+  echo "Reprocessing DOCX files with needs_reprocessing status (only updates sources_google document_type_id)"
+  track_command "reprocess-docx-files" "ts-node $SCRIPT_DIR/reprocess-docx-files.ts $*"
   exit $?
 fi
 
@@ -452,6 +460,9 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Classify .docx and .txt files (only updates sources_google table)"
   echo "  ./google-sync-cli.sh classify-docs-service --limit 5 --concurrency 2"
+  echo ""
+  echo "  # Reprocess DOCX files that have needs_reprocessing status"
+  echo "  ./google-sync-cli.sh reprocess-docx-files --limit 10 --verbose"
   echo ""
   echo "LISTING & REPORTING:"
   echo "  # Generate a report of expert documents in the database"
