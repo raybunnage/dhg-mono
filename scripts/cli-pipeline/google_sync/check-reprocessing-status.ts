@@ -201,12 +201,12 @@ export async function checkReprocessingStatus(options: {
           if (source.document_type_id) {
             const { data: docType, error: docTypeError } = await supabaseClient
               .from('document_types')
-              .select('document_type')
+              .select('name')
               .eq('id', source.document_type_id)
               .maybeSingle();
               
             if (!docTypeError && docType) {
-              sourcesGoogleDocumentTypeName = docType.document_type;
+              sourcesGoogleDocumentTypeName = docType.name;
             }
           }
           
@@ -261,12 +261,12 @@ export async function checkReprocessingStatus(options: {
           if (expertDoc.document_type_id) {
             const { data: docType, error: docTypeError } = await supabaseClient
               .from('document_types')
-              .select('document_type')
+              .select('name')
               .eq('id', expertDoc.document_type_id)
               .maybeSingle();
             
             if (!docTypeError && docType) {
-              documentTypeName = docType.document_type;
+              documentTypeName = docType.name;
             }
           }
           
@@ -275,12 +275,12 @@ export async function checkReprocessingStatus(options: {
           if (source.document_type_id) {
             const { data: docType, error: docTypeError } = await supabaseClient
               .from('document_types')
-              .select('document_type')
+              .select('name')
               .eq('id', source.document_type_id)
               .maybeSingle();
               
             if (!docTypeError && docType) {
-              sourcesGoogleDocumentTypeName = docType.document_type;
+              sourcesGoogleDocumentTypeName = docType.name;
             }
           }
 
@@ -309,12 +309,12 @@ export async function checkReprocessingStatus(options: {
           if (source.document_type_id) {
             const { data: docType, error: docTypeError } = await supabaseClient
               .from('document_types')
-              .select('document_type')
+              .select('name')
               .eq('id', source.document_type_id)
               .maybeSingle();
               
             if (!docTypeError && docType) {
-              sourcesGoogleDocumentTypeName = docType.document_type;
+              sourcesGoogleDocumentTypeName = docType.name;
             }
           }
 
@@ -457,12 +457,12 @@ export async function checkReprocessingStatus(options: {
                 if (doc.document_type_id) {
                   const { data: docType } = await supabaseClient
                     .from('document_types')
-                    .select('document_type')
+                    .select('name')
                     .eq('id', doc.document_type_id)
                     .maybeSingle();
                   
                   if (docType) {
-                    documentTypeName = docType.document_type;
+                    documentTypeName = docType.name;
                   }
                 }
                 
@@ -471,12 +471,12 @@ export async function checkReprocessingStatus(options: {
                 if (source.document_type_id) {
                   const { data: docType } = await supabaseClient
                     .from('document_types')
-                    .select('document_type')
+                    .select('name')
                     .eq('id', source.document_type_id)
                     .maybeSingle();
                     
                   if (docType) {
-                    sourcesGoogleDocumentTypeName = docType.document_type;
+                    sourcesGoogleDocumentTypeName = docType.name;
                   }
                 }
                 
