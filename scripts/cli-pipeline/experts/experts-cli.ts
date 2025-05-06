@@ -293,6 +293,18 @@ program
             
             console.log('✅ Experts table accessible');
             
+            // Additional check for document_types table using the new column name 'name'
+            const { data: docTypes, error: docTypesError } = await supabase
+              .from('document_types')
+              .select('id, name')
+              .limit(1);
+              
+            if (docTypesError) {
+              console.warn(`⚠️ Could not verify document_types table: ${docTypesError.message}`);
+            } else {
+              console.log('✅ Document types table accessible');
+            }
+            
             // Additional check for folder-expert relationships
             const { data: relations, error: relError } = await supabase
               .from('folder_expert_relationships')

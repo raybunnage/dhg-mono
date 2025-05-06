@@ -30,24 +30,46 @@ check_supabase() {
   fi
   
   # Use the SupabaseClientService to test the connection
-  SUPABASE_TEST_RESULT=$(cd "$ROOT_DIR" && npx ts-node -e "
-    const { SupabaseClientService } = require('./packages/shared/services/supabase-client');
+  SUPABASE_TEST_RESULT=$(cd "$ROOT_DIR" && node -e "
     async function testConnection() {
       try {
-        const supabase = SupabaseClientService.getInstance().getClient();
-        const { data, error } = await supabase.from('prompts').select('count(*)', { count: 'exact', head: true });
-        if (error) {
-          console.log('❌ Supabase connection test failed:', error.message);
-          return 1;
+        const { createClient } = require('@supabase/supabase-js');
+        
+        // Get credentials directly from env
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error('Missing required Supabase credentials');
         }
+        
+        // Create a client directly
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        // Test prompts table - this should be safe and avoid column name issues
+        const { data, error } = await supabase
+          .from('prompts')
+          .select('id')
+          .limit(1);
+          
+        if (error) {
+          throw new Error('Failed to query prompts table: ' + error.message);
+        }
+        
         console.log('✅ Supabase connection successful');
         return 0;
-      } catch (err: any) {
+      } catch (err) {
         console.log('❌ Error testing Supabase connection:', err.message || String(err));
         return 1;
       }
     }
-    testConnection().then(code => process.exit(code));
+    
+    testConnection()
+      .then(code => process.exit(code))
+      .catch(err => {
+        console.log('❌ Fatal error in connection test:', err.message || String(err));
+        process.exit(1);
+      });
   ")
   
   echo "$SUPABASE_TEST_RESULT" >> "$LOG_FILE"
@@ -85,7 +107,10 @@ check_claude_api() {
         return 1;
       }
     }
-    testClaudeApi().then(code => process.exit(code));
+    testClaudeApi().then(code => process.exit(code)).catch(err => {
+      console.log('❌ Fatal error in Claude API test:', err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    });
   ")
   
   echo "$CLAUDE_TEST_RESULT" >> "$LOG_FILE"
