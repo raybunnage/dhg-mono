@@ -469,15 +469,23 @@ async function classifyMissingDocuments(
           // We're NOT updating the document_type_id in expert_documents (same approach as force-classify-docs.ts)
           console.log(`Updating document_type_id in sources_google table for ${file.name} to ${classificationResult.document_type_id}`);
           
+          // Ensure the document_type_id is in the correct UUID format (removing any leading characters if needed)
+          let cleanDocumentTypeId = classificationResult.document_type_id;
+          // If the UUID has more than 36 characters, extract just the last 36 characters
+          if (cleanDocumentTypeId.length > 36) {
+            cleanDocumentTypeId = cleanDocumentTypeId.substring(cleanDocumentTypeId.length - 36);
+            console.log(`Corrected document_type_id format to: ${cleanDocumentTypeId}`);
+          }
+          
           const { error: updateError } = await supabase
             .from('sources_google')
-            .update({ document_type_id: classificationResult.document_type_id })
+            .update({ document_type_id: cleanDocumentTypeId })
             .eq('id', file.id);
           
           if (updateError) {
             console.error(`Error updating document type: ${updateError.message}`);
           } else if (debug) {
-            console.log(`✅ Successfully updated sources_google record with document_type_id: ${classificationResult.document_type_id}`);
+            console.log(`✅ Successfully updated sources_google record with document_type_id: ${cleanDocumentTypeId}`);
           }
           
           // Check if this file already has an expert_document entry that needs reprocessing
@@ -507,7 +515,7 @@ async function classifyMissingDocuments(
               .update({
                 // document_type_id: intentionally NOT updated
                 classification_confidence: classificationResult.classification_confidence || 0.75,
-                classification_metadata: classificationResult,
+                classification_metadata: { ...classificationResult, document_type_id: cleanDocumentTypeId },
                 document_processing_status: 'reprocessing_done',
                 document_processing_status_updated_at: new Date().toISOString(),
                 processing_skip_reason: null,

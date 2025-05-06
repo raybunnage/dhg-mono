@@ -230,7 +230,7 @@ Return your classification as a complete, valid JSON object with all of these fi
           if (classificationResponse.document_type_id) {
             console.log(`[${index+1}/${filesToProcess.length}] ✅ Classified with document_type_id: ${classificationResponse.document_type_id}`);
             console.log(`[${index+1}/${filesToProcess.length}] 📝 Document type: ${classificationResponse.name || 'Unknown'}`);
-            console.log(`[${index+1}/${filesToProcess.length}] 📊 Confidence: ${(classificationResponse.classification_confidence || 0) * 100}%`);
+            console.log(`[${index+1}/${filesToProcess.length}] 📊 Confidence: ${Math.round((classificationResponse.classification_confidence || 0) * 100)}%`);
           } else {
             console.log(`[${index+1}/${filesToProcess.length}] ❌ Classification failed: No document_type_id returned`);
             return {
@@ -253,11 +253,19 @@ Return your classification as a complete, valid JSON object with all of these fi
           if (!dryRun) {
             console.log(`Updating document_type_id in sources_google table for ${file.name} to ${classificationResponse.document_type_id}`);
             
+            // Ensure the document_type_id is in the correct UUID format
+            let cleanDocumentTypeId = classificationResponse.document_type_id;
+            // If the UUID has more than 36 characters, extract just the last 36 characters
+            if (cleanDocumentTypeId.length > 36) {
+              cleanDocumentTypeId = cleanDocumentTypeId.substring(cleanDocumentTypeId.length - 36);
+              console.log(`Corrected document_type_id format to: ${cleanDocumentTypeId}`);
+            }
+            
             // Update ONLY the sources_google record with the document_type_id
             const { error: updateError } = await supabase
               .from('sources_google')
               .update({ 
-                document_type_id: classificationResponse.document_type_id,
+                document_type_id: cleanDocumentTypeId,
                 updated_at: new Date().toISOString()
               })
               .eq('id', file.id);
@@ -281,7 +289,7 @@ Return your classification as a complete, valid JSON object with all of these fi
                 document_processing_status: 'reprocessing_done',
                 document_processing_status_updated_at: new Date().toISOString(),
                 classification_confidence: classificationResponse.classification_confidence || 0.75,
-                classification_metadata: classificationResponse,
+                classification_metadata: { ...classificationResponse, document_type_id: cleanDocumentTypeId },
                 classification_reasoning: classificationResponse.classification_reasoning || '',
                 title: classificationResponse.suggested_title || file.name, // Use the suggested title 
                 key_insights: classificationResponse.concepts ? classificationResponse.concepts.map(c => c.name) : [],
