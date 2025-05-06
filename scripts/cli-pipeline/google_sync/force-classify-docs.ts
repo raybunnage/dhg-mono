@@ -340,9 +340,29 @@ Return your classification as a complete, valid JSON object with all of these fi
                   }
                 });
                 
-                console.log('\nComplete Classification Result:');
+                console.log('\nComplete Classification Result (RAW JSON):');
                 console.log('---------------------------------');
+                // Print the raw, unformatted JSON string
+                console.log('Raw JSON string:');
+                console.log(JSON.stringify(classificationResponse));
+                
+                console.log('\nFormatted JSON:');
                 console.log(JSON.stringify(classificationResponse, null, 2));
+                
+                // Get all keys to ensure we show ALL properties, even unexpected ones
+                console.log('\nAll properties in the response:');
+                const allKeys = Object.keys(classificationResponse);
+                console.log(`Found ${allKeys.length} properties: ${allKeys.join(', ')}`);
+                
+                // Show each property and its value
+                console.log('\nDetailed property breakdown:');
+                allKeys.forEach(key => {
+                  const value = classificationResponse[key as keyof typeof classificationResponse];
+                  console.log(`\nProperty: ${key}`);
+                  console.log(`Type: ${typeof value}`);
+                  console.log(`Value: ${JSON.stringify(value, null, 2)}`);
+                });
+                
                 console.log('---------------------------------');
                 
                 // Log what we would do in a real run
