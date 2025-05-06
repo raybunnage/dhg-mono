@@ -609,6 +609,50 @@ Return your classification as a complete, valid JSON object with all of these fi
             });
             continue;
           }
+          
+          // Save concepts to document_concepts table if available
+          if (classificationResponse.concepts && classificationResponse.concepts.length > 0) {
+            // First, delete any existing concepts for this document to avoid duplicates
+            const { error: deleteError } = await supabase
+              .from('document_concepts')
+              .delete()
+              .eq('document_id', expertDoc.id);
+              
+            if (deleteError) {
+              processingResults.push({
+                file,
+                classificationResult: classificationResponse,
+                success: false,
+                error: `Error deleting existing concepts: ${deleteError.message}`
+              });
+              continue;
+            }
+            
+            // Prepare concept records for insertion
+            const conceptRecords = classificationResponse.concepts.map(concept => ({
+              document_id: expertDoc.id,
+              concept: concept.name,
+              weight: concept.weight,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }));
+            
+            // Insert all concepts
+            const { error: conceptsError } = await supabase
+              .from('document_concepts')
+              .insert(conceptRecords)
+              .select();
+              
+            if (conceptsError) {
+              processingResults.push({
+                file,
+                classificationResult: classificationResponse,
+                success: false,
+                error: `Error saving concepts: ${conceptsError.message}`
+              });
+              continue;
+            }
+          }
         }
         
         // Add successful result
