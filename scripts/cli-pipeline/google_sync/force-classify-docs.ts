@@ -569,12 +569,12 @@ Return your classification as a complete, valid JSON object with all of these fi
                       }
                     }
                     
-                    // Update the document_type_id in sources_google as well
+                    // Update the document_type_id in sources_google using the ID directly from the AI response
                     console.log('\nUpdating document_type_id in sources_google record...');
                     const { data: updateSourceData, error: updateSourceError } = await supabase
                       .from('sources_google')
                       .update({
-                        document_type_id: documentTypeId,
+                        document_type_id: classificationResponse.document_type_id,
                         updated_at: new Date().toISOString()
                       })
                       .eq('id', options.id)
@@ -583,7 +583,7 @@ Return your classification as a complete, valid JSON object with all of these fi
                     if (updateSourceError) {
                       console.error(`❌ Error updating sources_google: ${updateSourceError.message}`);
                     } else {
-                      console.log('✅ Successfully updated document_type_id in sources_google record');
+                      console.log(`✅ Successfully updated document_type_id in sources_google record with ID: ${classificationResponse.document_type_id}`);
                     }
                   }
                 }
