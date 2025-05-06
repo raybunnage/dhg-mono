@@ -118,10 +118,10 @@ program
         console.log('='.repeat(160));
         console.log(
           'ID'.padEnd(38) + ' | ' + 
-          'Category'.padEnd(20) + ' | ' + 
-          'General'.padEnd(10) + ' | ' + 
-          'Name'.padEnd(30) + ' | ' + 
-          'AI Gen'.padEnd(8) + ' | ' + 
+          'Category'.padEnd(18) + ' | ' + 
+          'General'.padEnd(8) + ' | ' + 
+          'Name'.padEnd(28) + ' | ' + 
+          'AI Gen'.padEnd(7) + ' | ' + 
           'Description'
         );
         console.log('-'.repeat(160));
@@ -129,15 +129,15 @@ program
         documentTypes.forEach(type => {
           // Get general type status
           const isGeneralType = type.is_general_type ? 'Yes' : 'No';
-          // Truncate description to fit within the table
-          const description = type.description ? type.description.substring(0, 45) : '';
+          // Truncate description to fit within the table - making it wider
+          const description = type.description ? type.description.substring(0, 60) : '';
           
           console.log(
             type.id.padEnd(38) + ' | ' +
-            (type.category || '').substring(0, 18).padEnd(20) + ' | ' +
-            isGeneralType.padEnd(10) + ' | ' +
-            type.name.substring(0, 28).padEnd(30) + ' | ' +
-            (type.is_ai_generated ? 'Yes' : 'No').padEnd(8) + ' | ' +
+            (type.category || '').substring(0, 16).padEnd(18) + ' | ' +
+            isGeneralType.padEnd(8) + ' | ' +
+            type.name.substring(0, 26).padEnd(28) + ' | ' +
+            (type.is_ai_generated ? 'Yes' : 'No').padEnd(7) + ' | ' +
             description
           );
         });

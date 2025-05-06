@@ -866,16 +866,15 @@ When implementing solutions, always check this section for known issues and thei
        - ✅ CORRECT: `experts(expert_name)`
        - ❌ INCORRECT: `experts(name)`
 
-   - The `document_types` table uses `document_type` as column name:
+   - The `document_types` table has been updated to use `name` instead of `document_type`:
      - When querying with nested selects:
-       - ✅ CORRECT: `document_types(document_type)` 
-       - ❌ INCORRECT: `document_types(name)`
+       - ✅ CORRECT: `document_types(name)` 
+       - ❌ INCORRECT: `document_types(document_type)`
        
 3. **KEY TABLE RELATIONSHIPS**:
    - In `sources_google`, there is a `document_type_id` field that joins to `document_types.id`
-   - The document_types table has a `document_type` field (not name) that contains the type name
-   - document_types also has a `mime_type` field that shows the document's mime_type
-   - When querying with nested selects, use: `document_type:document_type_id(document_type, mime_type)`
+   - The document_types table has a `name` field that contains the type name
+   - When querying with nested selects, use: `document_type:document_type_id(name, category)`
 
 3. **TABLE RELATIONSHIPS**:
    - Always verify foreign key relationships before writing queries
