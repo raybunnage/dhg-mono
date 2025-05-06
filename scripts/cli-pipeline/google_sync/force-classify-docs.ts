@@ -15,11 +15,23 @@ interface CommandOptions {
 }
 
 interface ClassificationResult {
-  generalCategory: string;
-  specificDocumentType: string;
-  keyConcepts: string[];
-  confidence: number;
-  reasoning: string;
+  document_type_id?: string;
+  category?: string;
+  name?: string;
+  suggested_title?: string;
+  classification_confidence?: number;
+  classification_reasoning?: string;
+  concepts?: Array<{
+    name: string;
+    weight: number;
+  }>;
+  
+  // Legacy fields - might be returned by some Claude models
+  generalCategory?: string;
+  specificDocumentType?: string;
+  keyConcepts?: string[];
+  confidence?: number;
+  reasoning?: string;
 }
 
 const program = new Command();
@@ -168,11 +180,174 @@ program
             console.log('⚠️ No content available for this expert document');
           }
           
-          console.log('\nThis document is ready for classification using document-classification-prompt-new');
-          console.log('Next implementation phase will process this content through Claude');
+          console.log('\nDocument is ready for classification using document-classification-prompt-new');
+          
+          // If we have content and a prompt, we can proceed with classification
+          if (contentData && contentData.length > 0 && contentData[0].raw_content && promptResult.prompt) {
+            try {
+              console.log('Starting AI classification process...');
+              
+              // Prepare the full prompt by combining the prompt template with the document content
+              const documentContent = contentData[0].raw_content;
+              
+              // Process the content through Claude API for classification
+              console.log('Sending to Claude API for classification...');
+              const classificationResponse = await claudeService.getJsonResponse<ClassificationResult>(
+                promptResult.combinedContent + '\n\n### Document Content:\n' + documentContent + '\n\nProvide your classification in JSON format.'
+              );
+              
+              if (classificationResponse) {
+                console.log('\n✅ Classification complete!');
+                console.log('\nClassification Result:');
+                console.log('---------------------------------');
+                console.log(JSON.stringify(classificationResponse, null, 2));
+                console.log('---------------------------------');
+                
+                // Log what we would do in a real run
+                if (options.dryRun) {
+                  console.log('\n🔍 DRY RUN: Database update would include:');
+                  
+                  // Determine the document type name to use based on response format
+                  const documentTypeName = classificationResponse.name || 
+                    classificationResponse.specificDocumentType || 
+                    'Unknown document type';
+                  
+                  // Extract concepts
+                  let conceptsList: string = 'None found';
+                  if (classificationResponse.concepts && classificationResponse.concepts.length > 0) {
+                    conceptsList = classificationResponse.concepts.map(c => c.name).join(', ');
+                  } else if (classificationResponse.keyConcepts && classificationResponse.keyConcepts.length > 0) {
+                    conceptsList = classificationResponse.keyConcepts.join(', ');
+                  }
+                  
+                  // Extract confidence score
+                  const confidence = classificationResponse.classification_confidence || 
+                    classificationResponse.confidence || 
+                    0;
+                  
+                  console.log(`- Setting document_type_id to match "${documentTypeName}"`);
+                  console.log(`- Adding key concepts: ${conceptsList}`);
+                  console.log(`- Setting classification confidence: ${confidence}`);
+                  console.log(`- Adding classification metadata with reasoning`);
+                  
+                  // Look up the document type ID for the classified type
+                  const { data: docTypeMatchData, error: docTypeMatchError } = await supabase
+                    .from('document_types')
+                    .select('id, name')
+                    .eq('name', documentTypeName)
+                    .limit(1);
+                    
+                  if (docTypeMatchError) {
+                    console.error('❌ Error finding matching document type:', docTypeMatchError.message);
+                  } else if (docTypeMatchData && docTypeMatchData.length > 0) {
+                    console.log(`✅ Found matching document type ID: ${docTypeMatchData[0].id}`);
+                  } else {
+                    console.log(`⚠️ No matching document type found for "${classificationResponse.specificDocumentType}"`);
+                    
+                    // Find similar document types to suggest alternatives
+                    console.log('Searching for similar document types...');
+                    const { data: similarTypes, error: similarError } = await supabase
+                      .from('document_types')
+                      .select('id, name')
+                      .eq('is_general_type', false)
+                      .limit(5);
+                      
+                    if (!similarError && similarTypes && similarTypes.length > 0) {
+                      console.log('Similar document types you might consider:');
+                      similarTypes.forEach(type => console.log(`- ${type.name} (${type.id})`));
+                    }
+                  }
+                } else {
+                  console.log('\nPerforming database update...');
+                  
+                  // Determine the document type name to use based on response format
+                  const documentTypeName = classificationResponse.name || 
+                    classificationResponse.specificDocumentType || 
+                    'Unknown document type';
+                  
+                  // Extract concepts
+                  let keyConceptsArray: string[] = [];
+                  if (classificationResponse.concepts && classificationResponse.concepts.length > 0) {
+                    keyConceptsArray = classificationResponse.concepts.map(c => c.name);
+                  } else if (classificationResponse.keyConcepts && classificationResponse.keyConcepts.length > 0) {
+                    keyConceptsArray = classificationResponse.keyConcepts;
+                  }
+                  
+                  // Extract confidence score
+                  const confidence = classificationResponse.classification_confidence || 
+                    classificationResponse.confidence || 
+                    0;
+                  
+                  // Look up the document type ID for the classified type
+                  const { data: docTypeMatchData, error: docTypeMatchError } = await supabase
+                    .from('document_types')
+                    .select('id, name')
+                    .eq('name', documentTypeName)
+                    .limit(1);
+                  
+                  if (docTypeMatchError) {
+                    console.error('❌ Error finding matching document type:', docTypeMatchError.message);
+                    return;
+                  }
+                  
+                  let documentTypeId: string | null = null;
+                  if (docTypeMatchData && docTypeMatchData.length > 0) {
+                    documentTypeId = docTypeMatchData[0].id;
+                    console.log(`✅ Found matching document type ID: ${documentTypeId}`);
+                  } else {
+                    console.log(`⚠️ No matching document type found for "${documentTypeName}"`);
+                    console.log('Cannot update without a valid document type ID');
+                    return;
+                  }
+                  
+                  // Prepare classification metadata
+                  const classificationMetadata = {
+                    classifier: 'claude',
+                    model: 'claude-3-7-sonnet',
+                    classifiedAt: new Date().toISOString(),
+                    originalResponse: classificationResponse,
+                    reasoning: classificationResponse.classification_reasoning || classificationResponse.reasoning || '',
+                    category: classificationResponse.category || classificationResponse.generalCategory || '',
+                    suggestedTitle: classificationResponse.suggested_title || '',
+                    concepts: classificationResponse.concepts || keyConceptsArray.map(name => ({ name, weight: 1.0 }))
+                  };
+                  
+                  // Update the expert document with the new document type and metadata
+                  const { data: updateData, error: updateError } = await supabase
+                    .from('expert_documents')
+                    .update({
+                      document_type_id: documentTypeId,
+                      classification_confidence: confidence,
+                      classification_metadata: classificationMetadata,
+                      key_insights: keyConceptsArray,
+                      document_processing_status: 'reprocessing_done',
+                      document_processing_status_updated_at: new Date().toISOString()
+                    })
+                    .eq('id', expertDoc.id)
+                    .select();
+                  
+                  if (updateError) {
+                    console.error('❌ Error updating expert document:', updateError.message);
+                  } else {
+                    console.log('✅ Successfully updated expert document with new classification');
+                    console.log(`- Document type set to: ${documentTypeName} (${documentTypeId})`);
+                    console.log(`- Classification confidence: ${confidence}`);
+                    console.log(`- Key concepts added: ${keyConceptsArray.length}`);
+                    console.log(`- Processing status updated to: reprocessing_done`);
+                  }
+                }
+              } else {
+                console.error('❌ Classification failed: No response from Claude API');
+              }
+            } catch (error) {
+              console.error('❌ Error during classification process:', error instanceof Error ? error.message : String(error));
+            }
+          } else {
+            console.error('❌ Cannot proceed with classification: Missing document content or prompt');
+          }
         } else {
           console.log('⚠️ No expert document found for this source');
-          console.log('Next implementation phase will fetch content and create an expert document');
+          console.log('Additional functionality would be needed to process sources without expert documents');
         }
       }
 
