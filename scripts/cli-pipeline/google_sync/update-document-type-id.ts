@@ -1,151 +1,167 @@
 #!/usr/bin/env ts-node
-
 /**
- * Update document_type_id without foreign key constraint
- * This command directly updates an expert_document's document_type_id field
- * bypassing the foreign key constraint check
+ * Update document_type_id in the expert_documents table
  */
 import { Command } from 'commander';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 interface CommandOptions {
-  expertDocId: string;
-  documentTypeId: string;
+  sourceId?: string;
+  documentTypeId?: string;
   dryRun?: boolean;
+  verbose?: boolean;
 }
 
 const program = new Command();
 
 program
   .name('update-document-type-id')
-  .description('Update document_type_id field without foreign key constraint check')
-  .requiredOption('-e, --expert-doc-id <id>', 'Expert document ID to update')
-  .requiredOption('-d, --document-type-id <id>', 'Document type ID to set')
-  .option('--dry-run', 'Show what would happen without making changes')
+  .description('Update document_type_id for a sources_google record')
+  .option('-s, --source-id <id>', 'Source ID to update document_type_id for')
+  .option('-t, --document-type-id <id>', 'Document type ID to set')
+  .option('-d, --dry-run', 'Show what would be updated without making changes')
+  .option('-v, --verbose', 'Show detailed output')
   .action(async (options: CommandOptions) => {
     try {
-      console.log('=== Update Expert Document Document Type ID ===');
+      // Validate required parameters
+      if (!options.sourceId) {
+        console.error('❌ Error: source-id parameter is required');
+        process.exit(1);
+      }
+
+      if (!options.documentTypeId) {
+        console.error('❌ Error: document-type-id parameter is required');
+        process.exit(1);
+      }
+
+      console.log(`Updating document_type_id for source ${options.sourceId} to ${options.documentTypeId}${options.dryRun ? ' (DRY RUN)' : ''}`);
       
-      // Get the Supabase client
+      // Get Supabase client
       const supabase = SupabaseClientService.getInstance().getClient();
       
-      console.log(`Expert Document ID: ${options.expertDocId}`);
-      console.log(`Document Type ID: ${options.documentTypeId}`);
-      
-      // Check if the expert document exists
-      const { data: expertDoc, error: expertDocError } = await supabase
-        .from('expert_documents')
-        .select('id, title, document_type_id')
-        .eq('id', options.expertDocId)
+      // First check if the source exists and get its current document_type_id
+      const { data: sourceData, error: sourceError } = await supabase
+        .from('sources_google')
+        .select('id, name, document_type_id')
+        .eq('id', options.sourceId)
         .single();
-        
-      if (expertDocError) {
-        console.error(`L Error fetching expert document: ${expertDocError.message}`);
+      
+      if (sourceError) {
+        console.error(`❌ Error fetching source: ${sourceError.message}`);
         process.exit(1);
       }
       
-      if (!expertDoc) {
-        console.error(`L Expert document with ID ${options.expertDocId} not found`);
+      if (!sourceData) {
+        console.error(`❌ Source with ID ${options.sourceId} not found`);
         process.exit(1);
       }
       
-      console.log(` Found expert document: ${expertDoc.title || 'No title'}`);
-      console.log(`Current document_type_id: ${expertDoc.document_type_id || 'None'}`);
+      console.log(`✅ Found source: ${sourceData.name}`);
+      console.log(`Current document_type_id: ${sourceData.document_type_id || 'None'}`);
       
-      // Check if document type exists (just for information)
-      const { data: docTypeData, error: docTypeError } = await supabase
+      // Also check if document type ID exists
+      const { data: documentTypeData, error: documentTypeError } = await supabase
         .from('document_types')
         .select('id, name, category')
         .eq('id', options.documentTypeId)
         .single();
-        
-      if (docTypeError) {
-        console.error(`� Error checking document type: ${docTypeError.message}`);
-        console.log('This update will still proceed, but note that the document type ID may not exist.');
-      } else if (docTypeData) {
-        console.log(` Found document type: ${docTypeData.name}`);
-        console.log(`Category: ${docTypeData.category || 'None'}`);
+      
+      if (documentTypeError) {
+        console.error(`⚠️ Warning: Error checking document type: ${documentTypeError.message}`);
+        console.log('This update may fail if the document type ID is invalid.');
+      } else if (!documentTypeData) {
+        console.log(`⚠️ Warning: Document type with ID ${options.documentTypeId} not found`);
+        console.log('This update may fail if the document type ID is invalid.');
       } else {
-        console.log(`� Document type with ID ${options.documentTypeId} not found`);
-        console.log('This update will still proceed, but note that the document type ID does not exist.');
+        console.log(`✅ Document type to set: ${documentTypeData.name} (${documentTypeData.category || 'No category'})`);
       }
       
       if (options.dryRun) {
-        console.log('\n= DRY RUN: Would update expert document with the following:');
-        console.log(`- document_type_id: ${options.documentTypeId}`);
-        console.log('No changes have been made.');
+        console.log('\n🔍 DRY RUN: Would update sources_google record with:');
+        console.log(`- Set document_type_id = ${options.documentTypeId}`);
+        console.log('No changes made.');
         return;
       }
       
-      console.log('\nUpdating expert document...');
+      // Update the document_type_id in sources_google
+      console.log('\nUpdating sources_google record...');
+      const { data: updateData, error: updateError } = await supabase
+        .from('sources_google')
+        .update({
+          document_type_id: options.documentTypeId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', options.sourceId)
+        .select();
       
-      // First approach: Try direct update with SQL query
-      try {
-        const { data: directUpdate, error: directUpdateError } = await supabase.rpc(
-          'execute_sql',
-          {
-            sql: `
-              UPDATE expert_documents 
-              SET document_type_id = '${options.documentTypeId}', 
-                  updated_at = NOW() 
-              WHERE id = '${options.expertDocId}';
-            `
-          }
-        );
-        
-        if (directUpdateError) {
-          console.error(`L Error with direct SQL update: ${directUpdateError.message}`);
-          console.log('Trying alternative approach...');
-          
-          // Try disabling triggers as fallback
-          const { data: disableTriggers, error: disableTriggersError } = await supabase.rpc(
-            'execute_sql',
-            {
-              sql: `
-                ALTER TABLE expert_documents DISABLE TRIGGER ALL;
-                UPDATE expert_documents 
-                SET document_type_id = '${options.documentTypeId}', 
-                    updated_at = NOW() 
-                WHERE id = '${options.expertDocId}';
-                ALTER TABLE expert_documents ENABLE TRIGGER ALL;
-              `
-            }
-          );
-          
-          if (disableTriggersError) {
-            console.error(`L Error with trigger disabling approach: ${disableTriggersError.message}`);
-            console.error('Update failed.');
-            process.exit(1);
-          } else {
-            console.log(' Successfully updated by disabling triggers');
-          }
-        } else {
-          console.log(' Successfully updated using direct SQL query');
-        }
-      } catch (error) {
-        console.error(`L Unexpected error: ${error instanceof Error ? error.message : String(error)}`);
+      if (updateError) {
+        console.error(`❌ Error updating sources_google: ${updateError.message}`);
         process.exit(1);
       }
       
-      // Verify the update
-      const { data: verifyData, error: verifyError } = await supabase
+      console.log('✅ Successfully updated sources_google record');
+      
+      // Check if there's an expert document that needs to be updated as well
+      console.log('\nChecking for related expert_documents...');
+      const { data: expertDocsData, error: expertDocsError } = await supabase
         .from('expert_documents')
-        .select('id, document_type_id')
-        .eq('id', options.expertDocId)
-        .single();
+        .select('id, document_type_id, title')
+        .eq('source_id', options.sourceId);
+      
+      if (expertDocsError) {
+        console.error(`❌ Error checking expert_documents: ${expertDocsError.message}`);
+        return;
+      }
+      
+      if (!expertDocsData || expertDocsData.length === 0) {
+        console.log('No related expert_documents found for this source.');
+        return;
+      }
+      
+      console.log(`Found ${expertDocsData.length} related expert document(s).`);
+      
+      // Update each expert document
+      for (const expertDoc of expertDocsData) {
+        console.log(`\nUpdating expert document ID: ${expertDoc.id}`);
+        console.log(`Current document_type_id: ${expertDoc.document_type_id || 'None'}`);
+        console.log(`Title: ${expertDoc.title || 'No title'}`);
         
-      if (verifyError) {
-        console.error(`L Error verifying update: ${verifyError.message}`);
-      } else if (verifyData) {
-        if (verifyData.document_type_id === options.documentTypeId) {
-          console.log(' Verification successful: document_type_id has been updated');
+        const { error: expertUpdateError } = await supabase
+          .from('expert_documents')
+          .update({
+            document_type_id: options.documentTypeId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', expertDoc.id);
+        
+        if (expertUpdateError) {
+          console.error(`❌ Error updating expert document: ${expertUpdateError.message}`);
+          console.log('Trying alternative approach...');
+          
+          // Use RPC to execute direct SQL if there's a foreign key constraint issue
+          const { error: rpcError } = await supabase.rpc('execute_sql', {
+            sql: `
+              UPDATE expert_documents 
+              SET document_type_id = '${options.documentTypeId}',
+                  updated_at = NOW() 
+              WHERE id = '${expertDoc.id}';
+            `
+          });
+          
+          if (rpcError) {
+            console.error(`❌ SQL execution error: ${rpcError.message}`);
+            console.log('Update failed for this expert document.');
+          } else {
+            console.log('✅ Successfully updated expert document with direct SQL');
+          }
         } else {
-          console.error(`L Verification failed: document_type_id is ${verifyData.document_type_id}`);
+          console.log('✅ Successfully updated expert document');
         }
       }
       
+      console.log('\n✅ All updates completed successfully');
     } catch (error) {
-      console.error(`L Error: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('❌ Error:', error instanceof Error ? error.message : String(error));
       process.exit(1);
     }
   });

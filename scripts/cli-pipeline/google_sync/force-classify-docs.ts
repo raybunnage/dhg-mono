@@ -500,11 +500,11 @@ Return your classification as a complete, valid JSON object with all of these fi
                     concepts: classificationResponse.concepts || keyConceptsArray.map(name => ({ name, weight: 1.0 }))
                   };
                   
-                  // For now, let's split the update into two parts to avoid the foreign key constraint
-                  // First, update everything except the document_type_id
+                  // Update the expert document with all fields including document_type_id
                   const { data: updateData, error: updateError } = await supabase
                     .from('expert_documents')
                     .update({
+                      document_type_id: documentTypeId, // Include document_type_id now that we're sure of its value
                       classification_confidence: confidence,
                       classification_metadata: classificationMetadata,
                       key_insights: keyConceptsArray,
@@ -567,6 +567,23 @@ Return your classification as a complete, valid JSON object with all of these fi
                           console.log(`  ${index+1}. ${concept.name} (weight: ${concept.weight})`);
                         });
                       }
+                    }
+                    
+                    // Update the document_type_id in sources_google as well
+                    console.log('\nUpdating document_type_id in sources_google record...');
+                    const { data: updateSourceData, error: updateSourceError } = await supabase
+                      .from('sources_google')
+                      .update({
+                        document_type_id: documentTypeId,
+                        updated_at: new Date().toISOString()
+                      })
+                      .eq('id', options.id)
+                      .select();
+                    
+                    if (updateSourceError) {
+                      console.error(`❌ Error updating sources_google: ${updateSourceError.message}`);
+                    } else {
+                      console.log('✅ Successfully updated document_type_id in sources_google record');
                     }
                   }
                 }
