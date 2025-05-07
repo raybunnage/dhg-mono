@@ -32,7 +32,7 @@ async function checkConcepts() {
     // Get expert_document record
     const { data: expertDoc, error: expertError } = await supabase
       .from('expert_documents')
-      .select('id, title, document_processing_status, classification_confidence, classification_reasoning, key_insights')
+      .select('id, title, reprocessing_status, classification_confidence, classification_reasoning, key_insights')
       .eq('source_id', sourceId)
       .limit(1);
       
@@ -49,7 +49,7 @@ async function checkConcepts() {
     console.log('Expert Document:');
     console.log('ID:', expertDoc[0].id);
     console.log('Title:', expertDoc[0].title);
-    console.log('Processing Status:', expertDoc[0].document_processing_status);
+    console.log('Processing Status:', expertDoc[0].reprocessing_status);
     console.log('Classification Confidence:', expertDoc[0].classification_confidence);
     console.log('Key Insights:', expertDoc[0].key_insights);
     

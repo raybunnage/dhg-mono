@@ -11,7 +11,7 @@ interface ResetProcessingOptions {
 }
 
 /**
- * Reset the document_processing_status for specified expert_documents by source ID
+ * Reset the reprocessing_status for specified expert_documents by source ID
  * @param ids - Comma-separated list of sources_google IDs to reset
  * @param options - Command options
  */
@@ -80,7 +80,7 @@ async function resetDocumentProcessingStatus(ids: string, options: ResetProcessi
     // Now find the corresponding expert documents
     const { data: expertDocs, error: expertDocsError } = await supabase
       .from('expert_documents')
-      .select('id, source_id, document_processing_status')
+      .select('id, source_id, reprocessing_status')
       .in('source_id', foundSourceIds);
     
     if (expertDocsError) {
@@ -109,7 +109,7 @@ async function resetDocumentProcessingStatus(ids: string, options: ResetProcessi
       console.log('\nCurrent expert documents:');
       expertDocs.forEach(doc => {
         const sourceName = sourceMap.get(doc.source_id) || 'Unknown';
-        console.log(`${doc.id} | ${sourceName} | ${doc.document_processing_status || 'null'}`);
+        console.log(`${doc.id} | ${sourceName} | ${doc.reprocessing_status || 'null'}`);
       });
       console.log('');
     }
@@ -120,9 +120,9 @@ async function resetDocumentProcessingStatus(ids: string, options: ResetProcessi
       expertDocs.forEach(doc => {
         const sourceName = sourceMap.get(doc.source_id) || 'Unknown';
         console.log(`- ${doc.id} | ${sourceName}`);
-        console.log(`  Current status: ${doc.document_processing_status || 'null'}`);
+        console.log(`  Current status: ${doc.reprocessing_status || 'null'}`);
         console.log(`  New status: needs_reprocessing`);
-        console.log(`  document_processing_status_updated_at: ${new Date().toISOString()}`);
+        console.log(`  reprocessing_status_updated_at: ${new Date().toISOString()}`);
         console.log('');
       });
       
@@ -145,8 +145,8 @@ async function resetDocumentProcessingStatus(ids: string, options: ResetProcessi
         const { data: updateData, error: updateError } = await supabase
           .from('expert_documents')
           .update({
-            document_processing_status: 'needs_reprocessing',
-            document_processing_status_updated_at: now
+            reprocessing_status: 'needs_reprocessing',
+            reprocessing_status_updated_at: now
           })
           .in('id', batchIds)
           .select();
@@ -184,7 +184,7 @@ async function resetDocumentProcessingStatus(ids: string, options: ResetProcessi
 
 program
   .name('ids-need-reprocessing')
-  .description('Reset document_processing_status for expert documents by source ID')
+  .description('Reset reprocessing_status for expert documents by source ID')
   .argument('<ids>', 'Comma-separated list of source IDs to reset')
   .option('--dry-run', 'Show what would be updated without making changes')
   .option('-v, --verbose', 'Show detailed output')

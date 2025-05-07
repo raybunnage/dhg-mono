@@ -871,43 +871,24 @@ export type Database = {
           ai_summary_status:
             | Database["public"]["Enums"]["ai_summary_status_type"]
             | null
-          batch_id: string | null
           classification_confidence: number | null
           classification_metadata: Json | null
           classification_reasoning: string | null
           confidence_score: number | null
-          content_type: string | null
           created_at: string
-          diarization_complete: boolean | null
-          document_processing_status:
-            | Database["public"]["Enums"]["document_processing_status"]
-            | null
-          document_processing_status_updated_at: string | null
           document_type_id: string | null
           id: string
-          is_latest: boolean | null
-          key_insights: string[] | null
-          language: string | null
-          last_processed_at: string | null
-          processed_at: string | null
+          pipeline_status: Database["public"]["Enums"]["pipeline_status"]
           processed_content: Json | null
-          processing_completed_at: string | null
           processing_error: string | null
           processing_skip_reason: string | null
-          processing_started_at: string | null
-          processing_stats: Json | null
-          processing_status: string | null
-          processing_status_updated_at: string | null
           raw_content: string | null
+          reprocessing_status: Database["public"]["Enums"]["reprocessing_status"]
+          reprocessing_status_updated_at: string | null
           retry_count: number | null
           source_id: string
-          status: string | null
-          summary_complete: boolean | null
           title: string | null
-          topics: string[] | null
-          transcription_complete: boolean | null
           updated_at: string
-          version: number | null
           whisper_model_used: string | null
           word_count: number | null
         }
@@ -915,43 +896,24 @@ export type Database = {
           ai_summary_status?:
             | Database["public"]["Enums"]["ai_summary_status_type"]
             | null
-          batch_id?: string | null
           classification_confidence?: number | null
           classification_metadata?: Json | null
           classification_reasoning?: string | null
           confidence_score?: number | null
-          content_type?: string | null
           created_at?: string
-          diarization_complete?: boolean | null
-          document_processing_status?:
-            | Database["public"]["Enums"]["document_processing_status"]
-            | null
-          document_processing_status_updated_at?: string | null
           document_type_id?: string | null
           id?: string
-          is_latest?: boolean | null
-          key_insights?: string[] | null
-          language?: string | null
-          last_processed_at?: string | null
-          processed_at?: string | null
+          pipeline_status?: Database["public"]["Enums"]["pipeline_status"]
           processed_content?: Json | null
-          processing_completed_at?: string | null
           processing_error?: string | null
           processing_skip_reason?: string | null
-          processing_started_at?: string | null
-          processing_stats?: Json | null
-          processing_status?: string | null
-          processing_status_updated_at?: string | null
           raw_content?: string | null
+          reprocessing_status?: Database["public"]["Enums"]["reprocessing_status"]
+          reprocessing_status_updated_at?: string | null
           retry_count?: number | null
           source_id: string
-          status?: string | null
-          summary_complete?: boolean | null
           title?: string | null
-          topics?: string[] | null
-          transcription_complete?: boolean | null
           updated_at?: string
-          version?: number | null
           whisper_model_used?: string | null
           word_count?: number | null
         }
@@ -959,59 +921,33 @@ export type Database = {
           ai_summary_status?:
             | Database["public"]["Enums"]["ai_summary_status_type"]
             | null
-          batch_id?: string | null
           classification_confidence?: number | null
           classification_metadata?: Json | null
           classification_reasoning?: string | null
           confidence_score?: number | null
-          content_type?: string | null
           created_at?: string
-          diarization_complete?: boolean | null
-          document_processing_status?:
-            | Database["public"]["Enums"]["document_processing_status"]
-            | null
-          document_processing_status_updated_at?: string | null
           document_type_id?: string | null
           id?: string
-          is_latest?: boolean | null
-          key_insights?: string[] | null
-          language?: string | null
-          last_processed_at?: string | null
-          processed_at?: string | null
+          pipeline_status?: Database["public"]["Enums"]["pipeline_status"]
           processed_content?: Json | null
-          processing_completed_at?: string | null
           processing_error?: string | null
           processing_skip_reason?: string | null
-          processing_started_at?: string | null
-          processing_stats?: Json | null
-          processing_status?: string | null
-          processing_status_updated_at?: string | null
           raw_content?: string | null
+          reprocessing_status?: Database["public"]["Enums"]["reprocessing_status"]
+          reprocessing_status_updated_at?: string | null
           retry_count?: number | null
           source_id?: string
-          status?: string | null
-          summary_complete?: boolean | null
           title?: string | null
-          topics?: string[] | null
-          transcription_complete?: boolean | null
           updated_at?: string
-          version?: number | null
           whisper_model_used?: string | null
           word_count?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "expert_documents_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "processing_batches"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "expert_documents_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "document_types_original"
+            referencedRelation: "document_types"
             referencedColumns: ["id"]
           },
           {
@@ -1280,111 +1216,6 @@ export type Database = {
           title?: string | null
           topics?: string[] | null
           transcription_complete?: boolean | null
-          updated_at?: string | null
-          version?: number | null
-          whisper_model_used?: string | null
-          word_count?: number | null
-        }
-        Relationships: []
-      }
-      expert_documents2: {
-        Row: {
-          batch_id: string | null
-          classification_confidence: number | null
-          classification_metadata: Json | null
-          confidence_score: number | null
-          content_type: string | null
-          created_at: string | null
-          document_processing_status_updated_at: string | null
-          document_type_id: string | null
-          extraction_metadata: Json | null
-          id: string | null
-          is_latest: boolean | null
-          key_insights: string[] | null
-          language: string | null
-          processed_content: Json | null
-          processing_history: Json | null
-          processing_skip_reason: string | null
-          processing_stats: Json | null
-          processing_status: string | null
-          processing_status_updated_at: string | null
-          processing_status_v2:
-            | Database["public"]["Enums"]["processing_status_v2"]
-            | null
-          processing_updated_at: string | null
-          raw_content: string | null
-          retry_count: number | null
-          source_id: string | null
-          title: string | null
-          topics: string[] | null
-          updated_at: string | null
-          version: number | null
-          whisper_model_used: string | null
-          word_count: number | null
-        }
-        Insert: {
-          batch_id?: string | null
-          classification_confidence?: number | null
-          classification_metadata?: Json | null
-          confidence_score?: number | null
-          content_type?: string | null
-          created_at?: string | null
-          document_processing_status_updated_at?: string | null
-          document_type_id?: string | null
-          extraction_metadata?: Json | null
-          id?: string | null
-          is_latest?: boolean | null
-          key_insights?: string[] | null
-          language?: string | null
-          processed_content?: Json | null
-          processing_history?: Json | null
-          processing_skip_reason?: string | null
-          processing_stats?: Json | null
-          processing_status?: string | null
-          processing_status_updated_at?: string | null
-          processing_status_v2?:
-            | Database["public"]["Enums"]["processing_status_v2"]
-            | null
-          processing_updated_at?: string | null
-          raw_content?: string | null
-          retry_count?: number | null
-          source_id?: string | null
-          title?: string | null
-          topics?: string[] | null
-          updated_at?: string | null
-          version?: number | null
-          whisper_model_used?: string | null
-          word_count?: number | null
-        }
-        Update: {
-          batch_id?: string | null
-          classification_confidence?: number | null
-          classification_metadata?: Json | null
-          confidence_score?: number | null
-          content_type?: string | null
-          created_at?: string | null
-          document_processing_status_updated_at?: string | null
-          document_type_id?: string | null
-          extraction_metadata?: Json | null
-          id?: string | null
-          is_latest?: boolean | null
-          key_insights?: string[] | null
-          language?: string | null
-          processed_content?: Json | null
-          processing_history?: Json | null
-          processing_skip_reason?: string | null
-          processing_stats?: Json | null
-          processing_status?: string | null
-          processing_status_updated_at?: string | null
-          processing_status_v2?:
-            | Database["public"]["Enums"]["processing_status_v2"]
-            | null
-          processing_updated_at?: string | null
-          raw_content?: string | null
-          retry_count?: number | null
-          source_id?: string | null
-          title?: string | null
-          topics?: string[] | null
           updated_at?: string | null
           version?: number | null
           whisper_model_used?: string | null
@@ -3780,6 +3611,21 @@ export type Database = {
         | "reprocessing_done"
         | "skip_processing"
         | "not_set"
+      pipeline_status:
+        | "unprocessed"
+        | "needs_audio_extraction"
+        | "needs_text_extraction"
+        | "extraction_in_progress"
+        | "extraction_failed"
+        | "needs_transcription"
+        | "transcription_in_progress"
+        | "transcription_failed"
+        | "needs_classification"
+        | "classification_in_progress"
+        | "classification_failed"
+        | "processed"
+        | "skip_processing"
+        | "needs_manual_review"
       processing_stage:
         | "queued"
         | "downloading"
@@ -3790,13 +3636,6 @@ export type Database = {
         | "failed"
         | "retrying"
       processing_status:
-        | "pending"
-        | "queued"
-        | "processing"
-        | "completed"
-        | "failed"
-        | "retrying"
-      processing_status_v2:
         | "unprocessed"
         | "needs_audio_extraction"
         | "needs_text_extraction"
@@ -3818,6 +3657,11 @@ export type Database = {
         | "prerequisite"
         | "alternative"
         | "successor"
+      reprocessing_status:
+        | "needs_reprocessing"
+        | "reprocessing_done"
+        | "skip_processing"
+        | "not_set"
       script_status:
         | "ACTIVE"
         | "UPDATE_NEEDED"
@@ -3992,6 +3836,22 @@ export const Constants = {
         "skip_processing",
         "not_set",
       ],
+      pipeline_status: [
+        "unprocessed",
+        "needs_audio_extraction",
+        "needs_text_extraction",
+        "extraction_in_progress",
+        "extraction_failed",
+        "needs_transcription",
+        "transcription_in_progress",
+        "transcription_failed",
+        "needs_classification",
+        "classification_in_progress",
+        "classification_failed",
+        "processed",
+        "skip_processing",
+        "needs_manual_review",
+      ],
       processing_stage: [
         "queued",
         "downloading",
@@ -4003,14 +3863,6 @@ export const Constants = {
         "retrying",
       ],
       processing_status: [
-        "pending",
-        "queued",
-        "processing",
-        "completed",
-        "failed",
-        "retrying",
-      ],
-      processing_status_v2: [
         "unprocessed",
         "needs_audio_extraction",
         "needs_text_extraction",
@@ -4033,6 +3885,12 @@ export const Constants = {
         "prerequisite",
         "alternative",
         "successor",
+      ],
+      reprocessing_status: [
+        "needs_reprocessing",
+        "reprocessing_done",
+        "skip_processing",
+        "not_set",
       ],
       script_status: [
         "ACTIVE",

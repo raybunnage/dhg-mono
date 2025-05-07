@@ -4,7 +4,7 @@
  * 
  * This script specifically:
  * 1. Finds all sources_google records that have:
- *    - A corresponding expert_documents record with document_processing_status='needs_reprocessing'
+ *    - A corresponding expert_documents record with reprocessing_status='needs_reprocessing'
  *    - File name ending with .docx
  * 2. Processes these files through Claude for classification
  * 3. Updates ONLY the sources_google.document_type_id with the result
@@ -81,7 +81,7 @@ program
       const { data: docsNeedingReprocessing, error: docsError } = await supabase
         .from('expert_documents')
         .select('id, source_id, raw_content')
-        .eq('document_processing_status', 'needs_reprocessing')
+        .eq('reprocessing_status', 'needs_reprocessing')
         .limit(500); // Get a larger pool than we need
       
       if (docsError) {
@@ -286,8 +286,8 @@ Return your classification as a complete, valid JSON object with all of these fi
               .from('expert_documents')
               .update({
                 // Intentionally NOT updating document_type_id
-                document_processing_status: 'reprocessing_done',
-                document_processing_status_updated_at: new Date().toISOString(),
+                reprocessing_status: 'reprocessing_done',
+                reprocessing_status_updated_at: new Date().toISOString(),
                 classification_confidence: classificationResponse.classification_confidence || 0.75,
                 classification_metadata: { ...classificationResponse, document_type_id: cleanDocumentTypeId },
                 classification_reasoning: classificationResponse.classification_reasoning || '',
@@ -471,7 +471,7 @@ export async function reprocessDocxFiles(options: {
     const { data: docsNeedingReprocessing, error: docsError } = await supabase
       .from('expert_documents')
       .select('id, source_id, raw_content')
-      .eq('document_processing_status', 'needs_reprocessing')
+      .eq('reprocessing_status', 'needs_reprocessing')
       .limit(500);
     
     if (docsError) {
@@ -596,8 +596,8 @@ Return your classification as a complete, valid JSON object with all of these fi
             .from('expert_documents')
             .update({
               // Intentionally NOT updating document_type_id
-              document_processing_status: 'reprocessing_done',
-              document_processing_status_updated_at: new Date().toISOString(),
+              reprocessing_status: 'reprocessing_done',
+              reprocessing_status_updated_at: new Date().toISOString(),
               classification_confidence: classificationResponse.classification_confidence || 0.75,
               classification_metadata: classificationResponse,
               classification_reasoning: classificationResponse.classification_reasoning || '',

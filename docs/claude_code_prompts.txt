@@ -2,7 +2,77 @@
  
 CLI commands could then include a --profile flag or automatically use the active profile.
 
+
+[
+  {
+    "trigger_name": "expert_documents_status_timestamps",
+    "function_name": "update_processing_timestamps",
+    "schema": "public",
+    "table_name": "expert_documents",
+    "function_definition": "CREATE OR REPLACE FUNCTION public.update_processing_timestamps()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.processing_status = 'queued' AND OLD.processing_status != 'queued' THEN\n    NEW.queued_at = NOW();\n  ELSIF NEW.processing_status = 'processing' AND OLD.processing_status != 'processing' THEN\n    NEW.processing_started_at = NOW();\n  ELSIF NEW.processing_status = 'completed' AND OLD.processing_status != 'completed' THEN\n    NEW.processing_completed_at = NOW();\n  ELSIF NEW.processing_status = 'failed' AND OLD.processing_status != 'failed' THEN\n    NEW.last_error_at = NOW();\n    NEW.retry_count = COALESCE(OLD.retry_count, 0) + 1;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "trigger_name": "trigger_documen_update_document_processing_status_timestamp",
+    "function_name": "update_document_processing_status_timestamp",
+    "schema": "public",
+    "table_name": "expert_documents",
+    "function_definition": "CREATE OR REPLACE FUNCTION public.update_document_processing_status_timestamp()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF OLD.document_processing_status IS DISTINCT FROM NEW.document_processing_status THEN\n        NEW.document_processing_status_updated_at = now();\n    END IF;\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "trigger_name": "trigger_document_update_document_processing_status_timestamp",
+    "function_name": "update_document_processing_status_timestamp",
+    "schema": "public",
+    "table_name": "expert_documents",
+    "function_definition": "CREATE OR REPLACE FUNCTION public.update_document_processing_status_timestamp()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF OLD.document_processing_status IS DISTINCT FROM NEW.document_processing_status THEN\n        NEW.document_processing_status_updated_at = now();\n    END IF;\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "trigger_name": "trigger_update_processing_status_timestamp",
+    "function_name": "update_processing_status_timestamp",
+    "schema": "public",
+    "table_name": "expert_documents",
+    "function_definition": "CREATE OR REPLACE FUNCTION public.update_processing_status_timestamp()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF OLD.processing_status IS DISTINCT FROM NEW.processing_status THEN\n        NEW.processing_status_updated_at = now();\n    END IF;\n    RETURN NEW;\nEND;\n$function$\n"
+  }
+]
+
 here is my modified table:
+
+ expert_documents2: {
+        Row: {
+          batch_id: string | null
+          classification_confidence: number | null
+          classification_metadata: Json | null
+          confidence_score: number | null
+          content_type: string | null
+          created_at: string | null
+          document_processing_status_updated_at: string | null
+          document_type_id: string | null
+          
+          
+          extraction_metadata: Json | null
+          id: string | null
+          is_latest: boolean | null
+          key_insights: string[] | null
+          language: string | null
+          processed_content: Json | null
+          processing_history: Json | null
+          processing_skip_reason: string | null
+          processing_stats: Json | null
+          processing_status: string | null
+          processing_status_updated_at: string | null
+          processing_status_v2:
+            | Database["public"]["Enums"]["processing_status_v2"]
+            | null
+          processing_updated_at: string | null
+          raw_content: string | null
+          retry_count: number | null
+          source_id: string | null
+          title: string | null
+          topics: string[] | null
+          updated_at: string | null
+          version: number | null
+          whisper_model_used: string | null
+          word_count: number | null
+        }
 
 
 erfect! Our implementation is now complete and fully tested. Let's summarize what we've done:

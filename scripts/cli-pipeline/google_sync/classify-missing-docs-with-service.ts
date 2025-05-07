@@ -12,7 +12,7 @@
  * 2. The associated sources_google file's name ends with .docx
  * 3. There is content in the raw_content field of the expert_document record
  * 4. The existing document_type_id field of the sources_google != 554ed67c-35d1-4218-abba-8d1b0ff7156d
- * 5. The expert_documents record has document_processing_status = 'needs_reprocessing'
+ * 5. The expert_documents record has reprocessing_status = 'needs_reprocessing'
  */
 
 import { program } from 'commander';
@@ -87,7 +87,7 @@ async function processFile(
       .from('expert_documents')
       .select('id, raw_content')
       .eq('source_id', sourceId)
-      .eq('document_processing_status', 'needs_reprocessing')
+      .eq('reprocessing_status', 'needs_reprocessing')
       .limit(1);
     
     if (expertDocsError) {
@@ -269,7 +269,7 @@ async function classifyMissingDocuments(
     // First, we'll try to find unclassified files (null document_type_id)
     let query = supabase
       .from('sources_google')
-      .select('*, expert_documents(id, document_processing_status)')
+      .select('*, expert_documents(id, reprocessing_status)')
       .is('is_deleted', false);
     
     // We'll use two separate queries and combine the results:
@@ -285,7 +285,7 @@ async function classifyMissingDocuments(
     const { data: expertDocsNeedingReprocessing, error: expertDocsError } = await supabase
       .from('expert_documents')
       .select('source_id')
-      .eq('document_processing_status', 'needs_reprocessing');
+      .eq('reprocessing_status', 'needs_reprocessing');
       
     if (expertDocsError) {
       throw new Error(`Error fetching expert documents: ${expertDocsError.message}`);
@@ -494,7 +494,7 @@ async function classifyMissingDocuments(
             .from('expert_documents')
             .select('*')
             .eq('source_id', file.id)
-            .eq('document_processing_status', 'needs_reprocessing')
+            .eq('reprocessing_status', 'needs_reprocessing')
             .limit(1);
             
           if (expertDocsError) {
@@ -516,8 +516,8 @@ async function classifyMissingDocuments(
                 // document_type_id: intentionally NOT updated
                 classification_confidence: classificationResult.classification_confidence || 0.75,
                 classification_metadata: { ...classificationResult, document_type_id: cleanDocumentTypeId },
-                document_processing_status: 'reprocessing_done',
-                document_processing_status_updated_at: new Date().toISOString(),
+                reprocessing_status: 'reprocessing_done',
+                reprocessing_status_updated_at: new Date().toISOString(),
                 processing_skip_reason: null,
                 updated_at: new Date().toISOString()
               })

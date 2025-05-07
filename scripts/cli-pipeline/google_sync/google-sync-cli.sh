@@ -425,7 +425,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id"
   echo ""
   echo "REPROCESSING MANAGEMENT:"
-  echo "    ids-need-reprocessing        Reset document_processing_status to needs_reprocessing for specified sources"
+  echo "    ids-need-reprocessing        Reset reprocessing_status to needs_reprocessing for specified sources"
   echo "    find-needs-reprocessing      Find files with incorrect document types and mark them for reprocessing"
   echo "    mark-pdfs                    Mark PDF files for reprocessing (creates needs_reprocessing status)"
   echo "    clear-reprocessing           Clear 'needs_reprocessing' status for documents"
@@ -585,7 +585,7 @@ if [ "$1" = "ids-need-reprocessing" ]; then
       
       const { data, error } = await supabase
         .from('expert_documents')
-        .select('id, source_id, document_processing_status, document_processing_status_updated_at')
+        .select('id, source_id, reprocessing_status, reprocessing_status_updated_at')
         .in('source_id', ids);
       
       if (error) {
@@ -604,9 +604,9 @@ if [ "$1" = "ids-need-reprocessing" ]; then
       console.log('-------------------------------------------------------------------------------------------------');
       
       for (const doc of data) {
-        const status = doc.document_processing_status || 'null';
-        const updated = doc.document_processing_status_updated_at ? 
-          new Date(doc.document_processing_status_updated_at).toLocaleString() : 'never';
+        const status = doc.reprocessing_status || 'null';
+        const updated = doc.reprocessing_status_updated_at ? 
+          new Date(doc.reprocessing_status_updated_at).toLocaleString() : 'never';
         
         console.log('| ' + doc.id.padEnd(40) + ' | ' + status.padEnd(20) + ' | ' + updated.padEnd(30) + ' |');
       }

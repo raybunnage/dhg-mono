@@ -407,3 +407,23 @@ export async function runMasterHealthCheck(options: HealthCheckOptions): Promise
   // Display results
   displayResults(results, options);
 }
+
+// Run the master health check if this script is executed directly
+if (require.main === module) {
+  // Parse command line arguments
+  const options: HealthCheckOptions = {
+    verbose: process.argv.includes('--verbose'),
+    timeout: process.argv.includes('--timeout') ? 
+      process.argv[process.argv.indexOf('--timeout') + 1] : '30000',
+    include: process.argv.includes('--include') ?
+      process.argv[process.argv.indexOf('--include') + 1] : undefined,
+    exclude: process.argv.includes('--exclude') ?
+      process.argv[process.argv.indexOf('--exclude') + 1] : undefined,
+    fix: process.argv.includes('--fix')
+  };
+  
+  runMasterHealthCheck(options).catch(error => {
+    console.error('Error running master health check:', error);
+    process.exit(1);
+  });
+}

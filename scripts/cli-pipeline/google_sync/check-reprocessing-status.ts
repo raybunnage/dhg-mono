@@ -164,8 +164,8 @@ export async function checkReprocessingStatus(options: {
       if (i === 0) {
         const { data: directCheck, error: directCheckError } = await supabaseClient
           .from('expert_documents')
-          .select('id, source_id, document_processing_status')
-          .eq('document_processing_status', 'needs_reprocessing')
+          .select('id, source_id, reprocessing_status')
+          .eq('reprocessing_status', 'needs_reprocessing')
           .limit(5);
           
         if (directCheckError) {
@@ -175,7 +175,7 @@ export async function checkReprocessingStatus(options: {
           if (directCheck && directCheck.length > 0) {
             console.log('Sample documents:');
             directCheck.forEach(doc => {
-              console.log(`- Document ${doc.id}: status=${doc.document_processing_status}`);
+              console.log(`- Document ${doc.id}: status=${doc.reprocessing_status}`);
             });
           }
         }
@@ -183,7 +183,7 @@ export async function checkReprocessingStatus(options: {
       
       const { data: expertDocs, error: expertDocsError } = await supabaseClient
         .from('expert_documents')
-        .select('id, source_id, document_type_id, document_processing_status, processing_skip_reason')
+        .select('id, source_id, document_type_id, reprocessing_status, processing_skip_reason')
         .in('source_id', sourceIds);
       
       if (expertDocsError) {
@@ -234,9 +234,9 @@ export async function checkReprocessingStatus(options: {
         if (expertDoc) {
           stats.sourcesWithExpertDocs++;
           
-          // FIXED: Explicitly check for the exact string values in document_processing_status
+          // FIXED: Explicitly check for the exact string values in reprocessing_status
           // This ensures we properly identify documents that need reprocessing
-          const processingStatus = expertDoc.document_processing_status || 'not_set';
+          const processingStatus = expertDoc.reprocessing_status || 'not_set';
           const processingReason = expertDoc.processing_skip_reason;
           
           // Debug log the actual value to help diagnose issues
@@ -425,8 +425,8 @@ export async function checkReprocessingStatus(options: {
           
           const { data: directDocs, error: directError } = await supabaseClient
             .from('expert_documents')
-            .select('id, source_id, document_type_id, document_processing_status')
-            .eq('document_processing_status', 'needs_reprocessing')
+            .select('id, source_id, document_type_id, reprocessing_status')
+            .eq('reprocessing_status', 'needs_reprocessing')
             .limit(options.limit || 10);
             
           if (directError) {
