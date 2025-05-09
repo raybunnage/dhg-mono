@@ -143,14 +143,47 @@ async function reviewAndReclassify(options: ReviewAndReclassifyOptions): Promise
       
       // Display content if available
       let content = 'No content available';
+      let contentLength = 0;
+      let totalLength = 0;
+      
       if (expertDocs && expertDocs.length > 0 && expertDocs[0].raw_content) {
-        const previewLength = options.previewLength || 1000;
+        const previewLength = options.previewLength || 1550;
+        totalLength = expertDocs[0].raw_content.length;
         content = expertDocs[0].raw_content.substring(0, previewLength);
+        contentLength = content.length;
         
-        console.log('\nContent Preview:');
-        console.log('-'.repeat(80));
-        console.log(content);
-        console.log('-'.repeat(80));
+        // Add document title if available
+        if (expertDocs[0].title) {
+          console.log(`\nDocument Title: ${expertDocs[0].title}`);
+        }
+        
+        console.log(`\nContent Preview (showing ${contentLength} of ${totalLength} characters):`);
+        console.log('-'.repeat(100));
+        
+        // Format content for better readability
+        // Add line breaks every 100 characters if they don't exist
+        let formattedContent = '';
+        let lastLineBreak = 0;
+        
+        for (let i = 0; i < content.length; i++) {
+          formattedContent += content[i];
+          
+          // Add line break if we haven't had one in 100 chars and we're at a space
+          if (i - lastLineBreak > 100 && content[i] === ' ') {
+            formattedContent += '\n';
+            lastLineBreak = i;
+          } else if (content[i] === '\n') {
+            lastLineBreak = i;
+          }
+        }
+        
+        console.log(formattedContent);
+        console.log('-'.repeat(100));
+        
+        // Display file info
+        console.log(`\nFile Name: ${document.name || 'Unnamed'}`);
+        console.log(`Drive ID: ${document.drive_id || 'N/A'}`);
+        
       } else if (expertError) {
         console.error(`Error fetching content: ${expertError.message}`);
       }
@@ -251,7 +284,7 @@ const command = new Command('review-and-reclassify')
   .description('Review documents of a specific type and reclassify them using mnemonics')
   .requiredOption('--name <name>', 'Document type name to review')
   .option('--limit <number>', 'Limit the number of documents to review', parseInt)
-  .option('--preview-length <number>', 'Number of characters to preview from document content', (val) => parseInt(val), 1000)
+  .option('--preview-length <number>', 'Number of characters to preview from document content', (val) => parseInt(val), 1550)
   .action(reviewAndReclassify);
 
 export default command;

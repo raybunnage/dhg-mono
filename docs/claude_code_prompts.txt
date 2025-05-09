@@ -6,11 +6,51 @@ CLI commands could then include a --profile flag or automatically use the active
 
 
 
+./scripts/cli-pipeline/document_types/create-category.sh "Strategic Direction Document" --description "Documents that articulate an organization's purpose, aspirations, and approach to achieving long-term goals. These documents define core values, establish directional priorities, and provide frameworks for decision-making and resource allocation. Distinguished by their forward-looking orientation, expression of organizational identity and intent, alignment of stakeholders around common objectives, and purpose of guiding strategic choices and organizational behavior over extended periods rather than tactical operations or immediate actions."  
+
+
+./scripts/cli-pipeline/document_types/document-types-cli.sh create --category "Strategic Direction Document" --name "Mission Statement" --mnemonic MIS   --description 'DIFFERENTIATING FEATURES: Concise documents that articulate an organization'\''s fundamental purpose, core function, and reason for existence. These statements define what the organization does, for whom, and the value it provides. Distinguished by their brevity (typically 1-3 sentences), present-tense orientation, focus on current organizational purpose rather than future aspirations, clear identification of primary stakeholders or beneficiaries, and function as a decision-making anchor that helps determine whether activities align with the organization'\''s core purpose. Mission statements answer the essential question "Why does our organization exist?" and serve as the foundation for all other strategic direction documents.'
+
+
+
+
+ ./scripts/cli-pipeline/document_types/document-types-cli.sh create --category "Strategic Direction Document" --name "Vision Statement" --mnemonic MIS --description 'DIFFERENTIATING FEATURES: Forward-looking documents that describe an organization'\''s aspirational future state and desired long-term impact. These statements paint a compelling picture of what the organization intends to become or achieve over time. Distinguished by their future orientation, inspirational and motivational tone, articulation of ambitious yet achievable goals, description of desired outcomes rather than processes, and purpose of aligning stakeholders around a shared destination. Vision statements answer the question "What does success look like for our organization?" and provide directional clarity that inspires strategic initiatives and organizational development efforts.'
+
+./scripts/cli-pipeline/document_types/document-types-cli.sh create --category "Strategic Direction Document" --name "Strategic Plan" --mnemonic STP --description 'DIFFERENTIATING FEATURES: Comprehensive documents that translate organizational vision and mission into concrete objectives, priorities, and action frameworks over a defined time period. These documents bridge high-level aspirations with practical implementation by establishing specific goals, strategies, metrics, and resource allocations. Distinguished by their systematic approach to organizational advancement, integration of external environment analysis with internal capabilities assessment, establishment of measurable objectives with associated timelines, articulation of specific strategies for achieving goals, and purpose of providing a coordinated roadmap for organizational activities and investments. Strategic plans typically cover multiple years (3-5) and include mechanisms for monitoring progress, evaluating effectiveness, and adapting to changing conditions while maintaining alignment with the organization'\''s mission and vision.'
+
+
+
+Comprehensive documents that translate organizational vision and mission into concrete objectives, priorities, and action frameworks over a defined time period. These documents bridge high-level aspirations with practical implementation by establishing specific goals, strategies, metrics, and resource allocations. Distinguished by their systematic approach to organizational advancement, integration of external environment analysis with internal capabilities assessment, establishment of measurable objectives with associated timelines, articulation of specific strategies for achieving goals, and purpose of providing a coordinated roadmap for organizational activities and investments. Strategic plans typically cover multiple years (3-5) and include mechanisms for monitoring progress, evaluating effectiveness, and adapting to changing conditions while maintaining alignment with the organization's mission and vision.
+
+
+organization'\''s
+
+
+
+
+
+Concise documents that articulate an organization's fundamental purpose, core function, and reason for existence. These statements define what the organization does, for whom, and the value it provides. Distinguished by their brevity (typically 1-3 sentences), present-tense orientation, focus on current organizational purpose rather than future aspirations, clear identification of primary stakeholders or beneficiaries, and function as a decision-making anchor that helps determine whether activities align with the organization's core purpose. Mission statements answer the essential question "Why does our organization exist?" and serve as the foundation for all other strategic direction documents.
+
+
+
+
 create --category Miscellaneous --name "Miscellaneous Artifact" --mnemonic MAR   --description "DIFFERENTIATING FEATURES: Documents that are identifiable in their purpose and structure but do not align cleanly with other established categories, and where further subdivision is not warranted or practical. Distinguished by their coherent, recognizable format and clear purpose while existing as outliers to the primary taxonomy. Unlike Unknown/Unclassified documents (which lack sufficient identifying characteristics), Miscellaneous documents possess definable attributes but represent edge cases, unique formats, or hybrid content types that occur with insufficient frequency to justify dedicated categories."  
+
+
+create --category Unknown/Unclassified --name "Unparsable Content" --mnemonic UNP   --description "DIFFERENTIATING FEATURES: Files with a .docx extension that begin with a tilde (~) character and cannot be parsed or accessed through standard document processing methods. These documents are likely temporary files, password-protected documents, or files that have become corrupted during transfer or storage. Distinguished by their inaccessibility despite having a recognized file format extension, presence of the tilde prefix indicating possible system-generated temporary status, and resistance to standard parsing attempts. Unlike regular documents, these artifacts cannot yield their content for classification and must be categorized based solely on external file characteristics."
+
+
+
+
 
 
 
 create --category Miscellaneous  --general-type  --description "Documents that are identifiable in their purpose and structure but do not align cleanly with other established categories, and where further subdivision is not warranted or practical. Distinguished by their coherent, recognizable format and clear purpose while existing as outliers to the primary taxonomy. Unlike Unknown/Unclassified documents (which lack sufficient identifying characteristics), Miscellaneous documents possess definable attributes but represent edge cases, unique formats, or hybrid content types that occur with insufficient frequency to justify dedicated categories."  
+
+
+
+
+
 
 You've outlined several important processing pathways. Let me expand this into a comprehensive processing                                                                                            │
 │     framework:                                                                                                                                                                                         │
