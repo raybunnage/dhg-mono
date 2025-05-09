@@ -141,10 +141,11 @@ async function reviewAndReclassify(options: ReviewAndReclassifyOptions): Promise
         .eq('source_id', document.id)
         .limit(1);
       
-      // Display content if available
+      // Get document content to review
       let content = 'No content available';
       let contentLength = 0;
       let totalLength = 0;
+      let formattedContent = '';
       
       if (expertDocs && expertDocs.length > 0 && expertDocs[0].raw_content) {
         const previewLength = options.previewLength || 1550;
@@ -152,17 +153,8 @@ async function reviewAndReclassify(options: ReviewAndReclassifyOptions): Promise
         content = expertDocs[0].raw_content.substring(0, previewLength);
         contentLength = content.length;
         
-        // Add document title if available
-        if (expertDocs[0].title) {
-          console.log(`\nDocument Title: ${expertDocs[0].title}`);
-        }
-        
-        console.log(`\nContent Preview (showing ${contentLength} of ${totalLength} characters):`);
-        console.log('-'.repeat(100));
-        
         // Format content for better readability
         // Add line breaks every 100 characters if they don't exist
-        let formattedContent = '';
         let lastLineBreak = 0;
         
         for (let i = 0; i < content.length; i++) {
@@ -176,14 +168,6 @@ async function reviewAndReclassify(options: ReviewAndReclassifyOptions): Promise
             lastLineBreak = i;
           }
         }
-        
-        console.log(formattedContent);
-        console.log('-'.repeat(100));
-        
-        // Display file info
-        console.log(`\nFile Name: ${document.name || 'Unnamed'}`);
-        console.log(`Drive ID: ${document.drive_id || 'N/A'}`);
-        
       } else if (expertError) {
         console.error(`Error fetching content: ${expertError.message}`);
       }
@@ -192,7 +176,7 @@ async function reviewAndReclassify(options: ReviewAndReclassifyOptions): Promise
       const currentDocTypeInfo = docTypeMap.get(documentTypeId);
       console.log(`Current Type: ${currentDocTypeInfo?.name} (${currentDocTypeInfo?.category})`);
       
-      // Display a list of available document type mnemonics
+      // Display a list of available document type mnemonics first
       console.log('\nAvailable Document Type Mnemonics:');
       console.log('-'.repeat(80));
       
@@ -214,12 +198,31 @@ async function reviewAndReclassify(options: ReviewAndReclassifyOptions): Promise
         }
       }
       
-      // Display types by category
+      // Display types by category - compact display with no empty lines
       for (const [category, types] of categorizedTypes.entries()) {
-        console.log(`\n${category}:`);
+        console.log(`${category}:`);
         types.forEach(type => {
           console.log(`  ${type.mnemonic}: ${type.name}`);
         });
+      }
+      
+      // Now display document content and info below the mnemonics
+      console.log('\n' + '-'.repeat(80) + '\n');
+      
+      // Add document title if available
+      if (expertDocs && expertDocs.length > 0 && expertDocs[0].title) {
+        console.log(`Document Title: ${expertDocs[0].title}`);
+      }
+      
+      // Display file info
+      console.log(`File Name: ${document.name || 'Unnamed'}`);
+      console.log(`Drive ID: ${document.drive_id || 'N/A'}`);
+      
+      if (contentLength > 0) {
+        console.log(`\nContent Preview (${contentLength} of ${totalLength} characters):`);
+        console.log('-'.repeat(80));
+        console.log(formattedContent);
+        console.log('-'.repeat(80));
       }
       
       // Prompt user for new document type

@@ -25,6 +25,11 @@ Comprehensive documents that translate organizational vision and mission into co
 
 organization'\''s
 
+./scripts/cli-pipeline/document_types/document-types-cli.sh create --category "Professional Communication" --name "Science Question Response" --mnemonic SQR --description 'DIFFERENTIATING FEATURES: A specialized form of professional communication where an expert provides clear, authoritative answers to specific scientific inquiries. Unlike general email correspondence, these responses focus exclusively on addressing technical questions with precision and evidence-based reasoning. Unlike letters to the editor, which often present opinions or critiques for public discourse, Science Question Responses serve as direct knowledge transfers from expert to inquirer.'
+
+
+
+
 
 
 
