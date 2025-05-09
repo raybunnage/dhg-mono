@@ -117,6 +117,23 @@ if [ "$1" = "set-classifier" ]; then
   exit $?
 fi
 
+if [ "$1" = "cheatsheet" ]; then
+  shift
+  track_command "cheatsheet" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts cheatsheet $*"
+  exit $?
+fi
+
+if [ "$1" = "review-and-reclassify" ]; then
+  shift
+  # Properly handle arguments with spaces
+  ARGS=""
+  for ARG in "$@"; do
+    ARGS="$ARGS \"$ARG\""
+  done
+  track_command "review-and-reclassify" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts review-and-reclassify $ARGS"
+  exit $?
+fi
+
 if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ -z "$1" ]; then
   # Show the help message
   echo "Document Types CLI - Manage document types"
@@ -132,12 +149,14 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ -z "$1" ]; t
   echo "  * get                          Get details of a document type (27 uses)"
   echo "    categories                   List all document type categories"
   echo "  * stats                        Get document type statistics"
+  echo "    cheatsheet                   Generate document types cheatsheet markdown"
   echo ""
   echo "CREATION & MANAGEMENT:"
   echo "  * update                       Update an existing document type (34 uses)"
   echo "    create                       Create a new document type"
   echo "    delete                       Delete a document type"
   echo "  * set-classifier               Interactively set the document_classifier enum for document types (26 uses)"
+  echo "    review-and-reclassify        Review and reclassify documents of a specific type using mnemonics"
   echo ""
   echo "AI ASSISTANCE:"
   echo "    generate                     Generate a document type definition using AI"
@@ -158,15 +177,21 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ -z "$1" ]; t
   echo "  # Get details of a specific document type"
   echo "  ./document-types-cli.sh get --id \"123e4567-e89b-12d3-a456-426614174000\""
   echo ""
+  echo "  # Generate document types cheatsheet"
+  echo "  ./document-types-cli.sh cheatsheet"
+  echo ""
   echo "CREATION & MANAGEMENT:"
   echo "  # Update an existing document type"
   echo "  ./document-types-cli.sh update --id \"123e4567-e89b-12d3-a456-426614174000\" --category \"Updated Category\""
   echo ""
   echo "  # Create a new document type"
-  echo "  ./document-types-cli.sh create --name \"Research Report\" --category \"Research\""
+  echo "  ./document-types-cli.sh create --name \"Research Report\" --category \"Research\" --description \"Detailed research report\" --mnemonic \"RES\" --ai-generated --general-type"
   echo ""
   echo "  # Set the document_classifier enum for document types"
   echo "  ./document-types-cli.sh set-classifier"
+  echo ""
+  echo "  # Review and reclassify documents of a specific type"
+  echo "  ./document-types-cli.sh review-and-reclassify --name \"Research Paper\""
   echo ""
   echo "SYSTEM:"
   echo "  # Check the health of document type services"

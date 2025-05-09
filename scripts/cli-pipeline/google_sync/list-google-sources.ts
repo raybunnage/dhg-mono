@@ -161,7 +161,7 @@ async function listGoogleSources(options: {
       
       const { data: batchExpertDocs, error: batchError } = await supabase
         .from('expert_documents')
-        .select('id, source_id, document_type_id, raw_content, processed_content, document_processing_status')
+        .select('id, source_id, document_type_id, raw_content, processed_content, reprocessing_status')
         .in('source_id', batchIds);
       
       if (batchError) {
@@ -369,17 +369,17 @@ async function listGoogleSources(options: {
         
         // Get simplified processing status
         let processingStatus = 'N/A';
-        if (expertDoc?.document_processing_status) {
-          if (expertDoc.document_processing_status === 'skip_processing') {
+        if (expertDoc?.reprocessing_status) {
+          if (expertDoc.reprocessing_status === 'skip_processing') {
             processingStatus = 'Skip';
-          } else if (expertDoc.document_processing_status === 'reprocessing_done') {
+          } else if (expertDoc.reprocessing_status === 'reprocessing_done') {
             processingStatus = 'Done';
-          } else if (expertDoc.document_processing_status === 'not_set') {
+          } else if (expertDoc.reprocessing_status === 'not_set') {
             processingStatus = 'Not Set';
-          } else if (expertDoc.document_processing_status === 'needs_reprocessing') {
+          } else if (expertDoc.reprocessing_status === 'needs_reprocessing') {
             processingStatus = 'Need';
           } else {
-            processingStatus = expertDoc.document_processing_status;
+            processingStatus = expertDoc.reprocessing_status;
           }
         }
         
@@ -439,7 +439,7 @@ type ExpertDocument = {
   document_type_id: string | null;
   raw_content: string | null;
   processed_content: any;
-  document_processing_status: string | null;
+  reprocessing_status: string | null;
 };
 
 // Set up CLI command

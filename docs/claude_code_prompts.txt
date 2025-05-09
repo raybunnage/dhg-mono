@@ -2,7 +2,188 @@
  
 CLI commands could then include a --profile flag or automatically use the active profile.
 
+./scripts/cli-pipeline/document_types/create-category.sh "Miscellaneous" --description "Documents that are identifiable in their purpose and structure but do not align cleanly with other established categories, and where further subdivision is not warranted or practical. Distinguished by their coherent, recognizable format and clear purpose while existing as outliers to the primary taxonomy. Unlike Unknown/Unclassified documents (which lack sufficient identifying characteristics), Miscellaneous documents possess definable attributes but represent edge cases, unique formats, or hybrid content types that occur with insufficient frequency to justify dedicated categories."  
 
+
+
+create --category Miscellaneous --name "Miscellaneous Artifact" --mnemonic MAR   --description "DIFFERENTIATING FEATURES: Documents that are identifiable in their purpose and structure but do not align cleanly with other established categories, and where further subdivision is not warranted or practical. Distinguished by their coherent, recognizable format and clear purpose while existing as outliers to the primary taxonomy. Unlike Unknown/Unclassified documents (which lack sufficient identifying characteristics), Miscellaneous documents possess definable attributes but represent edge cases, unique formats, or hybrid content types that occur with insufficient frequency to justify dedicated categories."  
+
+
+
+create --category Miscellaneous  --general-type  --description "Documents that are identifiable in their purpose and structure but do not align cleanly with other established categories, and where further subdivision is not warranted or practical. Distinguished by their coherent, recognizable format and clear purpose while existing as outliers to the primary taxonomy. Unlike Unknown/Unclassified documents (which lack sufficient identifying characteristics), Miscellaneous documents possess definable attributes but represent edge cases, unique formats, or hybrid content types that occur with insufficient frequency to justify dedicated categories."  
+
+You've outlined several important processing pathways. Let me expand this into a comprehensive processing                                                                                            │
+│     framework:                                                                                                                                                                                         │
+│                                                                                                                                                                                                        │
+│     Complete Document Processing Workflow                                                                                                                                                              │
+│                                                                                                                                                                                                        │
+│     Video Processing Pathway (video/mp4)                                                                                                                                                               │
+│                                                                                                                                                                                                        │
+│     1. Extraction Phase:                                                                                                                                                                               │
+│       - Detect video/mp4 MIME type                                                                                                                                                                     │
+│       - Use ffmpeg to extract audio to .m4a file in file_types folder                                                                                                                                  │
+│       - Set processing_status = "needs_transcription"                                                                                                                                                  │
+│     2. Transcription Phase:                                                                                                                                                                            │
+│       - Process m4a file through Whisper                                                                                                                                                               │
+│       - Store transcript in expert_documents.raw_content                                                                                                                                               │
+│       - Set processing_status = "needs_classification"                                                                                                                                                 │
+│     3. Analysis Phase:                                                                                                                                                                                 │
+│       - Send transcript to AI for analysis/summary                                                                                                                                                     │
+│       - Store summary (often JSON) in expert_documents.processed_content                                                                                                                               │
+│       - Set processing_status = "processed"                                                                                                                                                            │
+│                                                                                                                                                                                                        │
+│     PDF Processing Pathway (application/pdf)                                                                                                                                                           │
+│                                                                                                                                                                                                        │
+│     1. Extraction Phase:                                                                                                                                                                               │
+│       - Detect application/pdf MIME type                                                                                                                                                               │
+│       - Convert PDF to text/extract content                                                                                                                                                            │
+│       - For large PDFs, implement chunking strategy                                                                                                                                                    │
+│       - Set processing_status = "needs_classification"                                                                                                                                                 │
+│     2. Analysis Phase:                                                                                                                                                                                 │
+│       - Send extracted text to AI for analysis                                                                                                                                                         │
+│       - Generate executive summary in JSON format                                                                                                                                                      │
+│       - Store in expert_documents.processed_content                                                                                                                                                    │
+│       - Set processing_status = "processed"                                                                                                                                                            │
+│                                                                                                                                                                                                        │
+│     Document Processing Pathway (docx, txt)                                                                                                                                                            │
+│                                                                                                                                                                                                        │
+│     1. Extraction Phase:                                                                                                                                                                               │
+│       - Detect document MIME types (application/vnd.openxmlformats-officedocument.wordprocessingml.document,                                                                                           │
+│     text/plain)                                                                                                                                                                                        │
+│       - Extract text content directly                                                                                                                                                                  │
+│       - Store in expert_documents.raw_content                                                                                                                                                          │
+│       - Set processing_status = "needs_classification"                                                                                                                                                 │
+│     2. Analysis Phase:                                                                                                                                                                                 │
+│       - Send content to AI for analysis                                                                                                                                                                │
+│       - Generate structured summary                                                                                                                                                                    │
+│       - Store in expert_documents.processed_content                                                                                                                                                    │
+│       - Set processing_status = "processed"                                                                                                                                                            │
+│                                                                                                                                                                                                        │
+│     PowerPoint Processing Pathway (pptx)                                                                                                                                                               │
+│                                                                                                                                                                                                        │
+│     1. Extraction Phase:                                                                                                                                                                               │
+│       - Detect presentation MIME type                                                                                                                                                                  │
+│       - Extract text and notes from slides                                                                                                                                                             │
+│       - Handle image content if needed                                                                                                                                                                 │
+│       - Set processing_status = "needs_classification"                                                                                                                                                 │
+│     2. Analysis Phase:                                                                                                                                                                                 │
+│       - Send content to AI for slide-by-slide analysis                                                                                                                                                 │
+│       - Generate structured presentation summary                                                                                                                                                       │
+│       - Store in expert_documents.processed_content                                                                                                                                                    │
+│       - Set processing_status = "processed"                                                                                                                                                            │
+│                                                                                                                                                                                                        │
+│     Comprehensive Processing Status Enum                                                                                                                                                               │
+│                                                                                                                                                                                                        │
+│     ADD COLUMN processing_status TEXT CHECK (                                                                                                                                                          │
+│       processing_status IN (                                                                                                                                                                           │
+│         -- Initial states                                                                                                                                                                              │
+│         'unprocessed',                 -- Initial state                                                                                                                                                │
+│                                                                                                                                                                                                        │
+│         -- Media extraction states                                                                                                                                                                     │
+│         'needs_audio_extraction',      -- Video needs audio extracted                                                                                                                                  │
+│         'needs_text_extraction',       -- Document needs text extracted                                                                                                                                │
+│         'extraction_in_progress',      -- Currently extracting content                                                                                                                                 │
+│         'extraction_failed',           -- Failed to extract content                                                                                                                                    │
+│                                                                                                                                                                                                        │
+│         -- Processing states                                                                                                                                                                           │
+│         'needs_transcription',         -- Audio needs transcription                                                                                                                                    │
+│         'transcription_in_progress',   -- Currently transcribing                                                                                                                                       │
+│         'transcription_failed',        -- Failed to transcribe                                                                                                                                         │
+│                                                                                                                                                                                                        │
+│         -- AI analysis states                                                                                                                                                                          │
+│         'needs_classification',        -- Content needs AI analysis                                                                                                                                    │
+│         'classification_in_progress',  -- AI currently analyzing                                                                                                                                       │
+│         'classification_failed',       -- AI analysis failed                                                                                                                                           │
+│                                                                                                                                                                                                        │
+│         -- Final states                                                                                                                                                                                │
+│         'processed',                   -- Successfully processed                                                                                                                                       │
+│         'skip_processing',             -- Deliberately skipped                                                                                                                                         │
+│                                                                                                                                                                                                        │
+│         -- Error recovery states                                                                                                                                                                       │
+│         'needs_manual_review'          -- Requires human intervention                                                                                                                                  │
+│       )                                                                                                                                                                                                │
+│     )                                                                                                                                                                                                  │
+│                                                                                                                                                                                                        │
+│     Gaps and Considerations                                                                                                                                                                            │
+│                                                                                                                                                                                                        │
+│     Missing Steps You Should Consider                                                                                                                                                                  │
+│                                                                                                                                                                                                        │
+│     1. Error Handling & Retries:                                                                                                                                                                       │
+│       - Implement retry mechanism for transcription failures                                                                                                                                           │
+│       - Add maximum retry count                                                                                                                                                                        │
+│     2. Chunking Strategy:                                                                                                                                                                              │
+│       - For large documents/PDFs, implement content chunking                                                                                                                                           │
+│       - Track chunk processing progress                                                                                                                                                                │
+│     3. Intermediate Storage:                                                                                                                                                                           │
+│       - Store intermediate artifacts (like extracted m4a files) with consistent naming                                                                                                                 │
+│     4. Format Standardization:                                                                                                                                                                         │
+│       - Standardize JSON output formats for different document types                                                                                                                                   │
+│       - Link to expected_json_schema in document_types                                                                                                                                                 │
+│     5. Processing Queue Management:                                                                                                                                                                    │
+│       - Implement priority and rate limiting                                                                                                                                                           │
+│       - Handle concurrent processing                                                                                                                                                                   │
+│                                                                                                                                                                                                        │
+│     Pros of This Approach                                                                                                                                                                              │
+│                                                                                                                                                                                                        │
+│     1. Clear State Transitions: Well-defined process flow for each document type                                                                                                                       │
+│     2. Granular Status Tracking: Fine-grained status enables detailed monitoring                                                                                                                       │
+│     3. Type-Specific Processing: Different paths for different content types                                                                                                                           │
+│     4. Recovery Points: Can resume processing from intermediate states                                                                                                                                 │
+│     5. Audit Trail: Complete history of processing steps                                                                                                                                               │
+│                                                                                                                                                                                                        │
+│     Potential Pitfalls                                                                                                                                                                                 │
+│                                                                                                                                                                                                        │
+│     1. Complex State Management: Many states to track and transition between                                                                                                                           │
+│     2. Resource Management: Need to handle files in file_types folder (cleanup, expiry)                                                                                                                │
+│     3. Processing Overhead: Multiple steps increase potential failure points                                                                                                                           │
+│     4. Timeout Handling: Long-running processes might timeout                                                                                                                                          │
+│     5. Scaling Challenges: Processing large quantities of media can be resource-intensive                                                                                                              │
+│                                                                                                                                                                                                        │
+│     Schema Recommendations                                                                                                                                                                             │
+│                                                                                                                                                                                                        │
+│     Based on your workflow, I recommend these additional fields:                                                                                                                                       │
+│                                                                                                                                                                                                        │
+│     ALTER TABLE expert_documents                                                                                                                                                                       │
+│       ADD COLUMN raw_content TEXT,                  -- Extracted/transcribed content                                                                                                                   │
+│       ADD COLUMN processed_content JSONB,           -- AI-processed structured content                                                                                                                 │
+│       ADD COLUMN processing_status TEXT,            -- Current processing state                                                                                                                        │
+│       ADD COLUMN processing_history JSONB,          -- History of status changes                                                                                                                       │
+│       ADD COLUMN extraction_metadata JSONB,         -- Details about extraction process                                                                                                                │
+│       ADD COLUMN processing_error TEXT,             -- Last error message if any                                                                                                                       │
+│       ADD COLUMN processing_updated_at TIMESTAMP,   -- When processing status last changed                                                                                                             │
+│       ADD COLUMN intermediate_files JSONB;          -- Paths to temporary files                                                                                                                        │
+│                                                                                                                                                                                                        │
+│     Unified Implementation Strategy                                                                                                                                                                    │
+│                                                                                                                                                                                                        │
+│     For a cohesive implementation:                                                                                                                                                                     │
+│                                                                                                                                                                                                        │
+│     1. Define MIME Type → Process Mapping:                                                                                                                                                             │
+│     CREATE TABLE mime_type_processing (                                                                                                                                                                │
+│       mime_type TEXT PRIMARY KEY,                                                                                                                                                                      │
+│       extraction_method TEXT,  -- 'ffmpeg', 'pdf-extract', 'direct'                                                                                                                                    │
+│       requires_transcription BOOLEAN,                                                                                                                                                                  │
+│       default_processing_steps JSONB, -- Ordered array of steps                                                                                                                                        │
+│       processing_priority INTEGER                                                                                                                                                                      │
+│     );                                                                                                                                                                                                 │
+│     2. Create Processing Queues:                                                                                                                                                                       │
+│       - Extraction queue                                                                                                                                                                               │
+│       - Transcription queue                                                                                                                                                                            │
+│       - Classification queue                                                                                                                                                                           │
+│     3. Implement Workers:                                                                                                                                                                              │
+│       - Extraction worker                                                                                                                                                                              │
+│       - Transcription worker                                                                                                                                                                           │
+│       - Classification worker                                                                                                                                                                          │
+│     4. Path-Based Tracking:                                                                                                                                                                            │
+│     /file_types/{mime_type}/{source_id}_original.{ext}                                                                                                                                                 │
+│     /file_types/{mime_type}/{source_id}_extracted.{format}                                                                                                                                             │
+│     /file_types/{mime_type}/{source_id}_transcribed.txt                                                                                                                                                │
+│                                                                                                                                                                                                        │
+│     This comprehensive approach gives you a scalable, maintainable processing pipeline that can handle diverse                                                                                         │
+│     document types while providing clear visibility into the processing state of each document.                                                                                                        │
+│    okay carefullm implement   -  
+
+
+create --category Miscellaneous  is
 [
   {
     "trigger_name": "expert_documents_status_timestamps",

@@ -29,6 +29,7 @@ export interface DocumentType {
   is_general_type?: boolean | null;
   prompt_id?: string | null;
   expected_json_schema?: Record<string, any> | null;
+  mnemonic?: string | null;
 }
 
 /**
@@ -49,6 +50,7 @@ export interface CreateDocumentTypeParams {
   is_general_type?: boolean | null;
   prompt_id?: string | null;
   expected_json_schema?: Record<string, any> | null;
+  mnemonic?: string | null;
 }
 
 /**
@@ -213,7 +215,8 @@ export class DocumentTypeService {
         updated_at: now,
         is_general_type: params.is_general_type || false,
         prompt_id: params.prompt_id || null,
-        expected_json_schema: params.expected_json_schema || null
+        expected_json_schema: params.expected_json_schema || null,
+        mnemonic: params.mnemonic || null
       };
       
       // Insert into database

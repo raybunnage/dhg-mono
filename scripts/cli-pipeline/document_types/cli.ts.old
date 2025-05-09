@@ -227,7 +227,7 @@ program
 program
   .command('create')
   .description('Create a new document type')
-  .option('--name <name>', 'Document type name')
+  .requiredOption('--name <name>', 'Document type name')
   .requiredOption('--category <category>', 'Document type category')
   .option('--description <description>', 'Document type description')
   // .option('--mime-type <mimeType>', 'Preferred MIME type') // Not in database
@@ -319,7 +319,7 @@ program
   .command('update')
   .description('Update an existing document type')
   .requiredOption('-i, --id <id>', 'Document type ID')
-  .option('--name <n>', 'Document type name (will use category name for general types if not provided)')
+  .option('--name <n>', 'Document type name')
   .option('--category <category>', 'Document type category')
   .option('--description <description>', 'Document type description')
   // .option('--mime-type <mimeType>', 'Preferred MIME type') // Not in database
