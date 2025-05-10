@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { SupabaseClientService } from './packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 async function checkDocTypeId() {
   const supabase = SupabaseClientService.getInstance().getClient();

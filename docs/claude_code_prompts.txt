@@ -1,3 +1,167 @@
+ questions
+
+Only Prerequsite:
+1) Premise - having a good set of material on a google drive
+   a) I catalogue it, process it with ai, extract document type - a set of commands that help process the material - that the user does not have to know at all
+   b) write it into a postgres database - supabase
+   c) write a front end over it in react - and relate the material and present it nicely and interactively
+   d) I can actually view the material on the google drive - without having to store it in the database - its lightweight and fast
+
+2) First major dropdown - just picks the google drive you want to work with - currently this is only set to Dynamic Healing Discussion Group
+   a) but soon - all the videos from our friday discussions
+   b) DR's, Davids - anyone elses dedicated google drive  
+
+
+
+what is it 
+1) a one page app for quick access to all the videos and associated materials in the google drive for anyone who comes to the google drive   - search and play
+2) comprehensive summaries, titles, categorizatin, transcription, association of documents, searching - two differing summaries - video summary and presetnations highlights - both optional
+3) context around the presentation - other files in the folders - are always shown and easily accessible
+4) a viewer of the source - video, powerpoints, mp4s, text files, doc files and pdf files - all in either summary or actual form
+
+5) this is the basis for a general purpose - presentation 
+
+
+0) does it need another way to show all the videos - or is what we have good enough
+a) omni search window
+b) pills to filter presentations
+c) tab to switch to filter by experts - okay if its a little bigger because the videos are usually 1   
+ Naviaux(4), Carter(5), Hanscom(3), DR(6)
+ Pandi(1), Lustig(2), you can better explore 
+
+Finishing work windows
+1) filter by experts or filter by subjects
+2) new experts by presenatins - some kind of ui that has all the experts and their associated presenations - could 
+3) I want to showcase the curated conversatin - the "AI Narrative Summaries" - may not have videos or there can be videos tied to it
+4) add a concept wheel - 
+ 
+ 1) search window
+  is the omni search method at the beginning workable?
+  should I consider showing some kind of condensed summary when you Hover over a video?
+  should I try to highlight in the video summary the search words?   if it matches the word you searched for - it remembers and highlights
+  need to search for powerpoints - 
+
+
+2) presentation cards - it shows the title and the mp4 name and the epxerts and the date -
+  a) consider adding mutlipe experts where there is more than 1
+  b) consider listing the key concepts (if not too busy ) - maybe 5 - then taking you the concept wheel
+  c) problably remove the filter name
+
+
+3) expert - popup info
+     do you like the popup expert info?  
+     working on assigning and showing many experts per video - going to present them below the title, but probably just the one on the card?
+     what order to present   1st primary  2nd secondary etc,
+     is there a preferable order for the expert assignment per document
+     for a video - i assume i don't need to call out the moderator as an associted expert - is that a correct assumption?
+     should the expert card be for all experts or just the currently chosen 1
+     highlight the links - in the etl so you it will open up the browser
+
+
+ 4) video summary  - collapsible window
+    a) is the summary too long
+    how long should it be?
+    Is it too hard to read?
+    how could I break it up - in different sentences 
+    is it too showy - the writeups - have enthusiastic - should I tone it down
+
+  
+5) Presentation assets - consider putting the title in the presentation asset window
+  a) use the file type as an icon - for it
+  b) web links - new thypes of assets with the information - and a link to open up a browser 
+  c) add document types on the cards
+  d) shorten mime_type to a short name for the type - 
+  e) possibly at the title - at least on a AJQWtBPbBgnB5A2HioJuANIUfGXhySK9YMxXVaonCWCRhOEsB6J17AimgWT7g6NSL4WH29Jtoq2pUpQ7XzwGdZe
+  f) short files where the presentatin highlight is longer thant the file - reconsider what is going on
+
+
+
+fixes In progress
+1) websites handled as links in presentation assets cards - remove summaries for them 
+2) assets show titles - when you over over them - or maybe condensed summaries 
+3) assets show the document types - presentatin accouncement, etc.  Q & A
+
+
+
+DOCMENT TYPES - txt 
+Post presentation Q & A
+
+4) pills
+add another pill that filters for PPTX - 
+
+
+SUBJECT classification - example - please refine and review 
+| short_name           | description                                                                                                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Acute Disease        | Acute diseases and bacterial infections typically follow different healing trajectories than chronic conditions.                                                            |
+| Addiction            | Addiction to substances like alcohol and drugs requires specialized healing approaches addressing both physical and psychological dependencies.                             |
+| Ai                   | Artificial intelligence applications can support healing processes by improving understanding of complex health systems.                                                    |
+| Biomarkers           | Biomarkers provide measurable indicators to assess healing progress and treatment effectiveness.                                                                            |
+| Book1                | Medical education, pathogenesis, and symptom recognition provide frameworks for understanding health challenges and treatment options.                                      |
+| Book2                | Key concepts include Salugenesis, Metabolomics, Exposomics, mitochondria, ATP, and cellular systems that support natural healing mechanisms.                                |
+| Cancer               | Cancer treatment approaches can be enhanced by integrating conventional care with supportive healing modalities.                                                            |
+| Cell                 | Cellular health forms the foundation for all healing processes in the body.                                                                                                 |
+| Chronic Disease      | Chronic diseases including autism, cardiovascular disease, glucose/insulin issues, lyme, and mast cell activation impact healing processes through multiple bodily systems. |
+| Collaboration        | Collaboration and teamwork enhance healing outcomes through shared knowledge and coordinated support.                                                                       |
+| Critiques            | Constructive feedback and critique help refine healing approaches for better effectiveness.                                                                                 |
+| Data                 | Data analysis and computation help identify patterns in healing responses and optimize treatment approaches.                                                                |
+| Education            | Education about healing modalities empowers individuals to participate actively in their wellbeing.                                                                         |
+| Emotion              | Emotional regulation influences brain regions, thoughts, and cognitive processes that impact overall healing capacity.                                                      |
+| Environmental        | Environmental factors significantly influence healing capacity through their impact on bodily systems.                                                                      |
+| Evolution            | Evolutionary perspectives help explain how bodily systems developed and how they respond to modern healing approaches.                                                      |
+| Exercise             | Exercise contributes to holistic wellbeing through balancing bodily systems and supporting natural healing mechanisms.                                                      |
+| Genetics             | Genetics influences how bodily systems function and respond to healing interventions.                                                                                       |
+| Healing              | Healing encompasses therapies, diet, fasting, nutrition, meditation, and other practices that support natural recovery processes.                                           |
+| Immunity             | Immunity functions as a primary defense system that can be supported through various healing modalities.                                                                    |
+| Invalid              | Understanding invalid classifications helps identify gaps in healing frameworks.                                                                                            |
+| Long Covid           | Long Covid represents post-viral conditions that require specialized healing approaches for multiple affected systems.                                                      |
+| Microbiome           | The microbiome and gut health provide fundamental support for holistic wellbeing through balancing bodily systems.                                                          |
+| Neuropeptides        | Neuropeptides like Oxytocin and Vasopressin influence birth, lactation, bonding, and stress responses that affect healing.                                                  |
+| Pain                 | Key concepts include Pain, Acute, Chronic Pain, and Opioid substances. Pain management is essential for holistic wellbeing and healing.                                     |
+| Parkinsons           | Parkinson's disease management benefits from approaches that support neurological healing and functional maintenance.                                                       |
+| Pharmaceutical       | Pharmaceutical approaches can support holistic wellbeing when integrated with natural healing systems.                                                                      |
+| Polyvagal TVST       | Polyvagal theory relates to vagal tone, safety, threat response, and nervous system regulation that fundamentally impacts healing capacity.                                 |
+| Psychiatric Disorder | Psychiatric disorders require integrated approaches that address both mental and physical aspects of wellbeing.                                                             |
+| Research             | Research methodologies and study designs provide evidence for effective healing approaches.                                                                                 |
+| RUTS                 | Repetitive uncontrolled thoughts and intrusive thinking patterns affect mental wellbeing and overall healing capacity.                                                      |
+| Sociostasis          | Sociostasis involves social dynamics, resilience, and coregulation that support collective healing processes.                                                               |
+| Vocabulary           | Scientific vocabulary and terminology provide essential frameworks for understanding biological mechanisms in healing.                                                      |
+| Writing              | Writing serves as both a healing modality and a way to document effective healing approaches.                                                                               |
+
+
+
+For completion of version 1
+1) add authentication - the product is free - or should I worry about it 
+   How - I could at least ask people to login just so I know who is using it and can track their commands  - not full blown  authentication - users have no special benefits 
+2) add a star rating system? 
+3)    should it be a self starring system - you could rank the ones yuou wanted most to learn
+4) using your own star (priority levels) to guide what you watch - high priority firt
+5) track what you watch as you go against your remaining stars - so it would just present the next video when ready
+
+6) offer quiz of most important points - 10 questions - after they finish watching the video
+    a)  would show 10 important questions - only
+    b) they would have multiple choise - and it would grade them 
+
+7) ability to take notes - just turn on real time documentatoin - and associate the notes with the material 
+   so next time there is a new file added that has your notes - and it appears at the bottom and you can edit it
+
+
+
+What is a concept wheel - lets you see the concepts involved and jump to related presentatins or documents actually
+1) a whole page devoted to showing concepts
+2) in the center is the concepts from the existing docue - 10 highest
+3) clickking on any of the concepts shows all the related documents in a radiaing circle around the concept
+4) clicking on one of radiating objects takes you to that presentation 
+5) the concept is highlighted in the video summary or presentatin highlight - or the asset is highlighted that you jump to
+
+
+
+ 
+ 
+ 
+ 
+ 
+ 
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
 CLI commands could then include a --profile flag or automatically use the active profile.
