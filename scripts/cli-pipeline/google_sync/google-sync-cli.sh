@@ -22,6 +22,7 @@
 #   check-expert-doc             Check the most recent expert document for proper content extraction
 #   fix-orphaned-docx            Fix DOCX files with document_type_id but no expert_documents records
 #   remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id (incl. large PDFs)
+#   sync-expert-documents        Sync sources_google files with expert_documents records (create missing records)
 #   help                         Show this help message
 
 # Get the directory of this script
@@ -417,6 +418,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    fix-mp4-status               Fix MP4 files that are incorrectly marked as needs_reprocessing"
   echo ""
   echo "EXPERT DOCUMENTS MANAGEMENT:"
+  echo "  * sync-expert-documents        Sync sources_google files with expert_documents records (create missing records)"
   echo "    expert-documents-duplicates  Find and report duplicate expert_documents with same source_id"
   echo "    expert-documents-purge       Purge problematic expert_documents (duplicates or orphaned records)"
   echo "    clean-orphaned-records       Clean up orphaned expert_documents and their presentation_assets references"
@@ -488,6 +490,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  ./google-sync-cli.sh reclassify-docs --dry-run"
   echo ""
   echo "EXPERT DOCUMENTS MANAGEMENT:"
+  echo "  # Sync sources_google files with expert_documents records"
+  echo "  ./google-sync-cli.sh sync-expert-documents --dry-run --verbose"
+  echo "" 
+  echo "  # Create missing expert_documents with a limit of 100 records"
+  echo "  ./google-sync-cli.sh sync-expert-documents --limit 100"
+  echo ""
   echo "  # Find and report duplicate expert_documents"
   echo "  ./google-sync-cli.sh expert-documents-duplicates --verbose"
   echo ""
@@ -856,6 +864,13 @@ fi
 if [ "$1" = "sync-and-update-metadata" ]; then
   shift
   track_command "sync-and-update-metadata" "ts-node $SCRIPT_DIR/index.ts sync-and-update-metadata $*"
+  exit $?
+fi
+
+# Add the sync-expert-documents command
+if [ "$1" = "sync-expert-documents" ]; then
+  shift
+  track_command "sync-expert-documents" "ts-node $SCRIPT_DIR/sync-expert-documents.ts $*"
   exit $?
 fi
 

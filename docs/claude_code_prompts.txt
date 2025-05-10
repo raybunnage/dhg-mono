@@ -130,6 +130,10 @@ SUBJECT classification - example - please refine and review
 
 
 
+
+
+
+
 For completion of version 1
 1) add authentication - the product is free - or should I worry about it 
    How - I could at least ask people to login just so I know who is using it and can track their commands  - not full blown  authentication - users have no special benefits 
@@ -156,10 +160,78 @@ What is a concept wheel - lets you see the concepts involved and jump to related
 
 
 
+ ERROR:  22P02: invalid input syntax for type uuid: "782347dd3-299f-4cab-b73f-a088c741a5fc"
+LINE 1:   select * from expert_documents where source_id = '782347dd3-299f-4cab-b73f-a088c741a5fc' limit 100;
+
  
  
  
- 
+[  expert documents
+  {
+    "id": "fa6e1d01-ec75-4975-b28d-db344349bc6b",
+    "source_id": "c55a61cf-1194-4bda-a3d3-68399dbdff91",
+    "document_type_id": null,
+    "raw_content": null,
+    "processed_content": null,
+    "word_count": null,
+    "confidence_score": null,
+    "processing_error": null,
+    "created_at": "2025-05-10 18:15:35.41067+00",
+    "updated_at": "2025-05-10 18:15:35.41067+00",
+    "classification_confidence": null,
+    "classification_metadata": null,
+    "retry_count": 0,
+    "whisper_model_used": null,
+    "ai_summary_status": "pending",
+    "processing_skip_reason": null,
+    "reprocessing_status_updated_at": "2025-05-10 18:15:35.41067+00",
+    "title": "AI_The Interplay of Mind.docx",
+    "classification_reasoning": null,
+    "pipeline_status": "unprocessed",
+    "reprocessing_status": "not_set"
+  }
+]
+
+[
+  {
+    "id": "fa6e1d01-ec75-4975-b28d-db344349bc6b",
+    "drive_id": "17Ps6b9cCwJllMOADHYY6mbLKFksmMhDU",
+    "name": "AI_The Interplay of Mind.docx",
+    "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "root_drive_id": "1wriOM2j2IglnMcejplqG_XcCxSIfoRMV",
+    "parent_folder_id": "1KxDzbu2XeSMM_gyKiN0Ndp770Q1Qgn6_",
+    "path": "/2025-05-04-AI-Narrative-Summaries/AI_The Interplay of Mind.docx",
+    "path_array": [
+      "",
+      "2025-05-04-AI-Narrative-Summaries",
+      "AI_The Interplay of Mind.docx"
+    ],
+    "path_depth": 1,
+    "is_root": null,
+    "is_deleted": false,
+    "metadata": {
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "isNewFile": true,
+      "lastUpdated": "2025-05-07T15:01:07.404Z",
+      "webViewLink": "https://docs.google.com/document/d/17Ps6b9cCwJllMOADHYY6mbLKFksmMhDU/edit?usp=drivesdk&ouid=112125686334929012732&rtpof=true&sd=true",
+      "modifiedTime": "2025-05-04T23:45:35.000Z",
+      "thumbnailLink": "https://lh3.googleusercontent.com/drive-storage/AJQWtBPYQiThLM6ieKdI6UallEa5W5yc-FU-Nggce-_iONVSillo2pBNcyvd-0q2f76MY6mzNkR8KgAFWNed2IwWZ4FT7iSkLED9CTg6358PaR_TGq1H=s220"
+    },
+    "size": 31502,
+    "modified_at": "2025-05-04 23:45:35+00",
+    "web_view_link": "https://docs.google.com/document/d/17Ps6b9cCwJllMOADHYY6mbLKFksmMhDU/edit?usp=drivesdk&ouid=112125686334929012732&rtpof=true&sd=true",
+    "thumbnail_link": "https://lh3.googleusercontent.com/drive-storage/AJQWtBPYQiThLM6ieKdI6UallEa5W5yc-FU-Nggce-_iONVSillo2pBNcyvd-0q2f76MY6mzNkR8KgAFWNed2IwWZ4FT7iSkLED9CTg6358PaR_TGq1H=s220",
+    "document_type_id": null,
+    "created_at": "2025-05-05 00:18:28.147+00",
+    "updated_at": "2025-05-07 15:01:07.404+00",
+    "last_indexed": null,
+    "main_video_id": null,
+    "file_signature": "AITheInterplayofMinddocx20250504T234535000Z",
+    "sgid": "c55a61cf-1194-4bda-a3d3-68399dbdff91"
+  }
+]
+
+
  
  
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
