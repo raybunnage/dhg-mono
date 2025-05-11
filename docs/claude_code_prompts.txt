@@ -163,6 +163,23 @@ What is a concept wheel - lets you see the concepts involved and jump to related
  ERROR:  22P02: invalid input syntax for type uuid: "782347dd3-299f-4cab-b73f-a088c741a5fc"
 LINE 1:   select * from expert_documents where source_id = '782347dd3-299f-4cab-b73f-a088c741a5fc' limit 100;
 
+
+
+ pipeline_status:
+        | "unprocessed"
+        | "needs_audio_extraction"
+        | "needs_text_extraction"
+        | "extraction_in_progress"
+        | "extraction_failed"
+        | "needs_transcription"
+        | "transcription_in_progress"
+        | "transcription_failed"
+        | "needs_classification"
+        | "classification_in_progress"
+        | "classification_failed"
+        | "processed"
+        | "skip_processing"
+        | "needs_manual_review"
  
  
  

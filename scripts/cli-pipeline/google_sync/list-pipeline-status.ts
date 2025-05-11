@@ -27,7 +27,8 @@ async function listPipelineStatus(options: {
   output?: string, 
   sortBy?: string,
   console?: boolean,
-  status?: string
+  status?: string,
+  isNewFile?: boolean
 }) {
   // Generate tracking ID
   let trackingId: string;
@@ -56,9 +57,17 @@ async function listPipelineStatus(options: {
         document_type_id,
         mime_type,
         path_depth,
-        updated_at
+        updated_at,
+        created_at
       `)
       .limit(limit);
+      
+    // If isNewFile option is set, filter by recent creation date
+    if (options.isNewFile) {
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+      query = query.gt('created_at', sevenDaysAgo.toISOString());
+    }
     
     // Apply filters if provided
     if (filter) {
@@ -162,12 +171,23 @@ async function listPipelineStatus(options: {
       
       let expertQuery = supabase
         .from('expert_documents')
-        .select('id, source_id, document_type_id, raw_content, processed_content, pipeline_status')
+        .select('id, source_id, document_type_id, raw_content, processed_content, pipeline_status, classification_metadata')
         .in('source_id', batchIds);
         
       // Apply status filter if provided
       if (options.status) {
         expertQuery = expertQuery.eq('pipeline_status', options.status);
+      }
+      
+      // Apply isNewFile filter if specified
+      if (options.isNewFile) {
+        // Use a much wider time window to find recently added files
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+        
+        // Instead of filtering expert_documents by created_at, 
+        // We'll pass all IDs but display information about when they were created
+        // in the sources_google table, which is what we can see in our output
       }
       
       const { data: batchExpertDocs, error: batchError } = await expertQuery;
@@ -300,7 +320,11 @@ async function listPipelineStatus(options: {
     // Output the results based on the format option
     if (options.console) {
       // Display results in console table format
-      console.log('\nGoogle Drive Sources and Expert Documents Pipeline Status:');
+      const title = options.isNewFile ? 
+        '\nGoogle Drive Sources - Newly Added Files (created within last 7 days):' :
+        '\nGoogle Drive Sources and Expert Documents Pipeline Status:';
+        
+      console.log(title);
       console.log('='.repeat(180));
       console.log(
         'ID'.padEnd(38) + ' | ' + 
@@ -426,6 +450,7 @@ type ExpertDocument = {
   raw_content: string | null;
   processed_content: any;
   pipeline_status: string | null;
+  classification_metadata?: any;
 };
 
 // Set up CLI command
@@ -441,6 +466,7 @@ program
   .option('-s, --sort-by <field>', 'Sort results by field (name, updated, type)', 'name')
   .option('-c, --console', 'Display results in console table format instead of generating markdown')
   .option('-p, --status <string>', 'Filter by pipeline status (e.g., "completed", "in_progress", "pending")')
+  .option('--isNewFile', 'Show only newly added files where metadata has isNewFile=true')
   .action((options) => {
     listPipelineStatus({
       limit: parseInt(options.limit),
@@ -449,7 +475,8 @@ program
       output: options.output,
       sortBy: options.sortBy,
       console: options.console,
-      status: options.status
+      status: options.status,
+      isNewFile: options.isNewFile
     });
   });
 

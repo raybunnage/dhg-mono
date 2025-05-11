@@ -3611,21 +3611,7 @@ export type Database = {
         | "reprocessing_done"
         | "skip_processing"
         | "not_set"
-      pipeline_status:
-        | "unprocessed"
-        | "needs_audio_extraction"
-        | "needs_text_extraction"
-        | "extraction_in_progress"
-        | "extraction_failed"
-        | "needs_transcription"
-        | "transcription_in_progress"
-        | "transcription_failed"
-        | "needs_classification"
-        | "classification_in_progress"
-        | "classification_failed"
-        | "processed"
-        | "skip_processing"
-        | "needs_manual_review"
+
       processing_stage:
         | "queued"
         | "downloading"

@@ -139,9 +139,18 @@ const supportedMimeTypes = [
 ];
 
 /**
- * Extracts unique MIME types from sources_google and updates the mime_types table
+ * Interface for the syncMimeTypes function options
  */
-async function syncMimeTypes(options: { dryRun?: boolean, verbose?: boolean }) {
+export interface SyncMimeTypesOptions {
+  dryRun?: boolean;    // Whether to run in dry-run mode (no changes made)
+  verbose?: boolean;   // Whether to output verbose details
+}
+
+/**
+ * Extracts unique MIME types from sources_google and updates the mime_types table
+ * @param options Configuration options
+ */
+async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
   const dryRun = options.dryRun || false;
   const verbose = options.verbose || false;
   
@@ -418,7 +427,7 @@ program
   .description('Synchronize the mime_types table with unique MIME types from sources_google')
   .option('--dry-run', 'Show what would be done without making changes')
   .option('-v, --verbose', 'Show detailed information about each MIME type')
-  .action((options) => {
+  .action((options: SyncMimeTypesOptions) => {
     syncMimeTypes({
       dryRun: options.dryRun,
       verbose: options.verbose

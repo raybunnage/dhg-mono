@@ -46,28 +46,54 @@ show_help() {
   echo "Usage: $0 <command> [options]"
   echo ""
   echo "Commands:"
-  echo "  sync               Synchronize the mime_types table with MIME types from sources_google"
-  echo "  help               Show this help message"
+  echo "  sync                      Synchronize the mime_types table with MIME types from sources_google"
+  echo "  configure-processing <ext> Configure mime_type_processing for a specific file extension"
+  echo "  help                      Show this help message"
   echo ""
   echo "Options for sync:"
-  echo "  --dry-run          Show what would be done without making changes"
-  echo "  -v, --verbose      Show detailed information about each MIME type"
+  echo "  --dry-run                 Show what would be done without making changes"
+  echo "  -v, --verbose             Show detailed information about each MIME type"
+  echo ""
+  echo "Options for configure-processing:"
+  echo "  <ext>                     File extension (e.g., docx, txt, pdf, pptx, mp4)"
+  echo "  --dry-run                 Show what would be done without making changes"
+  echo "  -v, --verbose             Show detailed information about the configuration"
+  echo "  -p, --priority <number>   Processing priority (higher numbers = higher priority)"
   echo ""
   echo "Examples:"
-  echo "  $0 sync            # Synchronize the mime_types table"
-  echo "  $0 sync --dry-run  # Show what would be synchronized without making changes"
-  echo "  $0 sync -v         # Synchronize with verbose output"
+  echo "  $0 sync                  # Synchronize the mime_types table"
+  echo "  $0 sync --dry-run        # Show what would be synchronized without making changes"
+  echo "  $0 sync -v               # Synchronize with verbose output"
+  echo "  $0 configure-processing docx --dry-run --verbose  # Configure processing for DOCX files (dry run)"
+  echo "  $0 configure-processing mp4 --priority 100        # Configure MP4 processing with high priority"
 }
 
 # Handle the sync command
 sync_mime_types() {
-  track_command "sync" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/sync-mime-types.ts $@"
+  track_command "sync" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts sync $@"
+}
+
+# Handle the configure-processing command
+configure_processing() {
+  if [ -z "$1" ]; then
+    echo "Error: File extension is required"
+    echo "Usage: $0 configure-processing <extension> [options]"
+    exit 1
+  fi
+  
+  EXTENSION="$1"
+  shift
+  
+  track_command "configure-processing-$EXTENSION" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts configure-processing $EXTENSION $@"
 }
 
 # Main command handler
 case "$1" in
   "sync")
     sync_mime_types "${@:2}"
+    ;;
+  "configure-processing" | "add-processing-config")
+    configure_processing "${@:2}"
     ;;
   "help" | "-h" | "--help")
     show_help

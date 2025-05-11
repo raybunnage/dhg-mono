@@ -394,6 +394,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * show-expert-documents        Generate a report of expert documents in the database (100 uses)"
   echo "  * list                         List Google sources with their corresponding expert documents (66 uses)"
   echo "    list-pipeline-status         List Google sources with their pipeline status (instead of reprocessing status)"
+  echo "    pipeline-status-summary      Generate a summary report of all pipeline_status enum values"
   echo "  * list-google-sources          List sources from Google Drive with filtering options"
   echo "    source-info                  Get detailed information about a sources_google record and related expert_documents"
   echo "    list-unclassified-files      List PDF, PowerPoint, TXT and DOCX files without document types"
@@ -477,8 +478,20 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # List Google sources with pipeline status in a console-friendly table format"
   echo "  ./google-sync-cli.sh list-pipeline-status --limit 50 --console"
   echo ""
-  echo "  # List Google sources with a specific pipeline status (e.g., in_progress)"
-  echo "  ./google-sync-cli.sh list-pipeline-status --status in_progress --console"
+  echo "  # List Google sources with a specific pipeline status (e.g., unprocessed)"
+  echo "  ./google-sync-cli.sh list-pipeline-status --status unprocessed --console"
+  echo ""
+  echo "  # List only newly added files (created within the last 7 days)"
+  echo "  ./google-sync-cli.sh list-pipeline-status --isNewFile --console"
+  echo ""
+  echo "  # Generate a summary of pipeline_status distribution across all expert documents"
+  echo "  ./google-sync-cli.sh pipeline-status-summary --console"
+  echo ""
+  echo "  # Generate a markdown-formatted table of pipeline statuses in the console"
+  echo "  ./google-sync-cli.sh pipeline-status-summary --markdown"
+  echo ""
+  echo "  # Generate a detailed pipeline status report with additional insights"
+  echo "  ./google-sync-cli.sh pipeline-status-summary --all --markdown"
   echo ""
   echo "  # Report on video files for folders"
   echo "  ./google-sync-cli.sh report-main-video-ids"
@@ -685,6 +698,12 @@ fi
 if [ "$1" = "list-pipeline-status" ]; then
   shift
   track_command "list-pipeline-status" "ts-node $SCRIPT_DIR/list-pipeline-status.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "pipeline-status-summary" ]; then
+  shift
+  track_command "pipeline-status-summary" "ts-node $SCRIPT_DIR/pipeline-status-summary.ts $*"
   exit $?
 fi
 
