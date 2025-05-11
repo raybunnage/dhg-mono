@@ -4,25 +4,8 @@
  */
 
 import { Command } from 'commander';
-import { syncMimeTypes } from './sync-mime-types';
+import { syncMimeTypes, SyncMimeTypesOptions } from './sync-mime-types';
 import { addMimeTypeProcessingConfig, MimeTypeProcessingOptions } from './manage-processing-config';
-
-/**
- * Interface for the configure-processing command options
- */
-interface ConfigureProcessingOptions {
-  dryRun?: boolean;
-  verbose?: boolean;
-  priority?: string;
-}
-
-/**
- * Interface for the sync command options
- */
-interface SyncOptions {
-  dryRun?: boolean;
-  verbose?: boolean;
-}
 
 // Setup CLI program
 const program = new Command();
@@ -31,23 +14,37 @@ program
   .name('mime-types-cli')
   .description('CLI tools for managing MIME types');
 
+// Interface for sync command options
+interface SyncCommandOptions {
+  dryRun?: boolean;
+  verbose?: boolean;
+}
+
+// Interface for configure-processing command options
+interface ConfigureProcessingOptions {
+  dryRun?: boolean;
+  verbose?: boolean;
+  priority?: string;
+}
+
+// Add commands directly to the program using .command()
 program
   .command('sync')
   .description('Synchronize the mime_types table with unique MIME types from sources_google')
   .option('--dry-run', 'Show what would be done without making changes')
   .option('-v, --verbose', 'Show detailed information about each MIME type')
-  .action((options: SyncOptions) => {
-    syncMimeTypes({
+  .action((options: SyncCommandOptions) => {
+    const syncOptions: SyncMimeTypesOptions = {
       dryRun: options.dryRun,
       verbose: options.verbose
-    });
+    };
+    syncMimeTypes(syncOptions);
   });
 
 program
-  .command('configure-processing')
+  .command('configure-processing <extension>')
   .alias('add-processing-config')
   .description('Configure mime_type_processing for a specific file extension')
-  .argument('<extension>', 'File extension (e.g., docx, txt, pdf, pptx, mp4)')
   .option('--dry-run', 'Show what would be done without making changes')
   .option('-v, --verbose', 'Show detailed information about the configuration')
   .option('-p, --priority <number>', 'Processing priority (higher numbers = higher priority)')

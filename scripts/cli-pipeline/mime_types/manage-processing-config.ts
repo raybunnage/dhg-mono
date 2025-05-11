@@ -228,15 +228,44 @@ async function addMimeTypeProcessingConfig(options: MimeTypeProcessingOptions): 
   }
   
   try {
-    // Test Supabase connection
+    // Test Supabase connection with our own test
     console.log('Testing Supabase connection...');
-    const connectionTest = await supabaseService.testConnection();
-    
-    if (!connectionTest.success) {
-      throw new Error(`Supabase connection test failed: ${connectionTest.error}`);
+    try {
+      // Use sources_google table for connection test - this table should always exist
+      const { data: sourceTest, error: sourceError } = await supabaseClient
+        .from('sources_google')
+        .select('id')
+        .limit(1);
+        
+      if (sourceError) {
+        throw new Error(`Error connecting to Supabase: ${JSON.stringify(sourceError)}`);
+      }
+      
+      console.log('✅ Successfully connected to Supabase');
+    } catch (error) {
+      throw new Error(`Supabase connection failed: ${error instanceof Error ? error.message : String(error)}`);
     }
     
-    console.log('✅ Supabase connection test successful');
+    // Verify the mime_types table exists
+    console.log('Testing connection with mime_types table...');
+    try {
+      const { data: mimeTypesTest, error: mimeTypesError } = await supabaseClient
+        .from('mime_types')
+        .select('id, mime_type')
+        .limit(1);
+        
+      if (mimeTypesError) {
+        throw new Error(`Error querying mime_types: ${JSON.stringify(mimeTypesError)}`);
+      }
+      
+      if (mimeTypesTest && mimeTypesTest.length > 0) {
+        console.log('✅ Successfully connected to mime_types table');
+      } else {
+        console.log('⚠️ mime_types table exists but may be empty. Consider running the sync command first.');
+      }
+    } catch (error) {
+      throw new Error(`Testing mime_types table failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
     
     // 1. Find the MIME type ID from mime_types table
     console.log(`Looking up MIME type ID for ${mimeType}...`);
@@ -368,17 +397,16 @@ interface ProcessingConfigOptions {
   priority?: string;
 }
 
-// Setup CLI program
+// Setup CLI program for when this script is run directly
 const program = new Command();
 
 program
   .name('manage-processing-config')
   .description('Manage MIME type processing configurations');
 
+// Direct command instead of using .argument() which may not be supported in this version
 program
-  .command('add')
-  .description('Add or update processing configuration for a specific file type')
-  .argument('<extension>', 'File extension (e.g., docx, txt, pdf, pptx, mp4)')
+  .arguments('<extension>')
   .option('--dry-run', 'Show what would be done without making changes')
   .option('-v, --verbose', 'Show detailed information about the configuration')
   .option('-p, --priority <number>', 'Processing priority (higher numbers = higher priority)')
@@ -398,7 +426,5 @@ if (require.main === module) {
 
 // Export for module usage
 export { 
-  addMimeTypeProcessingConfig, 
-  MimeTypeProcessingOptions,
-  ProcessingStep 
+  addMimeTypeProcessingConfig
 };

@@ -166,15 +166,23 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
   }
 
   try {
-    // Test Supabase connection
+    // Test Supabase connection with our own test
     console.log('Testing Supabase connection...');
-    const connectionTest = await supabaseService.testConnection();
-    
-    if (!connectionTest.success) {
-      throw new Error(`Supabase connection test failed: ${connectionTest.error}`);
+    try {
+      // Use sources_google table for connection test - this table should always exist
+      const { data: sourceTest, error: sourceError } = await supabaseClient
+        .from('sources_google')
+        .select('id')
+        .limit(1);
+        
+      if (sourceError) {
+        throw new Error(`Error connecting to Supabase: ${JSON.stringify(sourceError)}`);
+      }
+      
+      console.log('✅ Successfully connected to Supabase');
+    } catch (error) {
+      throw new Error(`Supabase connection failed: ${error instanceof Error ? error.message : String(error)}`);
     }
-    
-    console.log('✅ Supabase connection test successful');
 
     // 1. Check if mime_types table exists, create it if not
     console.log('Checking if mime_types table exists...');
