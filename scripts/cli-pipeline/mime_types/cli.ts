@@ -5,7 +5,6 @@
 
 import { Command } from 'commander';
 import { syncMimeTypes, SyncMimeTypesOptions } from './sync-mime-types';
-import { addMimeTypeProcessingConfig, MimeTypeProcessingOptions } from './manage-processing-config';
 
 // Setup CLI program
 const program = new Command();
@@ -20,13 +19,6 @@ interface SyncCommandOptions {
   verbose?: boolean;
 }
 
-// Interface for configure-processing command options
-interface ConfigureProcessingOptions {
-  dryRun?: boolean;
-  verbose?: boolean;
-  priority?: string;
-}
-
 // Add commands directly to the program using .command()
 program
   .command('sync')
@@ -39,23 +31,6 @@ program
       verbose: options.verbose
     };
     syncMimeTypes(syncOptions);
-  });
-
-program
-  .command('configure-processing <extension>')
-  .alias('add-processing-config')
-  .description('Configure mime_type_processing for a specific file extension')
-  .option('--dry-run', 'Show what would be done without making changes')
-  .option('-v, --verbose', 'Show detailed information about the configuration')
-  .option('-p, --priority <number>', 'Processing priority (higher numbers = higher priority)')
-  .action((extension: string, options: ConfigureProcessingOptions) => {
-    const processingOptions: MimeTypeProcessingOptions = {
-      extension,
-      dryRun: options.dryRun,
-      verbose: options.verbose,
-      priority: options.priority ? parseInt(options.priority) : undefined
-    };
-    addMimeTypeProcessingConfig(processingOptions);
   });
 
 program

@@ -396,7 +396,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    list-pipeline-status         List Google sources with their pipeline status (instead of reprocessing status)"
   echo "    pipeline-status-summary      Generate a summary report of all pipeline_status enum values"
   echo "    update-processed-records     Update records with valid processed_content JSON to have a pipeline_status of \"processed\""
-  echo "    process-unprocessed          Process unprocessed documents based on mime type (currently DOCX only)"
+  echo "    process-unprocessed          Process unprocessed documents based on mime type (supports DOCX and PDF)"
   echo "  * list-google-sources          List sources from Google Drive with filtering options"
   echo "    source-info                  Get detailed information about a sources_google record and related expert_documents"
   echo "    list-unclassified-files      List PDF, PowerPoint, TXT and DOCX files without document types"
@@ -498,7 +498,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Update records with valid processed_content and no errors to have status \"processed\""
   echo "  ./google-sync-cli.sh update-processed-records --dry-run"
   echo ""
-  echo "  # Process unprocessed DOCX files according to mime_types_processing configuration"
+  echo "  # Process unprocessed DOCX and PDF files with specialized handling"
   echo "  ./google-sync-cli.sh process-unprocessed --dry-run --limit 5"
   echo ""
   echo "  # Report on video files for folders"
@@ -723,7 +723,30 @@ fi
 
 if [ "$1" = "process-unprocessed" ]; then
   shift
-  track_command "process-unprocessed" "ts-node $SCRIPT_DIR/process-unprocessed.ts $*"
+  echo "Processing unprocessed documents based on mime type (DOCX, PDF)..."
+  echo "This command will extract content from unprocessed files according to mime_types_processing configuration."
+  
+  # Process arguments
+  MIME_TYPE_ARG=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --mime-type|-m)
+        MIME_TYPE_ARG="--mime-type \"$2\""
+        shift 2
+        ;;
+      --mime-type=*|-m=*)
+        MIME_TYPE_ARG="--mime-type \"${1#*=}\""
+        shift
+        ;;
+      *)
+        # Keep other arguments as is
+        MIME_TYPE_ARG="$MIME_TYPE_ARG $1"
+        shift
+        ;;
+    esac
+  done
+  
+  track_command "process-unprocessed" "ts-node $SCRIPT_DIR/process-unprocessed.ts $MIME_TYPE_ARG"
   exit $?
 fi
 

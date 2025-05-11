@@ -262,6 +262,7 @@ export type Database = {
           id: string
           is_ai_generated: boolean | null
           is_general_type: boolean | null
+          mnemonic: string | null
           name: string
           prompt_id: string | null
           updated_at: string | null
@@ -274,6 +275,7 @@ export type Database = {
           id?: string
           is_ai_generated?: boolean | null
           is_general_type?: boolean | null
+          mnemonic?: string | null
           name: string
           prompt_id?: string | null
           updated_at?: string | null
@@ -286,6 +288,7 @@ export type Database = {
           id?: string
           is_ai_generated?: boolean | null
           is_general_type?: boolean | null
+          mnemonic?: string | null
           name?: string
           prompt_id?: string | null
           updated_at?: string | null
@@ -878,6 +881,7 @@ export type Database = {
           created_at: string
           document_type_id: string | null
           id: string
+          is_supported_type: boolean | null
           pipeline_status: Database["public"]["Enums"]["pipeline_status"]
           processed_content: Json | null
           processing_error: string | null
@@ -903,6 +907,7 @@ export type Database = {
           created_at?: string
           document_type_id?: string | null
           id?: string
+          is_supported_type?: boolean | null
           pipeline_status?: Database["public"]["Enums"]["pipeline_status"]
           processed_content?: Json | null
           processing_error?: string | null
@@ -928,6 +933,7 @@ export type Database = {
           created_at?: string
           document_type_id?: string | null
           id?: string
+          is_supported_type?: boolean | null
           pipeline_status?: Database["public"]["Enums"]["pipeline_status"]
           processed_content?: Json | null
           processing_error?: string | null
@@ -1462,41 +1468,6 @@ export type Database = {
           id?: string
         }
         Relationships: []
-      }
-      mime_type_processing: {
-        Row: {
-          default_processing_steps: Json | null
-          extraction_method: string | null
-          id: string
-          mime_type_id: string
-          processing_priority: number | null
-          requires_transcription: boolean | null
-        }
-        Insert: {
-          default_processing_steps?: Json | null
-          extraction_method?: string | null
-          id?: string
-          mime_type_id: string
-          processing_priority?: number | null
-          requires_transcription?: boolean | null
-        }
-        Update: {
-          default_processing_steps?: Json | null
-          extraction_method?: string | null
-          id?: string
-          mime_type_id?: string
-          processing_priority?: number | null
-          requires_transcription?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_mime_type_id"
-            columns: ["mime_type_id"]
-            isOneToOne: false
-            referencedRelation: "mime_types"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       mime_types: {
         Row: {
@@ -3611,7 +3582,21 @@ export type Database = {
         | "reprocessing_done"
         | "skip_processing"
         | "not_set"
-
+      pipeline_status:
+        | "unprocessed"
+        | "needs_audio_extraction"
+        | "needs_text_extraction"
+        | "extraction_in_progress"
+        | "extraction_failed"
+        | "needs_transcription"
+        | "transcription_in_progress"
+        | "transcription_failed"
+        | "needs_classification"
+        | "classification_in_progress"
+        | "classification_failed"
+        | "processed"
+        | "skip_processing"
+        | "needs_manual_review"
       processing_stage:
         | "queued"
         | "downloading"
