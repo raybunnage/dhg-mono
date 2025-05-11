@@ -12,6 +12,10 @@ import { cleanPromptMetadataCommand } from './commands/clean-prompt-metadata';
 import { verifyClaudeTemperatureCommand } from './commands/verify-claude-temperature';
 import { summarizeMetadataFieldsCommand } from './commands/summarize-metadata-fields';
 import { healthCheckCommand } from './commands/health-check';
+import { createTemplateCommand } from './commands/create-template';
+import { listTemplatesCommand } from './commands/list-templates';
+import { associateTemplateCommand } from './commands/associate-template';
+import { listTemplateAssociationsCommand } from './commands/list-template-associations';
 
 const program = new Command();
 
@@ -90,6 +94,38 @@ program.command('health-check')
   .option('--skip-claude', 'Skip Claude service check')
   .option('-v, --verbose', 'Show verbose output')
   .action(healthCheckCommand);
+
+// Template commands
+program.command('create-template')
+  .description('Create a new prompt output template')
+  .argument('<name>', 'Name of the template')
+  .argument('<template-path>', 'Path to the JSON template file')
+  .option('-d, --description <description>', 'Description of the template')
+  .option('--dry-run', 'Show what would be created without making changes', false)
+  .action(createTemplateCommand);
+
+program.command('list-templates')
+  .description('List all prompt output templates')
+  .option('-f, --format <format>', 'Output format (table, json)', 'table')
+  .action(listTemplatesCommand);
+
+program.command('associate-template')
+  .description('Associate a template with a prompt')
+  .argument('<prompt-name>', 'Name of the prompt')
+  .argument('<template-name>', 'Name of the template')
+  .option('-p, --priority <priority>', 'Priority of the association (default: 0)', '0')
+  .option('--dry-run', 'Show what would be associated without making changes', false)
+  .action((promptName, templateName, options) => {
+    // Convert priority to number
+    options.priority = parseInt(options.priority, 10);
+    return associateTemplateCommand(promptName, templateName, options);
+  });
+
+program.command('list-template-associations')
+  .description('List all templates associated with a prompt')
+  .argument('<prompt-name>', 'Name of the prompt')
+  .option('-f, --format <format>', 'Output format (table, json)', 'table')
+  .action(listTemplateAssociationsCommand);
 
 // Parse the arguments
 program.parse(process.argv);

@@ -12,6 +12,30 @@ import { PromptService, Prompt, PromptRelationship } from './prompt-service';
 import { Database } from '../../../../supabase/types';
 
 /**
+ * Prompt Output Template structure
+ */
+export interface PromptOutputTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  template: any;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Prompt Template Association structure
+ */
+export interface PromptTemplateAssociation {
+  id: string;
+  prompt_id: string;
+  template_id: string;
+  priority: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
  * Documentation file structure (simplified from AI.tsx)
  */
 export interface DocumentationFile {
@@ -1074,6 +1098,342 @@ export class PromptManagementService {
     } catch (error) {
       Logger.error(`Exception updating prompt relationships: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
+    }
+  }
+
+  /**
+   * Get all prompt output templates
+   */
+  public async getPromptOutputTemplates(): Promise<PromptOutputTemplate[]> {
+    try {
+      Logger.debug('Fetching prompt output templates');
+      const supabase = this.supabaseService.getClient();
+      
+      const { data, error } = await supabase
+        .from('prompt_output_templates')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) {
+        Logger.error(`Error fetching prompt output templates: ${error.message}`);
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      Logger.error(`Exception fetching prompt output templates: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return [];
+    }
+  }
+  
+  /**
+   * Get a prompt output template by ID
+   */
+  public async getPromptOutputTemplateById(templateId: string): Promise<PromptOutputTemplate | null> {
+    try {
+      Logger.debug(`Fetching prompt output template with ID: ${templateId}`);
+      const supabase = this.supabaseService.getClient();
+      
+      const { data, error } = await supabase
+        .from('prompt_output_templates')
+        .select('*')
+        .eq('id', templateId)
+        .single();
+      
+      if (error) {
+        Logger.error(`Error fetching prompt output template by ID: ${error.message}`);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      Logger.error(`Exception fetching prompt output template by ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return null;
+    }
+  }
+  
+  /**
+   * Create a new prompt output template
+   */
+  public async createPromptOutputTemplate(
+    name: string,
+    template: any,
+    description?: string
+  ): Promise<PromptOutputTemplate | null> {
+    try {
+      Logger.debug(`Creating new prompt output template: ${name}`);
+      const supabase = this.supabaseService.getClient();
+      
+      const { data, error } = await supabase
+        .from('prompt_output_templates')
+        .insert([{
+          name,
+          description: description || null,
+          template
+        }])
+        .select()
+        .single();
+      
+      if (error) {
+        Logger.error(`Error creating prompt output template: ${error.message}`);
+        return null;
+      }
+      
+      Logger.debug(`Created new prompt output template: ${data.name}`);
+      return data;
+    } catch (error) {
+      Logger.error(`Exception creating prompt output template: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return null;
+    }
+  }
+  
+  /**
+   * Update an existing prompt output template
+   */
+  public async updatePromptOutputTemplate(
+    templateId: string,
+    updates: {
+      name?: string;
+      description?: string | null;
+      template?: any;
+    }
+  ): Promise<PromptOutputTemplate | null> {
+    try {
+      Logger.debug(`Updating prompt output template with ID: ${templateId}`);
+      const supabase = this.supabaseService.getClient();
+      
+      const { data, error } = await supabase
+        .from('prompt_output_templates')
+        .update(updates)
+        .eq('id', templateId)
+        .select()
+        .single();
+      
+      if (error) {
+        Logger.error(`Error updating prompt output template: ${error.message}`);
+        return null;
+      }
+      
+      Logger.debug(`Updated prompt output template: ${data.name}`);
+      return data;
+    } catch (error) {
+      Logger.error(`Exception updating prompt output template: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return null;
+    }
+  }
+  
+  /**
+   * Delete a prompt output template
+   */
+  public async deletePromptOutputTemplate(templateId: string): Promise<boolean> {
+    try {
+      Logger.debug(`Deleting prompt output template with ID: ${templateId}`);
+      const supabase = this.supabaseService.getClient();
+      
+      // First delete all associations with this template
+      const { error: associationError } = await supabase
+        .from('prompt_template_associations')
+        .delete()
+        .eq('template_id', templateId);
+      
+      if (associationError) {
+        Logger.error(`Error deleting prompt template associations: ${associationError.message}`);
+        return false;
+      }
+      
+      // Then delete the template
+      const { error } = await supabase
+        .from('prompt_output_templates')
+        .delete()
+        .eq('id', templateId);
+      
+      if (error) {
+        Logger.error(`Error deleting prompt output template: ${error.message}`);
+        return false;
+      }
+      
+      Logger.debug(`Deleted prompt output template with ID: ${templateId}`);
+      return true;
+    } catch (error) {
+      Logger.error(`Exception deleting prompt output template: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return false;
+    }
+  }
+  
+  /**
+   * Get all prompt template associations for a prompt
+   */
+  public async getPromptTemplateAssociations(promptId: string): Promise<{
+    associations: PromptTemplateAssociation[];
+    templates: PromptOutputTemplate[];
+  }> {
+    try {
+      Logger.debug(`Fetching template associations for prompt with ID: ${promptId}`);
+      const supabase = this.supabaseService.getClient();
+      
+      // Get associations
+      const { data: associations, error: associationsError } = await supabase
+        .from('prompt_template_associations')
+        .select('*')
+        .eq('prompt_id', promptId)
+        .order('priority', { ascending: true });
+      
+      if (associationsError) {
+        Logger.error(`Error fetching prompt template associations: ${associationsError.message}`);
+        return { associations: [], templates: [] };
+      }
+      
+      if (!associations || associations.length === 0) {
+        return { associations: [], templates: [] };
+      }
+      
+      // Get the associated templates
+      const templateIds = associations.map(a => a.template_id);
+      const { data: templates, error: templatesError } = await supabase
+        .from('prompt_output_templates')
+        .select('*')
+        .in('id', templateIds);
+      
+      if (templatesError) {
+        Logger.error(`Error fetching associated templates: ${templatesError.message}`);
+        return { associations, templates: [] };
+      }
+      
+      return {
+        associations: associations || [],
+        templates: templates || []
+      };
+    } catch (error) {
+      Logger.error(`Exception fetching prompt template associations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return { associations: [], templates: [] };
+    }
+  }
+  
+  /**
+   * Associate a template with a prompt
+   */
+  public async associateTemplateWithPrompt(
+    promptId: string,
+    templateId: string,
+    priority: number = 0
+  ): Promise<PromptTemplateAssociation | null> {
+    try {
+      Logger.debug(`Associating template ${templateId} with prompt ${promptId}`);
+      const supabase = this.supabaseService.getClient();
+      
+      // Check if the association already exists
+      const { data: existingAssociation, error: checkError } = await supabase
+        .from('prompt_template_associations')
+        .select('*')
+        .eq('prompt_id', promptId)
+        .eq('template_id', templateId)
+        .maybeSingle();
+      
+      if (checkError) {
+        Logger.error(`Error checking for existing association: ${checkError.message}`);
+        return null;
+      }
+      
+      if (existingAssociation) {
+        // Update the priority if the association already exists
+        const { data, error } = await supabase
+          .from('prompt_template_associations')
+          .update({ priority })
+          .eq('id', existingAssociation.id)
+          .select()
+          .single();
+        
+        if (error) {
+          Logger.error(`Error updating association priority: ${error.message}`);
+          return null;
+        }
+        
+        Logger.debug(`Updated priority for existing association between prompt ${promptId} and template ${templateId}`);
+        return data;
+      } else {
+        // Create a new association
+        const { data, error } = await supabase
+          .from('prompt_template_associations')
+          .insert([{
+            prompt_id: promptId,
+            template_id: templateId,
+            priority
+          }])
+          .select()
+          .single();
+        
+        if (error) {
+          Logger.error(`Error creating association: ${error.message}`);
+          return null;
+        }
+        
+        Logger.debug(`Created new association between prompt ${promptId} and template ${templateId}`);
+        return data;
+      }
+    } catch (error) {
+      Logger.error(`Exception associating template with prompt: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return null;
+    }
+  }
+  
+  /**
+   * Unassociate a template from a prompt
+   */
+  public async unassociateTemplateFromPrompt(
+    promptId: string,
+    templateId: string
+  ): Promise<boolean> {
+    try {
+      Logger.debug(`Unassociating template ${templateId} from prompt ${promptId}`);
+      const supabase = this.supabaseService.getClient();
+      
+      const { error } = await supabase
+        .from('prompt_template_associations')
+        .delete()
+        .eq('prompt_id', promptId)
+        .eq('template_id', templateId);
+      
+      if (error) {
+        Logger.error(`Error unassociating template: ${error.message}`);
+        return false;
+      }
+      
+      Logger.debug(`Unassociated template ${templateId} from prompt ${promptId}`);
+      return true;
+    } catch (error) {
+      Logger.error(`Exception unassociating template from prompt: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return false;
+    }
+  }
+  
+  /**
+   * Update the priority of a template association
+   */
+  public async updateTemplateAssociationPriority(
+    associationId: string,
+    priority: number
+  ): Promise<PromptTemplateAssociation | null> {
+    try {
+      Logger.debug(`Updating priority for association ${associationId} to ${priority}`);
+      const supabase = this.supabaseService.getClient();
+      
+      const { data, error } = await supabase
+        .from('prompt_template_associations')
+        .update({ priority })
+        .eq('id', associationId)
+        .select()
+        .single();
+      
+      if (error) {
+        Logger.error(`Error updating association priority: ${error.message}`);
+        return null;
+      }
+      
+      Logger.debug(`Updated priority for association ${associationId}`);
+      return data;
+    } catch (error) {
+      Logger.error(`Exception updating association priority: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return null;
     }
   }
 }

@@ -28,6 +28,7 @@ async function listPipelineStatus(options: {
   sortBy?: string,
   console?: boolean,
   status?: string,
+  excludeProcessed?: boolean,
   isNewFile?: boolean
 }) {
   // Generate tracking ID
@@ -233,11 +234,49 @@ async function listPipelineStatus(options: {
       report += `Pipeline Status: ${options.status}\n\n`;
     }
     
+    if (options.excludeProcessed) {
+      report += `Excluded files with pipeline_status = "processed"\n\n`;
+    }
+    
     report += `## Sources List\n\n`;
     report += `| Source Name | Document Type | Has Expert Doc | Expert Doc Type | Raw Content Preview | Has JSON | Pipeline Status |\n`;
     report += `|-------------|---------------|----------------|-----------------|---------------------|----------|----------------|\n`;
     
-    for (const source of sources) {
+    // Apply the same filtering logic for markdown output as we do for console
+    let filteredSourcesForMarkdown = [...sources];
+    
+    // First, filter out sources without expert documents if needed for filtering
+    const needsExpertDocsForMarkdown = options.status || options.excludeProcessed;
+    
+    if (needsExpertDocsForMarkdown) {
+      // Filter out sources that have no expert documents
+      filteredSourcesForMarkdown = filteredSourcesForMarkdown.filter(source => 
+        (expertDocsMap.get(source.id) || []).length > 0
+      );
+    }
+    
+    // Apply status filter if specified
+    if (options.status) {
+      const statusValue = options.status;
+      
+      // Filter to only keep sources with expert docs matching the status
+      filteredSourcesForMarkdown = filteredSourcesForMarkdown.filter(source => {
+        const expertDocsForSource = expertDocsMap.get(source.id) || [];
+        return expertDocsForSource.some(doc => doc.pipeline_status === statusValue);
+      });
+    }
+    
+    // Apply exclude-processed filter if specified
+    if (options.excludeProcessed) {
+      // Filter to exclude sources with expert docs that have pipeline_status = "processed"
+      filteredSourcesForMarkdown = filteredSourcesForMarkdown.filter(source => {
+        const expertDocsForSource = expertDocsMap.get(source.id) || [];
+        // Keep only sources where NO expert doc has pipeline_status = "processed"
+        return !expertDocsForSource.some(doc => doc.pipeline_status === "processed");
+      });
+    }
+    
+    for (const source of filteredSourcesForMarkdown) {
       const sourceName = source.name || 'Unnamed';
       const documentType = source.document_type_id ? documentTypeMap.get(source.document_type_id) || 'Unknown' : 'None';
       
@@ -313,6 +352,7 @@ async function listPipelineStatus(options: {
     
     report += `\n## Summary\n\n`;
     report += `- Total sources: ${sources.length}\n`;
+    report += `- Sources after filtering: ${filteredSourcesForMarkdown.length}\n`;
     report += `- Sources with expert documents: ${sourcesWithExpertDocs}\n`;
     report += `- Total expert documents: ${totalExpertDocs}\n`;
     
@@ -336,25 +376,44 @@ async function listPipelineStatus(options: {
       );
       console.log('-'.repeat(180));
       
-      // Filter sources to only include those with expert documents that match the status filter
+      // Filter sources to only include those with expert documents that match the filters
       let filteredSources = [...sources];
-      if (options.status) {
-        // Apply client-side filtering based on the status option
-        const statusValue = options.status;
-        
+      
+      // First, filter out sources without expert documents if needed for filtering
+      const needsExpertDocs = options.status || options.excludeProcessed;
+      
+      if (needsExpertDocs) {
         // Step 1: Filter out sources that have no expert documents
-        const sourcesWithExpertDocs = filteredSources.filter(source => 
+        filteredSources = filteredSources.filter(source => 
           (expertDocsMap.get(source.id) || []).length > 0
         );
+      }
+      
+      // Apply status filter if specified
+      if (options.status) {
+        const statusValue = options.status;
         
-        // Step 2: Filter to only keep sources with expert docs matching the status
-        filteredSources = sourcesWithExpertDocs.filter(source => {
+        // Filter to only keep sources with expert docs matching the status
+        filteredSources = filteredSources.filter(source => {
           const expertDocsForSource = expertDocsMap.get(source.id) || [];
           return expertDocsForSource.some(doc => doc.pipeline_status === statusValue);
         });
         
         console.log(`\nApplying status filter: pipeline_status = "${statusValue}"`);
         console.log(`Found ${filteredSources.length} sources with expert documents matching this status`);
+      }
+      
+      // Apply exclude-processed filter if specified
+      if (options.excludeProcessed) {
+        // Filter to exclude sources with expert docs that have pipeline_status = "processed"
+        filteredSources = filteredSources.filter(source => {
+          const expertDocsForSource = expertDocsMap.get(source.id) || [];
+          // Keep only sources where NO expert doc has pipeline_status = "processed"
+          return !expertDocsForSource.some(doc => doc.pipeline_status === "processed");
+        });
+        
+        console.log(`\nExcluding sources with pipeline_status = "processed"`);
+        console.log(`Found ${filteredSources.length} sources without processed status`);
       }
       
       // Sort sources by document type for console display
@@ -426,6 +485,7 @@ async function listPipelineStatus(options: {
       
       console.log('-'.repeat(180));
       console.log(`Total sources: ${sources.length}`);
+      console.log(`Sources after filtering: ${filteredSources.length}`);
       console.log(`Sources with expert documents: ${sourcesWithExpertDocs}`);
       console.log(`Total expert documents: ${totalExpertDocs}`);
     } else {
@@ -486,6 +546,7 @@ program
   .option('-s, --sort-by <field>', 'Sort results by field (name, updated, type)', 'name')
   .option('-c, --console', 'Display results in console table format instead of generating markdown')
   .option('-p, --status <string>', 'Filter by pipeline status (e.g., "completed", "in_progress", "pending")')
+  .option('--exclude-processed', 'Exclude files with pipeline_status = "processed"')
   .option('--isNewFile', 'Show only newly added files where metadata has isNewFile=true')
   .action((options) => {
     listPipelineStatus({
@@ -496,6 +557,7 @@ program
       sortBy: options.sortBy,
       console: options.console,
       status: options.status,
+      excludeProcessed: options.excludeProcessed,
       isNewFile: options.isNewFile
     });
   });

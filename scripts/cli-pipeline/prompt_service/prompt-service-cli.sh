@@ -70,6 +70,97 @@ cd "$ROOT_DIR"
 # Use the first argument as the command name or default to "main"
 COMMAND="${1:-main}"
 
+# Command handler for template-related commands
+handle_template_command() {
+  local template_cmd="$1"
+  shift
+  
+  # Handle template commands
+  case "$template_cmd" in
+    list-templates)
+      track_command "list-templates" "npx ts-node $SCRIPT_DIR/commands/manage-output-templates.ts list-templates $*"
+      ;;
+    view-template)
+      if [ -z "$1" ]; then
+        echo "Error: Template name is required"
+        echo "Usage: ./prompt-service-cli.sh template view-template <template-name>"
+        return 1
+      fi
+      track_command "view-template" "npx ts-node $SCRIPT_DIR/commands/manage-output-templates.ts view-template $*"
+      ;;
+    create-template)
+      if [ -z "$1" ]; then
+        echo "Error: Template name is required"
+        echo "Usage: ./prompt-service-cli.sh template create-template <template-name> [options]"
+        return 1
+      fi
+      track_command "create-template" "npx ts-node $SCRIPT_DIR/commands/manage-output-templates.ts create-template $*"
+      ;;
+    update-template)
+      if [ -z "$1" ]; then
+        echo "Error: Template name is required"
+        echo "Usage: ./prompt-service-cli.sh template update-template <template-name> [options]"
+        return 1
+      fi
+      track_command "update-template" "npx ts-node $SCRIPT_DIR/commands/manage-output-templates.ts update-template $*"
+      ;;
+    delete-template)
+      if [ -z "$1" ]; then
+        echo "Error: Template name is required"
+        echo "Usage: ./prompt-service-cli.sh template delete-template <template-name>"
+        return 1
+      fi
+      track_command "delete-template" "npx ts-node $SCRIPT_DIR/commands/manage-output-templates.ts delete-template $*"
+      ;;
+    list-associations)
+      if [ -z "$1" ]; then
+        echo "Error: Prompt name is required"
+        echo "Usage: ./prompt-service-cli.sh template list-associations <prompt-name>"
+        return 1
+      fi
+      track_command "list-associations" "npx ts-node $SCRIPT_DIR/commands/manage-output-templates.ts list-associations $*"
+      ;;
+    associate-template)
+      if [ -z "$1" ] || [ -z "$2" ]; then
+        echo "Error: Prompt name and template name are required"
+        echo "Usage: ./prompt-service-cli.sh template associate-template <prompt-name> <template-name> [options]"
+        return 1
+      fi
+      track_command "associate-template" "npx ts-node $SCRIPT_DIR/commands/manage-output-templates.ts associate-template $*"
+      ;;
+    dissociate-template)
+      if [ -z "$1" ] || [ -z "$2" ]; then
+        echo "Error: Prompt name and template name are required"
+        echo "Usage: ./prompt-service-cli.sh template dissociate-template <prompt-name> <template-name> [options]"
+        return 1
+      fi
+      track_command "dissociate-template" "npx ts-node $SCRIPT_DIR/commands/manage-output-templates.ts dissociate-template $*"
+      ;;
+    generate-schema)
+      if [ -z "$1" ]; then
+        echo "Error: Template name is required"
+        echo "Usage: ./prompt-service-cli.sh template generate-schema <template-name> [options]"
+        return 1
+      fi
+      track_command "generate-schema" "npx ts-node $SCRIPT_DIR/commands/manage-output-templates.ts generate-schema $*"
+      ;;
+    help|--help|-h|*)
+      echo "Template Management Commands:"
+      echo "  list-templates           List all available prompt output templates"
+      echo "  view-template            View details of a specific output template"
+      echo "  create-template          Create a new output template"
+      echo "  update-template          Update an existing output template"
+      echo "  delete-template          Delete an output template"
+      echo "  list-associations        List template associations for a prompt"
+      echo "  associate-template       Associate a template with a prompt"
+      echo "  dissociate-template      Remove a template association from a prompt"
+      echo "  generate-schema          Generate a JSON schema for a prompt output template"
+      ;;
+  esac
+  
+  return 0
+}
+
 # Display help function
 display_help() {
   echo "Prompt Service CLI - Manage prompts across the application"
@@ -82,12 +173,18 @@ display_help() {
   echo ""
   echo "PROMPT MANAGEMENT:"
   echo "    load <file-path>           Load a prompt file into the database"
-  echo "  * update <name> <file-path>  Update an existing prompt in the database (16 uses)"
+  echo "  * update <n> <file-path>  Update an existing prompt in the database (16 uses)"
   echo "    view <prompt-number>       View the content of a prompt"
   echo "  * view-metadata <number>     View metadata of a prompt (9 uses)"
   echo ""
+  echo "OUTPUT TEMPLATE MANAGEMENT:"
+  echo "    template                   Access template management commands (see below)"
+  echo "    template list-templates    List all available prompt output templates"
+  echo "    template view-template     View details of a specific output template"
+  echo "    template list-associations List template associations for a prompt"
+  echo ""
   echo "DATABASE OPERATIONS:"
-  echo "  * add-query <name> <query>   Add or update a database query for a prompt (14 uses)"
+  echo "  * add-query <n> <query>   Add or update a database query for a prompt (14 uses)"
   echo "    clean-metadata             Clean metadata by removing specified fields"
   echo ""
   echo "REPORTING & UTILITIES:"
@@ -112,6 +209,16 @@ display_help() {
   echo "  # View prompt metadata"
   echo "  ./prompt-service-cli.sh view-metadata 1"
   echo ""
+  echo "TEMPLATE MANAGEMENT:"
+  echo "  # List all output templates"
+  echo "  ./prompt-service-cli.sh template list-templates"
+  echo ""
+  echo "  # View details of a template"
+  echo "  ./prompt-service-cli.sh template view-template core_document_classification"
+  echo ""
+  echo "  # Associate a template with a prompt"
+  echo "  ./prompt-service-cli.sh template associate-template document-classification-prompt core_document_classification"
+  echo ""
   echo "DATABASE OPERATIONS:"
   echo "  # Add a database query to a prompt"
   echo "  ./prompt-service-cli.sh add-query \"document-classification-prompt\" \"select * from document_types\""
@@ -125,6 +232,11 @@ display_help() {
 if [ "$COMMAND" = "help" ] || [ "$COMMAND" = "--help" ] || [ "$COMMAND" = "-h" ]; then
   display_help
   exit 0
+# Check for template commands
+elif [ "$COMMAND" = "template" ]; then
+  shift
+  handle_template_command "$@"
+  exit $?
 # Check for special commands
 elif [ "$COMMAND" = "fix-database-queries" ]; then
   fix_database_queries

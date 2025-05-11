@@ -1,3 +1,6 @@
+
+# document-classification-prompt-new
+
 # Two-Layer Document Classification and Concept Extraction Prompt
 ---
 name: document-classification-prompt-new
@@ -132,3 +135,139 @@ The following templates will be provided in your query. You must format your res
 9. Ensure all required fields from each template are included in your response
 
 If the document does not clearly fit any category with confidence above 0.6, classify it as "Unclassified" and select the most appropriate specific type from the "Unclassified" category.
+
+
+## Sample document types:
+```json
+[
+  {
+    "id": "c1b8df4f-c435-47a7-b79c-64da0fc9983e",
+    "name": "",
+    "category": "Academic Biography",
+    "description": "Documents that provide biographical information about individuals in academic or professional contexts. These documents focus on qualifications, expertise, experiences, and achievements relevant to academic, research, or professional standing. They typically include educational background, professional positions held, research interests, publications, and significant contributions to their field. Distinguished by their formal tone, structured presentation of career progression, and emphasis on scholarly or professional accomplishments rather than personal life details."
+  },
+  {
+    "id": "03743a23-d2f3-4c73-a282-85afc138fdfd",
+    "name": "Curriculum Vitae",
+    "category": "Academic Biography",
+    "description": "DIFFERENTIATING FEATURES: Comprehensive chronological listing of an individual's educational background, work experience, skills, achievements, publications, and other professional qualifications in a structured format. Typically longer and more detailed than a resume or professional biography."
+  },
+  {
+    "id": "af194b7e-cbf9-45c3-a1fc-863dbc815f1e",
+    "name": "Professional Biography",
+    "category": "Academic Biography",
+    "description": "DIFFERENTIATING FEATURES: Concise narrative summary of an individual's career, expertise, and accomplishments written in third-person. More narrative in structure than a CV, highlighting key accomplishments and areas of expertise rather than providing a comprehensive history."
+  }
+]
+```
+
+## Output templates:
+```json
+[
+  {
+    "template_id": "68c9ac6d-c541-4208-baf7-e0124477abff",
+    "template_name": "core_document_classification",
+    "template_schema": {
+      "name": {
+        "type": "string",
+        "required": true,
+        "description": "The specific document type name"
+      },
+      "category": {
+        "type": "string",
+        "required": true,
+        "description": "General document category"
+      },
+      "key_topics": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "required": true,
+        "description": "List of the main topics covered in the document"
+      },
+      "suggested_title": {
+        "type": "string",
+        "required": true,
+        "description": "A clear, concise title that accurately represents the document content"
+      },
+      "target_audience": {
+        "type": "string",
+        "required": true,
+        "description": "Specific types of healthcare providers who would benefit most from this content"
+      },
+      "unique_insights": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "required": true,
+        "description": "Key insights from the document"
+      },
+      "document_summary": {
+        "type": "string",
+        "required": true,
+        "description": "A comprehensive 5-7 paragraph summary of the document"
+      },
+      "document_type_id": {
+        "type": "string",
+        "required": true,
+        "description": "UUID of the selected document type"
+      },
+      "classification_reasoning": {
+        "type": "string",
+        "required": true,
+        "description": "Detailed explanation of why this document type was selected"
+      },
+      "classification_confidence": {
+        "type": "number",
+        "required": true,
+        "description": "A number between 0.0 and 1.0 indicating confidence in the classification"
+      }
+    }
+  },
+  {
+    "template_id": "57cd6e12-9c47-4a14-b64f-42cba3348900",
+    "template_name": "concepts_extraction",
+    "template_schema": {
+      "concepts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the concept"
+            },
+            "weight": {
+              "type": "number",
+              "description": "Importance weight (0.0-1.0) of the concept"
+            }
+          }
+        },
+        "required": true,
+        "description": "Key concepts from the document with importance weights"
+      }
+    }
+  },
+  {
+    "template_id": "30d4cd80-1bd4-47c3-80a6-8e5563482086",
+    "template_name": "clinical_implications",
+    "template_schema": {
+      "limitations": {
+        "type": "string",
+        "required": true,
+        "description": "Important limitations or contextual factors practitioners should consider"
+      },
+      "clinical_implications": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "required": true,
+        "description": "Specific implications for clinical practice"
+      }
+    }
+  }
+]
+```

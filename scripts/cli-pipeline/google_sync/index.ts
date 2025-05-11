@@ -1262,6 +1262,50 @@ program
     }
   });
 
+// Add classify-unprocessed-with-content command
+program
+  .command('classify-unprocessed-with-content')
+  .description('Find docx/txt/pptx files with content and classify them using AI')
+  .option('-l, --limit <number>', 'Limit the number of files to process (default: 10)', '10')
+  .option('--dry-run', 'Run without making database changes', false)
+  .option('-v, --verbose', 'Show verbose output', false)
+  .option('-m, --mime-types <types>', 'Comma-separated mime types to process (default: docx,txt,pptx)', 'docx,txt,pptx')
+  .option('-c, --concurrency <number>', 'Number of files to process concurrently (1-5, default: 1)', '1')
+  .action(async (options) => {
+    try {
+      console.log('Launching classify-unprocessed-with-content command...');
+      const { exec } = require('child_process');
+      const path = require('path');
+      
+      const scriptPath = path.resolve(__dirname, 'classify-unprocessed-with-content.ts');
+      
+      // Build command with options
+      let cmd = `ts-node "${scriptPath}"`;
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+      if (options.dryRun) cmd += ' --dry-run';
+      if (options.verbose) cmd += ' --verbose';
+      if (options.mimeTypes) cmd += ` --mime-types "${options.mimeTypes}"`;
+      if (options.concurrency) cmd += ` --concurrency ${options.concurrency}`;
+      
+      console.log(`Executing: ${cmd}`);
+      
+      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(stdout);
+      });
+    } catch (error) {
+      console.error('Error executing classify-unprocessed-with-content:', error);
+      process.exit(1);
+    }
+  });
+
 // Handle any unhandled exceptions
 process.on('unhandledRejection', (error) => {
   Logger.error('Unhandled rejection:', error);

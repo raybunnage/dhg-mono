@@ -1,5 +1,9 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
+
+> I think I gave you the wrong instructions: in classify-unprocessed-with-content only classify documents that don't have document_type_id     │
+│   for sources_google and that are marked with enum needs_classification and that have null record in processed_content field -    
+
  questions
 
 Only Prerequsite:
@@ -184,6 +188,81 @@ LINE 1:   select * from expert_documents where source_id = '782347dd3-299f-4cab-
         | "needs_manual_review"
  
  
+"key_topics": [
+    "Topic 1",
+    "Topic 2",
+    "Topic 3",
+    "Topic 4",
+    "Topic 5"
+  ],
+  "clinical_implicationsprompts/scientific-powerpoint.md": [
+    "Specific implication for clinical practice 1",
+    "Specific implication for clinical practice 2",
+    "Specific implication for clinical practice 3"
+  ],
+  "target_audience": "Specific types of healthcare providers who would benefit most from this research",
+  "unique_insights": [
+    "Key insight 1",
+    "Key insight 2",
+    "Key insight 3"
+  ],
+  "transformative_potential": "One paragraph describing how this research might shift our understanding of healing processes or open new therapeutic pathways",
+  "limitations": "Brief description of important limitations or contextual factors practitioners should consider",
+  "powerpoint_suggestions":
+
+  
+
+
+
+
+
+
+ {
+	"research_summary": "Dr. Naviaux directs a core laboratory for metabolomics and exposomics at UCSD, where his groundbreaking research has revolutionized our understanding of complex chronic disorders. He discovered POLG1 mutations as the cause of Alpers syndrome and developed the first DNA test for its diagnosis. His lab has pioneered new methods in metabolomics and exposomics, revealing metabolic signatures in various disorders including autism spectrum disorder, ME/CFS, and post-treatment Lyme disease syndrome. His work has identified crucial abnormalities in purinergic signaling and healing cycle defects shared across multiple chronic conditions, leading to innovative therapeutic approaches.",
+	"basic_information": {
+		"name": "Robert K. Naviaux, M.D., Ph.D.",
+		"title": "M.D., Ph.D.",
+		"credentials": [
+			"M.D.",
+			"Ph.D.",
+			"Former President of Mitochondrial Medicine Society",
+			"Founding Associate Editor of Mitochondrion journal"
+		],
+		"institution": "University of California, San Diego School of Medicine",
+		"specialty_areas": [
+			"Genetics",
+			"Mitochondrial Medicine",
+			"Metabolomics",
+			"Exposomics",
+			"Environmental Toxicology"
+		],
+		"current_position": "Professor of Genetics"
+	},
+	"expertise_keywords": [
+		"mitochondrial medicine",
+		"metabolomics",
+		"exposomics",
+		"autism",
+		"chronic disease",
+		"purinergic signaling",
+		"environmental health",
+		"healing cycle biology"
+	],
+	"professional_links": {
+		"website_urls": [
+			"https://naviauxlab.ucsd.edu"
+		]
+	},
+	"notable_achievements": [
+		"Discoverer of POLG1 mutations as cause of Alpers syndrome",
+		"Developer of first DNA test for Alpers syndrome diagnosis",
+		"Directed first FDA-approved clinical trial of suramin for autism spectrum disorder",
+		"Discovered first mitochondrial DNA mutation causing ASD",
+		"Co-founder and former President of Mitochondrial Medicine Society",
+		"Founding associate editor of journal Mitochondrion",
+		"Development of new methods in metabolomics and exposomics"
+	]
+}
  
 [  expert documents
   {

@@ -11,6 +11,7 @@ import { Logger } from '../../utils';
 import { FileService } from '../file-service/file-service';
 import { claudeService } from '../claude-service/claude-service';
 import { SupabaseClientService } from '../../services/supabase-client';
+import { promptOutputTemplateService, PromptOutputTemplate } from './prompt-output-templates';
 
 /**
  * Prompt data structure
@@ -50,6 +51,7 @@ export interface PromptLoadOptions {
   executeQueries?: boolean;
   returnAsMarkdown?: boolean;
   returnAll?: boolean;
+  includeOutputTemplates?: boolean; // Include associated output templates
 }
 
 /**
@@ -70,6 +72,12 @@ export interface PromptLoadResult {
     queryName: string;
     queryText: string;
     queryResults: any;
+  }[];
+  outputTemplates?: {
+    id: string;
+    name: string;
+    template: any;
+    priority: number;
   }[];
   combinedContent: string;
 }

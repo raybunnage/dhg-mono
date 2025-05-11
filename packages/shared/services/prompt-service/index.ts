@@ -6,3 +6,4 @@
 export * from './prompt-service';
 export * from './prompt-management-service';
 export * from './prompt-cli-interface';
+export * from './prompt-output-templates';

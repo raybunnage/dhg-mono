@@ -385,6 +385,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    force-classify-docs          Force classify documents using the document-classification-prompt-new"
   echo "    find-documents-with-content Find documents with content that can be used for classification"
   echo "    check-concepts            Check concepts stored for a document (by source ID)"
+  echo "    classify-unprocessed-with-content  Find docx/txt/pptx files with content and classify them using AI"
   echo "    classify-pdfs                Classify PDF files missing document types or marked as needs_reprocessing using Claude AI"
   echo "    direct-classify-pdfs         Process PDF files with needs_reprocessing status directly (more reliable)"
   echo "    fix-classify-pdfs            Mark PDF files with needs_reprocessing status as processed (without analyzing)"
@@ -467,6 +468,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Classify .docx and .txt files (only updates sources_google table)"
   echo "  ./google-sync-cli.sh classify-docs-service --limit 5 --concurrency 2"
   echo ""
+  echo "  # Find and classify unprocessed docx/txt/pptx files that have content"
+  echo "  ./google-sync-cli.sh classify-unprocessed-with-content --limit 5 --mime-types docx,txt"
+  echo ""
+  echo "  # Run a dry run of the classify-unprocessed-with-content command"
+  echo "  ./google-sync-cli.sh classify-unprocessed-with-content --dry-run --verbose"
+  echo ""
   echo "  # Reprocess DOCX files that have needs_reprocessing status"
   echo "  ./google-sync-cli.sh reprocess-docx-files --limit 10 --verbose"
   echo ""
@@ -482,6 +489,9 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # List Google sources with a specific pipeline status (e.g., unprocessed)"
   echo "  ./google-sync-cli.sh list-pipeline-status --status unprocessed --console"
+  echo ""
+  echo "  # List Google sources excluding those with 'processed' status"
+  echo "  ./google-sync-cli.sh list-pipeline-status --exclude-processed --console"
   echo ""
   echo "  # List only newly added files (created within the last 7 days)"
   echo "  ./google-sync-cli.sh list-pipeline-status --isNewFile --console"
@@ -1070,5 +1080,11 @@ fi
 if [ "$1" = "update-pipeline-status" ]; then
   shift
   track_command "update-pipeline-status" "ts-node $SCRIPT_DIR/update-pipeline-status.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "classify-unprocessed-with-content" ]; then
+  shift
+  track_command "classify-unprocessed-with-content" "ts-node $SCRIPT_DIR/classify-unprocessed-with-content.ts $*"
   exit $?
 fi
