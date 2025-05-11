@@ -393,6 +393,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "LISTING & REPORTING:"
   echo "  * show-expert-documents        Generate a report of expert documents in the database (100 uses)"
   echo "  * list                         List Google sources with their corresponding expert documents (66 uses)"
+  echo "    list-pipeline-status         List Google sources with their pipeline status (instead of reprocessing status)"
   echo "  * list-google-sources          List sources from Google Drive with filtering options"
   echo "    source-info                  Get detailed information about a sources_google record and related expert_documents"
   echo "    list-unclassified-files      List PDF, PowerPoint, TXT and DOCX files without document types"
@@ -472,6 +473,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # List Google sources with a console-friendly table format"
   echo "  ./google-sync-cli.sh list --limit 50 --console"
+  echo ""
+  echo "  # List Google sources with pipeline status in a console-friendly table format"
+  echo "  ./google-sync-cli.sh list-pipeline-status --limit 50 --console"
+  echo ""
+  echo "  # List Google sources with a specific pipeline status (e.g., in_progress)"
+  echo "  ./google-sync-cli.sh list-pipeline-status --status in_progress --console"
   echo ""
   echo "  # Report on video files for folders"
   echo "  ./google-sync-cli.sh report-main-video-ids"
@@ -672,6 +679,12 @@ fi
 if [ "$1" = "list" ]; then
   shift
   track_command "list" "ts-node $SCRIPT_DIR/list-google-sources.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "list-pipeline-status" ]; then
+  shift
+  track_command "list-pipeline-status" "ts-node $SCRIPT_DIR/list-pipeline-status.ts $*"
   exit $?
 fi
 
