@@ -395,6 +395,8 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * list                         List Google sources with their corresponding expert documents (66 uses)"
   echo "    list-pipeline-status         List Google sources with their pipeline status (instead of reprocessing status)"
   echo "    pipeline-status-summary      Generate a summary report of all pipeline_status enum values"
+  echo "    update-processed-records     Update records with valid processed_content JSON to have a pipeline_status of \"processed\""
+  echo "    process-unprocessed          Process unprocessed documents based on mime type (currently DOCX only)"
   echo "  * list-google-sources          List sources from Google Drive with filtering options"
   echo "    source-info                  Get detailed information about a sources_google record and related expert_documents"
   echo "    list-unclassified-files      List PDF, PowerPoint, TXT and DOCX files without document types"
@@ -492,6 +494,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Generate a detailed pipeline status report with additional insights"
   echo "  ./google-sync-cli.sh pipeline-status-summary --all --markdown"
+  echo ""
+  echo "  # Update records with valid processed_content and no errors to have status \"processed\""
+  echo "  ./google-sync-cli.sh update-processed-records --dry-run"
+  echo ""
+  echo "  # Process unprocessed DOCX files according to mime_types_processing configuration"
+  echo "  ./google-sync-cli.sh process-unprocessed --dry-run --limit 5"
   echo ""
   echo "  # Report on video files for folders"
   echo "  ./google-sync-cli.sh report-main-video-ids"
@@ -704,6 +712,18 @@ fi
 if [ "$1" = "pipeline-status-summary" ]; then
   shift
   track_command "pipeline-status-summary" "ts-node $SCRIPT_DIR/pipeline-status-summary.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "update-processed-records" ]; then
+  shift
+  track_command "update-processed-records" "ts-node $SCRIPT_DIR/update-processed-records.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "process-unprocessed" ]; then
+  shift
+  track_command "process-unprocessed" "ts-node $SCRIPT_DIR/process-unprocessed.ts $*"
   exit $?
 fi
 
@@ -1021,5 +1041,11 @@ fi
 if [ "$1" = "fix-classify-pdfs" ]; then
   shift
   track_command "fix-classify-pdfs" "ts-node $SCRIPT_DIR/fix-classify-pdfs.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "update-pipeline-status" ]; then
+  shift
+  track_command "update-pipeline-status" "ts-node $SCRIPT_DIR/update-pipeline-status.ts $*"
   exit $?
 fi

@@ -1,3 +1,5 @@
+ pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+ 
  questions
 
 Only Prerequsite:
@@ -251,8 +253,195 @@ LINE 1:   select * from expert_documents where source_id = '782347dd3-299f-4cab-
 
  
  
- pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
+ 
+
+
+[
+  {
+    "id": "3f03c2af-5456-43cd-a3a9-d8504386c968",
+    "mime_type_id": "9b7f01d6-9413-45c0-9ce9-1e28c31167c6",
+    "extraction_method": "mammoth",
+    "requires_transcription": false,
+    "default_processing_steps": [
+      {
+        "step": "content_extraction",
+        "method": "mammoth",
+        "options": {
+          "preserveStyles": true
+        }
+      },
+      {
+        "step": "ai_classification",
+        "model": "claude",
+        "prompt": "document-classification-prompt"
+      },
+      {
+        "step": "metadata_extraction",
+        "fields": [
+          "title",
+          "concepts"
+        ],
+        "method": "ai"
+      },
+      {
+        "step": "document_type_processing",
+        "useDocumentTypePrompt": true
+      },
+      {
+        "step": "save_processed_content"
+      }
+    ],
+    "processing_priority": 50
+  },
+  {
+    "id": "52e76abb-4eed-47e1-bebd-26e32564651b",
+    "mime_type_id": "54ceea70-4c96-4189-86d2-0af7582c772f",
+    "extraction_method": "pdf",
+    "requires_transcription": false,
+    "default_processing_steps": [
+      {
+        "step": "content_extraction",
+        "method": "pdf",
+        "options": {
+          "splitLargeFiles": true
+        }
+      },
+      {
+        "step": "ai_classification",
+        "model": "claude",
+        "prompt": "document-classification-prompt"
+      },
+      {
+        "step": "metadata_extraction",
+        "fields": [
+          "title",
+          "concepts"
+        ],
+        "method": "ai"
+      },
+      {
+        "step": "document_type_processing",
+        "useDocumentTypePrompt": true
+      },
+      {
+        "step": "save_processed_content"
+      }
+    ],
+    "processing_priority": 60
+  },
+  {
+    "id": "3bdb273f-f04c-4b89-ab44-10f8ae708d8b",
+    "mime_type_id": "45a3acbc-02e5-4173-9bab-2d6327c914f6",
+    "extraction_method": "whisper",
+    "requires_transcription": true,
+    "default_processing_steps": [
+      {
+        "step": "content_extraction",
+        "method": "whisper",
+        "options": {
+          "model": "medium"
+        }
+      },
+      {
+        "step": "ai_classification",
+        "model": "claude",
+        "prompt": "document-classification-prompt"
+      },
+      {
+        "step": "metadata_extraction",
+        "fields": [
+          "title",
+          "concepts"
+        ],
+        "method": "ai"
+      },
+      {
+        "step": "document_type_processing",
+        "useDocumentTypePrompt": true
+      },
+      {
+        "step": "save_processed_content"
+      }
+    ],
+    "processing_priority": 80
+  },
+  {
+    "id": "580587cd-93e8-4249-ac50-afb0293c68b1",
+    "mime_type_id": "a30db3dc-4c27-44dc-81b2-1aa16959b2aa",
+    "extraction_method": "pptx",
+    "requires_transcription": false,
+    "default_processing_steps": [
+      {
+        "step": "content_extraction",
+        "method": "pptx",
+        "options": {
+          "extractText": true,
+          "extractImages": false
+        }
+      },
+      {
+        "step": "ai_classification",
+        "model": "claude",
+        "prompt": "document-classification-prompt"
+      },
+      {
+        "step": "metadata_extraction",
+        "fields": [
+          "title",
+          "concepts"
+        ],
+        "method": "ai"
+      },
+      {
+        "step": "document_type_processing",
+        "useDocumentTypePrompt": true
+      },
+      {
+        "step": "save_processed_content"
+      }
+    ],
+    "processing_priority": 70
+  },
+  {
+    "id": "2d723fb1-7e56-47b1-a447-b0486c94ba99",
+    "mime_type_id": "4bee9123-8f45-4268-8cb0-ed57ff925e77",
+    "extraction_method": "text",
+    "requires_transcription": false,
+    "default_processing_steps": [
+      {
+        "step": "content_extraction",
+        "method": "text",
+        "options": {
+          "encoding": "utf8"
+        }
+      },
+      {
+        "step": "ai_classification",
+        "model": "claude",
+        "prompt": "document-classification-prompt"
+      },
+      {
+        "step": "metadata_extraction",
+        "fields": [
+          "title",
+          "concepts"
+        ],
+        "method": "ai"
+      },
+      {
+        "step": "document_type_processing",
+        "useDocumentTypePrompt": true
+      },
+      {
+        "step": "save_processed_content"
+      }
+    ],
+    "processing_priority": 40
+  }
+]
+
+
 CLI commands could then include a --profile flag or automatically use the active profile.
 
 ./scripts/cli-pipeline/document_types/create-category.sh "Miscellaneous" --description "Documents that are identifiable in their purpose and structure but do not align cleanly with other established categories, and where further subdivision is not warranted or practical. Distinguished by their coherent, recognizable format and clear purpose while existing as outliers to the primary taxonomy. Unlike Unknown/Unclassified documents (which lack sufficient identifying characteristics), Miscellaneous documents possess definable attributes but represent edge cases, unique formats, or hybrid content types that occur with insufficient frequency to justify dedicated categories."  

@@ -929,6 +929,91 @@ The Claude service supports processing PDFs and will automatically:
 - Convert PDFs to Claude's required format
 - Return either text or structured JSON
 
+## Google Drive Service Account Integration
+
+The project requires a valid Google Drive service account for accessing files in Google Drive.
+
+### Setting Up Service Account Authentication
+
+When working with scripts that access Google Drive, you need a valid service account configuration:
+
+1. **Service Account Setup**:
+   - The project expects a `.service-account.json` file in the project root directory
+   - This is the standard approach used by all commands that access Google Drive
+   - Alternatively, you can set environment variables:
+     - `GOOGLE_SERVICE_ACCOUNT_PATH`: Path to the service account JSON file
+     - `GOOGLE_APPLICATION_CREDENTIALS`: Standard Google credential path variable
+
+2. **Direct Authentication with JWT** (Recommended for file downloads and API calls):
+   - This is the approach used by the sync command and most Google Drive operations
+   - The following pattern is the most reliable for downloading files and API access:
+   ```typescript
+   // Import required libraries
+   const { google } = require('googleapis');
+   const { JWT } = require('google-auth-library');
+   
+   // Get service account key file path from standard locations
+   const keyFilePath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH || 
+                     process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+                     path.resolve(process.cwd(), '../../../.service-account.json');
+   
+   // Check if file exists
+   if (!fs.existsSync(keyFilePath)) {
+     throw new Error(`Google service account key file not found at ${keyFilePath}`);
+   }
+   
+   // Read and parse the service account key file
+   const keyFileData = fs.readFileSync(keyFilePath, 'utf8');
+   const keyFile = JSON.parse(keyFileData);
+   
+   // Create JWT auth client with the service account
+   const authClient = new JWT({
+     email: keyFile.client_email,
+     key: keyFile.private_key,
+     scopes: ['https://www.googleapis.com/auth/drive.readonly']
+   });
+   
+   // Initialize Google Drive API
+   const drive = google.drive({ version: 'v3', auth: authClient });
+   
+   // Now use the drive API for operations
+   const response = await drive.files.get({
+     fileId: driveId,
+     alt: 'media',
+   }, { responseType: 'arraybuffer' });
+   ```
+
+3. **Using the GoogleDriveService Singleton** (For metadata operations):
+   - For higher-level operations, use the provided singleton:
+   ```typescript
+   import { GoogleDriveService, getGoogleDriveService } from '../../../packages/shared/services/google-drive';
+   import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+   
+   // Get SupabaseClient
+   const supabase = SupabaseClientService.getInstance().getClient();
+   
+   // Get the drive service (recommended helper method)
+   const googleDriveService = getGoogleDriveService(supabase);
+   
+   // OR get it directly with default auth
+   import { defaultGoogleAuth } from '../../../packages/shared/services/google-drive';
+   const googleDriveService = GoogleDriveService.getInstance(defaultGoogleAuth, supabase);
+   
+   // Now use the service for operations
+   const file = await googleDriveService.getFile(fileId, 'id,name,mimeType');
+   ```
+
+4. **Troubleshooting**:
+   - If you see "Google service account key file not found", check:
+     - The `.service-account.json` file exists in the project root
+     - The file path resolution is correct in your script
+     - For nested scripts, you might need to adjust the path to the root directory:
+       ```typescript
+       // For scripts in subdirectories, adjust the path to reach the root
+       const keyFilePath = path.resolve(process.cwd(), '../../../.service-account.json');
+       ```
+   - Check the service account has appropriate permissions on the Google Drive folders
+
 ## sources_google Folder Hierarchy
 
 The parent-child relationship in sources_google table is stored using Google Drive IDs, not Supabase UUIDs. For example, "Envy.pdf" has a parent_folder_id of "1ZUpNHLc9iNMQj-6q3t80Hyu1ylJyP2Yw", which is the drive_id of the "Papers/References" folder.

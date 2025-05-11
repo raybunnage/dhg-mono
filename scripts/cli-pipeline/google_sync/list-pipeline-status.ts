@@ -169,15 +169,14 @@ async function listPipelineStatus(options: {
       const batchIds = sourceIds.slice(i, i + batchSize);
       console.log(`Fetching expert documents batch ${i/batchSize + 1} of ${Math.ceil(sourceIds.length/batchSize)}...`);
       
+      // Build the query to get all expert documents for these sources
       let expertQuery = supabase
         .from('expert_documents')
         .select('id, source_id, document_type_id, raw_content, processed_content, pipeline_status, classification_metadata')
         .in('source_id', batchIds);
-        
-      // Apply status filter if provided
-      if (options.status) {
-        expertQuery = expertQuery.eq('pipeline_status', options.status);
-      }
+      
+      // Note: We're not filtering in the database query anymore to ensure we get relationship data
+      // We'll filter the results after fetching to show only matching status records in the UI
       
       // Apply isNewFile filter if specified
       if (options.isNewFile) {
@@ -337,8 +336,29 @@ async function listPipelineStatus(options: {
       );
       console.log('-'.repeat(180));
       
+      // Filter sources to only include those with expert documents that match the status filter
+      let filteredSources = [...sources];
+      if (options.status) {
+        // Apply client-side filtering based on the status option
+        const statusValue = options.status;
+        
+        // Step 1: Filter out sources that have no expert documents
+        const sourcesWithExpertDocs = filteredSources.filter(source => 
+          (expertDocsMap.get(source.id) || []).length > 0
+        );
+        
+        // Step 2: Filter to only keep sources with expert docs matching the status
+        filteredSources = sourcesWithExpertDocs.filter(source => {
+          const expertDocsForSource = expertDocsMap.get(source.id) || [];
+          return expertDocsForSource.some(doc => doc.pipeline_status === statusValue);
+        });
+        
+        console.log(`\nApplying status filter: pipeline_status = "${statusValue}"`);
+        console.log(`Found ${filteredSources.length} sources with expert documents matching this status`);
+      }
+      
       // Sort sources by document type for console display
-      const sortedSources = [...sources].sort((a, b) => {
+      const sortedSources = filteredSources.sort((a, b) => {
         const docTypeA = a.document_type_id ? documentTypeMap.get(a.document_type_id) || 'Unknown' : 'None';
         const docTypeB = b.document_type_id ? documentTypeMap.get(b.document_type_id) || 'Unknown' : 'None';
         return docTypeA.localeCompare(docTypeB);
