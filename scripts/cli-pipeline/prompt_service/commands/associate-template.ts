@@ -2,6 +2,7 @@
  * Command to associate a template with a prompt
  */
 import { promptManagementService } from '../../../../packages/shared/services/prompt-service/prompt-management-service';
+import { promptService } from '../../../../packages/shared/services/prompt-service/prompt-service';
 import { Logger } from '../../../../packages/shared/utils';
 
 interface AssociateTemplateOptions {
@@ -18,8 +19,9 @@ export async function associateTemplateCommand(
     const priority = options.priority || 0;
     const dryRun = options.dryRun || false;
     
-    // First, find the prompt
-    const prompt = await promptManagementService.getPromptByName(promptName);
+    // First, get all prompts and find by name
+    const allPrompts = await promptManagementService.getDatabasePrompts();
+    const prompt = allPrompts.find(p => p.name === promptName);
     if (!prompt) {
       console.error(`Prompt not found: ${promptName}`);
       process.exit(1);

@@ -150,3 +150,102 @@ VALUES
   }
 }'
 );
+
+
+
+
+-- Add presentation summary template
+INSERT INTO prompt_output_templates (name, description, template)
+VALUES 
+('presentation_summary', 'Template for generating comprehensive presentation summaries and viewer guides', 
+'{
+  "title": "An engaging, descriptive title for the presentation",
+  "speakerProfile": {
+    "name": "Full name of the speaker",
+    "title": "Professional title or role",
+    "expertise": "Brief description of expertise and what makes them valuable"
+  },
+  "presentationEssence": {
+    "coreTopic": "Main subject or focus of the presentation",
+    "uniqueApproach": "What makes this presentation''s perspective distinctive",
+    "problemAddressed": "Problem being addressed or opportunity explored",
+    "insightSummary": "Summary of the core insight or message"
+  },
+  "keyTakeaways": [
+    "First key insight or actionable advice",
+    "Second key insight or actionable advice",
+    "Third key insight or actionable advice",
+    "Fourth key insight or actionable advice (optional)"
+  ],
+  "memorableQuotes": [
+    {
+      "quote": "Direct quote from the speaker",
+      "context": "Brief context for the quote"
+    },
+    {
+      "quote": "Another direct quote (optional)",
+      "context": "Brief context for the second quote"
+    }
+  ],
+  "discussionHighlights": {
+    "exchanges": "Notable exchanges or insights from Q&A",
+    "challenges": "Interesting challenges or debates that emerged",
+    "additionalContext": "Any additional context from the discussion"
+  },
+  "whyWatch": {
+    "targetAudience": "Who would benefit most from this presentation",
+    "uniqueValue": "What distinguishes this from other videos on similar topics"
+  },
+  "summary": "A vibrant, informative 200-300 word summary that captures the overall presentation, combining elements from all sections above in an engaging narrative format"
+}');
+
+INSERT INTO prompt_output_templates (name, description, template)
+  VALUES
+  ('expert_profile', 'Template for structured expert profiles including credentials and research',
+  '{
+        "research_summary": "Dr. Carter is a pioneering researcher who first discovered the relationship between oxytocin and social monogamy, as 
+  well as its role in adult social bond formation. Her work focuses on understanding the neurobiology of early experience, stress-coping, and 
+  love, with particular emphasis on oxytocin pathways. She studies how these systems promote social bonding, parental behavior, and healthy 
+  relationships throughout the lifecycle. Her research has been instrumental in establishing the biological foundations of human sociality and
+   love, particularly examining the intersections between birth, lactation, and social behavior.",
+        "basic_information": {
+                "name": "Sue Carter, Ph.D.",
+                "title": "Ph.D.",
+                "credentials": [
+                        "Ph.D.",
+                        "Distinguished University Scientist at Indiana University",
+                        "Former Executive Director of the Kinsey Institute",
+                        "Rudy Professor Emerita of Biology"
+                ],
+                "institution": "University of Virginia",
+                "specialty_areas": [
+                        "Neurobiology",
+                        "Social Bonding",
+                        "Oxytocin Research",
+                        "Behavioral Biology",
+                        "Reproductive Biology"
+                ],
+                "current_position": "Professor of Psychology"
+        },
+        "expertise_keywords": [
+                "oxytocin",
+                "social bonding",
+                "neurobiology",
+                "behavioral biology",
+                "reproductive biology",
+                "attachment",
+                "sociostasis"
+        ],
+        "professional_links": {
+                "website_urls": [
+                        "[Not provided]"
+                ]
+        },
+        "notable_achievements": [
+                "First scientist to discover the relationship between oxytocin and social monogamy",
+                "Authored more than 400 publications",
+                "Edited 5 books including ''Attachment and Bonding: A New Synthesis'' (MIT Press)",
+                "Distinguished University Professor at University of Maryland",
+                "Former Executive Director of the Kinsey Institute"
+        ]
+  }');

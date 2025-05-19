@@ -1,6 +1,15 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
 
+  To ensure I always follow the "NEVER ADD FILES TO ROOT DIRECTORY" rule in the future, I will:
+  1. Always read CLAUDE.md at the start of our conversation
+  2. Check for appropriate subdirectories before creating any new files
+  3. Ask explicitly where to put new files when unsure
+  4. Double-check all paths to make sure they're not in the root
+
+  Would you like me to make any other adjustments to ensure proper organization?
+
+
 > I think I gave you the wrong instructions: in classify-unprocessed-with-content only classify documents that don't have document_type_id     │
 │   for sources_google and that are marked with enum needs_classification and that have null record in processed_content field -    
 

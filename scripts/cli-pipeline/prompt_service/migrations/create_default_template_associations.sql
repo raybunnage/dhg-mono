@@ -91,6 +91,28 @@ BEGIN
   );
 END$$;
 
+
+
+DO $$
+DECLARE
+  expert_profile_id UUID;
+BEGIN
+
+ SELECT id INTO expert_profile_id FROM prompt_output_templates WHERE name = 'expert_profile';
+
+  INSERT INTO prompt_template_associations (prompt_id, template_id, priority)
+  SELECT id, expert_profile_id, 1
+  FROM prompts
+  WHERE name = 'final_video-summary-prompt'
+  AND NOT EXISTS (
+    SELECT 1 FROM prompt_template_associations 
+    WHERE prompt_id = prompts.id AND template_id = expert_profile_id
+  );
+END$$;
+
+
+
+
 -- Create an additional association for any new prompts
 -- (Used as an example of adding associations directly without the PL/pgSQL block)
 -- INSERT INTO prompt_template_associations (prompt_id, template_id, priority)

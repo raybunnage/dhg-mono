@@ -84,3 +84,63 @@ You must respond with a single JSON object having the following structure:
 {{TRANSCRIPT START}}
 {{TRANSCRIPT}}
 {{TRANSCRIPT END}}
+
+## Expected Output Format
+
+Please provide your response as a JSON object with the following structure:
+
+```json
+{
+  "title": "An engaging, descriptive title for the presentation",
+  "summary": "A vibrant, informative 200-300 word summary that captures the overall presentation, combining elements from all sections above in an engaging narrative format",
+  "whyWatch": {
+    "uniqueValue": "What distinguishes this from other videos on similar topics",
+    "targetAudience": "Who would benefit most from this presentation"
+  },
+  "keyTakeaways": [
+    "First key insight or actionable advice",
+    "Second key insight or actionable advice",
+    "Third key insight or actionable advice",
+    "Fourth key insight or actionable advice (optional)"
+  ],
+  "speakerProfile": {
+    "name": "Full name of the speaker",
+    "title": "Professional title or role",
+    "expertise": "Brief description of expertise and what makes them valuable"
+  },
+  "memorableQuotes": [
+    {
+      "quote": "Direct quote from the speaker",
+      "context": "Brief context for the quote"
+    },
+    {
+      "quote": "Another direct quote (optional)",
+      "context": "Brief context for the second quote"
+    }
+  ],
+  "presentationEssence": {
+    "coreTopic": "Main subject or focus of the presentation",
+    "insightSummary": "Summary of the core insight or message",
+    "uniqueApproach": "What makes this presentation's perspective distinctive",
+    "problemAddressed": "Problem being addressed or opportunity explored"
+  },
+  "discussionHighlights": {
+    "exchanges": "Notable exchanges or insights from Q&A",
+    "challenges": "Interesting challenges or debates that emerged",
+    "additionalContext": "Any additional context from the discussion"
+  }
+}
+```
+
+## Field Descriptions
+
+### presentation_summary
+
+- **title**: An engaging, descriptive title for the presentation
+- **summary**: A vibrant, informative 200-300 word summary that captures the overall presentation, combining elements from all sections above in an engaging narrative format
+- **whyWatch**: {uniqueValue: "What distinguishes this from other videos on similar topics", targetAudience: "Who would benefit most from this presentation"}
+- **keyTakeaways**: ["First key insight or actionable advice", "Second key insight or actionable advice", "Third key insight or actionable advice", "Fourth key insight or actionable advice (optional)"]
+- **speakerProfile**: {name: "Full name of the speaker", title: "Professional title or role", expertise: "Brief description of expertise and what makes them valuable"}
+- **memorableQuotes**: [{quote: "Direct quote from the speaker", context: "Brief context for the quote"}, {quote: "Another direct quote (optional)", context: "Brief context for the second quote"}]
+- **presentationEssence**: {coreTopic: "Main subject or focus of the presentation", insightSummary: "Summary of the core insight or message", uniqueApproach: "What makes this presentation's perspective distinctive", problemAddressed: "Problem being addressed or opportunity explored"}
+- **discussionHighlights**: {exchanges: "Notable exchanges or insights from Q&A", challenges: "Interesting challenges or debates that emerged", additionalContext: "Any additional context from the discussion"}

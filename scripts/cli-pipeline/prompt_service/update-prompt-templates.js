@@ -1,4 +1,4 @@
-const { SupabaseClientService } = require('./packages/shared/services/supabase-client');
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 
 async function associateTemplates() {
   const supabase = SupabaseClientService.getInstance().getClient();

@@ -5,7 +5,7 @@ description: Enhanced document classification with structured JSON output using 
 version: 2.0
 status: active
 model: claude-3-sonnet-20240229
-temperature: 0.1
+temperature: 0
 maxTokens: 12000
 tags:
   - classification
@@ -45,11 +45,6 @@ Your job is to:
 - Select the specific document type id that best matches the document
 - If multiple types seem applicable, prioritize the one that best captures the primary nature of the document
 
-### Concept Extraction
-- Identify the most significant and distinctive concepts present in the document
-- Focus on terminology, themes, and ideas that would be useful for search and retrieval
-- Extract concepts that uniquely identify the core ideas in the document
-- Provide a confidence weight for each concept (0.0-1.0)
 
 ### Title Generation
 - Create a clear, concise, and descriptive title for the document
@@ -64,6 +59,27 @@ Provide your analysis as structured JSON following the required templates provid
 1. Core document classification data (document_type_id, category, name, suggested_title, etc.)
 2. Concept extraction data (key concepts with importance weights)
 3. Any additional template-specific fields requested
+
+### Required Field Definitions and Guidelines
+
+#### Core Classification Fields
+- `document_type_id`: UUID of the selected document type from the reference list (required)
+- `name`: The specific document type name exactly as it appears in the reference (required)
+- `category`: General document category the document belongs to (required)
+- `suggested_title`: A clear, concise title that accurately represents the document content (required)
+- `classification_confidence`: A number between 0.0 and 1.0 indicating confidence in the classification (required)
+- `classification_reasoning`: Detailed explanation of why this document type was selected, including key characteristics that support this classification (required)
+- `document_summary`: A comprehensive 5-7 paragraph summary of the document that captures its main points, methodology, conclusions, and significance (required)
+- `target_audience`: Specific types of healthcare providers who would benefit most from this content (e.g., neurologists, psychiatrists, primary care physicians) (required)
+- `key_topics`: List of the main topics covered in the document, provided as an array of strings (required)
+- `unique_insights`: Key insights from the document, provided as an array of strings (required)
+
+#### Research-Specific Fields
+- `transformative_potential`: How this research might shift understanding or open new therapeutic pathways in healthcare (required for research documents)
+
+#### Clinical Fields
+- `clinical_implications`: Specific implications for clinical practice, provided as an array of strings (required for clinical documents)
+- `limitations`: Important limitations or contextual factors practitioners should consider when applying this information (required for clinical documents)
 
 ## Inputs
 
@@ -116,8 +132,7 @@ Provide your analysis as structured JSON following the required templates provid
 The following templates will be provided in your query. You must format your response to match these templates exactly.
 
 1. Core Document Classification Template - Required fields for all document classifications
-2. Concepts Extraction Template - Required information about key concepts in the document
-3. Category-specific Templates - Additional fields required for specific document categories
+2. Category-specific Templates - Additional fields required for specific document categories
 
 ## Example Classification Process
 
@@ -127,8 +142,97 @@ The following templates will be provided in your query. You must format your res
 4. Select the specific document type that best matches (e.g., "Journal Article")
 5. Return the associated document_type_id of the best matching document type
 6. Generate a clear, descriptive title for the document
-7. Extract key concepts from the document with importance weights
-8. Format your response according to ALL provided output templates
-9. Ensure all required fields from each template are included in your response
+7. Format your response according to ALL provided output templates
+8. Ensure all required fields from each template are included in your response
 
 If the document does not clearly fit any category with confidence above 0.6, classify it as "Unclassified" and select the most appropriate specific type from the "Unclassified" category.
+
+## Example Output
+
+```json
+{
+  "document_type_id": "12a45678-90bc-def1-2345-67890abcdef1",
+  "name": "Scientific Research Paper",
+  "category": "Research",
+  "suggested_title": "Oxytocin Pathways and Social Bonding: Neurobiological Mechanisms in Mammals",
+  "classification_confidence": 0.95,
+  "classification_reasoning": "This document displays the standard structure of a scientific research paper with abstract, methods, results, and discussion sections. It contains technical neuroscience terminology, presents original research findings with statistical analyses, and includes extensive references to prior research in the field. The formal academic tone, detailed methodology, and presence of data analyses are characteristic of scientific research papers.",
+  "document_summary": "This research paper investigates the neurobiological mechanisms of oxytocin in social bonding across mammalian species. The authors present findings from a longitudinal study examining oxytocin receptor distribution in the brain and its correlation with social behaviors. The methodology combines neuroimaging techniques with behavioral assessments to track oxytocin pathway development. Results indicate that oxytocin receptor density in specific brain regions directly correlates with prosocial behaviors, with notable differences between species. The researchers identify key developmental windows when oxytocin system interventions might be most effective. They also discovered a previously unknown interaction between oxytocin and dopamine systems that appears critical for pair bond formation. The discussion contextualizes these findings within evolutionary biology and suggests potential clinical applications for social behavior disorders.",
+  "target_audience": "Neuroscientists, behavioral biologists, psychiatrists, and developmental psychologists with interests in neurohormonal systems and social behavior",
+  "key_topics": [
+    "Oxytocin neural pathways",
+    "Social bonding mechanisms",
+    "Comparative mammalian neurobiology",
+    "Developmental neurobiology",
+    "Hormone-behavior relationships"
+  ],
+  "unique_insights": [
+    "Identification of critical developmental windows for oxytocin system formation",
+    "Discovery of novel oxytocin-dopamine interaction pathways",
+    "Species-specific differences in oxytocin receptor distribution patterns",
+    "Correlation between receptor density and specific social behavior outcomes"
+  ],
+  "transformative_potential": "This research establishes a new framework for understanding social bonding at the neurobiological level. By identifying specific developmental windows and neural mechanisms, it creates opportunities for targeted interventions in social developmental disorders and suggests new approaches to promoting healthy attachment and social functioning.",
+  "clinical_implications": [
+    "Potential for developing biomarkers to identify risk for social developmental disorders",
+    "Timing considerations for therapeutic interventions targeting the oxytocin system",
+    "Possible novel pharmaceutical targets at oxytocin-dopamine interaction points",
+    "Improved understanding of attachment disorders and their neurobiological underpinnings"
+  ],
+  "limitations": "The research primarily involved animal models with limited human data, so translational applications require further investigation. The sample sizes for some species were relatively small, and the longitudinal tracking was limited to 18 months, which may not capture all developmental effects. Environmental factors that influence oxytocin system development were not fully controlled across all study groups.",
+```
+
+## Expected Output Format
+
+Please provide your response as a JSON object with the following structure:
+
+```json
+{
+  "name": "Example The specific document type name",
+  "category": "Example General document category",
+  "key_topics": [
+    "Item 1",
+    "Item 2",
+    "Item 3"
+  ],
+  "suggested_title": "Example A clear, concise title that accurately represents the document content",
+  "target_audience": "Example Specific types of healthcare providers who would benefit most from this content",
+  "unique_insights": [
+    "Item 1",
+    "Item 2",
+    "Item 3"
+  ],
+  "document_summary": "Example A comprehensive 5-7 paragraph summary of the document",
+  "document_type_id": "Example UUID of the selected document type",
+  "classification_reasoning": "Example Detailed explanation of why this document type was selected",
+  "transformative_potential": "Example How this research might shift understanding or open new therapeutic pathways",
+  "classification_confidence": 0.85,
+  "limitations": "Example Important limitations or contextual factors practitioners should consider",
+  "clinical_implications": [
+    "Item 1",
+    "Item 2",
+    "Item 3"
+  ]
+}
+```
+
+## Field Descriptions
+
+### core_document_classification
+
+- **name** (string, required): The specific document type name
+- **category** (string, required): General document category
+- **key_topics** (array, required): List of the main topics covered in the document
+- **suggested_title** (string, required): A clear, concise title that accurately represents the document content
+- **target_audience** (string, required): Specific types of healthcare providers who would benefit most from this content
+- **unique_insights** (array, required): Key insights from the document
+- **document_summary** (string, required): A comprehensive 5-7 paragraph summary of the document
+- **document_type_id** (string, required): UUID of the selected document type
+- **classification_reasoning** (string, required): Detailed explanation of why this document type was selected
+- **transformative_potential** (string, required): How this research might shift understanding or open new therapeutic pathways
+- **classification_confidence** (number, required): A number between 0.0 and 1.0 indicating confidence in the classification
+
+### clinical_implications
+
+- **limitations** (string, required): Important limitations or contextual factors practitioners should consider
+- **clinical_implications** (array, required): Specific implications for clinical practice

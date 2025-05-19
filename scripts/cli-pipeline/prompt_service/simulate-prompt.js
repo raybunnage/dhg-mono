@@ -1,4 +1,4 @@
-const { SupabaseClientService } = require('./packages/shared/services/supabase-client');
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 const fs = require('fs');
 
 async function simulatePromptUsage() {
@@ -84,7 +84,7 @@ ${JSON.stringify(templates, null, 2)}
 `;
     
     // Save to file for inspection
-    const outputPath = './assembled-classification-prompt.md';
+    const outputPath = '../../prompts/assembled-classification-prompt.md';
     fs.writeFileSync(outputPath, simulatedPrompt, 'utf8');
     console.log(`\nComplete assembled prompt saved to ${outputPath}`);
   } catch (error) {

@@ -329,8 +329,20 @@ program
         
         prompt = data;
       } else {
-        // It's a name
-        prompt = await promptService.getPromptByName(promptNameOrId);
+        // It's a name, get all prompts and find by name
+        const supabase = SupabaseClientService.getInstance().getClient();
+        const { data, error } = await supabase
+          .from('prompts')
+          .select('*')
+          .eq('name', promptNameOrId)
+          .single();
+          
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+          console.error(`Error fetching prompt by name: ${error.message}`);
+          process.exit(1);
+        }
+        
+        prompt = data;
       }
       
       if (!prompt) {

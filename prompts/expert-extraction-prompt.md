@@ -46,4 +46,56 @@ Please analyze the provided announcement/document and extract a comprehensive pr
 - Note any major collaborations or interdisciplinary work
 - Highlight any public impact or practical applications of their work
 
+## Expected Output Format
+
+Please provide your response as a JSON object with the following structure:
+
+```json
+{
+  "research_summary": "Example Overview of research",
+  "basic_information": {
+    "name": "Example Full name",
+    "title": "Example Title",
+    "credentials": [
+      "Item 1",
+      "Item 2",
+      "Item 3"
+    ],
+    "institution": "Example Institution",
+    "specialty_areas": [
+      "Item 1",
+      "Item 2",
+      "Item 3"
+    ],
+    "current_position": "Example Role"
+  },
+  "expertise_keywords": [
+    "Item 1",
+    "Item 2",
+    "Item 3"
+  ],
+  "professional_links": {
+    "website_urls": [
+      "Item 1",
+      "Item 2",
+      "Item 3"
+    ]
+  },
+  "notable_achievements": [
+    "Item 1",
+    "Item 2",
+    "Item 3"
+  ]
+}
+```
+
+## Field Descriptions
+
+### expert_profile
+
+- **research_summary** (string, required): Overview of research
+- **basic_information** (object, required): Core info
+- **expertise_keywords** (array, required): Keywords
+- **professional_links** (object): Web links
+- **notable_achievements** (array, required): Achievements
 

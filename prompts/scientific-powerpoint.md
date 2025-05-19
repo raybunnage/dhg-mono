@@ -38,7 +38,7 @@ Respond with a JSON object containing the following fields:
     "Topic 4",
     "Topic 5"
   ],
-  "clinical_implicationsprompts/scientific-powerpoint.md": [
+  "clinical_implications": [
     "Specific implication for clinical practice 1",
     "Specific implication for clinical practice 2",
     "Specific implication for clinical practice 3"
@@ -71,3 +71,68 @@ For example, if provided with a research paper on immune system involvement in p
 4. Format the response according to the JSON structure
 
 Remember: Maintain scientific accuracy while using accessible language. Avoid oversimplifying to the point of misrepresentation. Your audience is knowledgeable about health and healing but may not be specialists in this particular research area.
+
+## Expected Output Format
+
+Please provide your response as a JSON object with the following structure:
+
+```json
+{
+  "name": "Example The specific document type name",
+  "category": "Example General document category",
+  "key_topics": [
+    "Item 1",
+    "Item 2",
+    "Item 3"
+  ],
+  "suggested_title": "Example A clear, concise title that accurately represents the document content",
+  "target_audience": "Example Specific types of healthcare providers who would benefit most from this content",
+  "unique_insights": [
+    "Item 1",
+    "Item 2",
+    "Item 3"
+  ],
+  "document_summary": "Example A comprehensive 5-7 paragraph summary of the document",
+  "document_type_id": "Example UUID of the selected document type",
+  "classification_reasoning": "Example Detailed explanation of why this document type was selected",
+  "transformative_potential": "Example How this research might shift understanding or open new therapeutic pathways",
+  "classification_confidence": 0.85,
+  "powerpoint_suggestions": [
+    "Item 1",
+    "Item 2",
+    "Item 3"
+  ],
+  "limitations": "Example Important limitations or contextual factors practitioners should consider",
+  "clinical_implications": [
+    "Item 1",
+    "Item 2",
+    "Item 3"
+  ]
+}
+```
+
+## Field Descriptions
+
+### core_document_classification
+
+- **name** (string, required): The specific document type name
+- **category** (string, required): General document category
+- **key_topics** (array, required): List of the main topics covered in the document
+- **suggested_title** (string, required): A clear, concise title that accurately represents the document content
+- **target_audience** (string, required): Specific types of healthcare providers who would benefit most from this content
+- **unique_insights** (array, required): Key insights from the document
+- **document_summary** (string, required): A comprehensive 5-7 paragraph summary of the document
+- **document_type_id** (string, required): UUID of the selected document type
+- **classification_reasoning** (string, required): Detailed explanation of why this document type was selected
+- **transformative_potential** (string, required): How this research might shift understanding or open new therapeutic pathways
+- **classification_confidence** (number, required): A number between 0.0 and 1.0 indicating confidence in the classification
+
+### powerpoint_specific
+
+- **powerpoint_suggestions** (array, required): Suggested slide organization for effective presentation
+- **transformative_potential** (string, required): How this research might shift understanding or open new therapeutic pathways
+
+### clinical_implications
+
+- **limitations** (string, required): Important limitations or contextual factors practitioners should consider
+- **clinical_implications** (array, required): Specific implications for clinical practice
