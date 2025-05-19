@@ -2,22 +2,28 @@
   "name": "dhg-audio",
   "private": true,
   "version": "0.0.1",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist node_modules",
-    "lint": "eslint . --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0",
+    "start": "node server.js",
+    "server": "node server.js",
+    "start:proxy": "npm run build && node server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.38.4",
     "clsx": "2.0.0",
+    "express": "^4.21.2",
+    "google-auth-library": "^9.15.1",
+    "googleapis": "^128.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.18.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/node": "20.9.0",
     "@types/react": "18.2.37",
     "@types/react-dom": "18.2.15",

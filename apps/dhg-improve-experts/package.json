@@ -100,7 +100,7 @@
     "@emotion/styled": "^11.11.0",
     "@iconify/icons-clarity": "^1.2.8",
     "@iconify/icons-fluent": "^1.2.26",
-    "@iconify/icons-heroicons": "^1.2.10",
+    "@iconify/icons-heroicons": "1.2.9",
     "@iconify/icons-mdi": "^1.2.47",
     "@iconify/react": "^4.1.1",
     "@mui/icons-material": "^5.14.0",

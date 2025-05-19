@@ -48,9 +48,9 @@ export const HomePage = () => {
         <p className="text-gray-600">
           Listen to presentations on the go. Select an audio file to begin.
         </p>
-        <p className="text-sm text-amber-600 mt-2 p-2 bg-amber-50 rounded border border-amber-200">
-          <strong>Note:</strong> Some browsers block audio from Google Drive due to tracking prevention. 
-          For best results, use Chrome or disable tracking prevention in your browser.
+        <p className="text-sm text-blue-600 mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+          <strong>New Feature:</strong> Audio files are now streamed through our server proxy to avoid 
+          browser tracking prevention issues. Playback should work in all browsers!
         </p>
       </div>
 

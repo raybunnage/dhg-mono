@@ -10,6 +10,40 @@
   Would you like me to make any other adjustments to ensure proper organization?
 
 
+I've implemented a complete solution for playing audio files without browser tracking prevention issues:
+
+  1. Created a proxy server (server.js) that:
+    - Acts as a middleman between your app and Google Drive
+    - Handles authentication with Google Drive securely
+    - Streams audio files directly to the browser
+    - Supports range requests for proper audio seeking
+  2. Updated the audio-adapter.ts to:
+    - Use the new proxy URL as the primary audio source
+    - Keep the direct Google Drive URL as a fallback
+  3. Enhanced the UI to:
+    - Provide a clear download button for each file
+    - Replace the tracking prevention warnings with positive proxy server messaging
+    - Show both direct and proxy options on the detail page
+  4. Updated the package.json with:
+    - Required dependencies for the server (express, googleapis, etc.)
+    - New scripts to run the app with the proxy server
+    - Type definitions for better development experience
+  5. Added a README with clear instructions on how to run the app with the proxy server
+
+  How to use this solution:
+
+  1. Install the new dependencies:
+  cd apps/dhg-audio
+  npm install
+  2. Build the app and start the proxy server:
+  npm run start:proxy
+  3. Access the app at http://localhost:3001
+
+  This approach solves the tracking prevention issue by serving the audio files from your own domain, bypassing the browser's tracking prevention mechanisms
+  entirely. The audio should now play properly in all browsers, including Safari with tracking prevention enabled.
+
+
+
 > I think I gave you the wrong instructions: in classify-unprocessed-with-content only classify documents that don't have document_type_id     │
 │   for sources_google and that are marked with enum needs_classification and that have null record in processed_content field -    
 

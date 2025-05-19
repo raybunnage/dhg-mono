@@ -14,5 +14,14 @@ export default defineConfig({
       '@pages': path.resolve(__dirname, './src/pages'),
       '@shared': path.resolve(__dirname, '../../packages/shared')
     }
+  },
+  // Add server settings to avoid CORS issues with the proxy
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      }
+    }
   }
 })

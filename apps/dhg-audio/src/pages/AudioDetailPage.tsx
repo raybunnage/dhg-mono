@@ -76,17 +76,29 @@ export const AudioDetailPage = () => {
             By {audioFile.expert.fullName || audioFile.expert.name}
           </p>
         )}
-        <div className="mt-3 flex items-center">
+        <div className="mt-3 flex items-center gap-2">
+          {audioFile.directUrl && (
+            <a 
+              href={audioFile.directUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-md hover:bg-blue-100 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path fillRule="evenodd" d="M15.75 2.25H21a.75.75 0 0 1 .75.75v5.25a.75.75 0 0 1-1.5 0V4.81L8.03 17.03a.75.75 0 0 1-1.06-1.06L19.19 3.75h-3.44a.75.75 0 0 1 0-1.5Zm-10.5 4.5a1.5 1.5 0 0 0-1.5 1.5v10.5a1.5 1.5 0 0 0 1.5 1.5h10.5a1.5 1.5 0 0 0 1.5-1.5V10.5a.75.75 0 0 1 1.5 0v8.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V8.25a3 3 0 0 1 3-3h8.25a.75.75 0 0 1 0 1.5H5.25Z" clipRule="evenodd" />
+              </svg>
+              Direct Google Drive Link
+            </a>
+          )}
           <a 
-            href={audioFile.url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-md hover:bg-blue-100 transition-colors"
+            href={audioFile.url}
+            download={audioFile.name}
+            className="inline-flex items-center gap-1 text-sm font-medium text-green-600 bg-green-50 px-3 py-1 rounded-md hover:bg-green-100 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-              <path fillRule="evenodd" d="M15.75 2.25H21a.75.75 0 0 1 .75.75v5.25a.75.75 0 0 1-1.5 0V4.81L8.03 17.03a.75.75 0 0 1-1.06-1.06L19.19 3.75h-3.44a.75.75 0 0 1 0-1.5Zm-10.5 4.5a1.5 1.5 0 0 0-1.5 1.5v10.5a1.5 1.5 0 0 0 1.5 1.5h10.5a1.5 1.5 0 0 0 1.5-1.5V10.5a.75.75 0 0 1 1.5 0v8.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V8.25a3 3 0 0 1 3-3h8.25a.75.75 0 0 1 0 1.5H5.25Z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3a.75.75 0 0 1 .75-.75Zm-9 13.5a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
             </svg>
-            Open in new tab (try this if audio doesn't play)
+            Download Audio
           </a>
         </div>
       </div>
@@ -98,16 +110,19 @@ export const AudioDetailPage = () => {
         />
       </div>
       
-      <div className="mb-8 bg-amber-50 border border-amber-200 rounded-md p-4 text-amber-800">
-        <h2 className="text-lg font-bold mb-2">Having trouble playing this audio?</h2>
+      <div className="mb-8 bg-blue-50 border border-blue-200 rounded-md p-4 text-blue-800">
+        <h2 className="text-lg font-bold mb-2">About Audio Playback</h2>
         <p className="mb-2">
-          Some browsers block audio from Google Drive due to tracking prevention settings. Try these options:
+          This audio is being streamed through our server proxy to avoid browser tracking prevention issues.
         </p>
         <ul className="list-disc ml-5 space-y-1">
-          <li>Click the "Open in new tab" button above to play directly in a new tab</li>
-          <li>Try using Chrome browser which typically allows Google Drive content</li>
-          <li>In Safari settings, go to Privacy → Tracking and turn off "Prevent Cross-Site Tracking"</li>
+          <li>Audio should play in all browsers without tracking prevention issues</li>
+          <li>If you have problems, try the "Download Audio" button to save the file</li>
+          <li>Alternatively, use the "Direct Google Drive Link" if you prefer</li>
         </ul>
+        <p className="mt-2 text-sm">
+          <strong>Note:</strong> The proxy server must be running on port 3001 for streaming to work properly.
+        </p>
       </div>
 
       <Transcript 

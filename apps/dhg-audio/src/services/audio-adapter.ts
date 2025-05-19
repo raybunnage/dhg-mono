@@ -4,6 +4,7 @@ export interface AudioFile {
   id: string;
   name: string;
   url: string;
+  directUrl?: string; // Direct Google Drive URL as fallback
   driveId: string;
   expert: {
     id: string;
@@ -74,21 +75,24 @@ export class AudioAdapter {
       }
     }
 
-    // Extract stream URL from web_view_link or drive_id
+    // Extract Drive ID from the file
     const driveId = file.drive_id || (file.web_view_link ? this.extractDriveId(file.web_view_link) : null);
     
     // Determine if transcript might be available based on file data
     const hasTranscript = true;
-
-    // Create alternative URLs - try both direct Google Drive and proxy
+    
+    // Create URLs for both direct Google Drive and our proxy server
     const googleDriveUrl = driveId ? `https://docs.google.com/uc?export=open&id=${driveId}` : '';
-    // Note: In production, you'd implement a proxy server route that fetches the file and serves it
-    // For now, we'll use the direct URL but note that this may be blocked by tracking prevention
-
+    
+    // Use our proxy server URL which avoids tracking prevention issues
+    // This will run through our server endpoint which fetches from Google Drive
+    const proxyUrl = driveId ? `/api/audio/${driveId}` : '';
+    
     return {
       id: file.id,
       name: file.name,
-      url: googleDriveUrl,
+      url: proxyUrl || googleDriveUrl, // Prefer our proxy, fallback to direct
+      directUrl: googleDriveUrl, // Keep the direct URL as a fallback
       driveId: driveId || '',
       expert,
       hasTranscript
