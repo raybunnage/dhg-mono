@@ -230,6 +230,13 @@ export type Database = {
             referencedRelation: "expert_documents"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "document_concepts_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["expert_document_id"]
+          },
         ]
       }
       document_type_aliases: {
@@ -960,6 +967,13 @@ export type Database = {
             foreignKeyName: "expert_documents_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "expert_documents_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "sources_google"
             referencedColumns: ["id"]
           },
@@ -1229,6 +1243,38 @@ export type Database = {
         }
         Relationships: []
       }
+      expert_preferences: {
+        Row: {
+          created_at: string
+          expert_id: string
+          id: string
+          preference_level: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expert_id: string
+          id?: string
+          preference_level?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expert_id?: string
+          id?: string
+          preference_level?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expert_preferences_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "experts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experts: {
         Row: {
           created_at: string
@@ -1448,6 +1494,38 @@ export type Database = {
           },
         ]
       }
+      learning_topics: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          parent_topic_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          parent_topic_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          parent_topic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_topics_parent_topic_id_fkey"
+            columns: ["parent_topic_id"]
+            isOneToOne: false
+            referencedRelation: "learning_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lionya_emails: {
         Row: {
           created_at: string
@@ -1468,6 +1546,284 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      media_bookmarks: {
+        Row: {
+          bookmark_type: string
+          created_at: string
+          description: string | null
+          end_position: number | null
+          id: string
+          metadata: Json | null
+          session_id: string
+          source_id: string | null
+          start_position: number
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          bookmark_type: string
+          created_at?: string
+          description?: string | null
+          end_position?: number | null
+          id?: string
+          metadata?: Json | null
+          session_id: string
+          source_id?: string | null
+          start_position: number
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bookmark_type?: string
+          created_at?: string
+          description?: string | null
+          end_position?: number | null
+          id?: string
+          metadata?: Json | null
+          session_id?: string
+          source_id?: string | null
+          start_position?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_bookmarks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "media_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_bookmarks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session_progress_view"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "media_bookmarks_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "media_bookmarks_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_playback_events: {
+        Row: {
+          data: Json | null
+          event_type: string
+          id: string
+          position: number
+          session_id: string
+          timestamp: string
+        }
+        Insert: {
+          data?: Json | null
+          event_type: string
+          id?: string
+          position: number
+          session_id: string
+          timestamp?: string
+        }
+        Update: {
+          data?: Json | null
+          event_type?: string
+          id?: string
+          position?: number
+          session_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_playback_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "media_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_playback_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session_progress_view"
+            referencedColumns: ["session_id"]
+          },
+        ]
+      }
+      media_sessions: {
+        Row: {
+          app_id: string
+          completed_at: string | null
+          completion_percentage: number | null
+          created_at: string
+          expert_document_id: string | null
+          id: string
+          last_position: number | null
+          media_type: string
+          play_count: number | null
+          playback_rate: number | null
+          presentation_id: string | null
+          source_id: string | null
+          started_at: string
+          total_play_duration: number | null
+          updated_at: string
+        }
+        Insert: {
+          app_id: string
+          completed_at?: string | null
+          completion_percentage?: number | null
+          created_at?: string
+          expert_document_id?: string | null
+          id?: string
+          last_position?: number | null
+          media_type: string
+          play_count?: number | null
+          playback_rate?: number | null
+          presentation_id?: string | null
+          source_id?: string | null
+          started_at?: string
+          total_play_duration?: number | null
+          updated_at?: string
+        }
+        Update: {
+          app_id?: string
+          completed_at?: string | null
+          completion_percentage?: number | null
+          created_at?: string
+          expert_document_id?: string | null
+          id?: string
+          last_position?: number | null
+          media_type?: string
+          play_count?: number | null
+          playback_rate?: number | null
+          presentation_id?: string | null
+          source_id?: string | null
+          started_at?: string
+          total_play_duration?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_sessions_expert_document_id_fkey"
+            columns: ["expert_document_id"]
+            isOneToOne: false
+            referencedRelation: "expert_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_sessions_expert_document_id_fkey"
+            columns: ["expert_document_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["expert_document_id"]
+          },
+          {
+            foreignKeyName: "media_sessions_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["presentation_id"]
+          },
+          {
+            foreignKeyName: "media_sessions_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "presentations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_sessions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "media_sessions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_topic_segments: {
+        Row: {
+          created_at: string
+          end_position: number
+          expert_id: string | null
+          id: string
+          relevance_score: number | null
+          source_id: string
+          start_position: number
+          topic_id: string
+          transcript_excerpt: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_position: number
+          expert_id?: string | null
+          id?: string
+          relevance_score?: number | null
+          source_id: string
+          start_position: number
+          topic_id: string
+          transcript_excerpt?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_position?: number
+          expert_id?: string | null
+          id?: string
+          relevance_score?: number | null
+          source_id?: string
+          start_position?: number
+          topic_id?: string
+          transcript_excerpt?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_topic_segments_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "experts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_topic_segments_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "media_topic_segments_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_topic_segments_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "learning_topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mime_types: {
         Row: {
@@ -1560,11 +1916,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "presentation_assets_asset_expert_document_id_fkey"
+            columns: ["asset_expert_document_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["expert_document_id"]
+          },
+          {
+            foreignKeyName: "presentation_assets_asset_source_id_fkey"
+            columns: ["asset_source_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+          {
             foreignKeyName: "presentation_assets_asset_source_id_fkey"
             columns: ["asset_source_id"]
             isOneToOne: false
             referencedRelation: "sources_google"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentation_assets_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["presentation_id"]
           },
           {
             foreignKeyName: "presentation_assets_presentation_id_fkey"
@@ -1672,11 +2049,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "presentations_expert_document_id_fkey"
+            columns: ["expert_document_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["expert_document_id"]
+          },
+          {
+            foreignKeyName: "presentations_high_level_folder_source_id_fkey"
+            columns: ["high_level_folder_source_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+          {
             foreignKeyName: "presentations_high_level_folder_source_id_fkey"
             columns: ["high_level_folder_source_id"]
             isOneToOne: false
             referencedRelation: "sources_google"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentations_video_source_id_fkey"
+            columns: ["video_source_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
           },
           {
             foreignKeyName: "presentations_video_source_id_fkey"
@@ -1922,6 +2320,13 @@ export type Database = {
             foreignKeyName: "prompt_relationships_prompt_id_fkey"
             columns: ["prompt_id"]
             isOneToOne: false
+            referencedRelation: "prompt_template_associations_view"
+            referencedColumns: ["prompt_id"]
+          },
+          {
+            foreignKeyName: "prompt_relationships_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
             referencedRelation: "prompts"
             referencedColumns: ["id"]
           },
@@ -1957,6 +2362,13 @@ export type Database = {
             foreignKeyName: "prompt_template_associations_prompt_id_fkey"
             columns: ["prompt_id"]
             isOneToOne: false
+            referencedRelation: "prompt_template_associations_view"
+            referencedColumns: ["prompt_id"]
+          },
+          {
+            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
             referencedRelation: "prompts"
             referencedColumns: ["id"]
           },
@@ -1966,6 +2378,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "prompt_output_templates"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_template_associations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_template_associations_view"
+            referencedColumns: ["template_id"]
           },
         ]
       }
@@ -2714,6 +3133,13 @@ export type Database = {
             foreignKeyName: "sources_google_experts_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "sources_google_experts_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "sources_google"
             referencedColumns: ["id"]
           },
@@ -3137,6 +3563,38 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subject_interests: {
+        Row: {
+          created_at: string
+          id: string
+          interest_level: number | null
+          subject_classification_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interest_level?: number | null
+          subject_classification_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interest_level?: number | null
+          subject_classification_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subject_interests_subject_classification_id_fkey"
+            columns: ["subject_classification_id"]
+            isOneToOne: false
+            referencedRelation: "subject_classifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       view_backups: {
         Row: {
           definition: string | null
@@ -3165,6 +3623,83 @@ export type Database = {
           subject_classification: string | null
         }
         Relationships: []
+      }
+      media_content_view: {
+        Row: {
+          entity_id: string | null
+          expert_document_id: string | null
+          expert_full_name: string | null
+          expert_id: string | null
+          expert_name: string | null
+          media_name: string | null
+          media_type: string | null
+          mime_type: string | null
+          path: string | null
+          presentation_id: string | null
+          presentation_title: string | null
+          source_id: string | null
+          subject: string | null
+          transcript_title: string | null
+          web_view_link: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sources_google_experts_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "experts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_template_associations_view: {
+        Row: {
+          association_created_at: string | null
+          association_id: string | null
+          association_updated_at: string | null
+          priority: number | null
+          prompt_id: string | null
+          prompt_name: string | null
+          template_description: string | null
+          template_id: string | null
+          template_name: string | null
+        }
+        Relationships: []
+      }
+      session_progress_view: {
+        Row: {
+          app_id: string | null
+          completed_at: string | null
+          completion_percentage: number | null
+          expert_name: string | null
+          last_position: number | null
+          media_name: string | null
+          media_type: string | null
+          play_count: number | null
+          presentation_title: string | null
+          session_id: string | null
+          source_id: string | null
+          started_at: string | null
+          status: string | null
+          total_play_duration: number | null
+          web_view_link: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_sessions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "media_sessions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources_google"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

@@ -10,6 +10,28 @@
   Would you like me to make any other adjustments to ensure proper organization?
 
 
+⏺ Perfect! I've successfully created the new assign-multiple-experts command that allows you to assign multiple experts to a sources_google folder. Here's
+  what the command does:
+
+  1. It focuses on folders (particularly presentation folders) rather than files
+  2. It displays a list of experts with their 3-character mnemonics for easy selection
+  3. It shows any experts already assigned to the current folder
+  4. It allows you to add multiple experts to the same folder by entering their mnemonics one at a time
+  5. When you're done adding experts to a folder, you can type "NEXT" to move to the next folder
+  6. You can also type "SKIP" to skip the current folder, "DONE" to finish, or "LIST" to see the experts list again
+
+  To run the command, you would use:
+  ./scripts/cli-pipeline/experts/experts-cli.sh assign-multiple-experts
+
+  Or to process a specific folder:
+  ./scripts/cli-pipeline/experts/experts-cli.sh assign-multiple-experts --folder-id "<folder-id>"
+
+  The command was designed based on the existing assign-expert and assign-folder-experts commands but with the specific enhancement that it allows adding
+  multiple experts to the same folder before moving on to the next one.
+
+
+
+
 I've implemented a complete solution for playing audio files without browser tracking prevention issues:
 
   1. Created a proxy server (server.js) that:

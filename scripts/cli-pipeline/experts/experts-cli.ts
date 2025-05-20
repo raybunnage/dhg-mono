@@ -10,6 +10,7 @@ import * as dotenv from 'dotenv';
 import { linkTopLevelFolders } from './commands/link-top-level-folders';
 import { assignExpert } from './commands/assign-expert';
 import { assignFolderExperts } from './commands/assign-folder-experts';
+import { assignMultipleFolderExperts } from './commands/assign-multiple-folder-experts';
 import { listExperts } from './commands/list-experts';
 import { addExpert } from './commands/add-expert';
 import { propagateExpertIds } from './commands/propagate-expert-ids';
@@ -26,11 +27,12 @@ program
   .name('experts-cli')
   .description('CLI utilities for managing experts and their associations\n\n' +
     'Common commands:\n' +
-    '  list-experts              List all experts with their unique 3-character mnemonics\n' +
-    '  assign-expert -i          Interactively assign experts to folders using mnemonics\n' +
-    '  assign-folder-experts     Interactively assign experts to high-level folders with path_depth = 0\n' +
-    '  link-top-level-folders    List folders with videos that need expert assignment\n' +
-    '  propagate-expert-ids      Recursively assign expert_id to all files under expert folders')
+    '  list-experts                List all experts with their unique 3-character mnemonics\n' +
+    '  assign-expert -i            Interactively assign experts to folders using mnemonics\n' +
+    '  assign-folder-experts       Interactively assign experts to high-level folders with path_depth = 0\n' +
+    '  assign-multiple-experts     Interactively assign multiple experts to individual folders\n' +
+    '  link-top-level-folders      List folders with videos that need expert assignment\n' +
+    '  propagate-expert-ids        Recursively assign expert_id to all files under expert folders')
   .version('1.0.0');
 
 // Command to list top-level folders for expert assignment
@@ -149,6 +151,37 @@ program
     await assignFolderExperts({
       dryRun: options.dryRun,
       isPrimary: options.primary,
+      verbose: options.verbose,
+      limit: parseInt(options.limit, 10)
+    });
+  });
+
+// Command to assign multiple experts to a sources_google folder
+program
+  .command('assign-multiple-experts')
+  .description('Interactively assign multiple experts to a sources_google folder\n' +
+    'Examples:\n' +
+    '  # Assign multiple experts to folders interactively\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh assign-multiple-experts\n\n' +
+    '  # Process a specific folder\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh assign-multiple-experts --folder-id "<folder-id>"\n\n' +
+    '  # Run in dry-run mode\n' +
+    '  ./scripts/cli-pipeline/experts/experts-cli.sh assign-multiple-experts --dry-run\n\n' +
+    'Workflow:\n' +
+    '  1. The command shows a folder to process (often a presentation folder)\n' +
+    '  2. It displays current experts already assigned to the folder\n' +
+    '  3. It displays all available experts with their 3-char mnemonics\n' +
+    '  4. Enter mnemonics one by one to assign multiple experts to the same folder\n' +
+    '  5. Type "NEXT" to move to the next folder, "SKIP" to skip this folder, "DONE" to finish\n' +
+    '  6. Type "LIST" to see the experts list again')
+  .option('--folder-id <id>', 'Process only a specific folder')
+  .option('-d, --dry-run', 'Show what would be done without making changes', false)
+  .option('-v, --verbose', 'Show more detailed output', false)
+  .option('-l, --limit <number>', 'Limit number of folders shown', '50')
+  .action(async (options) => {
+    await assignMultipleFolderExperts({
+      folderId: options.folderId,
+      dryRun: options.dryRun,
       verbose: options.verbose,
       limit: parseInt(options.limit, 10)
     });

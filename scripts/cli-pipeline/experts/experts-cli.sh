@@ -6,6 +6,7 @@
 #   link-top-level-folders  List folders with videos for expert assignment
 #   assign-expert           Assign an expert to a folder (interactive mode with -i)
 #   assign-folder-experts   Interactively assign experts to high-level folders (path_depth = 0)
+#   assign-multiple-experts Interactively assign multiple experts to individual folders
 #   list-experts            List all experts with their mnemonics
 #   add-expert              Add a new expert to the database
 #   propagate-expert-ids    Recursively assign expert_id to all files under expert folders
@@ -146,6 +147,7 @@ else
     echo "FOLDER ASSIGNMENTS:"
     echo "  * assign-folder-experts   Interactively assign experts to high-level folders (7 uses)"
     echo "    assign-expert           Assign an expert to a folder (interactive mode with -i)"
+    echo "    assign-multiple-experts Interactively assign multiple experts to individual folders"
     echo "    link-top-level-folders  List folders with videos for expert assignment"
     echo "  * propagate-expert-ids    Recursively assign expert_id to all files under expert folders (5 uses)"
     echo "    transfer-expert-metadata Transfer processed_content to experts.metadata field"
@@ -172,6 +174,9 @@ else
     echo ""
     echo "  # Interactive mode for bulk assignment using mnemonics"
     echo "  ./experts-cli.sh assign-expert -i"
+    echo ""
+    echo "  # Assign multiple experts to individual folders interactively"
+    echo "  ./experts-cli.sh assign-multiple-experts"
     echo ""
     echo "  # Propagate expert IDs to all child files and folders"
     echo "  ./experts-cli.sh propagate-expert-ids"
