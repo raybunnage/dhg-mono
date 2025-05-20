@@ -43,6 +43,16 @@ interface MinimalFolder {
 }
 
 /**
+ * Enhanced folder information including associated document content
+ */
+interface EnhancedFolderInfo {
+  folder: MinimalFolder;
+  videoTitle?: string;
+  videoContent?: string;
+  currentExperts: MinimalExpert[];
+}
+
+/**
  * Map of custom mnemonics from expert-list.md
  * Key is the lowercase name, value is the custom mnemonic
  */
@@ -206,18 +216,20 @@ async function getAllExperts(): Promise<MinimalExpert[]> {
   }
   
   return experts.map((expert) => {
-    const name = expert.expert_name || expert.full_name || 'Unknown';
+    // Prioritize full_name over expert_name for display
+    const name = expert.full_name || expert.expert_name || 'Unknown';
+    const shortName = expert.expert_name || 'Unknown'; // Keep track of short name for mnemonics
     
     // Use the database mnemonic if available, otherwise fall back to the mapping or generate one
     let mnemonic = expert.mnemonic;
     if (!mnemonic) {
-      const nameLower = name.toLowerCase();
-      mnemonic = CUSTOM_MNEMONICS[nameLower] || createMnemonic(name, 0);
+      const nameLower = shortName.toLowerCase();
+      mnemonic = CUSTOM_MNEMONICS[nameLower] || createMnemonic(shortName, 0);
     }
     
     return { 
       id: expert.id, 
-      name, 
+      name, // Now using full_name as primary display name
       mnemonic
     };
   });
@@ -261,6 +273,64 @@ async function getFoldersForExpertAssignment(limit: number = 50): Promise<Minima
     document_type_id: folder.document_type_id,
     main_video_id: folder.main_video_id
   }));
+}
+
+/**
+ * Get video document information for a folder with main_video_id
+ */
+async function getVideoDocumentInfo(mainVideoId: string | null): Promise<{ title?: string; content?: string; fileName?: string }> {
+  if (!mainVideoId) {
+    return {};
+  }
+  
+  const supabaseClientService = SupabaseClientService.getInstance();
+  const supabase = supabaseClientService.getClient();
+  
+  try {
+    // First, get the sources_google record for the video
+    const { data: videoSource, error: videoError } = await supabase
+      .from('sources_google')
+      .select('id, name')
+      .eq('id', mainVideoId)
+      .single();
+    
+    if (videoError || !videoSource) {
+      console.log(`Could not find video with ID ${mainVideoId}: ${videoError?.message || 'Video not found'}`);
+      return {};
+    }
+    
+    // Then get the expert_document associated with this source
+    const { data: documents, error: docError } = await supabase
+      .from('expert_documents')
+      .select('id, title, raw_content')
+      .eq('source_id', mainVideoId);
+    
+    if (docError || !documents || documents.length === 0) {
+      console.log(`No expert document found for video ID ${mainVideoId}`);
+      return {};
+    }
+    
+    const document = documents[0];
+    
+    // Get first 3000 characters of content if available
+    let contentPreview = '';
+    if (document.raw_content) {
+      contentPreview = document.raw_content.substring(0, 3000);
+      // Add ellipsis if content was truncated
+      if (document.raw_content.length > 3000) {
+        contentPreview += '...';
+      }
+    }
+    
+    return {
+      title: document.title,
+      content: contentPreview,
+      fileName: videoSource.name // Include the file name from sources_google
+    };
+  } catch (error) {
+    console.log(`Error fetching video document info: ${error instanceof Error ? error.message : String(error)}`);
+    return {};
+  }
 }
 
 /**
@@ -514,28 +584,62 @@ async function runInteractiveFolderMode(folderId: string, options: AssignMultipl
     // Get all experts with mnemonics for selection
     const experts = await getAllExperts();
     
-    // Display the header with folder information
+    // Get current experts for this folder
+    const currentExperts = await getFolderExperts(folderId);
+    
+    // Get video document info if available
+    const videoInfo = await getVideoDocumentInfo(folderData.main_video_id);
+    
+    // Display the expert list with mnemonics first
     loggerUtil.info('\n================================================================================');
+    loggerUtil.info(`EXPERT MNEMONICS LIST`);
+    loggerUtil.info('================================================================================');
+    displayExpertList(experts);
+    
+    // Display video content if available
+    if (videoInfo.title || videoInfo.content || videoInfo.fileName) {
+      loggerUtil.info('\n================================================================================');
+      loggerUtil.info(`VIDEO CONTENT`);
+      loggerUtil.info('================================================================================');
+      
+      if (videoInfo.fileName) {
+        loggerUtil.info(`VIDEO FILE: ${videoInfo.fileName}`);
+        loggerUtil.info('');
+      }
+      
+      if (videoInfo.title) {
+        loggerUtil.info(`TITLE: ${videoInfo.title}`);
+        loggerUtil.info('');
+      }
+      
+      if (videoInfo.content) {
+        loggerUtil.info(`CONTENT PREVIEW:`);
+        loggerUtil.info('--------------------------------------------------------------------------------');
+        loggerUtil.info(videoInfo.content);
+        loggerUtil.info('--------------------------------------------------------------------------------');
+      }
+    }
+    
+    // Display folder information last
+    loggerUtil.info('\n================================================================================');
+    loggerUtil.info(`FOLDER INFORMATION`);
+    loggerUtil.info('================================================================================');
     loggerUtil.info(`FOLDER: ${folderData.name}`);
     loggerUtil.info(`PATH: ${folderData.path}`);
     loggerUtil.info(`PATH DEPTH: ${folderData.path_depth}`);
     if (folderData.main_video_id) {
-      loggerUtil.info(`HAS MAIN VIDEO: Yes`);
+      loggerUtil.info(`HAS MAIN VIDEO: Yes (ID: ${folderData.main_video_id})`);
     }
-    loggerUtil.info('================================================================================');
     
-    // Get and display current experts for this folder
-    const currentExperts = await getFolderExperts(folderId);
+    // Display current experts if any
     if (currentExperts.length > 0) {
-      loggerUtil.info('\nCurrent experts assigned to this folder:');
+      loggerUtil.info('\nCURRENT EXPERTS ASSIGNED TO THIS FOLDER:');
       currentExperts.forEach(expert => {
         loggerUtil.info(`- ${expert.mnemonic} | ${expert.name}`);
       });
-      loggerUtil.info('');
     }
     
-    // Display the expert list with mnemonics
-    displayExpertList(experts);
+    loggerUtil.info('\n================================================================================');
     
     // Keep processing the same folder until the user moves to the next one
     let keepAddingExperts = true;
