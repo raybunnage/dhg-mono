@@ -13,17 +13,35 @@ interface HealthCheckOptions {
   verbose?: boolean;
 }
 
+interface HealthCheckStatusResult {
+  status: 'success' | 'failure' | 'unknown';
+  message: string;
+}
+
+interface HealthCheckResults {
+  database: HealthCheckStatusResult;
+  presentations: HealthCheckStatusResult;
+  claude: HealthCheckStatusResult;
+  commands: HealthCheckStatusResult;
+}
+
+interface HealthCheckReturnValue {
+  results: HealthCheckResults;
+  allHealthy: boolean;
+  anyFailure: boolean;
+}
+
 /**
  * Performs health checks on the presentations pipeline infrastructure
  */
 export async function healthCheckCommand(options: HealthCheckOptions = {}): Promise<void> {
   await trackCommandExecution('presentations', 'health-check', async () => {
     try {
-      const results = {
-        database: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
-        presentations: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
-        claude: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
-        commands: { status: 'unknown' as 'success' | 'failure' | 'unknown', message: '' },
+      const results: HealthCheckResults = {
+        database: { status: 'unknown', message: '' },
+        presentations: { status: 'unknown', message: '' },
+        claude: { status: 'unknown', message: '' },
+        commands: { status: 'unknown', message: '' },
       };
       
       console.log('🏥 Running presentations pipeline health checks...');
@@ -72,15 +90,17 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
           
           // Check if presentations table exists by querying it
           let error;
+          let presentationCount = 0;
           try {
-            const { count, error: countError } = await supabase
+            const response = await supabase
               .from('presentations')
               .select('*', { count: 'exact', head: true });
             
-            if (countError) {
-              error = countError;
+            if (response.error) {
+              error = response.error;
             } else {
-              console.log(`   ✅ Presentations table has approximately ${count} records`);
+              presentationCount = response.count || 0;
+              console.log(`   ✅ Presentations table has approximately ${presentationCount} records`);
             }
           } catch (e) {
             error = e;
@@ -93,15 +113,15 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
           // Check for expert_documents table as well
           let expertDocsError;
           try {
-            const { count, error: countError } = await supabase
+            const response = await supabase
               .from('expert_documents')
               .select('*', { count: 'exact', head: true });
               
-            if (countError) {
-              expertDocsError = countError;
-              console.warn(`⚠️ Could not verify expert_documents table: ${countError.message}`);
+            if (response.error) {
+              expertDocsError = response.error;
+              console.warn(`⚠️ Could not verify expert_documents table: ${response.error.message}`);
             } else {
-              console.log(`   ✅ Expert documents table has approximately ${count} records`);
+              console.log(`   ✅ Expert documents table has approximately ${response.count || 0} records`);
             }
           } catch (e) {
             expertDocsError = e;
@@ -111,15 +131,15 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
           // Check join tables
           let assetsError;
           try {
-            const { count, error: countError } = await supabase
+            const response = await supabase
               .from('presentation_assets')
               .select('*', { count: 'exact', head: true });
               
-            if (countError) {
-              assetsError = countError;
-              console.warn(`⚠️ Could not verify presentation_assets table: ${countError.message}`);
+            if (response.error) {
+              assetsError = response.error;
+              console.warn(`⚠️ Could not verify presentation_assets table: ${response.error.message}`);
             } else {
-              console.log(`   ✅ Presentation assets table has approximately ${count} records`);
+              console.log(`   ✅ Presentation assets table has approximately ${response.count || 0} records`);
             }
           } catch (e) {
             assetsError = e;
@@ -375,18 +395,20 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
       }
       
       // Return results for tracking
-      return {
+      const returnValue: HealthCheckReturnValue = {
         results,
         allHealthy,
         anyFailure
       };
+      
+      return returnValue;
       
     } catch (error) {
       console.error(`Error performing health check: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }, {
-    getResultSummary: (result) => ({
+    getResultSummary: (result: HealthCheckReturnValue) => ({
       recordsAffected: 0,
       affectedEntity: 'health-check',
       summary: result.allHealthy 
@@ -397,3 +419,5 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
     })
   });
 }
+
+// healthCheckCommand is already exported above

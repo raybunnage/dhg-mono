@@ -23,7 +23,7 @@ interface FileInfo {
   name: string;
   document_type: string | null;
   expert_document_id: string | null;
-  document_processing_status: string | null;
+  reprocessing_status: string | null;
   processed_content_preview: string | null;
 }
 
@@ -77,7 +77,7 @@ export const listMainVideoFoldersTree = async (): Promise<void> => {
     // Get document types for lookup
     const { data: documentTypeData, error: documentTypeError } = await supabase
       .from('document_types')
-      .select('id, document_type');
+      .select('id, name');
     
     if (documentTypeError) {
       console.error('Error fetching document types:', documentTypeError);
@@ -87,7 +87,7 @@ export const listMainVideoFoldersTree = async (): Promise<void> => {
     // Create a lookup map for document types
     const documentTypeMap = new Map<string, string>();
     documentTypeData?.forEach(docType => {
-      documentTypeMap.set(docType.id, docType.document_type);
+      documentTypeMap.set(docType.id, docType.name);
     });
 
     // Prepare the folder info array
@@ -106,19 +106,25 @@ export const listMainVideoFoldersTree = async (): Promise<void> => {
     
     // Display the results in a nicely formatted table
     console.log('\nHigh-Level Folders with Main Video IDs:');
-    console.log('-'.repeat(maxNameLength + 65));
-    console.log(`${'Folder Name'.padEnd(maxNameLength)} | ${'Depth'.padEnd(6)} | ${'Main Video'.padEnd(30)} | ${'Document Type'}`);
-    console.log('-'.repeat(maxNameLength + 65));
+    console.log('='.repeat(120));
+
+    // Constants for formatting
+    const INDENT = '    ';
+    const MAX_FILE_NAME_LENGTH = 50;
+    const MAX_DOC_TYPE_LENGTH = 30;
+    const MAX_STATUS_LENGTH = 20;
     
     // Process each high-level folder
     for (const folder of folderInfo) {
-      // Display the main folder information
-      console.log(
-        `${folder.name.padEnd(maxNameLength)} | ` +
-        `${String(folder.path_depth).padEnd(6)} | ` +
-        `${(folder.main_video_name || 'N/A').padEnd(30)} | ` +
-        `${folder.document_type || 'N/A'}`
-      );
+      // Display the main folder information with a prominent header
+      console.log(`\n📁 ${folder.name}`);
+      console.log(`${INDENT}Main Video: ${folder.main_video_name || 'N/A'}`);
+      console.log(`${INDENT}Document Type: ${folder.document_type || 'N/A'}`);
+      console.log(`${INDENT}${'─'.repeat(80)}`);
+      
+      // Format header for files
+      console.log(`${INDENT}${'File'.padEnd(MAX_FILE_NAME_LENGTH)} | ${'Document Type'.padEnd(MAX_DOC_TYPE_LENGTH)} | ${'Status'.padEnd(MAX_STATUS_LENGTH)} | Content`);
+      console.log(`${INDENT}${'─'.repeat(MAX_FILE_NAME_LENGTH)} | ${'─'.repeat(MAX_DOC_TYPE_LENGTH)} | ${'─'.repeat(MAX_STATUS_LENGTH)} | ${'─'.repeat(20)}`);
       
       // Get all subfolders and files under this folder
       const { data: subItems, error: subItemsError } = await supabase
@@ -139,7 +145,7 @@ export const listMainVideoFoldersTree = async (): Promise<void> => {
       }
       
       if (!subItems || subItems.length === 0) {
-        console.log(`    No subitems found for folder ${folder.name}`);
+        console.log(`${INDENT}No subitems found for folder ${folder.name}`);
         continue;
       }
       
@@ -156,7 +162,7 @@ export const listMainVideoFoldersTree = async (): Promise<void> => {
       });
       
       if (filteredSubItems.length === 0) {
-        console.log(`    No matching files (.txt, .mp4, .docx, .pptx) with main_video_id found for folder ${folder.name}`);
+        console.log(`${INDENT}No matching files (.txt, .mp4, .docx, .pptx) with main_video_id found for folder ${folder.name}`);
         continue;
       }
       
@@ -167,7 +173,7 @@ export const listMainVideoFoldersTree = async (): Promise<void> => {
           id,
           source_id,
           document_type_id,
-          document_processing_status,
+          reprocessing_status,
           processed_content
         `)
         .in('source_id', filteredSubItems.map(item => item.id));
@@ -186,10 +192,6 @@ export const listMainVideoFoldersTree = async (): Promise<void> => {
       
       // Process each filtered subitem
       for (const item of filteredSubItems) {
-        
-        // Check if this item has an associated main_video_id (might inherit from parent)
-        // We know the parent folder has a main_video_id since that's how we selected it
-        
         const docType = item.document_type_id ? documentTypeMap.get(item.document_type_id) || 'Unknown' : 'N/A';
         let processedContentPreview = 'N/A';
         let docProcessingStatus = 'N/A';
@@ -197,7 +199,7 @@ export const listMainVideoFoldersTree = async (): Promise<void> => {
         // Get expert document info if available
         const expertDoc = expertDocMap.get(item.id);
         if (expertDoc) {
-          docProcessingStatus = expertDoc.document_processing_status || 'N/A';
+          docProcessingStatus = expertDoc.reprocessing_status || 'N/A';
           
           // Get a preview of processed content if available
           if (expertDoc.processed_content) {
@@ -218,25 +220,30 @@ export const listMainVideoFoldersTree = async (): Promise<void> => {
           }
         }
         
-        // Calculate indent based on path depth
-        const pathParts = item.path ? item.path.split('/') : [];
-        const depth = pathParts.length;
-        const indent = '  '.repeat(depth);
+        // Truncate filename if too long
+        let displayName = item.name || 'Unknown';
+        if (displayName.length > MAX_FILE_NAME_LENGTH - 3) {
+          displayName = displayName.substring(0, MAX_FILE_NAME_LENGTH - 5) + '...';
+        }
         
-        // Display the subitem
+        // Truncate document type if too long
+        let displayDocType = docType;
+        if (displayDocType.length > MAX_DOC_TYPE_LENGTH - 3) {
+          displayDocType = displayDocType.substring(0, MAX_DOC_TYPE_LENGTH - 5) + '...';
+        }
+        
+        // Display the subitem with consistent formatting
         console.log(
-          `${indent}${item.name || 'Unknown'} - ` +
-          `Type: ${docType}, ` +
-          `Status: ${docProcessingStatus}, ` +
-          `Content: ${processedContentPreview}`
+          `${INDENT}${displayName.padEnd(MAX_FILE_NAME_LENGTH)} | ` +
+          `${displayDocType.padEnd(MAX_DOC_TYPE_LENGTH)} | ` +
+          `${docProcessingStatus.padEnd(MAX_STATUS_LENGTH)} | ` +
+          `${processedContentPreview}`
         );
       }
-      
-      // Add a separator between folders
-      console.log('-'.repeat(maxNameLength + 65));
     }
     
-    console.log(`Total high-level folders with main_video_id: ${folderInfo.length}`);
+    console.log(`\nTotal high-level folders with main_video_id: ${folderInfo.length}`);
+    console.log('='.repeat(120));
 
   } catch (error) {
     console.error('Unexpected error:', error);

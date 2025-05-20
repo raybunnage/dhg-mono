@@ -276,38 +276,96 @@ async function getFoldersForExpertAssignment(limit: number = 50): Promise<Minima
 }
 
 /**
- * Get video document information for a folder with main_video_id
+ * Get video document information for a folder
+ * First tries the main_video_id, then looks for related videos based on path
  */
-async function getVideoDocumentInfo(mainVideoId: string | null): Promise<{ title?: string; content?: string; fileName?: string }> {
-  if (!mainVideoId) {
-    return {};
-  }
-  
+async function getVideoDocumentInfo(mainVideoId: string | null, folderPath?: string, folderId?: string): Promise<{ title?: string; content?: string; fileName?: string; sourceInfo?: string }> {
   const supabaseClientService = SupabaseClientService.getInstance();
   const supabase = supabaseClientService.getClient();
+  let sourceInfo = '';
   
   try {
-    // First, get the sources_google record for the video
-    const { data: videoSource, error: videoError } = await supabase
-      .from('sources_google')
-      .select('id, name')
-      .eq('id', mainVideoId)
-      .single();
+    let videoId = mainVideoId;
+    let videoSource = null;
     
-    if (videoError || !videoSource) {
-      console.log(`Could not find video with ID ${mainVideoId}: ${videoError?.message || 'Video not found'}`);
-      return {};
+    // If we have a mainVideoId, try to use it first
+    if (mainVideoId) {
+      // Get the sources_google record for the video
+      const { data, error } = await supabase
+        .from('sources_google')
+        .select('id, name, mime_type, path')
+        .eq('id', mainVideoId)
+        .single();
+      
+      if (!error && data) {
+        videoSource = data;
+        sourceInfo = `Using main_video_id: ${mainVideoId}`;
+      } else {
+        sourceInfo = `Main video with ID ${mainVideoId} not found: ${error?.message || 'Not found'}`;
+      }
     }
     
-    // Then get the expert_document associated with this source
+    // If we couldn't get a video from main_video_id and we have a folder path, 
+    // try to find a related video based on the folder path
+    if (!videoSource && folderPath) {
+      // Search for video files that match the folder path pattern
+      // Using LIKE pattern to match videos that might be in a subfolder but related
+      const { data, error } = await supabase
+        .from('sources_google')
+        .select('id, name, mime_type, path')
+        .like('path', `${folderPath}%`) // Find files with paths starting with the folder path
+        .in('mime_type', ['video/mp4', 'video/quicktime']) // Common video MIME types
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false }) // Most recent first
+        .limit(1);
+      
+      if (!error && data && data.length > 0) {
+        videoSource = data[0];
+        videoId = videoSource.id;
+        sourceInfo = `Found video by path: ${videoSource.path}`;
+      } else {
+        sourceInfo += `\nNo related videos found by path: ${folderPath}`;
+      }
+    }
+    
+    // If we still don't have a video and we have folder ID, 
+    // try to find videos with the same parent_folder_id
+    if (!videoSource && folderId) {
+      const { data, error } = await supabase
+        .from('sources_google')
+        .select('id, name, mime_type, path')
+        .eq('parent_folder_id', folderId)
+        .in('mime_type', ['video/mp4', 'video/quicktime'])
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (!error && data && data.length > 0) {
+        videoSource = data[0];
+        videoId = videoSource.id;
+        sourceInfo = `Found video as child of folder: ${videoSource.path}`;
+      } else {
+        sourceInfo += `\nNo child videos found for folder ID: ${folderId}`;
+      }
+    }
+    
+    // If we still don't have a video, return empty
+    if (!videoSource || !videoId) {
+      return { sourceInfo };
+    }
+    
+    // Now that we have a video ID, get the expert_document
     const { data: documents, error: docError } = await supabase
       .from('expert_documents')
       .select('id, title, raw_content')
-      .eq('source_id', mainVideoId);
+      .eq('source_id', videoId);
     
     if (docError || !documents || documents.length === 0) {
-      console.log(`No expert document found for video ID ${mainVideoId}`);
-      return {};
+      sourceInfo += `\nNo expert document found for video ID ${videoId}`;
+      return { 
+        fileName: videoSource.name,
+        sourceInfo
+      };
     }
     
     const document = documents[0];
@@ -325,7 +383,8 @@ async function getVideoDocumentInfo(mainVideoId: string | null): Promise<{ title
     return {
       title: document.title,
       content: contentPreview,
-      fileName: videoSource.name // Include the file name from sources_google
+      fileName: videoSource.name,
+      sourceInfo
     };
   } catch (error) {
     console.log(`Error fetching video document info: ${error instanceof Error ? error.message : String(error)}`);
@@ -588,7 +647,8 @@ async function runInteractiveFolderMode(folderId: string, options: AssignMultipl
     const currentExperts = await getFolderExperts(folderId);
     
     // Get video document info if available
-    const videoInfo = await getVideoDocumentInfo(folderData.main_video_id);
+    // Pass folder path and ID to help find the right video if main_video_id is not accurate
+    const videoInfo = await getVideoDocumentInfo(folderData.main_video_id, folderData.path, folderId);
     
     // Display the expert list with mnemonics first
     loggerUtil.info('\n================================================================================');
@@ -597,10 +657,15 @@ async function runInteractiveFolderMode(folderId: string, options: AssignMultipl
     displayExpertList(experts);
     
     // Display video content if available
-    if (videoInfo.title || videoInfo.content || videoInfo.fileName) {
+    if (videoInfo.title || videoInfo.content || videoInfo.fileName || videoInfo.sourceInfo) {
       loggerUtil.info('\n================================================================================');
       loggerUtil.info(`VIDEO CONTENT`);
       loggerUtil.info('================================================================================');
+      
+      if (videoInfo.sourceInfo) {
+        loggerUtil.info(`SOURCE INFO: ${videoInfo.sourceInfo}`);
+        loggerUtil.info('');
+      }
       
       if (videoInfo.fileName) {
         loggerUtil.info(`VIDEO FILE: ${videoInfo.fileName}`);

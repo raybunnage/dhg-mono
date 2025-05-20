@@ -22,16 +22,16 @@ export async function checkPresentationTitlesCommand(options: {
       title,
       expert_document_id,
       high_level_folder_source_id,
-      expert_documents!inner(
+      expert_documents:expert_document_id(
         id,
         title,
         processed_content
       ),
-      sources_google!inner(
+      sources_google:main_video_id(
         id, 
         name
       ),
-      sources_google:high_level_folder_source_id(
+      sources_google_high_level_folder:high_level_folder_source_id(
         id,
         name
       )
@@ -56,22 +56,46 @@ export async function checkPresentationTitlesCommand(options: {
     markdown += `| Folder | Presentation | Expert Title | Processed Content Preview |\n`;
     markdown += `|--------|--------------|-------------|---------------------------|\n`;
     
+    // Process each presentation
     for (const presentation of data) {
-      const folder = presentation.sources_google?.name || 'Unknown';
-      const presentationTitle = presentation.title || 'Untitled';
-      const expertDocument = presentation.expert_documents;
-      const expertTitle = expertDocument?.title || 'No title';
+      // Handle sources safely - handle different possible naming of return fields
+      // Use type assertion with any for maximum flexibility with the returned data structure
+      const presentationAny = presentation as any;
       
-      // Get a preview of the processed content (first 100 characters)
-      let contentPreview = '';
-      if (expertDocument?.processed_content) {
-        contentPreview = expertDocument.processed_content
-          .substring(0, 150)
-          .replace(/\n/g, ' ')
-          .trim() + '...';
+      // Get folder name
+      let folderName = 'Unknown';
+      if (presentationAny.sources_google_high_level_folder) {
+        const folders = presentationAny.sources_google_high_level_folder;
+        if (Array.isArray(folders) && folders.length > 0) {
+          folderName = folders[0].name || 'Unknown';
+        }
       }
       
-      markdown += `| ${folder} | ${presentationTitle} | ${expertTitle} | ${contentPreview} |\n`;
+      // Get presentation title
+      const presentationTitle = presentationAny.title || 'Untitled';
+      
+      // Get expert document title
+      let expertTitle = 'No title';
+      let contentPreview = 'No content';
+      
+      if (presentationAny.expert_documents) {
+        const expertDocs = presentationAny.expert_documents;
+        if (Array.isArray(expertDocs) && expertDocs.length > 0) {
+          // Use the first document
+          const expertDoc = expertDocs[0];
+          expertTitle = expertDoc.title || 'No title';
+          
+          // Get content preview
+          if (expertDoc.processed_content) {
+            contentPreview = expertDoc.processed_content
+              .substring(0, 150)
+              .replace(/\n/g, ' ')
+              .trim() + '...';
+          }
+        }
+      }
+      
+      markdown += `| ${folderName} | ${presentationTitle} | ${expertTitle} | ${contentPreview} |\n`;
     }
     
     // Add instructions for updating titles

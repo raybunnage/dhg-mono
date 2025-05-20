@@ -655,13 +655,13 @@ export class PresentationService {
               
             if (!sourceError && sourceExperts && sourceExperts.length > 0) {
               // Extract expert info from each record
-              experts = sourceExperts.map(record => {
+              experts = sourceExperts.map((record: { expert_id: string, experts: any }) => {
                 const expertRecord = record.experts as any;
                 return {
                   id: record.expert_id,
                   name: expertRecord?.expert_name || expertRecord?.full_name || 'Unknown'
                 };
-              }).filter(e => e.id); // Filter out any without IDs
+              }).filter((e: { id?: string }) => e.id); // Filter out any without IDs
               
               // For backward compatibility, use the first expert for existing fields
               if (experts.length > 0) {

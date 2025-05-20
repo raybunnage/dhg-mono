@@ -4,8 +4,28 @@ import { Logger } from '../../../../packages/shared/utils/logger';
 // Use require for chalk to avoid ESM compatibility issues
 const chalk = require('chalk');
 
-// Create a new command
-export const checkProfessionalDocumentsCommand = new Command('check-professional-documents');
+// Define interfaces for the professional document data structure
+interface ProfessionalDocument {
+  id: string;
+  type: string;
+  status: 'available' | 'missing';
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface PresentationWithProfessionalDocs {
+  id: string;
+  title: string;
+  expert_id?: string;
+  expert_name?: string;
+  cv?: ProfessionalDocument;
+  bio?: ProfessionalDocument;
+  announcement?: ProfessionalDocument;
+  hasAnyProfessionalDocument: boolean;
+}
+
+// Create the command
+const checkProfessionalDocumentsCommand = new Command('check-professional-documents');
 
 // Set command description and options
 checkProfessionalDocumentsCommand
@@ -48,7 +68,7 @@ checkProfessionalDocumentsCommand
         missing: chalk.red('✗'),
       };
       
-      presentations.forEach((presentation) => {
+      (presentations as PresentationWithProfessionalDocs[]).forEach((presentation) => {
         console.log(chalk.bold(`Presentation: ${presentation.title} (ID: ${presentation.id})`));
         console.log(`Expert: ${presentation.expert_name || 'Unknown'}`);
         
@@ -81,7 +101,7 @@ checkProfessionalDocumentsCommand
       });
       
       // Summary
-      const withDocs = presentations.filter(p => p.hasAnyProfessionalDocument).length;
+      const withDocs = (presentations as PresentationWithProfessionalDocs[]).filter(p => p.hasAnyProfessionalDocument).length;
       const withoutDocs = presentations.length - withDocs;
       
       console.log(chalk.bold('Summary:'));
@@ -96,3 +116,6 @@ checkProfessionalDocumentsCommand
       process.exit(1);
     }
   });
+
+// Export the command
+export { checkProfessionalDocumentsCommand };

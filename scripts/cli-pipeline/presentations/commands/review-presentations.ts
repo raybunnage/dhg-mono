@@ -4,10 +4,25 @@ import { Logger } from '../../../../packages/shared/utils/logger';
 // Use require for chalk to avoid ESM compatibility issues
 const chalk = require('chalk');
 
-// const logger = new Logger('review-presentations-command');
+// Interface for expert document
+interface ExpertDocument {
+  id: string;
+  document_type?: string;
+  has_raw_content?: boolean;
+  raw_content_preview?: string | null;
+}
 
-// Create a new command
-export const reviewPresentationsCommand = new Command('review-presentations');
+// Interface for presentation
+interface Presentation {
+  id: string;
+  title: string;
+  expert_name?: string;
+  status: string;
+  expert_documents?: ExpertDocument[];
+}
+
+// Create a command for export
+const reviewPresentationsCommand = new Command('review-presentations');
 
 // Set command description and options
 reviewPresentationsCommand
@@ -48,7 +63,7 @@ reviewPresentationsCommand
       console.log('|--------------|--------|--------|--------------|---------------------|');
       
       // Table rows
-      presentations.forEach((presentation) => {
+      (presentations as Presentation[]).forEach((presentation) => {
         const expertName = presentation.expert_name || 'Unknown';
         const status = presentation.status;
         
@@ -56,7 +71,7 @@ reviewPresentationsCommand
           presentation.expert_documents.forEach((doc) => {
             // Only include rows that have raw_content or are in completed status
             if (doc.has_raw_content || status === 'complete') {
-              const docType = doc.document_type;
+              const docType = doc.document_type || 'Unknown';
               // Get first few words of raw_content preview (if it exists)
               const contentPreview = doc.raw_content_preview 
                 ? doc.raw_content_preview.substring(0, 50).replace(/\n/g, ' ').trim() + '...'
@@ -95,3 +110,6 @@ function getStatusLabel(status: string): string {
       return status || 'Unknown';
   }
 }
+
+// Export the command
+export { reviewPresentationsCommand };

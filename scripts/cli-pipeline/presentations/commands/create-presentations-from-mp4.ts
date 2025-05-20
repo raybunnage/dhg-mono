@@ -439,9 +439,11 @@ export const createPresentationsFromMp4Command = async (options: {
       let expertId = null;
       let expertName = null;
       
-      if (highLevelFolderId && expertMap[highLevelFolderId]) {
-        expertId = expertMap[highLevelFolderId].expertId;
-        expertName = expertMap[highLevelFolderId].expertName;
+      if (highLevelFolderId && expertMap[highLevelFolderId] && expertMap[highLevelFolderId].length > 0) {
+        // Use the first expert in the array
+        const firstExpert = expertMap[highLevelFolderId][0];
+        expertId = firstExpert.expertId;
+        expertName = firstExpert.expertName;
         if (verbose) {
           Logger.info(`Found expert for ${file.name} via ${matchMethod}: ${expertName}`);
         }
