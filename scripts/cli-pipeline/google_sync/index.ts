@@ -15,6 +15,7 @@ import { updateFileSignatures } from './update-file-signatures';
 import { countMp4Files, CountMp4Result } from './count-mp4-files';
 import { addRootFolder } from './add-root-service';
 import { checkReprocessingStatus } from './check-reprocessing-status';
+import { updateMainVideoId } from './update-main-video-id';
 // These functions may not exist as TypeScript exports, so we'll use direct file paths 
 // or wrap them in a functional command
 
@@ -1258,6 +1259,23 @@ program
       process.exit(0);
     } catch (error) {
       console.error('Error executing check-deleted-files:', error);
+      process.exit(1);
+    }
+  });
+
+// Add update-main-video-id command
+program
+  .command('update-main-video-id')
+  .description('Update main_video_id for a specified folder with a specified video file')
+  .requiredOption('--folder-name <name>', 'Name of the folder with path_depth=0 to find')
+  .requiredOption('--video-name <name>', 'Name of the video file (MP4) to set as main_video_id')
+  .option('--dry-run', 'Don\'t make any actual changes, just show what would happen', false)
+  .option('--verbose', 'Show detailed logs', false)
+  .action(async (options) => {
+    try {
+      await updateMainVideoId();
+    } catch (error) {
+      Logger.error('Error updating main video ID:', error);
       process.exit(1);
     }
   });

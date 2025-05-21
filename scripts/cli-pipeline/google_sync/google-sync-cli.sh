@@ -408,6 +408,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    check-document-summary       Check and display the summary for a specific document by ID"
   echo "    check-expert-doc             Check the most recent expert document for proper content extraction"
   echo "  * report-main-video-ids        Report on video files for folders"
+  echo "    update-main-video-id         Update main_video_id for a specified folder with a specified video file"
   echo ""
   echo "MAINTENANCE & INTEGRITY:"
   echo "  * sources-google-integrity     Check for document type consistency issues (files with folder types, etc.) (108 uses)"
@@ -513,6 +514,9 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Report on video files for folders"
   echo "  ./google-sync-cli.sh report-main-video-ids"
+  echo ""
+  echo "  # Update main_video_id for a folder with a specific video file"
+  echo "  ./google-sync-cli.sh update-main-video-id --folder-name \"2024-05-08-Kjearvik\" --video-name \"Kjearvik_2024_05_08.mp4\""
   echo ""
   echo "MAINTENANCE & INTEGRITY:"
   echo "  # Check for document type consistency issues"
@@ -1005,6 +1009,57 @@ fi
 if [ "$1" = "check-document-ids" ]; then
   shift
   track_command "check-document-ids" "ts-node $SCRIPT_DIR/check-document-ids.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "update-main-video-id" ]; then
+  shift
+  
+  # Process arguments to handle --folder-name and --video-name
+  FOLDER_NAME=""
+  VIDEO_NAME=""
+  OTHER_ARGS=""
+  
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --folder-name=*)
+        FOLDER_NAME="${1#*=}"
+        shift
+        ;;
+      --folder-name)
+        FOLDER_NAME="$2"
+        shift 2
+        ;;
+      --video-name=*)
+        VIDEO_NAME="${1#*=}"
+        shift
+        ;;
+      --video-name)
+        VIDEO_NAME="$2"
+        shift 2
+        ;;
+      *)
+        OTHER_ARGS="$OTHER_ARGS $1"
+        shift
+        ;;
+    esac
+  done
+  
+  # Validate required parameters
+  if [ -z "$FOLDER_NAME" ]; then
+    echo "Error: --folder-name parameter is required"
+    echo "Usage: ./google-sync-cli.sh update-main-video-id --folder-name <folder-name> --video-name <video-name> [options]"
+    exit 1
+  fi
+  
+  if [ -z "$VIDEO_NAME" ]; then
+    echo "Error: --video-name parameter is required"
+    echo "Usage: ./google-sync-cli.sh update-main-video-id --folder-name <folder-name> --video-name <video-name> [options]"
+    exit 1
+  fi
+  
+  # Form the command with proper parameter handling
+  track_command "update-main-video-id" "ts-node $SCRIPT_DIR/update-main-video-id.ts --folder-name \"$FOLDER_NAME\" --video-name \"$VIDEO_NAME\" $OTHER_ARGS"
   exit $?
 fi
 
