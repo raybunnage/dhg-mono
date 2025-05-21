@@ -13,9 +13,24 @@ track_command() {
   shift
   local full_command="$@"
   
+  # For check-video-consistency command, add special handling to ensure output is visible
+  if [[ "$command_name" == "check-video-consistency" ]]; then
+    # Execute with full output passthrough
+    echo "Running check-video-consistency command..."
+    if [ -f "$TRACKER_TS" ]; then
+      eval "npx ts-node \"$TRACKER_TS\" \"$pipeline_name\" \"$command_name\" \"$full_command\"" 2>&1
+      return $?
+    else
+      eval "$full_command" 2>&1
+      return $?
+    fi
+  fi
+  
+  # Regular command handling for other commands
   # Check if we have a TS tracking wrapper
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    # Use 2>&1 to ensure both stdout and stderr are passed through
+    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command" 2>&1
   else
     # Fallback to direct execution without tracking
     echo "ℹ️ Tracking not available. Running command directly."
@@ -53,6 +68,7 @@ function display_help() {
   echo -e "    create-presentations-from-mp4  Create presentation records for MP4 files"
   echo -e "    create-from-expert-docs    Create presentations from expert documents"
   echo -e "    repair-presentations       Repair presentations with missing main_video_id"
+  echo -e "    fix-mismatched-videos      Fix video_source_id in presentations to match main_video_id in folders"
   echo -e "    update-root-drive-id       Fill in the root_drive_id for all records"
   echo ""
   
@@ -63,6 +79,9 @@ function display_help() {
   echo -e "    show-ai-summary-status     Show AI summary status in markdown table"
   echo -e "    check-presentation-titles  Check titles against processed content"
   echo -e "    check-professional-docs    Check for professional documents with presentations"
+  echo -e "    repair-mismatched-video-ids Find presentations with mismatched video IDs compared to their high-level folders"
+  echo -e "      --folder-depth <number>    Folder depth to check (default: 0)"
+  echo -e "      -v, --verbose              Show detailed logs during processing"
   echo ""
   
   echo -e "  \033[1mSystem:\033[0m"
@@ -152,6 +171,9 @@ function display_help() {
   echo ""
   echo -e "  # Check health of the presentations pipeline"
   echo -e "  presentations-cli health-check"
+  echo ""
+  echo -e "  # Find and fix presentations with mismatched video IDs"
+  echo -e "  presentations-cli fix-mismatched-videos"
   echo ""
   
   echo -e "For detailed help on a specific command, run:"
@@ -279,6 +301,21 @@ fi
 
 if [[ "$1" == "check-presentation-titles" ]]; then
   track_command "check-presentation-titles" "ts-node $SCRIPT_DIR/index.ts check-presentation-titles ${@:2}"
+  exit $?
+fi
+
+# Archived check-video-consistency command as it didn't work correctly
+# Archived on $(date +%Y-%m-%d) to .archived_scripts/check-video-consistency.$(date +%Y%m%d).ts
+
+if [[ "$1" == "repair-mismatched-video-ids" ]]; then
+  # Run the direct script instead of going through index.ts
+  track_command "repair-mismatched-video-ids" "ts-node $SCRIPT_DIR/test-repair-mismatched.ts ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "fix-mismatched-videos" ]]; then
+  # Direct script to fix mismatched video IDs
+  track_command "fix-mismatched-videos" "ts-node $SCRIPT_DIR/repair-mismatched-fix.ts ${@:2}"
   exit $?
 fi
 

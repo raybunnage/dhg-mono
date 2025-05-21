@@ -11,6 +11,8 @@ import { createPresentationsFromMp4Command } from './commands/create-presentatio
 import { createPresentationAssetsCommand } from './commands/create-presentation-assets';
 import { processMp4FilesCommand } from './commands/process-mp4-files';
 import { testProcessDocumentCommand } from './commands/test-process-document';
+// Archived: import checkVideoConsistencyCommand from './commands/check-video-consistency';
+import repairMismatchedVideoIdsCommand from './commands/repair-mismatched-video-ids';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
@@ -380,6 +382,8 @@ program
 // Now push the other commands (keep this for backward compatibility)
 program.commands.push(generateSummaryCommand);
 program.commands.push(testProcessDocumentCommand);
+// Archived: program.commands.push(checkVideoConsistencyCommand);
+program.commands.push(repairMismatchedVideoIdsCommand);
   
 console.log("DEBUG: Commands after adding commands:", program.commands.map((cmd: any) => cmd.name()));
 
@@ -1567,6 +1571,8 @@ program
       process.exit(1);
     }
   });
+
+// Note: check-video-consistency command is now imported from its own file and added to program.commands
 
 // Handle any unhandled exceptions
 process.on('unhandledRejection', (error) => {
