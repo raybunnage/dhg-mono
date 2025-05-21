@@ -172,12 +172,13 @@ program
     '  2. It displays current experts already assigned to the folder\n' +
     '  3. It displays all available experts with their 3-char mnemonics\n' +
     '  4. Enter mnemonics one by one to assign multiple experts to the same folder\n' +
-    '  5. Type "NEXT" to move to the next folder, "SKIP" to skip this folder, "DONE" to finish\n' +
-    '  6. Type "LIST" to see the experts list again')
+    '  5. Type "DELETE <mnemonic>" to remove an expert from the folder (e.g., DELETE WAG)\n' +
+    '  6. Simply press Enter or type "NEXT" to move to the next folder, "SKIP" to skip this folder, "DONE" to finish\n' +
+    '  7. Type "LIST" to see the experts list again')
   .option('--folder-id <id>', 'Process only a specific folder')
   .option('-d, --dry-run', 'Show what would be done without making changes', false)
   .option('-v, --verbose', 'Show more detailed output', false)
-  .option('-l, --limit <number>', 'Limit number of folders shown', '50')
+  .option('-l, --limit <number>', 'Limit number of folders shown (0 for no limit, up to 1000)', '500')
   .action(async (options) => {
     await assignMultipleFolderExperts({
       folderId: options.folderId,

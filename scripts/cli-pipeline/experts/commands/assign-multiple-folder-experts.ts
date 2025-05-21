@@ -31,6 +31,16 @@ interface MinimalExpert {
 }
 
 /**
+ * Create a relationship object between source and expert
+ */
+interface ExpertRelationship {
+  id: string;
+  expert_id: string;
+  source_id: string;
+  is_primary: boolean;
+}
+
+/**
  * Create a minimal folder information object
  */
 interface MinimalFolder {
@@ -239,9 +249,12 @@ async function getAllExperts(): Promise<MinimalExpert[]> {
  * Get a list of folders that might need multiple expert assignments
  * Focuses on high-level folders (path_depth = 0) that likely represent presentations
  */
-async function getFoldersForExpertAssignment(limit: number = 50): Promise<MinimalFolder[]> {
+async function getFoldersForExpertAssignment(limit: number = 500): Promise<MinimalFolder[]> {
   const supabaseClientService = SupabaseClientService.getInstance();
   const supabase = supabaseClientService.getClient();
+  
+  // If limit is 0, use a very large number to effectively remove the limit
+  const effectiveLimit = limit === 0 ? 1000 : limit;
   
   // Find high-level folders that represent presentations
   const { data: folders, error } = await supabase
@@ -259,11 +272,13 @@ async function getFoldersForExpertAssignment(limit: number = 50): Promise<Minima
     .eq('mime_type', 'application/vnd.google-apps.folder')
     .not('main_video_id', 'is', null) // Folders with videos are likely presentations
     .order('name')
-    .limit(limit);
+    .limit(effectiveLimit);
   
   if (error || !folders) {
     throw new Error(`Failed to fetch folders: ${error?.message || 'Unknown error'}`);
   }
+  
+  console.log(`Found ${folders.length} high-level folders with main video IDs`);
   
   return folders.map(folder => ({
     id: folder.id,
@@ -393,9 +408,9 @@ async function getVideoDocumentInfo(mainVideoId: string | null, folderPath?: str
 }
 
 /**
- * Get the current experts assigned to a folder
+ * Get the current experts assigned to a folder including relationship details
  */
-async function getFolderExperts(folderId: string): Promise<MinimalExpert[]> {
+async function getFolderExpertsWithRelationships(folderId: string): Promise<{ experts: MinimalExpert[], relationships: ExpertRelationship[] }> {
   const supabaseClientService = SupabaseClientService.getInstance();
   const supabase = supabaseClientService.getClient();
   
@@ -404,7 +419,8 @@ async function getFolderExperts(folderId: string): Promise<MinimalExpert[]> {
     .select(`
       id,
       is_primary,
-      expert_id
+      expert_id,
+      source_id
     `)
     .eq('source_id', folderId);
   
@@ -413,8 +429,16 @@ async function getFolderExperts(folderId: string): Promise<MinimalExpert[]> {
   }
   
   if (!data || data.length === 0) {
-    return [];
+    return { experts: [], relationships: [] };
   }
+  
+  // Store the relationships
+  const relationships: ExpertRelationship[] = data.map(record => ({
+    id: record.id,
+    expert_id: record.expert_id,
+    source_id: record.source_id,
+    is_primary: record.is_primary || false
+  }));
   
   // Get the unique expert IDs
   const expertIds = data.map(record => record.expert_id);
@@ -429,7 +453,7 @@ async function getFolderExperts(folderId: string): Promise<MinimalExpert[]> {
     throw new Error(`Failed to fetch expert details: ${expertError.message}`);
   }
   
-  return (expertData || []).map(expert => {
+  const experts = (expertData || []).map(expert => {
     const name = expert.expert_name || expert.full_name || 'Unknown';
     
     // Use the database mnemonic if available, otherwise generate one
@@ -445,6 +469,16 @@ async function getFolderExperts(folderId: string): Promise<MinimalExpert[]> {
       mnemonic
     };
   });
+  
+  return { experts, relationships };
+}
+
+/**
+ * Get the current experts assigned to a folder
+ */
+async function getFolderExperts(folderId: string): Promise<MinimalExpert[]> {
+  const { experts } = await getFolderExpertsWithRelationships(folderId);
+  return experts;
 }
 
 /**
@@ -471,6 +505,97 @@ function displayExpertList(experts: MinimalExpert[]): void {
   }
   
   loggerUtil.info('================================================================================');
+}
+
+/**
+ * Delete an expert assignment from a folder
+ */
+async function deleteExpertFromFolder(options: {
+  relationshipId: string;
+  dryRun: boolean;
+  verbose: boolean;
+}): Promise<void> {
+  const { 
+    relationshipId, 
+    dryRun, 
+    verbose 
+  } = options;
+  
+  if (verbose) {
+    loggerUtil.info(`Delete options: ${JSON.stringify(options, null, 2)}`);
+  }
+  
+  try {
+    // Get Supabase client
+    const supabaseClientService = SupabaseClientService.getInstance();
+    const supabase = supabaseClientService.getClient();
+    
+    // Step 1: Verify relationship exists and get details for better logging
+    if (verbose) loggerUtil.info(`Verifying relationship ID: ${relationshipId}`);
+    
+    const { data: relationshipData, error: relationshipError } = await supabase
+      .from('sources_google_experts')
+      .select(`
+        id,
+        source_id,
+        expert_id,
+        is_primary
+      `)
+      .eq('id', relationshipId)
+      .single();
+    
+    if (relationshipError || !relationshipData) {
+      throw new Error(`Relationship not found: ${relationshipError?.message || 'No relationship with that ID'}`);
+    }
+    
+    // Get folder and expert details for better user feedback
+    const { data: folderData, error: folderError } = await supabase
+      .from('sources_google')
+      .select('id, name')
+      .eq('id', relationshipData.source_id)
+      .single();
+    
+    if (folderError) {
+      loggerUtil.warn(`Could not get folder details: ${folderError.message}`);
+    }
+    
+    const { data: expertData, error: expertError } = await supabase
+      .from('experts')
+      .select('id, expert_name, full_name')
+      .eq('id', relationshipData.expert_id)
+      .single();
+    
+    if (expertError) {
+      loggerUtil.warn(`Could not get expert details: ${expertError.message}`);
+    }
+    
+    const folderName = folderData?.name || relationshipData.source_id;
+    const expertName = expertData ? (expertData.expert_name || expertData.full_name) : relationshipData.expert_id;
+    
+    // Step 2: Delete the relationship
+    if (dryRun) {
+      loggerUtil.info(`[DRY RUN] Would delete the relationship between:`);
+      loggerUtil.info(`- Folder: ${folderName} (${relationshipData.source_id})`);
+      loggerUtil.info(`- Expert: ${expertName} (${relationshipData.expert_id})`);
+      return;
+    }
+    
+    const { error: deleteError } = await supabase
+      .from('sources_google_experts')
+      .delete()
+      .eq('id', relationshipId);
+    
+    if (deleteError) {
+      throw new Error(`Failed to delete relationship: ${deleteError.message}`);
+    }
+    
+    if (verbose) {
+      loggerUtil.info(`✅ Successfully deleted relationship between folder "${folderName}" and expert "${expertName}"`);
+    }
+    
+  } catch (error: any) {
+    loggerUtil.error(`Error deleting expert assignment: ${error?.message || error}`);
+  }
 }
 
 /**
@@ -643,8 +768,19 @@ async function runInteractiveFolderMode(folderId: string, options: AssignMultipl
     // Get all experts with mnemonics for selection
     const experts = await getAllExperts();
     
-    // Get current experts for this folder
-    const currentExperts = await getFolderExperts(folderId);
+    // Get current experts for this folder with relationship details for potential deletion
+    const { experts: currentExperts, relationships } = await getFolderExpertsWithRelationships(folderId);
+    
+    // Create a mnemonic-to-relationship map for easy lookup during DELETE operations
+    const mnemonicToRelationship = new Map<string, ExpertRelationship>();
+    for (let i = 0; i < currentExperts.length; i++) {
+      const expert = currentExperts[i];
+      // Find the relationship for this expert
+      const relationship = relationships.find(rel => rel.expert_id === expert.id);
+      if (expert && relationship && expert.mnemonic) {
+        mnemonicToRelationship.set(expert.mnemonic.toLowerCase(), relationship);
+      }
+    }
     
     // Get video document info if available
     // Pass folder path and ID to help find the right video if main_video_id is not accurate
@@ -700,8 +836,13 @@ async function runInteractiveFolderMode(folderId: string, options: AssignMultipl
     if (currentExperts.length > 0) {
       loggerUtil.info('\nCURRENT EXPERTS ASSIGNED TO THIS FOLDER:');
       currentExperts.forEach(expert => {
-        loggerUtil.info(`- ${expert.mnemonic} | ${expert.name}`);
+        const relationship = mnemonicToRelationship.get(expert.mnemonic.toLowerCase());
+        loggerUtil.info(`- ${expert.mnemonic} | ${expert.name} ${relationship ? `| Relationship ID: ${relationship.id}` : ''}`);
       });
+      
+      // Instructions for DELETE
+      loggerUtil.info('\nTo delete an expert from this folder, type DELETE followed by the expert\'s mnemonic');
+      loggerUtil.info('Example: DELETE WAG');
     }
     
     loggerUtil.info('\n================================================================================');
@@ -710,12 +851,12 @@ async function runInteractiveFolderMode(folderId: string, options: AssignMultipl
     let keepAddingExperts = true;
     while (keepAddingExperts) {
       // Get user input
-      const mnemonicInput = await questionAsync('\nEnter expert mnemonic (or "NEXT" to move to next folder, "SKIP" to skip this folder, "DONE" to finish, "LIST" to see experts): ');
+      const mnemonicInput = await questionAsync('\nEnter expert mnemonic (or press Enter/NEXT to move to next folder, "SKIP" to skip this folder, "DONE" to finish, "LIST" to see experts, "DELETE <mnemonic>" to remove expert): ');
       
       const input = mnemonicInput.trim().toUpperCase();
       
       // Check for special commands
-      if (input === 'NEXT') {
+      if (input === 'NEXT' || input === '') {
         loggerUtil.info('Moving to the next folder...');
         return true; // Continue to the next folder
       } else if (input === 'SKIP') {
@@ -728,8 +869,57 @@ async function runInteractiveFolderMode(folderId: string, options: AssignMultipl
         // Show expert list again
         displayExpertList(experts);
         continue;
-      } else if (input === '') {
-        continue; // Empty input, just continue
+      } else if (input.startsWith('DELETE ')) {
+        // Handle DELETE command
+        const expertMnemonic = input.substring(7).trim().toLowerCase(); // Remove "DELETE " prefix
+        
+        if (!expertMnemonic) {
+          loggerUtil.error('❌ Please specify an expert mnemonic to delete (e.g. DELETE WAG)');
+          continue;
+        }
+        
+        // Look up the relationship based on the mnemonic
+        const relationship = mnemonicToRelationship.get(expertMnemonic);
+        if (!relationship) {
+          loggerUtil.error(`❌ No expert with mnemonic "${expertMnemonic.toUpperCase()}" found for this folder`);
+          continue;
+        }
+        
+        // Get expert details for better user feedback
+        const expertToDelete = currentExperts.find(e => e.mnemonic.toLowerCase() === expertMnemonic);
+        if (!expertToDelete) {
+          loggerUtil.error(`❌ Cannot find expert with mnemonic "${expertMnemonic.toUpperCase()}"`);
+          continue;
+        }
+        
+        // Confirm deletion
+        const confirmDelete = await questionAsync(`Are you sure you want to delete expert "${expertToDelete.name}" (${expertMnemonic.toUpperCase()}) from this folder? (y/n): `);
+        if (confirmDelete.toLowerCase() !== 'y') {
+          loggerUtil.info('Deletion cancelled.');
+          continue;
+        }
+        
+        // Delete the relationship
+        await deleteExpertFromFolder({
+          relationshipId: relationship.id,
+          dryRun: dryRun,
+          verbose: verbose
+        });
+        
+        if (!dryRun) {
+          // Remove from the current experts list and relationship map
+          const expertIndex = currentExperts.findIndex(e => e.mnemonic.toLowerCase() === expertMnemonic);
+          if (expertIndex !== -1) {
+            currentExperts.splice(expertIndex, 1);
+          }
+          mnemonicToRelationship.delete(expertMnemonic);
+          
+          loggerUtil.info(`✅ Removed expert "${expertToDelete.name}" from folder "${folderData.name}"`);
+        } else {
+          loggerUtil.info(`[DRY RUN] Would remove expert "${expertToDelete.name}" from folder "${folderData.name}"`);
+        }
+        
+        continue;
       }
       
       // Find the expert with this mnemonic
