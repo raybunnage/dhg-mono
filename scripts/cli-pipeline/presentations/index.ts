@@ -15,6 +15,7 @@ import { testProcessDocumentCommand } from './commands/test-process-document';
 import repairMismatchedVideoIdsCommand from './commands/repair-mismatched-video-ids';
 import findMissingPresentationsCommand from './commands/find-missing-presentations';
 import createMissingPresentationsCommand from './commands/create-missing-presentations';
+import findDuplicateFolderNamesCommand from './commands/find-duplicate-folder-names';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
@@ -387,6 +388,7 @@ program.commands.push(testProcessDocumentCommand);
 // Archived: program.commands.push(checkVideoConsistencyCommand);
 program.commands.push(repairMismatchedVideoIdsCommand);
 program.commands.push(findMissingPresentationsCommand);
+program.commands.push(findDuplicateFolderNamesCommand);
   
 console.log("DEBUG: Commands after adding commands:", program.commands.map((cmd: any) => cmd.name()));
 

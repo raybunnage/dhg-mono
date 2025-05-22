@@ -81,6 +81,10 @@ function display_help() {
   echo -e "    check-professional-docs    Check for professional documents with presentations"
   echo -e "    find-missing-presentations Find top-level folders with videos that need presentations created"
   echo -e "    create-missing-presentations Create presentations for folders that don't have them yet"
+  echo -e "    find-duplicate-folder-names Find folders with duplicate names and list their presentations and videos"
+  echo -e "      -d, --path-depth <number>  Folder depth to check (default: 0)"
+  echo -e "      -o, --output-file <path>   Output file path for the results"
+  echo -e "      -v, --verbose              Show detailed logs during processing"
   echo -e "    repair-mismatched-video-ids Find presentations with mismatched video IDs compared to their high-level folders"
   echo -e "      --folder-depth <number>    Folder depth to check (default: 0)"
   echo -e "      -v, --verbose              Show detailed logs during processing"
@@ -388,6 +392,12 @@ if [[ "$1" == "create-missing-presentations" ]]; then
   
   # Execute the command
   track_command "create-missing-presentations" "ts-node $SCRIPT_DIR/commands/create-missing-presentations.ts ${@:2}"
+  exit $?
+fi
+
+# Add find-duplicate-folder-names command
+if [[ "$1" == "find-duplicate-folder-names" ]]; then
+  track_command "find-duplicate-folder-names" "ts-node $SCRIPT_DIR/commands/find-duplicate-folder-names.ts ${@:2}"
   exit $?
 fi
 
