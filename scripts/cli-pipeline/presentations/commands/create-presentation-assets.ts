@@ -398,9 +398,9 @@ export async function createPresentationAssetsCommand(options: {
             let assetRole = 'supplementary';
             if (file.name.toLowerCase().includes('transcript')) {
               assetType = 'transcript';
-              assetRole = 'primary';
+              assetRole = 'main'; // Using 'main' instead of 'primary' as it's a valid enum value
             } else if (file.name.toLowerCase().includes('summary')) {
-              assetType = 'summary';
+              assetType = 'document'; // Using 'document' instead of 'summary' as it's a valid enum value
               assetRole = 'supplementary';
             } else if (file.name.toLowerCase().includes('bio') || 
                       file.name.toLowerCase().includes('profile')) {
