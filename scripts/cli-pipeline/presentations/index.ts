@@ -1151,7 +1151,7 @@ program
   .command('create-presentations-from-mp4')
   .description('Create presentation records for MP4 files in sources_google')
   .option('--no-dry-run', 'Actually create the presentations instead of just showing what would be created')
-  .option('-l, --limit <number>', 'Limit the number of MP4 files to process', '100')
+  .option('-l, --limit <number>', 'Limit the number of MP4 files to process', '150')
   .option('-v, --verbose', 'Show detailed logs')
   .option('--fix-missing-folders', 'Fix presentations with missing high-level folder source IDs')
   .action(async (options: any) => {

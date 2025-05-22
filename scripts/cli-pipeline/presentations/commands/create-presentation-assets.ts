@@ -404,7 +404,7 @@ export async function createPresentationAssetsCommand(options: {
               assetRole = 'supplementary';
             } else if (file.name.toLowerCase().includes('bio') || 
                       file.name.toLowerCase().includes('profile')) {
-              assetType = 'expert_bio';
+              assetType = 'document'; // Using 'document' instead of 'expert_bio' as it's a valid enum value
               assetRole = 'supplementary';
             }
             

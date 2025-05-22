@@ -84,7 +84,7 @@ const command = new Command('find-missing-presentations')
               
               createResult.created.forEach(item => {
                 const presentation = item.presentation;
-                const expertName = presentation.expert_id ? 'Found' : 'Not Found';
+                const expertName = presentation.expert_document_id ? 'Found' : 'Not Found';
                 process.stdout.write(`| ${presentation.id.substring(0, 8)}... | ${presentation.title} | ${item.folder.name} | ${expertName} |\n`);
               });
             }

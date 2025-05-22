@@ -6,6 +6,15 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
+# Export Supabase environment variables
+ENV_DEV_FILE="${ROOT_DIR}/.env.development"
+if [ -f "$ENV_DEV_FILE" ]; then
+  echo "Loading environment variables from $ENV_DEV_FILE"
+  export $(grep -E "SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY" "$ENV_DEV_FILE" | xargs)
+else
+  echo "Warning: .env.development file not found at $ENV_DEV_FILE"
+fi
+
 # Function to execute a command with tracking
 track_command() {
   local pipeline_name="presentations"
@@ -137,6 +146,8 @@ function display_help() {
   echo -e "   Options:"
   echo -e "     --dry-run                   Preview changes (default)"
   echo -e "     --no-dry-run                Actually create the presentations"
+  echo -e "     -l, --limit <number>        Limit the number of MP4 files to process (default: 150)"
+  echo -e "     -v, --verbose               Show detailed logs"
   echo -e "     --fix-missing-folders       Fix presentations with missing folder IDs"
   echo ""
   
@@ -169,8 +180,10 @@ function display_help() {
   echo -e "  # Process MP4 files and generate AI summaries"
   echo -e "  presentations-cli process-mp4-files --limit 10 --batch-size 5"
   echo ""
-  echo -e "  # Create presentations from MP4 files"
+  echo -e "  # Create presentations from MP4 files (default limit is 150)"
   echo -e "  presentations-cli create-presentations-from-mp4 --no-dry-run -v"
+  echo -e "  # Process more files by setting a higher limit"
+  echo -e "  presentations-cli create-presentations-from-mp4 --no-dry-run -v --limit 300"
   echo ""
   echo -e "  # Create assets for all presentations"
   echo -e "  presentations-cli create-presentation-assets"

@@ -2352,7 +2352,7 @@ export class PresentationService {
           }
           
           // Prepare the new presentation data
-          // Now includes all fields required by the current schema
+          // Only include fields that exist in the presentations table schema
           const newPresentation = {
             id: uuidv4(), // Generate a UUID for the new presentation
             title: folder.name,

@@ -22,7 +22,7 @@ export const createPresentationsFromMp4Command = async (options: {
   verbose?: boolean;
   fixMissingFolders?: boolean;
 }) => {
-  const { dryRun = true, limit = 100, verbose = false, fixMissingFolders = false } = options;
+  const { dryRun = true, limit = 150, verbose = false, fixMissingFolders = false } = options;
   
   Logger.info(`Starting create-presentations-from-mp4 command ${dryRun ? '(DRY RUN)' : ''}`);
   if (fixMissingFolders) {
@@ -461,6 +461,7 @@ export const createPresentationsFromMp4Command = async (options: {
       }
       
       // Create presentation object
+      // Only include fields that are in the presentations table schema
       const presentation = {
         id: uuidv4(),
         title,
@@ -468,7 +469,7 @@ export const createPresentationsFromMp4Command = async (options: {
         web_view_link: file.web_view_link,
         root_drive_id: file.root_drive_id,
         duration_seconds: durationSeconds,
-        expert_id: expertId,
+        // expert_id field doesn't exist in the presentations table schema
         expert_document_id: expertDocumentId,
         high_level_folder_source_id: highLevelFolderId,
         created_at: new Date().toISOString(),
@@ -502,7 +503,7 @@ export const createPresentationsFromMp4Command = async (options: {
         for (const presentation of sample) {
           Logger.info(`- Title: ${presentation.title}`);
           Logger.info(`  Video Source: ${presentation.video_source_id}`);
-          Logger.info(`  Expert ID: ${presentation.expert_id || 'None'}`);
+          Logger.info(`  Expert Document ID: ${presentation.expert_document_id || 'None'}`);
           Logger.info(`  Duration: ${presentation.duration_seconds ? Math.floor(presentation.duration_seconds / 60) + 'm ' + (presentation.duration_seconds % 60) + 's' : 'Unknown'}\n`);
         }
         
@@ -702,7 +703,7 @@ if (require.main === module) {
   program
     .description('Create presentation records for MP4 files in sources_google')
     .option('--no-dry-run', 'Actually create the presentations instead of just showing what would be created')
-    .option('-l, --limit <number>', 'Limit the number of MP4 files to process', '100')
+    .option('-l, --limit <number>', 'Limit the number of MP4 files to process', '150')
     .option('-v, --verbose', 'Show detailed logs')
     .action(async (options) => {
       await createPresentationsFromMp4Command({
