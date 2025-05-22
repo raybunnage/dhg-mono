@@ -70,7 +70,7 @@
     "dhg-tree": "./scripts/show-tree.js"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-code": "^0.2.9",
+    "@anthropic-ai/claude-code": "^1.0.1",
     "gray-matter": "^4.0.3",
     "netlify-cli": "18.0.4",
     "supabase": "2.12.1",
