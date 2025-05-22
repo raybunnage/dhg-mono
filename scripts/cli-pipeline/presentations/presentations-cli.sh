@@ -13,10 +13,10 @@ track_command() {
   shift
   local full_command="$@"
   
-  # For check-video-consistency command, add special handling to ensure output is visible
-  if [[ "$command_name" == "check-video-consistency" ]]; then
+  # For commands that need special handling to ensure output is visible
+  if [[ "$command_name" == "check-video-consistency" || "$command_name" == "find-missing-presentations" ]]; then
     # Execute with full output passthrough
-    echo "Running check-video-consistency command..."
+    echo "Running $command_name command with direct output..."
     if [ -f "$TRACKER_TS" ]; then
       eval "npx ts-node \"$TRACKER_TS\" \"$pipeline_name\" \"$command_name\" \"$full_command\"" 2>&1
       return $?
@@ -79,6 +79,7 @@ function display_help() {
   echo -e "    show-ai-summary-status     Show AI summary status in markdown table"
   echo -e "    check-presentation-titles  Check titles against processed content"
   echo -e "    check-professional-docs    Check for professional documents with presentations"
+  echo -e "    find-missing-presentations Find top-level folders with videos that need presentations created"
   echo -e "    repair-mismatched-video-ids Find presentations with mismatched video IDs compared to their high-level folders"
   echo -e "      --folder-depth <number>    Folder depth to check (default: 0)"
   echo -e "      -v, --verbose              Show detailed logs during processing"
@@ -326,6 +327,42 @@ fi
 
 if [[ "$1" == "test-process-document" ]]; then
   track_command "test-process-document" "ts-node $SCRIPT_DIR/index.ts test-process-document ${@:2}"
+  exit $?
+fi
+
+if [[ "$1" == "find-missing-presentations" ]]; then
+  # Add confirmation step for create-missing without dry-run
+  if [[ "${@:2}" == *"--create-missing"* && "${@:2}" != *"--dry-run"* && "${@:2}" != *"--dry-run=true"* ]]; then
+    echo -e "\n⚠️ CAUTION: You are about to create presentations in the database."
+    read -p "Are you sure you want to proceed? (y/N): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+      echo "Operation canceled."
+      exit 0
+    fi
+    echo "Proceeding with creating presentations..."
+  fi
+  
+  # Run directly from command file, skipping the index.ts routing
+  track_command "find-missing-presentations" "ts-node $SCRIPT_DIR/commands/find-missing-presentations.ts ${@:2}"
+  exit $?
+fi
+
+# Create one presentation command (helper command for testing)
+if [[ "$1" == "create-one-presentation" ]]; then
+  echo "Creating a single presentation for a specific folder..."
+  
+  # Add confirmation if not in dry-run mode
+  if [[ "$*" != *"--dry-run"* ]]; then
+    echo -e "\n⚠️ CAUTION: You are about to create a presentation in the database."
+    read -p "Are you sure you want to proceed? (y/N): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+      echo "Operation canceled."
+      exit 0
+    fi
+    echo "Proceeding with creating presentation..."
+  fi
+  
+  track_command "create-one-presentation" "ts-node $SCRIPT_DIR/test-create-one-presentation.ts ${@:2}"
   exit $?
 fi
 

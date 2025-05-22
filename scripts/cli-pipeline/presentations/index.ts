@@ -13,6 +13,7 @@ import { processMp4FilesCommand } from './commands/process-mp4-files';
 import { testProcessDocumentCommand } from './commands/test-process-document';
 // Archived: import checkVideoConsistencyCommand from './commands/check-video-consistency';
 import repairMismatchedVideoIdsCommand from './commands/repair-mismatched-video-ids';
+import findMissingPresentationsCommand from './commands/find-missing-presentations';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
@@ -384,6 +385,7 @@ program.commands.push(generateSummaryCommand);
 program.commands.push(testProcessDocumentCommand);
 // Archived: program.commands.push(checkVideoConsistencyCommand);
 program.commands.push(repairMismatchedVideoIdsCommand);
+program.commands.push(findMissingPresentationsCommand);
   
 console.log("DEBUG: Commands after adding commands:", program.commands.map((cmd: any) => cmd.name()));
 

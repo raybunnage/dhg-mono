@@ -1,6 +1,8 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
 
+ repair-mismatched-video-ids
+
   To ensure I always follow the "NEVER ADD FILES TO ROOT DIRECTORY" rule in the future, I will:
   1. Always read CLAUDE.md at the start of our conversation
   2. Check for appropriate subdirectories before creating any new files
