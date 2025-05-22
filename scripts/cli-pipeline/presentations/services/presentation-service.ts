@@ -1,6 +1,7 @@
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { Logger } from '../../../../packages/shared/utils/logger';
 import * as fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 interface PresentationReviewOptions {
   presentationId?: string;
@@ -525,7 +526,7 @@ export class PresentationService {
         .select(`
           id,
           title,
-          main_video_id,
+          video_source_id,
           created_at,
           updated_at
         `)
@@ -566,7 +567,7 @@ export class PresentationService {
         } else if (sourcesWithExpert && sourcesWithExpert.length > 0) {
           const sourceIds = sourcesWithExpert.map((s: any) => s.source_id);
           filteredPresentations = presentations.filter((p: any) => 
-            p.main_video_id && sourceIds.includes(p.main_video_id)
+            p.video_source_id && sourceIds.includes(p.video_source_id)
           );
         } else {
           // No sources found for this expert
@@ -588,7 +589,7 @@ export class PresentationService {
         } else if (dhgSources && dhgSources.length > 0) {
           const dhgSourceIds = dhgSources.map((s: any) => s.id);
           filteredPresentations = filteredPresentations.filter((p: any) => 
-            p.main_video_id && dhgSourceIds.includes(p.main_video_id)
+            p.video_source_id && dhgSourceIds.includes(p.video_source_id)
           );
           
           Logger.info(`Filtered to ${filteredPresentations.length} presentations from Dynamic Healing Discussion Group`);
@@ -643,7 +644,7 @@ export class PresentationService {
           let expertName = null;
           let experts: { id: string, name: string }[] = [];
           
-          if (presentation.main_video_id) {
+          if (presentation.video_source_id) {
             // Get all experts associated with this source
             const { data: sourceExperts, error: sourceError } = await this.supabaseClient
               .from('sources_google_experts')
@@ -651,7 +652,7 @@ export class PresentationService {
                 expert_id, 
                 experts(id, expert_name, full_name)
               `)
-              .eq('source_id', presentation.main_video_id);
+              .eq('source_id', presentation.video_source_id);
               
             if (!sourceError && sourceExperts && sourceExperts.length > 0) {
               // Extract expert info from each record
@@ -746,7 +747,7 @@ export class PresentationService {
           // Check if we have a 'Video Summary Transcript' document with raw_content
           const videoSummaryTranscript = expertDocuments.find(doc => 
             doc.document_types?.document_type === 'Video Summary Transcript' && 
-            doc.source_id === presentation.main_video_id &&
+            doc.source_id === presentation.video_source_id &&
             doc.raw_content && 
             doc.processing_status === 'completed'
           );
@@ -793,7 +794,7 @@ export class PresentationService {
           
           // Check if we have the specific expert document for this presentation's source_id
           const hasTranscriptDocument = expertDocuments.some(doc => 
-            doc.source_id === presentation.main_video_id && 
+            doc.source_id === presentation.video_source_id && 
             doc.raw_content !== null && 
             doc.raw_content !== undefined
           );
@@ -1185,7 +1186,7 @@ export class PresentationService {
           const { data: presentations, error: presError } = await this._supabaseClient
             .from('presentations')
             .select('id, title')
-            .eq('main_video_id', videoSource.id);
+            .eq('video_source_id', videoSource.id);
           
           if (presError || !presentations || presentations.length === 0) {
             continue;
@@ -1297,7 +1298,7 @@ export class PresentationService {
     // Get all presentations
     const { data: presentations, error: presError } = await this._supabaseClient
       .from('presentations')
-      .select('id, title, main_video_id');
+      .select('id, title, video_source_id');
     
     if (presError || !presentations || presentations.length === 0) {
       return {
@@ -1315,7 +1316,7 @@ export class PresentationService {
     
     // Get video sources for presentations
     const videoIds = presentations
-      .map((p: any) => p.main_video_id)
+      .map((p: any) => p.video_source_id)
       .filter((id: string) => id);
     
     if (videoIds.length === 0) {
@@ -1362,7 +1363,7 @@ export class PresentationService {
     let bestScore = 0;
     
     for (const presentation of presentations) {
-      const videoName = videoNames[presentation.main_video_id] || '';
+      const videoName = videoNames[presentation.video_source_id] || '';
       const score = this.calculateNameSimilarity(docName, videoName);
       
       if (score > bestScore && score > 0.5) {
@@ -1869,7 +1870,7 @@ export class PresentationService {
         .select(`
           id,
           title,
-          main_video_id
+          video_source_id
         `)
         .order('created_at', { ascending: false });
       
@@ -1908,7 +1909,7 @@ export class PresentationService {
         } else if (sourcesWithExpert && sourcesWithExpert.length > 0) {
           const sourceIds = sourcesWithExpert.map((s: any) => s.source_id);
           filteredPresentations = presentations.filter((p: any) => 
-            p.main_video_id && sourceIds.includes(p.main_video_id)
+            p.video_source_id && sourceIds.includes(p.video_source_id)
           );
         } else {
           // No sources found for this expert
@@ -1940,11 +1941,11 @@ export class PresentationService {
           let expertId = null;
           let expertName = null;
           
-          if (presentation.main_video_id) {
+          if (presentation.video_source_id) {
             const { data: source, error: sourceError } = await this.supabaseClient
               .from('sources_google_experts')
               .select('expert_id')
-              .eq('source_id', presentation.main_video_id)
+              .eq('source_id', presentation.video_source_id)
               .single();
               
             if (!sourceError && source && source.expert_id) {
@@ -2070,6 +2071,561 @@ export class PresentationService {
     } catch (error) {
       Logger.error('Error checking professional documents:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Find top-level folders with main_video_id but no presentations
+   * @param options Optional parameters for the search
+   * @returns Array of folder objects that need presentations
+   */
+  async findFoldersWithoutPresentations(options?: {
+    limit?: number;
+  }): Promise<any[]> {
+    try {
+      process.stdout.write('Finding top-level folders with main_video_id...\n');
+      
+      // Step 1: Find top-level folders (path_depth = 0) with main_video_id not null
+      const { data: topLevelFolders, error: foldersError } = await this._supabaseClient
+        .from('sources_google')
+        .select('id, name, drive_id, path, main_video_id, path_depth')
+        .eq('path_depth', 0)
+        .not('main_video_id', 'is', null)
+        .order('name')
+        .limit(options?.limit || 1000);
+      
+      if (foldersError) {
+        process.stdout.write(`ERROR fetching top-level folders: ${foldersError.message}\n`);
+        throw foldersError;
+      }
+      
+      if (!topLevelFolders || topLevelFolders.length === 0) {
+        process.stdout.write('No top-level folders with main_video_id found.\n');
+        return [];
+      }
+      
+      process.stdout.write(`Found ${topLevelFolders.length} top-level folders with main_video_id.\n`);
+      
+      // Step 2: Check which folders don't have presentations
+      const missingPresentations = [];
+      
+      for (const folder of topLevelFolders) {
+        // Check if there's a presentation for this folder
+        const { data: presentations, error: presError } = await this._supabaseClient
+          .from('presentations')
+          .select('id, title')
+          .eq('high_level_folder_source_id', folder.id);
+        
+        if (presError) {
+          process.stdout.write(`ERROR checking presentations for folder ${folder.id}: ${presError.message}\n`);
+          continue;
+        }
+        
+        // If no presentations, add to missing list
+        if (!presentations || presentations.length === 0) {
+          missingPresentations.push({
+            id: folder.id,
+            name: folder.name,
+            drive_id: folder.drive_id,
+            main_video_id: folder.main_video_id,
+            path: folder.path
+          });
+        }
+      }
+      
+      return missingPresentations;
+    } catch (error) {
+      Logger.error('Error in findFoldersWithoutPresentations:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find videos that need text extraction/processing
+   * @param options Optional parameters for the search
+   * @returns Array of video objects that need processing
+   */
+  async findVideosNeedingProcessing(options?: {
+    includeProcessed?: boolean;
+    limit?: number;
+    folderIds?: string[];
+    searchName?: string;
+    forceUnprocessed?: boolean;
+  }): Promise<any[]> {
+    try {
+      process.stdout.write('Searching for videos that need processing...\n');
+      const videosNeedingProcessing = [];
+      
+      // Build the query for folders with main_video_id
+      let query = this._supabaseClient
+        .from('sources_google')
+        .select('id, name, drive_id, path, main_video_id')
+        .not('main_video_id', 'is', null);
+        
+      // If searchName is provided, filter by folder name
+      if (options?.searchName) {
+        process.stdout.write(`Filtering for folders containing: ${options.searchName}\n`);
+        query = query.ilike('name', `%${options.searchName}%`);
+      }
+      
+      // Execute query with limit and order
+      const { data: folders, error: foldersError } = await query
+        .order('name')
+        .limit(options?.limit || 1000);
+      
+      if (foldersError) {
+        process.stdout.write(`ERROR fetching folders with main_video_id: ${foldersError.message}\n`);
+        throw foldersError;
+      }
+      
+      if (!folders || folders.length === 0) {
+        process.stdout.write('No folders with main_video_id found.\n');
+        return [];
+      }
+      
+      process.stdout.write(`Found ${folders.length} folders with main_video_id to check.\n`);
+      
+      // Filter by folder IDs if provided
+      const filteredFolders = options?.folderIds 
+        ? folders.filter((folder: any) => options.folderIds?.includes(folder.id))
+        : folders;
+      
+      for (const folder of filteredFolders) {
+        if (!folder.main_video_id) continue;
+        
+        // Check if the main video needs text extraction (raw_content is null)
+        const { data: expertDocuments, error: docsError } = await this._supabaseClient
+          .from('expert_documents')
+          .select('id, raw_content')
+          .eq('source_id', folder.main_video_id);
+        
+        if (docsError) {
+          process.stdout.write(`ERROR checking expert documents for video ${folder.main_video_id}: ${docsError.message}\n`);
+          continue;
+        }
+        
+        const needsProcessing = !expertDocuments || 
+                               expertDocuments.length === 0 || 
+                               expertDocuments.every((doc: any) => doc.raw_content === null);
+        
+        // Debug info about why a file does/doesn't need processing
+        if (options?.searchName) {
+          if (needsProcessing) {
+            process.stdout.write(`Video ${folder.main_video_id} needs processing because: `);
+            if (!expertDocuments) {
+              process.stdout.write('No expert documents found\n');
+            } else if (expertDocuments.length === 0) {
+              process.stdout.write('Expert documents array is empty\n');
+            } else {
+              process.stdout.write('All expert documents have null raw_content\n');
+              expertDocuments.forEach((doc: any, index: number) => {
+                process.stdout.write(`  Doc ${index + 1}: ID=${doc.id}, raw_content=${doc.raw_content === null ? 'null' : 'present'}\n`);
+              });
+            }
+          } else {
+            process.stdout.write(`Video ${folder.main_video_id} (${folder.name}) already processed: `);
+            process.stdout.write(`${expertDocuments.length} expert documents found with content\n`);
+            expertDocuments.forEach((doc: any, index: number) => {
+              process.stdout.write(`  Doc ${index + 1}: ID=${doc.id}, raw_content=${doc.raw_content === null ? 'null' : 'present'}\n`);
+            });
+          }
+        }
+        
+        // Include the video if it needs processing, or if include-processed flag is set,
+        // or if force-unprocessed is set
+        if (needsProcessing || options?.includeProcessed || options?.forceUnprocessed) {
+          // Get the video details
+          const { data: videoDetails, error: videoError } = await this._supabaseClient
+            .from('sources_google')
+            .select('id, name, mime_type')
+            .eq('id', folder.main_video_id)
+            .single();
+            
+          if (videoError || !videoDetails) {
+            process.stdout.write(`ERROR fetching video details for ${folder.main_video_id}: ${videoError?.message || 'No details found'}\n`);
+            continue;
+          }
+          
+          videosNeedingProcessing.push({
+            id: videoDetails.id,
+            name: videoDetails.name,
+            folder_name: folder.name,
+            folder_id: folder.id,
+            mime_type: videoDetails.mime_type,
+            needs_processing: options?.forceUnprocessed ? true : needsProcessing
+          });
+        }
+      }
+      
+      process.stdout.write(`Found ${videosNeedingProcessing.length} videos that need processing.\n`);
+      return videosNeedingProcessing;
+    } catch (error) {
+      process.stdout.write(`ERROR in findVideosNeedingProcessing: ${error instanceof Error ? error.message : String(error)}\n`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Create presentations for missing high-level folders
+   * @param folders Array of folder objects that need presentations
+   * @param options Optional parameters for the operation
+   * @returns Information about created presentations
+   */
+  async createMissingPresentations(folders: any[], options?: {
+    dryRun?: boolean;
+    batchSize?: number;
+    verbose?: boolean;
+    createAssets?: boolean;
+  }): Promise<{
+    success: boolean;
+    created: any[];
+    failed: any[];
+    message?: string;
+    assets?: any;
+  }> {
+    try {
+      // Only run in dry run mode if explicitly set to true or if not specified
+      const dryRun = options?.dryRun === undefined ? true : options.dryRun;
+      const batchSize = options?.batchSize || 10;
+      const verbose = options?.verbose || false;
+      
+      process.stdout.write(`${dryRun ? '[DRY RUN] ' : ''}Creating presentations for ${folders.length} folders (batch size: ${batchSize})\n`);
+      
+      // Limit to batch size
+      const foldersToProcess = folders.slice(0, batchSize);
+      
+      if (foldersToProcess.length === 0) {
+        return {
+          success: true,
+          created: [],
+          failed: [],
+          message: 'No folders to process'
+        };
+      }
+      
+      const created: any[] = [];
+      const failed: any[] = [];
+      
+      for (const folder of foldersToProcess) {
+        try {
+          process.stdout.write(`${dryRun ? '[DRY RUN] ' : ''}Processing folder: ${folder.name} (${folder.id})\n`);
+          
+          if (!folder.main_video_id) {
+            process.stdout.write(`Skipping folder ${folder.name} - no main_video_id\n`);
+            failed.push({
+              folder: folder,
+              reason: 'No main_video_id'
+            });
+            continue;
+          }
+          
+          // Get video details from main_video_id
+          const { data: videoDetails, error: videoError } = await this._supabaseClient
+            .from('sources_google')
+            .select('id, name, mime_type, drive_id, created_at, modified_at')
+            .eq('id', folder.main_video_id)
+            .single();
+          
+          if (videoError || !videoDetails) {
+            process.stdout.write(`Error getting video details for ${folder.main_video_id}: ${videoError?.message || 'Not found'}\n`);
+            failed.push({
+              folder: folder,
+              reason: `Video details error: ${videoError?.message || 'Not found'}`
+            });
+            continue;
+          }
+          
+          process.stdout.write(`Found video: ${videoDetails.name} (${videoDetails.id})\n`);
+          
+          // Get expert document for the video
+          let expertDocumentId = null;
+          const { data: videoDocuments, error: videoDocError } = await this._supabaseClient
+            .from('expert_documents')
+            .select('id')
+            .eq('source_id', folder.main_video_id);
+            
+          if (!videoDocError && videoDocuments && videoDocuments.length > 0) {
+            expertDocumentId = videoDocuments[0].id;
+            process.stdout.write(`Found expert document for video: ${expertDocumentId}\n`);
+          } else {
+            process.stdout.write(`No expert document found for video ${folder.main_video_id}\n`);
+          }
+          
+          // Prepare the new presentation data
+          // Now includes all fields required by the current schema
+          const newPresentation = {
+            id: uuidv4(), // Generate a UUID for the new presentation
+            title: folder.name,
+            video_source_id: folder.main_video_id,
+            high_level_folder_source_id: folder.id,
+            root_drive_id: folder.drive_id,
+            web_view_link: `https://drive.google.com/drive/folders/${folder.drive_id}`,
+            duration_seconds: 0, // We'll update this when we get actual video duration
+            expert_document_id: expertDocumentId, // Set from the video's expert document
+            view_count: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          // Try to get video metadata for duration
+          try {
+            const { data: videoMetadata } = await this._supabaseClient
+              .from('video_metadata')
+              .select('duration_seconds')
+              .eq('source_id', folder.main_video_id)
+              .single();
+              
+            if (videoMetadata?.duration_seconds) {
+              newPresentation.duration_seconds = videoMetadata.duration_seconds;
+              process.stdout.write(`Found video duration: ${videoMetadata.duration_seconds} seconds\n`);
+            }
+          } catch (metadataError) {
+            process.stdout.write(`No video metadata found. Setting default duration.\n`);
+          }
+          
+          // Try to find an expert based on the folder name or video name
+          const folderNameLower = folder.name.toLowerCase();
+          const videoNameLower = videoDetails.name.toLowerCase();
+          
+          // Common expert names to look for
+          const expertKeywords = [
+            'porges', 'clawson', 'carter', 'wager', 'naviaux', 'hanscom', 
+            'lederman', 'lustig', 'pennebaker', 'aria', 'garland', 'simonsson',
+            'germer', 'wilkinson', 'luskin', 'panda', 'sutphin'
+          ];
+          
+          // Look for expert in folder name
+          const matchingExpertKeyword = expertKeywords.find(keyword => 
+            folderNameLower.includes(keyword) || videoNameLower.includes(keyword)
+          );
+          
+          if (matchingExpertKeyword) {
+            process.stdout.write(`Found potential expert keyword: ${matchingExpertKeyword}\n`);
+            
+            // Try to find the expert ID from the keyword
+            const { data: expertData, error: expertError } = await this._supabaseClient
+              .from('experts')
+              .select('id, expert_name')
+              .ilike('expert_name', `%${matchingExpertKeyword}%`)
+              .limit(1);
+            
+            if (!expertError && expertData && expertData.length > 0) {
+              process.stdout.write(`Found expert: ${expertData[0].expert_name} (${expertData[0].id})\n`);
+              
+              // Try to find an expert document for this expert to link
+              try {
+                // First try to find a bio document
+                const { data: bioDocuments, error: bioError } = await this._supabaseClient
+                  .from('expert_documents')
+                  .select('id, document_type_id, expert_id')
+                  .eq('expert_id', expertData[0].id)
+                  .eq('document_type_id', '4') // Bio type (4 = Bio)
+                  .order('created_at', { ascending: false })
+                  .limit(1);
+                
+                if (!bioError && bioDocuments && bioDocuments.length > 0) {
+                  // Found a bio document
+                  newPresentation.expert_document_id = bioDocuments[0].id;
+                  process.stdout.write(`Found expert bio document: ${bioDocuments[0].id}\n`);
+                } else {
+                  // If no bio, try CV or Profile
+                  const { data: otherDocs, error: docsError } = await this._supabaseClient
+                    .from('expert_documents')
+                    .select('id, document_type_id, expert_id')
+                    .eq('expert_id', expertData[0].id)
+                    .in('document_type_id', ['21', '22']) // 21 = CV, 22 = Profile
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                  
+                  if (!docsError && otherDocs && otherDocs.length > 0) {
+                    newPresentation.expert_document_id = otherDocs[0].id;
+                    process.stdout.write(`Found expert ${otherDocs[0].document_type_id === '21' ? 'CV' : 'Profile'} document: ${otherDocs[0].id}\n`);
+                  } else {
+                    // If no appropriate document found, try any expert document
+                    const { data: anyDocs, error: anyError } = await this._supabaseClient
+                      .from('expert_documents')
+                      .select('id, document_type_id, expert_id')
+                      .eq('expert_id', expertData[0].id)
+                      .order('created_at', { ascending: false })
+                      .limit(1);
+                    
+                    if (!anyError && anyDocs && anyDocs.length > 0) {
+                      newPresentation.expert_document_id = anyDocs[0].id;
+                      process.stdout.write(`Found expert document (type ${anyDocs[0].document_type_id}): ${anyDocs[0].id}\n`);
+                    } else {
+                      process.stdout.write(`No expert documents found for expert ${expertData[0].expert_name}\n`);
+                    }
+                  }
+                }
+              } catch (docFindError) {
+                process.stdout.write(`Error finding expert document: ${docFindError instanceof Error ? docFindError.message : String(docFindError)}\n`);
+              }
+            } else {
+              process.stdout.write(`No expert found for keyword: ${matchingExpertKeyword}\n`);
+            }
+          }
+          
+          if (dryRun) {
+            process.stdout.write(`[DRY RUN] Would create presentation: ${JSON.stringify(newPresentation, null, 2)}\n`);
+            created.push({
+              folder: folder,
+              presentation: newPresentation
+            });
+          } else {
+            // Actually create the presentation
+            const { data: insertedPresentation, error: insertError } = await this._supabaseClient
+              .from('presentations')
+              .insert(newPresentation)
+              .select();
+            
+            if (insertError) {
+              process.stdout.write(`Error creating presentation for folder ${folder.name}: ${insertError.message}\n`);
+              failed.push({
+                folder: folder,
+                reason: `Insert error: ${insertError.message}`
+              });
+            } else {
+              process.stdout.write(`Created presentation: ${newPresentation.title} (${newPresentation.id})\n`);
+              created.push({
+                folder: folder,
+                presentation: insertedPresentation[0]
+              });
+            }
+          }
+        } catch (folderError) {
+          process.stdout.write(`Error processing folder ${folder.name}: ${folderError instanceof Error ? folderError.message : String(folderError)}\n`);
+          failed.push({
+            folder: folder,
+            reason: `Processing error: ${folderError instanceof Error ? folderError.message : String(folderError)}`
+          });
+        }
+      }
+      
+      const message = dryRun
+        ? `[DRY RUN] Would create ${created.length} presentations (${failed.length} would fail)`
+        : `Created ${created.length} presentations (${failed.length} failed)`;
+      
+      process.stdout.write(`${message}\n`);
+      
+      // Create presentation assets if requested
+      let assetsResult = null;
+      if (options?.createAssets && created.length > 0) {
+        process.stdout.write(`\nCreating presentation assets for ${created.length} new presentations...\n`);
+        
+        // Get the presentation IDs from the created presentations
+        const presentationIds = created.map(c => c.presentation.id);
+        
+        try {
+          // We can't directly use createPresentationAssetsCommand in dry-run mode
+          // because the presentations don't actually exist yet,
+          // so we'll simulate the asset creation process for dry-run
+          
+          // Loop through presentations and create assets for each
+          const assetsResults = [];
+          
+          for (const createdItem of created) {
+            const presentationId = createdItem.presentation.id;
+            const folderId = createdItem.folder.id;
+            process.stdout.write(`Creating assets for presentation ${presentationId}...\n`);
+            
+            if (dryRun) {
+              // In dry-run mode, we'll do our own asset discovery
+              process.stdout.write(`[DRY RUN] Finding assets for folder ${createdItem.folder.name} (${folderId})...\n`);
+              
+              // Get files in the high-level folder
+              const { data: folderFiles, error: filesError } = await this._supabaseClient
+                .from('sources_google')
+                .select('id, name, mime_type, drive_id, parent_folder_id')
+                .eq('parent_folder_id', createdItem.folder.drive_id)
+                .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
+              
+              if (filesError) {
+                process.stdout.write(`Error fetching files for folder: ${filesError.message}\n`);
+                assetsResults.push({
+                  presentationId,
+                  result: {
+                    success: false,
+                    message: `Error fetching files: ${filesError.message}`
+                  }
+                });
+                continue;
+              }
+              
+              if (!folderFiles || folderFiles.length === 0) {
+                process.stdout.write(`No files found in folder.\n`);
+              } else {
+                process.stdout.write(`[DRY RUN] Found ${folderFiles.length} files in folder. Would create assets for:\n`);
+                
+                // Show files that would become assets
+                for (const file of folderFiles) {
+                  if (file.id !== createdItem.folder.main_video_id) { // Skip the main video
+                    process.stdout.write(`  - ${file.name} (${file.id}) - ${file.mime_type}\n`);
+                  }
+                }
+              }
+              
+              // Get subfolders to check for more files
+              const { data: subfolders, error: subfolderError } = await this._supabaseClient
+                .from('sources_google')
+                .select('id, name, drive_id')
+                .eq('parent_folder_id', createdItem.folder.drive_id)
+                .eq('mime_type', 'application/vnd.google-apps.folder');
+              
+              if (!subfolderError && subfolders && subfolders.length > 0) {
+                process.stdout.write(`[DRY RUN] Found ${subfolders.length} subfolders. Would search for files in each.\n`);
+              }
+              
+              assetsResults.push({
+                presentationId,
+                result: {
+                  success: true,
+                  message: `[DRY RUN] Would create assets for ${folderFiles ? folderFiles.length - 1 : 0} files and search ${subfolders ? subfolders.length : 0} subfolders`
+                }
+              });
+            } else {
+              // In non-dry-run mode, use the actual command
+              const createPresentationAssetsCommand = require('../commands/create-presentation-assets').createPresentationAssetsCommand;
+              
+              // Call create-presentation-assets command for this presentation
+              const assetResult = await createPresentationAssetsCommand({
+                presentationId: presentationId,
+                dryRun: false,
+                depth: 6, // Search up to 6 levels deep
+                skipExisting: false // Don't skip, as this is a new presentation
+              });
+              
+              assetsResults.push({
+                presentationId,
+                result: assetResult
+              });
+            }
+          }
+          
+          assetsResult = assetsResults;
+        } catch (assetsError) {
+          process.stdout.write(`Error creating presentation assets: ${assetsError instanceof Error ? assetsError.message : String(assetsError)}\n`);
+          assetsResult = {
+            success: false,
+            error: assetsError instanceof Error ? assetsError.message : String(assetsError)
+          };
+        }
+      }
+      
+      return {
+        success: true,
+        created,
+        failed,
+        message,
+        assets: assetsResult
+      };
+    } catch (error) {
+      process.stdout.write(`ERROR in createMissingPresentations: ${error instanceof Error ? error.message : String(error)}\n`);
+      return {
+        success: false,
+        created: [],
+        failed: [],
+        message: `Error: ${error instanceof Error ? error.message : String(error)}`
+      };
     }
   }
 }

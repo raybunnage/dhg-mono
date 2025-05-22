@@ -31,7 +31,7 @@ export async function createPresentationAssetsCommand(options: {
     // Get presentations with high_level_folder_source_id
     let query = supabase
       .from('presentations')
-      .select('id, title, high_level_folder_source_id, video_source_id')
+      .select('id, title, high_level_folder_source_id, video_source_id, expert_document_id')
       .not('high_level_folder_source_id', 'is', null)
       .order('created_at', { ascending: false });
     
@@ -332,6 +332,7 @@ export async function createPresentationAssetsCommand(options: {
           try {
             // Get the expert_document_id if available
             let expertDocumentId = null;
+            let assetExpertDocumentId = null;
             
             // Lookup expert document for this file source
             const { data: expertDocuments, error: docError } = await supabase
@@ -342,7 +343,8 @@ export async function createPresentationAssetsCommand(options: {
             if (!docError && expertDocuments && expertDocuments.length > 0) {
               // Check if document type is in the unsupported list
               if (!unsupportedDocTypeIds.includes(expertDocuments[0].document_type_id)) {
-                expertDocumentId = expertDocuments[0].id;
+                // Set the asset_expert_document_id from the expert_documents lookup
+                assetExpertDocumentId = expertDocuments[0].id;
               } else {
                 // Skip this file if its document type is unsupported
                 Logger.info(`Skipping file ${file.id} with unsupported document type`);
@@ -350,21 +352,81 @@ export async function createPresentationAssetsCommand(options: {
               }
             }
             
+            // If this is the video source ID that matches the presentation's video_source_id,
+            // lookup the expert document for the presentation's expert_document_id
+            if (file.id === presentation.video_source_id) {
+              const { data: videoDocuments, error: videoDocError } = await supabase
+                .from('expert_documents')
+                .select('id, document_type_id')
+                .eq('source_id', presentation.video_source_id);
+                
+              if (!videoDocError && videoDocuments && videoDocuments.length > 0) {
+                // Use the first document as the presentation's expert_document_id
+                expertDocumentId = videoDocuments[0].id;
+                
+                // Update the presentation's expert_document_id
+                Logger.info(`Setting presentation expert_document_id to ${expertDocumentId} for video ${presentation.video_source_id}`);
+                const { error: updateError } = await supabase
+                  .from('presentations')
+                  .update({ expert_document_id: expertDocumentId })
+                  .eq('id', presentation.id);
+                  
+                if (updateError) {
+                  Logger.error(`Error updating presentation expert_document_id: ${updateError.message}`);
+                }
+              } else {
+                Logger.info(`No expert document found for video ${presentation.video_source_id}`);
+              }
+            }
+            
+            // Determine asset type based on mime type
+            // Default to 'document' instead of 'other' since 'other' isn't in the enum
+            let assetType = 'document';
+            if (file.mime_type.includes('audio')) {
+              assetType = 'audio';
+            } else if (file.mime_type.includes('video')) {
+              assetType = 'video';
+            } else if (file.mime_type.includes('pdf')) {
+              assetType = 'document';
+            } else if (file.mime_type.includes('text')) {
+              assetType = 'transcript';
+            } else if (file.mime_type.includes('document')) {
+              assetType = 'document';
+            }
+            
+            // Determine asset role based on file name and type
+            let assetRole = 'supplementary';
+            if (file.name.toLowerCase().includes('transcript')) {
+              assetType = 'transcript';
+              assetRole = 'primary';
+            } else if (file.name.toLowerCase().includes('summary')) {
+              assetType = 'summary';
+              assetRole = 'supplementary';
+            } else if (file.name.toLowerCase().includes('bio') || 
+                      file.name.toLowerCase().includes('profile')) {
+              assetType = 'expert_bio';
+              assetRole = 'supplementary';
+            }
+            
             if (options.dryRun) {
               Logger.info(`[DRY RUN] Would create presentation_asset for file: ${file.name} (${file.id})`);
               Logger.info(`  source_id: ${file.id}`);
-              Logger.info(`  expert_document_id: ${expertDocumentId || 'null'}`);
+              Logger.info(`  asset_expert_document_id: ${assetExpertDocumentId || 'null'}`);
+              Logger.info(`  asset_type: ${assetType}`);
+              Logger.info(`  asset_role: ${assetRole}`);
               createdForPresentation++;
               continue;
             }
             
-            // Create the presentation_asset
+            // Create the presentation_asset with proper type and role
             const { data: newAsset, error: createError } = await supabase
               .from('presentation_assets')
               .insert({
                 presentation_id: presentation.id,
                 asset_source_id: file.id,
-                asset_expert_document_id: expertDocumentId,
+                asset_expert_document_id: assetExpertDocumentId,
+                asset_type: assetType,
+                asset_role: assetRole,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
               })
