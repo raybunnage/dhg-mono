@@ -297,8 +297,15 @@ if [[ "$1" == "generate-expert-bio" ]]; then
 fi
 
 if [[ "$1" == "review-presentations" ]]; then
-  track_command "review-presentations" "ts-node $SCRIPT_DIR/index.ts review-presentations ${@:2}"
-  exit $?
+  # Check for direct execution flag
+  if [[ "$2" == "--direct" ]]; then
+    echo "Executing review-presentations command directly..."
+    ts-node $SCRIPT_DIR/commands/review-presentations.ts ${@:3}
+    exit $?
+  else
+    track_command "review-presentations" "ts-node $SCRIPT_DIR/commands/review-presentations.ts ${@:2}"
+    exit $?
+  fi
 fi
 
 if [[ "$1" == "check-presentation-titles" ]]; then
