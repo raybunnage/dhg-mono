@@ -14,6 +14,7 @@ import { testProcessDocumentCommand } from './commands/test-process-document';
 // Archived: import checkVideoConsistencyCommand from './commands/check-video-consistency';
 import repairMismatchedVideoIdsCommand from './commands/repair-mismatched-video-ids';
 import findMissingPresentationsCommand from './commands/find-missing-presentations';
+import createMissingPresentationsCommand from './commands/create-missing-presentations';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
