@@ -65,6 +65,9 @@ show_help() {
   echo "  * schema-health        Analyze database schema health and identify issues (2 uses)"
   echo "    check-auth-objects   Check if auth migration objects already exist"
   echo ""
+  echo "RLS POLICIES:"
+  echo "    check-rls-policies   Check and create permissive RLS policies for tables"
+  echo ""
   echo "MIGRATION MANAGEMENT:"
   echo "    migration validate   Validate SQL migration file without executing"
   echo "    migration dry-run    Show what would be executed without running"
@@ -220,6 +223,11 @@ check_auth_objects() {
   track_command "check-auth-objects" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/check-auth-migration-objects.ts $@"
 }
 
+check_rls_policies() {
+  echo "🔒 Checking and creating RLS policies..."
+  track_command "check-rls-policies" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/check-and-create-rls-policies.ts $@"
+}
+
 # Migration command handlers
 migration_validate() {
   echo "🔍 Validating migration file..."
@@ -337,6 +345,9 @@ case "$1" in
     ;;
   "check-auth-objects")
     check_auth_objects "${@:2}"
+    ;;
+  "check-rls-policies")
+    check_rls_policies "${@:2}"
     ;;
   "migration")
     case "$2" in
