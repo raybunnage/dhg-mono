@@ -66,6 +66,44 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_audit_log: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auth_audit_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       citation_expert_aliases: {
         Row: {
           alias_name: string
@@ -91,6 +129,44 @@ export type Database = {
             columns: ["expert_uuid"]
             isOneToOne: false
             referencedRelation: "experts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cli_auth_tokens: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          last_used: string | null
+          name: string
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          last_used?: string | null
+          name: string
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          last_used?: string | null
+          name?: string
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cli_auth_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_details"
             referencedColumns: ["id"]
           },
         ]
@@ -762,7 +838,15 @@ export type Database = {
           owner_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "domains_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_addresses: {
         Row: {
@@ -804,6 +888,13 @@ export type Database = {
             columns: ["domain_id"]
             isOneToOne: false
             referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_details"
             referencedColumns: ["id"]
           },
         ]
@@ -2000,6 +2091,54 @@ export type Database = {
         }
         Relationships: []
       }
+      presentation_assets_backup_20250522: {
+        Row: {
+          asset_expert_document_id: string | null
+          asset_role: Database["public"]["Enums"]["asset_role_enum"] | null
+          asset_source_id: string | null
+          asset_type: Database["public"]["Enums"]["asset_type_enum"] | null
+          created_at: string | null
+          id: string | null
+          importance_level: number | null
+          metadata: Json | null
+          presentation_id: string | null
+          timestamp_end: number | null
+          timestamp_start: number | null
+          updated_at: string | null
+          user_notes: string | null
+        }
+        Insert: {
+          asset_expert_document_id?: string | null
+          asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
+          asset_source_id?: string | null
+          asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
+          created_at?: string | null
+          id?: string | null
+          importance_level?: number | null
+          metadata?: Json | null
+          presentation_id?: string | null
+          timestamp_end?: number | null
+          timestamp_start?: number | null
+          updated_at?: string | null
+          user_notes?: string | null
+        }
+        Update: {
+          asset_expert_document_id?: string | null
+          asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
+          asset_source_id?: string | null
+          asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
+          created_at?: string | null
+          id?: string | null
+          importance_level?: number | null
+          metadata?: Json | null
+          presentation_id?: string | null
+          timestamp_end?: number | null
+          timestamp_start?: number | null
+          updated_at?: string | null
+          user_notes?: string | null
+        }
+        Relationships: []
+      }
       presentations: {
         Row: {
           created_at: string | null
@@ -2130,6 +2269,90 @@ export type Database = {
         }
         Relationships: []
       }
+      presentations_backup_20250521: {
+        Row: {
+          created_at: string | null
+          duration_seconds: number | null
+          expert_document_id: string | null
+          high_level_folder_source_id: string | null
+          id: string | null
+          root_drive_id: string | null
+          title: string | null
+          updated_at: string | null
+          video_source_id: string | null
+          view_count: number | null
+          web_view_link: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          expert_document_id?: string | null
+          high_level_folder_source_id?: string | null
+          id?: string | null
+          root_drive_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+          video_source_id?: string | null
+          view_count?: number | null
+          web_view_link?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          expert_document_id?: string | null
+          high_level_folder_source_id?: string | null
+          id?: string | null
+          root_drive_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+          video_source_id?: string | null
+          view_count?: number | null
+          web_view_link?: string | null
+        }
+        Relationships: []
+      }
+      presentations_backup_20250522: {
+        Row: {
+          created_at: string | null
+          duration_seconds: number | null
+          expert_document_id: string | null
+          high_level_folder_source_id: string | null
+          id: string | null
+          root_drive_id: string | null
+          title: string | null
+          updated_at: string | null
+          video_source_id: string | null
+          view_count: number | null
+          web_view_link: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          expert_document_id?: string | null
+          high_level_folder_source_id?: string | null
+          id?: string | null
+          root_drive_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+          video_source_id?: string | null
+          view_count?: number | null
+          web_view_link?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          expert_document_id?: string | null
+          high_level_folder_source_id?: string | null
+          id?: string | null
+          root_drive_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+          video_source_id?: string | null
+          view_count?: number | null
+          web_view_link?: string | null
+        }
+        Relationships: []
+      }
       processing_batches: {
         Row: {
           completed_at: string | null
@@ -2200,7 +2423,15 @@ export type Database = {
           email?: string | null
           id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       prompt_categories: {
         Row: {
@@ -3215,7 +3446,15 @@ export type Database = {
           query_text?: string
           tags?: string[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sql_query_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subject_classifications: {
         Row: {
@@ -3563,6 +3802,38 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string | null
+          id: string
+          preferences: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          preferences?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          preferences?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_subject_interests: {
         Row: {
           created_at: string
@@ -3701,6 +3972,19 @@ export type Database = {
           },
         ]
       }
+      user_details: {
+        Row: {
+          email: string | null
+          full_name: string | null
+          id: string | null
+          last_sign_in_at: string | null
+          preferences: Json | null
+          profile_created_at: string | null
+          profile_updated_at: string | null
+          user_created_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_unique_constraint: {
@@ -3756,8 +4040,12 @@ export type Database = {
           deletion_rule: string
         }[]
       }
+      cleanup_expired_cli_tokens: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       execute_sql: {
-        Args: { sql: string }
+        Args: { sql_query: string }
         Returns: Json
       }
       execute_sql_query: {
