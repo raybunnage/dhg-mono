@@ -28,7 +28,8 @@
       "@hooks/*": ["./src/hooks/*"],
       "@services/*": ["./src/services/*"],
       "@pages/*": ["./src/pages/*"],
-      "@shared/*": ["../../packages/shared/*"]
+      "@shared/*": ["../../packages/shared/*"],
+      "@dhg/shared-components": ["../../packages/shared/components/index.ts"]
     }
   },
   "include": ["src"],
