@@ -292,7 +292,28 @@ async function executeSectionWithRetry(supabase: any, section: MigrationSection,
   error?: string;
 }> {
   try {
-    // Split SQL into individual statements
+    // For complex SQL with functions and dollar-quoted strings, execute as one block
+    if (section.sql.includes('$$') || section.sql.includes('LANGUAGE plpgsql')) {
+      if (verbose) {
+        console.log(`     Executing complete SQL block...`);
+      }
+      
+      const result = await supabase.rpc('execute_sql', { sql_query: section.sql });
+      
+      if (result.error) {
+        return {
+          success: false,
+          error: result.error.message
+        };
+      }
+      
+      return {
+        success: true,
+        objectsCreated: ['Complex SQL block executed']
+      };
+    }
+
+    // Split SQL into individual statements for simple cases
     const statements = section.sql
       .split(';')
       .map(s => s.trim())
@@ -314,7 +335,7 @@ async function executeSectionWithRetry(supabase: any, section: MigrationSection,
       // Use execute_sql function if available, otherwise try direct query
       let result;
       try {
-        result = await supabase.rpc('execute_sql', { sql_statement: statement });
+        result = await supabase.rpc('execute_sql', { sql_query: statement });
       } catch (rpcError) {
         // Fallback to direct query for simple SELECTs
         if (statement.toUpperCase().startsWith('SELECT')) {

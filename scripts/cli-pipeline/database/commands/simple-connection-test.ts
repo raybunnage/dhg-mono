@@ -142,7 +142,7 @@ const isUrlReachable = (url: string): Promise<boolean> => {
         console.log('\nRunning test query on document_types table:');
         const { data, error } = await supabase
           .from('document_types')
-          .select('id, document_type')
+          .select('id, name')
           .limit(3);
           
         if (error) {
@@ -150,7 +150,7 @@ const isUrlReachable = (url: string): Promise<boolean> => {
         } else {
           console.log(`✅ Query successful. Retrieved ${data.length} records:`);
           data.forEach((item, index) => {
-            console.log(`   ${index + 1}. ${item.document_type} (ID: ${item.id})`);
+            console.log(`   ${index + 1}. ${item.name} (ID: ${item.id})`);
           });
         }
       } else {

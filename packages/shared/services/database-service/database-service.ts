@@ -29,7 +29,7 @@ export class DatabaseService {
       // Query the information_schema directly with RPC since we can't query information_schema directly
       let { data: tables, error: tablesError } = await this.supabase
         .rpc('execute_sql', {
-          sql: `SELECT table_name 
+          sql_query: `SELECT table_name 
                 FROM information_schema.tables 
                 WHERE table_schema = 'public' 
                 AND table_type = 'BASE TABLE'`
@@ -45,7 +45,7 @@ export class DatabaseService {
         console.log("Using fallback approach for table listing");
         const { data: fallbackTables, error: fallbackError } = await this.supabase
           .rpc('execute_sql', {
-            sql: `SELECT tablename as table_name FROM pg_tables WHERE schemaname = 'public' LIMIT 50`
+            sql_query: `SELECT tablename as table_name FROM pg_tables WHERE schemaname = 'public' LIMIT 125`
           });
           
         if (fallbackError) {
@@ -108,7 +108,7 @@ export class DatabaseService {
     try {
       // Try to get functions using direct SQL execution which is more reliable
       const { data: directData, error: directError } = await this.supabase.rpc('execute_sql', {
-        sql: `
+        sql_query: `
           SELECT 
             routine_name as name, 
             routine_type as type,
@@ -145,7 +145,7 @@ export class DatabaseService {
       console.log('Attempting final fallback method');
       try {
         const { data: backupData, error: backupError } = await this.supabase.rpc('execute_sql', {
-          sql: `
+          sql_query: `
             SELECT 
               p.proname as name,
               'FUNCTION' as type,
@@ -217,7 +217,7 @@ export class DatabaseService {
       // Get indexes
       const { data: indexes, error: indexesError } = await this.supabase
         .rpc('execute_sql', { 
-          sql: `SELECT 
+          sql_query: `SELECT 
                  indexname, 
                  indexdef 
                FROM 
@@ -253,7 +253,7 @@ export class DatabaseService {
       // 1. Check for tables without primary keys
       const { data: tablesWithoutPK, error: pkError } = await this.supabase
         .rpc('execute_sql', {
-          sql: `
+          sql_query: `
             SELECT 
               t.table_name 
             FROM 
@@ -285,7 +285,7 @@ export class DatabaseService {
       // 2. Check for nullable foreign keys
       const { data: nullableFKs, error: fkError } = await this.supabase
         .rpc('execute_sql', {
-          sql: `
+          sql_query: `
             SELECT 
               tc.table_name,
               kcu.column_name
@@ -320,7 +320,7 @@ export class DatabaseService {
       // 3. Check for tables without indexes
       const { data: tablesWithoutIndexes, error: indexError } = await this.supabase
         .rpc('execute_sql', {
-          sql: `
+          sql_query: `
             SELECT 
               t.table_name
             FROM 

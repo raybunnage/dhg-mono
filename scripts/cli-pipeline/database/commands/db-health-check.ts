@@ -34,7 +34,7 @@ program
       process.stdout.write(chalk.yellow('DEBUG: Executing query\n'));
       const { data, error } = await supabase
         .from('document_types')
-        .select('id, document_type')
+        .select('id, name')
         .limit(3);
       
       process.stdout.write(chalk.yellow(`DEBUG: Query complete, error=${!!error}, data=${!!data}\n`));
@@ -53,7 +53,7 @@ program
         if (data && data.length > 0) {
           process.stdout.write(chalk.cyan('\nSample document types:\n'));
           data.forEach((item, index) => {
-            process.stdout.write(`  ${index + 1}. ${item.document_type} (ID: ${item.id})\n`);
+            process.stdout.write(`  ${index + 1}. ${item.name} (ID: ${item.id})\n`);
           });
         }
       }
