@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { authService } from '../services/auth-service';
+import { browserAuthService } from '../services/auth-service';
 
 interface ProfilePromptProps {
   onComplete: (profile: any) => void;
@@ -22,7 +22,7 @@ export const ProfilePrompt: React.FC<ProfilePromptProps> = ({ onComplete }) => {
     setError(null);
 
     try {
-      await authService.updateUserProfile(formData);
+      await browserAuthService.updateUserProfile(formData);
       onComplete(formData);
     } catch (err) {
       setError('Failed to update profile. Please try again.');

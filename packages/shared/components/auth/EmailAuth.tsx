@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { browserAuthService, type AccessRequestData } from '../services/auth-service';
+import { browserAuthService, type AccessRequestData } from '../../services/auth-service';
 
 interface EmailAuthProps {
   onSuccess?: () => void;

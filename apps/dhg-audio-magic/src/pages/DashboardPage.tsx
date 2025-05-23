@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { AudioPlayer } from '../components/AudioPlayer';
 import { ProfilePrompt } from '../components/ProfilePrompt';
-import { authService } from '../services/auth-service';
+import { browserAuthService } from '../services/auth-service';
 
 // Mock audio data - replace with real data from your API
 const mockAudioFiles = [
@@ -46,7 +46,7 @@ export const DashboardPage: React.FC = () => {
 
   const checkUserProfile = async () => {
     try {
-      const currentUser = await authService.getCurrentUser();
+      const currentUser = await browserAuthService.getCurrentUser();
       if (currentUser) {
         // Check if user has completed their profile
         const hasProfile = currentUser.user_metadata?.profession || 

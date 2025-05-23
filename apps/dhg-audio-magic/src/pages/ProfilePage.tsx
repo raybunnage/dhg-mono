@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { useAuth } from '../hooks/useAuth';
-import { authService } from '../services/auth-service';
+import { browserAuthService } from '../services/auth-service';
 
 export const ProfilePage: React.FC = () => {
   const { user } = useAuth();
@@ -23,7 +23,7 @@ export const ProfilePage: React.FC = () => {
 
   const loadUserProfile = async () => {
     try {
-      const currentUser = await authService.getCurrentUser();
+      const currentUser = await browserAuthService.getCurrentUser();
       if (currentUser?.user_metadata) {
         setFormData({
           full_name: currentUser.user_metadata.full_name || '',
@@ -45,7 +45,7 @@ export const ProfilePage: React.FC = () => {
     setSuccessMessage('');
 
     try {
-      await authService.updateUserProfile(formData);
+      await browserAuthService.updateUserProfile(formData);
       setSuccessMessage('Profile updated successfully!');
       setIsEditing(false);
       setTimeout(() => setSuccessMessage(''), 3000);

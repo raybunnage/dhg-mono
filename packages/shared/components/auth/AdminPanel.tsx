@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { authService, type AccessRequest, type AllowedEmail } from '../services/auth-service';
+import { browserAuthService, type AccessRequest, type AllowedEmail } from '../../services/auth-service';
 
 export const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'requests' | 'allowed'>('requests');
@@ -15,10 +15,10 @@ export const AdminPanel: React.FC = () => {
     setIsLoading(true);
     try {
       if (activeTab === 'requests') {
-        const requests = await authService.getPendingAccessRequests();
+        const requests = await browserAuthService.getPendingAccessRequests();
         setPendingRequests(requests);
       } else {
-        const emails = await authService.getAllowedEmails();
+        const emails = await browserAuthService.getAllowedEmails();
         setAllowedEmails(emails);
       }
     } catch (error) {
@@ -31,7 +31,7 @@ export const AdminPanel: React.FC = () => {
   const handleApprove = async (request: AccessRequest) => {
     if (!window.confirm(`Approve access for ${request.email}?`)) return;
 
-    const result = await authService.approveAccessRequest(request.id);
+    const result = await browserAuthService.approveAccessRequest(request.id);
     if (result.success) {
       loadData();
     } else {
@@ -43,7 +43,7 @@ export const AdminPanel: React.FC = () => {
     const reason = window.prompt(`Reason for denying ${request.email}?`);
     if (reason === null) return;
 
-    const result = await authService.denyAccessRequest(request.id, reason);
+    const result = await browserAuthService.denyAccessRequest(request.id, reason);
     if (result.success) {
       loadData();
     } else {
@@ -211,7 +211,7 @@ const AllowedEmailsTab: React.FC<AllowedEmailsTabProps> = ({ emails, onRefresh }
 
   const handleAddEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = await authService.addAllowedEmail(
+    const result = await browserAuthService.addAllowedEmail(
       newEmail.email,
       newEmail.name,
       newEmail.organization,

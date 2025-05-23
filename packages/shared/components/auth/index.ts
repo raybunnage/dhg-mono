@@ -1,11 +1,8 @@
-export { AuthForm } from './AuthForm';
-export type { AuthFormProps, AuthFormData } from './AuthForm';
+/**
+ * Shared Auth Components
+ * 
+ * Reusable authentication components for email allowlist functionality
+ */
 
-export { AuthModal } from './AuthModal';
-export type { AuthModalProps } from './AuthModal';
-
-export { UserMenu } from './UserMenu';
-export type { UserMenuProps } from './UserMenu';
-
-export { ProtectedRoute } from './ProtectedRoute';
-export type { ProtectedRouteProps } from './ProtectedRoute';
+export { EmailAuth } from './EmailAuth';
+export { AdminPanel } from './AdminPanel';

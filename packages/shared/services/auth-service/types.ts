@@ -143,3 +143,53 @@ export interface ServiceAccountCredentials {
   email: string;
   key: string;
 }
+
+/**
+ * Access request data for email allowlist
+ */
+export interface AccessRequestData {
+  email: string;
+  name: string;
+  profession?: string;
+  professional_interests?: string;
+  organization?: string;
+  reason_for_access?: string;
+}
+
+/**
+ * Access request database record
+ */
+export interface AccessRequest {
+  id: string;
+  email: string;
+  name: string;
+  profession?: string;
+  professional_interests?: string;
+  organization?: string;
+  reason_for_access?: string;
+  request_date: string;
+  approved: boolean;
+  approved_at?: string;
+  approved_by?: string;
+  denied: boolean;
+  denied_at?: string;
+  denied_by?: string;
+  denial_reason?: string;
+  notes?: string;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Allowed email database record
+ */
+export interface AllowedEmail {
+  id: string;
+  email: string;
+  name?: string;
+  organization?: string;
+  added_at: string;
+  added_by?: string;
+  notes?: string;
+  is_active: boolean;
+  metadata?: Record<string, any>;
+}

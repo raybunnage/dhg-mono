@@ -5,6 +5,7 @@
  */
 
 export { AuthService, authService } from './auth-service';
+export { browserAuthService } from './browser-auth-service';
 export * from './types';
 
 // Re-export commonly used types for convenience
@@ -18,5 +19,8 @@ export type {
   UserProfileUpdate,
   CLIAuthToken,
   AuthEvent,
-  AuthEventType
+  AuthEventType,
+  AccessRequestData,
+  AccessRequest,
+  AllowedEmail
 } from './types';

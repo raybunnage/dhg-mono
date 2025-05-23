@@ -9,6 +9,125 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      access_requests: {
+        Row: {
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          denial_reason: string | null
+          denied: boolean | null
+          denied_at: string | null
+          denied_by: string | null
+          email: string
+          id: string
+          metadata: Json | null
+          name: string
+          notes: string | null
+          organization: string | null
+          profession: string | null
+          professional_interests: string | null
+          reason_for_access: string | null
+          request_date: string | null
+        }
+        Insert: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          denial_reason?: string | null
+          denied?: boolean | null
+          denied_at?: string | null
+          denied_by?: string | null
+          email: string
+          id?: string
+          metadata?: Json | null
+          name: string
+          notes?: string | null
+          organization?: string | null
+          profession?: string | null
+          professional_interests?: string | null
+          reason_for_access?: string | null
+          request_date?: string | null
+        }
+        Update: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          denial_reason?: string | null
+          denied?: boolean | null
+          denied_at?: string | null
+          denied_by?: string | null
+          email?: string
+          id?: string
+          metadata?: Json | null
+          name?: string
+          notes?: string | null
+          organization?: string | null
+          profession?: string | null
+          professional_interests?: string | null
+          reason_for_access?: string | null
+          request_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_requests_denied_by_fkey"
+            columns: ["denied_by"]
+            isOneToOne: false
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      allowed_emails: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          name: string | null
+          notes: string | null
+          organization: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          email: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string | null
+          notes?: string | null
+          organization?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string | null
+          notes?: string | null
+          organization?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allowed_emails_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_pages: {
         Row: {
           app_name: string
@@ -3804,24 +3923,51 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          bio: string | null
           created_at: string | null
+          expertise_keywords: string[] | null
           full_name: string | null
           id: string
+          linkedin_url: string | null
+          onboarding_completed: boolean | null
+          organization: string | null
           preferences: Json | null
+          profession: string | null
+          professional_interests: string | null
+          profile_visibility: string | null
+          research_areas: string[] | null
           updated_at: string | null
         }
         Insert: {
+          bio?: string | null
           created_at?: string | null
+          expertise_keywords?: string[] | null
           full_name?: string | null
           id: string
+          linkedin_url?: string | null
+          onboarding_completed?: boolean | null
+          organization?: string | null
           preferences?: Json | null
+          profession?: string | null
+          professional_interests?: string | null
+          profile_visibility?: string | null
+          research_areas?: string[] | null
           updated_at?: string | null
         }
         Update: {
+          bio?: string | null
           created_at?: string | null
+          expertise_keywords?: string[] | null
           full_name?: string | null
           id?: string
+          linkedin_url?: string | null
+          onboarding_completed?: boolean | null
+          organization?: string | null
           preferences?: Json | null
+          profession?: string | null
+          professional_interests?: string | null
+          profile_visibility?: string | null
+          research_areas?: string[] | null
           updated_at?: string | null
         }
         Relationships: [
@@ -3829,6 +3975,35 @@ export type Database = {
             foreignKeyName: "user_profiles_id_fkey"
             columns: ["id"]
             isOneToOne: true
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_details"
             referencedColumns: ["id"]
           },
@@ -3923,6 +4098,115 @@ export type Database = {
           },
         ]
       }
+      pending_access_requests: {
+        Row: {
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          denial_reason: string | null
+          denied: boolean | null
+          denied_at: string | null
+          denied_by: string | null
+          email: string | null
+          id: string | null
+          interests_array: string[] | null
+          metadata: Json | null
+          name: string | null
+          notes: string | null
+          organization: string | null
+          profession: string | null
+          professional_interests: string | null
+          reason_for_access: string | null
+          request_date: string | null
+        }
+        Insert: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          denial_reason?: string | null
+          denied?: boolean | null
+          denied_at?: string | null
+          denied_by?: string | null
+          email?: string | null
+          id?: string | null
+          interests_array?: never
+          metadata?: Json | null
+          name?: string | null
+          notes?: string | null
+          organization?: string | null
+          profession?: string | null
+          professional_interests?: string | null
+          reason_for_access?: string | null
+          request_date?: string | null
+        }
+        Update: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          denial_reason?: string | null
+          denied?: boolean | null
+          denied_at?: string | null
+          denied_by?: string | null
+          email?: string | null
+          id?: string | null
+          interests_array?: never
+          metadata?: Json | null
+          name?: string | null
+          notes?: string | null
+          organization?: string | null
+          profession?: string | null
+          professional_interests?: string | null
+          reason_for_access?: string | null
+          request_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_requests_denied_by_fkey"
+            columns: ["denied_by"]
+            isOneToOne: false
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professional_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          email: string | null
+          expertise_keywords: string[] | null
+          full_name: string | null
+          has_completed_profile: boolean | null
+          id: string | null
+          interests_array: string[] | null
+          linkedin_url: string | null
+          onboarding_completed: boolean | null
+          organization: string | null
+          preferences: Json | null
+          profession: string | null
+          professional_interests: string | null
+          profile_visibility: string | null
+          research_areas: string[] | null
+          updated_at: string | null
+          user_created_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_template_associations_view: {
         Row: {
           association_created_at: string | null
@@ -3987,6 +4271,16 @@ export type Database = {
       }
     }
     Functions: {
+      add_allowed_email: {
+        Args: {
+          p_email: string
+          p_name?: string
+          p_organization?: string
+          p_notes?: string
+          p_added_by?: string
+        }
+        Returns: string
+      }
       add_unique_constraint: {
         Args: { p_table_name: string; p_column_name: string }
         Returns: undefined
@@ -4021,6 +4315,10 @@ export type Database = {
           recommendation: string
         }[]
       }
+      approve_access_request: {
+        Args: { p_request_id: string; p_approved_by?: string; p_notes?: string }
+        Returns: boolean
+      }
       batch_track_usage: {
         Args: {
           p_page_id: string
@@ -4043,6 +4341,14 @@ export type Database = {
       cleanup_expired_cli_tokens: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      deny_access_request: {
+        Args: {
+          p_request_id: string
+          p_denied_by?: string
+          p_denial_reason?: string
+        }
+        Returns: boolean
       }
       execute_sql: {
         Args: { sql_query: string }
@@ -4365,6 +4671,10 @@ export type Database = {
         Args: { presentation_uuid: string }
         Returns: undefined
       }
+      is_email_allowed: {
+        Args: { check_email: string }
+        Returns: boolean
+      }
       list_function_comments: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -4374,6 +4684,10 @@ export type Database = {
           return_type: string
           argument_types: string
         }[]
+      }
+      make_me_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       populate_sources_with_fixed_user_id: {
         Args: { user_email_address: string }
@@ -4422,6 +4736,17 @@ export type Database = {
       set_current_domain: {
         Args: { domain_id: string }
         Returns: undefined
+      }
+      submit_access_request: {
+        Args: {
+          p_email: string
+          p_name: string
+          p_profession?: string
+          p_professional_interests?: string
+          p_organization?: string
+          p_reason_for_access?: string
+        }
+        Returns: string
       }
       table_exists: {
         Args: { p_schema_name: string; p_table_name: string }

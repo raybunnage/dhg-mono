@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
-import { authService } from '../services/auth-service';
+import { browserAuthService } from '../services/auth-service';
 
 export const useIsAdmin = () => {
   const { user } = useAuth();
@@ -16,7 +16,7 @@ export const useIsAdmin = () => {
       }
 
       try {
-        const roles = await authService.getUserRoles();
+        const roles = await browserAuthService.getUserRoles();
         setIsAdmin(roles.includes('admin'));
       } catch (error) {
         console.error('Error checking admin status:', error);

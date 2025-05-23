@@ -1,86 +1,40 @@
 /**
- * Browser-compatible Auth Service for dhg-audio-magic
+ * Browser-compatible Auth Service
  * 
- * Uses the shared SupabaseClientService singleton for database connections
+ * This is a browser-compatible wrapper around the main AuthService
+ * that doesn't rely on Node.js-specific modules like crypto, fs, path, os.
  */
 
-import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../supabase-client';
 import type { 
   User,
   Session,
+  AuthError,
   Subscription
 } from '@supabase/supabase-js';
+import type {
+  AppUser,
+  AuthSession,
+  AuthResult,
+  MagicLinkOptions,
+  UserProfileUpdate,
+  AccessRequestData,
+  AccessRequest,
+  AllowedEmail
+} from './types';
 
-export type AppUser = User;
-export type AuthSession = Session;
-
-export interface AuthResult {
-  session: Session | null;
-  user: User | null;
-  error: any | null;
-}
-
-export interface UserProfileUpdate {
-  full_name?: string;
-  preferences?: Record<string, any>;
-}
-
-export interface MagicLinkOptions {
-  email: string;
-  redirectTo?: string;
-}
-
-export interface AccessRequestData {
-  email: string;
-  name: string;
-  profession?: string;
-  professional_interests?: string;
-  organization?: string;
-  reason_for_access?: string;
-}
-
-export interface AccessRequest {
-  id: string;
-  email: string;
-  name: string;
-  profession?: string;
-  professional_interests?: string;
-  organization?: string;
-  reason_for_access?: string;
-  request_date: string;
-  approved: boolean;
-  approved_at?: string;
-  approved_by?: string;
-  denied: boolean;
-  denied_at?: string;
-  denied_by?: string;
-  denial_reason?: string;
-  notes?: string;
-  metadata?: Record<string, any>;
-}
-
-export interface AllowedEmail {
-  id: string;
-  email: string;
-  name?: string;
-  organization?: string;
-  added_at: string;
-  added_by?: string;
-  notes?: string;
-  is_active: boolean;
-  metadata?: Record<string, any>;
-}
+export { type AccessRequestData, type AccessRequest, type AllowedEmail } from './types';
 
 /**
  * Browser Auth Service
- * Uses shared SupabaseClientService singleton
+ * Provides authentication functionality for web applications
  */
 class BrowserAuthService {
   private static instance: BrowserAuthService;
   private supabase;
 
   private constructor() {
-    // Use the shared SupabaseClientService singleton
+    // Private constructor to enforce singleton pattern
     this.supabase = SupabaseClientService.getInstance().getClient();
   }
 
@@ -452,5 +406,4 @@ class BrowserAuthService {
 }
 
 // Export singleton instance
-export const authService = BrowserAuthService.getInstance();
-export const browserAuthService = authService; // Alias for compatibility
+export const browserAuthService = BrowserAuthService.getInstance();

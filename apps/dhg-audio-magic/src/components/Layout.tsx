@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useIsAdmin } from '../hooks/useIsAdmin';
-import { authService } from '../services/auth-service';
+import { browserAuthService } from '../services/auth-service';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,7 +15,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleSignOut = async () => {
-    await authService.signOut();
+    await browserAuthService.signOut();
     navigate('/login');
   };
 
