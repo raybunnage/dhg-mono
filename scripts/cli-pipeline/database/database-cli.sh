@@ -64,6 +64,12 @@ show_help() {
   echo "  * db-health-check      Simple database health check (quick connection test) (4 uses)"
   echo "  * schema-health        Analyze database schema health and identify issues (2 uses)"
   echo ""
+  echo "MIGRATION MANAGEMENT:"
+  echo "    migration validate   Validate SQL migration file without executing"
+  echo "    migration dry-run    Show what would be executed without running"
+  echo "    migration test       Test migration sections against database"
+  echo "    migration run-staged Execute migration with confirmation between sections"
+  echo ""
   echo "OPTIONS:"
   echo "  --debug                Run commands directly without tracking"
   echo "  --simple               Run simplified version with direct output"
@@ -86,6 +92,19 @@ show_help() {
   echo ""
   echo "  # Run a quick health check"
   echo "  ./database-cli.sh db-health-check"
+  echo ""
+  echo "MIGRATION MANAGEMENT:"
+  echo "  # Validate migration file"
+  echo "  ./database-cli.sh migration validate migration.sql"
+  echo ""
+  echo "  # Dry run migration"
+  echo "  ./database-cli.sh migration dry-run --show-sql migration.sql"
+  echo ""
+  echo "  # Test migration sections"
+  echo "  ./database-cli.sh migration test --section tables migration.sql"
+  echo ""
+  echo "  # Execute migration with confirmations"
+  echo "  ./database-cli.sh migration run-staged migration.sql"
 }
 
 # Command handlers
@@ -195,6 +214,98 @@ db_health_check() {
   track_command "db-health-check" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/db-health-check.ts $@"
 }
 
+# Migration command handlers
+migration_validate() {
+  echo "🔍 Validating migration file..."
+  track_command "migration-validate" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/migration/validate.ts $@"
+}
+
+migration_dry_run() {
+  echo "🏃‍♂️ Performing migration dry run..."
+  track_command "migration-dry-run" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/migration/dry-run.ts $@"
+}
+
+migration_test() {
+  echo "🧪 Testing migration sections..."
+  track_command "migration-test" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/migration/test-sections.ts $@"
+}
+
+migration_run_staged() {
+  echo "🚀 Running staged migration..."
+  track_command "migration-run-staged" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/migration/run-staged.ts $@"
+}
+
+migration_help() {
+  echo "Migration Management Commands"
+  echo "============================"
+  echo ""
+  echo "COMMANDS:"
+  echo "  validate     Validate SQL migration file without executing"
+  echo "  dry-run      Show what would be executed without running"
+  echo "  test         Test migration sections against database"
+  echo "  run-staged   Execute migration with confirmation between sections"
+  echo ""
+  echo "EXAMPLES:"
+  echo ""
+  echo "VALIDATION:"
+  echo "  # Validate migration file"
+  echo "  ./database-cli.sh migration validate migration.sql"
+  echo ""
+  echo "  # Validate with warnings"
+  echo "  ./database-cli.sh migration validate --warnings migration.sql"
+  echo ""
+  echo "  # Validate specific section type"
+  echo "  ./database-cli.sh migration validate --section tables migration.sql"
+  echo ""
+  echo "DRY RUN:"
+  echo "  # Show execution plan"
+  echo "  ./database-cli.sh migration dry-run migration.sql"
+  echo ""
+  echo "  # Show with SQL code"
+  echo "  ./database-cli.sh migration dry-run --show-sql migration.sql"
+  echo ""
+  echo "  # Export to JSON"
+  echo "  ./database-cli.sh migration dry-run --output plan.json migration.sql"
+  echo ""
+  echo "TESTING:"
+  echo "  # Test all sections"
+  echo "  ./database-cli.sh migration test migration.sql"
+  echo ""
+  echo "  # Test only tables"
+  echo "  ./database-cli.sh migration test --section tables migration.sql"
+  echo ""
+  echo "  # Dry run test"
+  echo "  ./database-cli.sh migration test --dry-run migration.sql"
+  echo ""
+  echo "EXECUTION:"
+  echo "  # Interactive staged execution"
+  echo "  ./database-cli.sh migration run-staged migration.sql"
+  echo ""
+  echo "  # Auto-confirm all sections"
+  echo "  ./database-cli.sh migration run-staged --auto-confirm migration.sql"
+  echo ""
+  echo "  # Continue on errors with logging"
+  echo "  ./database-cli.sh migration run-staged --continue-on-error --log migration.log migration.sql"
+  echo ""
+  echo "SECTION TYPES:"
+  echo "  extensions, tables, indexes, functions, triggers, rls, grants, views, custom"
+  echo ""
+  echo "MIGRATION FILE FORMAT:"
+  echo "  Migration files should use section-based structure:"
+  echo ""
+  echo "  -- MIGRATION: migration_name"
+  echo "  -- VERSION: 20250522000000"
+  echo "  -- DESCRIPTION: Description of changes"
+  echo ""
+  echo "  -- SECTION: extensions"
+  echo "  CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+  echo ""
+  echo "  -- SECTION: tables"
+  echo "  CREATE TABLE IF NOT EXISTS ..."
+  echo ""
+  echo "  See existing migration files for examples."
+}
+
 # Main command processor
 case "$1" in
   "table-records")
@@ -217,6 +328,31 @@ case "$1" in
     ;;
   "db-health-check")
     db_health_check "${@:2}"
+    ;;
+  "migration")
+    case "$2" in
+      "validate")
+        migration_validate "${@:3}"
+        ;;
+      "dry-run")
+        migration_dry_run "${@:3}"
+        ;;
+      "test")
+        migration_test "${@:3}"
+        ;;
+      "run-staged")
+        migration_run_staged "${@:3}"
+        ;;
+      "help"|"--help"|"-h"|"")
+        migration_help
+        ;;
+      *)
+        echo "Unknown migration command: $2"
+        echo ""
+        migration_help
+        exit 1
+        ;;
+    esac
     ;;
   "help"|"--help"|"-h")
     show_help

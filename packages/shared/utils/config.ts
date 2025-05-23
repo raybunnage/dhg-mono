@@ -62,7 +62,7 @@ const config: Config = {
   claudeApiKey: process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '',
   claudeApiBaseUrl: process.env.CLAUDE_API_BASE_URL || 'https://api.anthropic.com',
   claudeApiVersion: process.env.CLAUDE_API_VERSION || '2023-06-01',
-  defaultModel: process.env.CLAUDE_DEFAULT_MODEL || 'claude-3-7-sonnet-20250219',
+  defaultModel: process.env.CLAUDE_DEFAULT_MODEL || 'claude-sonnet-4-20250514',
   
   // Logging
   logLevel: (process.env.LOG_LEVEL as LogLevel) || LogLevel.INFO,

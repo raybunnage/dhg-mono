@@ -45,7 +45,7 @@ export class ClaudeService {
     this.apiKey = config.claudeApiKey;
     this.baseUrl = config.claudeApiBaseUrl || 'https://api.anthropic.com';
     this.apiVersion = config.claudeApiVersion || '2023-12-15';
-    this.defaultModel = config.defaultModel || 'claude-3-7-sonnet-20250219';
+    this.defaultModel = config.defaultModel || 'claude-sonnet-4-20250514';
     
     // Log configuration for debugging (not showing full key)
     Logger.debug(`ClaudeService initialized:
