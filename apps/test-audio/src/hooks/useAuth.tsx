@@ -5,8 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { authService } from '../../../../packages/shared/services/auth-service';
-import { AppUser, AuthResult } from '../../../../packages/shared/services/auth-service/types';
+import { authService, AppUser, AuthResult } from '../services/auth-service';
 
 /**
  * Authentication hook state
