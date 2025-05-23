@@ -14,17 +14,7 @@ export default defineConfig({
       '@hooks': path.resolve(__dirname, './src/hooks'),
       '@services': path.resolve(__dirname, './src/services'),
       '@pages': path.resolve(__dirname, './src/pages'),
-      '@shared': path.resolve(__dirname, '../../packages/shared'),
-      '@dhg/shared-components': path.resolve(__dirname, '../../packages/shared/components/index.ts')
-    }
-  },
-  // Add server settings to avoid CORS issues with the proxy
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true
-      }
+      '@shared': path.resolve(__dirname, '../../packages/shared')
     }
   }
 })
