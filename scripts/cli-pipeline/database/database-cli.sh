@@ -63,6 +63,7 @@ show_help() {
   echo "  * connection-test      Test connection to Supabase database (4 uses)"
   echo "  * db-health-check      Simple database health check (quick connection test) (4 uses)"
   echo "  * schema-health        Analyze database schema health and identify issues (2 uses)"
+  echo "    check-auth-objects   Check if auth migration objects already exist"
   echo ""
   echo "MIGRATION MANAGEMENT:"
   echo "    migration validate   Validate SQL migration file without executing"
@@ -214,6 +215,11 @@ db_health_check() {
   track_command "db-health-check" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/db-health-check.ts $@"
 }
 
+check_auth_objects() {
+  echo "🔍 Checking for existing auth migration objects..."
+  track_command "check-auth-objects" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/check-auth-migration-objects.ts $@"
+}
+
 # Migration command handlers
 migration_validate() {
   echo "🔍 Validating migration file..."
@@ -328,6 +334,9 @@ case "$1" in
     ;;
   "db-health-check")
     db_health_check "${@:2}"
+    ;;
+  "check-auth-objects")
+    check_auth_objects "${@:2}"
     ;;
   "migration")
     case "$2" in

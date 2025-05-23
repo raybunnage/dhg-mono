@@ -10,7 +10,6 @@ import type {
   User,
   Session,
   AuthError,
-  AuthChangeEvent,
   Subscription
 } from '@supabase/supabase-js';
 
@@ -114,7 +113,7 @@ class BrowserAuthService {
   async sendMagicLink(options: MagicLinkOptions): Promise<AuthResult> {
     const redirectTo = options.redirectTo || `${window.location.origin}/auth/callback`;
     
-    const { data, error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithOtp({
       email: options.email,
       options: {
         emailRedirectTo: redirectTo,
@@ -223,7 +222,7 @@ class BrowserAuthService {
    * Listen to auth state changes
    */
   onAuthStateChange(callback: (user: AppUser | null) => void): Subscription {
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       callback(session?.user || null);
     });
 
@@ -255,7 +254,7 @@ class BrowserAuthService {
    */
   async submitAccessRequest(requestData: AccessRequestData): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .rpc('submit_access_request', {
           p_email: requestData.email,
           p_name: requestData.name,
@@ -327,7 +326,7 @@ class BrowserAuthService {
    */
   async addAllowedEmail(email: string, name?: string, organization?: string, notes?: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .rpc('add_allowed_email', {
           p_email: email,
           p_name: name,
@@ -352,7 +351,7 @@ class BrowserAuthService {
    */
   async approveAccessRequest(requestId: string, notes?: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .rpc('approve_access_request', {
           p_request_id: requestId,
           p_notes: notes
@@ -375,7 +374,7 @@ class BrowserAuthService {
    */
   async denyAccessRequest(requestId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .rpc('deny_access_request', {
           p_request_id: requestId,
           p_denial_reason: reason

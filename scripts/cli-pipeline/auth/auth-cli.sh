@@ -45,6 +45,7 @@ print_help() {
   echo "  profile                  Show user profile"
   echo "  profile update           Update user profile"
   echo "  test                     Test authentication service"
+  echo "  verify-migration         Verify email allowlist migration"
   echo "  help                     Show this help message"
   echo ""
   echo "Options:"
@@ -182,6 +183,14 @@ cmd_test() {
   track_command "test" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/auth-cli-commands.ts test"
 }
 
+# Verify migration command
+cmd_verify_migration() {
+  echo "🔐 DHG Authentication - Verify Email Allowlist Migration"
+  echo ""
+  
+  track_command "verify-migration" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/verify-email-allowlist-migration.ts"
+}
+
 # Parse command line arguments
 COMMAND=""
 API_KEY=""
@@ -202,7 +211,7 @@ while [[ $# -gt 0 ]]; do
       PASSWORD="$2"
       shift 2
       ;;
-    login|logout|whoami|profile|test|help)
+    login|logout|whoami|profile|test|verify-migration|help)
       COMMAND="$1"
       shift
       ;;
@@ -260,6 +269,9 @@ case $COMMAND in
     ;;
   test)
     cmd_test
+    ;;
+  verify-migration)
+    cmd_verify_migration
     ;;
   help|"")
     print_help
