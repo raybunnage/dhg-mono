@@ -113,7 +113,7 @@ export function useAuth(): UseAuthReturn {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: new Error(result.error.message)
+          error: new Error(result.error?.message || 'Sign in failed')
         }));
       } else {
         setState({
@@ -150,7 +150,7 @@ export function useAuth(): UseAuthReturn {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: new Error(result.error.message)
+          error: new Error(result.error?.message || 'Sign up failed')
         }));
       } else {
         setState({
