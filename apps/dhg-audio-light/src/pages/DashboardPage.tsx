@@ -37,7 +37,7 @@ export const DashboardPage: React.FC = () => {
             You have successfully logged in using the lightweight authentication system.
           </p>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="font-medium text-blue-900 mb-2">Your Profile</h3>
             <dl className="text-sm space-y-1">
               <div>
@@ -63,15 +63,6 @@ export const DashboardPage: React.FC = () => {
                 </div>
               )}
             </dl>
-          </div>
-
-          <div className="flex gap-4">
-            <button
-              onClick={() => navigate('/admin')}
-              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-            >
-              View Admin Panel
-            </button>
           </div>
         </div>
       </main>

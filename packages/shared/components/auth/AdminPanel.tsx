@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { browserAuthService, type AccessRequest, type AllowedEmail } from '../../services/auth-service';
+import { getBrowserAuthService, type AccessRequest, type AllowedEmail } from '../../services/auth-service/browser';
 
 export const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'requests' | 'allowed'>('requests');
@@ -15,10 +15,10 @@ export const AdminPanel: React.FC = () => {
     setIsLoading(true);
     try {
       if (activeTab === 'requests') {
-        const requests = await browserAuthService.getPendingAccessRequests();
+        const requests = await getBrowserAuthService().getPendingAccessRequests();
         setPendingRequests(requests);
       } else {
-        const emails = await browserAuthService.getAllowedEmails();
+        const emails = await getBrowserAuthService().getAllowedEmails();
         setAllowedEmails(emails);
       }
     } catch (error) {
@@ -31,7 +31,7 @@ export const AdminPanel: React.FC = () => {
   const handleApprove = async (request: AccessRequest) => {
     if (!window.confirm(`Approve access for ${request.email}?`)) return;
 
-    const result = await browserAuthService.approveAccessRequest(request.id);
+    const result = await getBrowserAuthService().approveAccessRequest(request.id);
     if (result.success) {
       loadData();
     } else {
@@ -43,7 +43,7 @@ export const AdminPanel: React.FC = () => {
     const reason = window.prompt(`Reason for denying ${request.email}?`);
     if (reason === null) return;
 
-    const result = await browserAuthService.denyAccessRequest(request.id, reason);
+    const result = await getBrowserAuthService().denyAccessRequest(request.id, reason);
     if (result.success) {
       loadData();
     } else {
@@ -211,7 +211,7 @@ const AllowedEmailsTab: React.FC<AllowedEmailsTabProps> = ({ emails, onRefresh }
 
   const handleAddEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = await browserAuthService.addAllowedEmail(
+    const result = await getBrowserAuthService().addAllowedEmail(
       newEmail.email,
       newEmail.name,
       newEmail.organization,

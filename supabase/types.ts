@@ -3999,15 +3999,7 @@ export type Database = {
           role?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_details"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_subject_interests: {
         Row: {
@@ -4284,6 +4276,10 @@ export type Database = {
       add_unique_constraint: {
         Args: { p_table_name: string; p_column_name: string }
         Returns: undefined
+      }
+      admin_reset_user_password: {
+        Args: { target_email: string; new_password: string }
+        Returns: boolean
       }
       analyze_default_values: {
         Args: { p_table_name: string }
@@ -4685,9 +4681,9 @@ export type Database = {
           argument_types: string
         }[]
       }
-      make_me_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
+      make_email_admin: {
+        Args: { user_email: string }
+        Returns: Json
       }
       populate_sources_with_fixed_user_id: {
         Args: { user_email_address: string }
@@ -4736,6 +4732,10 @@ export type Database = {
       set_current_domain: {
         Args: { domain_id: string }
         Returns: undefined
+      }
+      set_user_admin_role: {
+        Args: { target_email: string; is_admin?: boolean }
+        Returns: boolean
       }
       submit_access_request: {
         Args: {

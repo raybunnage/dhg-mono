@@ -52,9 +52,21 @@ class LightAuthService {
   private mockSession: AuthSession | null = null;
 
   private constructor() {
-    // Create Supabase client directly with Vite environment variables
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    // Get environment variables - support both Vite (browser) and Node environments
+    let supabaseUrl: string | undefined;
+    let supabaseKey: string | undefined;
+    
+    // Check if we're in a browser environment with Vite
+    if (typeof window !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env) {
+      supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    } 
+    // Fallback to process.env for Node environments
+    else if (typeof process !== 'undefined' && process.env) {
+      supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+      supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 
+                    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    }
     
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Unable to find Supabase credentials. Please make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are defined in your .env file.');
@@ -283,6 +295,7 @@ class LightAuthService {
       return { success: false, error: 'Failed to remove from whitelist' };
     }
   }
+
 }
 
 // Export singleton instance

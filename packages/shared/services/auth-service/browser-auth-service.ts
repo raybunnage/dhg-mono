@@ -5,12 +5,12 @@
  * that doesn't rely on Node.js-specific modules like crypto, fs, path, os.
  */
 
-import { SupabaseClientService } from '../supabase-client';
 import type { 
   User,
   Session,
   AuthError,
-  Subscription
+  Subscription,
+  SupabaseClient
 } from '@supabase/supabase-js';
 import type {
   AppUser,
@@ -31,19 +31,31 @@ export { type AccessRequestData, type AccessRequest, type AllowedEmail } from '.
  */
 class BrowserAuthService {
   private static instance: BrowserAuthService;
-  private supabase;
+  private static supabaseClient: SupabaseClient | null = null;
+  private supabase: SupabaseClient;
 
-  private constructor() {
+  private constructor(supabaseClient: SupabaseClient) {
     // Private constructor to enforce singleton pattern
-    this.supabase = SupabaseClientService.getInstance().getClient();
+    this.supabase = supabaseClient;
+  }
+
+  /**
+   * Initialize the service with a Supabase client
+   * Must be called before getInstance()
+   */
+  public static initialize(supabaseClient: SupabaseClient): void {
+    BrowserAuthService.supabaseClient = supabaseClient;
   }
 
   /**
    * Get singleton instance
    */
   public static getInstance(): BrowserAuthService {
+    if (!BrowserAuthService.supabaseClient) {
+      throw new Error('BrowserAuthService must be initialized with a Supabase client before use. Call BrowserAuthService.initialize(supabaseClient) first.');
+    }
     if (!BrowserAuthService.instance) {
-      BrowserAuthService.instance = new BrowserAuthService();
+      BrowserAuthService.instance = new BrowserAuthService(BrowserAuthService.supabaseClient);
     }
     return BrowserAuthService.instance;
   }
@@ -405,5 +417,6 @@ class BrowserAuthService {
   }
 }
 
-// Export singleton instance
-export const browserAuthService = BrowserAuthService.getInstance();
+// Export the class and a getter for the singleton instance
+export { BrowserAuthService };
+export const getBrowserAuthService = () => BrowserAuthService.getInstance();
