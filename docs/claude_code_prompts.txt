@@ -1,5 +1,596 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
+drop
+
+[
+  {
+    "id": "3cd8356d-fa16-43ad-831b-6e64ffec4595",
+    "email": "bunnage.ray@gmail.com",
+    "name": "Ray Bunnage",
+    "profession": "Programmer and Dynamic Healing Enthusiast",
+    "professional_interests": "All things healing",
+    "organization": "Concept Extravaganza",
+    "reason_for_access": "to learn more about dynamic healing",
+    "request_date": "2025-05-23 17:05:17.408765+00",
+    "approved": true,
+    "approved_at": "2025-05-24 16:04:32.664596+00",
+    "approved_by": "f43a2f8a-b01f-47d6-af61-0b92225ff033",
+    "denied": false,
+    "denied_at": null,
+    "denied_by": null,
+    "denial_reason": null,
+    "notes": null,
+    "metadata": {}
+  }
+]
+
+
+Excellent forward-thinking question! For web-scraped expert information, I recommend adding new tables rather than overloading existing ones.
+  This maintains clean data provenance and allows for temporal tracking.
+
+  Complete Architecture with Web Intelligence:
+
+  1. Core Identity System (Unchanged)
+
+  allowed_emails (Universal User Identity)
+  ├── id (UUID) - Primary key used everywhere
+  ├── email - Unique, links to auth.users
+  ├── name
+  ├── auth_user_id - Cached Supabase ID
+  ├── auth_status - 'none', 'invited', 'active'
+  └── metadata - Tracks invitations, last login, etc.
+
+  2. Profile System (Unchanged)
+
+  user_profiles_v2 (User-Provided Data)
+  ├── id → allowed_emails.id
+  ├── Professional background (self-reported)
+  ├── Learning preferences
+  ├── Bio information
+  ├── expert_id → experts.id (if applicable)
+  └── All user-volunteered information
+
+  3. Expert Knowledge System (Enhanced)
+
+  experts (Master Expert Record)
+  ├── id
+  ├── expert_name
+  ├── primary_email - For matching to allowed_emails
+  ├── credentials - Basic, stable credentials
+  ├── metadata - Core professional info
+  └── web_monitoring_enabled BOOLEAN DEFAULT false
+
+  sources_google_experts (Document Links)
+  └── Links experts to their documents
+
+  expert_web_profiles (NEW - Web Intelligence)
+  ├── id
+  ├── expert_id → experts.id
+  ├── source_type - 'google_scholar', 'pubmed', 'linkedin', 'twitter', 'institutional', 'news'
+  ├── source_url
+  ├── source_identifier - ORCID, Google Scholar ID, etc.
+  ├── profile_data JSONB - Structured data from source
+  ├── last_fetched TIMESTAMPTZ
+  ├── fetch_frequency - 'daily', 'weekly', 'monthly'
+  ├── is_verified BOOLEAN
+  └── created_at, updated_at
+
+  expert_web_updates (NEW - Temporal Updates)
+  ├── id
+  ├── expert_id → experts.id
+  ├── update_type - 'publication', 'position_change', 'award', 'media_mention', 'presentation'
+  ├── source_url
+  ├── title
+  ├── summary
+  ├── full_content JSONB
+  ├── relevance_score FLOAT - AI-determined importance
+  ├── detected_date - When the event happened
+  ├── fetched_date - When we found it
+  └── processed BOOLEAN DEFAULT false
+
+  4. Aggregated Expert View
+
+  CREATE VIEW expert_current_view AS
+  SELECT
+    e.id,
+    e.expert_name,
+    e.credentials,
+
+    -- Latest position from web profiles
+    (ewp.profile_data->>'current_position')::TEXT as current_position_web,
+
+    -- Recent publications count
+    COUNT(DISTINCT ewu.id) FILTER (WHERE
+      ewu.update_type = 'publication'
+      AND ewu.detected_date > CURRENT_DATE - INTERVAL '1 year'
+    ) as recent_publications,
+
+    -- User-provided info (if they're also a user)
+    up.profession as self_reported_profession,
+    up.current_organization as self_reported_org,
+
+    -- Latest update
+    MAX(ewu.detected_date) as last_activity_date
+
+  FROM experts e
+  LEFT JOIN expert_web_profiles ewp ON e.id = ewp.expert_id
+    AND ewp.source_type = 'institutional'
+  LEFT JOIN expert_web_updates ewu ON e.id = ewu.expert_id
+  LEFT JOIN user_profiles_v2 up ON e.id = up.expert_id
+  GROUP BY e.id, e.expert_name, e.credentials, ewp.profile_data, up.profession, up.current_organization;
+
+  Implementation Example:
+
+  -- Example: Web scraping service populates data
+  INSERT INTO expert_web_profiles (
+    expert_id,
+    source_type,
+    source_url,
+    source_identifier,
+    profile_data,
+    last_fetched
+  ) VALUES (
+    (SELECT id FROM experts WHERE expert_name = 'Tor Wager'),
+    'google_scholar',
+    'https://scholar.google.com/citations?user=XXXXX',
+    'XXXXX', -- Google Scholar ID
+    '{
+      "name": "Tor D. Wager",
+      "affiliation": "Dartmouth College",
+      "email_verified": "tor.d.wager@dartmouth.edu",
+      "interests": ["Neuroimaging", "Pain", "Emotion", "Placebo"],
+      "citations": {"all": 55000, "last_5_years": 25000},
+      "h_index": 95,
+      "i10_index": 245
+    }'::JSONB,
+    NOW()
+  );
+
+  -- Recent publication detected
+  INSERT INTO expert_web_updates (
+    expert_id,
+    update_type,
+    source_url,
+    title,
+    summary,
+    relevance_score,
+    detected_date
+  ) VALUES (
+    (SELECT id FROM experts WHERE expert_name = 'Tor Wager'),
+    'publication',
+    'https://doi.org/10.1038/s41593-024-xxxxx',
+    'Brain signatures of placebo analgesia revealed by machine learning',
+    'New research identifies neural markers that predict placebo response...',
+    0.95,
+    '2024-01-15'
+  );
+
+  Key Design Principles:
+
+  1. Separation of Sources:
+    - experts - Core identity and document-derived info
+    - user_profiles_v2 - Self-reported user data
+    - expert_web_profiles - Web-sourced profiles
+    - expert_web_updates - Time-series web intelligence
+  2. Data Provenance:
+    - Always know where information came from
+    - Track when it was fetched
+    - Maintain history of changes
+  3. Flexible Aggregation:
+    - Views combine multiple sources
+    - Applications choose which data to trust/display
+    - Can show "According to Google Scholar..." vs "Self-reported..."
+  4. Monitoring Control:
+    - web_monitoring_enabled flag on experts table
+    - fetch_frequency per source
+    - Only monitor "worthy" experts as you mentioned
+
+  Benefits:
+
+  1. Clean Architecture: Each table has a single responsibility
+  2. Temporal Intelligence: Track how experts evolve over time
+  3. Source Attribution: Know where each piece of info came from
+  4. Scalable: Can add new web sources without schema changes
+  5. Privacy Conscious: Separate self-reported from public data
+
+  Future Features This Enables:
+
+  - "Expert Updates" feed showing recent publications/achievements
+  - Relevance scoring for content recommendation
+  - Automatic expert discovery from web mentions
+  - Trend analysis of research topics
+  - Network analysis of collaborations
+
+  This architecture gives you a robust foundation for both current needs and future web intelligence features!
+
+
+
+
+
+
+Great question! The relationship between allowed_emails.id and auth.users.id is indeed the trickiest part. Let me clarify the clean
+  relationship:
+
+  The Clean Relationship Pattern:
+
+  Option 1: Email as the Bridge (Recommended) ✅
+
+  allowed_emails (Universal User Table):
+    id UUID PRIMARY KEY -- Your universal user ID
+    email TEXT UNIQUE   -- Links to auth.users.email
+    auth_user_id UUID   -- Cache auth.users.id when created
+    name
+    is_active
+    metadata
+
+  auth.users (Supabase Managed):
+    id UUID PRIMARY KEY -- Supabase's ID
+    email TEXT          -- Matches allowed_emails.email
+
+  Key Points:
+  - allowed_emails.email = auth.users.email (the linking field)
+  - allowed_emails.auth_user_id caches the Supabase ID for performance
+  - allowed_emails.id is used everywhere in YOUR tables
+  - auth.users.id is only used for Supabase-specific operations
+
+  Complete Architecture:
+
+  -- Your Universal User System
+  allowed_emails:
+    id              -- Use this ID everywhere in your app
+    email           -- Unique, links to auth.users
+    auth_user_id    -- Cached reference to auth.users.id
+    auth_status     -- 'none', 'invited', 'active'
+
+  user_profiles_v2:
+    id              -- FK to allowed_emails.id (NOT auth.users.id!)
+    profession
+    expert_id       -- Links to experts table if applicable
+
+  -- Supabase Auth (Don't modify)
+  auth.users:
+    id              -- Supabase's ID
+    email           -- Matches allowed_emails.email
+    app_metadata    -- Stores role: 'admin'
+
+  Implementation:
+
+  -- Add auth tracking to allowed_emails
+  ALTER TABLE allowed_emails
+  ADD COLUMN auth_user_id UUID,
+  ADD COLUMN auth_status TEXT DEFAULT 'none'
+    CHECK (auth_status IN ('none', 'invited', 'active'));
+
+  -- Function to sync auth user creation
+  CREATE OR REPLACE FUNCTION sync_auth_user_to_allowed_emails()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    -- When a new auth.user is created, update allowed_emails
+    UPDATE allowed_emails
+    SET
+      auth_user_id = NEW.id,
+      auth_status = 'active',
+      metadata = metadata || jsonb_build_object(
+        'auth_created_at', NEW.created_at,
+        'auth_provider', NEW.app_metadata->>'provider'
+      )
+    WHERE email = NEW.email;
+
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+  -- Trigger to keep them in sync
+  CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION sync_auth_user_to_allowed_emails();
+
+  Usage Patterns:
+
+  1. In Your Application Code:
+
+  // Always use allowed_emails.id
+  const userProfile = await supabase
+    .from('user_profiles_v2')
+    .select('*')
+    .eq('id', allowedEmailId);  // NOT auth.users.id
+
+  2. For RLS Policies:
+
+  -- Use auth.uid() but join through allowed_emails
+  CREATE POLICY "Users can view own profile" ON user_profiles_v2
+  FOR SELECT USING (
+    id IN (
+      SELECT ae.id FROM allowed_emails ae
+      WHERE ae.auth_user_id = auth.uid()
+    )
+  );
+
+  3. Complete User View:
+
+  CREATE VIEW user_complete_view AS
+  SELECT
+    -- Identity
+    ae.id as user_id,           -- Your primary ID
+    ae.auth_user_id,             -- Supabase ID (when exists)
+    ae.email,
+    ae.auth_status,
+
+    -- Profile
+    up.profession,
+    up.professional_interests,
+
+    -- Auth details (when available)
+    au.created_at as auth_created_at,
+    au.last_sign_in_at,
+    au.app_metadata->>'role' as role,
+
+    -- Expert link (when applicable)
+    e.expert_name,
+    e.credentials
+
+  FROM allowed_emails ae
+  LEFT JOIN user_profiles_v2 up ON ae.id = up.id
+  LEFT JOIN auth.users au ON ae.auth_user_id = au.id
+  LEFT JOIN experts e ON up.expert_id = e.id;
+
+  Benefits of This Approach:
+
+  1. Single User ID: allowed_emails.id works everywhere
+  2. Clean Supabase Integration: auth.users remains untouched
+  3. Performance: Cached auth_user_id avoids email joins
+  4. Flexibility: Users exist before/without Supabase auth
+  5. RLS Compatible: Can still use auth.uid() in policies
+
+  Key Rules:
+
+  1. Never store allowed_emails.id in auth.users (can't modify it)
+  2. Always use allowed_emails.id in your tables
+  3. Only use auth.users.id for RLS policies and auth operations
+  4. Email is the permanent link between the two systems
+
+  This gives you a clean, maintainable architecture where allowed_emails is your user system and auth.users is just for authentication!
+
+
+
+
+Excellent clarification! Let me revise my recommendations with the complete picture:
+
+  Complete Architecture Overview:
+
+  1. Identity & Authentication Layer
+
+  allowed_emails (Primary User Identity):
+    id (UUID) -- Universal User ID
+    email -- Primary email for auth (UNIQUE)
+    name
+    organization
+    is_active
+    metadata -- tracks auth_status, invitation_sent, etc.
+
+  2. Document & Expert Knowledge Layer (Keep as-is)
+
+  experts (Subject Matter Experts):
+    id
+    expert_name
+    credentials
+    metadata -- AI-extracted professional info
+
+  sources_google (Documents):
+    id
+    drive_id
+    name
+    content
+    ...
+
+  sources_google_experts (Junction):
+    source_id -> sources_google.id
+    expert_id -> experts.id
+
+  3. User Profile Layer (New)
+
+  user_profiles_v2:
+    id (UUID) -- FK to allowed_emails.id
+    -- Learning preferences
+    profession
+    professional_interests
+    learning_goals
+    preferred_topics[]
+
+    -- Link to expert record if applicable
+    expert_id (UUID) -- FK to experts.id (NULLABLE)
+
+    -- Additional emails
+    additional_emails[] -- Array of secondary emails
+
+    -- Metadata
+    profile_source
+    created_at
+    updated_at
+
+  Key Design Principles:
+
+  1. One Email, One ID for Auth
+
+  - ✅ allowed_emails.email is the PRIMARY authentication email
+  - ✅ allowed_emails.id is the UNIVERSAL user identifier
+  - ✅ Additional emails stored in profile but NOT for auth
+
+  2. Clear Separation of Concerns
+
+  - experts table: Knowledge about subject matter experts (from documents)
+  - allowed_emails: Authentication and identity
+  - user_profiles_v2: User preferences and learning data
+  - Link: A user CAN be linked to an expert record via expert_id
+
+  3. Relationships Diagram
+
+  auth.users (Supabase)
+      ↓ (email match)
+  allowed_emails ←→ user_profiles_v2
+      ↓                     ↓ (expert_id)
+  (Universal ID)         experts
+                            ↓
+                   sources_google_experts
+                            ↓
+                     sources_google
+
+  Implementation Example:
+
+  -- Create the new profile table
+  CREATE TABLE user_profiles_v2 (
+    id UUID PRIMARY KEY REFERENCES allowed_emails(id),
+    profession TEXT,
+    professional_interests TEXT,
+    learning_goals TEXT,
+    preferred_topics JSONB DEFAULT '[]',
+
+    -- Link to expert if this user is also an expert
+    expert_id UUID REFERENCES experts(id),
+
+    -- Additional emails (not for auth)
+    additional_emails TEXT[] DEFAULT '{}',
+
+    -- Bio and preferences
+    bio_summary TEXT,
+    timezone TEXT,
+    language_preference TEXT DEFAULT 'en',
+
+    -- Metadata
+    profile_source TEXT CHECK (profile_source IN ('self_provided', 'ai_extracted', 'mixed')),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+  );
+
+  -- Helper view to see complete user picture
+  CREATE VIEW user_complete_profile AS
+  SELECT
+    ae.id as user_id,
+    ae.email as primary_email,
+    ae.name,
+    ae.organization,
+    ae.is_active,
+
+    -- Auth status
+    CASE
+      WHEN au.id IS NOT NULL THEN 'full_auth'
+      ELSE 'light_auth_only'
+    END as auth_status,
+
+    -- Profile data
+    up.profession,
+    up.professional_interests,
+    up.learning_goals,
+    up.additional_emails,
+
+    -- Expert data (if linked)
+    e.expert_name,
+    e.credentials as expert_credentials,
+    e.metadata as expert_metadata
+
+  FROM allowed_emails ae
+  LEFT JOIN auth.users au ON ae.email = au.email
+  LEFT JOIN user_profiles_v2 up ON ae.id = up.id
+  LEFT JOIN experts e ON up.expert_id = e.id;
+
+  Migration Strategy:
+
+  1. Migrate access_requests data → user_profiles_v2
+  2. Link existing experts to users where emails match
+  3. Preserve all existing relationships in sources_google_experts
+
+  Benefits:
+
+  1. Single source of truth: allowed_emails.id for user identity
+  2. Flexible expert linking: Users can be experts, but experts don't have to be users
+  3. Clean authentication: One email per user for auth
+  4. Rich profiles: Capture learning preferences without requiring full auth
+  5. Maintains document relationships: Expert-document links unchanged
+
+  Would you like me to create the migration scripts to implement this architecture?
+
+
+
+
+
+
+
+
+
+
+ Proposed Solution:
+
+  I recommend using allowed_emails as your primary user identity table and restructuring around it:
+
+  -- Enhanced allowed_emails becomes your primary user table
+  allowed_emails (existing):
+    id (UUID) -- This becomes your universal user ID
+    email
+    name
+    organization
+    is_active
+    metadata -- Can track auth_status, last_login, etc.
+
+  -- New unified profile table
+  user_profiles_v2:
+    id (UUID) -- Foreign key to allowed_emails.id
+    -- Learning preferences
+    profession
+    professional_interests
+    learning_goals
+    preferred_topics []
+    -- Bio data
+    bio_summary
+    timezone
+    language_preference
+    -- Professional data (if they're also an expert)
+    is_expert (boolean)
+    expert_data (JSONB) -- credentials, research, etc.
+    -- Metadata
+    profile_source -- 'self_provided', 'ai_extracted', 'mixed'
+    last_updated
+    created_at
+
+  Benefits of This Approach:
+
+  1. One ID per person - The allowed_emails.id becomes the universal identifier
+  2. Works for all users - Light auth, full auth, or no auth yet
+  3. Preserves valuable data - Migrate from access_requests
+  4. Flexible expert tracking - Users can be experts too
+  5. Clean separation - Identity (allowed_emails) vs Profile (user_profiles_v2)
+
+  Migration Path:
+
+  1. Create new user_profiles_v2 table linked to allowed_emails.id
+  2. Migrate data from access_requests → user_profiles_v2
+  3. For experts who are also users, merge their expert metadata into profile
+  4. Add helper functions to check auth status:
+  -- Function to check if allowed_email user has full auth
+  CREATE FUNCTION has_full_auth(allowed_email_id UUID)
+  RETURNS BOOLEAN AS $$
+    SELECT EXISTS (
+      SELECT 1 FROM auth.users au
+      JOIN allowed_emails ae ON au.email = ae.email
+      WHERE ae.id = allowed_email_id
+    );
+  $$ LANGUAGE SQL;
+
+  Key Design Decisions:
+
+  1. Email as the linking field between allowed_emails and auth.users
+  2. allowed_emails.id as the universal user ID across your system
+  3. Separate expert documents (experts table) from user profiles
+  4. Consolidate all user data in one profile table
+
+  Would you like me to:
+  1. Create the migration SQL to implement this structure?
+  2. Show how to query users with their auth status?
+  3. Create functions to manage the unified profiles?
+
+  This approach gives you the flexibility to track everyone while maintaining clean data architecture!
+
+
+
 Perfect! I've successfully added the authentication invitation functionality to the Allowed Emails management page. Here's what's now
   available:
 
