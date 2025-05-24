@@ -34,7 +34,10 @@ import {
   ServiceAccountCredentials,
   SignUpOptions,
   UserProfile,
-  UserProfileUpdate
+  UserProfileUpdate,
+  AccessRequestData,
+  AccessRequest,
+  AllowedEmail
 } from './types';
 
 // Import existing SupabaseClientService
@@ -956,6 +959,195 @@ export class AuthService {
       return result !== null;
     } catch (error) {
       return false;
+    }
+  }
+
+  /**
+   * Check if an email is on the allowed list
+   */
+  public async isEmailAllowed(email: string): Promise<boolean> {
+    try {
+      const { data, error } = await this.supabase
+        .rpc('is_email_allowed', { check_email: email });
+
+      if (error) {
+        console.error('Error checking email allowlist:', error);
+        return false;
+      }
+
+      return data || false;
+    } catch (error) {
+      console.error('Error checking email allowlist:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Submit an access request for a non-allowed email
+   */
+  public async submitAccessRequest(requestData: AccessRequestData): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await this.supabase
+        .rpc('submit_access_request', {
+          p_email: requestData.email,
+          p_name: requestData.name,
+          p_profession: requestData.profession,
+          p_professional_interests: requestData.professional_interests,
+          p_organization: requestData.organization,
+          p_reason_for_access: requestData.reason_for_access
+        });
+
+      if (error) {
+        console.error('Error submitting access request:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error submitting access request:', error);
+      return { success: false, error: 'Failed to submit access request' };
+    }
+  }
+
+  /**
+   * Get pending access requests (admin only)
+   */
+  public async getPendingAccessRequests(): Promise<AccessRequest[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('pending_access_requests')
+        .select('*')
+        .order('request_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching access requests:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching access requests:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get allowed emails list (admin only)
+   */
+  public async getAllowedEmails(): Promise<AllowedEmail[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('allowed_emails')
+        .select('*')
+        .eq('is_active', true)
+        .order('email', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching allowed emails:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching allowed emails:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Add an email to the allowed list (admin only)
+   */
+  public async addAllowedEmail(email: string, name?: string, organization?: string, notes?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const user = await this.getCurrentUser();
+      const { error } = await this.supabase
+        .rpc('add_allowed_email', {
+          p_email: email,
+          p_name: name,
+          p_organization: organization,
+          p_notes: notes,
+          p_added_by: user?.id
+        });
+
+      if (error) {
+        console.error('Error adding allowed email:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error adding allowed email:', error);
+      return { success: false, error: 'Failed to add email to allowlist' };
+    }
+  }
+
+  /**
+   * Approve an access request (admin only)
+   */
+  public async approveAccessRequest(requestId: string, notes?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const user = await this.getCurrentUser();
+      const { error } = await this.supabase
+        .rpc('approve_access_request', {
+          p_request_id: requestId,
+          p_approved_by: user?.id,
+          p_notes: notes
+        });
+
+      if (error) {
+        console.error('Error approving access request:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error approving access request:', error);
+      return { success: false, error: 'Failed to approve access request' };
+    }
+  }
+
+  /**
+   * Deny an access request (admin only)
+   */
+  public async denyAccessRequest(requestId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const user = await this.getCurrentUser();
+      const { error } = await this.supabase
+        .rpc('deny_access_request', {
+          p_request_id: requestId,
+          p_denied_by: user?.id,
+          p_denial_reason: reason
+        });
+
+      if (error) {
+        console.error('Error denying access request:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error denying access request:', error);
+      return { success: false, error: 'Failed to deny access request' };
+    }
+  }
+
+  /**
+   * Make current user an admin (temporary, for initial setup)
+   */
+  public async makeMeAdmin(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await this.supabase
+        .rpc('make_me_admin');
+
+      if (error) {
+        console.error('Error making user admin:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error making user admin:', error);
+      return { success: false, error: 'Failed to grant admin role' };
     }
   }
 }

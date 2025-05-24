@@ -9,6 +9,62 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      allowed_emails: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          auth_status: string | null
+          auth_user_id: string | null
+          created_at: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          name: string | null
+          notes: string | null
+          organization: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          auth_status?: string | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string | null
+          notes?: string | null
+          organization?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          auth_status?: string | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string | null
+          notes?: string | null
+          organization?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allowed_emails_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_pages: {
         Row: {
           app_name: string
@@ -1640,99 +1696,72 @@ export type Database = {
       }
       media_bookmarks: {
         Row: {
-          bookmark_type: string
-          created_at: string
-          description: string | null
-          end_position: number | null
+          bookmark_type: string | null
+          created_at: string | null
           id: string
-          metadata: Json | null
-          session_id: string
-          source_id: string | null
-          start_position: number
-          title: string | null
-          updated_at: string
+          media_id: string
+          note: string | null
+          tags: string[] | null
+          timestamp_seconds: number
+          user_id: string | null
         }
         Insert: {
-          bookmark_type: string
-          created_at?: string
-          description?: string | null
-          end_position?: number | null
+          bookmark_type?: string | null
+          created_at?: string | null
           id?: string
-          metadata?: Json | null
-          session_id: string
-          source_id?: string | null
-          start_position: number
-          title?: string | null
-          updated_at?: string
+          media_id: string
+          note?: string | null
+          tags?: string[] | null
+          timestamp_seconds: number
+          user_id?: string | null
         }
         Update: {
-          bookmark_type?: string
-          created_at?: string
-          description?: string | null
-          end_position?: number | null
+          bookmark_type?: string | null
+          created_at?: string | null
           id?: string
-          metadata?: Json | null
-          session_id?: string
-          source_id?: string | null
-          start_position?: number
-          title?: string | null
-          updated_at?: string
+          media_id?: string
+          note?: string | null
+          tags?: string[] | null
+          timestamp_seconds?: number
+          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "media_bookmarks_session_id_fkey"
-            columns: ["session_id"]
+            foreignKeyName: "media_bookmarks_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "media_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "media_bookmarks_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "session_progress_view"
-            referencedColumns: ["session_id"]
-          },
-          {
-            foreignKeyName: "media_bookmarks_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["source_id"]
-          },
-          {
-            foreignKeyName: "media_bookmarks_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
+            referencedRelation: "allowed_emails"
             referencedColumns: ["id"]
           },
         ]
       }
       media_playback_events: {
         Row: {
-          data: Json | null
+          created_at: string | null
+          event_data: Json | null
           event_type: string
           id: string
-          position: number
-          session_id: string
-          timestamp: string
+          session_id: string | null
+          timestamp_seconds: number
+          user_id: string | null
         }
         Insert: {
-          data?: Json | null
+          created_at?: string | null
+          event_data?: Json | null
           event_type: string
           id?: string
-          position: number
-          session_id: string
-          timestamp?: string
+          session_id?: string | null
+          timestamp_seconds: number
+          user_id?: string | null
         }
         Update: {
-          data?: Json | null
+          created_at?: string | null
+          event_data?: Json | null
           event_type?: string
           id?: string
-          position?: number
-          session_id?: string
-          timestamp?: string
+          session_id?: string | null
+          timestamp_seconds?: number
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1743,178 +1772,99 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "media_playback_events_session_id_fkey"
-            columns: ["session_id"]
+            foreignKeyName: "media_playback_events_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "session_progress_view"
-            referencedColumns: ["session_id"]
+            referencedRelation: "allowed_emails"
+            referencedColumns: ["id"]
           },
         ]
       }
       media_sessions: {
         Row: {
-          app_id: string
-          completed_at: string | null
           completion_percentage: number | null
-          created_at: string
-          expert_document_id: string | null
+          created_at: string | null
+          device_type: string | null
           id: string
-          last_position: number | null
-          media_type: string
-          play_count: number | null
-          playback_rate: number | null
-          presentation_id: string | null
-          source_id: string | null
-          started_at: string
-          total_play_duration: number | null
-          updated_at: string
+          media_id: string | null
+          session_end: string | null
+          session_start: string | null
+          session_type: string | null
+          total_duration_seconds: number | null
+          user_id: string | null
         }
         Insert: {
-          app_id: string
-          completed_at?: string | null
           completion_percentage?: number | null
-          created_at?: string
-          expert_document_id?: string | null
+          created_at?: string | null
+          device_type?: string | null
           id?: string
-          last_position?: number | null
-          media_type: string
-          play_count?: number | null
-          playback_rate?: number | null
-          presentation_id?: string | null
-          source_id?: string | null
-          started_at?: string
-          total_play_duration?: number | null
-          updated_at?: string
+          media_id?: string | null
+          session_end?: string | null
+          session_start?: string | null
+          session_type?: string | null
+          total_duration_seconds?: number | null
+          user_id?: string | null
         }
         Update: {
-          app_id?: string
-          completed_at?: string | null
           completion_percentage?: number | null
-          created_at?: string
-          expert_document_id?: string | null
+          created_at?: string | null
+          device_type?: string | null
           id?: string
-          last_position?: number | null
-          media_type?: string
-          play_count?: number | null
-          playback_rate?: number | null
-          presentation_id?: string | null
-          source_id?: string | null
-          started_at?: string
-          total_play_duration?: number | null
-          updated_at?: string
+          media_id?: string | null
+          session_end?: string | null
+          session_start?: string | null
+          session_type?: string | null
+          total_duration_seconds?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "media_sessions_expert_document_id_fkey"
-            columns: ["expert_document_id"]
+            foreignKeyName: "media_sessions_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "expert_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "media_sessions_expert_document_id_fkey"
-            columns: ["expert_document_id"]
-            isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["expert_document_id"]
-          },
-          {
-            foreignKeyName: "media_sessions_presentation_id_fkey"
-            columns: ["presentation_id"]
-            isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["presentation_id"]
-          },
-          {
-            foreignKeyName: "media_sessions_presentation_id_fkey"
-            columns: ["presentation_id"]
-            isOneToOne: false
-            referencedRelation: "presentations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "media_sessions_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["source_id"]
-          },
-          {
-            foreignKeyName: "media_sessions_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
+            referencedRelation: "allowed_emails"
             referencedColumns: ["id"]
           },
         ]
       }
       media_topic_segments: {
         Row: {
-          created_at: string
-          end_position: number
-          expert_id: string | null
+          ai_summary: string | null
+          created_at: string | null
+          difficulty_level: string | null
+          end_time_seconds: number
           id: string
-          relevance_score: number | null
-          source_id: string
-          start_position: number
-          topic_id: string
-          transcript_excerpt: string | null
-          updated_at: string
+          key_concepts: string[] | null
+          media_id: string
+          segment_title: string | null
+          start_time_seconds: number
+          topic_id: string | null
         }
         Insert: {
-          created_at?: string
-          end_position: number
-          expert_id?: string | null
+          ai_summary?: string | null
+          created_at?: string | null
+          difficulty_level?: string | null
+          end_time_seconds: number
           id?: string
-          relevance_score?: number | null
-          source_id: string
-          start_position: number
-          topic_id: string
-          transcript_excerpt?: string | null
-          updated_at?: string
+          key_concepts?: string[] | null
+          media_id: string
+          segment_title?: string | null
+          start_time_seconds: number
+          topic_id?: string | null
         }
         Update: {
-          created_at?: string
-          end_position?: number
-          expert_id?: string | null
+          ai_summary?: string | null
+          created_at?: string | null
+          difficulty_level?: string | null
+          end_time_seconds?: number
           id?: string
-          relevance_score?: number | null
-          source_id?: string
-          start_position?: number
-          topic_id?: string
-          transcript_excerpt?: string | null
-          updated_at?: string
+          key_concepts?: string[] | null
+          media_id?: string
+          segment_title?: string | null
+          start_time_seconds?: number
+          topic_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "media_topic_segments_expert_id_fkey"
-            columns: ["expert_id"]
-            isOneToOne: false
-            referencedRelation: "experts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "media_topic_segments_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["source_id"]
-          },
-          {
-            foreignKeyName: "media_topic_segments_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "media_topic_segments_topic_id_fkey"
-            columns: ["topic_id"]
-            isOneToOne: false
-            referencedRelation: "learning_topics"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       mime_types: {
         Row: {
@@ -3749,6 +3699,50 @@ export type Database = {
         }
         Relationships: []
       }
+      user_content_scores: {
+        Row: {
+          calculated_at: string | null
+          difficulty_match: number | null
+          engagement_score: number | null
+          id: string
+          media_id: string
+          reason: string | null
+          relevance_score: number | null
+          shown_to_user: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          calculated_at?: string | null
+          difficulty_match?: number | null
+          engagement_score?: number | null
+          id?: string
+          media_id: string
+          reason?: string | null
+          relevance_score?: number | null
+          shown_to_user?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          calculated_at?: string | null
+          difficulty_match?: number | null
+          engagement_score?: number | null
+          id?: string
+          media_id?: string
+          reason?: string | null
+          relevance_score?: number | null
+          shown_to_user?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_content_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "allowed_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_filter_profile_drives: {
         Row: {
           id: string
@@ -3802,26 +3796,100 @@ export type Database = {
         }
         Relationships: []
       }
+      user_learning_analytics: {
+        Row: {
+          average_session_length: number | null
+          completion_rate: number | null
+          experts_followed: string[] | null
+          insights: Json | null
+          last_calculated: string | null
+          preferred_time_of_day: string | null
+          quiz_average_score: number | null
+          topics_explored: string[] | null
+          total_minutes_watched: number | null
+          user_id: string
+        }
+        Insert: {
+          average_session_length?: number | null
+          completion_rate?: number | null
+          experts_followed?: string[] | null
+          insights?: Json | null
+          last_calculated?: string | null
+          preferred_time_of_day?: string | null
+          quiz_average_score?: number | null
+          topics_explored?: string[] | null
+          total_minutes_watched?: number | null
+          user_id: string
+        }
+        Update: {
+          average_session_length?: number | null
+          completion_rate?: number | null
+          experts_followed?: string[] | null
+          insights?: Json | null
+          last_calculated?: string | null
+          preferred_time_of_day?: string | null
+          quiz_average_score?: number | null
+          topics_explored?: string[] | null
+          total_minutes_watched?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_learning_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "allowed_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
+          bio: string | null
           created_at: string | null
+          expertise_keywords: string[] | null
           full_name: string | null
           id: string
+          linkedin_url: string | null
+          onboarding_completed: boolean | null
+          organization: string | null
           preferences: Json | null
+          profession: string | null
+          professional_interests: string | null
+          profile_visibility: string | null
+          research_areas: string[] | null
           updated_at: string | null
         }
         Insert: {
+          bio?: string | null
           created_at?: string | null
+          expertise_keywords?: string[] | null
           full_name?: string | null
           id: string
+          linkedin_url?: string | null
+          onboarding_completed?: boolean | null
+          organization?: string | null
           preferences?: Json | null
+          profession?: string | null
+          professional_interests?: string | null
+          profile_visibility?: string | null
+          research_areas?: string[] | null
           updated_at?: string | null
         }
         Update: {
+          bio?: string | null
           created_at?: string | null
+          expertise_keywords?: string[] | null
           full_name?: string | null
           id?: string
+          linkedin_url?: string | null
+          onboarding_completed?: boolean | null
+          organization?: string | null
           preferences?: Json | null
+          profession?: string | null
+          professional_interests?: string | null
+          profile_visibility?: string | null
+          research_areas?: string[] | null
           updated_at?: string | null
         }
         Relationships: [
@@ -3833,6 +3901,131 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_profiles_v2: {
+        Row: {
+          avoided_topics: string[] | null
+          bio_summary: string | null
+          content_tags_following: string[] | null
+          created_at: string | null
+          credentials: string[] | null
+          current_challenges: string | null
+          id: string
+          industry_sectors: string[] | null
+          intended_application: string | null
+          interested_experts: string[] | null
+          interested_topics: string[] | null
+          last_activity: string | null
+          learning_background: string | null
+          learning_goals: string[] | null
+          learning_pace: string | null
+          onboarding_completed: boolean | null
+          preferred_depth: string | null
+          preferred_formats: string[] | null
+          preferred_session_length: number | null
+          priority_subjects: string[] | null
+          profession: string | null
+          professional_title: string | null
+          profile_completeness: number | null
+          reason_for_learning: string | null
+          referral_source: string | null
+          specialty_areas: string[] | null
+          time_commitment: string | null
+          updated_at: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          avoided_topics?: string[] | null
+          bio_summary?: string | null
+          content_tags_following?: string[] | null
+          created_at?: string | null
+          credentials?: string[] | null
+          current_challenges?: string | null
+          id: string
+          industry_sectors?: string[] | null
+          intended_application?: string | null
+          interested_experts?: string[] | null
+          interested_topics?: string[] | null
+          last_activity?: string | null
+          learning_background?: string | null
+          learning_goals?: string[] | null
+          learning_pace?: string | null
+          onboarding_completed?: boolean | null
+          preferred_depth?: string | null
+          preferred_formats?: string[] | null
+          preferred_session_length?: number | null
+          priority_subjects?: string[] | null
+          profession?: string | null
+          professional_title?: string | null
+          profile_completeness?: number | null
+          reason_for_learning?: string | null
+          referral_source?: string | null
+          specialty_areas?: string[] | null
+          time_commitment?: string | null
+          updated_at?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          avoided_topics?: string[] | null
+          bio_summary?: string | null
+          content_tags_following?: string[] | null
+          created_at?: string | null
+          credentials?: string[] | null
+          current_challenges?: string | null
+          id?: string
+          industry_sectors?: string[] | null
+          intended_application?: string | null
+          interested_experts?: string[] | null
+          interested_topics?: string[] | null
+          last_activity?: string | null
+          learning_background?: string | null
+          learning_goals?: string[] | null
+          learning_pace?: string | null
+          onboarding_completed?: boolean | null
+          preferred_depth?: string | null
+          preferred_formats?: string[] | null
+          preferred_session_length?: number | null
+          priority_subjects?: string[] | null
+          profession?: string | null
+          professional_title?: string | null
+          profile_completeness?: number | null
+          reason_for_learning?: string | null
+          referral_source?: string | null
+          specialty_areas?: string[] | null
+          time_commitment?: string | null
+          updated_at?: string | null
+          years_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_v2_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "allowed_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_subject_interests: {
         Row: {
@@ -3923,6 +4116,37 @@ export type Database = {
           },
         ]
       }
+      professional_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          email: string | null
+          expertise_keywords: string[] | null
+          full_name: string | null
+          has_completed_profile: boolean | null
+          id: string | null
+          interests_array: string[] | null
+          linkedin_url: string | null
+          onboarding_completed: boolean | null
+          organization: string | null
+          preferences: Json | null
+          profession: string | null
+          professional_interests: string | null
+          profile_visibility: string | null
+          research_areas: string[] | null
+          updated_at: string | null
+          user_created_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_template_associations_view: {
         Row: {
           association_created_at: string | null
@@ -3937,41 +4161,6 @@ export type Database = {
         }
         Relationships: []
       }
-      session_progress_view: {
-        Row: {
-          app_id: string | null
-          completed_at: string | null
-          completion_percentage: number | null
-          expert_name: string | null
-          last_position: number | null
-          media_name: string | null
-          media_type: string | null
-          play_count: number | null
-          presentation_title: string | null
-          session_id: string | null
-          source_id: string | null
-          started_at: string | null
-          status: string | null
-          total_play_duration: number | null
-          web_view_link: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "media_sessions_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["source_id"]
-          },
-          {
-            foreignKeyName: "media_sessions_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_details: {
         Row: {
           email: string | null
@@ -3985,11 +4174,49 @@ export type Database = {
         }
         Relationships: []
       }
+      user_learning_progress: {
+        Row: {
+          avg_completion: number | null
+          bookmarks_created: number | null
+          email: string | null
+          interested_topics: string[] | null
+          learning_goals: string[] | null
+          name: string | null
+          onboarding_completed: boolean | null
+          profile_completeness: number | null
+          total_minutes: number | null
+          user_id: string | null
+          videos_watched: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_v2_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "allowed_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      add_allowed_email: {
+        Args: {
+          p_email: string
+          p_name?: string
+          p_organization?: string
+          p_notes?: string
+          p_added_by?: string
+        }
+        Returns: string
+      }
       add_unique_constraint: {
         Args: { p_table_name: string; p_column_name: string }
         Returns: undefined
+      }
+      admin_reset_user_password: {
+        Args: { target_email: string; new_password: string }
+        Returns: boolean
       }
       analyze_default_values: {
         Args: { p_table_name: string }
@@ -4021,6 +4248,10 @@ export type Database = {
           recommendation: string
         }[]
       }
+      approve_access_request: {
+        Args: { p_request_id: string; p_approved_by?: string; p_notes?: string }
+        Returns: boolean
+      }
       batch_track_usage: {
         Args: {
           p_page_id: string
@@ -4029,6 +4260,15 @@ export type Database = {
           p_dependencies?: Json
         }
         Returns: boolean
+      }
+      check_auth_user_exists: {
+        Args: { target_email: string }
+        Returns: {
+          user_id: string
+          email: string
+          created_at: string
+          user_exists: boolean
+        }[]
       }
       check_user_id_foreign_keys: {
         Args: Record<PropertyKey, never>
@@ -4043,6 +4283,14 @@ export type Database = {
       cleanup_expired_cli_tokens: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      deny_access_request: {
+        Args: {
+          p_request_id: string
+          p_denied_by?: string
+          p_denial_reason?: string
+        }
+        Returns: boolean
       }
       execute_sql: {
         Args: { sql_query: string }
@@ -4365,6 +4613,10 @@ export type Database = {
         Args: { presentation_uuid: string }
         Returns: undefined
       }
+      is_email_allowed: {
+        Args: { check_email: string }
+        Returns: boolean
+      }
       list_function_comments: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -4374,6 +4626,10 @@ export type Database = {
           return_type: string
           argument_types: string
         }[]
+      }
+      make_email_admin: {
+        Args: { user_email: string }
+        Returns: Json
       }
       populate_sources_with_fixed_user_id: {
         Args: { user_email_address: string }
@@ -4422,6 +4678,21 @@ export type Database = {
       set_current_domain: {
         Args: { domain_id: string }
         Returns: undefined
+      }
+      set_user_admin_role: {
+        Args: { target_email: string; is_admin?: boolean }
+        Returns: boolean
+      }
+      submit_access_request: {
+        Args: {
+          p_email: string
+          p_name: string
+          p_profession?: string
+          p_professional_interests?: string
+          p_organization?: string
+          p_reason_for_access?: string
+        }
+        Returns: string
       }
       table_exists: {
         Args: { p_schema_name: string; p_table_name: string }

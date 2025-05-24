@@ -1,7 +1,28 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { UserMenu } from '@dhg/shared-components';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export const Layout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Signed out successfully');
+      navigate('/login');
+    } catch (error) {
+      toast.error('Failed to sign out');
+    }
+  };
+
+  const userInfo = user ? {
+    email: user.email,
+    name: user.user_metadata?.full_name,
+    avatar: user.user_metadata?.avatar_url
+  } : null;
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -22,28 +43,37 @@ export const Layout = () => {
                 <span className="ml-2 text-lg font-semibold text-gray-900">DHG Audio</span>
               </Link>
             </div>
-            <nav className="flex space-x-4">
-              <Link
-                to="/"
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  location.pathname === '/'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Home
-              </Link>
-              <Link
-                to="/about"
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  location.pathname === '/about'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                About
-              </Link>
-            </nav>
+            <div className="flex items-center space-x-4">
+              <nav className="flex space-x-4">
+                <Link
+                  to="/"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/'
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/about"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/about'
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  About
+                </Link>
+              </nav>
+              {/* User Menu */}
+              {userInfo && (
+                <UserMenu 
+                  user={userInfo} 
+                  onSignOut={handleSignOut}
+                />
+              )}
+            </div>
           </div>
         </div>
       </header>
