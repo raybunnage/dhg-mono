@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { dhgHubAuthService } from '../services/dhg-hub-auth-service';
-import { SimpleProfileForm, SimpleProfileFormData } from './SimpleProfileForm';
+import { profileService } from '../services/profile-service';
+import { ProfileForm, ProfileFormData } from '../../../../packages/shared/components/profile/ProfileForm';
 
 export const LightEmailAuth: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -9,8 +10,29 @@ export const LightEmailAuth: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [existingProfileData, setExistingProfileData] = useState<any>(null);
   
   const { login, registerWithProfile, completeProfile, user, needsProfile } = useAuth();
+
+  // Load existing profile data when user needs profile completion
+  useEffect(() => {
+    const loadExistingProfile = async () => {
+      if (user && (needsProfile || showProfileForm) && !isNewUser) {
+        try {
+          console.log('Loading existing profile for user:', user.id);
+          const result = await profileService.getProfile(user.id);
+          if (result.success && result.data) {
+            console.log('Found existing profile data:', result.data);
+            setExistingProfileData(result.data);
+          }
+        } catch (error) {
+          console.error('Error loading existing profile:', error);
+        }
+      }
+    };
+
+    loadExistingProfile();
+  }, [user, needsProfile, isNewUser, showProfileForm]);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,25 +65,17 @@ export const LightEmailAuth: React.FC = () => {
     }
   };
 
-  const handleProfileSubmit = async (profileData: SimpleProfileFormData) => {
+  const handleProfileSubmit = async (profileData: ProfileFormData) => {
     setIsLoading(true);
     setError('');
 
     try {
       if (isNewUser) {
         // New user - register with profile
-        await registerWithProfile(email, {
-          display_name: profileData.display_name,
-          bio: profileData.bio,
-          avatar_url: profileData.avatar_url
-        });
+        await registerWithProfile(email, profileData);
       } else {
         // Existing user - complete profile
-        await completeProfile({
-          display_name: profileData.display_name,
-          bio: profileData.bio,
-          avatar_url: profileData.avatar_url
-        });
+        await completeProfile(profileData);
       }
       // Navigation will be handled by App.tsx after successful profile completion
     } catch (err) {
@@ -82,12 +96,14 @@ export const LightEmailAuth: React.FC = () => {
           <p className="text-center text-gray-600 mb-6">
             Email: {email || user?.email}
           </p>
-          <SimpleProfileForm
+          <ProfileForm
+            initialData={existingProfileData || {}}
             onSubmit={handleProfileSubmit}
             onCancel={() => {
               setShowProfileForm(false);
               setEmail('');
               setIsNewUser(false);
+              setExistingProfileData(null);
             }}
             isLoading={isLoading}
           />

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { dhgHubAuthService, AuthUser, ProfileData } from '../services/dhg-hub-auth-service';
-import { profileService } from '../services/profile-service';
+import { dhgHubAuthService, AuthUser, ProfileFormData } from '../services/dhg-hub-auth-service';
 
 interface UseAuthReturn {
   user: AuthUser | null;
@@ -9,8 +8,8 @@ interface UseAuthReturn {
   needsProfile: boolean;
   login: (email: string) => Promise<void>;
   logout: () => Promise<void>;
-  completeProfile: (profileData: ProfileData) => Promise<void>;
-  registerWithProfile: (email: string, profileData: ProfileData) => Promise<void>;
+  completeProfile: (profileData: ProfileFormData) => Promise<void>;
+  registerWithProfile: (email: string, profileData: ProfileFormData) => Promise<void>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -94,7 +93,7 @@ export function useAuth(): UseAuthReturn {
     }
   };
 
-  const completeProfile = async (profileData: ProfileData) => {
+  const completeProfile = async (profileData: ProfileFormData) => {
     if (!user) {
       throw new Error('No user to complete profile for');
     }
@@ -103,29 +102,28 @@ export function useAuth(): UseAuthReturn {
     setError(null);
     
     try {
-      const { profile, error: profileError } = await profileService.createProfile(
-        user.id,
-        user.email,
-        profileData
-      );
+      const result = await dhgHubAuthService.completeProfile(user.id, profileData);
       
-      if (profileError) {
-        throw profileError;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to complete profile');
       }
       
-      if (!profile) {
-        throw new Error('Failed to create profile');
+      if (result.user) {
+        // The auth service already returns the properly formatted user
+        const updatedUser = {
+          id: result.user.id,
+          email: result.user.email || user.email,
+          role: (result.user as any).role || 'user',
+          created_at: result.user.created_at,
+          last_login_at: (result.user as any).last_login_at || null,
+          user_profile_id: (result.user as any).user_profile_id,
+          profile: (result.user as any).profile || null
+        };
+        
+        dhgHubAuthService.saveUser(updatedUser);
+        setUser(updatedUser);
+        setNeedsProfile(false);
       }
-      
-      const updatedUser = {
-        ...user,
-        user_profile_id: profile.id,
-        profile: profile
-      };
-      
-      dhgHubAuthService.saveUser(updatedUser);
-      setUser(updatedUser);
-      setNeedsProfile(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to complete profile';
       setError(message);
@@ -135,7 +133,7 @@ export function useAuth(): UseAuthReturn {
     }
   };
 
-  const registerWithProfile = async (email: string, profileData: ProfileData) => {
+  const registerWithProfile = async (email: string, profileData: ProfileFormData) => {
     setLoading(true);
     setError(null);
     

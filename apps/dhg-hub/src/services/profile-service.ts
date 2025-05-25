@@ -2,18 +2,44 @@ import { supabase } from './supabase-browser';
 
 export interface UserProfile {
   id: string;
-  email: string;
-  display_name: string;
+  email?: string;
+  display_name?: string;
   bio?: string | null;
   avatar_url?: string | null;
   created_at: string;
   updated_at: string;
+  // Full profile data from user_profiles_v2
+  profession?: string;
+  professional_title?: string;
+  years_experience?: number;
+  industry_sectors?: string[];
+  specialty_areas?: string[];
+  credentials?: string[];
+  learning_goals?: string[];
+  reason_for_learning?: string;
+  preferred_formats?: string[];
+  learning_pace?: string;
+  time_commitment?: string;
+  preferred_depth?: string;
+  preferred_session_length?: number;
+  interested_topics?: string[];
+  interested_experts?: string[];
+  avoided_topics?: string[];
+  priority_subjects?: string[];
+  content_tags_following?: string[];
+  bio_summary?: string;
+  learning_background?: string;
+  current_challenges?: string;
+  intended_application?: string;
+  referral_source?: string;
+  onboarding_completed?: boolean;
+  profile_completeness?: number;
 }
 
-export interface ProfileData {
-  display_name: string;
-  bio?: string;
-  avatar_url?: string;
+export interface ProfileServiceResult {
+  success: boolean;
+  data?: UserProfile | null;
+  error?: string;
 }
 
 class ProfileService {
@@ -28,7 +54,7 @@ class ProfileService {
     return ProfileService.instance;
   }
   
-  async getProfile(userId: string): Promise<{ profile: UserProfile | null; error: Error | null }> {
+  async getProfile(userId: string): Promise<ProfileServiceResult> {
     try {
       const { data, error } = await supabase
         .from('user_profiles_v2')
@@ -38,72 +64,23 @@ class ProfileService {
       
       if (error) {
         if (error.code === 'PGRST116') {
-          return { profile: null, error: null };
+          // No profile exists yet
+          return { success: true, data: null };
         }
-        throw error;
+        console.error('Profile fetch error:', error);
+        return { success: false, error: error.message };
       }
       
-      return { profile: data as UserProfile, error: null };
+      return { success: true, data: data as UserProfile };
     } catch (error) {
       console.error('Profile fetch error:', error);
       return {
-        profile: null,
-        error: error instanceof Error ? error : new Error('Unknown error')
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
   
-  async createProfile(userId: string, email: string, profileData: ProfileData): Promise<{ profile: UserProfile | null; error: Error | null }> {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles_v2')
-        .insert({
-          id: userId,
-          email: email,
-          display_name: profileData.display_name,
-          bio: profileData.bio || null,
-          avatar_url: profileData.avatar_url || null
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      return { profile: data as UserProfile, error: null };
-    } catch (error) {
-      console.error('Profile creation error:', error);
-      return {
-        profile: null,
-        error: error instanceof Error ? error : new Error('Unknown error')
-      };
-    }
-  }
-  
-  async updateProfile(userId: string, profileData: Partial<ProfileData>): Promise<{ profile: UserProfile | null; error: Error | null }> {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles_v2')
-        .update({
-          display_name: profileData.display_name,
-          bio: profileData.bio,
-          avatar_url: profileData.avatar_url,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      return { profile: data as UserProfile, error: null };
-    } catch (error) {
-      console.error('Profile update error:', error);
-      return {
-        profile: null,
-        error: error instanceof Error ? error : new Error('Unknown error')
-      };
-    }
-  }
 }
 
 export const profileService = ProfileService.getInstance();

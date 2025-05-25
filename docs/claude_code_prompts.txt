@@ -5,7 +5,9 @@
 database cleaniup
 database backiups
 auth_audit_log - integration
-new fields in 
+new fields in allowed_emails
+upgrading dhg-hub to do lightweight authentication
+making a video viewer 
 
 
 [
