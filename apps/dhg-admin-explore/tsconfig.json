@@ -8,7 +8,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@root/*": ["../../*"]
+      "@root/*": ["../../*"],
+      "@shared/*": ["../../packages/shared/*"]
     },
 
     /* Bundler mode */

@@ -6,7 +6,6 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../../../supabase/types';
 
 export interface FileNode {
   id: string;
@@ -21,9 +20,9 @@ export interface FileNode {
   web_view_link: string | null;
   metadata: any;
   expertDocument?: any;
-  path_depth?: number;
-  created_at?: string;
-  updated_at?: string;
+  path_depth?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface FileTreeStats {
@@ -36,54 +35,36 @@ export interface FileTreeStats {
 }
 
 export class GoogleDriveExplorerService {
-  constructor(private supabase: SupabaseClient<Database>) {}
+  constructor(private supabase: SupabaseClient<any>) {}
 
   /**
    * Fetch all files from sources_google with optional expert document data
    */
   async fetchAllFiles(includeExpertDocuments: boolean = false): Promise<FileNode[]> {
     try {
-      let query = this.supabase
+      const { data, error } = await this.supabase
         .from('sources_google')
-        .select(includeExpertDocuments ? `
-          *,
-          expert_documents(
-            id, 
-            processing_status, 
-            processed_content, 
-            batch_id, 
-            error_message,
-            queued_at, 
-            processing_started_at, 
-            processing_completed_at,
-            processing_error, 
-            retry_count
-          )
-        ` : '*')
+        .select('*')
         .order('name');
-
-      const { data, error } = await query;
       
       if (error) throw error;
 
       // Transform to FileNode interface
       return (data || []).map(source => ({
         id: source.id,
-        name: source.name,
+        name: source.name || '',
         mime_type: source.mime_type || '',
         path: source.path,
-        parent_path: source.parent_path,
+        parent_path: (source as any).parent_path || null, // parent_path might not be in the types yet
         parent_folder_id: source.parent_folder_id,
         drive_id: source.drive_id,
         is_root: source.is_root,
-        content_extracted: source.content_extracted,
+        content_extracted: (source as any).content_extracted || null,
         web_view_link: source.web_view_link,
         metadata: source.metadata,
         path_depth: source.path_depth,
         created_at: source.created_at,
-        updated_at: source.updated_at,
-        expertDocument: includeExpertDocuments && 'expert_documents' in source ? 
-          source.expert_documents?.[0] : undefined
+        updated_at: source.updated_at
       }));
     } catch (error) {
       console.error('Error fetching files:', error);
@@ -96,25 +77,8 @@ export class GoogleDriveExplorerService {
    * Uses the drive_id and parent_folder_id for navigation as per CLAUDE.md
    */
   async getFilesRecursively(folderId: string, maxDepth: number = 10): Promise<FileNode[]> {
-    try {
-      // Use recursive CTE to get all children
-      const { data, error } = await this.supabase.rpc('get_folder_tree', {
-        root_folder_id: folderId,
-        max_depth: maxDepth
-      });
-
-      if (error) {
-        // If RPC doesn't exist, fall back to manual recursive fetch
-        console.warn('RPC function not found, using manual recursive fetch');
-        return this.manualRecursiveFetch(folderId, maxDepth);
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Error in recursive fetch:', error);
-      // Fall back to manual recursive fetch
-      return this.manualRecursiveFetch(folderId, maxDepth);
-    }
+    // Always use manual recursive fetch for now
+    return this.manualRecursiveFetch(folderId, maxDepth);
   }
 
   /**
@@ -143,14 +107,14 @@ export class GoogleDriveExplorerService {
     for (const child of children || []) {
       const fileNode: FileNode = {
         id: child.id,
-        name: child.name,
+        name: child.name || '',
         mime_type: child.mime_type || '',
         path: child.path,
-        parent_path: child.parent_path,
+        parent_path: (child as any).parent_path || null,
         parent_folder_id: child.parent_folder_id,
         drive_id: child.drive_id,
         is_root: child.is_root,
-        content_extracted: child.content_extracted,
+        content_extracted: (child as any).content_extracted || null,
         web_view_link: child.web_view_link,
         metadata: child.metadata,
         path_depth: child.path_depth
@@ -193,14 +157,14 @@ export class GoogleDriveExplorerService {
 
       return (data || []).map(source => ({
         id: source.id,
-        name: source.name,
+        name: source.name || '',
         mime_type: source.mime_type || '',
         path: source.path,
-        parent_path: source.parent_path,
+        parent_path: (source as any).parent_path || null,
         parent_folder_id: source.parent_folder_id,
         drive_id: source.drive_id,
         is_root: source.is_root,
-        content_extracted: source.content_extracted,
+        content_extracted: (source as any).content_extracted || null,
         web_view_link: source.web_view_link,
         metadata: source.metadata,
         path_depth: source.path_depth
@@ -358,7 +322,7 @@ export class GoogleDriveExplorerService {
     for (const child of children) {
       const correctPath = `${parentPath}/${child.name}`;
       
-      if (child.path !== correctPath || child.parent_path !== parentPath) {
+      if (child.path !== correctPath || (child as any).parent_path !== parentPath) {
         const { error: updateError } = await this.supabase
           .from('sources_google')
           .update({
