@@ -1,5 +1,6 @@
 import { Logger } from '../../../../packages/shared/utils/logger';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { getActiveFilterProfile } from '../get-active-filter-profile';
 
 /**
  * Create presentation_assets for presentations with a high_level_folder_source_id
@@ -28,12 +29,26 @@ export async function createPresentationAssetsCommand(options: {
     
     const supabase = SupabaseClientService.getInstance().getClient();
     
+    // Check for active filter profile
+    const activeFilter = await getActiveFilterProfile();
+    let rootDriveIdFilter: string | null = null;
+    if (activeFilter && activeFilter.rootDriveId) {
+      Logger.info(`🔍 Active filter: "${activeFilter.profile.name}"`);
+      Logger.info(`📁 Using root_drive_id: ${activeFilter.rootDriveId}\n`);
+      rootDriveIdFilter = activeFilter.rootDriveId;
+    }
+    
     // Get presentations with high_level_folder_source_id
     let query = supabase
       .from('presentations')
-      .select('id, title, high_level_folder_source_id, video_source_id, expert_document_id')
+      .select('id, title, high_level_folder_source_id, video_source_id, expert_document_id, root_drive_id')
       .not('high_level_folder_source_id', 'is', null)
       .order('created_at', { ascending: false });
+    
+    // Apply root_drive_id filter to presentations if active
+    if (rootDriveIdFilter) {
+      query = query.eq('root_drive_id', rootDriveIdFilter);
+    }
     
     // Apply filters if specific presentation ID provided
     if (options.presentationId) {

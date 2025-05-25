@@ -100,6 +100,12 @@ health_check() {
   track_command "health-check" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/commands/health-check.ts $@"
 }
 
+# Check for help flags first
+if [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ "$1" = "help" ]; then
+  show_help
+  exit 0
+fi
+
 # Process command
 if [ $# -eq 0 ]; then
   show_help

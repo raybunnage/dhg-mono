@@ -382,13 +382,13 @@ program
     await processMp4FilesAction(extractedOptions);
   });
 
-// Now push the other commands (keep this for backward compatibility)
-program.commands.push(generateSummaryCommand);
-program.commands.push(testProcessDocumentCommand);
-// Archived: program.commands.push(checkVideoConsistencyCommand);
-program.commands.push(repairMismatchedVideoIdsCommand);
-program.commands.push(findMissingPresentationsCommand);
-program.commands.push(findDuplicateFolderNamesCommand);
+// Add commands using addCommand method
+program.addCommand(generateSummaryCommand);
+program.addCommand(testProcessDocumentCommand);
+// Archived: program.addCommand(checkVideoConsistencyCommand);
+program.addCommand(repairMismatchedVideoIdsCommand);
+program.addCommand(findMissingPresentationsCommand);
+program.addCommand(findDuplicateFolderNamesCommand);
   
 console.log("DEBUG: Commands after adding commands:", program.commands.map((cmd: any) => cmd.name()));
 

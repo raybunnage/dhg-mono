@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { v4 as uuidv4 } from 'uuid';
 import { Logger } from '../../../../packages/shared/utils/logger';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { getActiveFilterProfile } from '../get-active-filter-profile';
 
 /**
  * Creates presentation records for MP4 files in the sources_google table.
@@ -34,14 +35,29 @@ export const createPresentationsFromMp4Command = async (options: {
   const supabase = SupabaseClientService.getInstance().getClient();
 
   try {
+    // Check for active filter profile
+    const activeFilter = await getActiveFilterProfile();
+    let rootDriveIdFilter: string | null = null;
+    if (activeFilter && activeFilter.rootDriveId) {
+      Logger.info(`🔍 Active filter: "${activeFilter.profile.name}"`);
+      Logger.info(`📁 Using root_drive_id: ${activeFilter.rootDriveId}\n`);
+      rootDriveIdFilter = activeFilter.rootDriveId;
+    }
     // Handle fixing missing high_level_folder_source_id if requested
     if (fixMissingFolders) {
       // 3. Get high-level folders information for expert lookup
-      const { data: highLevelFolders, error: foldersError } = await supabase
+      let fixFoldersQuery = supabase
         .from('sources_google')
-        .select('id, path_depth, main_video_id, name')
+        .select('id, path_depth, main_video_id, name, root_drive_id')
         .eq('path_depth', 0)
         .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac'); // The specific document type for high-level folders
+      
+      // Apply root_drive_id filter if active
+      if (rootDriveIdFilter) {
+        fixFoldersQuery = fixFoldersQuery.eq('root_drive_id', rootDriveIdFilter);
+      }
+      
+      const { data: highLevelFolders, error: foldersError } = await fixFoldersQuery;
         
       if (foldersError) {
         Logger.error('Error fetching high-level folders:', foldersError);
@@ -234,7 +250,7 @@ export const createPresentationsFromMp4Command = async (options: {
     }
     
     // Get all MP4 files and filter out those that already have presentations
-    const { data: allMp4Files, error: mp4Error } = await supabase
+    let mp4Query = supabase
       .from('sources_google')
       .select(`
         id, 
@@ -246,7 +262,14 @@ export const createPresentationsFromMp4Command = async (options: {
         path_depth,
         path
       `)
-      .like('mime_type', '%mp4%')
+      .like('mime_type', '%mp4%');
+    
+    // Apply root_drive_id filter if active
+    if (rootDriveIdFilter) {
+      mp4Query = mp4Query.eq('root_drive_id', rootDriveIdFilter);
+    }
+    
+    const { data: allMp4Files, error: mp4Error } = await mp4Query
       .order('name', { ascending: true })
       .limit(limit * 2); // Get more than needed to account for filtering
       
@@ -305,11 +328,18 @@ export const createPresentationsFromMp4Command = async (options: {
     }
     
     // 3. Get high-level folders information for expert lookup
-    const { data: highLevelFolders, error: foldersError } = await supabase
+    let foldersQuery = supabase
       .from('sources_google')
-      .select('id, path_depth, main_video_id, name')
+      .select('id, path_depth, main_video_id, name, root_drive_id')
       .eq('path_depth', 0)
       .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac'); // The specific document type for high-level folders
+    
+    // Apply root_drive_id filter if active
+    if (rootDriveIdFilter) {
+      foldersQuery = foldersQuery.eq('root_drive_id', rootDriveIdFilter);
+    }
+    
+    const { data: highLevelFolders, error: foldersError } = await foldersQuery;
       
     if (foldersError) {
       Logger.error('Error fetching high-level folders:', foldersError);

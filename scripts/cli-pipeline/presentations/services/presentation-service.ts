@@ -2,6 +2,7 @@ import { SupabaseClientService } from '../../../../packages/shared/services/supa
 import { Logger } from '../../../../packages/shared/utils/logger';
 import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import { getActiveFilterProfile } from '../get-active-filter-profile';
 
 interface PresentationReviewOptions {
   presentationId?: string;

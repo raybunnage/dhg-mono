@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { Logger } from '../../../../packages/shared/utils/logger';
 import { PresentationService } from '../services/presentation-service';
 import { v4 as uuidv4 } from 'uuid';
+import { getActiveFilterProfile } from '../get-active-filter-profile';
 
 /**
  * Command to create presentations for folders that don't have them yet.
@@ -79,7 +80,7 @@ async function createPresentationForFolder(folderData: any, presentationService:
       title: folder.name,
       video_source_id: folder.main_video_id,
       high_level_folder_source_id: folder.id,
-      root_drive_id: folder.drive_id,
+      root_drive_id: folder.root_drive_id || folder.drive_id, // Use root_drive_id from folder data
       web_view_link: `https://drive.google.com/drive/folders/${folder.drive_id}`,
       duration_seconds: 0,
       expert_document_id: expertDocumentId, // Set from video's expert document
@@ -212,13 +213,27 @@ const command = new Command('create-missing-presentations')
       // Get the service
       const presentationService = PresentationService.getInstance();
       
+      // Check for active filter profile
+      const activeFilter = await getActiveFilterProfile();
+      if (activeFilter && activeFilter.rootDriveId) {
+        Logger.info(`🔍 Active filter: "${activeFilter.profile.name}"`);
+        Logger.info(`📁 Using root_drive_id: ${activeFilter.rootDriveId}\n`);
+      }
+      
       // Get folders with path_depth=0 and main_video_id not null
       // that don't have presentations created for them
-      const { data: folders, error: foldersError } = await presentationService.supabaseClient
+      let query = presentationService.supabaseClient
         .from('sources_google')
-        .select('id, name, drive_id, path, main_video_id, path_depth')
+        .select('id, name, drive_id, path, main_video_id, path_depth, root_drive_id')
         .eq('path_depth', 0)
-        .not('main_video_id', 'is', null)
+        .not('main_video_id', 'is', null);
+      
+      // Apply filter if active
+      if (activeFilter && activeFilter.rootDriveId) {
+        query = query.eq('root_drive_id', activeFilter.rootDriveId);
+      }
+      
+      const { data: folders, error: foldersError } = await query
         .order('name', { ascending: true })
         .limit(options.limit || 10); // Process up to 10 at a time by default
       

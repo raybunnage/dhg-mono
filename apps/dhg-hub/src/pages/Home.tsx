@@ -819,6 +819,41 @@ export function Home() {
     return filtered;
   }, [presentations, searchQuery, selectedSubjects, presentationClassifications]);
 
+  // Compute unique experts count
+  const uniqueExperts = useMemo(() => {
+    const experts = new Set<string>();
+    presentations.forEach(p => {
+      if (p.expert?.id) {
+        experts.add(p.expert.id);
+      }
+      // Also count experts from the experts array if present
+      if (p.experts && Array.isArray(p.experts)) {
+        p.experts.forEach((e: {id: string, name: string}) => {
+          if (e.id) experts.add(e.id);
+        });
+      }
+    });
+    return experts;
+  }, [presentations]);
+
+  // Compute audio assets count
+  const audioAssetsCount = useMemo(() => {
+    let count = 0;
+    presentations.forEach(p => {
+      // Count audio from video sources
+      if (p.video_source?.mime_type?.includes('audio')) {
+        count++;
+      }
+    });
+    // Also count audio assets from all presentation assets
+    presentationAssets.forEach(asset => {
+      if (asset.asset_type === 'audio' || asset.source_file?.mime_type?.includes('audio')) {
+        count++;
+      }
+    });
+    return count;
+  }, [presentations, presentationAssets]);
+
   // Check if content is likely markdown
   const isMarkdown = (content: string): boolean => {
     // Check for common markdown elements
@@ -1744,9 +1779,9 @@ export function Home() {
       )}
     
       {/* Main content area with everything side by side */}
-      <div className="flex lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Left column with filter dropdown and left sidebar content */}
-        <div className="lg:w-1/3 space-y-4">
+        <div className="w-full lg:w-1/3 space-y-4">
           {/* Filter profiles dropdown */}
           <select 
             className="px-4 py-2 w-full bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-lg font-semibold"
