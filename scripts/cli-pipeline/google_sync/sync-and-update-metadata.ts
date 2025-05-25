@@ -24,6 +24,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { getGoogleDriveService, GoogleDriveService } from '../../../packages/shared/services/google-drive';
 import type { Database } from '../../../supabase/types';
+import { getActiveFilterProfile } from './get-active-filter-profile';
 // Note: converterService is dynamically imported within the updateMetadata function
 // to avoid circular dependencies
 
@@ -245,7 +246,7 @@ async function checkFileExists(fileId: string): Promise<{ exists: boolean, data?
 /**
  * Insert a specific file from Google Drive into sources_google
  */
-async function insertSpecificFile(driveService: GoogleDriveService, fileId: string, parentId: string, isDryRun: boolean, isVerbose: boolean): Promise<{ success: boolean, message?: string, data?: any }> {
+async function insertSpecificFile(driveService: GoogleDriveService, fileId: string, parentId: string, rootFolderId: string, isDryRun: boolean, isVerbose: boolean): Promise<{ success: boolean, message?: string, data?: any }> {
   console.log(`=== Attempting to insert specific file ${fileId} ===`);
   
   try {
@@ -288,13 +289,13 @@ async function insertSpecificFile(driveService: GoogleDriveService, fileId: stri
     // Calculate path_depth - if parent is the root folder, depth should be 1
     // Since this is a direct file lookup, we need to determine the depth based on the parent
     // If parentId is the root folder, depth is 1, otherwise it's unknown so default to 1
-    const path_depth = (parentId === DYNAMIC_HEALING_FOLDER_ID) ? 1 : 1;
+    const path_depth = (parentId === rootFolderId) ? 1 : 1;
     
     if (isVerbose) {
       console.log(`Path depth calculation:`);
       console.log(`- Path: ${filePath}`);
       console.log(`- Parent ID: ${parentId}`);
-      console.log(`- Root folder ID: ${DYNAMIC_HEALING_FOLDER_ID}`);
+      console.log(`- Root folder ID: ${rootFolderId}`);
       console.log(`- Setting path_depth to ${path_depth}`);
     }
     
@@ -315,7 +316,7 @@ async function insertSpecificFile(driveService: GoogleDriveService, fileId: stri
       path_array: pathArray,
       path_depth,
       parent_folder_id: parentId,
-      root_drive_id: DYNAMIC_HEALING_FOLDER_ID,
+      root_drive_id: rootFolderId,
       is_deleted: false,
       created_at: now,
       updated_at: now,
@@ -629,10 +630,10 @@ async function syncFiles(
     );
     
     // Track files that need to be marked as deleted
-    // Filter for records with root_drive_id = DYNAMIC_HEALING_FOLDER_ID that are missing from foundDriveIds
+    // Filter for records with root_drive_id = folderId that are missing from foundDriveIds
     const recordsToMarkDeleted = (existingRecords || [])
       .filter(record => 
-        record.root_drive_id === DYNAMIC_HEALING_FOLDER_ID && 
+        record.root_drive_id === folderId && 
         !foundDriveIds.has(record.drive_id)
       );
       
@@ -651,12 +652,12 @@ async function syncFiles(
     
     // Debug check for the root folder
     if (isVerbose) {
-      const rootFolderRecord = (existingRecords || []).find(record => record.drive_id === DYNAMIC_HEALING_FOLDER_ID);
+      const rootFolderRecord = (existingRecords || []).find(record => record.drive_id === folderId);
       console.log("\n=== ROOT FOLDER CHECK ===");
       console.log(`Root folder found in database: ${rootFolderRecord ? 'YES' : 'NO'}`);
       if (rootFolderRecord) {
         console.log(`Root folder ID: ${rootFolderRecord.id}`);
-        console.log(`Root folder would be marked as deleted: ${!foundDriveIds.has(DYNAMIC_HEALING_FOLDER_ID) ? 'YES (but prevented)' : 'NO'}`);
+        console.log(`Root folder would be marked as deleted: ${!foundDriveIds.has(folderId) ? 'YES (but prevented)' : 'NO'}`);
       }
       console.log("=== END ROOT FOLDER CHECK ===\n");
     }
@@ -880,7 +881,8 @@ async function syncFiles(
         const insertResult = await insertSpecificFile(
           driveService, 
           testFileId, 
-          testFileInBatch.parentFolderId || DYNAMIC_HEALING_FOLDER_ID, 
+          testFileInBatch.parentFolderId || folderId, 
+          folderId,
           isDryRun,
           isVerbose
         );
@@ -947,7 +949,7 @@ async function syncFiles(
           path_array: pathArray,
           path_depth: file.depth || 0, // Use the folder depth from recursive search
           parent_folder_id: file.parentFolderId,
-          root_drive_id: DYNAMIC_HEALING_FOLDER_ID,
+          root_drive_id: folderId,
           is_deleted: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -1515,7 +1517,7 @@ async function updateMetadata(
 /**
  * Direct lookup for a specific file in Google Drive
  */
-async function lookupSpecificFile(driveService: GoogleDriveService, fileId: string, isDryRun: boolean, isVerbose: boolean): Promise<void> {
+async function lookupSpecificFile(driveService: GoogleDriveService, fileId: string, rootFolderId: string, isDryRun: boolean, isVerbose: boolean): Promise<void> {
   console.log(`\n=== Direct Lookup for File ID: ${fileId} ===`);
   
   try {
@@ -1537,12 +1539,12 @@ async function lookupSpecificFile(driveService: GoogleDriveService, fileId: stri
       console.log(`✅ File found in Google Drive: ${fileData.name} (${fileData.mimeType})`);
       
       // Get parent folder ID
-      const parentFolderId = fileData.parents?.[0] || DYNAMIC_HEALING_FOLDER_ID;
+      const parentFolderId = fileData.parents?.[0] || rootFolderId;
       console.log(`Parent folder ID: ${parentFolderId}`);
       
       // Insert the file
       console.log(`Attempting to insert file into database...`);
-      const insertResult = await insertSpecificFile(driveService, fileId, parentFolderId, isDryRun, isVerbose);
+      const insertResult = await insertSpecificFile(driveService, fileId, parentFolderId, rootFolderId, isDryRun, isVerbose);
       
       if (insertResult.success) {
         console.log(`✅ Successfully performed direct lookup and insertion of file ${fileData.name} (${fileId})`);
@@ -1578,6 +1580,18 @@ export async function syncAndUpdateMetadata(
   maxDepth = folderDepth;
   isVerbose = verbose;
   
+  // Check for active filter profile
+  const activeFilter = await getActiveFilterProfile();
+  let effectiveFolderId = folderId;
+  
+  if (activeFilter && activeFilter.rootDriveId) {
+    console.log(`\n🔍 Active filter profile detected: "${activeFilter.profile.name}"`);
+    console.log(`   Using root_drive_id: ${activeFilter.rootDriveId}`);
+    effectiveFolderId = activeFilter.rootDriveId;
+  } else {
+    console.log(`\n📁 No active filter profile - using default folder: ${folderId}`);
+  }
+  
   // Parse arguments to look for continuation parameters
   const args = process.argv.slice(2);
   
@@ -1610,7 +1624,7 @@ export async function syncAndUpdateMetadata(
     
     // If a specific file ID was provided, do a direct lookup
     if (specificFileId) {
-      await lookupSpecificFile(driveService, specificFileId, isDryRun, isVerbose);
+      await lookupSpecificFile(driveService, specificFileId, effectiveFolderId, isDryRun, isVerbose);
     }
     
     // TEMPORARY: Direct test for specific file
@@ -1629,8 +1643,8 @@ export async function syncAndUpdateMetadata(
         // Check if it's in our target folder
         const parentFolderId = fileData.parents?.[0];
         console.log(`Parent folder ID: ${parentFolderId}`);
-        console.log(`Target folder ID: ${DYNAMIC_HEALING_FOLDER_ID}`);
-        console.log(`Is in target folder: ${parentFolderId === DYNAMIC_HEALING_FOLDER_ID}`);
+        console.log(`Target folder ID: ${effectiveFolderId}`);
+        console.log(`Is in target folder: ${parentFolderId === effectiveFolderId}`);
         
         // Also try to list files directly in the root folder
         console.log('\nDirect file listing in root folder:');
@@ -1638,7 +1652,7 @@ export async function syncAndUpdateMetadata(
         // Fix direct file listing by using the helper without custom fields
         const files = await listFilesInFolder(
           driveService,
-          DYNAMIC_HEALING_FOLDER_ID
+          effectiveFolderId
         );
         
         console.log(`Found ${files.length} files directly in root folder`);
@@ -1661,12 +1675,12 @@ export async function syncAndUpdateMetadata(
     }
     
     // First check if folder exists
-    console.log(`Checking folder: ${DYNAMIC_HEALING_FOLDER_ID}`);
+    console.log(`Checking folder: ${effectiveFolderId}`);
     
     try {
       // Use GoogleDriveService to get folder
       const folder = await driveService.getFile(
-        DYNAMIC_HEALING_FOLDER_ID,
+        effectiveFolderId,
         'id, name, mimeType'
       );
       
@@ -1698,7 +1712,7 @@ export async function syncAndUpdateMetadata(
       };
     } else {
       console.log('\n=== Step 1: Sync Files from Google Drive ===');
-      syncResult = await syncFiles(driveService, DYNAMIC_HEALING_FOLDER_ID, isDryRun, maxDepth);
+      syncResult = await syncFiles(driveService, effectiveFolderId, isDryRun, maxDepth);
     }
     
     console.log('\n=== Sync Summary ===');
@@ -1750,7 +1764,7 @@ export async function syncAndUpdateMetadata(
           const { data: newFiles } = await supabase
             .from('sources_google')
             .select('id, name, mime_type, path, created_at')
-            .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+            .eq('root_drive_id', effectiveFolderId)
             .order('created_at', { ascending: false })
             .limit(Math.min(syncResult.filesInserted, 50));
             
@@ -1781,7 +1795,7 @@ export async function syncAndUpdateMetadata(
           const { data: recentFiles } = await supabase
             .from('sources_google')
             .select('id, name, mime_type, path, created_at')
-            .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+            .eq('root_drive_id', effectiveFolderId)
             .eq('is_deleted', false)
             .order('created_at', { ascending: false })
             .limit(10);
@@ -1803,7 +1817,7 @@ export async function syncAndUpdateMetadata(
         const { data: possiblyRenamedFiles } = await supabase
           .from('sources_google')
           .select('id, name, path, updated_at')
-          .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+          .eq('root_drive_id', effectiveFolderId)
           .eq('is_deleted', false)
           .gt('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
           .order('updated_at', { ascending: false })
@@ -1837,7 +1851,7 @@ export async function syncAndUpdateMetadata(
           const { data: deletedFiles } = await supabase
             .from('sources_google')
             .select('id, name, path, updated_at')
-            .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+            .eq('root_drive_id', effectiveFolderId)
             .eq('is_deleted', true)
             .gt('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
             .order('updated_at', { ascending: false })
@@ -1886,7 +1900,7 @@ export async function syncAndUpdateMetadata(
         const { data: rootFolderCheck, error: rootCheckError } = await supabase
           .from('sources_google')
           .select('id, is_deleted')
-          .eq('drive_id', DYNAMIC_HEALING_FOLDER_ID)
+          .eq('drive_id', effectiveFolderId)
           .single();
           
         if (rootCheckError) {
@@ -1902,7 +1916,7 @@ export async function syncAndUpdateMetadata(
                 is_deleted: false,
                 updated_at: new Date().toISOString()
               })
-              .eq('drive_id', DYNAMIC_HEALING_FOLDER_ID);
+              .eq('drive_id', effectiveFolderId);
               
             if (updateError) {
               console.error(`Error fixing root folder deletion status: ${updateError.message}`);
@@ -1942,7 +1956,7 @@ export async function syncAndUpdateMetadata(
             path_array,
             document_type_id
           `)
-          .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)
+          .eq('root_drive_id', effectiveFolderId)
           .order('created_at', { ascending: false })
           .limit(maxNewFilesToShow);
           
@@ -2053,7 +2067,7 @@ export async function syncAndUpdateMetadata(
       process.stdout.write(`Fetching records from Supabase... `);
     }
     
-    const updateResult = await updateMetadata(driveService, DYNAMIC_HEALING_FOLDER_ID, limit, isDryRun, isVerbose);
+    const updateResult = await updateMetadata(driveService, effectiveFolderId, limit, isDryRun, isVerbose);
     
     // Show total time taken for metadata update
     const metadataEndTime = new Date();

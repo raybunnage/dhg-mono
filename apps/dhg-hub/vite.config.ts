@@ -13,5 +13,10 @@ export default defineConfig({
   },
   server: {
     port: 5174, // Use a different port than other apps
+    host: true, // Listen on all addresses
+    hmr: {
+      port: 5174,
+      host: 'localhost'
+    }
   }
 })

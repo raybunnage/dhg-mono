@@ -445,6 +445,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    clear-reprocessing           Clear 'needs_reprocessing' status for documents"
   echo ""
   echo "OTHER:"
+  echo "    analyze-command-usage        Analyze Google sync command usage patterns from tracking data"
   echo "    help                         Show this help message"
   echo ""
   echo "EXAMPLES:"
@@ -581,6 +582,10 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Reset is_deleted flag for files that still exist in Google Drive"
   echo "  ./google-sync-cli.sh reset-deleted-files --dry-run"
   echo "  ./google-sync-cli.sh reset-deleted-files --verbose --limit 200"
+  echo ""
+  echo "ANALYTICS:"
+  echo "  # Analyze Google sync command usage patterns"
+  echo "  ./google-sync-cli.sh analyze-command-usage"
   exit 0
 fi
 
@@ -1174,5 +1179,11 @@ fi
 if [ "$1" = "get-current-drive-id" ]; then
   shift
   track_command "get-current-drive-id" "ts-node $SCRIPT_DIR/get-current-drive-id.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "analyze-command-usage" ]; then
+  shift
+  track_command "analyze-command-usage" "ts-node $SCRIPT_DIR/analyze-command-usage.ts $*"
   exit $?
 fi

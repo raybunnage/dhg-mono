@@ -7,6 +7,8 @@ import JsonFormatter from '../components/JsonFormatter';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../components/ui/collapsible';
 import { ChevronDown, ChevronRight, ArrowLeft, RefreshCcw } from 'lucide-react';
 import { filterService } from '@/utils/filter-service-adapter';
+import { FirstTimeProfilePrompt } from '../components/FirstTimeProfilePrompt';
+import { useFirstTimeProfilePrompt } from '../hooks/useFirstTimeProfilePrompt';
 
 // Verify Supabase connection on page load
 (async () => {
@@ -266,6 +268,9 @@ export function Home() {
   
   // Collapsible section states - default all open except asset view mode
   const [videoSectionOpen, setVideoSectionOpen] = useState<boolean>(true);
+  
+  // First-time profile prompt
+  const { shouldShowPrompt, dismissPrompt } = useFirstTimeProfilePrompt();
   const [presentationAssetsOpen, setPresentationAssetsOpen] = useState<boolean>(true);
   const [assetSectionOpen, setAssetSectionOpen] = useState<boolean>(true);
   const [assetViewMode, setAssetViewMode] = useState<boolean>(false);
@@ -1640,6 +1645,11 @@ export function Home() {
 
   return (
     <div className="container mx-auto p-4">
+      {/* First-time profile prompt */}
+      {shouldShowPrompt && (
+        <FirstTimeProfilePrompt onDismiss={dismissPrompt} />
+      )}
+      
       {/* Expert Profile Modal - Used for both debug and regular viewing */}
       {(showDebugModal || showExpertProfileModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
