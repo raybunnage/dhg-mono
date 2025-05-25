@@ -18,9 +18,9 @@
  * - Proper TypeScript types
  */
 
-import { lightAuthService } from '../light-auth-service';
 import { userProfileService, type ProfileFormData } from '../user-profile-service';
-import type { User, Session } from '@supabase/supabase-js';
+import { SupabaseClientService } from '../supabase-client';
+import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
 
 // Re-export types for convenience
 export type { ProfileFormData } from '../user-profile-service';
@@ -42,14 +42,220 @@ export interface UserRegistrationData {
 }
 
 /**
+ * Light auth service interface for compatibility
+ */
+interface LightAuthService {
+  isEmailAllowed(email: string): Promise<boolean>;
+  registerUser(profile: any): Promise<any>;
+  login(email: string): Promise<any>;
+  logout(): Promise<void>;
+  getCurrentUser(): User | null;
+  getAllowedEmails(): Promise<any[]>;
+  removeFromWhitelist(email: string): Promise<any>;
+}
+
+/**
+ * Simple light auth implementation since we archived the original
+ */
+class SimpleLightAuthService implements LightAuthService {
+  private supabase: SupabaseClient;
+  private mockSession: Session | null = null;
+
+  constructor() {
+    this.supabase = SupabaseClientService.getInstance().getClient();
+  }
+
+  async isEmailAllowed(email: string): Promise<boolean> {
+    try {
+      const { data, error } = await this.supabase
+        .rpc('is_email_allowed', { check_email: email });
+
+      if (error) {
+        console.error('Error checking email allowlist:', error);
+        return false;
+      }
+
+      return data || false;
+    } catch (error) {
+      console.error('Error checking email allowlist:', error);
+      return false;
+    }
+  }
+
+  async registerUser(profile: any): Promise<any> {
+    try {
+      const { data: allowedEmail, error: allowError } = await this.supabase
+        .from('allowed_emails')
+        .insert({
+          email: profile.email.toLowerCase(),
+          name: profile.name,
+          organization: profile.organization,
+          notes: `Auto-registered via light auth. Profession: ${profile.profession}, Interests: ${profile.professional_interests}`,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (allowError) {
+        console.error('Error adding to allowed emails:', allowError);
+        return { success: false, error: allowError.message };
+      }
+
+      const mockUser: User = {
+        id: allowedEmail.id,
+        email: profile.email,
+        app_metadata: {},
+        user_metadata: { 
+          name: profile.name,
+          profession: profile.profession,
+          organization: profile.organization
+        },
+        aud: 'authenticated',
+        created_at: new Date().toISOString()
+      } as User;
+
+      this.mockSession = {
+        access_token: 'mock-token-' + allowedEmail.id,
+        token_type: 'bearer',
+        expires_in: 3600,
+        refresh_token: 'mock-refresh-' + allowedEmail.id,
+        user: mockUser
+      } as Session;
+
+      localStorage.setItem('dhg-light-auth-user', JSON.stringify(mockUser));
+
+      return { 
+        success: true, 
+        user: mockUser,
+        session: this.mockSession
+      };
+    } catch (error) {
+      console.error('Error registering user:', error);
+      return { success: false, error: 'Failed to register user' };
+    }
+  }
+
+  async login(email: string): Promise<any> {
+    try {
+      const isAllowed = await this.isEmailAllowed(email);
+      
+      if (!isAllowed) {
+        return { success: false, error: 'Email not on allowed list' };
+      }
+
+      const { data: allowedEmail, error } = await this.supabase
+        .from('allowed_emails')
+        .select('*')
+        .eq('email', email.toLowerCase())
+        .eq('is_active', true)
+        .single();
+
+      if (error || !allowedEmail) {
+        return { success: false, error: 'User not found' };
+      }
+
+      const mockUser: User = {
+        id: allowedEmail.id,
+        email: allowedEmail.email,
+        app_metadata: {},
+        user_metadata: { 
+          name: allowedEmail.name,
+          organization: allowedEmail.organization
+        },
+        aud: 'authenticated',
+        created_at: allowedEmail.added_at
+      } as User;
+
+      this.mockSession = {
+        access_token: 'mock-token-' + allowedEmail.id,
+        token_type: 'bearer',
+        expires_in: 3600,
+        refresh_token: 'mock-refresh-' + allowedEmail.id,
+        user: mockUser
+      } as Session;
+
+      localStorage.setItem('dhg-light-auth-user', JSON.stringify(mockUser));
+
+      return { 
+        success: true, 
+        user: mockUser,
+        session: this.mockSession
+      };
+    } catch (error) {
+      console.error('Error logging in:', error);
+      return { success: false, error: 'Login failed' };
+    }
+  }
+
+  async logout(): Promise<void> {
+    this.mockSession = null;
+    localStorage.removeItem('dhg-light-auth-user');
+  }
+
+  getCurrentUser(): User | null {
+    const userStr = localStorage.getItem('dhg-light-auth-user');
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  async getAllowedEmails(): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('allowed_emails')
+        .select('*')
+        .eq('is_active', true)
+        .order('email', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching allowed emails:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching allowed emails:', error);
+      return [];
+    }
+  }
+
+  async removeFromWhitelist(email: string): Promise<any> {
+    try {
+      const { error } = await this.supabase
+        .from('allowed_emails')
+        .update({ is_active: false })
+        .eq('email', email.toLowerCase());
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error removing from whitelist:', error);
+      return { success: false, error: 'Failed to remove from whitelist' };
+    }
+  }
+}
+
+/**
  * Enhanced Light Auth Service
  * Provides complete authentication flow with profile management
  */
 class LightAuthEnhancedService {
   private static instance: LightAuthEnhancedService;
+  private lightAuthService: LightAuthService;
+  private supabase: SupabaseClient;
 
   private constructor() {
     // Private constructor for singleton
+    this.lightAuthService = new SimpleLightAuthService();
+    this.supabase = SupabaseClientService.getInstance().getClient();
   }
 
   /**
@@ -69,9 +275,15 @@ class LightAuthEnhancedService {
   async login(email: string): Promise<LightAuthEnhancedResult> {
     try {
       // Check if email is allowed using base service
-      const loginResult = await lightAuthService.login(email);
+      const loginResult = await this.lightAuthService.login(email);
       
       if (!loginResult.success) {
+        // Log failed login attempt
+        await this.logLightAuthEvent('login_failed', {
+          email,
+          reason: 'email_not_on_allowlist'
+        });
+        
         // Email not on whitelist - they need to fill profile
         return {
           success: false,
@@ -88,6 +300,13 @@ class LightAuthEnhancedService {
         const hasProfile = profileResult.success && profileResult.profile;
         const profileComplete = hasProfile && profileResult.profile!.onboarding_completed === true;
         
+        // Log successful login
+        await this.logLightAuthEvent('login', {
+          email,
+          user_id: loginResult.user.id,
+          profile_complete: profileComplete
+        });
+        
         return {
           success: true,
           user: loginResult.user,
@@ -96,6 +315,12 @@ class LightAuthEnhancedService {
           profileComplete
         };
       }
+
+      // Log successful login without user
+      await this.logLightAuthEvent('login', {
+        email,
+        user_id: loginResult.user?.id
+      });
 
       return {
         success: true,
@@ -106,6 +331,13 @@ class LightAuthEnhancedService {
       };
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Log login error
+      await this.logLightAuthEvent('login_failed', {
+        email,
+        error: (error as Error).message
+      });
+      
       return {
         success: false,
         error: 'Login failed: ' + (error as Error).message
@@ -120,7 +352,7 @@ class LightAuthEnhancedService {
   async registerWithProfile(data: UserRegistrationData): Promise<LightAuthEnhancedResult> {
     try {
       // First, register the user (adds to allowed_emails)
-      const registerResult = await lightAuthService.registerUser({
+      const registerResult = await this.lightAuthService.registerUser({
         email: data.email,
         name: data.name,
         profession: data.profile.profession,
@@ -129,6 +361,13 @@ class LightAuthEnhancedService {
       });
 
       if (!registerResult.success || !registerResult.user) {
+        // Log failed registration
+        await this.logLightAuthEvent('login_failed', {
+          email: data.email,
+          action: 'registration_failed',
+          error: registerResult.error
+        });
+        
         return {
           success: false,
           error: registerResult.error || 'Registration failed'
@@ -147,6 +386,14 @@ class LightAuthEnhancedService {
         // Continue anyway - they can update profile later
       }
 
+      // Log successful registration
+      await this.logLightAuthEvent('login', {
+        email: data.email,
+        user_id: registerResult.user.id,
+        action: 'registration_with_profile',
+        profile_complete: profileResult.success
+      });
+
       return {
         success: true,
         user: registerResult.user,
@@ -156,6 +403,14 @@ class LightAuthEnhancedService {
       };
     } catch (error) {
       console.error('Registration error:', error);
+      
+      // Log registration error
+      await this.logLightAuthEvent('login_failed', {
+        email: data.email,
+        action: 'registration_error',
+        error: (error as Error).message
+      });
+      
       return {
         success: false,
         error: 'Registration failed: ' + (error as Error).message
@@ -182,11 +437,37 @@ class LightAuthEnhancedService {
           // Update localStorage
           localStorage.setItem('dhg-light-auth-user', JSON.stringify(user));
         }
+        
+        // Log profile completion
+        await this.logLightAuthEvent('profile_updated', {
+          user_id: userId,
+          action: 'profile_completed',
+          profile_data: {
+            profession: profile.profession,
+            topics_count: profile.interested_topics?.length,
+            sectors_count: profile.industry_sectors?.length
+          }
+        });
+      } else {
+        // Log profile completion failure
+        await this.logLightAuthEvent('profile_updated', {
+          user_id: userId,
+          action: 'profile_completion_failed',
+          error: result.error
+        });
       }
       
       return result.success;
     } catch (error) {
       console.error('Profile completion error:', error);
+      
+      // Log profile completion error
+      await this.logLightAuthEvent('profile_updated', {
+        user_id: userId,
+        action: 'profile_completion_error',
+        error: (error as Error).message
+      });
+      
       return false;
     }
   }
@@ -229,7 +510,23 @@ class LightAuthEnhancedService {
    * Logout using base service
    */
   async logout(): Promise<void> {
-    return lightAuthService.logout();
+    try {
+      const user = this.getCurrentUser();
+      
+      // Log logout event before clearing session
+      if (user) {
+        await this.logLightAuthEvent('logout', {
+          user_id: user.id,
+          email: user.email
+        });
+      }
+      
+      return this.lightAuthService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still logout even if logging fails
+      return this.lightAuthService.logout();
+    }
   }
 
   /**
@@ -250,21 +547,134 @@ class LightAuthEnhancedService {
    * Check if email is allowed (whitelist check)
    */
   async isEmailAllowed(email: string): Promise<boolean> {
-    return lightAuthService.isEmailAllowed(email);
+    return this.lightAuthService.isEmailAllowed(email);
   }
 
   /**
    * Get allowed emails list (admin function)
    */
   async getAllowedEmails() {
-    return lightAuthService.getAllowedEmails();
+    return this.lightAuthService.getAllowedEmails();
   }
 
   /**
    * Remove from whitelist (admin function)
    */
   async removeFromWhitelist(email: string) {
-    return lightAuthService.removeFromWhitelist(email);
+    return this.lightAuthService.removeFromWhitelist(email);
+  }
+
+  // ===== AUDIT LOG METHODS =====
+
+  /**
+   * Log a light auth event to the auth_audit_log table
+   */
+  private async logLightAuthEvent(
+    eventType: 'login' | 'logout' | 'login_failed' | 'profile_updated',
+    metadata?: Record<string, any>
+  ): Promise<void> {
+    try {
+      const event = {
+        user_id: metadata?.user_id || null,
+        event_type: eventType,
+        metadata: {
+          ...metadata,
+          auth_method: 'light_auth_enhanced',
+          user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined
+        },
+        created_at: new Date().toISOString()
+      };
+
+      const { error } = await this.supabase
+        .from('auth_audit_log')
+        .insert(event);
+
+      if (error) {
+        console.error('LightAuthEnhanced: Error logging auth event:', error);
+      }
+    } catch (error) {
+      console.error('LightAuthEnhanced: Failed to log auth event:', error);
+    }
+  }
+
+  /**
+   * Get light auth audit logs for the current user
+   */
+  public async getUserAuditLogs(limit: number = 50): Promise<any[]> {
+    try {
+      const user = this.getCurrentUser();
+      if (!user) {
+        return [];
+      }
+
+      const { data, error } = await this.supabase
+        .from('auth_audit_log')
+        .select('*')
+        .eq('user_id', user.id)
+        .contains('metadata', { auth_method: 'light_auth_enhanced' })
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('LightAuthEnhanced: Error fetching user audit logs:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('LightAuthEnhanced: Failed to fetch user audit logs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get light auth activity summary
+   */
+  public async getActivitySummary(): Promise<{
+    totalLogins: number;
+    totalRegistrations: number;
+    profileCompletions: number;
+    recentActivity: any[];
+  }> {
+    try {
+      const user = this.getCurrentUser();
+      if (!user) {
+        return {
+          totalLogins: 0,
+          totalRegistrations: 0,
+          profileCompletions: 0,
+          recentActivity: []
+        };
+      }
+
+      const logs = await this.getUserAuditLogs(100);
+      
+      const summary = {
+        totalLogins: logs.filter(log => 
+          log.event_type === 'login' && 
+          log.metadata?.action !== 'registration_with_profile'
+        ).length,
+        totalRegistrations: logs.filter(log => 
+          log.event_type === 'login' && 
+          log.metadata?.action === 'registration_with_profile'
+        ).length,
+        profileCompletions: logs.filter(log => 
+          log.event_type === 'profile_updated' && 
+          log.metadata?.action === 'profile_completed'
+        ).length,
+        recentActivity: logs.slice(0, 10)
+      };
+
+      return summary;
+    } catch (error) {
+      console.error('LightAuthEnhanced: Failed to get activity summary:', error);
+      return {
+        totalLogins: 0,
+        totalRegistrations: 0,
+        profileCompletions: 0,
+        recentActivity: []
+      };
+    }
   }
 }
 

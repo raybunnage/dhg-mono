@@ -193,3 +193,45 @@ export interface AllowedEmail {
   is_active: boolean;
   metadata?: Record<string, any>;
 }
+
+/**
+ * Authentication summary for a user
+ */
+export interface AuthSummary {
+  totalLogins: number;
+  totalFailedAttempts: number;
+  lastLoginAt: string | null;
+  tokensCreated: number;
+  profileUpdates: number;
+  recentActivity: AuthEvent[];
+}
+
+/**
+ * System-wide authentication statistics
+ */
+export interface SystemAuthStats {
+  totalUsers: number;
+  activeUsersToday: number;
+  activeUsersThisWeek: number;
+  totalLogins: number;
+  totalFailedAttempts: number;
+  topEventTypes: Array<{ event_type: string; count: number }>;
+}
+
+/**
+ * Audit log cleanup result
+ */
+export interface AuditLogCleanupResult {
+  success: boolean;
+  deletedCount?: number;
+  error?: string;
+}
+
+/**
+ * Audit log export result
+ */
+export interface AuditLogExportResult {
+  success: boolean;
+  data?: AuthEvent[];
+  error?: string;
+}

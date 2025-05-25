@@ -1,0 +1,25 @@
+{
+  "name": "nlp-presentation-analysis",
+  "version": "1.0.0",
+  "description": "NLP analysis tools for DHG presentation content",
+  "scripts": {
+    "setup": "pip install -r requirements.txt && python -m spacy download en_core_web_sm",
+    "setup-medical": "pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.3/en_core_sci_md-0.5.3.tar.gz",
+    "analyze": "python analyze_presentations.py",
+    "embeddings": "python generate_embeddings.py",
+    "cluster": "python cluster_topics.py",
+    "test": "python test_analyzers.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/dhg-mono.git"
+  },
+  "keywords": [
+    "nlp",
+    "medical",
+    "presentations",
+    "analysis"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

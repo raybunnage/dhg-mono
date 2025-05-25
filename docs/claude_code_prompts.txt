@@ -1,6 +1,14 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
 
+
+database cleaniup
+database backiups
+auth_audit_log
+
+
+
+
 [
   {
     "id": "5645a49d-f42c-4a07-91a0-c00bf65859f3",

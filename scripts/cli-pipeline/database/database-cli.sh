@@ -58,6 +58,7 @@ show_help() {
   echo "  * empty-tables         List tables with no records (5 uses)"
   echo "    database-functions   List database functions (3 uses)"
   echo "    table-structure      Get detailed information about a table structure (3 uses)"
+  echo "    find-tables          Search for specific tables in the database"
   echo ""
   echo "SYSTEM HEALTH:"
   echo "  * connection-test      Test connection to Supabase database (4 uses)"
@@ -68,6 +69,9 @@ show_help() {
   echo ""
   echo "RLS POLICIES:"
   echo "    check-rls-policies   Check and create permissive RLS policies for tables"
+  echo ""
+  echo "BACKUP MANAGEMENT:"
+  echo "    list-backup-tables   List all backup tables in the backup schema"
   echo ""
   echo "MIGRATION MANAGEMENT:"
   echo "    migration validate   Validate SQL migration file without executing"
@@ -229,9 +233,19 @@ check_rls_policies() {
   track_command "check-rls-policies" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/check-and-create-rls-policies.ts $@"
 }
 
+list_backup_tables() {
+  echo "📋 Listing backup tables..."
+  track_command "list-backup-tables" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/list-backup-tables.ts $@"
+}
+
 verify_user_roles() {
   echo "🔍 Verifying user roles removal migration..."
   track_command "verify-user-roles" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/verify-user-roles-removal.ts $@"
+}
+
+find_tables() {
+  echo "🔍 Searching for tables in the database..."
+  track_command "find-tables" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/find-missing-tables.ts $@"
 }
 
 # Migration command handlers
@@ -357,6 +371,12 @@ case "$1" in
     ;;
   "verify-user-roles")
     verify_user_roles "${@:2}"
+    ;;
+  "list-backup-tables")
+    list_backup_tables "${@:2}"
+    ;;
+  "find-tables")
+    find_tables "${@:2}"
     ;;
   "migration")
     case "$2" in

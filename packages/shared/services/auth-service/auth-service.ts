@@ -1150,6 +1150,323 @@ export class AuthService {
       return { success: false, error: 'Failed to grant admin role' };
     }
   }
+
+  // ===== AUTH AUDIT LOG ENHANCEMENT METHODS =====
+
+  /**
+   * Get audit logs for the current user
+   */
+  public async getUserAuditLogs(limit: number = 50, offset: number = 0): Promise<AuthEvent[]> {
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        return [];
+      }
+
+      const { data, error } = await this.supabase
+        .from('auth_audit_log')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error('AuthService: Error fetching user audit logs:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('AuthService: Failed to fetch user audit logs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get audit logs for a specific user (admin only)
+   */
+  public async getAuditLogsForUser(userId: string, limit: number = 50, offset: number = 0): Promise<AuthEvent[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('auth_audit_log')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error('AuthService: Error fetching audit logs for user:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('AuthService: Failed to fetch audit logs for user:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all recent audit logs (admin only)
+   */
+  public async getRecentAuditLogs(limit: number = 100): Promise<AuthEvent[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('auth_audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('AuthService: Error fetching recent audit logs:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('AuthService: Failed to fetch recent audit logs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get audit logs by event type
+   */
+  public async getAuditLogsByType(eventType: AuthEventType, limit: number = 50): Promise<AuthEvent[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('auth_audit_log')
+        .select('*')
+        .eq('event_type', eventType)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('AuthService: Error fetching audit logs by type:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('AuthService: Failed to fetch audit logs by type:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get failed login attempts
+   */
+  public async getFailedLoginAttempts(limit: number = 50): Promise<AuthEvent[]> {
+    return this.getAuditLogsByType('login_failed', limit);
+  }
+
+  /**
+   * Get authentication summary for a user
+   */
+  public async getAuthSummaryForUser(userId: string): Promise<{
+    totalLogins: number;
+    totalFailedAttempts: number;
+    lastLoginAt: string | null;
+    tokensCreated: number;
+    profileUpdates: number;
+    recentActivity: AuthEvent[];
+  }> {
+    try {
+      const logs = await this.getAuditLogsForUser(userId, 1000);
+      
+      const summary = {
+        totalLogins: logs.filter(log => log.event_type === 'login').length,
+        totalFailedAttempts: logs.filter(log => log.event_type === 'login_failed').length,
+        lastLoginAt: logs.find(log => log.event_type === 'login')?.created_at || null,
+        tokensCreated: logs.filter(log => log.event_type === 'token_created').length,
+        profileUpdates: logs.filter(log => log.event_type === 'profile_updated').length,
+        recentActivity: logs.slice(0, 10)
+      };
+
+      return summary;
+    } catch (error) {
+      console.error('AuthService: Failed to get auth summary for user:', error);
+      return {
+        totalLogins: 0,
+        totalFailedAttempts: 0,
+        lastLoginAt: null,
+        tokensCreated: 0,
+        profileUpdates: 0,
+        recentActivity: []
+      };
+    }
+  }
+
+  /**
+   * Get system-wide authentication statistics (admin only)
+   */
+  public async getSystemAuthStats(): Promise<{
+    totalUsers: number;
+    activeUsersToday: number;
+    activeUsersThisWeek: number;
+    totalLogins: number;
+    totalFailedAttempts: number;
+    topEventTypes: Array<{ event_type: string; count: number }>;
+  }> {
+    try {
+      const today = new Date();
+      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const dayAgo = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+      // Get all recent logs for analysis
+      const { data: allLogs, error } = await this.supabase
+        .from('auth_audit_log')
+        .select('*')
+        .gte('created_at', weekAgo.toISOString());
+
+      if (error) {
+        throw error;
+      }
+
+      const logs = allLogs || [];
+      
+      // Count unique users
+      const uniqueUsersToday = new Set(
+        logs
+          .filter(log => log.created_at && new Date(log.created_at) >= dayAgo)
+          .map(log => log.user_id)
+          .filter(Boolean)
+      ).size;
+
+      const uniqueUsersThisWeek = new Set(
+        logs.map(log => log.user_id).filter(Boolean)
+      ).size;
+
+      // Count event types
+      const eventTypeCounts = logs.reduce((acc, log) => {
+        acc[log.event_type] = (acc[log.event_type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const topEventTypes = Object.entries(eventTypeCounts)
+        .map(([event_type, count]) => ({ event_type, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      return {
+        totalUsers: uniqueUsersThisWeek,
+        activeUsersToday: uniqueUsersToday,
+        activeUsersThisWeek: uniqueUsersThisWeek,
+        totalLogins: eventTypeCounts['login'] || 0,
+        totalFailedAttempts: eventTypeCounts['login_failed'] || 0,
+        topEventTypes
+      };
+    } catch (error) {
+      console.error('AuthService: Failed to get system auth stats:', error);
+      return {
+        totalUsers: 0,
+        activeUsersToday: 0,
+        activeUsersThisWeek: 0,
+        totalLogins: 0,
+        totalFailedAttempts: 0,
+        topEventTypes: []
+      };
+    }
+  }
+
+  /**
+   * Log a custom authentication event
+   */
+  public async logCustomAuthEvent(
+    eventType: AuthEventType,
+    metadata?: Record<string, any>,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string
+  ): Promise<void> {
+    try {
+      const event: AuthEvent = {
+        user_id: userId || this.currentSession?.user?.id,
+        event_type: eventType,
+        metadata,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        created_at: new Date().toISOString()
+      };
+
+      const { error } = await this.supabase
+        .from('auth_audit_log')
+        .insert(event);
+
+      if (error) {
+        console.error('AuthService: Error logging custom auth event:', error);
+      }
+    } catch (error) {
+      console.error('AuthService: Failed to log custom auth event:', error);
+    }
+  }
+
+  /**
+   * Clean up old audit logs (admin only)
+   * Removes logs older than specified days
+   */
+  public async cleanupOldAuditLogs(daysToKeep: number = 90): Promise<{ success: boolean; deletedCount?: number; error?: string }> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+      const { data, error } = await this.supabase
+        .from('auth_audit_log')
+        .delete()
+        .lt('created_at', cutoffDate.toISOString())
+        .select('id');
+
+      if (error) {
+        console.error('AuthService: Error cleaning up old audit logs:', error);
+        return { success: false, error: error.message };
+      }
+
+      const deletedCount = data?.length || 0;
+      
+      // Log the cleanup event
+      await this.logCustomAuthEvent('profile_updated', {
+        action: 'audit_log_cleanup',
+        days_kept: daysToKeep,
+        deleted_count: deletedCount
+      });
+
+      console.log(`AuthService: Cleaned up ${deletedCount} old audit log entries`);
+      return { success: true, deletedCount };
+    } catch (error) {
+      console.error('AuthService: Failed to cleanup old audit logs:', error);
+      return { success: false, error: 'Failed to cleanup old audit logs' };
+    }
+  }
+
+  /**
+   * Export audit logs for a user (admin only)
+   */
+  public async exportAuditLogsForUser(userId: string): Promise<{ success: boolean; data?: AuthEvent[]; error?: string }> {
+    try {
+      const { data, error } = await this.supabase
+        .from('auth_audit_log')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('AuthService: Error exporting audit logs:', error);
+        return { success: false, error: error.message };
+      }
+
+      // Log the export event
+      await this.logCustomAuthEvent('profile_updated', {
+        action: 'audit_log_export',
+        exported_user_id: userId,
+        record_count: data?.length || 0
+      });
+
+      return { success: true, data: data || [] };
+    } catch (error) {
+      console.error('AuthService: Failed to export audit logs:', error);
+      return { success: false, error: 'Failed to export audit logs' };
+    }
+  }
 }
 
 // Export singleton instance
