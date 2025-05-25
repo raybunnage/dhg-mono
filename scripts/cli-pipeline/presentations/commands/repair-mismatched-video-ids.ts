@@ -6,6 +6,7 @@
 import { Command } from 'commander';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { Logger } from '../../../../packages/shared/utils/logger';
+import { getActiveFilterProfile } from '../get-active-filter-profile';
 
 // Define interface for mismatch records
 interface MismatchedPresentation {
@@ -36,13 +37,29 @@ const command = new Command('repair-mismatched-video-ids')
       // Get Supabase client
       const supabase = SupabaseClientService.getInstance().getClient();
       
+      // Check for active filter profile
+      const activeFilter = await getActiveFilterProfile();
+      let rootDriveIdFilter: string | null = null;
+      if (activeFilter && activeFilter.rootDriveId) {
+        process.stdout.write(`🔍 Active filter: "${activeFilter.profile.name}"\n`);
+        process.stdout.write(`📁 Using root_drive_id: ${activeFilter.rootDriveId}\n\n`);
+        rootDriveIdFilter = activeFilter.rootDriveId;
+      }
+      
       // Step 1: Get all presentations with high_level_folder_source_id
       process.stdout.write("Fetching presentations with high_level_folder_source_id...\n");
       
-      const { data: presentations, error: presError } = await supabase
+      let presQuery = supabase
         .from('presentations')
-        .select('id, title, video_source_id, high_level_folder_source_id')
-        .not('high_level_folder_source_id', 'is', null)
+        .select('id, title, video_source_id, high_level_folder_source_id, root_drive_id')
+        .not('high_level_folder_source_id', 'is', null);
+      
+      // Apply root_drive_id filter if active
+      if (rootDriveIdFilter) {
+        presQuery = presQuery.eq('root_drive_id', rootDriveIdFilter);
+      }
+      
+      const { data: presentations, error: presError } = await presQuery
         .limit(limit);
       
       if (presError) {
@@ -69,11 +86,18 @@ const command = new Command('repair-mismatched-video-ids')
       }
       
       // Step 2: Get info about these folders
-      const { data: folders, error: foldersError } = await supabase
+      let foldersQuery = supabase
         .from('sources_google')
-        .select('id, name, main_video_id')
+        .select('id, name, main_video_id, root_drive_id')
         .in('id', folderIds)
         .not('main_video_id', 'is', null);
+      
+      // Apply root_drive_id filter if active
+      if (rootDriveIdFilter) {
+        foldersQuery = foldersQuery.eq('root_drive_id', rootDriveIdFilter);
+      }
+      
+      const { data: folders, error: foldersError } = await foldersQuery;
       
       if (foldersError) {
         process.stdout.write(`ERROR fetching folders: ${foldersError.message}\n`);
@@ -107,10 +131,17 @@ const command = new Command('repair-mismatched-video-ids')
       const videoIdArray = Array.from(allVideoIds);
       
       // Step 4: Get video name information
-      const { data: videos, error: videosError } = await supabase
+      let videosQuery = supabase
         .from('sources_google')
-        .select('id, name')
+        .select('id, name, root_drive_id')
         .in('id', videoIdArray);
+      
+      // Apply root_drive_id filter if active
+      if (rootDriveIdFilter) {
+        videosQuery = videosQuery.eq('root_drive_id', rootDriveIdFilter);
+      }
+      
+      const { data: videos, error: videosError } = await videosQuery;
       
       if (videosError) {
         process.stdout.write(`ERROR fetching video information: ${videosError.message}\n`);

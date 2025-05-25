@@ -5,6 +5,7 @@ import { Logger } from '../../../../packages/shared/utils/logger';
 import { PromptQueryService } from '../../../../packages/cli/src/services/prompt-query-service';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getActiveFilterProfile } from '../get-active-filter-profile';
 // Use require for chalk to avoid ESM compatibility issues
 const chalk = require('chalk');
 
@@ -259,13 +260,29 @@ processMp4FilesCommand
 async function getNextBatchOfMp4Files(limit: number): Promise<any[]> {
   const supabase = SupabaseClientService.getInstance().getClient();
   
+  // Check for active filter profile
+  const activeFilter = await getActiveFilterProfile();
+  let rootDriveIdFilter: string | null = null;
+  if (activeFilter && activeFilter.rootDriveId) {
+    Logger.info(`🔍 Active filter: "${activeFilter.profile.name}"`);
+    Logger.info(`📁 Using root_drive_id: ${activeFilter.rootDriveId}\n`);
+    rootDriveIdFilter = activeFilter.rootDriveId;
+  }
+  
   // Find MP4 files that don't have .mp4 in the name but mime_type is video/mp4
-  const { data, error } = await supabase
+  let query = supabase
     .from('sources_google')
-    .select('id, name, mime_type, drive_id, path, web_view_link')
+    .select('id, name, mime_type, drive_id, path, web_view_link, root_drive_id')
     .eq('mime_type', 'video/mp4')
     .not('name', 'ilike', '%.mp4')
-    .is('is_deleted', false)
+    .is('is_deleted', false);
+  
+  // Apply root_drive_id filter if active
+  if (rootDriveIdFilter) {
+    query = query.eq('root_drive_id', rootDriveIdFilter);
+  }
+  
+  const { data, error } = await query
     .order('modified_at', { ascending: false })
     .limit(limit);
   

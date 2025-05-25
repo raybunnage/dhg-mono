@@ -85,6 +85,37 @@ interface SyncResult {
 }
 
 /**
+ * Progress tracking for file scanning
+ */
+let scanProgress = {
+  foldersScanned: 0,
+  filesFound: 0,
+  currentPath: '',
+  startTime: Date.now()
+};
+
+/**
+ * Display progress update
+ */
+function updateScanProgress(path: string, filesInFolder: number) {
+  scanProgress.foldersScanned++;
+  scanProgress.filesFound += filesInFolder;
+  scanProgress.currentPath = path;
+  
+  const elapsed = (Date.now() - scanProgress.startTime) / 1000;
+  const rate = scanProgress.foldersScanned / elapsed;
+  
+  // Clear previous line and show progress
+  process.stdout.write('\r\x1b[K'); // Clear line
+  process.stdout.write(
+    `📂 Scanning: ${scanProgress.foldersScanned} folders | ` +
+    `📄 ${scanProgress.filesFound} files | ` +
+    `⚡ ${rate.toFixed(1)} folders/sec | ` +
+    `📍 ${path.slice(-50)}`
+  );
+}
+
+/**
  * List files recursively with optimized performance
  */
 async function listFilesRecursively(
@@ -97,7 +128,7 @@ async function listFilesRecursively(
   let allFiles: GoogleDriveFile[] = [];
   
   if (currentDepth > maxDepth) {
-    if (isVerbose) console.log(`Reached max depth (${maxDepth}) at ${parentPath}`);
+    if (isVerbose) console.log(`\nReached max depth (${maxDepth}) at ${parentPath}`);
     return [];
   }
   
@@ -111,7 +142,7 @@ async function listFilesRecursively(
     const files = listResult.files;
     
     if (isVerbose && listResult.nextPageToken) {
-      console.log(`Warning: More files exist beyond page size in folder ${folderId}`);
+      console.log(`\nWarning: More files exist beyond page size in folder ${folderId}`);
     }
     
     // Process files
@@ -128,9 +159,8 @@ async function listFilesRecursively(
     
     allFiles = [...allFiles, ...enhancedFiles];
     
-    if (isVerbose && allFiles.length % 500 === 0) {
-      console.log(`Found ${allFiles.length} files so far...`);
-    }
+    // Update progress
+    updateScanProgress(parentPath, files.length);
     
     // Process subfolders recursively
     const folders = files.filter((file: GoogleDriveFile) => 

@@ -305,53 +305,96 @@ export const FileViewer: React.FC<FileViewerProps> = ({ file, defaultViewMode = 
           // Native Google Drive viewer
           (() => {
             const fileType = getFileType();
+            const driveId = extractDriveId(file.web_view_link);
+            
+            if (!driveId) {
+              return (
+                <div className="h-full flex items-center justify-center p-8 bg-gray-50">
+                  <div className="text-center">
+                    <div className="mb-4 text-6xl text-gray-400">
+                      {getFileIcon(file.mime_type)}
+                    </div>
+                    <p className="text-gray-600">No preview available - missing Drive ID</p>
+                    {file.web_view_link && (
+                      <a
+                        href={file.web_view_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-4 inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                      >
+                        Open in Google Drive ↗
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+            
             const isDocument = ['pdf', 'presentation', 'document', 'spreadsheet', 'other'].includes(fileType);
             const isVideo = fileType === 'video';
             const isAudio = fileType === 'audio';
+            const isImage = fileType === 'image';
             
-            console.log('🎯 Rendering file:', file.name, 'FileType:', fileType, 'isDocument:', isDocument);
+            console.log('🎯 Rendering file:', file.name, 'FileType:', fileType, 'DriveID:', driveId);
             
             if (isDocument) {
               // For documents, use full height without padding
-              console.log('📋 Rendering as DOCUMENT with full height');
+              console.log('📋 Rendering as DOCUMENT with Google Drive preview');
               return (
                 <div className="h-full">
-                  {file.web_view_link && (
-                    <iframe
-                      src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
-                      className="w-full h-full"
-                      allow="autoplay"
-                      title={`${file.name} preview`}
-                    />
-                  )}
+                  <iframe
+                    src={`https://drive.google.com/file/d/${driveId}/preview`}
+                    className="w-full h-full"
+                    allow="autoplay"
+                    title={`${file.name} preview`}
+                    onLoad={() => console.log('✅ Document iframe loaded successfully')}
+                    onError={(e) => console.error('❌ Document iframe error:', e)}
+                  />
                 </div>
               );
             } else if (isVideo) {
               // For videos, center with aspect ratio
+              console.log('🎥 Rendering as VIDEO with Google Drive preview');
               return (
                 <div className="h-full flex items-center justify-center p-4 bg-gray-100">
-                  {file.web_view_link && (
-                    <iframe
-                      src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
-                      className="w-full max-w-5xl aspect-video rounded-lg shadow-lg"
-                      allow="autoplay"
-                      title={`${file.name} preview`}
-                    />
-                  )}
+                  <iframe
+                    src={`https://drive.google.com/file/d/${driveId}/preview`}
+                    className="w-full max-w-5xl aspect-video rounded-lg shadow-lg"
+                    allow="autoplay"
+                    title={`${file.name} preview`}
+                    onLoad={() => console.log('✅ Video iframe loaded successfully')}
+                    onError={(e) => console.error('❌ Video iframe error:', e)}
+                  />
                 </div>
               );
             } else if (isAudio) {
               // For audio, small player at top
+              console.log('🎵 Rendering as AUDIO with Google Drive preview');
               return (
                 <div className="flex items-start justify-center p-4">
-                  {file.web_view_link && (
-                    <iframe
-                      src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
-                      className="w-full max-w-2xl h-20 rounded-lg shadow-lg"
-                      allow="autoplay"
-                      title={`${file.name} preview`}
-                    />
-                  )}
+                  <iframe
+                    src={`https://drive.google.com/file/d/${driveId}/preview`}
+                    className="w-full max-w-2xl h-20 rounded-lg shadow-lg"
+                    allow="autoplay"
+                    title={`${file.name} preview`}
+                    onLoad={() => console.log('✅ Audio iframe loaded successfully')}
+                    onError={(e) => console.error('❌ Audio iframe error:', e)}
+                  />
+                </div>
+              );
+            } else if (isImage) {
+              // For images, center with proper sizing
+              console.log('🖼️ Rendering as IMAGE with Google Drive preview');
+              return (
+                <div className="h-full flex items-center justify-center p-4 bg-gray-100">
+                  <iframe
+                    src={`https://drive.google.com/file/d/${driveId}/preview`}
+                    className="w-full max-w-4xl h-full max-h-[80vh] rounded-lg shadow-lg"
+                    allow="autoplay"
+                    title={`${file.name} preview`}
+                    onLoad={() => console.log('✅ Image iframe loaded successfully')}
+                    onError={(e) => console.error('❌ Image iframe error:', e)}
+                  />
                 </div>
               );
             }

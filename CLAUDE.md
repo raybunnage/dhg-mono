@@ -375,6 +375,44 @@ When working with scripts that access Google Drive, you need a valid service acc
    - Ensure the service account has proper permissions to access the Google Drive folders
    - The service account needs at least read-only access to the drives/folders being accessed
 
+### Displaying Google Drive Files in Browser (iframe previews)
+
+When displaying Google Drive files in browser applications, use the `/preview` endpoint to avoid Content Security Policy restrictions:
+
+**❌ Problem**: Embedding Google Drive directly causes CSP errors
+```typescript
+// This will fail with "frame-ancestors" CSP errors
+<iframe src="https://drive.google.com/file/..." />
+```
+
+**✅ Solution**: Use the preview endpoint with extracted Drive ID
+```typescript
+// Extract Drive ID from web_view_link
+const extractDriveId = (url: string | null): string | null => {
+  if (!url) return null;
+  const match = url.match(/\/d\/([^/]+)/);
+  return match ? match[1] : null;
+};
+
+// Use the preview endpoint
+<iframe 
+  src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
+  className="w-full h-full"
+  allow="autoplay"
+  title="File preview"
+/>
+```
+
+**Key Points**:
+- Always use `/preview` endpoint for embedding Google Drive files
+- Extract the Drive ID from the web_view_link URL
+- Different file types need different iframe styling:
+  - Documents/PDFs: Full height (`h-full`)
+  - Videos: Aspect ratio preserved (`aspect-video`)
+  - Audio: Small player height (`h-20`)
+  - Images: Centered with max dimensions
+- The preview endpoint works for all file types without CSP restrictions
+
 ## Key Points Summary
 
 This document provides the essential guidelines for working with Claude Code v1.03. The most important principles are:

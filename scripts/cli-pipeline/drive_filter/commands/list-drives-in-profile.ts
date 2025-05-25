@@ -7,8 +7,8 @@ import { SupabaseClientService } from '../../../../packages/shared/services/supa
 const command = new Command('list-drives-in-profile');
 
 command
-  .description('List all drives excluded in a filter profile')
-  .requiredOption('-i, --id <id>', 'Profile ID')
+  .description('List all drives included in a filter profile')
+  .option('-i, --id <id>', 'Profile ID (defaults to active profile if not specified)')
   .option('--json', 'Output as JSON')
   .option('--verbose', 'Show drive details (name, path, etc.)')
   .action(async (options) => {
@@ -17,21 +17,34 @@ command
       const supabase = SupabaseClientService.getInstance().getClient();
       const filterService = new FilterService(supabase);
       
+      let profileId = options.id;
+      
+      // If no profile ID specified, use the active profile
+      if (!profileId) {
+        const activeProfile = await filterService.loadActiveProfile();
+        if (!activeProfile) {
+          console.error(chalk.red('❌ No active profile found. Please specify a profile ID with --id or set an active profile.'));
+          process.exit(1);
+        }
+        profileId = activeProfile.id;
+        console.log(chalk.cyan(`Using active profile: ${activeProfile.name}`));
+      }
+      
       // First load the profile to confirm it exists
-      const profile = await filterService.loadProfile(options.id);
+      const profile = await filterService.loadProfile(profileId);
       
       if (!profile) {
-        console.error(chalk.red(`❌ Profile with ID ${options.id} not found`));
+        console.error(chalk.red(`❌ Profile with ID ${profileId} not found`));
         process.exit(1);
       }
       
       console.log(chalk.green(`✓ Found profile: ${profile.name}`));
       
       // Get the list of drive IDs
-      const driveIds = await filterService.listDrivesForProfile(options.id);
+      const driveIds = await filterService.listDrivesForProfile(profileId);
       
       if (driveIds.length === 0) {
-        console.log(chalk.yellow(`No drives excluded in profile "${profile.name}"`));
+        console.log(chalk.yellow(`No drives included in profile "${profile.name}"`));
         return;
       }
       
@@ -43,16 +56,16 @@ command
       
       // Simple output if not verbose
       if (!options.verbose) {
-        console.log(chalk.cyan(`Drives excluded in profile "${profile.name}":`));
+        console.log(chalk.cyan(`Drives included in profile "${profile.name}":`));
         driveIds.forEach((driveId: string) => {
           console.log(driveId);
         });
-        console.log(`\nTotal excluded drives: ${driveIds.length}`);
+        console.log(`\nTotal included drives: ${driveIds.length}`);
         return;
       }
       
       // Verbose output with drive details
-      console.log(chalk.cyan(`Fetching details for ${driveIds.length} drives excluded in profile "${profile.name}"...`));
+      console.log(chalk.cyan(`Fetching details for ${driveIds.length} drives included in profile "${profile.name}"...`));
       
       // Get drive details from sources_google table (reuse the supabase client)
       const { data: drives, error } = await supabase
@@ -91,7 +104,7 @@ command
       });
       
       console.log(table.toString());
-      console.log(`\nTotal excluded drives: ${driveIds.length}`);
+      console.log(`\nTotal included drives: ${driveIds.length}`);
       
       // Check if any drive IDs are not found in the database
       const foundDriveIds = drives.map(d => d.drive_id);

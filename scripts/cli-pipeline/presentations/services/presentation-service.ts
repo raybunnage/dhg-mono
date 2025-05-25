@@ -521,6 +521,15 @@ export class PresentationService {
     try {
       Logger.debug(`Reviewing presentations with options: ${JSON.stringify(options)}`);
       
+      // Check for active filter profile
+      const activeFilter = await getActiveFilterProfile();
+      let rootDriveIdFilter: string | null = null;
+      if (activeFilter && activeFilter.rootDriveId) {
+        Logger.info(`🔍 Active filter: "${activeFilter.profile.name}"`);
+        Logger.info(`📁 Using root_drive_id: ${activeFilter.rootDriveId}\n`);
+        rootDriveIdFilter = activeFilter.rootDriveId;
+      }
+      
       // Get presentations with filters
       let query = this.supabaseClient
         .from('presentations')
@@ -529,9 +538,15 @@ export class PresentationService {
           title,
           video_source_id,
           created_at,
-          updated_at
+          updated_at,
+          root_drive_id
         `)
         .order('created_at', { ascending: false });
+      
+      // Apply root_drive_id filter if active
+      if (rootDriveIdFilter && !options.skipFolderFilter) {
+        query = query.eq('root_drive_id', rootDriveIdFilter);
+      }
       
       // Apply filters
       if (options.presentationId) {
@@ -580,10 +595,18 @@ export class PresentationService {
       if (options.folderId && !options.skipFolderFilter) {
         // Get all sources related to Dynamic Healing Discussion Group, including those not directly in the folder
         // but whose path indicates they're part of the group
-        const { data: dhgSources, error: dhgError } = await this.supabaseClient
+        let dhgQuery = this.supabaseClient
           .from('sources_google')
-          .select('id, name, path, drive_id')
-          .or(`path.like.%Dynamic Healing Discussion Group%,drive_id.eq.${options.folderId}`);
+          .select('id, name, path, drive_id, root_drive_id');
+        
+        // If we have a root_drive_id filter, use that instead of the path-based filtering
+        if (rootDriveIdFilter) {
+          dhgQuery = dhgQuery.eq('root_drive_id', rootDriveIdFilter);
+        } else {
+          dhgQuery = dhgQuery.or(`path.like.%Dynamic Healing Discussion Group%,drive_id.eq.${options.folderId}`);
+        }
+        
+        const { data: dhgSources, error: dhgError } = await dhgQuery;
         
         if (dhgError) {
           Logger.error('Error fetching Dynamic Healing Discussion Group sources:', dhgError);

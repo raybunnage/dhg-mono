@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { Logger } from '../../../../packages/shared/utils/logger';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { getActiveFilterProfile } from '../get-active-filter-profile';
 
 // Define interfaces for our data
 interface DuplicateFolderInfo {
@@ -41,14 +42,30 @@ export const findDuplicateFolderNamesCommand = async (options: {
     // Get the Supabase client
     const supabase = SupabaseClientService.getInstance().getClient();
 
+    // Check for active filter profile
+    const activeFilter = await getActiveFilterProfile();
+    let rootDriveIdFilter: string | null = null;
+    if (activeFilter && activeFilter.rootDriveId) {
+      Logger.info(`🔍 Active filter: "${activeFilter.profile.name}"`);
+      Logger.info(`📁 Using root_drive_id: ${activeFilter.rootDriveId}\n`);
+      rootDriveIdFilter = activeFilter.rootDriveId;
+    }
+
     // First, get all folder names at the specified path depth
-    const { data: allFolders, error: allFoldersError } = await supabase
+    let foldersQuery = supabase
       .from('sources_google')
       .select('name')
       .eq('path_depth', pathDepth)
       .eq('is_deleted', false)
       .not('name', 'is', null)
-      .neq('name', '')
+      .neq('name', '');
+    
+    // Apply root_drive_id filter if active
+    if (rootDriveIdFilter) {
+      foldersQuery = foldersQuery.eq('root_drive_id', rootDriveIdFilter);
+    }
+    
+    const { data: allFolders, error: allFoldersError } = await foldersQuery
       .order('name');
     
     if (allFoldersError) {
@@ -90,12 +107,19 @@ export const findDuplicateFolderNamesCommand = async (options: {
       const folderName = item.name;
       
       // Get all folders with this name
-      const { data: folderInfo, error: folderInfoError } = await supabase
+      let folderInfoQuery = supabase
         .from('sources_google')
-        .select('id, drive_id, created_at, name')
+        .select('id, drive_id, created_at, name, root_drive_id')
         .eq('name', folderName)
         .eq('path_depth', pathDepth)
-        .eq('is_deleted', false)
+        .eq('is_deleted', false);
+      
+      // Apply root_drive_id filter if active
+      if (rootDriveIdFilter) {
+        folderInfoQuery = folderInfoQuery.eq('root_drive_id', rootDriveIdFilter);
+      }
+      
+      const { data: folderInfo, error: folderInfoError } = await folderInfoQuery
         .order('created_at', { ascending: true });
       
       if (folderInfoError) {
