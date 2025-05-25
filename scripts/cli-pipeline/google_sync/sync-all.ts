@@ -147,7 +147,7 @@ async function generateSyncReport(
         .from('sources_google')
         .select('name, mime_type, created_at')
         .eq('root_drive_id', rootDriveId)
-        .eq('processing_status', 'queued')
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false })
         .limit(20);
       

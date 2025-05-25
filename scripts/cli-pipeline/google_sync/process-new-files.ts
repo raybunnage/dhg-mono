@@ -23,6 +23,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import type { Database } from '../../../supabase/types';
 import { getActiveFilterProfile } from './get-active-filter-profile';
+import { createFolderHierarchyService } from '../../../packages/shared/services/folder-hierarchy-service';
 
 // Load environment files
 function loadEnvFiles() {
@@ -59,6 +60,10 @@ interface ProcessResult {
   filesSkipped: number;
   errors: string[];
   duration: number;
+  createdRecords?: Array<{
+    id: string;
+    sourceId: string;
+  }>;
 }
 
 // Supported file types for processing
@@ -136,16 +141,18 @@ async function processNewFiles(rootDriveId?: string): Promise<ProcessResult> {
     expertDocsCreated: 0,
     filesSkipped: 0,
     errors: [],
-    duration: 0
+    duration: 0,
+    createdRecords: []
   };
   
   try {
     // Build query for files needing processing
+    // Note: processing_status doesn't exist in sources_google, we need to check
+    // which files don't have expert_documents records yet
     let query = supabase
       .from('sources_google')
-      .select('id, drive_id, name, mime_type, document_type_id, processing_status')
+      .select('id, drive_id, name, mime_type, document_type_id, main_video_id')
       .eq('is_deleted', false)
-      .or('processing_status.eq.pending,processing_status.is.null')
       .order('created_at', { ascending: false })
       .limit(limit);
     
@@ -194,6 +201,9 @@ async function processNewFiles(rootDriveId?: string): Promise<ProcessResult> {
       return result;
     }
     
+    // Create folder hierarchy service
+    const folderService = createFolderHierarchyService(supabase);
+    
     // Process files in batches
     const BATCH_SIZE = 50;
     const batches = Math.ceil(filesToProcess.length / BATCH_SIZE);
@@ -204,44 +214,70 @@ async function processNewFiles(rootDriveId?: string): Promise<ProcessResult> {
       const batch = filesToProcess.slice(start, end);
       
       const expertDocsToInsert = [];
-      const sourceUpdates = [];
+      const filesToUpdateMainVideoId = [];
       
       for (const file of batch) {
         const { status, skipReason } = determineProcessingStatus(file.name, file.mime_type);
+        
+        // Find main_video_id if the file doesn't have one
+        let mainVideoId = file.main_video_id;
+        if (!mainVideoId) {
+          if (isVerbose) {
+            console.log(`Finding main_video_id for ${file.name}...`);
+          }
+          
+          const highLevelResult = await folderService.findHighLevelFolder(file.id);
+          if (highLevelResult.main_video_id) {
+            mainVideoId = highLevelResult.main_video_id;
+            filesToUpdateMainVideoId.push({
+              id: file.id,
+              main_video_id: mainVideoId
+            });
+            
+            if (isVerbose) {
+              console.log(`  Found main_video_id: ${mainVideoId} from high-level folder: ${highLevelResult.folder?.name}`);
+            }
+          } else if (isVerbose) {
+            console.log(`  No main_video_id found in hierarchy`);
+          }
+        }
         
         // Prepare expert_documents record
         expertDocsToInsert.push({
           id: uuidv4(),
           source_id: file.id,
-          document_processing_status: status,
-          document_processing_status_updated_at: new Date().toISOString(),
+          reprocessing_status: status === 'needs_reprocessing' ? 'needs_reprocessing' : 
+                              status === 'skip_processing' ? 'skip_processing' : 'not_set',
+          reprocessing_status_updated_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          document_type_id: file.document_type_id,
-          source_type: 'google_drive',
-          processing_skip_reason: skipReason,
-          metadata: {
-            created_from_sync: true,
-            file_name: file.name,
-            mime_type: file.mime_type,
-            processing_determined_by: 'file_type_analysis'
-          }
-        });
-        
-        // Update processing status on sources_google
-        sourceUpdates.push({
-          id: file.id,
-          processing_status: status === 'needs_reprocessing' ? 'queued' : 'skipped'
+          document_type_id: null, // Will be set by classification
+          processing_skip_reason: skipReason
         });
         
         result.filesProcessed++;
       }
       
+      // Update main_video_id in sources_google for files that need it
+      if (filesToUpdateMainVideoId.length > 0 && !isDryRun) {
+        for (const fileUpdate of filesToUpdateMainVideoId) {
+          const { error: updateError } = await supabase
+            .from('sources_google')
+            .update({ main_video_id: fileUpdate.main_video_id })
+            .eq('id', fileUpdate.id);
+          
+          if (updateError) {
+            result.errors.push(`Failed to update main_video_id for ${fileUpdate.id}: ${updateError.message}`);
+          }
+        }
+      }
+      
       // Insert expert_documents records
       if (expertDocsToInsert.length > 0) {
-        const { error: insertError } = await supabase
+        const { data: insertedRecords, error: insertError } = await supabase
           .from('expert_documents')
-          .insert(expertDocsToInsert);
+          .insert(expertDocsToInsert)
+          .select('id, source_id');
         
         if (insertError) {
           result.errors.push(`Batch ${i + 1} insert error: ${insertError.message}`);
@@ -249,17 +285,15 @@ async function processNewFiles(rootDriveId?: string): Promise<ProcessResult> {
         } else {
           result.expertDocsCreated += expertDocsToInsert.length;
           console.log(`✓ Created ${expertDocsToInsert.length} expert_documents in batch ${i + 1}/${batches}`);
-        }
-        
-        // Update source processing status
-        for (const update of sourceUpdates) {
-          const { error: updateError } = await supabase
-            .from('sources_google')
-            .update({ processing_status: update.processing_status })
-            .eq('id', update.id);
           
-          if (updateError && isVerbose) {
-            console.log(`Warning: Could not update processing status for ${update.id}`);
+          // Store created record IDs
+          if (insertedRecords) {
+            insertedRecords.forEach(record => {
+              result.createdRecords?.push({
+                id: record.id,
+                sourceId: record.source_id
+              });
+            });
           }
         }
       }
@@ -272,6 +306,177 @@ async function processNewFiles(rootDriveId?: string): Promise<ProcessResult> {
   
   result.duration = (Date.now() - startTime) / 1000;
   return result;
+}
+
+/**
+ * Display recently created expert documents
+ */
+async function displayRecentExpertDocuments(rootDriveId?: string) {
+  try {
+    // Query for recent expert_documents
+    let query = supabase
+      .from('expert_documents')
+      .select(`
+        id,
+        created_at,
+        sources_google!inner(
+          id,
+          name,
+          modified_at,
+          root_drive_id,
+          main_video_id
+        ),
+        document_types(
+          id,
+          name
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    // Apply root drive filter if provided
+    if (rootDriveId) {
+      query = query.eq('sources_google.root_drive_id', rootDriveId);
+    }
+    
+    const { data: records, error } = await query;
+    
+    if (error) {
+      console.error('Could not fetch recent records:', error.message);
+      return;
+    }
+    
+    if (!records || records.length === 0) {
+      console.log('No recent expert_documents found.');
+      return;
+    }
+    
+    // Display table
+    console.log('─'.repeat(155));
+    console.log(
+      '│ ' + 
+      'File Name'.padEnd(60) + ' │ ' +
+      'ID'.padEnd(36) + ' │ ' +
+      'Document Type'.padEnd(25) + ' │ ' +
+      'Modified'.padEnd(10) + ' │ ' +
+      'Video'.padEnd(5) + ' │'
+    );
+    console.log('─'.repeat(155));
+    
+    records.forEach((record: any) => {
+      const fileName = record.sources_google.name.length > 60 
+        ? record.sources_google.name.substring(0, 57) + '...' 
+        : record.sources_google.name;
+      
+      const docType = record.document_types?.name || 'Not classified';
+      const docTypeTruncated = docType.length > 25
+        ? docType.substring(0, 22) + '...'
+        : docType;
+      
+      const modifiedDate = record.sources_google.modified_at 
+        ? new Date(record.sources_google.modified_at).toLocaleDateString()
+        : 'Unknown';
+      
+      const hasVideo = record.sources_google.main_video_id ? '✓' : '✗';
+      
+      console.log(
+        '│ ' + 
+        fileName.padEnd(60) + ' │ ' +
+        record.sources_google.id.padEnd(36) + ' │ ' +
+        docTypeTruncated.padEnd(25) + ' │ ' +
+        modifiedDate.padEnd(10) + ' │ ' +
+        hasVideo.padEnd(5) + ' │'
+      );
+    });
+    
+    console.log('─'.repeat(155));
+    
+  } catch (error: any) {
+    console.error('Error displaying table:', error.message);
+  }
+}
+
+/**
+ * Display created records in a table
+ */
+async function displayCreatedRecordsTable(createdRecords: Array<{id: string; sourceId: string}>) {
+  if (!createdRecords || createdRecords.length === 0) return;
+  
+  try {
+    // Query for detailed information about created records
+    const sourceIds = createdRecords.map(r => r.sourceId);
+    
+    const { data: records, error } = await supabase
+      .from('sources_google')
+      .select(`
+        id,
+        name,
+        modified_at,
+        main_video_id,
+        expert_documents!inner(
+          id,
+          document_type_id,
+          document_types(
+            id,
+            name
+          )
+        )
+      `)
+      .in('id', sourceIds)
+      .order('name');
+    
+    if (error) {
+      console.error('Could not fetch record details:', error.message);
+      return;
+    }
+    
+    if (!records || records.length === 0) return;
+    
+    // Display table header
+    console.log('\n📊 Created Expert Documents:');
+    console.log('─'.repeat(155));
+    console.log(
+      '│ ' + 
+      'File Name'.padEnd(60) + ' │ ' +
+      'ID'.padEnd(36) + ' │ ' +
+      'Document Type'.padEnd(25) + ' │ ' +
+      'Modified'.padEnd(10) + ' │ ' +
+      'Video'.padEnd(5) + ' │'
+    );
+    console.log('─'.repeat(155));
+    
+    // Display each record
+    records.forEach((record: any) => {
+      const fileName = record.name.length > 60 
+        ? record.name.substring(0, 57) + '...' 
+        : record.name;
+      
+      const docType = record.expert_documents?.[0]?.document_types?.name || 'Not classified';
+      const docTypeTruncated = docType.length > 25
+        ? docType.substring(0, 22) + '...'
+        : docType;
+      
+      const modifiedDate = record.modified_at 
+        ? new Date(record.modified_at).toLocaleDateString()
+        : 'Unknown';
+      
+      const hasVideo = record.main_video_id ? '✓' : '✗';
+      
+      console.log(
+        '│ ' + 
+        fileName.padEnd(60) + ' │ ' +
+        record.id.padEnd(36) + ' │ ' +
+        docTypeTruncated.padEnd(25) + ' │ ' +
+        modifiedDate.padEnd(10) + ' │ ' +
+        hasVideo.padEnd(5) + ' │'
+      );
+    });
+    
+    console.log('─'.repeat(155));
+    
+  } catch (error: any) {
+    console.error('Error displaying table:', error.message);
+  }
 }
 
 /**
@@ -296,6 +501,15 @@ async function main() {
     
     // Process new files
     const result = await processNewFiles(rootDriveId);
+    
+    // Display the created records table if not in dry run mode
+    if (!isDryRun && result.createdRecords && result.createdRecords.length > 0) {
+      await displayCreatedRecordsTable(result.createdRecords);
+    } else if (!isDryRun && result.filesProcessed === 0) {
+      // Show recently created expert_documents as an example
+      console.log('\n📊 Recently created expert_documents (for demonstration):');
+      await displayRecentExpertDocuments(rootDriveId);
+    }
     
     // Display results
     console.log('\n=== Processing Complete ===');

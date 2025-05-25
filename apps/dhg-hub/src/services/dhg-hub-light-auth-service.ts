@@ -75,10 +75,18 @@ class DhgHubLightAuthService {
   }
 
   async login(email: string): Promise<LightAuthServiceResult> {
+    console.log('[DHG-HUB-AUTH] Starting login for email:', email);
+    
     try {
       const isAllowed = await this.isEmailAllowed(email);
+      console.log('[DHG-HUB-AUTH] Email allowed check:', isAllowed);
       
       if (!isAllowed) {
+        // Log failed login attempt
+        await this.logAuthEvent('login_failed', {
+          email,
+          error: 'Email not on allowed list'
+        });
         return { success: false, error: 'Email not on allowed list' };
       }
 
@@ -89,7 +97,14 @@ class DhgHubLightAuthService {
         .eq('is_active', true)
         .single();
 
+      console.log('[DHG-HUB-AUTH] Allowed email lookup:', { found: !!allowedEmail, error });
+
       if (error || !allowedEmail) {
+        // Log failed login attempt
+        await this.logAuthEvent('login_failed', {
+          email,
+          error: error?.message || 'User not found'
+        });
         return { success: false, error: 'User not found' };
       }
 
@@ -113,11 +128,17 @@ class DhgHubLightAuthService {
         profile: profile
       };
 
-      // Update last_login_at
-      await this.supabase
-        .from('allowed_emails')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', allowedEmail.id);
+      // Update login tracking
+      await this.updateLoginTracking(allowedEmail.id);
+      
+      // Log successful login
+      await this.logAuthEvent('login', {
+        email,
+        user_id: allowedEmail.id,
+        profile_complete: hasProfile
+      });
+
+      console.log('[DHG-HUB-AUTH] Login successful for user:', allowedEmail.id);
 
       return {
         success: true,
@@ -125,7 +146,14 @@ class DhgHubLightAuthService {
         needsProfile: !hasProfile
       };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[DHG-HUB-AUTH] Login error:', error);
+      
+      // Log error
+      await this.logAuthEvent('login_failed', {
+        email,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -261,6 +289,85 @@ class DhgHubLightAuthService {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
+    }
+  }
+
+  /**
+   * Update login tracking fields in allowed_emails
+   */
+  private async updateLoginTracking(userId: string): Promise<void> {
+    try {
+      console.log('[DHG-HUB-AUTH] Updating login tracking for user:', userId);
+      
+      // First get current login count
+      const { data: currentData, error: fetchError } = await this.supabase
+        .from('allowed_emails')
+        .select('login_count')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError) {
+        console.error('[DHG-HUB-AUTH] Error fetching current login count:', fetchError);
+        return;
+      }
+
+      const currentCount = currentData?.login_count || 0;
+      console.log('[DHG-HUB-AUTH] Current login count:', currentCount);
+
+      // Update last_login_at and increment login_count
+      const { error: updateError } = await this.supabase
+        .from('allowed_emails')
+        .update({
+          last_login_at: new Date().toISOString(),
+          login_count: currentCount + 1
+        })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('[DHG-HUB-AUTH] Error updating login tracking:', updateError);
+      } else {
+        console.log('[DHG-HUB-AUTH] Login tracking updated successfully');
+      }
+    } catch (error) {
+      console.error('[DHG-HUB-AUTH] Failed to update login tracking:', error);
+      // Don't throw - this is not critical for login success
+    }
+  }
+
+  /**
+   * Log an auth event to the auth_audit_log table
+   */
+  private async logAuthEvent(
+    eventType: 'login' | 'logout' | 'login_failed' | 'profile_updated',
+    metadata?: Record<string, any>
+  ): Promise<void> {
+    try {
+      console.log('[DHG-HUB-AUTH] Logging auth event:', eventType, metadata);
+      
+      const event = {
+        user_id: metadata?.user_id || null,
+        event_type: eventType,
+        metadata: {
+          ...metadata,
+          auth_method: 'light_auth_dhg_hub',
+          user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+          app: 'dhg-hub'
+        },
+        created_at: new Date().toISOString()
+      };
+
+      const { error } = await this.supabase
+        .from('auth_audit_log')
+        .insert(event);
+
+      if (error) {
+        console.error('[DHG-HUB-AUTH] Error logging auth event:', error);
+        console.error('[DHG-HUB-AUTH] Event data:', event);
+      } else {
+        console.log('[DHG-HUB-AUTH] Auth event logged successfully');
+      }
+    } catch (error) {
+      console.error('[DHG-HUB-AUTH] Failed to log auth event:', error);
     }
   }
 }

@@ -36,16 +36,21 @@ export const LightEmailAuth: React.FC = () => {
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[LightEmailAuth] Form submitted with email:', email);
     setError('');
     setIsLoading(true);
 
     try {
       // First check if email is whitelisted
+      console.log('[LightEmailAuth] Checking whitelist status...');
       const { isWhitelisted } = await dhgHubAuthService.checkWhitelistStatus(email);
+      console.log('[LightEmailAuth] Whitelist check result:', isWhitelisted);
       
       if (isWhitelisted) {
         // Try to login
+        console.log('[LightEmailAuth] Email is whitelisted, attempting login...');
         await login(email);
+        console.log('[LightEmailAuth] Login completed, needsProfile:', needsProfile);
         // If login successful and user has profile, navigation will be handled by App.tsx
         // If user needs profile, needsProfile will be true
         if (needsProfile) {
@@ -54,11 +59,12 @@ export const LightEmailAuth: React.FC = () => {
         }
       } else {
         // Not whitelisted - show registration form
+        console.log('[LightEmailAuth] Email not whitelisted, showing registration form');
         setIsNewUser(true);
         setShowProfileForm(true);
       }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('[LightEmailAuth] Error during login:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);

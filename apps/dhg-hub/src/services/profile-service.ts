@@ -1,4 +1,4 @@
-import { supabase } from './supabase-browser';
+import { supabaseBrowser } from './supabase-browser-adapter';
 
 export interface UserProfile {
   id: string;
@@ -56,7 +56,7 @@ class ProfileService {
   
   async getProfile(userId: string): Promise<ProfileServiceResult> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseBrowser.getClient()
         .from('user_profiles_v2')
         .select('*')
         .eq('id', userId)

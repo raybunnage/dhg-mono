@@ -6,13 +6,13 @@
  */
 
 import { FilterService, FilterProfile, FilterProfileDrive } from '../../../../packages/shared/services/filter-service';
-import { supabase } from './supabase-adapter';
+import { supabaseBrowser } from '../services/supabase-browser-adapter';
 
 // Re-export types for backward compatibility
 export type { FilterProfile, FilterProfileDrive };
 
 // Create an instance of the shared FilterService with dhg-hub's configured Supabase client
-const sharedFilterService = new FilterService(supabase as any);
+const sharedFilterService = new FilterService(supabaseBrowser.getClient() as any);
 
 // Create a wrapper class that delegates to the shared service
 class FilterServiceAdapter {

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { AdminPanel } from '@shared/components/auth/AdminPanel';
 import { UserManagement } from '../components/UserManagement';
 import { AllowedEmailsManagement } from '../components/AllowedEmailsManagement';
 import { ServerManagement } from '../components/ServerManagement';
@@ -10,7 +9,7 @@ import { LoginStatistics } from '../components/LoginStatistics';
 export const AdminDashboard: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'access' | 'users' | 'emails' | 'servers' | 'stats'>('access');
+  const [activeTab, setActiveTab] = useState<'emails' | 'users' | 'servers' | 'stats'>('emails');
 
   const handleSignOut = async () => {
     await signOut();
@@ -63,16 +62,16 @@ export const AdminDashboard: React.FC = () => {
         <div className="border-b border-gray-200 mb-8">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
-              onClick={() => setActiveTab('access')}
+              onClick={() => setActiveTab('emails')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'access'
+                ${activeTab === 'emails'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }
               `}
             >
-              Access Control
+              Allowed Emails
             </button>
             <button
               onClick={() => setActiveTab('users')}
@@ -85,18 +84,6 @@ export const AdminDashboard: React.FC = () => {
               `}
             >
               User Management
-            </button>
-            <button
-              onClick={() => setActiveTab('emails')}
-              className={`
-                py-2 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'emails'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }
-              `}
-            >
-              Allowed Emails
             </button>
             <button
               onClick={() => setActiveTab('servers')}
@@ -126,12 +113,10 @@ export const AdminDashboard: React.FC = () => {
         </div>
         
         {/* Tab Content */}
-        {activeTab === 'access' ? (
-          <AdminPanel />
+        {activeTab === 'emails' ? (
+          <AllowedEmailsManagement />
         ) : activeTab === 'users' ? (
           <UserManagement />
-        ) : activeTab === 'emails' ? (
-          <AllowedEmailsManagement />
         ) : activeTab === 'servers' ? (
           <ServerManagement />
         ) : (

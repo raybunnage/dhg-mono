@@ -118,13 +118,20 @@ async function updateMetadata(
     // Process files in batches for API efficiency
     const BATCH_SIZE = 20;
     const batches = Math.ceil(files.length / BATCH_SIZE);
+    const updateStartTime = Date.now();
     
     for (let i = 0; i < batches; i++) {
       const start = i * BATCH_SIZE;
       const end = Math.min(start + BATCH_SIZE, files.length);
       const batch = files.slice(start, end);
       
-      console.log(`🔍 Checking batch ${i + 1}/${batches} (${batch.length} files)`);
+      process.stdout.write('\r\x1b[K');
+      process.stdout.write(
+        `🔍 Progress: ${i + 1}/${batches} batches | ` +
+        `${result.filesChecked}/${files.length} files | ` +
+        `📝 ${result.filesUpdated} updated | ` +
+        `✏️ ${result.filesRenamed} renamed`
+      );
       
       // Fetch metadata for all files in batch in parallel
       const metadataPromises = batch.map(async (file) => {
@@ -305,8 +312,21 @@ async function updateMetadata(
       }
     }
     
+    // Show final progress summary
+    const updateElapsed = (Date.now() - updateStartTime) / 1000;
+    const rate = result.filesChecked / updateElapsed;
+    
+    process.stdout.write('\r\x1b[K');
+    console.log(
+      `✅ Update complete: ${result.filesChecked} files checked | ` +
+      `${result.filesUpdated} updated | ` +
+      `${result.filesRenamed} renamed | ` +
+      `${updateElapsed.toFixed(1)}s | ` +
+      `${rate.toFixed(0)} files/sec`
+    );
+    
   } catch (error: any) {
-    console.error('❌ Update error:', error.message);
+    console.error('\n❌ Update error:', error.message);
     result.errors.push(error.message);
   }
   

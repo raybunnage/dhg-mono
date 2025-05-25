@@ -91,7 +91,8 @@ let scanProgress = {
   foldersScanned: 0,
   filesFound: 0,
   currentPath: '',
-  startTime: Date.now()
+  startTime: Date.now(),
+  lastUpdate: Date.now()
 };
 
 /**
@@ -102,7 +103,12 @@ function updateScanProgress(path: string, filesInFolder: number) {
   scanProgress.filesFound += filesInFolder;
   scanProgress.currentPath = path;
   
-  const elapsed = (Date.now() - scanProgress.startTime) / 1000;
+  // Only update display every 100ms to avoid flickering
+  const now = Date.now();
+  if (now - scanProgress.lastUpdate < 100) return;
+  scanProgress.lastUpdate = now;
+  
+  const elapsed = (now - scanProgress.startTime) / 1000;
   const rate = scanProgress.foldersScanned / elapsed;
   
   // Clear previous line and show progress
@@ -112,6 +118,22 @@ function updateScanProgress(path: string, filesInFolder: number) {
     `📄 ${scanProgress.filesFound} files | ` +
     `⚡ ${rate.toFixed(1)} folders/sec | ` +
     `📍 ${path.slice(-50)}`
+  );
+}
+
+/**
+ * Show final scan summary
+ */
+function finalizeScanProgress() {
+  const elapsed = (Date.now() - scanProgress.startTime) / 1000;
+  const rate = scanProgress.foldersScanned / elapsed;
+  
+  process.stdout.write('\r\x1b[K'); // Clear line
+  console.log(
+    `✅ Scan complete: ${scanProgress.foldersScanned} folders | ` +
+    `${scanProgress.filesFound} files | ` +
+    `${elapsed.toFixed(1)}s | ` +
+    `${rate.toFixed(1)} folders/sec`
   );
 }
 
@@ -257,10 +279,13 @@ async function syncFiles(
     
     // List all files
     console.log(`🔍 Scanning files (max depth: ${maxDepth})...`);
+    scanProgress.startTime = Date.now(); // Reset timer for scanning
     const allFiles = await listFilesRecursively(driveService, rootDriveId, maxDepth);
     
+    finalizeScanProgress(); // Show final scan summary
+    
     result.filesFound = allFiles.length;
-    console.log(`✓ Found ${allFiles.length} files`);
+    console.log(`\n📊 Total files found: ${allFiles.length}`);
     
     if (isDryRun) {
       console.log(`DRY RUN: Would process ${allFiles.length} files`);
@@ -269,6 +294,9 @@ async function syncFiles(
     }
     
     // Get existing files for this root
+    console.log('\n🔍 Checking existing files in database...');
+    const queryStartTime = Date.now();
+    
     const { data: existingRecords, error: queryError } = await supabase
       .from('sources_google')
       .select('id, drive_id, name')
@@ -277,7 +305,11 @@ async function syncFiles(
     
     if (queryError) throw queryError;
     
+    const queryElapsed = (Date.now() - queryStartTime) / 1000;
+    console.log(`✅ Found ${existingRecords?.length || 0} existing files (${queryElapsed.toFixed(1)}s)`);
+    
     // Create lookup sets
+    console.log('\n📊 Analyzing changes...');
     const foundDriveIds = new Set([...allFiles.map(f => f.id), rootDriveId]);
     const existingDriveIds = new Set((existingRecords || []).map(r => r.drive_id));
     
@@ -289,6 +321,9 @@ async function syncFiles(
     if (newFiles.length > 0) {
       const BATCH_SIZE = 100;
       const batches = Math.ceil(newFiles.length / BATCH_SIZE);
+      
+      console.log(`\n📥 Inserting ${newFiles.length} new files in ${batches} batches...`);
+      const insertStartTime = Date.now();
       
       for (let i = 0; i < batches; i++) {
         const start = i * BATCH_SIZE;
@@ -316,8 +351,7 @@ async function syncFiles(
           },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          is_deleted: false,
-          processing_status: 'pending' // Mark for later processing
+          is_deleted: false
         }));
         
         const { error } = await supabase
@@ -327,11 +361,29 @@ async function syncFiles(
         if (error) {
           result.errors.push(`Batch ${i + 1} error: ${error.message}`);
           result.filesSkipped += batch.length;
+          process.stdout.write('\r\x1b[K');
+          console.log(`❌ Batch ${i + 1}/${batches} failed (${batch.length} files): ${error.message}`);
         } else {
           result.filesInserted += batch.length;
-          console.log(`✓ Inserted batch ${i + 1}/${batches} (${batch.length} files)`);
+          const elapsed = (Date.now() - insertStartTime) / 1000;
+          const rate = result.filesInserted / elapsed;
+          
+          process.stdout.write('\r\x1b[K');
+          process.stdout.write(
+            `📥 Progress: ${i + 1}/${batches} batches | ` +
+            `${result.filesInserted}/${newFiles.length} files | ` +
+            `⚡ ${rate.toFixed(0)} files/sec`
+          );
         }
       }
+      
+      const totalElapsed = (Date.now() - insertStartTime) / 1000;
+      process.stdout.write('\r\x1b[K');
+      console.log(
+        `✅ Insert complete: ${result.filesInserted} files | ` +
+        `${totalElapsed.toFixed(1)}s | ` +
+        `${(result.filesInserted / totalElapsed).toFixed(0)} files/sec`
+      );
     }
     
     // Handle deletions
@@ -340,22 +392,47 @@ async function syncFiles(
         .filter(r => r.drive_id !== rootDriveId && !foundDriveIds.has(r.drive_id));
       
       if (recordsToDelete.length > 0) {
-        console.log(`🗑️  ${recordsToDelete.length} files to mark as deleted`);
+        console.log(`\n🗑️  Marking ${recordsToDelete.length} files as deleted...`);
         
+        const deleteStartTime = Date.now();
         const deleteIds = recordsToDelete.map(r => r.id);
-        const { error } = await supabase
-          .from('sources_google')
-          .update({
-            is_deleted: true,
-            updated_at: new Date().toISOString()
-          })
-          .in('id', deleteIds);
         
-        if (error) {
-          result.errors.push(`Deletion error: ${error.message}`);
-        } else {
-          result.filesMarkedDeleted = recordsToDelete.length;
+        // Process deletions in batches for performance
+        const DELETE_BATCH_SIZE = 100;
+        const deleteBatches = Math.ceil(deleteIds.length / DELETE_BATCH_SIZE);
+        
+        for (let i = 0; i < deleteBatches; i++) {
+          const start = i * DELETE_BATCH_SIZE;
+          const end = Math.min(start + DELETE_BATCH_SIZE, deleteIds.length);
+          const batchIds = deleteIds.slice(start, end);
+          
+          const { error } = await supabase
+            .from('sources_google')
+            .update({
+              is_deleted: true,
+              updated_at: new Date().toISOString()
+            })
+            .in('id', batchIds);
+          
+          if (error) {
+            result.errors.push(`Deletion batch ${i + 1} error: ${error.message}`);
+          } else {
+            result.filesMarkedDeleted += batchIds.length;
+            
+            process.stdout.write('\r\x1b[K');
+            process.stdout.write(
+              `🗑️  Progress: ${i + 1}/${deleteBatches} batches | ` +
+              `${result.filesMarkedDeleted}/${recordsToDelete.length} files`
+            );
+          }
         }
+        
+        const deleteElapsed = (Date.now() - deleteStartTime) / 1000;
+        process.stdout.write('\r\x1b[K');
+        console.log(
+          `✅ Deletion complete: ${result.filesMarkedDeleted} files | ` +
+          `${deleteElapsed.toFixed(1)}s`
+        );
       }
     }
     

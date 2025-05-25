@@ -101,10 +101,14 @@ class DhgHubAuthService {
   }
   
   async loginWithEmail(email: string): Promise<AuthResponse> {
+    console.log('[DHG-HUB-AUTH-SERVICE] loginWithEmail called with:', email);
     try {
+      console.log('[DHG-HUB-AUTH-SERVICE] Calling lightAuthService.login...');
       const response = await this.lightAuthService.login(email);
+      console.log('[DHG-HUB-AUTH-SERVICE] Response from lightAuthService:', response);
       
       if (!response || !response.success) {
+        console.log('[DHG-HUB-AUTH-SERVICE] Login failed:', response?.error);
         return {
           user: null,
           error: new Error(response?.error || 'Login failed')
@@ -112,6 +116,7 @@ class DhgHubAuthService {
       }
       
       if (response.user) {
+        console.log('[DHG-HUB-AUTH-SERVICE] Mapping user data...');
         const mappedUser: AuthUser = {
           id: response.user.id,
           email: response.user.email,
@@ -122,18 +127,20 @@ class DhgHubAuthService {
           profile: response.user.profile || null
         };
         
+        console.log('[DHG-HUB-AUTH-SERVICE] Login successful, returning user:', mappedUser.id);
         return {
           user: mappedUser,
           error: null
         };
       }
       
+      console.log('[DHG-HUB-AUTH-SERVICE] No user returned from login');
       return {
         user: null,
         error: new Error('No user returned')
       };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[DHG-HUB-AUTH-SERVICE] Login error:', error);
       return {
         user: null,
         error: error instanceof Error ? error : new Error('Unknown error')

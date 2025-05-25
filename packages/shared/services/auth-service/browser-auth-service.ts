@@ -304,7 +304,6 @@ class BrowserAuthService {
       const { data, error } = await this.supabase
         .from('allowed_emails')
         .select('*')
-        .eq('is_active', true)
         .order('email', { ascending: true });
 
       if (error) {
@@ -413,6 +412,50 @@ class BrowserAuthService {
     } catch (error) {
       console.error('Error making user admin:', error);
       return { success: false, error: 'Failed to grant admin role' };
+    }
+  }
+
+  /**
+   * Update an allowed email (admin only)
+   */
+  async updateAllowedEmail(emailId: string, updates: Partial<AllowedEmail>): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await this.supabase
+        .from('allowed_emails')
+        .update(updates)
+        .eq('id', emailId);
+
+      if (error) {
+        console.error('Error updating allowed email:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating allowed email:', error);
+      return { success: false, error: 'Failed to update allowed email' };
+    }
+  }
+
+  /**
+   * Delete an allowed email (admin only)
+   */
+  async deleteAllowedEmail(emailId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await this.supabase
+        .from('allowed_emails')
+        .delete()
+        .eq('id', emailId);
+
+      if (error) {
+        console.error('Error deleting allowed email:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting allowed email:', error);
+      return { success: false, error: 'Failed to delete allowed email' };
     }
   }
 }

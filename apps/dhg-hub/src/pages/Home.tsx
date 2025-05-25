@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/utils/supabase-adapter';
+import { supabaseBrowser } from '../services/supabase-browser-adapter';
 // @ts-ignore - This import will work at runtime
 import { Database } from '../../../supabase/types';
 import ReactMarkdown from 'react-markdown';
@@ -24,7 +24,7 @@ import { useFirstTimeProfilePrompt } from '../hooks/useFirstTimeProfilePrompt';
     
     // Test connection with direct test query
     console.log('Testing Supabase connection with direct query...');
-    const { count, error } = await supabase.from('user_filter_profiles').select('*', { count: 'exact', head: true });
+    const { count, error } = await supabaseBrowser.getClient().from('user_filter_profiles').select('*', { count: 'exact', head: true });
     
     if (error) {
       console.error('Supabase connection test failed:', error);
@@ -38,6 +38,9 @@ import { useFirstTimeProfilePrompt } from '../hooks/useFirstTimeProfilePrompt';
 
 // Import FilterProfile interface from adapter
 import { FilterProfile } from '@/utils/filter-service-adapter';
+
+// Create a const for the supabase client to use throughout the file
+const supabase = supabaseBrowser.getClient();
 
 // Debug function to check the database directly
 async function debugCheckFilterProfiles() {
@@ -610,7 +613,18 @@ export function Home() {
                 expert_name
               )
             `)
-            .eq('source_id', presentation.video_source_id);
+            .eq('source_id', presentation.video_source_id) as { 
+              data: Array<{ 
+                expert_id: string; 
+                is_primary: boolean; 
+                expert: { 
+                  id: string; 
+                  full_name: string | null; 
+                  expert_name: string | null 
+                } | null 
+              }> | null; 
+              error: any 
+            };
             
           if (expertsError) {
             console.error(`Error fetching experts for presentation ${presentation.id}:`, expertsError);
