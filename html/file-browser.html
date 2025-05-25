@@ -209,109 +209,54 @@
     </div>
 
     <script>
-        // This is a mock file system for demonstration
-        const mockFileSystem = {
-            '/Users/raybunnage/Documents/github/dhg-mono': {
-                type: 'directory',
-                children: {
-                    '.env': { type: 'file' },
-                    '.env.example': { type: 'file' },
-                    '.gitignore': { type: 'file' },
-                    'package.json': { type: 'file' },
-                    'turbo.json': { type: 'file' },
-                    'tsconfig.json': { type: 'file' },
-                    'README.md': { type: 'file' },
-                    'apps': {
-                        type: 'directory',
-                        children: {
-                            'web': {
-                                type: 'directory',
-                                children: {
-                                    'package.json': { type: 'file' },
-                                    'src': {
-                                        type: 'directory',
-                                        children: {
-                                            'index.ts': { type: 'file' },
-                                            'App.tsx': { type: 'file' },
-                                            'components': {
-                                                type: 'directory',
-                                                children: {
-                                                    'Header.tsx': { type: 'file' },
-                                                    'Footer.tsx': { type: 'file' }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    'packages': {
-                        type: 'directory',
-                        children: {
-                            'ui': {
-                                type: 'directory',
-                                children: {
-                                    'package.json': { type: 'file' },
-                                    'index.ts': { type: 'file' }
-                                }
-                            },
-                            'utils': {
-                                type: 'directory',
-                                children: {
-                                    'package.json': { type: 'file' },
-                                    'index.ts': { type: 'file' }
-                                }
-                            }
-                        }
-                    },
-                    'docs': {
-                        type: 'directory',
-                        children: {
-                            'README.md': { type: 'file' },
-                            'getting-started.md': { type: 'file' },
-                            'interactive-browser': {
-                                type: 'directory',
-                                children: {
-                                    'file-browser-guide.md': { type: 'file' }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        const basePath = '/Users/raybunnage/Documents/github/dhg-mono';
+        const API_BASE = window.location.origin;
         let selectedFiles = new Set();
-        let currentFileSystem = null;
+        let currentPath = '';
+        let fileCache = {};
 
-        function loadRootDirectory() {
-            currentFileSystem = mockFileSystem[basePath];
-            document.getElementById('currentPath').textContent = basePath;
-            renderDirectory(currentFileSystem, document.getElementById('fileTree'), basePath);
+        async function loadRootDirectory() {
+            await loadDirectory('');
         }
 
-        function renderDirectory(node, container, currentPath) {
+        async function loadDirectory(path) {
+            try {
+                const response = await fetch(`${API_BASE}/api/list-directory`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dirPath: path })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load directory');
+                }
+
+                const items = await response.json();
+                currentPath = path;
+                document.getElementById('currentPath').textContent = path || 'Root Directory';
+                renderDirectory(items, document.getElementById('fileTree'), path);
+            } catch (error) {
+                console.error('Error loading directory:', error);
+                document.getElementById('fileTree').innerHTML = `<div class="error">Error loading directory: ${error.message}</div>`;
+            }
+        }
+
+        function renderDirectory(items, container, currentPath) {
             container.innerHTML = '';
             
-            if (!node || !node.children) {
+            if (!items || items.length === 0) {
                 container.innerHTML = '<div style="color: #666;">Empty directory</div>';
                 return;
             }
 
-            const items = Object.entries(node.children).sort(([a], [b]) => {
-                // Sort directories first, then files
-                const aIsDir = node.children[a].type === 'directory';
-                const bIsDir = node.children[b].type === 'directory';
-                if (aIsDir && !bIsDir) return -1;
-                if (!aIsDir && bIsDir) return 1;
-                return a.toLowerCase().localeCompare(b.toLowerCase());
+            // Sort directories first, then files
+            items.sort((a, b) => {
+                if (a.type === 'directory' && b.type !== 'directory') return -1;
+                if (a.type !== 'directory' && b.type === 'directory') return 1;
+                return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
             });
 
-            items.forEach(([name, item]) => {
-                const fullPath = `${currentPath}/${name}`;
-                const element = createFileElement(name, fullPath, item);
+            items.forEach(item => {
+                const element = createFileElement(item.name, item.path, item);
                 container.appendChild(element);
             });
         }
@@ -326,14 +271,25 @@
                 childrenContainer.className = 'children';
                 childrenContainer.style.display = 'none';
                 
-                element.onclick = (e) => {
+                element.onclick = async (e) => {
                     e.stopPropagation();
                     const isExpanded = element.classList.contains('expanded');
                     element.classList.toggle('expanded');
                     childrenContainer.style.display = isExpanded ? 'none' : 'block';
                     
                     if (!isExpanded && childrenContainer.children.length === 0) {
-                        renderDirectory(item, childrenContainer, path);
+                        childrenContainer.innerHTML = '<div class="loading">Loading...</div>';
+                        try {
+                            const response = await fetch(`${API_BASE}/api/list-directory`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ dirPath: path })
+                            });
+                            const items = await response.json();
+                            renderDirectory(items, childrenContainer, path);
+                        } catch (error) {
+                            childrenContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                        }
                     }
                 };
                 
@@ -375,9 +331,8 @@
                 const item = document.createElement('div');
                 item.className = 'selected-file-item';
                 const fileName = path.split('/').pop();
-                const relativePath = path.replace(basePath + '/', '');
                 item.innerHTML = `
-                    <span title="${path}">${relativePath}</span>
+                    <span title="${path}">${path}</span>
                     <span class="remove-btn" onclick="removeFile('${path}')">✕</span>
                 `;
                 container.appendChild(item);
@@ -408,14 +363,14 @@
         }
 
         function copyFileList() {
-            const fileList = Array.from(selectedFiles).map(path => path.replace(basePath + '/', '')).join('\n');
+            const fileList = Array.from(selectedFiles).join('\n');
             navigator.clipboard.writeText(fileList).then(() => {
                 alert('File list copied to clipboard!');
             });
         }
 
         function generateLoadCommand() {
-            const files = Array.from(selectedFiles).map(path => path.replace(basePath + '/', ''));
+            const files = Array.from(selectedFiles);
             const command = `load ${files.join(' ')}`;
             
             const output = document.getElementById('output');
@@ -428,50 +383,59 @@
             });
         }
 
-        function searchFiles() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        async function searchFiles() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
             if (!searchTerm) {
                 loadRootDirectory();
                 return;
             }
 
-            const results = [];
-            searchInNode(mockFileSystem[basePath], basePath, searchTerm, results);
-            
             const container = document.getElementById('fileTree');
-            container.innerHTML = `<div class="path-breadcrumb">Search results for "${searchTerm}"</div>`;
+            container.innerHTML = '<div class="loading">Searching...</div>';
             
-            if (results.length === 0) {
-                container.innerHTML += '<div style="color: #666;">No files found</div>';
-            } else {
-                results.forEach(({ path, name }) => {
-                    const element = document.createElement('div');
-                    element.className = 'file';
-                    element.textContent = path.replace(basePath + '/', '');
-                    element.onclick = () => {
-                        toggleFileSelection(path, name);
-                        element.classList.toggle('selected');
-                    };
-                    if (selectedFiles.has(path)) {
-                        element.classList.add('selected');
-                    }
-                    container.appendChild(element);
+            try {
+                const response = await fetch(`${API_BASE}/api/search-files`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ searchTerm, searchPath: currentPath })
                 });
+                
+                if (!response.ok) {
+                    throw new Error('Search failed');
+                }
+                
+                const results = await response.json();
+                
+                container.innerHTML = `<div class="path-breadcrumb">Search results for "${searchTerm}"</div>`;
+                
+                if (results.length === 0) {
+                    container.innerHTML += '<div style="color: #666;">No files found</div>';
+                } else {
+                    results.forEach(item => {
+                        const element = document.createElement('div');
+                        element.className = item.type === 'directory' ? 'directory' : 'file';
+                        element.textContent = item.path;
+                        
+                        if (item.type === 'file') {
+                            element.onclick = () => {
+                                toggleFileSelection(item.path, item.name);
+                                element.classList.toggle('selected');
+                            };
+                            if (selectedFiles.has(item.path)) {
+                                element.classList.add('selected');
+                            }
+                        } else {
+                            element.onclick = () => {
+                                loadDirectory(item.path);
+                            };
+                        }
+                        
+                        container.appendChild(element);
+                    });
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="error">Search error: ${error.message}</div>`;
             }
-        }
-
-        function searchInNode(node, currentPath, searchTerm, results) {
-            if (!node || !node.children) return;
-            
-            Object.entries(node.children).forEach(([name, item]) => {
-                const fullPath = `${currentPath}/${name}`;
-                if (name.toLowerCase().includes(searchTerm) && item.type === 'file') {
-                    results.push({ path: fullPath, name });
-                }
-                if (item.type === 'directory') {
-                    searchInNode(item, fullPath, searchTerm, results);
-                }
-            });
         }
 
         window.removeFile = removeFile;
