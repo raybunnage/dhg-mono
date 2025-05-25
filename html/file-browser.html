@@ -45,6 +45,14 @@
             padding: 4px 8px;
             border-radius: 4px;
             margin: 2px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-info {
+            font-size: 0.85em;
+            color: #666;
+            margin-left: 10px;
         }
         .directory:hover, .file:hover {
             background-color: #f0f0f0;
@@ -248,13 +256,7 @@
                 return;
             }
 
-            // Sort directories first, then files
-            items.sort((a, b) => {
-                if (a.type === 'directory' && b.type !== 'directory') return -1;
-                if (a.type !== 'directory' && b.type === 'directory') return 1;
-                return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-            });
-
+            // Items are already sorted by the server (directories first, then by date)
             items.forEach(item => {
                 const element = createFileElement(item.name, item.path, item);
                 container.appendChild(element);

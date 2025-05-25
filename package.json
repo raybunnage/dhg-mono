@@ -13,6 +13,8 @@
     "audio:build": "pnpm --filter dhg-audio build",
     "audio:proxy": "cd apps/dhg-audio && node server.js",
     "audio:start": "pnpm run audio:setup && pnpm run audio:build && pnpm run audio:proxy",
+    "file-browser": "cd html && node server.js",
+    "browser": "cd html && node server.js",
     "presentations": "./scripts/cli-pipeline/presentations-cli.sh",
     "presentations:summary": "./scripts/cli-pipeline/presentations-cli.sh generate-summary",
     "git:info": "./scripts/get-git-info.sh",

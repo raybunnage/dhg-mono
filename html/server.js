@@ -4,7 +4,7 @@ const path = require('path');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.FILE_BROWSER_PORT || 3002;
 
 // Enable CORS for all origins (for development)
 app.use(cors());
@@ -34,24 +34,40 @@ app.post('/api/list-directory', async (req, res) => {
                 const itemPath = path.join(fullPath, item.name);
                 let type = item.isDirectory() ? 'directory' : 'file';
                 let size = 0;
+                let mtime = null;
                 
-                if (type === 'file') {
-                    try {
-                        const stats = await fs.stat(itemPath);
-                        size = stats.size;
-                    } catch (e) {
-                        // Ignore stat errors
-                    }
+                try {
+                    const stats = await fs.stat(itemPath);
+                    size = stats.size;
+                    mtime = stats.mtime;
+                } catch (e) {
+                    // Ignore stat errors
                 }
                 
                 return {
                     name: item.name,
                     type,
                     size,
+                    mtime,
                     path: path.relative(BASE_PATH, itemPath)
                 };
             })
         );
+        
+        // Sort by modification time (most recent first)
+        result.sort((a, b) => {
+            // Directories first, then files
+            if (a.type === 'directory' && b.type !== 'directory') return -1;
+            if (a.type !== 'directory' && b.type === 'directory') return 1;
+            
+            // Within same type, sort by modification time (most recent first)
+            if (a.mtime && b.mtime) {
+                return b.mtime - a.mtime;
+            }
+            
+            // Fallback to alphabetical if no mtime
+            return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        });
 
         res.json(result);
     } catch (error) {
