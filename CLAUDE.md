@@ -312,6 +312,37 @@ export class MyService {
 - Use adapter pattern in apps to maintain backward compatibility
 - Each environment handles its own client configuration needs
 
+## Google Drive Service Account Integration
+
+The project requires a valid Google Drive service account for accessing files in Google Drive.
+
+### Setting Up Service Account Authentication
+
+When working with scripts that access Google Drive, you need a valid service account configuration:
+
+1. **Service Account Setup**:
+   - The project expects a `.service-account.json` file in the project root directory
+   - This is the standard approach used by all commands that access Google Drive
+   - The `.service-account.json` file should contain your Google Cloud service account credentials
+
+2. **Environment Variables**:
+   - The service account credentials are automatically loaded from `.service-account.json`
+   - Some commands may also use these environment variables:
+     - `GOOGLE_SERVICE_ACCOUNT_EMAIL` - Service account email address
+     - `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` - Service account private key
+
+3. **Commands That Require Google Drive Access**:
+   - `sync` - Syncs files from Google Drive to the database
+   - `find-folder` - Searches for folders/files in Google Drive
+   - `get-current-drive-id` - Gets the current drive_id for a file
+   - `check-duplicates --check-current` - Verifies if drive_ids still exist
+   - Any command that needs to read or verify files in Google Drive
+
+4. **Troubleshooting**:
+   - If you see "Could not initialize Google Drive API", check that `.service-account.json` exists
+   - Ensure the service account has proper permissions to access the Google Drive folders
+   - The service account needs at least read-only access to the drives/folders being accessed
+
 ## Key Points Summary
 
 This document provides the essential guidelines for working with Claude Code v1.03. The most important principles are:
@@ -324,6 +355,7 @@ This document provides the essential guidelines for working with Claude Code v1.
 6. **Follow TypeScript best practices** - run `tsc --noEmit` before submitting
 7. **Leverage the monorepo** - when debugging, compare with working apps for patterns
 8. **Test incrementally** - especially during cleanup or refactoring
+9. **Configure Google Drive access** - ensure `.service-account.json` exists for Drive commands
 
 When in doubt, ask for clarification rather than making assumptions or implementing temporary solutions.
 

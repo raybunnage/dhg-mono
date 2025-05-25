@@ -376,6 +376,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "CORE OPERATIONS:"
   echo "  * sync                         Sync files from Google Drive to the database with intelligent file categorization"
   echo "    find-folder                  Find a specific folder or file by name pattern in Google Drive"
+  echo "    get-current-drive-id         Get the current drive_id for a file given its path and root_drive_id"
   echo "  * health-check                 Check the health of Google Drive API connection"
   echo ""
   echo "DOCUMENT CLASSIFICATION:"
@@ -415,7 +416,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * check-reprocessing-status    Check which expert documents need reprocessing based on metadata (144 uses)"
   echo "  * needs-reprocessing           Find documents marked as needs_reprocessing with unsupported document types (65 uses)"
   echo "  * reclassify-docs              Re-classify documents that need reprocessing based on file type (61 uses)"
-  echo "    check-duplicates             Check for duplicate files in sources_google"
+  echo "    check-duplicates             Check for duplicate files by path_array, drive_id, or name"
   echo "    check-document-types         Check for files missing document types"
   echo "    check-deleted-files          Check if files marked as deleted in the database still exist in Google Drive
     reset-deleted-files          Reset is_deleted flag for files that still exist in Google Drive"
@@ -455,6 +456,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Find a specific folder by name"
   echo "  ./google-sync-cli.sh find-folder \"folder-name-pattern\""
+  echo ""
+  echo "  # Get the current drive_id for a file at a specific path"
+  echo "  ./google-sync-cli.sh get-current-drive-id --path \"Expert Profiles/John Doe/presentation.pptx\" --root-drive-id \"1ABC123XYZ\""
+  echo ""
+  echo "  # Get drive_id with verbose output to see search progress"
+  echo "  ./google-sync-cli.sh get-current-drive-id --path \"folder1/folder2/document.pdf\" --root-drive-id \"1DEF456ABC\" --verbose"
   echo ""
   echo "  # Check if Google Drive API connection is working"
   echo "  ./google-sync-cli.sh health-check"
@@ -530,6 +537,21 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Re-classify documents that need reprocessing"
   echo "  ./google-sync-cli.sh reclassify-docs --dry-run"
+  echo ""
+  echo "  # Check for duplicate path_arrays (same file listed multiple times)"
+  echo "  ./google-sync-cli.sh check-duplicates --by-path-array --limit 20 --verbose"
+  echo ""
+  echo "  # Check for duplicate drive_ids"
+  echo "  ./google-sync-cli.sh check-duplicates --by-drive-id --verbose"
+  echo ""
+  echo "  # Check duplicates and verify if drive_ids still exist in Google Drive"
+  echo "  ./google-sync-cli.sh check-duplicates --by-path-array --check-current --verbose"
+  echo ""
+  echo "  # Check duplicate drive_ids and show which ones can be safely deleted"
+  echo "  ./google-sync-cli.sh check-duplicates --by-drive-id --check-current"
+  echo ""
+  echo "  # Check all types of duplicates (path_array, drive_id, and name)"
+  echo "  ./google-sync-cli.sh check-duplicates --all --limit 10"
   echo ""
   echo "EXPERT DOCUMENTS MANAGEMENT:"
   echo "  # Sync sources_google files with expert_documents records"
@@ -857,7 +879,7 @@ fi
 
 if [ "$1" = "check-duplicates" ]; then
   shift
-  track_command "check-duplicates" "ts-node $SCRIPT_DIR/index.ts check-duplicates $*"
+  track_command "check-duplicates" "ts-node $SCRIPT_DIR/check-duplicates.ts $*"
   exit $?
 fi
 
@@ -1141,5 +1163,11 @@ fi
 if [ "$1" = "classify-unprocessed-with-content" ]; then
   shift
   track_command "classify-unprocessed-with-content" "ts-node $SCRIPT_DIR/classify-unprocessed-with-content.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "get-current-drive-id" ]; then
+  shift
+  track_command "get-current-drive-id" "ts-node $SCRIPT_DIR/get-current-drive-id.ts $*"
   exit $?
 fi

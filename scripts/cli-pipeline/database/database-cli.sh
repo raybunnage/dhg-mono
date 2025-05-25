@@ -64,6 +64,7 @@ show_help() {
   echo "  * db-health-check      Simple database health check (quick connection test) (4 uses)"
   echo "  * schema-health        Analyze database schema health and identify issues (2 uses)"
   echo "    check-auth-objects   Check if auth migration objects already exist"
+  echo "    verify-user-roles    Verify user roles removal migration was successful"
   echo ""
   echo "RLS POLICIES:"
   echo "    check-rls-policies   Check and create permissive RLS policies for tables"
@@ -228,6 +229,11 @@ check_rls_policies() {
   track_command "check-rls-policies" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/check-and-create-rls-policies.ts $@"
 }
 
+verify_user_roles() {
+  echo "🔍 Verifying user roles removal migration..."
+  track_command "verify-user-roles" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/verify-user-roles-removal.ts $@"
+}
+
 # Migration command handlers
 migration_validate() {
   echo "🔍 Validating migration file..."
@@ -348,6 +354,9 @@ case "$1" in
     ;;
   "check-rls-policies")
     check_rls_policies "${@:2}"
+    ;;
+  "verify-user-roles")
+    verify_user_roles "${@:2}"
     ;;
   "migration")
     case "$2" in
