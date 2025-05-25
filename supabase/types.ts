@@ -55,15 +55,7 @@ export type Database = {
           organization?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "allowed_emails_added_by_fkey"
-            columns: ["added_by"]
-            isOneToOne: false
-            referencedRelation: "user_details"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       app_pages: {
         Row: {
@@ -150,15 +142,7 @@ export type Database = {
           user_agent?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "auth_audit_log_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_details"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       citation_expert_aliases: {
         Row: {
@@ -217,15 +201,7 @@ export type Database = {
           token_hash?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "cli_auth_tokens_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_details"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       cli_command_tracking: {
         Row: {
@@ -894,15 +870,7 @@ export type Database = {
           owner_id?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "domains_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "user_details"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       email_addresses: {
         Row: {
@@ -944,13 +912,6 @@ export type Database = {
             columns: ["domain_id"]
             isOneToOne: false
             referencedRelation: "domains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_user_id"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_details"
             referencedColumns: ["id"]
           },
         ]
@@ -2373,15 +2334,7 @@ export type Database = {
           email?: string | null
           id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "user_details"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       prompt_categories: {
         Row: {
@@ -3396,15 +3349,7 @@ export type Database = {
           query_text?: string
           tags?: string[] | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sql_query_history_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_details"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       subject_classifications: {
         Row: {
@@ -3892,15 +3837,7 @@ export type Database = {
           research_areas?: string[] | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "user_details"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_profiles_v2: {
         Row: {
@@ -4006,27 +3943,6 @@ export type Database = {
           },
         ]
       }
-      user_roles: {
-        Row: {
-          created_at: string | null
-          id: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          role: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_subject_interests: {
         Row: {
           created_at: string
@@ -4116,37 +4032,6 @@ export type Database = {
           },
         ]
       }
-      professional_profiles: {
-        Row: {
-          bio: string | null
-          created_at: string | null
-          email: string | null
-          expertise_keywords: string[] | null
-          full_name: string | null
-          has_completed_profile: boolean | null
-          id: string | null
-          interests_array: string[] | null
-          linkedin_url: string | null
-          onboarding_completed: boolean | null
-          organization: string | null
-          preferences: Json | null
-          profession: string | null
-          professional_interests: string | null
-          profile_visibility: string | null
-          research_areas: string[] | null
-          updated_at: string | null
-          user_created_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "user_details"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       prompt_template_associations_view: {
         Row: {
           association_created_at: string | null
@@ -4158,19 +4043,6 @@ export type Database = {
           template_description: string | null
           template_id: string | null
           template_name: string | null
-        }
-        Relationships: []
-      }
-      user_details: {
-        Row: {
-          email: string | null
-          full_name: string | null
-          id: string | null
-          last_sign_in_at: string | null
-          preferences: Json | null
-          profile_created_at: string | null
-          profile_updated_at: string | null
-          user_created_at: string | null
         }
         Relationships: []
       }
