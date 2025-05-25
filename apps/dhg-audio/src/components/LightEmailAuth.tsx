@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { SupabaseClientService } from '@shared/services/supabase-client';
+import { profileService } from '../services/profile-service';
 
 // Try specific path import like dhg-admin-config uses
 import { ProfileForm, ProfileFormData } from '@shared/components/profile/ProfileForm';
@@ -14,8 +14,10 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
+  const [tempUserData, setTempUserData] = useState<{ email: string; name: string; userId?: string }>({ email: '', name: '' });
+  const [isNewUser, setIsNewUser] = useState(false);
   
-  const { login } = useAuth();
+  const { login, registerWithProfile, completeProfile, user } = useAuth();
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,13 +29,30 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
       const result = await login(email);
       console.log('Login result:', result);
       
-      if (result.success) {
+      if (result.success && !result.needsProfile) {
         // Login successful - the App component will handle navigation
         console.log('Login successful');
-        // Don't call onSuccess immediately - let the auth state update first
       } else if (result.needsProfile) {
         // User needs to complete profile
-        console.log('User needs to complete profile');
+        console.log('User needs to complete profile, user:', result.user);
+        
+        if (result.user) {
+          // Existing user on whitelist but needs profile
+          setTempUserData({ 
+            email: result.user.email || email, 
+            name: result.user.user_metadata?.name || email.split('@')[0],
+            userId: result.user.id 
+          });
+          setIsNewUser(false);
+        } else {
+          // New user not on whitelist
+          setTempUserData({ 
+            email, 
+            name: email.split('@')[0] 
+          });
+          setIsNewUser(true);
+        }
+        
         setShowProfileForm(true);
       } else {
         setError(result.error || 'Login failed');
@@ -52,88 +71,52 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
     setError('');
 
     try {
-      console.log('Submitting profile for registration:', { email, profileData });
+      console.log('Submitting profile:', { 
+        email: tempUserData.email, 
+        isNewUser, 
+        userId: tempUserData.userId,
+        profileData 
+      });
       
-      const supabase = SupabaseClientService.getInstance().getClient();
-      
-      // First, get the allowed_emails record to get the user ID
-      const { data: allowedEmail, error: emailError } = await supabase
-        .from('allowed_emails')
-        .select('id, email, name')
-        .eq('email', email.toLowerCase())
-        .single();
+      if (isNewUser) {
+        // New user - register with profile
+        const result = await registerWithProfile(
+          tempUserData.email,
+          tempUserData.name,
+          profileData
+        );
 
-      if (emailError || !allowedEmail) {
-        throw new Error('Email not found in allowed list');
-      }
-
-      // Insert the profile data into user_profiles_v2 table
-      const { data: profileRecord, error: profileError } = await supabase
-        .from('user_profiles_v2')
-        .insert({
-          id: allowedEmail.id,
-          profession: profileData.profession,
-          professional_title: profileData.professional_title,
-          years_experience: profileData.years_experience,
-          industry_sectors: profileData.industry_sectors,
-          specialty_areas: profileData.specialty_areas,
-          credentials: profileData.credentials,
-          interested_topics: profileData.interested_topics,
-          avoided_topics: profileData.avoided_topics,
-          interested_experts: profileData.interested_experts,
-          learning_goals: profileData.learning_goals,
-          reason_for_learning: profileData.reason_for_learning,
-          intended_application: profileData.intended_application,
-          current_challenges: profileData.current_challenges,
-          preferred_depth: profileData.preferred_depth,
-          preferred_formats: profileData.preferred_formats,
-          preferred_session_length: profileData.preferred_session_length,
-          learning_pace: profileData.learning_pace,
-          time_commitment: profileData.time_commitment,
-          bio_summary: profileData.bio_summary,
-          referral_source: profileData.referral_source,
-          learning_background: profileData.learning_background,
-          priority_subjects: profileData.priority_subjects,
-          content_tags_following: profileData.content_tags_following,
-          onboarding_completed: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        throw new Error(`Failed to save profile: ${profileError.message}`);
-      }
-
-      console.log('Profile saved successfully:', profileRecord);
-      
-      // Create user object with the allowed_emails ID as the universal identifier
-      const user = {
-        id: allowedEmail.id,
-        email: allowedEmail.email,
-        name: allowedEmail.name || `${profileData.professional_title || ''} ${profileData.profession || ''}`.trim() || email,
-        email_confirmed_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        aud: 'authenticated',
-        role: 'authenticated',
-        app_metadata: {},
-        user_metadata: {
-          profile_complete: true,
-          allowed_email_id: allowedEmail.id
+        if (result.success) {
+          console.log('New user registration successful');
+          // Force re-authentication to update the user state
+          window.dispatchEvent(new Event('storage'));
+        } else {
+          throw new Error(result.error || 'Registration failed');
         }
-      };
-
-      // Save to localStorage for lightweight auth
-      localStorage.setItem('dhg_auth_user', JSON.stringify(user));
-      localStorage.setItem('dhg_user_profile', JSON.stringify(profileData));
-      
-      // Trigger storage event to update auth state
-      window.dispatchEvent(new Event('storage'));
-      
-      console.log('Profile completed and user registered with ID:', allowedEmail.id);
+      } else if (tempUserData.userId) {
+        // Existing user - just complete profile
+        console.log('Completing profile for existing user:', tempUserData.userId);
+        const result = await profileService.saveProfile(tempUserData.userId, profileData);
+        
+        if (result.success) {
+          console.log('Profile completion successful');
+          // Update the user in localStorage to reflect profile completion
+          const currentUser = user || JSON.parse(localStorage.getItem('dhg_auth_user') || '{}');
+          if (currentUser) {
+            currentUser.user_metadata = {
+              ...currentUser.user_metadata,
+              profile_complete: true
+            };
+            localStorage.setItem('dhg_auth_user', JSON.stringify(currentUser));
+          }
+          // Force re-authentication to update the user state
+          window.dispatchEvent(new Event('storage'));
+        } else {
+          throw new Error(result.error || 'Failed to save profile');
+        }
+      } else {
+        throw new Error('Invalid state: no user ID for profile completion');
+      }
     } catch (err) {
       console.error('Profile submission error:', err);
       setError(err instanceof Error ? err.message : 'Failed to complete registration. Please try again.');
@@ -151,16 +134,23 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
               Complete Your Profile
             </h2>
             <p className="text-center text-gray-600 mb-6">
-              Email: {email}
+              Email: {tempUserData.email}
             </p>
             <ProfileForm
               onSubmit={handleProfileSubmit}
               onCancel={() => {
                 setShowProfileForm(false);
                 setEmail('');
+                setTempUserData({ email: '', name: '' });
+                setIsNewUser(false);
               }}
               isLoading={isLoading}
             />
+            {error && (
+              <div className="mt-4 rounded-md bg-red-50 p-4">
+                <div className="text-sm text-red-800">{error}</div>
+              </div>
+            )}
           </div>
         </div>
       </div>

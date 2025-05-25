@@ -12,3 +12,4 @@ export * from "./pdf-processor-service"; // PDF processor service for PDF file h
 export * from "./filter-service"; // Filter service for query filtering
 export * from "./user-profile-service"; // User profile service for comprehensive user data management
 export * from "./light-auth-service"; // Light authentication service for email whitelist authentication
+export * from "./light-auth-enhanced-service"; // Enhanced light authentication with profile management

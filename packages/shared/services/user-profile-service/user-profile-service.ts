@@ -66,8 +66,18 @@ class UserProfileService {
   private static instance: UserProfileService;
   private supabase: SupabaseClient;
 
+  private supabaseInitialized = false;
+
   private constructor() {
-    this.supabase = SupabaseClientService.getInstance().getClient();
+    // Don't initialize Supabase client in constructor
+    // Will be initialized lazily on first use
+  }
+
+  private ensureSupabase(): void {
+    if (!this.supabaseInitialized) {
+      this.supabase = SupabaseClientService.getInstance().getClient();
+      this.supabaseInitialized = true;
+    }
   }
 
   /**
@@ -85,6 +95,7 @@ class UserProfileService {
    */
   async getProfile(allowedEmailId: string): Promise<ProfileResult> {
     try {
+      this.ensureSupabase();
       const { data, error } = await this.supabase
         .from('user_profiles_v2')
         .select('*')
@@ -112,6 +123,10 @@ class UserProfileService {
    */
   async saveProfile(allowedEmailId: string, profileData: ProfileFormData): Promise<ProfileResult> {
     try {
+      console.log('[UserProfileService] Saving profile for user:', allowedEmailId);
+      console.log('[UserProfileService] Profile data:', profileData);
+      
+      this.ensureSupabase();
       // Calculate profile completeness
       const completeness = this.calculateProfileCompleteness(profileData);
 
@@ -145,6 +160,8 @@ class UserProfileService {
         last_activity: new Date().toISOString()
       };
 
+      console.log('[UserProfileService] Profile record to save:', profileRecord);
+      
       // Use upsert to handle both create and update
       const { data, error } = await this.supabase
         .from('user_profiles_v2')
@@ -156,10 +173,11 @@ class UserProfileService {
         .single();
 
       if (error) {
-        console.error('Error saving profile:', error);
+        console.error('[UserProfileService] Error saving profile:', error);
         return { success: false, error: error.message };
       }
 
+      console.log('[UserProfileService] Profile saved successfully:', data);
       return { success: true, profile: data };
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -172,6 +190,7 @@ class UserProfileService {
    */
   async updateProfile(allowedEmailId: string, updates: UserProfileUpdate): Promise<ProfileResult> {
     try {
+      this.ensureSupabase();
       const { data, error } = await this.supabase
         .from('user_profiles_v2')
         .update({

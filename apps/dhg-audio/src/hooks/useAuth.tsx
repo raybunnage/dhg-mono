@@ -2,11 +2,11 @@
  * React Authentication Hook for DHG Audio
  * 
  * Provides light authentication state and methods for React components
- * Uses email whitelist authentication
+ * Uses the new dhg-audio-auth-service which wraps the shared enhanced auth service
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { dhgAudioLightAuth, LightAuthUser, LightAuthResult } from '../services/light-auth-service-simple';
+import { dhgAudioAuth, type LightAuthUser, type LightAuthResult, type ProfileFormData } from '../services/dhg-audio-auth-service';
 
 /**
  * Authentication hook state
@@ -25,8 +25,8 @@ interface AuthState {
 interface UseAuthReturn extends AuthState {
   login: (email: string) => Promise<LightAuthResult>;
   logout: () => Promise<void>;
-  completeProfile?: (profile: any) => Promise<void>;
-  updateProfile?: (profile: any) => Promise<void>;
+  completeProfile: (profile: ProfileFormData) => Promise<boolean>;
+  registerWithProfile: (email: string, name: string, profile: ProfileFormData) => Promise<LightAuthResult>;
 }
 
 /**
@@ -46,12 +46,18 @@ export function useAuth(): UseAuthReturn {
 
     const initializeAuth = async () => {
       try {
-        const currentUser = dhgAudioLightAuth.getCurrentUser();
+        console.log('[useAuth] Initializing auth...');
+        const currentUser = dhgAudioAuth.getCurrentUser();
+        console.log('[useAuth] Current user from auth service:', currentUser);
         
-        // Add a small delay to ensure everything is loaded
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Also check localStorage directly
+        const storedUser = localStorage.getItem('dhg_auth_user');
+        console.log('[useAuth] User in localStorage:', storedUser ? 'exists' : 'null');
         
         if (currentUser && mounted) {
+          // For now, skip the async profile check during navigation
+          // Just set the user and assume profile is complete
+          console.log('[useAuth] Setting user state immediately');
           setState({
             user: currentUser,
             loading: false,
@@ -59,7 +65,25 @@ export function useAuth(): UseAuthReturn {
             needsProfile: false,
             profileCompleteness: 100
           });
+          
+          // Then check profile completion in the background
+          dhgAudioAuth.hasCompletedOnboarding(currentUser.id)
+            .then(hasProfile => {
+              console.log('[useAuth] Profile check result:', hasProfile);
+              if (mounted) {
+                setState(prev => ({
+                  ...prev,
+                  needsProfile: !hasProfile,
+                  profileCompleteness: hasProfile ? 100 : 0
+                }));
+              }
+            })
+            .catch(profileError => {
+              console.warn('[useAuth] Could not check profile completion:', profileError);
+              // Don't update state on error - keep the user logged in
+            });
         } else if (mounted) {
+          console.log('[useAuth] No user found, setting as logged out');
           setState({
             user: null,
             loading: false,
@@ -68,12 +92,14 @@ export function useAuth(): UseAuthReturn {
           });
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('[useAuth] Auth initialization error:', error);
         if (mounted) {
+          // Don't show error to user for initialization issues
+          // Just set as not logged in
           setState({
             user: null,
             loading: false,
-            error: error as Error,
+            error: null,
             needsProfile: false
           });
         }
@@ -82,6 +108,7 @@ export function useAuth(): UseAuthReturn {
 
     // Listen for storage events to detect auth changes
     const handleStorageChange = () => {
+      console.log('[useAuth] Storage change detected, reinitializing auth');
       initializeAuth();
     };
 
@@ -100,7 +127,7 @@ export function useAuth(): UseAuthReturn {
     
     try {
       console.log('Attempting login with email:', email);
-      const result = await dhgAudioLightAuth.login(email);
+      const result = await dhgAudioAuth.login(email);
       console.log('Login result:', result);
       
       if (!result.success) {
@@ -138,12 +165,97 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
+  // Register with profile method
+  const registerWithProfile = useCallback(async (email: string, name: string, profile: ProfileFormData): Promise<LightAuthResult> => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const result = await dhgAudioAuth.registerWithProfile(email, name, profile);
+      
+      if (result.success && result.user) {
+        setState({
+          user: result.user,
+          loading: false,
+          error: null,
+          needsProfile: false,
+          profileCompleteness: 100
+        });
+        
+        // Force a re-render
+        window.dispatchEvent(new Event('storage'));
+      } else {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: new Error(result.error || 'Registration failed')
+        }));
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Registration error:', error);
+      const err = error as Error;
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: err
+      }));
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  // Complete profile method
+  const completeProfile = useCallback(async (profile: ProfileFormData): Promise<boolean> => {
+    // Get current user from auth service in case state hasn't updated yet
+    const currentUser = state.user || dhgAudioAuth.getCurrentUser();
+    
+    if (!currentUser) {
+      console.error('No user to complete profile for');
+      return false;
+    }
+
+    console.log('Completing profile for user:', currentUser.id);
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const success = await dhgAudioAuth.completeProfile(currentUser.id, profile);
+      
+      if (success) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          needsProfile: false,
+          profileCompleteness: 100
+        }));
+        
+        // Force a re-render
+        window.dispatchEvent(new Event('storage'));
+      } else {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: new Error('Failed to complete profile')
+        }));
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Profile completion error:', error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: error as Error
+      }));
+      return false;
+    }
+  }, [state.user]);
+
   // Logout method
   const logout = useCallback(async (): Promise<void> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      await dhgAudioLightAuth.logout();
+      await dhgAudioAuth.logout();
       setState({
         user: null,
         loading: false,
@@ -164,17 +276,6 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
-  // Placeholder methods for profile management (to be implemented later)
-  const completeProfile = useCallback(async (profile: any): Promise<void> => {
-    console.log('Profile completion not yet implemented:', profile);
-    // TODO: Implement profile completion
-  }, []);
-
-  const updateProfile = useCallback(async (profile: any): Promise<void> => {
-    console.log('Profile update not yet implemented:', profile);
-    // TODO: Implement profile update
-  }, []);
-
   return {
     user: state.user,
     loading: state.loading,
@@ -184,6 +285,6 @@ export function useAuth(): UseAuthReturn {
     login,
     logout,
     completeProfile,
-    updateProfile
+    registerWithProfile
   };
 }

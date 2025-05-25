@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout, LoginPage } from '@/components';
-import { HomePage, AudioDetailPage, AboutPage } from '@/pages';
+import { HomePage, AudioDetailPage, AboutPage, ProfileSettingsPage, TestProfilePage } from '@/pages';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 
@@ -31,6 +31,8 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="audio/:id" element={<AudioDetailPage />} />
           <Route path="about" element={<AboutPage />} />
+          <Route path="profile" element={<ProfileSettingsPage />} />
+          <Route path="test-profile" element={<TestProfilePage />} />
         </Route>
       )}
     </Routes>
