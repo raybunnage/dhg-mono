@@ -5,16 +5,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 
 function App() {
-  console.log('[App.tsx] App component rendering...');
-  
   const { user, loading } = useAuth();
   
   useEffect(() => {
-    console.log('[App.tsx] Auth state:', { user: !!user, loading, userEmail: user?.email });
+    console.log('Auth state:', { user: !!user, loading });
   }, [user, loading]);
 
   if (loading) {
-    console.log('[App.tsx] Showing loading screen...');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -25,7 +22,6 @@ function App() {
     );
   }
 
-  console.log('[App.tsx] Rendering routes...');
   return (
     <Routes>
       {!user ? (

@@ -11,8 +11,6 @@ interface ProfileFormData {
   // Add other fields as needed
 }
 
-console.log('[LightEmailAuth] Component module loading...');
-
 interface LightEmailAuthProps {
   redirectTo?: string;
 }
@@ -22,7 +20,6 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
-  const [needsProfile, setNeedsProfile] = useState(false);
   
   const { login } = useAuth();
 
@@ -43,7 +40,6 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
       } else if (result.needsProfile) {
         // User needs to complete profile
         console.log('User needs to complete profile');
-        setNeedsProfile(true);
         setShowProfileForm(true);
       } else {
         setError(result.error || 'Login failed');
@@ -138,7 +134,6 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
             <button
               onClick={() => {
                 setShowProfileForm(false);
-                setNeedsProfile(false);
                 setEmail('');
               }}
               className="mt-2 w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"

@@ -33,8 +33,6 @@ interface UseAuthReturn extends AuthState {
  * React hook for light authentication
  */
 export function useAuth(): UseAuthReturn {
-  console.log('[useAuth] Hook initializing...');
-  
   const [state, setState] = useState<AuthState>({
     user: null,
     loading: true,
@@ -44,21 +42,16 @@ export function useAuth(): UseAuthReturn {
 
   // Initialize authentication state
   useEffect(() => {
-    console.log('[useAuth] useEffect running...');
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
-        console.log('[useAuth] Getting current user...');
         const currentUser = dhgAudioLightAuth.getCurrentUser();
-        console.log('[useAuth] Current user:', currentUser);
         
         // Add a small delay to ensure everything is loaded
         await new Promise(resolve => setTimeout(resolve, 100));
         
         if (currentUser && mounted) {
-          console.log('[useAuth] User found, setting authenticated state');
-          // For now, assume no profile needed if user exists
           setState({
             user: currentUser,
             loading: false,
@@ -67,7 +60,6 @@ export function useAuth(): UseAuthReturn {
             profileCompleteness: 100
           });
         } else if (mounted) {
-          console.log('[useAuth] No user found, setting unauthenticated state');
           setState({
             user: null,
             loading: false,
@@ -76,8 +68,7 @@ export function useAuth(): UseAuthReturn {
           });
         }
       } catch (error) {
-        console.error('[useAuth] Auth initialization error:', error);
-        console.error('[useAuth] Error stack:', (error as Error).stack);
+        console.error('Auth initialization error:', error);
         if (mounted) {
           setState({
             user: null,
@@ -91,7 +82,6 @@ export function useAuth(): UseAuthReturn {
 
     // Listen for storage events to detect auth changes
     const handleStorageChange = () => {
-      console.log('[useAuth] Storage change detected, re-initializing auth...');
       initializeAuth();
     };
 

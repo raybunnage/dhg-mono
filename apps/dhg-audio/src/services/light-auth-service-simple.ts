@@ -28,7 +28,6 @@ class DhgAudioLightAuthService {
   private currentUser: User | null = null;
 
   private constructor() {
-    console.log('[DhgAudioLightAuthService] Constructor called');
     // Try to restore user from localStorage
     this.restoreUserFromStorage();
   }
@@ -165,8 +164,3 @@ class DhgAudioLightAuthService {
 // Export singleton instance
 export const dhgAudioLightAuth = DhgAudioLightAuthService.getInstance();
 
-// Add to window for debugging
-if (typeof window !== 'undefined') {
-  (window as any).dhgAudioLightAuth = dhgAudioLightAuth;
-  console.log('[light-auth-service-simple] Service exported to window.dhgAudioLightAuth for debugging');
-}
