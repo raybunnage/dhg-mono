@@ -319,6 +319,31 @@ export class MyService {
 - Use adapter pattern in apps to maintain backward compatibility
 - Each environment handles its own client configuration needs
 
+### Universal Supabase Adapter
+
+**✅ Solution**: The project includes a universal Supabase adapter that handles both browser and server environments automatically.
+
+**Location**: `packages/shared/adapters/supabase-adapter.ts`
+
+**Usage Pattern**:
+```typescript
+import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
+
+// The adapter automatically detects the environment and uses the correct configuration
+const supabase = createSupabaseAdapter();
+```
+
+**Key Benefits**:
+- Automatically detects browser vs server environment
+- Uses `VITE_` prefixed variables in browser, standard variables in CLI/server
+- No need to manually handle environment differences
+- Works seamlessly with shared services that need Supabase access
+
+**When to Use**:
+- Creating new shared services that need to work in both browser and CLI environments
+- Refactoring existing services to be cross-environment compatible
+- Any situation where you need Supabase access without worrying about environment specifics
+
 ## Google Drive Service Account Integration
 
 The project requires a valid Google Drive service account for accessing files in Google Drive.

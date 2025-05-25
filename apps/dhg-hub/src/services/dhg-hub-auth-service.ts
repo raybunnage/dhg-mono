@@ -1,6 +1,7 @@
-import { envCheck } from '../utils/env-check';
 import type { ProfileFormData as ComponentProfileFormData } from '../../../../packages/shared/components/profile/ProfileForm';
 import type { User } from '@supabase/supabase-js';
+import { dhgHubLightAuthService } from './dhg-hub-light-auth-service';
+import type { Database } from '../../../../supabase/types';
 
 // Re-export types for backward compatibility
 export type LightAuthUser = User;
@@ -88,8 +89,7 @@ function convertToServiceProfile(componentProfile: ComponentProfileFormData): an
 
 class DhgHubAuthService {
   private static instance: DhgHubAuthService;
-  private lightAuthService: any = null;
-  private initPromise: Promise<void> | null = null;
+  private lightAuthService = dhgHubLightAuthService;
   
   private constructor() {}
   
@@ -100,35 +100,8 @@ class DhgHubAuthService {
     return DhgHubAuthService.instance;
   }
   
-  private async ensureInitialized(): Promise<void> {
-    if (this.lightAuthService) return;
-    
-    if (this.initPromise) {
-      await this.initPromise;
-      return;
-    }
-    
-    this.initPromise = this.initialize();
-    await this.initPromise;
-  }
-  
-  private async initialize(): Promise<void> {
-    try {
-      envCheck();
-      
-      // Dynamic import to avoid module initialization issues
-      const module = await import('../../../../packages/shared/services/light-auth-enhanced-service');
-      this.lightAuthService = module.lightAuthEnhanced;
-    } catch (error) {
-      console.error('Failed to initialize auth service:', error);
-      throw error;
-    }
-  }
-  
   async loginWithEmail(email: string): Promise<AuthResponse> {
     try {
-      await this.ensureInitialized();
-      
       const response = await this.lightAuthService.login(email);
       
       if (!response || !response.success) {
@@ -170,7 +143,6 @@ class DhgHubAuthService {
   
   async checkWhitelistStatus(email: string): Promise<{ isWhitelisted: boolean; error: Error | null }> {
     try {
-      await this.ensureInitialized();
       const result = await this.lightAuthService.checkWhitelistStatus(email);
       return result;
     } catch (error) {
@@ -184,8 +156,6 @@ class DhgHubAuthService {
   
   async registerWithProfile(email: string, profileData: ComponentProfileFormData): Promise<AuthResponse> {
     try {
-      await this.ensureInitialized();
-      
       // Convert component profile data to service format
       const response = await this.lightAuthService.registerWithProfile({
         email,
@@ -232,9 +202,7 @@ class DhgHubAuthService {
   
   async createProfile(userId: string, profileData: ComponentProfileFormData): Promise<{ profile: any | null; error: Error | null }> {
     try {
-      await this.ensureInitialized();
-      
-      // Use the shared service with proper profile conversion
+      // Use the browser service with proper profile conversion
       const result = await this.lightAuthService.createProfile(userId, convertToServiceProfile(profileData));
       return result;
     } catch (error) {
@@ -248,8 +216,6 @@ class DhgHubAuthService {
   
   async completeProfile(userId: string, profileData: ComponentProfileFormData): Promise<LightAuthResult> {
     try {
-      await this.ensureInitialized();
-      
       const result = await this.lightAuthService.completeProfile(userId, convertToServiceProfile(profileData));
       
       // Save updated user to localStorage

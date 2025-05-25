@@ -11,6 +11,7 @@ import { SupabaseClientService } from '../../../packages/shared/services/supabas
 import { runMasterHealthCheck } from './master-health-check';
 import { generateUsageReport } from './usage-report';
 import { generateClassificationRollup } from './classification-rollup';
+import { clearAllCaches, quickRestart } from './clear-cache';
 import * as path from 'path';
 
 // Create a new command instance
@@ -99,6 +100,36 @@ program
     } catch (error) {
       console.error('Failed to generate classification rollup report:', 
         error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  });
+
+// Add cache clearing command
+program
+  .command('clear-cache')
+  .description('Clear all caches when development environment gets stuck')
+  .option('-v, --verbose', 'Show detailed output during cleanup')
+  .option('--skip-browser', 'Skip browser cache clearing instructions')
+  .option('--nuclear', 'Remove all node_modules (requires full reinstall)')
+  .action(async (options) => {
+    try {
+      await clearAllCaches(options);
+    } catch (error) {
+      console.error('❌ Error clearing caches:', error);
+      process.exit(1);
+    }
+  });
+
+// Add quick restart command
+program
+  .command('quick-restart')
+  .description('Quick restart helper - kills Vite and clears Vite cache only')
+  .option('-a, --app <name>', 'App name to restart (e.g., dhg-admin-explore)')
+  .action(async (options) => {
+    try {
+      await quickRestart(options.app);
+    } catch (error) {
+      console.error('❌ Error during quick restart:', error);
       process.exit(1);
     }
   });

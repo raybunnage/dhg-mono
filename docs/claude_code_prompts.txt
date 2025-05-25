@@ -2,12 +2,143 @@
  
 
 
-database cleaniup
+more database cleaniup
 database backiups
 auth_audit_log - integration
 new fields in allowed_emails
 upgrading dhg-hub to do lightweight authentication
 making a video viewer 
+refactoring the sync commands into pieces
+
+
+
+
+
+
+Now let me clean up the temporary file:
+
+⏺ Bash(rm /Users/raybunnage/Documents/github/dhg-mono/scripts/cli-pipeline/google_sync/analyze-sync-usage.ts)…
+  ⎿  (No content)
+
+⏺ Analysis and Recommendations
+
+  Based on my analysis of the Google sync command and usage patterns, here's what I found:
+
+  Current State of the Sync Command
+
+  The sync-and-update-metadata command currently does too much in a single operation:
+
+  1. Phase 1 - Sync Files (lines 447-1135):
+    - Lists all files recursively from Google Drive
+    - Compares with database records
+    - Inserts new files
+    - Marks deleted files
+    - Creates expert_documents records
+    - Performs deletion verification with API calls
+  2. Phase 2 - Update Metadata (lines 1140-1515):
+    - Updates metadata for existing files
+    - Extracts video metadata using FFprobe
+    - Handles file renames
+    - Updates various fields (size, thumbnail, modified time)
+  3. Additional Responsibilities:
+    - Generates detailed markdown reports
+    - Handles special cases (test files)
+    - Manages complex error states
+
+  Usage Pattern Insights
+
+  From the command tracking data:
+  - Main sync command: Used 22 times with 81.8% success rate, averaging 121 seconds
+  - Most used commands are actually status/listing commands, not sync operations
+  - Processing commands like reprocess-docx-files take 4+ minutes on average
+  - High failure rates for update commands (e.g., update-main-video-id at 44.3% success)
+
+  Pros and Cons of Current Approach
+
+  Pros of Single Command:
+  - Atomic operation ensures consistency
+  - Simple for users - one command does everything
+  - Good for initial imports or full refreshes
+  - Comprehensive reporting
+
+  Cons of Single Command:
+  - Takes 2+ minutes average (long feedback loop)
+  - Hard to debug when something fails
+  - Can't run just the part you need
+  - Mixes concerns (sync vs processing vs reporting)
+  - Difficult to resume from failures
+
+  Recommended Architecture
+
+  I recommend splitting into these focused commands:
+
+  1. sync-files (Core sync only)
+
+  - Just sync file existence from Google Drive
+  - Insert new files with basic metadata
+  - Mark missing files as deleted
+  - No processing, no expert_documents creation
+  - Target: < 30 seconds for typical runs
+
+  2. process-new-files (Handle new additions)
+
+  - Create expert_documents for new files
+  - Set initial processing status
+  - Queue files for classification
+  - Target: Fast, focused on new files only
+
+  3. update-metadata (Refresh existing files)
+
+  - Update metadata for files that changed
+  - Handle renames
+  - Extract media metadata
+  - Target: Only process changed files
+
+  4. verify-deletions (Deletion management)
+
+  - Verify files marked for deletion
+  - Provide safety checks
+  - Generate deletion reports
+  - Target: Separate risky operation
+
+  5. process-all (Orchestration command)
+
+  - Runs sync-files → process-new-files → update-metadata
+  - Provides the current "do everything" behavior
+  - But allows running individual steps
+
+  Benefits of This Approach
+
+  1. Faster feedback loops - Each command completes quickly
+  2. Better error recovery - Can retry just the failed part
+  3. Clearer mental model - Each command has one job
+  4. More flexible - Run only what you need
+  5. Easier debugging - Smaller, focused operations
+  6. Better for automation - Can schedule different parts at different intervals
+
+  Implementation Strategy
+
+  1. Keep the current command as sync-all for backward compatibility
+  2. Extract the phases into separate functions/commands
+  3. Add a new sync command that just does file sync (most common need)
+  4. Make processing commands work on queued/marked files
+
+  Example Workflow
+
+  # Quick sync to see what's new (< 30s)
+  ./google-sync-cli.sh sync
+
+  # Process any new files found
+  ./google-sync-cli.sh process-new-files
+
+  # Update metadata for changed files
+  ./google-sync-cli.sh update-metadata
+r
+  # Or do everything at once (current behavior)
+  ./google-sync-cli.sh sync-all
+
+  This gives you both simplicity (fewer commands visible to users) and clarity (each command does one thing well). The key insight is that
+  syncing file existence is a different concern from processing file contents, and they should be separable.r
 
 
 [

@@ -101,6 +101,16 @@ classification_rollup() {
   track_command "classification-rollup" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts classification-rollup $@"
 }
 
+# Command handler for clear-cache
+clear_cache() {
+  track_command "clear-cache" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts clear-cache $@"
+}
+
+# Command handler for quick-restart
+quick_restart() {
+  track_command "quick-restart" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts quick-restart $@"
+}
+
 # Print help information
 show_help() {
   echo "All Pipelines CLI - Master CLI for running health checks across all pipelines"
@@ -117,6 +127,10 @@ show_help() {
   echo "REPORTING:"
   echo "  * usage-report              Generate a markdown report of CLI command usage (6 uses)"
   echo "  * classification-rollup     Generate a rollup report of subject classifications (8 uses)"
+  echo ""
+  echo "CACHE MANAGEMENT:"
+  echo "  * clear-cache               Clear all caches when dev environment gets stuck (NEW)"
+  echo "    quick-restart             Quick restart - kills Vite and clears Vite cache only"
   echo ""
   echo "SYSTEM:"
   echo "    help                      Show this help message"
@@ -135,6 +149,14 @@ show_help() {
   echo "    --min-count <number>      Minimum count to include in report (default: 1)"
   echo "    --format <format>         Output format: markdown or json (default: markdown)"
   echo ""
+  echo "  For clear-cache:"
+  echo "    --verbose                 Show detailed output during cleanup"
+  echo "    --skip-browser            Skip browser cache clearing instructions"
+  echo "    --nuclear                 Remove all node_modules (requires full reinstall)"
+  echo ""
+  echo "  For quick-restart:"
+  echo "    --app <name>              App name to restart (e.g., dhg-admin-explore)"
+  echo ""
   echo "EXAMPLES:"
   echo ""
   echo "MONITORING:"
@@ -150,6 +172,19 @@ show_help() {
   echo ""
   echo "  # Generate a classification rollup report"
   echo "  ./all-pipelines-cli.sh classification-rollup"
+  echo ""
+  echo "CACHE MANAGEMENT:"
+  echo "  # Clear all caches when things get stuck"
+  echo "  ./all-pipelines-cli.sh clear-cache"
+  echo ""
+  echo "  # Clear all caches with verbose output"
+  echo "  ./all-pipelines-cli.sh clear-cache --verbose"
+  echo ""
+  echo "  # Nuclear option - remove all node_modules"
+  echo "  ./all-pipelines-cli.sh clear-cache --nuclear"
+  echo ""
+  echo "  # Quick restart for a specific app"
+  echo "  ./all-pipelines-cli.sh quick-restart --app dhg-admin-explore"
 }
 
 # Main command router
@@ -162,6 +197,12 @@ case "$1" in
     ;;
   "classification-rollup")
     classification_rollup "${@:2}"
+    ;;
+  "clear-cache")
+    clear_cache "${@:2}"
+    ;;
+  "quick-restart")
+    quick_restart "${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

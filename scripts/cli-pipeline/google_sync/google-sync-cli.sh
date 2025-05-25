@@ -379,7 +379,12 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  (* = frequently used commands with usage count and success rate)"
   echo ""
   echo "CORE OPERATIONS:"
-  echo "  * sync                         Sync files from Google Drive to the database with intelligent file categorization"
+  echo "  * sync                         Sync files from Google Drive to the database with intelligent file categorization (legacy - use sync-all)"
+  echo "    sync-all                     NEW: Complete sync pipeline (sync + process + metadata update) - RECOMMENDED"
+  echo "    sync-files                   NEW: Fast core sync only - just file existence (< 30s typical)"
+  echo "    process-new-files            NEW: Process newly added files (create expert_documents)"
+  echo "    update-metadata              NEW: Update metadata for existing files (size, thumbnails, renames)"
+  echo "    verify-deletions             NEW: Verify deleted files and optionally restore those that still exist"
   echo "    find-folder                  Find a specific folder or file by name pattern in Google Drive"
   echo "    get-current-drive-id         Get the current drive_id for a file given its path and root_drive_id"
   echo "  * health-check                 Check the health of Google Drive API connection"
@@ -451,7 +456,22 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "EXAMPLES:"
   echo ""
   echo "CORE OPERATIONS:"
-  echo "  # Sync files from Google Drive with verbose output"
+  echo "  # NEW RECOMMENDED: Complete sync pipeline (fast sync + process + metadata)"
+  echo "  ./google-sync-cli.sh sync-all --verbose"
+  echo ""
+  echo "  # NEW: Quick sync to check for new files only (< 30s typical)"
+  echo "  ./google-sync-cli.sh sync-files --dry-run"
+  echo ""
+  echo "  # NEW: Process newly added files to create expert_documents"
+  echo "  ./google-sync-cli.sh process-new-files --limit 50"
+  echo ""
+  echo "  # NEW: Update metadata for existing files (handles renames, size changes)"
+  echo "  ./google-sync-cli.sh update-metadata --limit 100 --verbose"
+  echo ""
+  echo "  # NEW: Verify deleted files and restore those that still exist"
+  echo "  ./google-sync-cli.sh verify-deletions --restore --limit 50"
+  echo ""
+  echo "  # Legacy: Full sync with all operations (slow - 2+ minutes)"
   echo "  ./google-sync-cli.sh sync --verbose --limit 100"
   echo ""
   echo "  # Run sync in preview mode (no changes) with limited depth"
@@ -964,6 +984,37 @@ if [ "$1" = "sync" ]; then
   else
     track_command "sync-and-update-metadata" "ts-node $SCRIPT_DIR/sync-and-update-metadata.ts $*"
   fi
+  exit $?
+fi
+
+# NEW MODULAR SYNC COMMANDS
+if [ "$1" = "sync-all" ]; then
+  shift
+  track_command "sync-all" "ts-node $SCRIPT_DIR/sync-all.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "sync-files" ]; then
+  shift
+  track_command "sync-files" "ts-node $SCRIPT_DIR/sync-files.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "process-new-files" ]; then
+  shift
+  track_command "process-new-files" "ts-node $SCRIPT_DIR/process-new-files.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "update-metadata" ]; then
+  shift
+  track_command "update-metadata" "ts-node $SCRIPT_DIR/update-metadata.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "verify-deletions" ]; then
+  shift
+  track_command "verify-deletions" "ts-node $SCRIPT_DIR/verify-deletions.ts $*"
   exit $?
 fi
 

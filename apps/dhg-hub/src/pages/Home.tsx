@@ -1644,7 +1644,7 @@ export function Home() {
   }, [showExpertProfileModal, showDebugModal, selectedExpertId]);
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="w-full">
       {/* First-time profile prompt */}
       {shouldShowPrompt && (
         <FirstTimeProfilePrompt onDismiss={dismissPrompt} />
