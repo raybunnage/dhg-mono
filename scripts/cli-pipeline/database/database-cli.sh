@@ -66,6 +66,7 @@ show_help() {
   echo "  * schema-health        Analyze database schema health and identify issues (2 uses)"
   echo "    check-auth-objects   Check if auth migration objects already exist"
   echo "    verify-user-roles    Verify user roles removal migration was successful"
+  echo "    test-light-auth-audit Test light auth audit logging functionality"
   echo ""
   echo "RLS POLICIES:"
   echo "    check-rls-policies   Check and create permissive RLS policies for tables"
@@ -248,6 +249,16 @@ find_tables() {
   track_command "find-tables" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/find-missing-tables.ts $@"
 }
 
+test_light_auth_audit() {
+  echo "🧪 Testing light auth audit logging..."
+  track_command "test-light-auth-audit" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/test-light-auth-audit-logging.ts $@"
+}
+
+test_auth_audit_simple() {
+  echo "🧪 Testing auth audit log functionality..."
+  track_command "test-auth-audit-simple" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/test-light-auth-audit-simple.ts $@"
+}
+
 # Migration command handlers
 migration_validate() {
   echo "🔍 Validating migration file..."
@@ -377,6 +388,12 @@ case "$1" in
     ;;
   "find-tables")
     find_tables "${@:2}"
+    ;;
+  "test-light-auth-audit")
+    test_light_auth_audit "${@:2}"
+    ;;
+  "test-auth-audit-simple")
+    test_auth_audit_simple "${@:2}"
     ;;
   "migration")
     case "$2" in

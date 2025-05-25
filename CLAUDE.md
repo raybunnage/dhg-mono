@@ -77,6 +77,13 @@
    - ⚠️ **NEVER hardcode credentials** - always use environment variables from `.env.development`
    - Check for hardcoded secrets before submitting any code
 
+5. **Archiving Strategy**: 
+   - Archive temporary or unused code in `.archived_scripts` folders within the appropriate domain directory
+   - Archive outdated documentation in `.archive_docs` folders within doc markdown directories
+   - Append the date to archived filenames (e.g., `scripts/cli-pipeline/google_sync/.archived_scripts/some-script.20250330.ts`)
+   - This keeps the active codebase clean while preserving code history for potential future reference
+   - Before archiving, ensure the code is not referenced elsewhere in the project
+
 
 ## CLI Pipeline Integration Requirements
 

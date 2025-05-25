@@ -450,8 +450,11 @@ export class AuthService {
         return null;
       }
       
+      // Type assertion for tokenData
+      const token = tokenData as any;
+      
       // Check if token is expired
-      if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) {
+      if (token.expires_at && new Date(token.expires_at) < new Date()) {
         console.error('AuthService: CLI token expired');
         return null;
       }
@@ -460,7 +463,7 @@ export class AuthService {
       await this.supabase
         .from('cli_auth_tokens')
         .update({ last_used: new Date().toISOString() })
-        .eq('id', tokenData.id);
+        .eq('id', token.id);
       
       // Create a session for the CLI user
       const cliSession: AuthSession = {
@@ -469,11 +472,11 @@ export class AuthService {
         expires_in: 3600,
         expires_at: Math.floor(Date.now() / 1000) + 3600,
         refresh_token: '',
-        user: tokenData.user as AppUser,
+        user: token.user as AppUser,
         environment: 'cli',
         metadata: {
-          token_id: tokenData.id,
-          token_name: tokenData.name
+          token_id: token.id,
+          token_name: token.name
         }
       };
       
@@ -484,9 +487,9 @@ export class AuthService {
       
       // Log CLI authentication
       await this.logAuthEvent('login', { 
-        user_id: tokenData.user_id, 
+        user_id: token.user_id, 
         environment: 'cli',
-        token_name: tokenData.name 
+        token_name: token.name 
       });
       
       return cliSession;
@@ -651,7 +654,7 @@ export class AuthService {
     }
     
     // Create new subscription
-    this.authStateSubscription = this.supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data } = this.supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`AuthService: Auth state changed - ${event}`);
       
       if (session) {
@@ -664,6 +667,7 @@ export class AuthService {
       }
     });
     
+    this.authStateSubscription = data.subscription;
     return this.authStateSubscription;
   }
   
@@ -1344,7 +1348,7 @@ export class AuthService {
       }, {} as Record<string, number>);
 
       const topEventTypes = Object.entries(eventTypeCounts)
-        .map(([event_type, count]) => ({ event_type, count }))
+        .map(([event_type, count]) => ({ event_type, count: count as number }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 10);
 

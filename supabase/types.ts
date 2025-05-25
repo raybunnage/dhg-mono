@@ -17,12 +17,17 @@ export type Database = {
           auth_user_id: string | null
           created_at: string | null
           email: string
+          email_verified: boolean | null
+          email_verified_at: string | null
           id: string
           is_active: boolean | null
+          last_login_at: string | null
+          login_count: number | null
           metadata: Json | null
           name: string | null
           notes: string | null
           organization: string | null
+          preferences: Json | null
           updated_at: string | null
         }
         Insert: {
@@ -32,12 +37,17 @@ export type Database = {
           auth_user_id?: string | null
           created_at?: string | null
           email: string
+          email_verified?: boolean | null
+          email_verified_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_login_at?: string | null
+          login_count?: number | null
           metadata?: Json | null
           name?: string | null
           notes?: string | null
           organization?: string | null
+          preferences?: Json | null
           updated_at?: string | null
         }
         Update: {
@@ -47,12 +57,17 @@ export type Database = {
           auth_user_id?: string | null
           created_at?: string | null
           email?: string
+          email_verified?: boolean | null
+          email_verified_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_login_at?: string | null
+          login_count?: number | null
           metadata?: Json | null
           name?: string | null
           notes?: string | null
           organization?: string | null
+          preferences?: Json | null
           updated_at?: string | null
         }
         Relationships: []
@@ -410,63 +425,6 @@ export type Database = {
         }
         Relationships: []
       }
-      document_types_backup_2025_05_02: {
-        Row: {
-          ai_processing_rules: Json | null
-          category: string | null
-          classifier: Database["public"]["Enums"]["document_classifier"] | null
-          content_schema: Json | null
-          created_at: string | null
-          current_num_of_type: number | null
-          description: string | null
-          document_type: string | null
-          document_type_counts: number | null
-          file_extension: string | null
-          id: string | null
-          is_ai_generated: boolean | null
-          legacy_document_type_id: number | null
-          required_fields: Json | null
-          updated_at: string | null
-          validation_rules: Json | null
-        }
-        Insert: {
-          ai_processing_rules?: Json | null
-          category?: string | null
-          classifier?: Database["public"]["Enums"]["document_classifier"] | null
-          content_schema?: Json | null
-          created_at?: string | null
-          current_num_of_type?: number | null
-          description?: string | null
-          document_type?: string | null
-          document_type_counts?: number | null
-          file_extension?: string | null
-          id?: string | null
-          is_ai_generated?: boolean | null
-          legacy_document_type_id?: number | null
-          required_fields?: Json | null
-          updated_at?: string | null
-          validation_rules?: Json | null
-        }
-        Update: {
-          ai_processing_rules?: Json | null
-          category?: string | null
-          classifier?: Database["public"]["Enums"]["document_classifier"] | null
-          content_schema?: Json | null
-          created_at?: string | null
-          current_num_of_type?: number | null
-          description?: string | null
-          document_type?: string | null
-          document_type_counts?: number | null
-          file_extension?: string | null
-          id?: string | null
-          is_ai_generated?: boolean | null
-          legacy_document_type_id?: number | null
-          required_fields?: Json | null
-          updated_at?: string | null
-          validation_rules?: Json | null
-        }
-        Relationships: []
-      }
       document_types_original: {
         Row: {
           ai_processing_rules: Json | null
@@ -539,7 +497,7 @@ export type Database = {
           file_hash: string | null
           file_path: string | null
           file_size: number | null
-          id: string | null
+          id: string
           language: string | null
           last_indexed_at: string | null
           last_modified_at: string | null
@@ -564,7 +522,7 @@ export type Database = {
           file_hash?: string | null
           file_path?: string | null
           file_size?: number | null
-          id?: string | null
+          id: string
           language?: string | null
           last_indexed_at?: string | null
           last_modified_at?: string | null
@@ -589,80 +547,8 @@ export type Database = {
           file_hash?: string | null
           file_path?: string | null
           file_size?: number | null
-          id?: string | null
+          id?: string
           language?: string | null
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json | null
-          status_recommendation?: string | null
-          summary?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      documentation_files_backup_20250324: {
-        Row: {
-          ai_assessment: Json | null
-          ai_generated_tags: string[] | null
-          assessment_created_at: string | null
-          assessment_date: string | null
-          assessment_model: string | null
-          assessment_quality_score: number | null
-          assessment_updated_at: string | null
-          assessment_version: number | null
-          created_at: string | null
-          document_type_id: string | null
-          file_hash: string | null
-          file_path: string | null
-          id: string | null
-          last_indexed_at: string | null
-          last_modified_at: string | null
-          manual_tags: string[] | null
-          metadata: Json | null
-          status_recommendation: string | null
-          summary: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string | null
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string | null
-          id?: string | null
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json | null
-          status_recommendation?: string | null
-          summary?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string | null
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string | null
-          id?: string | null
           last_indexed_at?: string | null
           last_modified_at?: string | null
           manual_tags?: string[] | null
@@ -1087,270 +973,6 @@ export type Database = {
           },
         ]
       }
-      expert_documents_backup_2025_05_02: {
-        Row: {
-          ai_summary_status:
-            | Database["public"]["Enums"]["ai_summary_status_type"]
-            | null
-          batch_id: string | null
-          classification_confidence: number | null
-          classification_metadata: Json | null
-          confidence_score: number | null
-          content_type: string | null
-          created_at: string | null
-          diarization_complete: boolean | null
-          document_processing_status:
-            | Database["public"]["Enums"]["document_processing_status"]
-            | null
-          document_processing_status_updated_at: string | null
-          document_type_id: string | null
-          id: string | null
-          is_latest: boolean | null
-          key_insights: string[] | null
-          language: string | null
-          last_processed_at: string | null
-          processed_at: string | null
-          processed_content: Json | null
-          processing_completed_at: string | null
-          processing_error: string | null
-          processing_skip_reason: string | null
-          processing_started_at: string | null
-          processing_stats: Json | null
-          processing_status: string | null
-          processing_status_updated_at: string | null
-          raw_content: string | null
-          retry_count: number | null
-          source_id: string | null
-          status: string | null
-          summary_complete: boolean | null
-          title: string | null
-          topics: string[] | null
-          transcription_complete: boolean | null
-          updated_at: string | null
-          version: number | null
-          whisper_model_used: string | null
-          word_count: number | null
-        }
-        Insert: {
-          ai_summary_status?:
-            | Database["public"]["Enums"]["ai_summary_status_type"]
-            | null
-          batch_id?: string | null
-          classification_confidence?: number | null
-          classification_metadata?: Json | null
-          confidence_score?: number | null
-          content_type?: string | null
-          created_at?: string | null
-          diarization_complete?: boolean | null
-          document_processing_status?:
-            | Database["public"]["Enums"]["document_processing_status"]
-            | null
-          document_processing_status_updated_at?: string | null
-          document_type_id?: string | null
-          id?: string | null
-          is_latest?: boolean | null
-          key_insights?: string[] | null
-          language?: string | null
-          last_processed_at?: string | null
-          processed_at?: string | null
-          processed_content?: Json | null
-          processing_completed_at?: string | null
-          processing_error?: string | null
-          processing_skip_reason?: string | null
-          processing_started_at?: string | null
-          processing_stats?: Json | null
-          processing_status?: string | null
-          processing_status_updated_at?: string | null
-          raw_content?: string | null
-          retry_count?: number | null
-          source_id?: string | null
-          status?: string | null
-          summary_complete?: boolean | null
-          title?: string | null
-          topics?: string[] | null
-          transcription_complete?: boolean | null
-          updated_at?: string | null
-          version?: number | null
-          whisper_model_used?: string | null
-          word_count?: number | null
-        }
-        Update: {
-          ai_summary_status?:
-            | Database["public"]["Enums"]["ai_summary_status_type"]
-            | null
-          batch_id?: string | null
-          classification_confidence?: number | null
-          classification_metadata?: Json | null
-          confidence_score?: number | null
-          content_type?: string | null
-          created_at?: string | null
-          diarization_complete?: boolean | null
-          document_processing_status?:
-            | Database["public"]["Enums"]["document_processing_status"]
-            | null
-          document_processing_status_updated_at?: string | null
-          document_type_id?: string | null
-          id?: string | null
-          is_latest?: boolean | null
-          key_insights?: string[] | null
-          language?: string | null
-          last_processed_at?: string | null
-          processed_at?: string | null
-          processed_content?: Json | null
-          processing_completed_at?: string | null
-          processing_error?: string | null
-          processing_skip_reason?: string | null
-          processing_started_at?: string | null
-          processing_stats?: Json | null
-          processing_status?: string | null
-          processing_status_updated_at?: string | null
-          raw_content?: string | null
-          retry_count?: number | null
-          source_id?: string | null
-          status?: string | null
-          summary_complete?: boolean | null
-          title?: string | null
-          topics?: string[] | null
-          transcription_complete?: boolean | null
-          updated_at?: string | null
-          version?: number | null
-          whisper_model_used?: string | null
-          word_count?: number | null
-        }
-        Relationships: []
-      }
-      expert_documents_backup_2025_05_05: {
-        Row: {
-          ai_summary_status:
-            | Database["public"]["Enums"]["ai_summary_status_type"]
-            | null
-          batch_id: string | null
-          classification_confidence: number | null
-          classification_metadata: Json | null
-          confidence_score: number | null
-          content_type: string | null
-          created_at: string | null
-          diarization_complete: boolean | null
-          document_processing_status:
-            | Database["public"]["Enums"]["document_processing_status"]
-            | null
-          document_processing_status_updated_at: string | null
-          document_type_id: string | null
-          id: string | null
-          is_latest: boolean | null
-          key_insights: string[] | null
-          language: string | null
-          last_processed_at: string | null
-          processed_at: string | null
-          processed_content: Json | null
-          processing_completed_at: string | null
-          processing_error: string | null
-          processing_skip_reason: string | null
-          processing_started_at: string | null
-          processing_stats: Json | null
-          processing_status: string | null
-          processing_status_updated_at: string | null
-          raw_content: string | null
-          retry_count: number | null
-          source_id: string | null
-          status: string | null
-          summary_complete: boolean | null
-          title: string | null
-          topics: string[] | null
-          transcription_complete: boolean | null
-          updated_at: string | null
-          version: number | null
-          whisper_model_used: string | null
-          word_count: number | null
-        }
-        Insert: {
-          ai_summary_status?:
-            | Database["public"]["Enums"]["ai_summary_status_type"]
-            | null
-          batch_id?: string | null
-          classification_confidence?: number | null
-          classification_metadata?: Json | null
-          confidence_score?: number | null
-          content_type?: string | null
-          created_at?: string | null
-          diarization_complete?: boolean | null
-          document_processing_status?:
-            | Database["public"]["Enums"]["document_processing_status"]
-            | null
-          document_processing_status_updated_at?: string | null
-          document_type_id?: string | null
-          id?: string | null
-          is_latest?: boolean | null
-          key_insights?: string[] | null
-          language?: string | null
-          last_processed_at?: string | null
-          processed_at?: string | null
-          processed_content?: Json | null
-          processing_completed_at?: string | null
-          processing_error?: string | null
-          processing_skip_reason?: string | null
-          processing_started_at?: string | null
-          processing_stats?: Json | null
-          processing_status?: string | null
-          processing_status_updated_at?: string | null
-          raw_content?: string | null
-          retry_count?: number | null
-          source_id?: string | null
-          status?: string | null
-          summary_complete?: boolean | null
-          title?: string | null
-          topics?: string[] | null
-          transcription_complete?: boolean | null
-          updated_at?: string | null
-          version?: number | null
-          whisper_model_used?: string | null
-          word_count?: number | null
-        }
-        Update: {
-          ai_summary_status?:
-            | Database["public"]["Enums"]["ai_summary_status_type"]
-            | null
-          batch_id?: string | null
-          classification_confidence?: number | null
-          classification_metadata?: Json | null
-          confidence_score?: number | null
-          content_type?: string | null
-          created_at?: string | null
-          diarization_complete?: boolean | null
-          document_processing_status?:
-            | Database["public"]["Enums"]["document_processing_status"]
-            | null
-          document_processing_status_updated_at?: string | null
-          document_type_id?: string | null
-          id?: string | null
-          is_latest?: boolean | null
-          key_insights?: string[] | null
-          language?: string | null
-          last_processed_at?: string | null
-          processed_at?: string | null
-          processed_content?: Json | null
-          processing_completed_at?: string | null
-          processing_error?: string | null
-          processing_skip_reason?: string | null
-          processing_started_at?: string | null
-          processing_stats?: Json | null
-          processing_status?: string | null
-          processing_status_updated_at?: string | null
-          raw_content?: string | null
-          retry_count?: number | null
-          source_id?: string | null
-          status?: string | null
-          summary_complete?: boolean | null
-          title?: string | null
-          topics?: string[] | null
-          transcription_complete?: boolean | null
-          updated_at?: string | null
-          version?: number | null
-          whisper_model_used?: string | null
-          word_count?: number | null
-        }
-        Relationships: []
-      }
       expert_preferences: {
         Row: {
           created_at: string
@@ -1418,45 +1040,6 @@ export type Database = {
           mnemonic?: string | null
           starting_ref_id?: number | null
           updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      experts_backup_2025_05_02: {
-        Row: {
-          created_at: string | null
-          expert_name: string | null
-          full_name: string | null
-          id: string | null
-          is_in_core_group: boolean | null
-          metadata: Json | null
-          mnemonic: string | null
-          starting_ref_id: number | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          expert_name?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_in_core_group?: boolean | null
-          metadata?: Json | null
-          mnemonic?: string | null
-          starting_ref_id?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          expert_name?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_in_core_group?: boolean | null
-          metadata?: Json | null
-          mnemonic?: string | null
-          starting_ref_id?: number | null
-          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -1633,27 +1216,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      lionya_emails: {
-        Row: {
-          created_at: string
-          email_address: string | null
-          email_count: number | null
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          email_address?: string | null
-          email_count?: number | null
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          email_address?: string | null
-          email_count?: number | null
-          id?: string
-        }
-        Relationships: []
       }
       media_bookmarks: {
         Row: {
@@ -1954,102 +1516,6 @@ export type Database = {
           },
         ]
       }
-      presentation_assets_backup_2025_05_02: {
-        Row: {
-          asset_expert_document_id: string | null
-          asset_role: Database["public"]["Enums"]["asset_role_enum"] | null
-          asset_source_id: string | null
-          asset_type: Database["public"]["Enums"]["asset_type_enum"] | null
-          created_at: string | null
-          id: string | null
-          importance_level: number | null
-          metadata: Json | null
-          presentation_id: string | null
-          timestamp_end: number | null
-          timestamp_start: number | null
-          updated_at: string | null
-          user_notes: string | null
-        }
-        Insert: {
-          asset_expert_document_id?: string | null
-          asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
-          asset_source_id?: string | null
-          asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
-          created_at?: string | null
-          id?: string | null
-          importance_level?: number | null
-          metadata?: Json | null
-          presentation_id?: string | null
-          timestamp_end?: number | null
-          timestamp_start?: number | null
-          updated_at?: string | null
-          user_notes?: string | null
-        }
-        Update: {
-          asset_expert_document_id?: string | null
-          asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
-          asset_source_id?: string | null
-          asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
-          created_at?: string | null
-          id?: string | null
-          importance_level?: number | null
-          metadata?: Json | null
-          presentation_id?: string | null
-          timestamp_end?: number | null
-          timestamp_start?: number | null
-          updated_at?: string | null
-          user_notes?: string | null
-        }
-        Relationships: []
-      }
-      presentation_assets_backup_20250522: {
-        Row: {
-          asset_expert_document_id: string | null
-          asset_role: Database["public"]["Enums"]["asset_role_enum"] | null
-          asset_source_id: string | null
-          asset_type: Database["public"]["Enums"]["asset_type_enum"] | null
-          created_at: string | null
-          id: string | null
-          importance_level: number | null
-          metadata: Json | null
-          presentation_id: string | null
-          timestamp_end: number | null
-          timestamp_start: number | null
-          updated_at: string | null
-          user_notes: string | null
-        }
-        Insert: {
-          asset_expert_document_id?: string | null
-          asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
-          asset_source_id?: string | null
-          asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
-          created_at?: string | null
-          id?: string | null
-          importance_level?: number | null
-          metadata?: Json | null
-          presentation_id?: string | null
-          timestamp_end?: number | null
-          timestamp_start?: number | null
-          updated_at?: string | null
-          user_notes?: string | null
-        }
-        Update: {
-          asset_expert_document_id?: string | null
-          asset_role?: Database["public"]["Enums"]["asset_role_enum"] | null
-          asset_source_id?: string | null
-          asset_type?: Database["public"]["Enums"]["asset_type_enum"] | null
-          created_at?: string | null
-          id?: string | null
-          importance_level?: number | null
-          metadata?: Json | null
-          presentation_id?: string | null
-          timestamp_end?: number | null
-          timestamp_start?: number | null
-          updated_at?: string | null
-          user_notes?: string | null
-        }
-        Relationships: []
-      }
       presentations: {
         Row: {
           created_at: string | null
@@ -2134,135 +1600,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      presentations_backup_2025_05_02: {
-        Row: {
-          created_at: string | null
-          duration_seconds: number | null
-          expert_document_id: string | null
-          expert_id: string | null
-          high_level_folder_source_id: string | null
-          id: string | null
-          root_drive_id: string | null
-          title: string | null
-          updated_at: string | null
-          video_source_id: string | null
-          view_count: number | null
-          web_view_link: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          duration_seconds?: number | null
-          expert_document_id?: string | null
-          expert_id?: string | null
-          high_level_folder_source_id?: string | null
-          id?: string | null
-          root_drive_id?: string | null
-          title?: string | null
-          updated_at?: string | null
-          video_source_id?: string | null
-          view_count?: number | null
-          web_view_link?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          duration_seconds?: number | null
-          expert_document_id?: string | null
-          expert_id?: string | null
-          high_level_folder_source_id?: string | null
-          id?: string | null
-          root_drive_id?: string | null
-          title?: string | null
-          updated_at?: string | null
-          video_source_id?: string | null
-          view_count?: number | null
-          web_view_link?: string | null
-        }
-        Relationships: []
-      }
-      presentations_backup_20250521: {
-        Row: {
-          created_at: string | null
-          duration_seconds: number | null
-          expert_document_id: string | null
-          high_level_folder_source_id: string | null
-          id: string | null
-          root_drive_id: string | null
-          title: string | null
-          updated_at: string | null
-          video_source_id: string | null
-          view_count: number | null
-          web_view_link: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          duration_seconds?: number | null
-          expert_document_id?: string | null
-          high_level_folder_source_id?: string | null
-          id?: string | null
-          root_drive_id?: string | null
-          title?: string | null
-          updated_at?: string | null
-          video_source_id?: string | null
-          view_count?: number | null
-          web_view_link?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          duration_seconds?: number | null
-          expert_document_id?: string | null
-          high_level_folder_source_id?: string | null
-          id?: string | null
-          root_drive_id?: string | null
-          title?: string | null
-          updated_at?: string | null
-          video_source_id?: string | null
-          view_count?: number | null
-          web_view_link?: string | null
-        }
-        Relationships: []
-      }
-      presentations_backup_20250522: {
-        Row: {
-          created_at: string | null
-          duration_seconds: number | null
-          expert_document_id: string | null
-          high_level_folder_source_id: string | null
-          id: string | null
-          root_drive_id: string | null
-          title: string | null
-          updated_at: string | null
-          video_source_id: string | null
-          view_count: number | null
-          web_view_link: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          duration_seconds?: number | null
-          expert_document_id?: string | null
-          high_level_folder_source_id?: string | null
-          id?: string | null
-          root_drive_id?: string | null
-          title?: string | null
-          updated_at?: string | null
-          video_source_id?: string | null
-          view_count?: number | null
-          web_view_link?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          duration_seconds?: number | null
-          expert_document_id?: string | null
-          high_level_folder_source_id?: string | null
-          id?: string | null
-          root_drive_id?: string | null
-          title?: string | null
-          updated_at?: string | null
-          video_source_id?: string | null
-          view_count?: number | null
-          web_view_link?: string | null
-        }
-        Relationships: []
       }
       processing_batches: {
         Row: {
@@ -2588,57 +1925,6 @@ export type Database = {
           },
         ]
       }
-      prompts_backup_2025_05_02: {
-        Row: {
-          author: string | null
-          category_id: string | null
-          content: Json | null
-          created_at: string | null
-          description: string | null
-          document_type_id: string | null
-          file_path: string | null
-          id: string | null
-          metadata: Json | null
-          name: string | null
-          status: Database["public"]["Enums"]["prompt_status"] | null
-          tags: string[] | null
-          updated_at: string | null
-          version: string | null
-        }
-        Insert: {
-          author?: string | null
-          category_id?: string | null
-          content?: Json | null
-          created_at?: string | null
-          description?: string | null
-          document_type_id?: string | null
-          file_path?: string | null
-          id?: string | null
-          metadata?: Json | null
-          name?: string | null
-          status?: Database["public"]["Enums"]["prompt_status"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          version?: string | null
-        }
-        Update: {
-          author?: string | null
-          category_id?: string | null
-          content?: Json | null
-          created_at?: string | null
-          description?: string | null
-          document_type_id?: string | null
-          file_path?: string | null
-          id?: string | null
-          metadata?: Json | null
-          name?: string | null
-          status?: Database["public"]["Enums"]["prompt_status"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          version?: string | null
-        }
-        Relationships: []
-      }
       scripts: {
         Row: {
           ai_assessment: Json | null
@@ -2724,87 +2010,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      scripts_backup_20250216: {
-        Row: {
-          ai_assessment: Json | null
-          ai_generated_tags: string[] | null
-          assessment_created_at: string | null
-          assessment_date: string | null
-          assessment_model: string | null
-          assessment_quality_score: number | null
-          assessment_updated_at: string | null
-          assessment_version: number | null
-          created_at: string | null
-          document_type_id: string | null
-          file_hash: string | null
-          file_path: string | null
-          id: string | null
-          is_deleted: boolean | null
-          language: string | null
-          last_indexed_at: string | null
-          last_modified_at: string | null
-          manual_tags: string[] | null
-          metadata: Json | null
-          package_json_references: Json | null
-          script_type_id: string | null
-          summary: Json | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string | null
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string | null
-          id?: string | null
-          is_deleted?: boolean | null
-          language?: string | null
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json | null
-          package_json_references?: Json | null
-          script_type_id?: string | null
-          summary?: Json | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string | null
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string | null
-          id?: string | null
-          is_deleted?: boolean | null
-          language?: string | null
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json | null
-          package_json_references?: Json | null
-          script_type_id?: string | null
-          summary?: Json | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       sources: {
         Row: {
@@ -3038,195 +2243,6 @@ export type Database = {
         }
         Relationships: []
       }
-      sources_google_backup_2025_04_08: {
-        Row: {
-          audio_bitrate: number | null
-          audio_channels: number | null
-          audio_duration_seconds: number | null
-          audio_extracted: boolean | null
-          audio_extraction_path: string | null
-          audio_quality_metrics: Json | null
-          content_extracted: boolean | null
-          created_at: string | null
-          deleted: boolean | null
-          document_type_id: string | null
-          drive_id: string | null
-          expert_id: string | null
-          extracted_content: Json | null
-          extraction_error: string | null
-          id: string | null
-          is_root: boolean | null
-          last_indexed: string | null
-          main_video_id: string | null
-          metadata: Json | null
-          mime_type: string | null
-          modified_time: string | null
-          name: string | null
-          parent_folder_id: string | null
-          parent_id: string | null
-          parent_path: string | null
-          path: string | null
-          root_drive_id: string | null
-          size: number | null
-          size_bytes: number | null
-          sync_error: string | null
-          sync_id: string | null
-          sync_status: string | null
-          thumbnail_link: string | null
-          updated_at: string | null
-          web_view_link: string | null
-        }
-        Insert: {
-          audio_bitrate?: number | null
-          audio_channels?: number | null
-          audio_duration_seconds?: number | null
-          audio_extracted?: boolean | null
-          audio_extraction_path?: string | null
-          audio_quality_metrics?: Json | null
-          content_extracted?: boolean | null
-          created_at?: string | null
-          deleted?: boolean | null
-          document_type_id?: string | null
-          drive_id?: string | null
-          expert_id?: string | null
-          extracted_content?: Json | null
-          extraction_error?: string | null
-          id?: string | null
-          is_root?: boolean | null
-          last_indexed?: string | null
-          main_video_id?: string | null
-          metadata?: Json | null
-          mime_type?: string | null
-          modified_time?: string | null
-          name?: string | null
-          parent_folder_id?: string | null
-          parent_id?: string | null
-          parent_path?: string | null
-          path?: string | null
-          root_drive_id?: string | null
-          size?: number | null
-          size_bytes?: number | null
-          sync_error?: string | null
-          sync_id?: string | null
-          sync_status?: string | null
-          thumbnail_link?: string | null
-          updated_at?: string | null
-          web_view_link?: string | null
-        }
-        Update: {
-          audio_bitrate?: number | null
-          audio_channels?: number | null
-          audio_duration_seconds?: number | null
-          audio_extracted?: boolean | null
-          audio_extraction_path?: string | null
-          audio_quality_metrics?: Json | null
-          content_extracted?: boolean | null
-          created_at?: string | null
-          deleted?: boolean | null
-          document_type_id?: string | null
-          drive_id?: string | null
-          expert_id?: string | null
-          extracted_content?: Json | null
-          extraction_error?: string | null
-          id?: string | null
-          is_root?: boolean | null
-          last_indexed?: string | null
-          main_video_id?: string | null
-          metadata?: Json | null
-          mime_type?: string | null
-          modified_time?: string | null
-          name?: string | null
-          parent_folder_id?: string | null
-          parent_id?: string | null
-          parent_path?: string | null
-          path?: string | null
-          root_drive_id?: string | null
-          size?: number | null
-          size_bytes?: number | null
-          sync_error?: string | null
-          sync_id?: string | null
-          sync_status?: string | null
-          thumbnail_link?: string | null
-          updated_at?: string | null
-          web_view_link?: string | null
-        }
-        Relationships: []
-      }
-      sources_google_backup_2025_05_02: {
-        Row: {
-          created_at: string | null
-          document_type_id: string | null
-          drive_id: string | null
-          file_signature: string | null
-          id: string | null
-          is_deleted: boolean | null
-          is_root: boolean | null
-          last_indexed: string | null
-          main_video_id: string | null
-          metadata: Json | null
-          mime_type: string | null
-          modified_at: string | null
-          name: string | null
-          parent_folder_id: string | null
-          path: string | null
-          path_array: string[] | null
-          path_depth: number | null
-          root_drive_id: string | null
-          size: number | null
-          thumbnail_link: string | null
-          updated_at: string | null
-          web_view_link: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          document_type_id?: string | null
-          drive_id?: string | null
-          file_signature?: string | null
-          id?: string | null
-          is_deleted?: boolean | null
-          is_root?: boolean | null
-          last_indexed?: string | null
-          main_video_id?: string | null
-          metadata?: Json | null
-          mime_type?: string | null
-          modified_at?: string | null
-          name?: string | null
-          parent_folder_id?: string | null
-          path?: string | null
-          path_array?: string[] | null
-          path_depth?: number | null
-          root_drive_id?: string | null
-          size?: number | null
-          thumbnail_link?: string | null
-          updated_at?: string | null
-          web_view_link?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          document_type_id?: string | null
-          drive_id?: string | null
-          file_signature?: string | null
-          id?: string | null
-          is_deleted?: boolean | null
-          is_root?: boolean | null
-          last_indexed?: string | null
-          main_video_id?: string | null
-          metadata?: Json | null
-          mime_type?: string | null
-          modified_at?: string | null
-          name?: string | null
-          parent_folder_id?: string | null
-          path?: string | null
-          path_array?: string[] | null
-          path_depth?: number | null
-          root_drive_id?: string | null
-          size?: number | null
-          thumbnail_link?: string | null
-          updated_at?: string | null
-          web_view_link?: string | null
-        }
-        Relationships: []
-      }
       sources_google_experts: {
         Row: {
           created_at: string | null
@@ -3278,36 +2294,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      sources_google_experts_backup_2025_05_02: {
-        Row: {
-          created_at: string | null
-          expert_id: string | null
-          id: string | null
-          is_primary: boolean | null
-          role_description: string | null
-          source_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          expert_id?: string | null
-          id?: string | null
-          is_primary?: boolean | null
-          role_description?: string | null
-          source_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          expert_id?: string | null
-          id?: string | null
-          is_primary?: boolean | null
-          role_description?: string | null
-          source_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       sql_query_history: {
         Row: {
@@ -3384,39 +2370,6 @@ export type Database = {
         }
         Relationships: []
       }
-      subject_classifications_backup_2025_05_02: {
-        Row: {
-          associated_concepts: string | null
-          created_at: string | null
-          description: string | null
-          id: string | null
-          short_name: string | null
-          subject: string | null
-          subject_character: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          associated_concepts?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string | null
-          short_name?: string | null
-          subject?: string | null
-          subject_character?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          associated_concepts?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string | null
-          short_name?: string | null
-          subject?: string | null
-          subject_character?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       sync_history: {
         Row: {
           completed_at: string | null
@@ -3465,57 +2418,6 @@ export type Database = {
           id?: string
           status?: string
           timestamp?: string
-        }
-        Relationships: []
-      }
-      sync_history_backup: {
-        Row: {
-          completed_at: string | null
-          duration_ms: number | null
-          error_message: string | null
-          files_added: number | null
-          files_error: number | null
-          files_processed: number | null
-          files_skipped: number | null
-          files_total: number | null
-          files_updated: number | null
-          folder_id: string | null
-          folder_name: string | null
-          id: string | null
-          status: string | null
-          timestamp: string | null
-        }
-        Insert: {
-          completed_at?: string | null
-          duration_ms?: number | null
-          error_message?: string | null
-          files_added?: number | null
-          files_error?: number | null
-          files_processed?: number | null
-          files_skipped?: number | null
-          files_total?: number | null
-          files_updated?: number | null
-          folder_id?: string | null
-          folder_name?: string | null
-          id?: string | null
-          status?: string | null
-          timestamp?: string | null
-        }
-        Update: {
-          completed_at?: string | null
-          duration_ms?: number | null
-          error_message?: string | null
-          files_added?: number | null
-          files_error?: number | null
-          files_processed?: number | null
-          files_skipped?: number | null
-          files_total?: number | null
-          files_updated?: number | null
-          folder_id?: string | null
-          folder_name?: string | null
-          id?: string | null
-          status?: string | null
-          timestamp?: string | null
         }
         Relationships: []
       }
@@ -3607,42 +2509,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      table_classifications_backup_2025_05_02: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          entity_id: string | null
-          entity_type:
-            | Database["public"]["Enums"]["classified_entity_type"]
-            | null
-          id: string | null
-          notes: string | null
-          subject_classification_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          entity_id?: string | null
-          entity_type?:
-            | Database["public"]["Enums"]["classified_entity_type"]
-            | null
-          id?: string | null
-          notes?: string | null
-          subject_classification_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          entity_id?: string | null
-          entity_type?:
-            | Database["public"]["Enums"]["classified_entity_type"]
-            | null
-          id?: string | null
-          notes?: string | null
-          subject_classification_id?: string | null
-        }
-        Relationships: []
       }
       user_content_scores: {
         Row: {
@@ -3788,57 +2654,6 @@ export type Database = {
           },
         ]
       }
-      user_profiles: {
-        Row: {
-          bio: string | null
-          created_at: string | null
-          expertise_keywords: string[] | null
-          full_name: string | null
-          id: string
-          linkedin_url: string | null
-          onboarding_completed: boolean | null
-          organization: string | null
-          preferences: Json | null
-          profession: string | null
-          professional_interests: string | null
-          profile_visibility: string | null
-          research_areas: string[] | null
-          updated_at: string | null
-        }
-        Insert: {
-          bio?: string | null
-          created_at?: string | null
-          expertise_keywords?: string[] | null
-          full_name?: string | null
-          id: string
-          linkedin_url?: string | null
-          onboarding_completed?: boolean | null
-          organization?: string | null
-          preferences?: Json | null
-          profession?: string | null
-          professional_interests?: string | null
-          profile_visibility?: string | null
-          research_areas?: string[] | null
-          updated_at?: string | null
-        }
-        Update: {
-          bio?: string | null
-          created_at?: string | null
-          expertise_keywords?: string[] | null
-          full_name?: string | null
-          id?: string
-          linkedin_url?: string | null
-          onboarding_completed?: boolean | null
-          organization?: string | null
-          preferences?: Json | null
-          profession?: string | null
-          professional_interests?: string | null
-          profile_visibility?: string | null
-          research_areas?: string[] | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       user_profiles_v2: {
         Row: {
           avoided_topics: string[] | null
@@ -3975,26 +2790,41 @@ export type Database = {
           },
         ]
       }
-      view_backups: {
+    }
+    Views: {
+      backup_inventory_view: {
         Row: {
-          definition: string | null
-          schemaname: unknown | null
-          viewname: unknown | null
+          backup_date: string | null
+          backup_reason: string | null
+          backup_size: string | null
+          backup_table_name: string | null
+          created_at: string | null
+          created_by: string | null
+          original_table_name: string | null
+          row_count: number | null
         }
         Insert: {
-          definition?: string | null
-          schemaname?: unknown | null
-          viewname?: unknown | null
+          backup_date?: string | null
+          backup_reason?: string | null
+          backup_size?: never
+          backup_table_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          original_table_name?: string | null
+          row_count?: number | null
         }
         Update: {
-          definition?: string | null
-          schemaname?: unknown | null
-          viewname?: unknown | null
+          backup_date?: string | null
+          backup_reason?: string | null
+          backup_size?: never
+          backup_table_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          original_table_name?: string | null
+          row_count?: number | null
         }
         Relationships: []
       }
-    }
-    Views: {
       document_classifications_view: {
         Row: {
           document_type: string | null
@@ -4224,6 +3054,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           create_statement: string
+        }[]
+      }
+      get_backup_tables: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          original_table_name: string
+          backup_table_name: string
+          backup_date: string
+          row_count: number
+          backup_reason: string
+          created_at: string
+          created_by: string
         }[]
       }
       get_cli_command_stats: {

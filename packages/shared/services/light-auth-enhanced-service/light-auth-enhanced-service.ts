@@ -300,6 +300,9 @@ class LightAuthEnhancedService {
         const hasProfile = profileResult.success && profileResult.profile;
         const profileComplete = hasProfile && profileResult.profile!.onboarding_completed === true;
         
+        // Update login tracking fields in allowed_emails
+        await this.updateLoginTracking(loginResult.user.id);
+        
         // Log successful login
         await this.logLightAuthEvent('login', {
           email,
@@ -386,6 +389,9 @@ class LightAuthEnhancedService {
         // Continue anyway - they can update profile later
       }
 
+      // Update login tracking for first login
+      await this.updateLoginTracking(registerResult.user.id);
+      
       // Log successful registration
       await this.logLightAuthEvent('login', {
         email: data.email,
@@ -489,7 +495,7 @@ class LightAuthEnhancedService {
    * Get current user from base service
    */
   getCurrentUser(): User | null {
-    return lightAuthService.getCurrentUser();
+    return this.lightAuthService.getCurrentUser();
   }
 
   /**
@@ -562,6 +568,45 @@ class LightAuthEnhancedService {
    */
   async removeFromWhitelist(email: string) {
     return this.lightAuthService.removeFromWhitelist(email);
+  }
+
+  // ===== LOGIN TRACKING METHODS =====
+
+  /**
+   * Update login tracking fields in allowed_emails
+   */
+  private async updateLoginTracking(userId: string): Promise<void> {
+    try {
+      // First get current login count
+      const { data: currentData, error: fetchError } = await this.supabase
+        .from('allowed_emails')
+        .select('login_count')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError) {
+        console.error('LightAuthEnhanced: Error fetching current login count:', fetchError);
+        return;
+      }
+
+      const currentCount = currentData?.login_count || 0;
+
+      // Update last_login_at and increment login_count
+      const { error: updateError } = await this.supabase
+        .from('allowed_emails')
+        .update({
+          last_login_at: new Date().toISOString(),
+          login_count: currentCount + 1
+        })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('LightAuthEnhanced: Error updating login tracking:', updateError);
+      }
+    } catch (error) {
+      console.error('LightAuthEnhanced: Failed to update login tracking:', error);
+      // Don't throw - this is not critical for login success
+    }
   }
 
   // ===== AUDIT LOG METHODS =====

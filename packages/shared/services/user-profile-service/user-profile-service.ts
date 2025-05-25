@@ -64,7 +64,7 @@ export interface ProfileResult {
  */
 class UserProfileService {
   private static instance: UserProfileService;
-  private supabase: SupabaseClient;
+  private supabase!: SupabaseClient;
 
   private supabaseInitialized = false;
 

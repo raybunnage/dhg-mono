@@ -4,9 +4,27 @@
 
 database cleaniup
 database backiups
-auth_audit_log
+auth_audit_log - integration
+new fields in 
 
 
+[
+  {
+    "id": "abddab9d-21ab-4c0b-908d-0409982f7b4a",
+    "email": "bunnage.ray+test3@gmail.com",
+    "name": "Test gmail ray",
+    "organization": "Some Random Org",
+    "added_at": "2025-05-24 14:50:32.64993+00",
+    "added_by": null,
+    "notes": "Auto-registered via light auth. Profession: programmer again, Interests: stuff",
+    "is_active": true,
+    "metadata": {},
+    "auth_user_id": null,
+    "auth_status": "none",
+    "created_at": "2025-05-24 21:22:24.217786+00",
+    "updated_at": "2025-05-24 21:22:24.217786+00"
+  }
+]
 
 
 [

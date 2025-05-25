@@ -5,11 +5,12 @@ import { AdminPanel } from '@shared/components/auth/AdminPanel';
 import { UserManagement } from '../components/UserManagement';
 import { AllowedEmailsManagement } from '../components/AllowedEmailsManagement';
 import { ServerManagement } from '../components/ServerManagement';
+import { LoginStatistics } from '../components/LoginStatistics';
 
 export const AdminDashboard: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'access' | 'users' | 'emails' | 'servers'>('access');
+  const [activeTab, setActiveTab] = useState<'access' | 'users' | 'emails' | 'servers' | 'stats'>('access');
 
   const handleSignOut = async () => {
     await signOut();
@@ -109,6 +110,18 @@ export const AdminDashboard: React.FC = () => {
             >
               Server Management
             </button>
+            <button
+              onClick={() => setActiveTab('stats')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'stats'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              Login Statistics
+            </button>
           </nav>
         </div>
         
@@ -119,8 +132,10 @@ export const AdminDashboard: React.FC = () => {
           <UserManagement />
         ) : activeTab === 'emails' ? (
           <AllowedEmailsManagement />
-        ) : (
+        ) : activeTab === 'servers' ? (
           <ServerManagement />
+        ) : (
+          <LoginStatistics />
         )}
       </main>
     </div>
