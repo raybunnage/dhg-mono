@@ -1,33 +1,43 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Layout } from '@/components';
+import { Routes, Route } from 'react-router-dom';
+import { Layout, LoginPage } from '@/components';
 import { HomePage, AudioDetailPage, AboutPage } from '@/pages';
-import Login from '@/pages/Login';
 import { useAuth } from '@/hooks/useAuth';
-import { ProtectedRoute } from '@dhg/shared-components';
-import { Toaster } from 'sonner';
+import { useEffect } from 'react';
 
 function App() {
+  console.log('[App.tsx] App component rendering...');
+  
   const { user, loading } = useAuth();
+  
+  useEffect(() => {
+    console.log('[App.tsx] Auth state:', { user: !!user, loading, userEmail: user?.email });
+  }, [user, loading]);
 
+  if (loading) {
+    console.log('[App.tsx] Showing loading screen...');
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('[App.tsx] Rendering routes...');
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public route for login */}
-        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-        
-        {/* Protected routes */}
-        <Route path="/" element={
-          <ProtectedRoute isAuthenticated={!!user} isLoading={loading} redirectTo="/login">
-            <Layout />
-          </ProtectedRoute>
-        }>
+    <Routes>
+      {!user ? (
+        <Route path="*" element={<LoginPage />} />
+      ) : (
+        <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="audio/:id" element={<AudioDetailPage />} />
           <Route path="about" element={<AboutPage />} />
         </Route>
-      </Routes>
-      <Toaster position="top-right" richColors />
-    </BrowserRouter>
+      )}
+    </Routes>
   );
 }
 

@@ -1,15 +1,22 @@
+console.log('[LoginPage] Module loading...');
+
 import React from 'react';
-import { EmailAuth } from './EmailAuth';
+import { LightEmailAuth } from './LightEmailAuth';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
+console.log('[LoginPage] Imports complete');
+
 export const LoginPage: React.FC = () => {
+  console.log('[LoginPage] Component rendering...');
   const { user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   React.useEffect(() => {
+    console.log('[LoginPage] useEffect - user:', !!user);
     if (user) {
+      console.log('[LoginPage] User exists, navigating to home...');
       navigate('/');
     }
   }, [user, navigate]);
@@ -22,10 +29,7 @@ export const LoginPage: React.FC = () => {
         </h1>
       </div>
 
-      <EmailAuth 
-        onSuccess={() => navigate('/')}
-        redirectTo={window.location.origin}
-      />
+      <LightEmailAuth />
     </div>
   );
 };

@@ -4,7 +4,5 @@ export * from './Layout';
 export * from './Transcript';
 
 // Auth components
-export * from './EmailAuth';
-export * from './AdminPanel';
+export * from './LightEmailAuth';
 export * from './LoginPage';
-export * from './AuthDemo';

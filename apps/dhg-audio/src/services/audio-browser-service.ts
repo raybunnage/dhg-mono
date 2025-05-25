@@ -161,5 +161,10 @@ class AudioBrowserService {
   }
 }
 
-// Export singleton instance
-export const audioBrowserService = AudioBrowserService.getInstance();
+// Export a factory function instead of immediate instance creation
+export const audioBrowserService = {
+  getInstance: () => AudioBrowserService.getInstance(),
+  getAudioFiles: async (limit?: number) => AudioBrowserService.getInstance().getAudioFiles(limit),
+  getAudioFile: async (id: string) => AudioBrowserService.getInstance().getAudioFile(id),
+  getTranscript: async (sourceId: string) => AudioBrowserService.getInstance().getTranscript(sourceId)
+};

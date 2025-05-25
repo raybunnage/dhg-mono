@@ -1,6 +1,5 @@
 export * from "./supabase-client";
-export * from "./claude-service"; // Legacy path - kept for backward compatibility
-export * from "./claude-service/claude-service"; // New path
+export * from "./claude-service/claude-service"; // Main claude service export
 export * from "./document-pipeline/document-pipeline-service";
 export * from "./script-pipeline/script-pipeline-service";
 export * from "./file-service/file-service";
@@ -11,3 +10,5 @@ export * from "./converter-service"; // Converter service for file and format co
 export * from "./document-classification-service"; // Document classification service for content classification
 export * from "./pdf-processor-service"; // PDF processor service for PDF file handling
 export * from "./filter-service"; // Filter service for query filtering
+export * from "./user-profile-service"; // User profile service for comprehensive user data management
+export * from "./light-auth-service"; // Light authentication service for email whitelist authentication

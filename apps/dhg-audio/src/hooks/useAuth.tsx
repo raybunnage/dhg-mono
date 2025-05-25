@@ -1,189 +1,170 @@
 /**
  * React Authentication Hook for DHG Audio
  * 
- * Provides authentication state and methods for React components
+ * Provides light authentication state and methods for React components
+ * Uses email whitelist authentication
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { authService, AppUser, AuthResult } from '../services/auth-service';
+import { dhgAudioLightAuth, LightAuthUser, LightAuthResult } from '../services/light-auth-service-simple';
 
 /**
  * Authentication hook state
  */
 interface AuthState {
-  user: AppUser | null;
+  user: LightAuthUser | null;
   loading: boolean;
   error: Error | null;
+  needsProfile: boolean;
+  profileCompleteness?: number;
 }
 
 /**
  * Authentication hook return type
  */
 interface UseAuthReturn extends AuthState {
-  signIn: (email: string, password: string) => Promise<AuthResult>;
-  signUp: (email: string, password: string, data?: Record<string, any>) => Promise<AuthResult>;
-  signOut: () => Promise<void>;
-  sendMagicLink: (email: string) => Promise<AuthResult>;
-  updateProfile: (updates: { full_name?: string; preferences?: Record<string, any> }) => Promise<AppUser>;
-  refreshSession: () => Promise<void>;
+  login: (email: string) => Promise<LightAuthResult>;
+  logout: () => Promise<void>;
+  completeProfile?: (profile: any) => Promise<void>;
+  updateProfile?: (profile: any) => Promise<void>;
 }
 
 /**
- * React hook for authentication
- * 
- * @example
- * ```tsx
- * function LoginComponent() {
- *   const { user, loading, error, signIn, signOut } = useAuth();
- *   
- *   if (loading) return <div>Loading...</div>;
- *   
- *   if (user) {
- *     return (
- *       <div>
- *         <p>Welcome, {user.email}</p>
- *         <button onClick={signOut}>Sign Out</button>
- *       </div>
- *     );
- *   }
- *   
- *   return <LoginForm onSubmit={signIn} error={error} />;
- * }
- * ```
+ * React hook for light authentication
  */
 export function useAuth(): UseAuthReturn {
+  console.log('[useAuth] Hook initializing...');
+  
   const [state, setState] = useState<AuthState>({
     user: null,
     loading: true,
-    error: null
+    error: null,
+    needsProfile: false
   });
 
   // Initialize authentication state
   useEffect(() => {
+    console.log('[useAuth] useEffect running...');
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
-        const user = await authService.getCurrentUser();
-        if (mounted) {
+        console.log('[useAuth] Getting current user...');
+        const currentUser = dhgAudioLightAuth.getCurrentUser();
+        console.log('[useAuth] Current user:', currentUser);
+        
+        // Add a small delay to ensure everything is loaded
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        if (currentUser && mounted) {
+          console.log('[useAuth] User found, setting authenticated state');
+          // For now, assume no profile needed if user exists
           setState({
-            user,
+            user: currentUser,
             loading: false,
-            error: null
+            error: null,
+            needsProfile: false,
+            profileCompleteness: 100
+          });
+        } else if (mounted) {
+          console.log('[useAuth] No user found, setting unauthenticated state');
+          setState({
+            user: null,
+            loading: false,
+            error: null,
+            needsProfile: false
           });
         }
       } catch (error) {
+        console.error('[useAuth] Auth initialization error:', error);
+        console.error('[useAuth] Error stack:', (error as Error).stack);
         if (mounted) {
           setState({
             user: null,
             loading: false,
-            error: error as Error
+            error: error as Error,
+            needsProfile: false
           });
         }
       }
     };
 
-    initializeAuth();
+    // Listen for storage events to detect auth changes
+    const handleStorageChange = () => {
+      console.log('[useAuth] Storage change detected, re-initializing auth...');
+      initializeAuth();
+    };
 
-    // Listen for auth state changes
-    const subscription = authService.onAuthStateChange((user) => {
-      if (mounted) {
-        setState(prev => ({
-          ...prev,
-          user,
-          loading: false
-        }));
-      }
-    });
+    window.addEventListener('storage', handleStorageChange);
+    initializeAuth();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
-  // Sign in method
-  const signIn = useCallback(async (email: string, password: string): Promise<AuthResult> => {
+  // Login method
+  const login = useCallback(async (email: string): Promise<LightAuthResult> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const result = await authService.signIn(email, password);
+      console.log('Attempting login with email:', email);
+      const result = await dhgAudioLightAuth.login(email);
+      console.log('Login result:', result);
       
-      if (result.error) {
+      if (!result.success) {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: new Error(result.error?.message || 'Authentication failed')
+          error: new Error(result.error || 'Authentication failed'),
+          needsProfile: result.needsProfile || false
         }));
       } else {
+        const needsProfile = result.needsProfile || false;
+        
         setState({
-          user: result.user,
+          user: result.user || null,
           loading: false,
-          error: null
+          error: null,
+          needsProfile,
+          profileCompleteness: needsProfile ? 0 : 100
         });
+        
+        // Force a re-render by updating localStorage event
+        window.dispatchEvent(new Event('storage'));
       }
       
       return result;
     } catch (error) {
+      console.error('Login error:', error);
       const err = error as Error;
       setState(prev => ({
         ...prev,
         loading: false,
         error: err
       }));
-      return { session: null, user: null, error: err as any };
+      return { success: false, error: err.message };
     }
   }, []);
 
-  // Sign up method
-  const signUp = useCallback(async (
-    email: string, 
-    password: string, 
-    data?: Record<string, any>
-  ): Promise<AuthResult> => {
+  // Logout method
+  const logout = useCallback(async (): Promise<void> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const result = await authService.signUp(email, password, { data });
-      
-      if (result.error) {
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          error: new Error(result.error?.message || 'Authentication failed')
-        }));
-      } else {
-        setState({
-          user: result.user,
-          loading: false,
-          error: null
-        });
-      }
-      
-      return result;
-    } catch (error) {
-      const err = error as Error;
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: err
-      }));
-      return { session: null, user: null, error: err as any };
-    }
-  }, []);
-
-  // Sign out method
-  const signOut = useCallback(async (): Promise<void> => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      await authService.signOut();
+      await dhgAudioLightAuth.logout();
       setState({
         user: null,
         loading: false,
-        error: null
+        error: null,
+        needsProfile: false
       });
+      
+      // Force a re-render by updating localStorage event
+      window.dispatchEvent(new Event('storage'));
     } catch (error) {
+      console.error('Logout error:', error);
       setState(prev => ({
         ...prev,
         loading: false,
@@ -193,274 +174,26 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
-  // Send magic link method
-  const sendMagicLink = useCallback(async (email: string): Promise<AuthResult> => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const result = await authService.sendMagicLink({ email });
-      
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: result.error ? new Error(result.error.message) : null
-      }));
-      
-      return result;
-    } catch (error) {
-      const err = error as Error;
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: err
-      }));
-      return { session: null, user: null, error: err as any };
-    }
+  // Placeholder methods for profile management (to be implemented later)
+  const completeProfile = useCallback(async (profile: any): Promise<void> => {
+    console.log('Profile completion not yet implemented:', profile);
+    // TODO: Implement profile completion
   }, []);
 
-  // Update profile method
-  const updateProfile = useCallback(async (updates: {
-    full_name?: string;
-    preferences?: Record<string, any>;
-  }): Promise<AppUser> => {
-    if (!state.user) {
-      throw new Error('No authenticated user');
-    }
-
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const updatedUser = await authService.updateUserProfile(updates);
-      
-      setState({
-        user: updatedUser,
-        loading: false,
-        error: null
-      });
-      
-      return updatedUser;
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error as Error
-      }));
-      throw error;
-    }
-  }, [state.user]);
-
-  // Refresh session method
-  const refreshSession = useCallback(async (): Promise<void> => {
-    try {
-      const session = await authService.refreshSession();
-      if (!session) {
-        setState({
-          user: null,
-          loading: false,
-          error: new Error('Failed to refresh session')
-        });
-      }
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error as Error
-      }));
-      throw error;
-    }
+  const updateProfile = useCallback(async (profile: any): Promise<void> => {
+    console.log('Profile update not yet implemented:', profile);
+    // TODO: Implement profile update
   }, []);
 
   return {
     user: state.user,
     loading: state.loading,
     error: state.error,
-    signIn,
-    signUp,
-    signOut,
-    sendMagicLink,
-    updateProfile,
-    refreshSession
+    needsProfile: state.needsProfile,
+    profileCompleteness: state.profileCompleteness,
+    login,
+    logout,
+    completeProfile,
+    updateProfile
   };
-}
-
-/**
- * Higher-order component for protecting routes
- * 
- * @example
- * ```tsx
- * const ProtectedDashboard = withAuth(Dashboard);
- * 
- * // Or with custom loading/error components
- * const ProtectedDashboard = withAuth(Dashboard, {
- *   LoadingComponent: CustomLoader,
- *   ErrorComponent: CustomError,
- *   redirectTo: '/login'
- * });
- * ```
- */
-export function withAuth<P extends object>(
-  Component: React.ComponentType<P>,
-  options?: {
-    LoadingComponent?: React.ComponentType;
-    ErrorComponent?: React.ComponentType<{ error: Error }>;
-    redirectTo?: string;
-  }
-): React.ComponentType<P> {
-  return function AuthenticatedComponent(props: P) {
-    const { user, loading, error } = useAuth();
-
-    // Show loading component
-    if (loading) {
-      if (options?.LoadingComponent) {
-        return <options.LoadingComponent />;
-      }
-      return <div>Loading...</div>;
-    }
-
-    // Show error component
-    if (error) {
-      if (options?.ErrorComponent) {
-        return <options.ErrorComponent error={error} />;
-      }
-      return <div>Authentication error: {error.message}</div>;
-    }
-
-    // Redirect if not authenticated
-    if (!user) {
-      if (options?.redirectTo && typeof window !== 'undefined') {
-        window.location.href = options.redirectTo;
-      }
-      return <div>Please sign in to continue</div>;
-    }
-
-    // Render the protected component
-    return <Component {...props} />;
-  };
-}
-
-/**
- * Hook for checking permissions
- * 
- * @example
- * ```tsx
- * function AdminPanel() {
- *   const { hasPermission, loading } = usePermission('admin:access');
- *   
- *   if (loading) return <div>Checking permissions...</div>;
- *   if (!hasPermission) return <div>Access denied</div>;
- *   
- *   return <div>Admin content here</div>;
- * }
- * ```
- */
-export function usePermission(permission: string): {
-  hasPermission: boolean;
-  loading: boolean;
-} {
-  const [hasPermission, setHasPermission] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-
-  useEffect(() => {
-    let mounted = true;
-
-    const checkPermission = async () => {
-      if (!user) {
-        if (mounted) {
-          setHasPermission(false);
-          setLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const result = await authService.hasPermission(permission);
-        if (mounted) {
-          setHasPermission(result);
-          setLoading(false);
-        }
-      } catch (error) {
-        if (mounted) {
-          setHasPermission(false);
-          setLoading(false);
-        }
-      }
-    };
-
-    checkPermission();
-
-    return () => {
-      mounted = false;
-    };
-  }, [user, permission]);
-
-  return { hasPermission, loading };
-}
-
-/**
- * Hook for managing user roles
- * 
- * @example
- * ```tsx
- * function RoleBasedContent() {
- *   const { roles, hasRole, loading } = useRoles();
- *   
- *   if (loading) return <div>Loading roles...</div>;
- *   
- *   return (
- *     <div>
- *       {hasRole('admin') && <AdminSection />}
- *       {hasRole('editor') && <EditorSection />}
- *       <p>Your roles: {roles.join(', ')}</p>
- *     </div>
- *   );
- * }
- * ```
- */
-export function useRoles(): {
-  roles: string[];
-  hasRole: (role: string) => boolean;
-  loading: boolean;
-} {
-  const [roles, setRoles] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchRoles = async () => {
-      if (!user) {
-        if (mounted) {
-          setRoles([]);
-          setLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const userRoles = await authService.getUserRoles();
-        if (mounted) {
-          setRoles(userRoles);
-          setLoading(false);
-        }
-      } catch (error) {
-        if (mounted) {
-          setRoles([]);
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchRoles();
-
-    return () => {
-      mounted = false;
-    };
-  }, [user]);
-
-  const hasRole = useCallback((role: string): boolean => {
-    return roles.includes(role);
-  }, [roles]);
-
-  return { roles, hasRole, loading };
 }
