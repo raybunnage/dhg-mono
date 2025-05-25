@@ -17,19 +17,17 @@ import { filterService } from '@/utils/filter-service-adapter';
     console.log('- VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
     console.log('- VITE_SUPABASE_SERVICE_ROLE_KEY exists:', !!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY);
     
-    // Use supabaseAdapter diagnostics
-    console.log('Getting Supabase adapter diagnostics...');
-    const diagnostics = await supabaseAdapter.getDiagnostics();
-    console.log('Supabase diagnostics:', diagnostics);
+    // Test the connection
+    console.log('Testing Supabase connection...');
     
     // Test connection with direct test query
     console.log('Testing Supabase connection with direct query...');
-    const { data, error } = await supabase.from('user_filter_profiles').select('count(*)', { count: 'exact', head: true });
+    const { count, error } = await supabase.from('user_filter_profiles').select('*', { count: 'exact', head: true });
     
     if (error) {
       console.error('Supabase connection test failed:', error);
     } else {
-      console.log('Supabase connection test succeeded, profile count:', data?.count);
+      console.log('Supabase connection test succeeded, profile count:', count);
     }
   } catch (e) {
     console.error('Error testing Supabase connection:', e);
@@ -55,7 +53,7 @@ async function debugCheckFilterProfiles() {
     // Check available fields in first profile
     if (data && data.length > 0) {
       console.log('Debug: Available fields in first profile:', Object.keys(data[0]).join(', '));
-      console.log('Debug: Found', data.length, 'profiles with these IDs:', data.map(p => p.id).join(', '));
+      console.log('Debug: Found', data.length, 'profiles with these IDs:', data.map((p: any) => p.id).join(', '));
       
       data.forEach(profile => {
         console.log(`Debug: Profile ${profile.id}: Name="${profile.name}", IsActive=${profile.is_active}`);
@@ -283,8 +281,8 @@ export function Home() {
         const directProfiles = await debugCheckFilterProfiles();
         console.log('Initial load: Direct database check found', directProfiles?.length || 0, 'profiles');
         
-        if (directProfiles?.length > 0) {
-          console.log('Initial load: Direct database check profile names:', directProfiles.map(p => p.name).join(', '));
+        if (directProfiles && directProfiles.length > 0) {
+          console.log('Initial load: Direct database check profile names:', directProfiles.map((p: any) => p.name).join(', '));
           console.log('Initial load: First profile structure:', Object.keys(directProfiles[0]).join(', '));
         }
         
@@ -411,7 +409,7 @@ export function Home() {
         } else {
           console.log(`Home: Found ${profilesDebug?.length || 0} profiles directly from DB`);
           if (profilesDebug && profilesDebug.length > 0) {
-            console.log('Home: Profile names:', profilesDebug.map(p => p.name).join(', '));
+            console.log('Home: Profile names:', profilesDebug.map((p: any) => p.name).join(', '));
           }
         }
       } catch (e) {
@@ -576,7 +574,7 @@ export function Home() {
                   console.log(`Home: Found ${sourceIds.length} source IDs for filtering`);
                   
                   // Filter presentations by video_source_id
-                  filteredPresentationsData = filteredPresentationsData.filter(p => 
+                  filteredPresentationsData = filteredPresentationsData.filter((p: any) => 
                     sourceIds.includes(p.video_source_id)
                   );
                   
@@ -592,7 +590,7 @@ export function Home() {
       
         // Fetch expert information separately for each presentation using sources_google_experts
         const presentationsWithExperts = await Promise.all(
-          (filteredPresentationsData || []).map(async (presentation) => {
+          (filteredPresentationsData || []).map(async (presentation: Presentation) => {
             if (!presentation.video_source_id) return presentation;
           
           // Get experts associated with this video source
