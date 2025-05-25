@@ -1,4 +1,4 @@
-# Claude Code Instructions (v1.02)
+# Claude Code Instructions (v1.03)
 
 ⚠️ **CRITICAL: ASK BEFORE WORKAROUNDS**
 - **NEVER implement workarounds without explicit permission**
@@ -111,6 +111,13 @@
    - When moving code to shared services: make it work first, then extract, then replace
    - Ask for permission before major architectural changes
 
+3. **Document Solutions After Struggles**:
+   - ⚠️ **After overcoming significant challenges, update this CLAUDE.md file**
+   - Add concise troubleshooting guidance for future reference
+   - Include specific error messages, root causes, and solutions
+   - Follow the existing format with ❌ Problem and ✅ Solution examples
+   - Focus on patterns that could help with similar issues in the future
+
 ## Final Checklist
 
 ⚠️ **BEFORE SUBMITTING CODE:**
@@ -164,6 +171,16 @@
    - If `@shared/components` imports fail, it may be a deeper config issue
    - Don't assume simple fixes - check if other apps successfully import from shared
    - Consider using temporary placeholders while investigating root cause
+   
+   **Shared Component Import Pattern Fix (dhg-audio example)**:
+   - ❌ **Problem**: `import { ProfileForm } from '@shared/components'` - General export may not be configured
+   - ✅ **Solution**: Use specific path imports like working apps do
+   - Example fix: `import { ProfileForm } from '@shared/components/profile/ProfileForm'`
+   - **Debugging steps**:
+     1. Check how working apps (dhg-admin-config, dhg-improve-experts) import the same component
+     2. Look for the component's actual file location in `packages/shared/components/`
+     3. Use the specific path import instead of relying on index.ts re-exports
+     4. If multiple apps use different patterns, follow the most recent/working pattern
 
 4. **Cleanup and refactoring**:
    - ⚠️ **Test incrementally** - Don't remove multiple files at once
