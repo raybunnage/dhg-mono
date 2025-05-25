@@ -14,7 +14,6 @@ export default function Login() {
 
   return (
     <LightEmailAuth 
-      onSuccess={handleSuccess}
       redirectTo={window.location.origin}
     />
   );

@@ -1,6 +1,33 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
-drop
+Ah, that's a Claude Code interface feature from Anthropic! The # shortcut is likely a way to quickly add memories or notes that Claude Code
+  can reference in future conversations.
+
+  Based on what you're describing, it sounds like:
+
+  The # shortcut allows you to:
+  - Quickly create "memories" or shortcuts that get stored for future reference
+  - These memories are probably linked to the CLAUDE.md file or project context
+  - It's a way to capture important lessons, patterns, or reminders without manually editing files
+
+  How it might work:
+  - Type # followed by a short keyword or phrase
+  - This creates a memorable shortcut that Claude Code can reference later
+  - These shortcuts might automatically inform future conversations about your project
+
+  Possible usage examples:
+  - #auth-issues - Remember authentication debugging patterns
+  - #vite-config - Remember Vite configuration lessons
+  - #monorepo-patterns - Remember how to leverage other apps for debugging
+
+  Unfortunately, I don't have access to the Claude Code interface documentation to give you the exact usage. You might try:
+
+  1. Experimenting with it - Try typing # and see what happens
+  2. Looking for help/documentation - Check if Claude Code has a help menu or docs about this feature
+  3. Trying simple examples - Maybe #test-memory to see how it works
+
+  This feature sounds very useful for building up project-specific knowledge that persists across conversations!
+
 
 [
   {

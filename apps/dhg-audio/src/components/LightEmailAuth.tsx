@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { SupabaseClientService } from '@shared/services/supabase-client';
 
-// Temporarily comment out to test if this is causing the issue
-// import { ProfileForm, ProfileFormData } from '@shared/components';
-
-// Temporary interface until we fix the import
-interface ProfileFormData {
-  profession: string;
-  professional_title: string;
-  // Add other fields as needed
-}
+// Try specific path import like dhg-admin-config uses
+import { ProfileForm, ProfileFormData } from '@shared/components/profile/ProfileForm';
 
 interface LightEmailAuthProps {
   redirectTo?: string;
@@ -60,21 +54,66 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
     try {
       console.log('Submitting profile for registration:', { email, profileData });
       
-      // For now, we'll create a simple registration process
-      // In a full implementation, this would call a proper registration service
-      const registrationData = {
-        email,
-        name: `${profileData.professional_title} ${profileData.profession}`.trim(),
-        profile: profileData
-      };
-
-      // Save the profile data to localStorage for now
-      localStorage.setItem('dhg_user_profile', JSON.stringify(profileData));
+      const supabase = SupabaseClientService.getInstance().getClient();
       
-      // Create a mock user and log them in
-      const mockUser = {
-        id: crypto.randomUUID(),
-        email: email,
+      // First, get the allowed_emails record to get the user ID
+      const { data: allowedEmail, error: emailError } = await supabase
+        .from('allowed_emails')
+        .select('id, email, name')
+        .eq('email', email.toLowerCase())
+        .single();
+
+      if (emailError || !allowedEmail) {
+        throw new Error('Email not found in allowed list');
+      }
+
+      // Insert the profile data into user_profiles_v2 table
+      const { data: profileRecord, error: profileError } = await supabase
+        .from('user_profiles_v2')
+        .insert({
+          id: allowedEmail.id,
+          profession: profileData.profession,
+          professional_title: profileData.professional_title,
+          years_experience: profileData.years_experience,
+          industry_sectors: profileData.industry_sectors,
+          specialty_areas: profileData.specialty_areas,
+          credentials: profileData.credentials,
+          interested_topics: profileData.interested_topics,
+          avoided_topics: profileData.avoided_topics,
+          interested_experts: profileData.interested_experts,
+          learning_goals: profileData.learning_goals,
+          reason_for_learning: profileData.reason_for_learning,
+          intended_application: profileData.intended_application,
+          current_challenges: profileData.current_challenges,
+          preferred_depth: profileData.preferred_depth,
+          preferred_formats: profileData.preferred_formats,
+          preferred_session_length: profileData.preferred_session_length,
+          learning_pace: profileData.learning_pace,
+          time_commitment: profileData.time_commitment,
+          bio_summary: profileData.bio_summary,
+          referral_source: profileData.referral_source,
+          learning_background: profileData.learning_background,
+          priority_subjects: profileData.priority_subjects,
+          content_tags_following: profileData.content_tags_following,
+          onboarding_completed: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw new Error(`Failed to save profile: ${profileError.message}`);
+      }
+
+      console.log('Profile saved successfully:', profileRecord);
+      
+      // Create user object with the allowed_emails ID as the universal identifier
+      const user = {
+        id: allowedEmail.id,
+        email: allowedEmail.email,
+        name: allowedEmail.name || `${profileData.professional_title || ''} ${profileData.profession || ''}`.trim() || email,
         email_confirmed_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -82,64 +121,46 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
         role: 'authenticated',
         app_metadata: {},
         user_metadata: {
-          name: registrationData.name,
-          email: email,
-          profile_complete: true
+          profile_complete: true,
+          allowed_email_id: allowedEmail.id
         }
       };
 
-      // Save to localStorage to simulate login
-      localStorage.setItem('dhg_auth_user', JSON.stringify(mockUser));
+      // Save to localStorage for lightweight auth
+      localStorage.setItem('dhg_auth_user', JSON.stringify(user));
+      localStorage.setItem('dhg_user_profile', JSON.stringify(profileData));
       
       // Trigger storage event to update auth state
       window.dispatchEvent(new Event('storage'));
       
-      console.log('Profile completed and user registered');
-      // Don't call onSuccess - let the auth state update handle navigation
+      console.log('Profile completed and user registered with ID:', allowedEmail.id);
     } catch (err) {
       console.error('Profile submission error:', err);
-      setError('Failed to complete registration. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to complete registration. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   if (showProfileForm) {
-    // Temporarily show a simple message instead of ProfileForm
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
             <h2 className="text-center text-2xl font-bold text-gray-900 mb-4">
               Complete Your Profile
             </h2>
-            <p className="text-center text-gray-600 mb-4">
+            <p className="text-center text-gray-600 mb-6">
               Email: {email}
             </p>
-            <p className="text-center text-gray-600">
-              Profile form would appear here. This is a temporary placeholder.
-            </p>
-            <button
-              onClick={() => {
-                // Simulate profile completion for testing
-                handleProfileSubmit({
-                  profession: 'Test User',
-                  professional_title: 'Testing'
-                });
-              }}
-              className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-            >
-              Complete Profile (Test)
-            </button>
-            <button
-              onClick={() => {
+            <ProfileForm
+              onSubmit={handleProfileSubmit}
+              onCancel={() => {
                 setShowProfileForm(false);
                 setEmail('');
               }}
-              className="mt-2 w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              Cancel
-            </button>
+              isLoading={isLoading}
+            />
           </div>
         </div>
       </div>

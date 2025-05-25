@@ -1,4 +1,4 @@
-# Claude Code Instructions (v1.01)
+# Claude Code Instructions (v1.02)
 
 ⚠️ **CRITICAL: ASK BEFORE WORKAROUNDS**
 - **NEVER implement workarounds without explicit permission**
@@ -121,6 +121,8 @@
 5. Check that commands are integrated into shell script CLI
 
 ## Project Structure
+- **Monorepo with multiple apps** - When debugging issues, check working apps for patterns
+- `apps/` - Multiple applications (dhg-hub, dhg-audio, dhg-improve-experts, etc.)
 - `packages/shared/services/` - Reusable services (preferred for new functionality)
 - `scripts/cli-pipeline/{domain}/` - CLI commands (ONLY place for new scripts)
 - `supabase/types.ts` - Database schema (single source of truth)
@@ -146,6 +148,28 @@
 5. **Standalone scripts**: 
    - ❌ NEVER create standalone `ts-node` scripts
    - ✅ ALWAYS integrate into shell script CLI pipelines
+
+## Debugging in a Monorepo Context
+
+1. **When an app has configuration issues**:
+   - ✅ **Compare with working apps** - Check how dhg-hub, dhg-improve-experts configure similar features
+   - ✅ **Look for patterns** - Router setup, imports, environment variables
+   - Example: If Vite config fails in dhg-audio, check dhg-hub's working vite.config.ts
+
+2. **React Router common patterns**:
+   - Most apps use `BrowserRouter` in main.tsx, not App.tsx
+   - Check working apps for the correct pattern before making changes
+
+3. **Import resolution issues**:
+   - If `@shared/components` imports fail, it may be a deeper config issue
+   - Don't assume simple fixes - check if other apps successfully import from shared
+   - Consider using temporary placeholders while investigating root cause
+
+4. **Cleanup and refactoring**:
+   - ⚠️ **Test incrementally** - Don't remove multiple files at once
+   - ⚠️ **Understand file purpose** - Some files (like auth-service.ts) may be for future use
+   - ⚠️ **Keep essential debug logs** - Remove verbose logs but keep error handling
+   - After cleanup, always test the app still works before committing
 
 ## TypeScript Best Practices
 
@@ -236,13 +260,15 @@ SELECT * FROM folder_tree;
 
 ## Key Points Summary
 
-This document provides the essential guidelines for working with Claude Code v1.01. The most important principles are:
+This document provides the essential guidelines for working with Claude Code v1.02. The most important principles are:
 
 1. **Ask before implementing workarounds** - explain problems and get permission
 2. **Use proper file locations** - scripts go in `scripts/cli-pipeline/{domain}/`
 3. **Use singleton services** - never create direct clients for Supabase, Claude, etc.
 4. **Integrate CLI commands** - always add to shell script wrappers
 5. **Follow TypeScript best practices** - run `tsc --noEmit` before submitting
+6. **Leverage the monorepo** - when debugging, compare with working apps for patterns
+7. **Test incrementally** - especially during cleanup or refactoring
 
 When in doubt, ask for clarification rather than making assumptions or implementing temporary solutions.
 
