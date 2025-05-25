@@ -1,5 +1,6 @@
-import { SupabaseClientService } from '../../services/supabase-client';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { Database } from '../../../../supabase/types';
 
 /**
  * Represents a filter profile that can be applied to queries
@@ -7,56 +8,36 @@ import { v4 as uuidv4 } from 'uuid';
 export interface FilterProfile {
   id: string;
   name: string;
-  description?: string;
-  is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
-  filter_criteria?: {
-    mime_types?: string[];
-    document_types?: string[];
-    experts?: string[];
-    folders?: string[];
-    path_patterns?: string[];
-    date_range?: {
-      start?: string;
-      end?: string;
-    };
-    other_criteria?: Record<string, any>;
-  };
+  description?: string | null;
+  is_active: boolean | null;
+  created_at?: string | null;
 }
 
 /**
- * Represents an excluded drive for a filter profile
+ * Represents a drive association for a filter profile
  */
 export interface FilterProfileDrive {
   id: string;
-  profile_id: string;
-  drive_id: string;
-  created_at?: string;
+  profile_id: string | null;
+  root_drive_id: string;
+  include_children?: boolean | null;
 }
 
 /**
- * Singleton service for managing filter profiles and applying filters to queries
+ * Service for managing filter profiles and applying filters to queries
+ * This service accepts a Supabase client to work in different environments
  */
 export class FilterService {
-  private static instance: FilterService;
   private activeProfile: FilterProfile | null = null;
-  private supabase = SupabaseClientService.getInstance().getClient();
+  private profileDrivesCache: Map<string, string[]> = new Map();
+  private supabase: SupabaseClient<any>;
 
   /**
-   * Private constructor to enforce singleton pattern
+   * Constructor that accepts a configured Supabase client
+   * @param supabaseClient - The Supabase client to use for database operations
    */
-  private constructor() {}
-
-  /**
-   * Gets the singleton instance of the FilterService
-   * @returns The FilterService instance
-   */
-  public static getInstance(): FilterService {
-    if (!FilterService.instance) {
-      FilterService.instance = new FilterService();
-    }
-    return FilterService.instance;
+  constructor(supabaseClient: SupabaseClient<any>) {
+    this.supabase = supabaseClient;
   }
 
   /**
@@ -67,9 +48,7 @@ export class FilterService {
   public async loadProfile(profileId: string): Promise<FilterProfile | null> {
     const { data, error } = await this.supabase
       .from('user_filter_profiles')
-      .select(`
-        *
-      `)
+      .select('*')
       .eq('id', profileId)
       .single();
 
@@ -82,6 +61,10 @@ export class FilterService {
     
     // Update the active profile
     this.activeProfile = profile;
+    
+    // Preload drive IDs for this profile
+    await this.getProfileDriveIds(profileId);
+    
     return profile;
   }
 
@@ -92,19 +75,25 @@ export class FilterService {
   public async loadActiveProfile(): Promise<FilterProfile | null> {
     const { data, error } = await this.supabase
       .from('user_filter_profiles')
-      .select(`
-        *
-      `)
+      .select('*')
       .eq('is_active', true)
-      .single();
+      .limit(1);
 
     if (error) {
       console.error('Error loading active filter profile:', error);
       return null;
     }
 
-    this.activeProfile = data as FilterProfile;
-    return this.activeProfile;
+    if (data && data.length > 0) {
+      this.activeProfile = data[0] as FilterProfile;
+      
+      // Preload drive IDs for this profile
+      await this.getProfileDriveIds(this.activeProfile.id);
+      
+      return this.activeProfile;
+    }
+    
+    return null;
   }
 
   /**
@@ -126,7 +115,7 @@ export class FilterService {
       const { error: deactivateError } = await this.supabase
         .from('user_filter_profiles')
         .update({ is_active: false })
-        .not('id', 'eq', profileId);
+        .not('id', 'is', null);
 
       if (deactivateError) {
         console.error('Error deactivating other profiles:', deactivateError);
@@ -144,7 +133,8 @@ export class FilterService {
         return false;
       }
 
-      // Load the newly activated profile
+      // Clear cache and load the newly activated profile
+      this.profileDrivesCache.clear();
       await this.loadProfile(profileId);
       return true;
     } catch (error) {
@@ -154,21 +144,73 @@ export class FilterService {
   }
 
   /**
+   * Get all drive IDs associated with a profile
+   * @param profileId - The profile ID
+   * @returns Array of root drive IDs
+   */
+  public async getProfileDriveIds(profileId: string): Promise<string[]> {
+    try {
+      // Check cache first
+      if (this.profileDrivesCache.has(profileId)) {
+        console.log(`FilterService: Using cached drives for profile ${profileId}`);
+        return this.profileDrivesCache.get(profileId) || [];
+      }
+      
+      console.log(`FilterService: Fetching drives for profile ${profileId}`);
+      
+      const { data, error } = await this.supabase
+        .from('user_filter_profile_drives')
+        .select('root_drive_id')
+        .eq('profile_id', profileId);
+      
+      if (error) {
+        console.error('FilterService: Error fetching profile drives:', error);
+        return [];
+      }
+      
+      if (!data || data.length === 0) {
+        console.log(`FilterService: No drives found for profile ${profileId}`);
+        return [];
+      }
+      
+      // Extract the root_drive_ids
+      const driveIds = data
+        .map(item => item.root_drive_id)
+        .filter(id => id !== null && id !== undefined);
+      
+      console.log(`FilterService: Found ${driveIds.length} root_drive_ids for profile ${profileId}`);
+      
+      // Cache the results
+      this.profileDrivesCache.set(profileId, driveIds);
+      
+      return driveIds;
+    } catch (err) {
+      console.error('FilterService: Error in getProfileDriveIds:', err);
+      return [];
+    }
+  }
+  
+  /**
+   * Clear drives cache for a specific profile or all profiles
+   * @param profileId - Optional profile ID to clear cache for
+   */
+  public clearDrivesCache(profileId?: string): void {
+    if (profileId) {
+      this.profileDrivesCache.delete(profileId);
+    } else {
+      this.profileDrivesCache.clear();
+    }
+  }
+
+  /**
    * Creates a new filter profile
    * @param profile - The profile to create
    * @returns The created profile with ID or null if creation failed
    */
-  public async createProfile(profile: Omit<FilterProfile, 'id'>): Promise<FilterProfile | null> {
-    const newProfile = {
-      ...profile,
-      id: uuidv4(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
+  public async createProfile(profile: Omit<FilterProfile, 'id' | 'created_at'>): Promise<FilterProfile | null> {
     const { data, error } = await this.supabase
       .from('user_filter_profiles')
-      .insert(newProfile)
+      .insert(profile)
       .select()
       .single();
 
@@ -182,33 +224,37 @@ export class FilterService {
 
   /**
    * Updates an existing filter profile
-   * @param profile - The profile with updated values
-   * @returns The updated profile or null if update failed
+   * @param profileId - The profile ID
+   * @param updates - The fields to update
+   * @returns True if successful, false otherwise
    */
-  public async updateProfile(profile: FilterProfile): Promise<FilterProfile | null> {
-    const updatedProfile = {
-      ...profile,
-      updated_at: new Date().toISOString()
-    };
-
-    const { data, error } = await this.supabase
-      .from('user_filter_profiles')
-      .update(updatedProfile)
-      .eq('id', profile.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating filter profile:', error);
-      return null;
+  public async updateProfile(profileId: string, updates: Partial<Omit<FilterProfile, 'id' | 'created_at'>>): Promise<boolean> {
+    try {
+      const { error } = await this.supabase
+        .from('user_filter_profiles')
+        .update(updates)
+        .eq('id', profileId);
+      
+      if (error) {
+        console.error('FilterService: Error updating profile:', error);
+        return false;
+      }
+      
+      // Clear cache if name or description changed
+      if (updates.name || updates.description) {
+        this.clearDrivesCache(profileId);
+      }
+      
+      // If this is the active profile, reload it
+      if (this.activeProfile && this.activeProfile.id === profileId) {
+        await this.loadProfile(profileId);
+      }
+      
+      return true;
+    } catch (err) {
+      console.error('FilterService: Error in updateProfile:', err);
+      return false;
     }
-
-    // If this is the active profile, update the cached copy
-    if (this.activeProfile && this.activeProfile.id === profile.id) {
-      this.activeProfile = data as FilterProfile;
-    }
-
-    return data as FilterProfile;
   }
 
   /**
@@ -239,7 +285,8 @@ export class FilterService {
       return false;
     }
 
-    // If we deleted the active profile, clear it
+    // Clear cache and active profile if needed
+    this.clearDrivesCache(profileId);
     if (this.activeProfile && this.activeProfile.id === profileId) {
       this.activeProfile = null;
     }
@@ -281,116 +328,144 @@ export class FilterService {
   }
 
   /**
-   * Adds a drive ID to be excluded by a filter profile
+   * Adds drive IDs to a filter profile
    * @param profileId - The profile ID
-   * @param driveId - The drive ID to exclude
-   * @returns The created drive filter record or null if creation failed
-   */
-  public async addDriveToProfile(profileId: string, driveId: string): Promise<FilterProfileDrive | null> {
-    const newDrive = {
-      id: uuidv4(),
-      profile_id: profileId,
-      drive_id: driveId,
-      created_at: new Date().toISOString()
-    };
-
-    const { data, error } = await this.supabase
-      .from('user_filter_profile_drives')
-      .insert(newDrive)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error adding drive to filter profile:', error);
-      return null;
-    }
-
-    return data as FilterProfileDrive;
-  }
-
-  /**
-   * Removes a drive ID from a filter profile
-   * @param profileId - The profile ID
-   * @param driveId - The drive ID to remove
+   * @param driveIds - Array of root drive IDs to add
    * @returns True if successful, false otherwise
    */
-  public async removeDriveFromProfile(profileId: string, driveId: string): Promise<boolean> {
-    const { error } = await this.supabase
-      .from('user_filter_profile_drives')
-      .delete()
-      .eq('profile_id', profileId)
-      .eq('drive_id', driveId);
-
-    if (error) {
-      console.error('Error removing drive from filter profile:', error);
+  public async addDrivesToProfile(profileId: string, driveIds: string[]): Promise<boolean> {
+    try {
+      const drivesToAdd = driveIds.map(driveId => ({
+        profile_id: profileId,
+        root_drive_id: driveId,
+        include_children: true
+      }));
+      
+      const { error } = await this.supabase
+        .from('user_filter_profile_drives')
+        .insert(drivesToAdd);
+      
+      if (error) {
+        console.error('FilterService: Error adding drives to profile:', error);
+        return false;
+      }
+      
+      // Clear cache for this profile
+      this.clearDrivesCache(profileId);
+      
+      return true;
+    } catch (err) {
+      console.error('FilterService: Error in addDrivesToProfile:', err);
       return false;
     }
-
-    return true;
   }
 
   /**
-   * Lists all drive IDs excluded by a filter profile
+   * Removes drive IDs from a filter profile
    * @param profileId - The profile ID
-   * @returns Array of drive IDs or empty array if none found
+   * @param driveIds - Array of root drive IDs to remove
+   * @returns True if successful, false otherwise
+   */
+  public async removeDrivesFromProfile(profileId: string, driveIds: string[]): Promise<boolean> {
+    try {
+      const { error } = await this.supabase
+        .from('user_filter_profile_drives')
+        .delete()
+        .eq('profile_id', profileId)
+        .in('root_drive_id', driveIds);
+      
+      if (error) {
+        console.error('FilterService: Error removing drives from profile:', error);
+        return false;
+      }
+      
+      // Clear cache for this profile
+      this.clearDrivesCache(profileId);
+      
+      return true;
+    } catch (err) {
+      console.error('FilterService: Error in removeDrivesFromProfile:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Lists all drive IDs for a filter profile (alias for getProfileDriveIds)
+   * @param profileId - The profile ID
+   * @returns Array of root drive IDs or empty array if none found
    */
   public async listDrivesForProfile(profileId: string): Promise<string[]> {
-    const { data, error } = await this.supabase
-      .from('user_filter_profile_drives')
-      .select('drive_id')
-      .eq('profile_id', profileId);
-
-    if (error) {
-      console.error('Error listing drives for filter profile:', error);
-      return [];
-    }
-
-    return data.map(item => item.drive_id);
+    return this.getProfileDriveIds(profileId);
   }
 
   /**
-   * Applies the filter criteria from the active profile to a Supabase query
+   * Apply filter to a query based on active profile
+   * This method modifies a Supabase query to filter results based on the active profile's drive IDs
    * @param query - The Supabase query to modify
+   * @param activeProfileId - Optional profile ID (uses active profile if not provided)
    * @returns The modified query with filters applied
    */
-  public applyFilterToQuery(query: any): any {
-    if (!this.activeProfile || !this.activeProfile.filter_criteria) {
-      return query;
-    }
-
-    const criteria = this.activeProfile.filter_criteria;
-
-    // Apply mime type filters if specified
-    if (criteria.mime_types && criteria.mime_types.length > 0) {
-      query = query.in('mime_type', criteria.mime_types);
-    }
-
-    // Apply document type filters if specified
-    if (criteria.document_types && criteria.document_types.length > 0) {
-      query = query.in('document_type_id', criteria.document_types);
-    }
-
-    // Apply expert filters if specified
-    if (criteria.experts && criteria.experts.length > 0) {
-      query = query.in('expert_id', criteria.experts);
-    }
-
-    // Apply folder filters if specified
-    if (criteria.folders && criteria.folders.length > 0) {
-      query = query.in('parent_folder_id', criteria.folders);
-    }
-
-    // Apply date range filters if specified
-    if (criteria.date_range) {
-      if (criteria.date_range.start) {
-        query = query.gte('created_at', criteria.date_range.start);
+  public async applyFilterToQuery(
+    query: any,
+    activeProfileId?: string
+  ): Promise<any> {
+    try {
+      if (!activeProfileId) {
+        const activeProfile = await this.loadActiveProfile();
+        if (!activeProfile) {
+          console.log('FilterService: No active profile found for filtering');
+          return query;
+        }
+        activeProfileId = activeProfile.id;
       }
-      if (criteria.date_range.end) {
-        query = query.lte('created_at', criteria.date_range.end);
+      
+      console.log(`FilterService: Applying filter for profile ${activeProfileId}`);
+      
+      // Get root_drive_ids for this profile
+      const rootDriveIds = await this.getProfileDriveIds(activeProfileId);
+      
+      if (!rootDriveIds || rootDriveIds.length === 0) {
+        console.log('FilterService: No root_drive_ids found for this profile, returning unfiltered query');
+        return query;
       }
+      
+      console.log(`FilterService: Using ${rootDriveIds.length} root_drive_ids for filtering`);
+      
+      // Get all sources where root_drive_id matches one of our allowed drive IDs
+      const { data: matchingSources, error: sourcesError } = await this.supabase
+        .from('sources_google')
+        .select('id')
+        .in('root_drive_id', rootDriveIds);
+      
+      if (sourcesError) {
+        console.error('FilterService: Error querying sources with root_drive_id:', sourcesError);
+        return query; // Return unfiltered query on error
+      }
+      
+      if (!matchingSources || matchingSources.length === 0) {
+        console.log('FilterService: No sources found with matching root_drive_id');
+        return query;
+      }
+      
+      console.log(`FilterService: Found ${matchingSources.length} sources with matching root_drive_id`);
+      
+      // Get the source IDs to use in our filter
+      const sourceIds = matchingSources.map(src => src.id);
+      
+      // Apply filter to query
+      // Limit to 1500 source IDs to avoid URL length issues
+      const maxSourceIds = 1500;
+      if (sourceIds.length > maxSourceIds) {
+        console.log(`FilterService: Limiting to ${maxSourceIds} source IDs due to URL length constraints`);
+        const limitedSourceIds = sourceIds.slice(0, maxSourceIds);
+        return query.in('video_source_id', limitedSourceIds);
+      }
+      
+      return query.in('video_source_id', sourceIds);
+    } catch (err) {
+      console.error('FilterService: Error in applyFilterToQuery:', err);
+      return query; // Return unfiltered query on any error
     }
-
-    return query;
   }
 
   /**
@@ -405,26 +480,25 @@ CREATE TABLE IF NOT EXISTS user_filter_profiles (
   name TEXT NOT NULL,
   description TEXT,
   is_active BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  filter_criteria JSONB
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Create filter profile drives table for excluding specific drives
+-- Create filter profile drives table for including specific root drives
 CREATE TABLE IF NOT EXISTS user_filter_profile_drives (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  profile_id UUID NOT NULL REFERENCES user_filter_profiles(id) ON DELETE CASCADE,
-  drive_id TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  UNIQUE (profile_id, drive_id)
+  profile_id UUID REFERENCES user_filter_profiles(id) ON DELETE CASCADE,
+  root_drive_id TEXT NOT NULL,
+  include_children BOOLEAN DEFAULT true
 );
 
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_filter_profiles_active ON user_filter_profiles(is_active);
 CREATE INDEX IF NOT EXISTS idx_filter_profile_drives_profile_id ON user_filter_profile_drives(profile_id);
+CREATE INDEX IF NOT EXISTS idx_filter_profile_drives_root_drive_id ON user_filter_profile_drives(root_drive_id);
     `;
   }
 }
 
-// Export a singleton instance
-export const filterService = FilterService.getInstance();
+// Note: No longer exporting a singleton instance
+// Each environment should create its own instance with the appropriate Supabase client
+// Example: const filterService = new FilterService(supabaseClient);

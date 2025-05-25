@@ -275,17 +275,55 @@ SELECT * FROM folder_tree;
 
 **Important:** When implementing recursive folder traversal or searching operations, always use the `drive_id` and `parent_folder_id` fields to navigate the hierarchy, not the Supabase UUIDs.
 
+## Cross-Environment Shared Services
+
+### Environment-Aware Service Design
+
+When creating shared services that work across different environments (browser vs server/CLI), follow these patterns:
+
+**❌ Problem**: Singleton services that auto-initialize clients in constructors
+```typescript
+export class MyService {
+  private static instance: MyService;
+  private supabase = SupabaseClientService.getInstance().getClient(); // Fails in browser!
+  
+  private constructor() {}
+  static getInstance() { return this.instance ||= new MyService(); }
+}
+```
+
+**✅ Solution**: Dependency injection pattern with environment-specific client configuration
+```typescript
+export class MyService {
+  private supabase: SupabaseClient<any>;
+  
+  constructor(supabaseClient: SupabaseClient<any>) {
+    this.supabase = supabaseClient;
+  }
+}
+
+// Browser usage: new MyService(browserConfiguredSupabaseClient)
+// CLI usage: new MyService(SupabaseClientService.getInstance().getClient())
+```
+
+**Key Lessons:**
+- Browser apps use `VITE_` prefixed environment variables, CLI/server use standard names
+- Shared services should accept configured clients rather than creating them
+- Use adapter pattern in apps to maintain backward compatibility
+- Each environment handles its own client configuration needs
+
 ## Key Points Summary
 
-This document provides the essential guidelines for working with Claude Code v1.02. The most important principles are:
+This document provides the essential guidelines for working with Claude Code v1.03. The most important principles are:
 
 1. **Ask before implementing workarounds** - explain problems and get permission
 2. **Use proper file locations** - scripts go in `scripts/cli-pipeline/{domain}/`
 3. **Use singleton services** - never create direct clients for Supabase, Claude, etc.
-4. **Integrate CLI commands** - always add to shell script wrappers
-5. **Follow TypeScript best practices** - run `tsc --noEmit` before submitting
-6. **Leverage the monorepo** - when debugging, compare with working apps for patterns
-7. **Test incrementally** - especially during cleanup or refactoring
+4. **Design for cross-environment compatibility** - use dependency injection for shared services
+5. **Integrate CLI commands** - always add to shell script wrappers
+6. **Follow TypeScript best practices** - run `tsc --noEmit` before submitting
+7. **Leverage the monorepo** - when debugging, compare with working apps for patterns
+8. **Test incrementally** - especially during cleanup or refactoring
 
 When in doubt, ask for clarification rather than making assumptions or implementing temporary solutions.
 
