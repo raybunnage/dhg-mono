@@ -1,5 +1,7 @@
+#!/usr/bin/env ts-node
 import { Command } from 'commander';
-import { filterService } from '../../../../packages/shared/services/filter-service';
+import { FilterService } from '../../../../packages/shared/services/filter-service';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import chalk from 'chalk';
 
 const command = new Command('update-profile');
@@ -16,6 +18,10 @@ command
   .option('--folders <folders...>', 'Folder IDs to include (comma-separated)')
   .action(async (options) => {
     try {
+      // Create filter service instance with Supabase client
+      const supabase = SupabaseClientService.getInstance().getClient();
+      const filterService = new FilterService(supabase);
+      
       // First load the existing profile
       const existingProfile = await filterService.loadProfile(options.id);
       
@@ -24,39 +30,26 @@ command
         process.exit(1);
       }
       
-      // Build updated filter criteria, preserving existing values if not provided
-      const filterCriteria = existingProfile.filter_criteria || {};
-      
-      if (options.mimeTypes) {
-        filterCriteria.mime_types = options.mimeTypes;
-      }
-      
-      if (options.documentTypes) {
-        filterCriteria.document_types = options.documentTypes;
-      }
-      
-      if (options.experts) {
-        filterCriteria.experts = options.experts;
-      }
-      
-      if (options.folders) {
-        filterCriteria.folders = options.folders;
-      }
-      
       // Update profile with new values, preserving existing ones if not provided
-      const updatedProfile = await filterService.updateProfile({
-        ...existingProfile,
-        name: options.name || existingProfile.name,
-        description: options.description !== undefined ? options.description : existingProfile.description,
-        filter_criteria: filterCriteria
-      });
+      const updates: Partial<Omit<typeof existingProfile, 'id' | 'created_at'>> = {};
       
-      if (updatedProfile) {
-        console.log(chalk.green(`✅ Filter profile "${updatedProfile.name}" updated successfully`));
+      if (options.name) {
+        updates.name = options.name;
+      }
+      
+      if (options.description !== undefined) {
+        updates.description = options.description;
+      }
+      
+      const success = await filterService.updateProfile(options.id, updates);
+      
+      if (success) {
+        const profileName = options.name || existingProfile.name;
+        console.log(chalk.green(`✅ Filter profile "${profileName}" updated successfully`));
         
         // If we need to set as active and it's not currently active
         if (options.active && !existingProfile.is_active) {
-          await filterService.setActiveProfile(updatedProfile.id);
+          await filterService.setActiveProfile(options.id);
           console.log(chalk.blue('👉 Profile set as active'));
         }
       } else {
@@ -68,5 +61,10 @@ command
       process.exit(1);
     }
   });
+
+// Run the command if this script is executed directly
+if (require.main === module) {
+  command.parse(process.argv);
+}
 
 export default command;

@@ -1,5 +1,7 @@
+#!/usr/bin/env ts-node
 import { Command } from 'commander';
-import { filterService } from '../../../../packages/shared/services/filter-service';
+import { FilterService } from '../../../../packages/shared/services/filter-service';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import chalk from 'chalk';
 
 const command = new Command('delete-profile');
@@ -10,6 +12,10 @@ command
   .option('-f, --force', 'Force deletion without confirmation')
   .action(async (options) => {
     try {
+      // Create filter service instance with Supabase client
+      const supabase = SupabaseClientService.getInstance().getClient();
+      const filterService = new FilterService(supabase);
+      
       // First load the profile to confirm it exists and show details
       const profile = await filterService.loadProfile(options.id);
       
@@ -43,5 +49,10 @@ command
       process.exit(1);
     }
   });
+
+// Run the command if this script is executed directly
+if (require.main === module) {
+  command.parse(process.argv);
+}
 
 export default command;

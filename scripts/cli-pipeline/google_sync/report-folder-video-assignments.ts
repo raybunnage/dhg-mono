@@ -277,7 +277,7 @@ async function main() {
   try {
     // Build folder hierarchy
     console.log('Building folder hierarchy...');
-    const folderHierarchy = await buildFolderHierarchy(folderId);
+    const folderHierarchy = await buildFolderHierarchy(folderId!);
     
     if (!folderHierarchy) {
       console.error('❌ Could not build folder hierarchy');

@@ -1,5 +1,6 @@
+#!/usr/bin/env ts-node
 import { Command } from 'commander';
-import { filterService } from '../../../../packages/shared/services/filter-service';
+import { FilterService } from '../../../../packages/shared/services/filter-service';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import chalk from 'chalk';
 
@@ -38,6 +39,9 @@ command
       
       console.log(chalk.green('✓ Filter tables exist'));
       
+      // Create filter service instance with Supabase client
+      const filterService = new FilterService(supabase);
+      
       // Get active profile info
       const activeProfile = await filterService.loadActiveProfile();
       
@@ -47,18 +51,7 @@ command
         if (options.verbose) {
           console.log(chalk.cyan('\nActive profile details:'));
           console.log(`Description: ${activeProfile.description || 'N/A'}`);
-          console.log(`Created: ${activeProfile.created_at}`);
-          console.log(`Updated: ${activeProfile.updated_at}`);
-          
-          // Show filter criteria
-          if (activeProfile.filter_criteria && Object.keys(activeProfile.filter_criteria).length > 0) {
-            console.log(chalk.cyan('\nFilter criteria:'));
-            Object.entries(activeProfile.filter_criteria).forEach(([key, value]) => {
-              console.log(`${key}: ${JSON.stringify(value)}`);
-            });
-          } else {
-            console.log('No filter criteria defined');
-          }
+          console.log(`Created: ${activeProfile.created_at || 'N/A'}`);
           
           // Show excluded drives
           const drives = await filterService.listDrivesForProfile(activeProfile.id);
@@ -90,5 +83,10 @@ command
       process.exit(1);
     }
   });
+
+// Run the command if this script is executed directly
+if (require.main === module) {
+  command.parse(process.argv);
+}
 
 export default command;

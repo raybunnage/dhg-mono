@@ -1,11 +1,16 @@
+#!/usr/bin/env ts-node
 /**
  * Example showing how to use the filter service to filter a sources_google query
  */
-import { filterService } from '../../../../packages/shared/services/filter-service';
+import { FilterService } from '../../../../packages/shared/services/filter-service';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 async function main() {
   try {
+    // Create filter service instance with Supabase client
+    const supabase = SupabaseClientService.getInstance().getClient();
+    const filterService = new FilterService(supabase);
+    
     // 1. Load the active filter profile (if any)
     const activeProfile = await filterService.loadActiveProfile();
     
@@ -16,7 +21,6 @@ async function main() {
     }
     
     // 2. Prepare the query
-    const supabase = SupabaseClientService.getInstance().getClient();
     let query = supabase
       .from('sources_google')
       .select('id, name, path, mime_type, drive_id')
@@ -43,12 +47,13 @@ async function main() {
       console.log(`${index + 1}. ${item.name} (${item.mime_type})`);
     });
     
-    // 6. Show what filters were applied
-    if (activeProfile && activeProfile.filter_criteria) {
-      console.log('\nFilters applied:');
-      Object.entries(activeProfile.filter_criteria).forEach(([key, value]) => {
-        console.log(`- ${key}: ${JSON.stringify(value)}`);
-      });
+    // 6. Show drives that were filtered
+    if (activeProfile) {
+      const drives = await filterService.listDrivesForProfile(activeProfile.id);
+      if (drives.length > 0) {
+        console.log('\nFiltered drives:');
+        drives.forEach(drive => console.log(`- ${drive}`));
+      }
     }
   } catch (error) {
     console.error('Error:', error);

@@ -77,6 +77,104 @@ interface AssignmentResult {
   duration: number;
 }
 
+interface ItemNode {
+  item: SourcesGoogleRow;
+  children: ItemNode[];
+}
+
+/**
+ * Build hierarchical tree structure
+ */
+async function buildHierarchicalTree(rootDriveId: string): Promise<ItemNode | null> {
+  // Get the root folder
+  const { data: rootItem, error: rootError } = await supabase
+    .from('sources_google')
+    .select('*')
+    .eq('drive_id', rootDriveId)
+    .single();
+  
+  if (rootError || !rootItem) return null;
+  
+  // Get all items in this tree using recursive fetch
+  const allItems: SourcesGoogleRow[] = [rootItem];
+  const toProcess = [rootDriveId];
+  const processed = new Set<string>();
+  
+  while (toProcess.length > 0) {
+    const currentId = toProcess.shift()!;
+    if (processed.has(currentId)) continue;
+    processed.add(currentId);
+    
+    const { data: children, error: childError } = await supabase
+      .from('sources_google')
+      .select('*')
+      .eq('parent_folder_id', currentId)
+      .eq('is_deleted', false);
+    
+    if (!childError && children) {
+      allItems.push(...children);
+      children.forEach(child => {
+        if (child.drive_id && child.mime_type === 'application/vnd.google-apps.folder') {
+          toProcess.push(child.drive_id);
+        }
+      });
+    }
+  }
+  
+  // Build item map
+  const itemMap = new Map<string, ItemNode>();
+  
+  // Create nodes
+  allItems.forEach(item => {
+    if (item.drive_id) {
+      itemMap.set(item.drive_id, { item, children: [] });
+    }
+  });
+  
+  // Build parent-child relationships
+  allItems.forEach(item => {
+    if (item.parent_folder_id && item.drive_id !== rootDriveId) {
+      const parent = itemMap.get(item.parent_folder_id);
+      const child = itemMap.get(item.drive_id!);
+      
+      if (parent && child) {
+        parent.children.push(child);
+      }
+    }
+  });
+  
+  return itemMap.get(rootDriveId) || null;
+}
+
+/**
+ * Display hierarchical tree
+ */
+function displayTree(node: ItemNode, indent: string = '', isLast: boolean = true): void {
+  const isFolder = node.item.mime_type === 'application/vnd.google-apps.folder';
+  const icon = isFolder ? '📁' : '📄';
+  const branch = isLast ? '└── ' : '├── ';
+  const extension = isLast ? '    ' : '│   ';
+  
+  // Show folder with indication if it's empty
+  const folderSuffix = isFolder && node.children.length === 0 ? ' (empty)' : '';
+  console.log(`${indent}${branch}${icon} ${node.item.name || 'Unknown'}${folderSuffix}`);
+  
+  // Sort children: folders first, then files
+  const sortedChildren = node.children.sort((a, b) => {
+    const aIsFolder = a.item.mime_type === 'application/vnd.google-apps.folder';
+    const bIsFolder = b.item.mime_type === 'application/vnd.google-apps.folder';
+    
+    if (aIsFolder && !bIsFolder) return -1;
+    if (!aIsFolder && bIsFolder) return 1;
+    return (a.item.name || '').localeCompare(b.item.name || '');
+  });
+  
+  sortedChildren.forEach((child, index) => {
+    const isChildLast = index === sortedChildren.length - 1;
+    displayTree(child, indent + extension, isChildLast);
+  });
+}
+
 /**
  * Recursively get all nested items within a folder
  */
@@ -162,6 +260,18 @@ async function assignMainVideoId(): Promise<AssignmentResult> {
     console.log(`   Drive ID: ${folderId}`);
     console.log(`   Path depth: ${result.folderPathDepth}`);
     console.log(`   Assigning main_video_id: ${videoId}\n`);
+    
+    // Build and display the hierarchical tree
+    console.log('📊 Folder Structure:');
+    const treeRoot = await buildHierarchicalTree(folderId!);
+    if (treeRoot) {
+      console.log(`📁 ${treeRoot.item.name || 'Unknown'}`);
+      treeRoot.children.forEach((child, index) => {
+        const isLast = index === treeRoot.children.length - 1;
+        displayTree(child, '', isLast);
+      });
+    }
+    console.log('\n');
     
     // Update the folder itself first
     if (!isDryRun) {
