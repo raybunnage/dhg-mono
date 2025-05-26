@@ -20,6 +20,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import type { Database } from '../../../supabase/types';
+import { getActiveFilterProfile } from './get-active-filter-profile';
+import { displayActiveFilter } from './display-active-filter';
 
 // Load environment files
 function loadEnvFiles() {
@@ -380,9 +382,33 @@ async function main() {
   console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'LIVE'}`);
   console.log(`Folder ID: ${folderId}`);
   console.log(`Video ID: ${videoId}`);
-  console.log('===========================');
   
   try {
+    // Display active filter prominently
+    const activeFilter = await displayActiveFilter();
+    
+    // Verify folder is within active filter if one exists
+    if (activeFilter && activeFilter.rootDriveId) {
+      // Get the folder to check its root_drive_id
+      const { data: folderCheck, error: checkError } = await supabase
+        .from('sources_google')
+        .select('root_drive_id')
+        .eq('drive_id', folderId)
+        .single();
+      
+      if (checkError || !folderCheck) {
+        console.error('❌ Error: Could not verify folder');
+        process.exit(1);
+      }
+      
+      if (folderCheck.root_drive_id !== activeFilter.rootDriveId) {
+        console.error('❌ Error: This folder is not within the active drive filter');
+        console.error(`   Folder root_drive_id: ${folderCheck.root_drive_id}`);
+        console.error(`   Active filter expects: ${activeFilter.rootDriveId}`);
+        process.exit(1);
+      }
+    }
+    
     // Run the assignment
     const result = await assignMainVideoId();
     

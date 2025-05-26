@@ -19,6 +19,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import type { Database } from '../../../supabase/types';
+import { getActiveFilterProfile } from './get-active-filter-profile';
+import { displayActiveFilter } from './display-active-filter';
 
 // Load environment files
 function loadEnvFiles() {
@@ -272,9 +274,11 @@ async function main() {
   if (outputPath) {
     console.log(`Output: ${outputPath}`);
   }
-  console.log('=====================================\n');
   
   try {
+    // Display active filter prominently
+    await displayActiveFilter();
+    
     // Build folder hierarchy
     console.log('Building folder hierarchy...');
     const folderHierarchy = await buildFolderHierarchy(folderId!);

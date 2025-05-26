@@ -717,7 +717,7 @@ async function main() {
     }
     
     if (result.filesInserted > 0) {
-      console.log('\n💡 Tip: Run process-new-files to create expert_documents for new files');
+      console.log('\n💡 Tip: Run process-new-files-enhanced to create expert_documents for new files');
     }
     
     process.exit(result.errors.length > 0 ? 1 : 0);

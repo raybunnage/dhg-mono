@@ -17,8 +17,9 @@
  * 
  * Options:
  *   --dry-run          Show what would be processed without making changes
- *   --limit <n>        Limit number of files to process (default: 100)
- *   --verbose          Show detailed logs
+ *   --limit <n>        Limit number of files to process (default: 1000, use 0 for no limit)
+ *   --batch-size <n>   Number of files per database insert batch (default: 50)
+ *   --verbose          Show detailed logs and progress updates
  *   --output-file      Save report to a file (default: true)
  *   --no-output-file   Disable file output
  */
@@ -54,9 +55,20 @@ const isVerbose = args.includes('--verbose');
 const outputToFile = !args.includes('--no-output-file');
 
 const limitIndex = args.indexOf('--limit');
-const limit = limitIndex !== -1 && args[limitIndex + 1] 
+let limit = limitIndex !== -1 && args[limitIndex + 1] 
   ? parseInt(args[limitIndex + 1], 10) 
-  : 100;
+  : 1000; // Default to 1000 files
+
+// Handle limit = 0 as no limit
+if (limit === 0) {
+  limit = 10000; // Supabase max
+}
+
+// Get batch size for expert document creation
+const batchSizeIndex = args.indexOf('--batch-size');
+const BATCH_SIZE = batchSizeIndex !== -1 && args[batchSizeIndex + 1]
+  ? parseInt(args[batchSizeIndex + 1], 10)
+  : 50; // Default batch size for database inserts
 
 // Create Supabase client
 const supabaseClientService = SupabaseClientService.getInstance();
@@ -359,6 +371,27 @@ function printFilesTable(
 }
 
 /**
+ * Count files in a tree structure recursively
+ */
+function countFilesInTree(node: FileNode): number {
+  let count = 0;
+  
+  // Count this node if it's a file
+  if (node.mime_type !== 'application/vnd.google-apps.folder') {
+    count = 1;
+  }
+  
+  // Count children recursively
+  if (node.children) {
+    for (const child of node.children) {
+      count += countFilesInTree(child);
+    }
+  }
+  
+  return count;
+}
+
+/**
  * Print the hierarchical tree with folders and tables for files
  */
 function printHierarchicalStructure(
@@ -428,6 +461,15 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     newExpertDocuments: []
   };
   
+  // Progress tracking
+  let processedCount = 0;
+  const updateProgress = (current: number, total: number) => {
+    if (isVerbose || current % 100 === 0 || current === total) {
+      const percentage = ((current / total) * 100).toFixed(1);
+      console.log(`⏳ Progress: ${current}/${total} (${percentage}%)`);
+    }
+  };
+  
   try {
     // Build query for files AND folders needing processing
     // Include folders to catch the edge case where new folders are created
@@ -437,8 +479,12 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
       .select('*')
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
-      .order('path_depth', { ascending: false })
-      .limit(limit);
+      .order('path_depth', { ascending: false });
+    
+    // For very large queries, we'll need to paginate
+    // Always apply a limit, but we'll handle pagination if needed
+    const pageSize = Math.min(limit, 1000); // Process in chunks of 1000
+    query = query.limit(pageSize);
     
     if (rootDriveId) {
       query = query.eq('root_drive_id', rootDriveId);
@@ -605,8 +651,8 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     }
     
     // Process files in batches
-    const BATCH_SIZE = 50;
     const batches = Math.ceil(filesToProcess.length / BATCH_SIZE);
+    console.log(`Processing ${filesToProcess.length} files in ${batches} batches of up to ${BATCH_SIZE} each...`);
     
     for (let i = 0; i < batches; i++) {
       const start = i * BATCH_SIZE;
@@ -682,7 +728,9 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
           result.filesSkipped += expertDocsToInsert.length;
         } else {
           result.expertDocsCreated += expertDocsToInsert.length;
+          processedCount += expertDocsToInsert.length;
           console.log(`✓ Created ${expertDocsToInsert.length} expert_documents in batch ${i + 1}/${batches}`);
+          updateProgress(processedCount, filesToProcess.length);
         }
       }
     }
@@ -826,7 +874,8 @@ function getTimestamp(): string {
 async function main() {
   console.log('=== Enhanced Process New Files ===');
   console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'LIVE'}`);
-  console.log(`Limit: ${limit} files`);
+  console.log(`Limit: ${limit === 10000 ? 'No limit' : `${limit} files`}`);
+  console.log(`Batch Size: ${BATCH_SIZE} files per database insert`);
   console.log('==================================\n');
   
   // Set up output
@@ -900,19 +949,53 @@ async function main() {
     if (result.newExpertDocuments.length > 0) {
       output.log('## New Expert Documents Created');
       output.log('');
-      output.log('| Source Name                             | Main Video                    | Expert Doc ID                        | Created            |');
-      output.log('|-----------------------------------------|-------------------------------|--------------------------------------|--------------------|');
       
-      for (const doc of result.newExpertDocuments) {
-        const truncatedName = doc.source_name.length > 40 ? 
-          doc.source_name.substring(0, 37) + '...' : 
-          doc.source_name.padEnd(40);
-        const videoName = (doc.main_video_name || 'No Video').length > 30 ?
-          (doc.main_video_name || 'No Video').substring(0, 27) + '...' :
-          (doc.main_video_name || 'No Video').padEnd(30);
-        const createdDate = new Date(doc.created_at).toLocaleString();
+      // For large result sets, show summary instead of full table
+      if (result.newExpertDocuments.length > 100) {
+        output.log(`Created ${result.newExpertDocuments.length} expert documents.`);
+        output.log('');
+        output.log('### Sample of created documents (first 10 and last 10):');
+        output.log('');
+        output.log('| Source Name                             | Main Video                    | Expert Doc ID                        | Created            |');
+        output.log('|-----------------------------------------|-------------------------------|--------------------------------------|--------------------|');
         
-        output.log(`| ${truncatedName} | ${videoName} | ${doc.id} | ${createdDate.padEnd(18)} |`);
+        // Show first 10
+        const sampleDocs = [
+          ...result.newExpertDocuments.slice(0, 10),
+          ...result.newExpertDocuments.slice(-10)
+        ];
+        
+        for (let i = 0; i < sampleDocs.length; i++) {
+          if (i === 10) {
+            output.log('| ... ' + (result.newExpertDocuments.length - 20) + ' more documents ... | | | |');
+          }
+          const doc = sampleDocs[i];
+          const truncatedName = doc.source_name.length > 40 ? 
+            doc.source_name.substring(0, 37) + '...' : 
+            doc.source_name.padEnd(40);
+          const videoName = (doc.main_video_name || 'No Video').length > 30 ?
+            (doc.main_video_name || 'No Video').substring(0, 27) + '...' :
+            (doc.main_video_name || 'No Video').padEnd(30);
+          const createdDate = new Date(doc.created_at).toLocaleString();
+          
+          output.log(`| ${truncatedName} | ${videoName} | ${doc.id} | ${createdDate.padEnd(18)} |`);
+        }
+      } else {
+        // Show full table for smaller result sets
+        output.log('| Source Name                             | Main Video                    | Expert Doc ID                        | Created            |');
+        output.log('|-----------------------------------------|-------------------------------|--------------------------------------|--------------------|');
+        
+        for (const doc of result.newExpertDocuments) {
+          const truncatedName = doc.source_name.length > 40 ? 
+            doc.source_name.substring(0, 37) + '...' : 
+            doc.source_name.padEnd(40);
+          const videoName = (doc.main_video_name || 'No Video').length > 30 ?
+            (doc.main_video_name || 'No Video').substring(0, 27) + '...' :
+            (doc.main_video_name || 'No Video').padEnd(30);
+          const createdDate = new Date(doc.created_at).toLocaleString();
+          
+          output.log(`| ${truncatedName} | ${videoName} | ${doc.id} | ${createdDate.padEnd(18)} |`);
+        }
       }
       output.log('');
     }
@@ -921,14 +1004,30 @@ async function main() {
     if (result.hierarchies.size > 0) {
       output.log('## Hierarchical View of Affected Folders');
       output.log('');
-      output.log('Legend: 🆕 = New file | ✓ = Existing file | 📁 = Folder | 📄 = File');
-      output.log('');
-      // Don't show column headers for hierarchical view - it's not a table
       
-      // Sort hierarchies by folder name
-      const sortedHierarchies = Array.from(result.hierarchies.entries()).sort((a, b) => {
-        return (a[1].name || '').localeCompare(b[1].name || '');
-      });
+      // For very large result sets, just show summary
+      if (result.newExpertDocuments.length > 500) {
+        output.log(`Processed files across ${result.hierarchies.size} high-level folders.`);
+        output.log('');
+        output.log('Folder summary:');
+        const sortedHierarchies = Array.from(result.hierarchies.entries()).sort((a, b) => {
+          return (a[1].name || '').localeCompare(b[1].name || '');
+        });
+        
+        for (const [driveId, tree] of sortedHierarchies) {
+          const fileCount = countFilesInTree(tree);
+          output.log(`- 📁 ${tree.name}: ${fileCount} files`);
+        }
+        output.log('');
+      } else {
+        // Show full hierarchical view for smaller sets
+        output.log('Legend: 🆕 = New file | ✓ = Existing file | 📁 = Folder | 📄 = File');
+        output.log('');
+        
+        // Sort hierarchies by folder name
+        const sortedHierarchies = Array.from(result.hierarchies.entries()).sort((a, b) => {
+          return (a[1].name || '').localeCompare(b[1].name || '');
+        });
       
       for (const [driveId, tree] of sortedHierarchies) {
         output.log(`### 📁 ${tree.name} (High-Level Folder)`);
@@ -949,6 +1048,7 @@ async function main() {
         output.log('');
         output.log('─'.repeat(110));
         output.log('');
+      }
       }
     }
     

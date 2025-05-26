@@ -72,6 +72,9 @@ show_help() {
   echo "    check-rls-policies   Check and create permissive RLS policies for tables"
   echo ""
   echo "BACKUP MANAGEMENT:"
+  echo "    create-backup        Create backups of configured tables with today's date"
+  echo "    add-backup-table     Add a table to the backup configuration"
+  echo "    list-backup-config   Show the current backup configuration"
   echo "    list-backup-tables   List all backup tables in the backup schema"
   echo ""
   echo "MIGRATION MANAGEMENT:"
@@ -102,6 +105,22 @@ show_help() {
   echo ""
   echo "  # Run a quick health check"
   echo "  ./database-cli.sh db-health-check"
+  echo ""
+  echo "BACKUP MANAGEMENT:"
+  echo "  # Create backups of all configured tables"
+  echo "  ./database-cli.sh create-backup"
+  echo ""
+  echo "  # Create backup with dry run"
+  echo "  ./database-cli.sh create-backup --dry-run"
+  echo ""
+  echo "  # Add a new table to backup configuration"
+  echo "  ./database-cli.sh add-backup-table script_analysis_results"
+  echo ""
+  echo "  # List current backup configuration"
+  echo "  ./database-cli.sh list-backup-config"
+  echo ""
+  echo "  # List backup config with validation"
+  echo "  ./database-cli.sh list-backup-config --validate --show-backups"
   echo ""
   echo "MIGRATION MANAGEMENT:"
   echo "  # Validate migration file"
@@ -259,6 +278,22 @@ test_auth_audit_simple() {
   track_command "test-auth-audit-simple" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/test-light-auth-audit-simple.ts $@"
 }
 
+# Backup command handlers
+create_backup() {
+  echo "🔄 Creating database backups..."
+  track_command "create-backup" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/backup/create-backup.ts $@"
+}
+
+add_backup_table() {
+  echo "📝 Adding table to backup configuration..."
+  track_command "add-backup-table" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/backup/add-backup-table.ts $@"
+}
+
+list_backup_config() {
+  echo "📋 Listing backup configuration..."
+  track_command "list-backup-config" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/backup/list-backup-config.ts $@"
+}
+
 # Migration command handlers
 migration_validate() {
   echo "🔍 Validating migration file..."
@@ -394,6 +429,15 @@ case "$1" in
     ;;
   "test-auth-audit-simple")
     test_auth_audit_simple "${@:2}"
+    ;;
+  "create-backup")
+    create_backup "${@:2}"
+    ;;
+  "add-backup-table")
+    add_backup_table "${@:2}"
+    ;;
+  "list-backup-config")
+    list_backup_config "${@:2}"
     ;;
   "migration")
     case "$2" in
