@@ -1,5 +1,5 @@
+#!/usr/bin/env ts-node
 import { Command } from 'commander';
-import { filterService } from '../../../../packages/shared/services/filter-service';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 const chalk = require('chalk');
 
@@ -76,5 +76,10 @@ command
       process.exit(1);
     }
   });
+
+// Run the command if this script is executed directly
+if (require.main === module) {
+  command.parse(process.argv);
+}
 
 export default command;

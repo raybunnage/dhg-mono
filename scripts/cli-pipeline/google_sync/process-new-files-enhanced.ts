@@ -87,9 +87,13 @@ class MultiOutput {
     }
   }
 
-  close(): void {
+  async close(): Promise<void> {
     if (this.fileStream) {
-      this.fileStream.end();
+      return new Promise((resolve) => {
+        this.fileStream!.end(() => {
+          resolve();
+        });
+      });
     }
   }
 
@@ -209,6 +213,7 @@ function determineProcessingStatus(filename: string, mimeType: string): {
 async function buildFolderHierarchy(
   highLevelFolder: HighLevelFolder,
   newFileIds: Set<string>,
+  newFolderIds: Set<string>,
   newExpertDocs: Map<string, { id: string; created_at: string }>,
   videoNameMap: Map<string, string>
 ): Promise<FileNode> {
@@ -252,7 +257,7 @@ async function buildFolderHierarchy(
           parent_folder_id: item.parent_folder_id,
           created_at: '',  // Not available from traversal
           modified_at: '',  // Not available from traversal
-          is_new: newFileIds.has(item.id),
+          is_new: newFileIds.has(item.id) || newFolderIds.has(item.id),
           children: []
         };
 
@@ -301,54 +306,109 @@ async function buildFolderHierarchy(
 }
 
 /**
- * Print the hierarchical tree
+ * Print files in a markdown table format
  */
-function printTree(
+function printFilesTable(
+  files: FileNode[],
+  output: MultiOutput,
+  indent: string,
+  videoNameMap: Map<string, string>,
+  documentTypeMap: Map<string, string>
+) {
+  if (files.length === 0) return;
+  
+  output.log(`${indent}Files:`);
+  output.log(`${indent}| Status | ${'Filename'.padEnd(45)} | ${'Document Type'.padEnd(25)} | ${'Main Video ID'.padEnd(36)} | ${'Video Name'.padEnd(25)} |`);
+  output.log(`${indent}|--------|${'-'.repeat(45)}--|${'-'.repeat(25)}--|${'-'.repeat(36)}--|${'-'.repeat(25)}--|`);
+  
+  for (const file of files) {
+    const status = file.is_new ? '🆕 New' : '✓ Exist';
+    const docType = file.document_type_id ? 
+      documentTypeMap.get(file.document_type_id) || 'Unknown' : 
+      'Unclassified';
+    
+    // Truncate filename if too long
+    let displayName = file.name || 'Unknown';
+    if (displayName.length > 43) {
+      displayName = displayName.substring(0, 40) + '...';
+    }
+    
+    // Get video name
+    const videoId = file.main_video_id || 'None';
+    const videoName = file.main_video_id ? 
+      (videoNameMap.get(file.main_video_id) || 'Unknown Video') : 
+      'None';
+    
+    // Truncate video name if needed
+    let displayVideoName = videoName;
+    if (displayVideoName.length > 23) {
+      displayVideoName = displayVideoName.substring(0, 20) + '...';
+    }
+    
+    // Truncate document type if needed
+    let displayDocType = docType;
+    if (displayDocType.length > 23) {
+      displayDocType = displayDocType.substring(0, 20) + '...';
+    }
+    
+    output.log(
+      `${indent}| ${status.padEnd(6)} | ${displayName.padEnd(45)} | ${displayDocType.padEnd(25)} | ${videoId.padEnd(36)} | ${displayVideoName.padEnd(25)} |`
+    );
+  }
+  output.log('');
+}
+
+/**
+ * Print the hierarchical tree with folders and tables for files
+ */
+function printHierarchicalStructure(
   node: FileNode,
   output: MultiOutput,
   indent: string = '',
   videoNameMap: Map<string, string>,
-  documentTypeMap: Map<string, string>
+  documentTypeMap: Map<string, string>,
+  depth: number = 0
 ) {
   const isFolder = node.mime_type === 'application/vnd.google-apps.folder';
-  const icon = isFolder ? '📁' : '📄';
-  const statusIcon = node.is_new ? '🆕' : '✓';
-  const docType = node.document_type_id ? documentTypeMap.get(node.document_type_id) || 'Unknown' : 
-                   isFolder ? 'Folder' : 'Unclassified';
   
-  // Format the name (truncate if too long)
-  let displayName = node.name || 'Unknown';
-  if (displayName.length > 55) {
-    displayName = displayName.substring(0, 52) + '...';
-  }
-
-  // Get video name
-  const videoName = node.main_video_id ? 
-    (videoNameMap.get(node.main_video_id) || 'Unknown Video') : 
-    'No Video';
-
-  // Build the output line
-  const line = `${indent}${statusIcon} ${icon} ${displayName.padEnd(55)} | Type: ${docType.padEnd(20)} | Video: ${videoName}`;
-  output.log(line);
-
-  // If this is a new file with expert document, add that info
-  if (node.is_new && node.expert_document_id) {
-    output.log(`${indent}   └─ Expert Doc ID: ${node.expert_document_id}`);
-  }
-
-  // Recursively print children
-  if (node.children && node.children.length > 0) {
-    // Sort children: folders first, then files
-    const sortedChildren = node.children.sort((a, b) => {
-      const aIsFolder = a.mime_type === 'application/vnd.google-apps.folder';
-      const bIsFolder = b.mime_type === 'application/vnd.google-apps.folder';
-      if (aIsFolder && !bIsFolder) return -1;
-      if (!aIsFolder && bIsFolder) return 1;
-      return (a.name || '').localeCompare(b.name || '');
-    });
-
-    for (const child of sortedChildren) {
-      printTree(child, output, indent + '    ', videoNameMap, documentTypeMap);
+  if (isFolder) {
+    const icon = '📁';
+    const statusIcon = node.is_new ? '🆕' : '';
+    const folderVideoName = node.main_video_id ? 
+      (videoNameMap.get(node.main_video_id) || 'Unknown Video') : 
+      'No Video';
+    
+    // Display folder with status
+    if (depth === 0) {
+      // High-level folder - already displayed in header
+      // Just process children
+    } else {
+      // Subfolder
+      output.log(`${indent}${statusIcon} ${icon} ${node.name || 'Unknown'} (Depth: ${node.path_depth}) | Main Video: ${folderVideoName}`);
+    }
+    
+    // Process children: separate folders and files
+    if (node.children && node.children.length > 0) {
+      const childFolders = node.children.filter(c => c.mime_type === 'application/vnd.google-apps.folder');
+      const childFiles = node.children.filter(c => c.mime_type !== 'application/vnd.google-apps.folder');
+      
+      // Sort folders by name
+      childFolders.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      
+      // Display subfolders first
+      if (childFolders.length > 0 && depth > 0) {
+        output.log(`${indent}Subfolders:`);
+      }
+      for (const folder of childFolders) {
+        printHierarchicalStructure(folder, output, indent + '    ', videoNameMap, documentTypeMap, depth + 1);
+      }
+      
+      // Display files in table format
+      if (childFiles.length > 0) {
+        // Sort files by name
+        childFiles.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        printFilesTable(childFiles, output, indent, videoNameMap, documentTypeMap);
+      }
     }
   }
 }
@@ -369,14 +429,15 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
   };
   
   try {
-    // Build query for files needing processing
+    // Build query for files AND folders needing processing
+    // Include folders to catch the edge case where new folders are created
+    // Order by created_at descending to get newest items first
     let query = supabase
       .from('sources_google')
       .select('*')
       .eq('is_deleted', false)
-      .neq('mime_type', 'application/vnd.google-apps.folder')
-      .order('path_depth', { ascending: false })
       .order('created_at', { ascending: false })
+      .order('path_depth', { ascending: false })
       .limit(limit);
     
     if (rootDriveId) {
@@ -393,37 +454,53 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
       return result;
     }
     
-    console.log(`📋 Found ${pendingFiles.length} files to check`);
+    console.log(`📋 Found ${pendingFiles.length} items to check`);
     
-    // Check which files already have expert_documents
-    const sourceIds = pendingFiles.map(f => f.id);
-    const { data: existingExpDocs } = await supabase
-      .from('expert_documents')
-      .select('source_id')
-      .in('source_id', sourceIds);
+    // Separate folders and files
+    const folders = pendingFiles.filter(f => f.mime_type === 'application/vnd.google-apps.folder');
+    const files = pendingFiles.filter(f => f.mime_type !== 'application/vnd.google-apps.folder');
     
-    const existingSourceIds = new Set((existingExpDocs || []).map(e => e.source_id));
+    console.log(`   - ${folders.length} folders`);
+    console.log(`   - ${files.length} files`);
     
-    // Filter to only files without expert_documents
-    const filesToProcess = pendingFiles.filter(f => !existingSourceIds.has(f.id));
+    // Check which files already have expert_documents (folders don't need expert_documents)
+    let filesToProcess = [];
+    if (files.length > 0) {
+      const fileIds = files.map(f => f.id);
+      const { data: existingExpDocs } = await supabase
+        .from('expert_documents')
+        .select('source_id')
+        .in('source_id', fileIds);
+      
+      const existingSourceIds = new Set((existingExpDocs || []).map(e => e.source_id));
+      filesToProcess = files.filter(f => !existingSourceIds.has(f.id));
+    }
     
     console.log(`📝 ${filesToProcess.length} files need expert_documents records`);
     
-    if (filesToProcess.length === 0) {
+    if (filesToProcess.length === 0 && folders.length === 0) {
+      console.log('No new files or folders to process');
       result.duration = (Date.now() - startTime) / 1000;
       return result;
     }
 
-    // Get all video names for mapping
-    const { data: videoData } = await supabase
+    // Get ALL video names for mapping (not just video mime types)
+    // Include all files that might be referenced as main_video_id
+    const { data: allVideoFiles } = await supabase
       .from('sources_google')
-      .select('id, name')
-      .like('mime_type', 'video/%');
+      .select('id, name, mime_type')
+      .or('mime_type.like.video/%,name.ilike.%.mp4,name.ilike.%.webm,name.ilike.%.mov,name.ilike.%.avi');
     
     const videoNameMap = new Map<string, string>();
-    videoData?.forEach((video: { id: string; name: string }) => {
-      videoNameMap.set(video.id, video.name);
-    });
+    if (allVideoFiles) {
+      for (const video of allVideoFiles) {
+        if (video.id && video.name) {
+          videoNameMap.set(video.id, video.name);
+        }
+      }
+    }
+    
+    console.log(`📹 Found ${videoNameMap.size} video files for name mapping`);
 
     // Get document types for mapping
     const { data: documentTypeData } = await supabase
@@ -520,7 +597,12 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     console.log('\n📝 Phase 2: Creating expert_documents records...');
     
     const newFileIds = new Set<string>(filesToProcess.map(f => f.id));
+    const newFolderIds = new Set<string>(folders.map(f => f.id));
     const newExpertDocsMap = new Map<string, { id: string; created_at: string }>();
+    
+    if (newFolderIds.size > 0) {
+      console.log(`📁 Found ${newFolderIds.size} new folders`);
+    }
     
     // Process files in batches
     const BATCH_SIZE = 50;
@@ -611,12 +693,40 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     // Get all affected high-level folders
     const affectedHighLevelFolders = new Set<string>();
     
+    // Include high-level folders for new files
     for (const file of filesToProcess) {
       if (file.path_depth === 0) {
         affectedHighLevelFolders.add(file.drive_id);
       } else {
         // Find the high-level folder for this file by traversing up
         let currentItem = file;
+        while (currentItem.path_depth > 0 && currentItem.parent_folder_id) {
+          const { data: parentFolder } = await supabase
+            .from('sources_google')
+            .select('*')
+            .eq('drive_id', currentItem.parent_folder_id)
+            .single();
+          
+          if (parentFolder) {
+            currentItem = parentFolder;
+            if (currentItem.path_depth === 0) {
+              affectedHighLevelFolders.add(currentItem.drive_id);
+              break;
+            }
+          } else {
+            break;
+          }
+        }
+      }
+    }
+    
+    // IMPORTANT: Also include high-level folders for new folders (edge case)
+    for (const folder of folders) {
+      if (folder.path_depth === 0) {
+        affectedHighLevelFolders.add(folder.drive_id);
+      } else {
+        // Find the high-level folder for this folder by traversing up
+        let currentItem = folder;
         while (currentItem.path_depth > 0 && currentItem.parent_folder_id) {
           const { data: parentFolder } = await supabase
             .from('sources_google')
@@ -667,6 +777,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
       const tree = await buildFolderHierarchy(
         hlFolder,
         newFileIds,
+        newFolderIds,
         newExpertDocsMap,
         videoNameMap
       );
@@ -677,6 +788,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     for (const file of filesToProcess) {
       const expertDoc = newExpertDocsMap.get(file.id);
       if (expertDoc) {
+        // Get the main_video_id from the file
         const videoName = file.main_video_id ? 
           (videoNameMap.get(file.main_video_id) || 'Unknown Video') : 
           null;
@@ -749,16 +861,20 @@ async function main() {
       documentTypeMap.set(docType.id, docType.name);
     });
     
-    // Get video name mapping
-    const { data: videoData } = await supabase
+    // Get video name mapping - same as in processNewFilesEnhanced
+    const { data: allVideoFiles } = await supabase
       .from('sources_google')
-      .select('id, name')
-      .like('mime_type', 'video/%');
+      .select('id, name, mime_type')
+      .or('mime_type.like.video/%,name.ilike.%.mp4,name.ilike.%.webm,name.ilike.%.mov,name.ilike.%.avi');
     
     const videoNameMap = new Map<string, string>();
-    videoData?.forEach((video: { id: string; name: string }) => {
-      videoNameMap.set(video.id, video.name);
-    });
+    if (allVideoFiles) {
+      for (const video of allVideoFiles) {
+        if (video.id && video.name) {
+          videoNameMap.set(video.id, video.name);
+        }
+      }
+    }
     
     // Generate the report
     output.log('# Process New Files Report');
@@ -784,17 +900,19 @@ async function main() {
     if (result.newExpertDocuments.length > 0) {
       output.log('## New Expert Documents Created');
       output.log('');
-      output.log('| Expert Doc ID | Source Name (55 chars) | Main Video | Created |');
-      output.log('|---------------|------------------------|------------|---------|');
+      output.log('| Source Name                             | Main Video                    | Expert Doc ID                        | Created            |');
+      output.log('|-----------------------------------------|-------------------------------|--------------------------------------|--------------------|');
       
       for (const doc of result.newExpertDocuments) {
-        const truncatedName = doc.source_name.length > 55 ? 
-          doc.source_name.substring(0, 52) + '...' : 
-          doc.source_name;
-        const videoName = doc.main_video_name || 'No Video';
+        const truncatedName = doc.source_name.length > 40 ? 
+          doc.source_name.substring(0, 37) + '...' : 
+          doc.source_name.padEnd(40);
+        const videoName = (doc.main_video_name || 'No Video').length > 30 ?
+          (doc.main_video_name || 'No Video').substring(0, 27) + '...' :
+          (doc.main_video_name || 'No Video').padEnd(30);
         const createdDate = new Date(doc.created_at).toLocaleString();
         
-        output.log(`| ${doc.id} | ${truncatedName} | ${videoName} | ${createdDate} |`);
+        output.log(`| ${truncatedName} | ${videoName} | ${doc.id} | ${createdDate.padEnd(18)} |`);
       }
       output.log('');
     }
@@ -805,6 +923,7 @@ async function main() {
       output.log('');
       output.log('Legend: 🆕 = New file | ✓ = Existing file | 📁 = Folder | 📄 = File');
       output.log('');
+      // Don't show column headers for hierarchical view - it's not a table
       
       // Sort hierarchies by folder name
       const sortedHierarchies = Array.from(result.hierarchies.entries()).sort((a, b) => {
@@ -825,9 +944,10 @@ async function main() {
         output.log('**Contents:**');
         output.log('');
         
-        printTree(tree, output, '', videoNameMap, documentTypeMap);
+        // Print the hierarchical structure
+        printHierarchicalStructure(tree, output, '', videoNameMap, documentTypeMap);
         output.log('');
-        output.log('---');
+        output.log('─'.repeat(110));
         output.log('');
       }
     }
@@ -852,12 +972,12 @@ async function main() {
       console.log(`\n📄 Report saved to: ${reportPath}`);
     }
     
-    output.close();
+    await output.close();
     process.exit(result.errors.length > 0 ? 1 : 0);
     
   } catch (error: any) {
     console.error('❌ Fatal error:', error.message);
-    output.close();
+    await output.close();
     process.exit(1);
   }
 }

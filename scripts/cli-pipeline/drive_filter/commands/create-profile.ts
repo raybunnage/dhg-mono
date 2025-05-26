@@ -1,6 +1,5 @@
 #!/usr/bin/env ts-node
 import { Command } from 'commander';
-import { filterService } from '../../../../packages/shared/services/filter-service';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 const command = new Command('create-profile');
