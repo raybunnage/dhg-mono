@@ -382,7 +382,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * sync                         Sync files from Google Drive to the database with intelligent file categorization (legacy - use sync-all)"
   echo "    sync-all                     NEW: Complete sync pipeline (sync + process + metadata update) - RECOMMENDED"
   echo "    sync-files                   NEW: Fast core sync only - just file existence (< 30s typical)"
-  echo "    process-new-files            NEW: Process newly added files (create expert_documents)"
+  echo "    process-new-files-enhanced   NEW: Process new files with detailed hierarchical report (create expert_documents)"
   echo "    update-metadata              NEW: Update metadata for existing files (size, thumbnails, renames)"
   echo "    verify-deletions             NEW: Verify deleted files and optionally restore those that still exist"
   echo "    find-folder                  Find a specific folder or file by name pattern in Google Drive"
@@ -451,6 +451,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "OTHER:"
   echo "    analyze-command-usage        Analyze Google sync command usage patterns from tracking data"
+  echo "    analyze-unprocessed-files    Analyze which files in sources_google don't have expert_documents records"
   echo "    help                         Show this help message"
   echo ""
   echo "EXAMPLES:"
@@ -462,8 +463,8 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # NEW: Quick sync to check for new files only (< 30s typical)"
   echo "  ./google-sync-cli.sh sync-files --dry-run"
   echo ""
-  echo "  # NEW: Process newly added files to create expert_documents"
-  echo "  ./google-sync-cli.sh process-new-files --limit 50"
+  echo "  # NEW: Process new files with detailed hierarchical report showing full folder structure"
+  echo "  ./google-sync-cli.sh process-new-files-enhanced --limit 50 --verbose"
   echo ""
   echo "  # NEW: Update metadata for existing files (handles renames, size changes)"
   echo "  ./google-sync-cli.sh update-metadata --limit 100 --verbose"
@@ -1000,9 +1001,9 @@ if [ "$1" = "sync-files" ]; then
   exit $?
 fi
 
-if [ "$1" = "process-new-files" ]; then
+if [ "$1" = "process-new-files-enhanced" ]; then
   shift
-  track_command "process-new-files" "ts-node $SCRIPT_DIR/process-new-files.ts $*"
+  track_command "process-new-files-enhanced" "ts-node $SCRIPT_DIR/process-new-files-enhanced.ts $*"
   exit $?
 fi
 
@@ -1236,5 +1237,11 @@ fi
 if [ "$1" = "analyze-command-usage" ]; then
   shift
   track_command "analyze-command-usage" "ts-node $SCRIPT_DIR/analyze-command-usage.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "analyze-unprocessed-files" ]; then
+  shift
+  track_command "analyze-unprocessed-files" "ts-node $SCRIPT_DIR/analyze-unprocessed-files.ts $*"
   exit $?
 fi

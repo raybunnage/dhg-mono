@@ -30,61 +30,11 @@ export interface LightAuthResult {
 }
 
 /**
- * Map component learning pace to service learning pace
- */
-function mapLearningPace(componentPace: 'slow' | 'moderate' | 'fast'): 'self-paced' | 'structured' | 'intensive' {
-  switch (componentPace) {
-    case 'slow':
-      return 'self-paced';
-    case 'moderate':
-      return 'structured';
-    case 'fast':
-      return 'intensive';
-    default:
-      return 'structured';
-  }
-}
-
-/**
- * Map component preferred depth to service preferred depth
- */
-function mapPreferredDepth(depth: 'beginner' | 'intermediate' | 'advanced' | 'expert'): 'beginner' | 'intermediate' | 'advanced' {
-  if (depth === 'expert') return 'advanced';
-  return depth;
-}
-
-/**
  * Convert component ProfileFormData to service ProfileFormData
+ * Since we're using browser-specific services, we can pass the profile data as-is
  */
-function convertToServiceProfile(componentProfile: ComponentProfileFormData): any {
-  return {
-    // Required fields
-    profession: componentProfile.profession,
-    learning_goals: componentProfile.learning_goals,
-    reason_for_learning: componentProfile.reason_for_learning,
-    interested_topics: componentProfile.interested_topics,
-    
-    // Optional fields with proper mapping
-    professional_title: componentProfile.professional_title || undefined,
-    years_experience: componentProfile.years_experience || undefined,
-    industry_sectors: componentProfile.industry_sectors.length > 0 ? componentProfile.industry_sectors : undefined,
-    specialty_areas: componentProfile.specialty_areas.length > 0 ? componentProfile.specialty_areas : undefined,
-    credentials: componentProfile.credentials.length > 0 ? componentProfile.credentials : undefined,
-    preferred_formats: componentProfile.preferred_formats.length > 0 ? componentProfile.preferred_formats : undefined,
-    learning_pace: mapLearningPace(componentProfile.learning_pace),
-    time_commitment: componentProfile.time_commitment || undefined,
-    preferred_depth: mapPreferredDepth(componentProfile.preferred_depth),
-    preferred_session_length: componentProfile.preferred_session_length || undefined,
-    interested_experts: componentProfile.interested_experts.length > 0 ? componentProfile.interested_experts : undefined,
-    avoided_topics: componentProfile.avoided_topics.length > 0 ? componentProfile.avoided_topics : undefined,
-    priority_subjects: componentProfile.priority_subjects,
-    content_tags_following: componentProfile.content_tags_following,
-    bio_summary: componentProfile.bio_summary,
-    learning_background: componentProfile.learning_background,
-    current_challenges: componentProfile.current_challenges || undefined,
-    intended_application: componentProfile.intended_application || undefined,
-    referral_source: componentProfile.referral_source
-  };
+function convertToServiceProfile(componentProfile: ComponentProfileFormData): ComponentProfileFormData {
+  return componentProfile;
 }
 
 class DhgHubAuthService {

@@ -10,31 +10,7 @@ import { filterService } from '@/utils/filter-service-adapter';
 import { FirstTimeProfilePrompt } from '../components/FirstTimeProfilePrompt';
 import { useFirstTimeProfilePrompt } from '../hooks/useFirstTimeProfilePrompt';
 
-// Verify Supabase connection on page load
-(async () => {
-  try {
-    // Check environment variables
-    console.log('Environment variables in browser:');
-    console.log('- VITE_SUPABASE_URL exists:', !!import.meta.env.VITE_SUPABASE_URL);
-    console.log('- VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
-    console.log('- VITE_SUPABASE_SERVICE_ROLE_KEY exists:', !!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY);
-    
-    // Test the connection
-    console.log('Testing Supabase connection...');
-    
-    // Test connection with direct test query
-    console.log('Testing Supabase connection with direct query...');
-    const { count, error } = await supabaseBrowser.getClient().from('user_filter_profiles').select('*', { count: 'exact', head: true });
-    
-    if (error) {
-      console.error('Supabase connection test failed:', error);
-    } else {
-      console.log('Supabase connection test succeeded, profile count:', count);
-    }
-  } catch (e) {
-    console.error('Error testing Supabase connection:', e);
-  }
-})();
+// Supabase connection verified during initialization
 
 // Import FilterProfile interface from adapter
 import { FilterProfile } from '@/utils/filter-service-adapter';
@@ -45,47 +21,17 @@ const supabase = supabaseBrowser.getClient();
 // Debug function to check the database directly
 async function debugCheckFilterProfiles() {
   try {
-    // Direct database query to check what profiles exist - USING THE EXACT QUERY THAT WORKS IN SUPABASE
-    console.log('Debug: Running exact query that works in Supabase: select id, name, is_active from user_filter_profiles');
-    
     const { data, error } = await supabase
       .from('user_filter_profiles')
       .select('id, name, is_active');
       
-    console.log('Debug: Direct database check for profiles');
-    console.log('Results:', data);
-    
-    // Check available fields in first profile
-    if (data && data.length > 0) {
-      console.log('Debug: Available fields in first profile:', Object.keys(data[0]).join(', '));
-      console.log('Debug: Found', data.length, 'profiles with these IDs:', data.map((p: any) => p.id).join(', '));
-      
-      data.forEach(profile => {
-        console.log(`Debug: Profile ${profile.id}: Name="${profile.name}", IsActive=${profile.is_active}`);
-      });
-    } else {
-      console.log('Debug: No profiles found in direct database check');
-      
-      // Additional error checking
-      console.log('Debug: Trying to diagnose connection issues...');
-      // Check if supabase object is properly configured
-      if (!supabase) {
-        console.error('Debug: supabase client is null or undefined!');
-      }
-      
-      if (error) {
-        console.error('Debug: SQL Error details:', JSON.stringify(error, null, 2));
-      }
+    if (error) {
+      console.error('Debug: SQL Error details:', error.message);
     }
     
     return data;
   } catch (err) {
     console.error('Error in debug check:', err);
-    // Log full error details
-    if (err instanceof Error) {
-      console.error('Error details:', err.message);
-      console.error('Error stack:', err.stack);
-    }
     return null;
   }
 }
@@ -283,53 +229,43 @@ export function Home() {
     async function fetchFilterProfiles() {
       setLoadingProfiles(true);
       try {
-        console.log('======== INITIAL PROFILE LOADING ========');
-        
-        // Debug check first using direct Supabase query
-        const directProfiles = await debugCheckFilterProfiles();
-        console.log('Initial load: Direct database check found', directProfiles?.length || 0, 'profiles');
-        
-        if (directProfiles && directProfiles.length > 0) {
-          console.log('Initial load: Direct database check profile names:', directProfiles.map((p: any) => p.name).join(', '));
-          console.log('Initial load: First profile structure:', Object.keys(directProfiles[0]).join(', '));
-        }
+        // Check if profiles exist directly in database first
+        console.log('Checking profiles directly in database...');
+        const { data: dbProfiles, error: dbError } = await supabase
+          .from('user_filter_profiles')
+          .select('*');
+        console.log('Direct DB check:', dbProfiles?.length || 0, 'profiles found');
+        if (dbError) console.error('DB Error:', dbError);
         
         // Fetch all available profiles using the filter service
-        console.log('Initial load: Now retrieving profiles with filterService.listProfiles()...');
+        console.log('Fetching filter profiles through service...');
         const profiles = await filterService.listProfiles();
-        console.log('Initial load: Filter service returned', profiles.length, 'profiles');
+        console.log('Found profiles through service:', profiles?.length || 0, profiles?.map(p => p.name) || []);
         
         if (profiles.length > 0) {
-          console.log('Initial load: Profile names from filterService:', profiles.map(p => p.name).join(', '));
-          console.log('Initial load: Profile data structure from service:', 
-            Object.keys(profiles[0]).join(', '));
           setFilterProfiles(profiles);
           
           // Then get the active profile
-          console.log('Initial load: Retrieving active profile...');
+          console.log('Loading active profile...');
           const active = await filterService.loadActiveProfile();
+          console.log('Active profile:', active?.name || 'none');
           if (active) {
-            console.log('Initial load: Found active profile:', active.name);
-            console.log('Initial load: Active profile structure:', Object.keys(active).join(', '));
             setActiveFilterProfile(active);
           } else {
-            console.log('Initial load: No active profile found, using first available profile');
             // If no active profile, use the first one
             if (profiles.length > 0) {
               // Set the first profile as active
+              console.log('Setting first profile as active:', profiles[0].name);
               const success = await filterService.setActiveProfile(profiles[0].id);
               if (success) {
-                console.log(`Initial load: Set profile ${profiles[0].name} as active`);
                 const active = await filterService.loadActiveProfile();
                 setActiveFilterProfile(active);
               }
             }
           }
         } else {
-          console.warn('Initial load: No profiles returned from filterService');
-          
+          console.log('No profiles found, proceeding without filter');
           // No profiles exist yet - just proceed without a filter
-          console.log('Initial load: No profiles found, proceeding without filtering');
           setActiveFilterProfile(null);
         }
       } catch (err) {
@@ -392,10 +328,13 @@ export function Home() {
     }
   };
 
-  // Fetch presentations data
+  // Fetch presentations data - only trigger when activeFilterProfile ID changes
   useEffect(() => {
-    fetchData();
-  }, [activeFilterProfile]);
+    console.log('useEffect triggered, activeFilterProfile:', activeFilterProfile?.name);
+    if (!loadingProfiles) {  // Don't fetch data while still loading profiles
+      fetchData();
+    }
+  }, [activeFilterProfile?.id, loadingProfiles]);
 
   // Function to fetch presentations data
   async function fetchData() {
@@ -404,44 +343,7 @@ export function Home() {
       console.log('Home: Fetching presentations data');
       console.log('Home: Current active profile:', activeFilterProfile);
       
-      // DEBUG: Let's directly verify if there are profiles in the user_filter_profiles table
-      try {
-        console.log('Home: DEBUG - Checking available profiles directly');
-        const { data: profilesDebug, error: profilesError } = await supabase
-          .from('user_filter_profiles')
-          .select('*')
-          .order('name');
-        
-        if (profilesError) {
-          console.error('Home: Error directly querying profiles:', profilesError);
-        } else {
-          console.log(`Home: Found ${profilesDebug?.length || 0} profiles directly from DB`);
-          if (profilesDebug && profilesDebug.length > 0) {
-            console.log('Home: Profile names:', profilesDebug.map((p: any) => p.name).join(', '));
-          }
-        }
-      } catch (e) {
-        console.error('Home: Error in direct profile check:', e);
-      }
-      
-      // DEBUG: Let's check profile drives directly
-      try {
-        console.log('Home: DEBUG - Checking profile drives directly');
-        const { data: drivesDebug, error: drivesError } = await supabase
-          .from('user_filter_profile_drives')
-          .select('*');
-        
-        if (drivesError) {
-          console.error('Home: Error directly querying profile drives:', drivesError);
-        } else {
-          console.log(`Home: Found ${drivesDebug?.length || 0} profile drives directly from DB`);
-          if (drivesDebug && drivesDebug.length > 0) {
-            console.log('Home: Sample profile drive fields:', Object.keys(drivesDebug[0]).join(', '));
-          }
-        }
-      } catch (e) {
-        console.error('Home: Error in direct drives check:', e);
-      }
+      // Debug: checking profiles and drives
       
       try {
         // Fetch presentations with their video sources and expert documents
@@ -468,7 +370,8 @@ export function Home() {
               created_at,
               modified_at,
               size,
-              metadata
+              metadata,
+              root_drive_id
             ),
             high_level_folder:high_level_folder_source_id(
               id,
@@ -505,29 +408,23 @@ export function Home() {
             } 
             else if (profileDrives && profileDrives.length > 0) {
               const rootDriveIds = profileDrives.map(d => d.root_drive_id).filter(Boolean);
-              console.log(`Home: Found ${rootDriveIds.length} root drive IDs for filtering`);
+              console.log(`Home: Found ${rootDriveIds.length} root drive IDs for filtering:`, rootDriveIds);
               
               if (rootDriveIds.length > 0) {
-                // THIS IS THE KEY CHANGE: Instead of filtering by source_id (which creates a huge URL),
-                // we'll filter presentations directly by the root_drive_ids using a join
+                // Apply filter by checking if the video_source has a root_drive_id in our filter list
+                // Join with sources_google to get the root_drive_id
+                query = query.eq('video_source.root_drive_id', rootDriveIds[0]);
                 
-                // Create the join query using expert_documents table to connect presentations to root_drive_ids
-                // This creates a much shorter query than listing hundreds of source_ids
-                console.log('Home: Using a Join query approach for filtering');
+                // If there are multiple root_drive_ids, we need to use an 'in' filter
+                if (rootDriveIds.length > 1) {
+                  query = query.in('video_source.root_drive_id', rootDriveIds);
+                }
                 
-                // Instead of the complex approach, we'll make a simpler version
-                // that filters the presentations after we fetch them
-                
-                // Get all presentations first (this query works fine)
-                // Then we'll filter them in memory
+                console.log(`Home: Applied filter for root_drive_ids: ${rootDriveIds.join(', ')}`);
               }
             } else {
               console.log('Home: No profile drives found for filtering');
             }
-            
-            // Get all presentations - we'll filter them after fetching
-            // This approach prevents the URL length issues completely
-            console.log('Home: Getting all presentations - will filter after fetching');
           } catch (filterError) {
             console.error('Home: Error in custom filter process:', filterError);
             console.log('Home: Proceeding without filtering due to error');
@@ -536,16 +433,10 @@ export function Home() {
           console.log('Home: No active filter profile to apply');
         }
 
-        // Add a timeout to the query to prevent hanging
-        const queryPromise = query;
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Query timeout - request took too long')), 30000);
-        });
-        
-        const { data: presentationsData, error: presentationsError } = await Promise.race([
-          queryPromise,
-          timeoutPromise
-        ]) as any;
+        // Execute the query
+        console.log('Executing presentations query...');
+        const { data: presentationsData, error: presentationsError } = await query;
+        console.log('Query result:', presentationsData?.length || 0, 'presentations found');
 
         if (presentationsError) {
           throw new Error(`Error fetching presentations: ${presentationsError.message}`);
@@ -1795,7 +1686,7 @@ export function Home() {
       {/* Main content area with everything side by side */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left column with filter dropdown and left sidebar content */}
-        <div className="w-full lg:w-1/3 space-y-4">
+        <div className="w-full lg:w-2/5 space-y-4">
           {/* Filter profiles dropdown */}
           <select 
             className="px-4 py-2 w-full bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-lg font-semibold"
@@ -2073,8 +1964,7 @@ export function Home() {
                       setActiveFilterProfile(null);
                       // Clear error
                       setError(null);
-                      // Refetch data with a slight delay to ensure state update
-                      setTimeout(() => fetchData(), 100);
+                      // Data will refetch automatically when activeFilterProfile changes
                     }}
                     className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm transition-colors"
                   >
@@ -2214,7 +2104,7 @@ export function Home() {
         </div>
       
         {/* Right Content Area */}
-        <div className="lg:w-2/3">
+        <div className="lg:w-3/5">
           {/* Video Title and Player */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {selectedPresentation?.expert_document?.title ? (
@@ -2314,12 +2204,13 @@ export function Home() {
                 
                 <CollapsibleContent>
                   {selectedPresentation?.video_source?.web_view_link ? (
-                    <div className="aspect-video bg-black">
+                    <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
                       <iframe 
                         src={`https://drive.google.com/file/d/${extractDriveId(selectedPresentation.video_source.web_view_link)}/preview`}
-                        className="w-full h-full"
+                        className="absolute top-0 left-0 w-full h-full"
                         title="Video Player"
                         allow="autoplay"
+                        style={{ border: 'none' }}
                       />
                     </div>
                   ) : (

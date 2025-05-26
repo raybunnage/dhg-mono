@@ -185,17 +185,44 @@ class LightAuthBrowserService {
 
   private async logAuthEvent(userId: string, action: string, status: string): Promise<void> {
     try {
-      await this.supabase
+      console.log('[LightAuthBrowser] Logging auth event:', { userId, action, status });
+      
+      // Map action and status to event_type based on the correct schema
+      let eventType: string;
+      if (action === 'login' && status === 'success') {
+        eventType = 'login';
+      } else if (action === 'logout' && status === 'success') {
+        eventType = 'logout';
+      } else if (action === 'login' && status === 'failed') {
+        eventType = 'login_failed';
+      } else {
+        eventType = action; // fallback
+      }
+      
+      const event = {
+        user_id: userId,
+        event_type: eventType,
+        metadata: {
+          app: 'dhg-audio',
+          auth_method: 'light_auth_browser',
+          user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+          timestamp: new Date().toISOString(),
+          original_action: action,
+          original_status: status
+        },
+        created_at: new Date().toISOString()
+      };
+      
+      const { error } = await this.supabase
         .from('auth_audit_log')
-        .insert({
-          user_id: userId,
-          action,
-          status,
-          metadata: {
-            app: 'dhg-audio',
-            timestamp: new Date().toISOString()
-          }
-        });
+        .insert(event);
+        
+      if (error) {
+        console.error('[LightAuthBrowser] Error logging auth event:', error);
+        console.error('[LightAuthBrowser] Event data:', event);
+      } else {
+        console.log('[LightAuthBrowser] Auth event logged successfully');
+      }
     } catch (error) {
       console.error('[LightAuthBrowser] Error logging auth event:', error);
     }

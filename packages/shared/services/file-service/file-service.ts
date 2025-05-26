@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { glob } from 'glob';
 import { Logger } from '../../utils/logger';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface FileResult {
   success: boolean;
@@ -15,7 +15,265 @@ export interface FileResult {
   };
 }
 
+// Google Drive specific interfaces
+export interface GoogleDriveItem {
+  id: string;                          // Supabase UUID
+  drive_id: string;                    // Google Drive ID
+  name: string | null;
+  path_depth: number | null;
+  document_type_id: string | null;
+  parent_folder_id: string | null;     // Parent's Google Drive ID
+  main_video_id: string | null;
+  mime_type: string | null;
+}
+
+export interface FolderTraversalResult {
+  folders: GoogleDriveItem[];
+  files: GoogleDriveItem[];
+  totalItems: number;
+}
+
+export interface RecursiveTraversalOptions {
+  includeFiles?: boolean;
+  includeFolders?: boolean;
+  maxDepth?: number;
+  onItemProcessed?: (item: GoogleDriveItem, depth: number) => void;
+}
+
 export class FileService {
+  // Set to track processed Google Drive items to avoid duplicates
+  private processedDriveIds = new Set<string>();
+
+  /**
+   * Reset the processed items tracker (call before starting a new traversal)
+   */
+  resetProcessedItems(): void {
+    this.processedDriveIds.clear();
+  }
+
+  /**
+   * Recursively traverse Google Drive folders and files
+   * Based on the solid pattern from list-main-video-folders-tree
+   */
+  async traverseGoogleDriveFolder(
+    supabase: SupabaseClient<any>,
+    parentDriveId: string,
+    options: RecursiveTraversalOptions = {},
+    currentDepth: number = 0
+  ): Promise<FolderTraversalResult> {
+    const {
+      includeFiles = true,
+      includeFolders = true,
+      maxDepth = Infinity,
+      onItemProcessed
+    } = options;
+
+    const result: FolderTraversalResult = {
+      folders: [],
+      files: [],
+      totalItems: 0
+    };
+
+    // Stop if we've reached max depth
+    if (currentDepth > maxDepth) {
+      return result;
+    }
+
+    try {
+      // Get all direct children of this folder
+      const { data: children, error } = await supabase
+        .from('sources_google')
+        .select(`
+          id,
+          drive_id,
+          name,
+          path_depth,
+          document_type_id,
+          parent_folder_id,
+          main_video_id,
+          mime_type
+        `)
+        .eq('parent_folder_id', parentDriveId)
+        .order('name');
+
+      if (error) {
+        Logger.error(`Error fetching children for folder ${parentDriveId}: ${error.message}`);
+        return result;
+      }
+
+      if (!children || children.length === 0) {
+        return result;
+      }
+
+      // Separate folders and files
+      const folders = children.filter((item: GoogleDriveItem) => 
+        item.mime_type === 'application/vnd.google-apps.folder'
+      );
+      
+      const files = children.filter((item: GoogleDriveItem) => 
+        item.mime_type !== 'application/vnd.google-apps.folder'
+      );
+
+      // Process folders
+      if (includeFolders) {
+        for (const folder of folders) {
+          // Skip if already processed
+          if (this.processedDriveIds.has(folder.drive_id)) {
+            continue;
+          }
+
+          this.processedDriveIds.add(folder.drive_id);
+          result.folders.push(folder);
+          result.totalItems++;
+
+          if (onItemProcessed) {
+            onItemProcessed(folder, currentDepth);
+          }
+
+          // Recursively process subfolder
+          const subfolderResult = await this.traverseGoogleDriveFolder(
+            supabase,
+            folder.drive_id,
+            options,
+            currentDepth + 1
+          );
+
+          // Merge results
+          result.folders.push(...subfolderResult.folders);
+          result.files.push(...subfolderResult.files);
+          result.totalItems += subfolderResult.totalItems;
+        }
+      }
+
+      // Process files
+      if (includeFiles) {
+        for (const file of files) {
+          // Skip if already processed
+          if (this.processedDriveIds.has(file.drive_id)) {
+            continue;
+          }
+
+          this.processedDriveIds.add(file.drive_id);
+          result.files.push(file);
+          result.totalItems++;
+
+          if (onItemProcessed) {
+            onItemProcessed(file, currentDepth);
+          }
+        }
+      }
+
+      return result;
+    } catch (error) {
+      Logger.error(`Error in traverseGoogleDriveFolder: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return result;
+    }
+  }
+
+  /**
+   * Get all items in a folder (non-recursive)
+   */
+  async getGoogleDriveFolderContents(
+    supabase: SupabaseClient<any>,
+    parentDriveId: string
+  ): Promise<FolderTraversalResult> {
+    const result: FolderTraversalResult = {
+      folders: [],
+      files: [],
+      totalItems: 0
+    };
+
+    try {
+      const { data: children, error } = await supabase
+        .from('sources_google')
+        .select(`
+          id,
+          drive_id,
+          name,
+          path_depth,
+          document_type_id,
+          parent_folder_id,
+          main_video_id,
+          mime_type
+        `)
+        .eq('parent_folder_id', parentDriveId)
+        .order('name');
+
+      if (error) {
+        Logger.error(`Error fetching folder contents: ${error.message}`);
+        return result;
+      }
+
+      if (!children || children.length === 0) {
+        return result;
+      }
+
+      // Separate and deduplicate
+      for (const item of children) {
+        if (this.processedDriveIds.has(item.drive_id)) {
+          continue;
+        }
+
+        this.processedDriveIds.add(item.drive_id);
+
+        if (item.mime_type === 'application/vnd.google-apps.folder') {
+          result.folders.push(item);
+        } else {
+          result.files.push(item);
+        }
+        result.totalItems++;
+      }
+
+      return result;
+    } catch (error) {
+      Logger.error(`Error in getGoogleDriveFolderContents: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return result;
+    }
+  }
+
+  /**
+   * Get high-level folders (path_depth = 0)
+   */
+  async getHighLevelFolders(
+    supabase: SupabaseClient<any>,
+    includeMainVideoOnly: boolean = false
+  ): Promise<GoogleDriveItem[]> {
+    try {
+      let query = supabase
+        .from('sources_google')
+        .select(`
+          id,
+          drive_id,
+          name,
+          path_depth,
+          document_type_id,
+          parent_folder_id,
+          main_video_id,
+          mime_type
+        `)
+        .eq('path_depth', 0)
+        .is('is_root', false)
+        .eq('mime_type', 'application/vnd.google-apps.folder')
+        .order('name');
+
+      if (includeMainVideoOnly) {
+        query = query.not('main_video_id', 'is', null);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        Logger.error(`Error fetching high-level folders: ${error.message}`);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      Logger.error(`Error in getHighLevelFolders: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return [];
+    }
+  }
+
   /**
    * Read a file from the filesystem
    */
@@ -169,59 +427,8 @@ export class FileService {
     }
   }
   
-  /**
-   * Find files using glob patterns
-   */
-  async findFiles(options: {
-    directory: string;
-    includePatterns: string[];
-    excludePatterns: string[];
-    recursive: boolean;
-  }): Promise<string[]> {
-    try {
-      const fullPath = path.resolve(options.directory);
-      
-      if (!fs.existsSync(fullPath)) {
-        Logger.warn(`Directory does not exist: ${fullPath}`);
-        return [];
-      }
-      
-      Logger.debug(`Finding files in ${fullPath} with patterns: ${options.includePatterns.join(', ')}`);
-      
-      const allResults: string[] = [];
-      
-      // Process each include pattern
-      for (const pattern of options.includePatterns) {
-        const globOptions = {
-          cwd: fullPath,
-          dot: false,
-          nodir: true,
-          absolute: true,
-          ignore: options.excludePatterns
-        };
-        
-        const results = await glob(pattern, globOptions);
-        
-        Logger.debug(`Found ${results.length} files matching pattern ${pattern}`);
-        allResults.push(...results);
-      }
-      
-      // Sort by modification time (newest first)
-      const sortedResults = await Promise.all(
-        allResults.map(async (filePath) => {
-          const stats = fs.statSync(filePath);
-          return { path: filePath, mtime: stats.mtime.getTime() };
-        })
-      );
-      
-      sortedResults.sort((a, b) => b.mtime - a.mtime);
-      
-      return sortedResults.map((item) => item.path);
-    } catch (error) {
-      Logger.error(`Error finding files: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      return [];
-    }
-  }
+  // Removed findFiles method that depends on glob package
+  // Use findFilesLegacy for filesystem operations instead
 }
 
 // Export a singleton instance

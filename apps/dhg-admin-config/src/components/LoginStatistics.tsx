@@ -24,19 +24,88 @@ interface LoginStats {
   }>;
 }
 
+// Debug info interface
+interface DebugInfo {
+  totalLogs24h: number;
+  totalLogs7d: number;
+  totalLogs30d: number;
+  uniqueEventTypes: string[];
+  sampleLogs: any[];
+  errors: string[];
+  lastRefresh: string;
+  tableAccessTest: boolean;
+  totalRecordsInTable: number;
+  allRecordsSample: any[];
+}
+
+// Audit log entry interface
+interface AuditLogEntry {
+  id: string;
+  created_at: string | null;
+  event_type: string;
+  user_id: string | null;
+  metadata: any;
+  ip_address: any;
+  user_agent: string | null;
+}
+
 export const LoginStatistics: React.FC = () => {
   const [stats, setStats] = useState<LoginStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   const fetchStats = async () => {
     try {
       setError(null);
+      const debugErrors: string[] = [];
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      console.log('[LoginStatistics] Fetching stats with date ranges:', {
+        now: now.toISOString(),
+        oneDayAgo: oneDayAgo.toISOString(),
+        sevenDaysAgo: sevenDaysAgo.toISOString(),
+        thirtyDaysAgo: thirtyDaysAgo.toISOString()
+      });
+
+      // First, let's test if we can access the auth_audit_log table at all
+      console.log('[LoginStatistics] Testing basic auth_audit_log access...');
+      const testQuery = await supabase
+        .from('auth_audit_log')
+        .select('*')
+        .limit(1);
+      
+      console.log('[LoginStatistics] Test query result:', testQuery);
+      
+      if (testQuery.error) {
+        debugErrors.push(`Test query failed: ${testQuery.error.message}`);
+        console.error('[LoginStatistics] Cannot access auth_audit_log:', testQuery.error);
+      }
+
+      // Try to get all records first (no date filter) to see what's actually in the table
+      console.log('[LoginStatistics] Fetching ALL auth_audit_log records...');
+      const allRecords = await supabase
+        .from('auth_audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      console.log('[LoginStatistics] All records query result:', allRecords);
+      
+      if (allRecords.error) {
+        debugErrors.push(`All records query failed: ${allRecords.error.message}`);
+        console.error('[LoginStatistics] Error fetching all records:', allRecords.error);
+      } else {
+        console.log('[LoginStatistics] Found total records:', allRecords.data?.length || 0);
+        if (allRecords.data && allRecords.data.length > 0) {
+          console.log('[LoginStatistics] Sample record:', allRecords.data[0]);
+        }
+      }
 
       // Get login events for different time periods
       const [logs24h, logs7d, logs30d] = await Promise.all([
@@ -48,43 +117,83 @@ export const LoginStatistics: React.FC = () => {
         supabase
           .from('auth_audit_log')
           .select('*')
-          .gte('created_at', sevenDaysAgo.toISOString()),
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .order('created_at', { ascending: false }),
         supabase
           .from('auth_audit_log')
           .select('*')
           .gte('created_at', thirtyDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
       ]);
+
+      if (logs24h.error) {
+        debugErrors.push(`24h logs error: ${logs24h.error.message}`);
+        console.error('[LoginStatistics] 24h logs error:', logs24h.error);
+      }
+      if (logs7d.error) {
+        debugErrors.push(`7d logs error: ${logs7d.error.message}`);
+        console.error('[LoginStatistics] 7d logs error:', logs7d.error);
+      }
+      if (logs30d.error) {
+        debugErrors.push(`30d logs error: ${logs30d.error.message}`);
+        console.error('[LoginStatistics] 30d logs error:', logs30d.error);
+      }
 
       if (logs24h.error || logs7d.error || logs30d.error) {
         throw new Error('Failed to fetch audit logs');
       }
 
-      const logs24hData = logs24h.data || [];
-      const logs7dData = logs7d.data || [];
-      const logs30dData = logs30d.data || [];
+      const logs24hData: AuditLogEntry[] = logs24h.data || [];
+      const logs7dData: AuditLogEntry[] = logs7d.data || [];
+      const logs30dData: AuditLogEntry[] = logs30d.data || [];
 
-      // Calculate statistics
-      const totalLogins24h = logs24hData.filter(log => log.event_type === 'login').length;
-      const totalLogins7d = logs7dData.filter(log => log.event_type === 'login').length;
-      const totalLogins30d = logs30dData.filter(log => log.event_type === 'login').length;
-      const totalFailedLogins24h = logs24hData.filter(log => log.event_type === 'login_failed').length;
+      console.log('[LoginStatistics] Fetched log counts:', {
+        '24h': logs24hData.length,
+        '7d': logs7dData.length,
+        '30d': logs30dData.length
+      });
+
+      // Collect unique event types for debugging
+      const allEventTypes = new Set<string>();
+      logs24hData.forEach((log: AuditLogEntry) => allEventTypes.add(log.event_type));
+
+      console.log('[LoginStatistics] Unique event types found:', Array.from(allEventTypes));
+
+      // Get all event types to understand what we're working with
+      const all24hEventTypes = [...new Set(logs24hData.map(log => log.event_type))];
+      const all7dEventTypes = [...new Set(logs7dData.map(log => log.event_type))];
+      const all30dEventTypes = [...new Set(logs30dData.map(log => log.event_type))];
+      
+      console.log('[LoginStatistics] All event types in data:', {
+        '24h': all24hEventTypes,
+        '7d': all7dEventTypes,
+        '30d': all30dEventTypes
+      });
+
+      // Calculate statistics with broader event type matching
+      // First, let's count ALL events to see what we have
+      const totalLogins24h = logs24hData.length; // Count all events for now
+      const totalLogins7d = logs7dData.length;
+      const totalLogins30d = logs30dData.length;
+      const totalFailedLogins24h = 0; // We'll fix this once we see the actual event types
+
+      console.log('[LoginStatistics] Raw counts (all events):', {
+        totalLogins24h,
+        totalLogins7d,
+        totalLogins30d
+      });
 
       // Unique users
-      const uniqueUsers24h = new Set(logs24hData.filter(log => log.user_id).map(log => log.user_id)).size;
-      const uniqueUsers7d = new Set(logs7dData.filter(log => log.user_id).map(log => log.user_id)).size;
+      const uniqueUsers24h = new Set(logs24hData.filter((log: AuditLogEntry) => log.user_id).map((log: AuditLogEntry) => log.user_id)).size;
+      const uniqueUsers7d = new Set(logs7dData.filter((log: AuditLogEntry) => log.user_id).map((log: AuditLogEntry) => log.user_id)).size;
 
-      // Recent logins and failed logins
-      const recentLogins = logs24hData
-        .filter(log => log.event_type === 'login')
-        .slice(0, 10);
-      
-      const recentFailedLogins = logs24hData
-        .filter(log => log.event_type === 'login_failed')
-        .slice(0, 10);
+      // Recent logins and failed logins - for now, show all recent events
+      const recentLogins = logs24hData.slice(0, 10);
+      const recentFailedLogins: AuditLogEntry[] = []; // We'll populate this once we know the event types
 
       // Auth method breakdown
       const authMethodCounts: Record<string, number> = {};
-      logs7dData.forEach(log => {
+      logs7dData.forEach((log: AuditLogEntry) => {
         const method = log.metadata?.auth_method || 'standard';
         authMethodCounts[method] = (authMethodCounts[method] || 0) + 1;
       });
@@ -106,7 +215,7 @@ export const LoginStatistics: React.FC = () => {
         console.error('Error fetching top users:', topUsersError);
       }
 
-      const topUsers = (topUsersData || []).map(user => ({
+      const topUsers = (topUsersData || []).map((user: any) => ({
         user_id: user.id,
         email: user.email,
         login_count: user.login_count || 0,
@@ -132,9 +241,56 @@ export const LoginStatistics: React.FC = () => {
         topUsers,
         authMethodBreakdown
       });
+
+      // Set debug info with more details
+      setDebugInfo({
+        totalLogs24h: logs24hData.length,
+        totalLogs7d: logs7dData.length,
+        totalLogs30d: logs30dData.length,
+        uniqueEventTypes: Array.from(allEventTypes),
+        sampleLogs: logs24hData.slice(0, 5).map(log => ({
+          id: log.id,
+          event_type: log.event_type,
+          user_id: log.user_id,
+          created_at: log.created_at,
+          metadata: log.metadata
+        })),
+        errors: debugErrors,
+        lastRefresh: new Date().toISOString(),
+        tableAccessTest: !testQuery.error,
+        totalRecordsInTable: allRecords.data?.length || 0,
+        allRecordsSample: (allRecords.data || []).slice(0, 3).map(log => ({
+          id: log.id,
+          event_type: log.event_type,
+          user_id: log.user_id,
+          created_at: log.created_at,
+          metadata: log.metadata
+        }))
+      });
+
+      console.log('[LoginStatistics] Stats calculated:', {
+        totalLogins24h,
+        totalLogins7d,
+        totalLogins30d,
+        totalFailedLogins24h,
+        uniqueUsers24h,
+        uniqueUsers7d
+      });
     } catch (err) {
       console.error('Error fetching login statistics:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch statistics');
+      setDebugInfo({
+        totalLogs24h: 0,
+        totalLogs7d: 0,
+        totalLogs30d: 0,
+        uniqueEventTypes: [],
+        sampleLogs: [],
+        errors: [err instanceof Error ? err.message : 'Unknown error'],
+        lastRefresh: new Date().toISOString(),
+        tableAccessTest: false,
+        totalRecordsInTable: 0,
+        allRecordsSample: []
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -178,13 +334,21 @@ export const LoginStatistics: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-900">Login Statistics</h2>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
-        >
-          {refreshing ? 'Refreshing...' : 'Refresh'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowDebug(!showDebug)}
+            className="px-3 py-1 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+          >
+            {showDebug ? 'Hide Debug' : 'Show Debug'}
+          </button>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -323,6 +487,80 @@ export const LoginStatistics: React.FC = () => {
           <span className="font-medium ml-2">Active This Week:</span> {stats.uniqueUsers7d}
         </p>
       </div>
+
+      {/* Debug Information */}
+      {showDebug && debugInfo && (
+        <div className="bg-gray-50 border border-gray-300 rounded-lg p-6 space-y-4">
+          <h3 className="text-lg font-medium text-gray-900">Debug Information</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Table Access</p>
+              <p className={`text-sm font-bold ${debugInfo.tableAccessTest ? 'text-green-600' : 'text-red-600'}`}>
+                {debugInfo.tableAccessTest ? '✓ SUCCESS' : '✗ FAILED'}
+              </p>
+              <p className="text-sm text-gray-900">Total Records: {debugInfo.totalRecordsInTable}</p>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-gray-600">Filtered Logs</p>
+              <p className="text-sm text-gray-900">24h: {debugInfo.totalLogs24h}</p>
+              <p className="text-sm text-gray-900">7d: {debugInfo.totalLogs7d}</p>
+              <p className="text-sm text-gray-900">30d: {debugInfo.totalLogs30d}</p>
+            </div>
+            
+            <div>
+              <p className="text-sm font-medium text-gray-600">Event Types Found</p>
+              {debugInfo.uniqueEventTypes.length > 0 ? (
+                <ul className="text-sm text-gray-900">
+                  {debugInfo.uniqueEventTypes.map(type => (
+                    <li key={type}>• {type}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500">No event types found</p>
+              )}
+            </div>
+            
+            <div>
+              <p className="text-sm font-medium text-gray-600">Last Refresh</p>
+              <p className="text-sm text-gray-900">
+                {formatDistanceToNow(new Date(debugInfo.lastRefresh), { addSuffix: true })}
+              </p>
+              {debugInfo.errors.length > 0 && (
+                <>
+                  <p className="text-sm font-medium text-red-600 mt-2">Errors</p>
+                  {debugInfo.errors.map((err, idx) => (
+                    <p key={idx} className="text-sm text-red-500">{err}</p>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+
+          {debugInfo.allRecordsSample.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2">Sample Records from auth_audit_log Table</p>
+              <div className="bg-white rounded border border-gray-200 p-3 overflow-x-auto">
+                <pre className="text-xs text-gray-700">
+                  {JSON.stringify(debugInfo.allRecordsSample, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {debugInfo.sampleLogs.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2">Sample Log Entries (First 5)</p>
+              <div className="bg-white rounded border border-gray-200 p-3 overflow-x-auto">
+                <pre className="text-xs text-gray-700">
+                  {JSON.stringify(debugInfo.sampleLogs, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

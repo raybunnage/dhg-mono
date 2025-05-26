@@ -5,7 +5,7 @@
  */
 
 import { supabaseBrowser } from './supabase-browser-adapter';
-import type { ProfileFormData } from '@shared/services/user-profile-service';
+import type { ProfileFormData } from '../../../../packages/shared/components/profile/ProfileForm';
 
 export interface ProfileResult {
   success: boolean;
