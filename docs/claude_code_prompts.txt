@@ -10,6 +10,42 @@
     --folder-id "1cKEcvA1Y3EwFGrR-wSWsyfkiTmp3uClg" \
     --video-id "88d99fa3-b901-407c-8e77-079770d33fe3"
 
+
+
+ Summary
+
+  I've successfully modified the dhg-audio app to display titles from the corresponding mp4 files' expert_documents. Here's what was
+  implemented:
+
+  The Solution:
+
+  1. Discovered the relationship: M4a files are audio extracts from mp4 files, sharing the same base filename
+  2. Modified the audio service to:
+    - Fetch m4a files as before
+    - For each m4a without its own title, find the corresponding mp4 in the same folder
+    - Extract the title from the mp4's expert_document
+    - Use that title for display
+
+  Key Changes:
+
+  - audio-browser-service.ts: Added logic to find mp4 files for m4a files without titles
+  - audio-adapter.ts: Updated to use mp4_title when available
+
+  Benefits:
+
+  - Single source of truth: Titles are only stored with mp4 files
+  - No data duplication: M4a files inherit titles from their source mp4s
+  - Automatic updates: If mp4 titles change, m4a displays update automatically
+
+  The cache has been cleared. When you run pnpm dev in the dhg-audio directory and hard refresh your browser (Cmd+Shift+R), you should now
+  see descriptive titles like "From Threat to Safety and Beyond: Transforming Consciousness Through Awe" instead of filenames like
+  "Amster.Eagle.2.10.21.m4a".
+
+
+
+
+
+
 I've successfully added a Drive Filter Management page to the dhg-admin-config app. The new functionality includes:
 
   Components Created:
