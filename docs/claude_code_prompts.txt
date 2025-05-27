@@ -11,6 +11,83 @@
     --video-id "88d99fa3-b901-407c-8e77-079770d33fe3"
 
 
+
+Table Rename Command Instructions
+
+  Basic Usage
+
+  ./scripts/cli-pipeline/database/database-cli.sh rename-table <old-name> <new-name> [options]
+
+  Options
+
+  - --no-view - Skip creating compatibility view (default: creates view)
+  - --dry-run - Show what would be done without making changes
+  - --notes=TEXT - Add notes to migration record
+
+  Examples
+
+  1. Simple rename with compatibility view:
+  ./scripts/cli-pipeline/database/database-cli.sh rename-table old_table_name new_table_name
+
+ ./scripts/cli-pipeline/database/database-cli.sh rename-table allowed_emails auth_allowed_emails
+ ./scripts/cli-pipeline/database/database-cli.sh rename-table allowed_emails auth_allowed_emails
+
+
+
+  This will:
+  - Rename old_table_name to new_table_name
+  - Create a view called old_table_name that points to new_table_name
+  - Allow existing queries to continue working
+
+  2. Rename without compatibility view:
+  ./scripts/cli-pipeline/database/database-cli.sh rename-table old_table_name new_table_name --no-view
+  Use this when you want a clean break and will update all queries immediately.
+
+  3. Dry run to preview changes:
+  ./scripts/cli-pipeline/database/database-cli.sh rename-table sources_google sources_google_v2 --dry-run
+  Shows the SQL that would be executed without making any changes.
+
+  4. Add documentation:
+  ./scripts/cli-pipeline/database/database-cli.sh rename-table old_table new_table --notes="Renaming as part of v2 schema migration"
+
+  What the Command Does
+
+  1. Pre-flight checks:
+    - Verifies source table exists
+    - Confirms new name is available
+    - Checks for existing migrations
+  2. Analyzes dependencies:
+    - Foreign keys
+    - Indexes
+    - Triggers
+    - RLS policies
+    - Views
+  3. Executes migration:
+    - Renames table atomically
+    - Creates compatibility view (unless --no-view)
+    - Updates sequences
+    - Records in sys_table_migrations
+  4. Validates results:
+    - Confirms new table exists
+    - Tests compatibility view
+    - Ensures functionality preserved
+
+  Related Commands
+
+  List all table migrations:
+  ./scripts/cli-pipeline/database/database-cli.sh list-migrations
+
+  Rollback a rename:
+  ./scripts/cli-pipeline/database/database-cli.sh rollback-rename new_table_name
+
+  Force rollback without confirmation:
+  ./scripts/cli-pipeline/database/database-cli.sh rollback-rename new_table_name --force
+
+
+
+
+
+
 Summary
 
   I've successfully implemented the table renaming migration infrastructure as requested:

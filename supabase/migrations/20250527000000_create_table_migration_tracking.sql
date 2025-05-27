@@ -1,6 +1,10 @@
 -- Create table migration tracking system
 -- This table tracks all table renames to enable safe migrations and rollbacks
 
+-- Drop existing policies if they exist (to allow re-running)
+DROP POLICY IF EXISTS "Service role full access" ON sys_table_migrations;
+DROP POLICY IF EXISTS "Authenticated read access" ON sys_table_migrations;
+
 CREATE TABLE IF NOT EXISTS sys_table_migrations (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   old_name TEXT NOT NULL,
