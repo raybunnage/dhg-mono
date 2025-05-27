@@ -387,6 +387,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    process-new-files-enhanced   NEW: Process new files with detailed hierarchical report (create expert_documents)"
   echo "    update-metadata              NEW: Update metadata for existing files (size, thumbnails, renames)"
   echo "    verify-deletions             NEW: Verify deleted files and optionally restore those that still exist"
+  echo "    fix-root-path-depth          Fix path_depth for root folders (should be -1)"
   echo "    find-folder                  Find a specific folder or file by name pattern in Google Drive"
   echo "    get-current-drive-id         Get the current drive_id for a file given its path and root_drive_id"
   echo "  * health-check                 Check the health of Google Drive API connection"
@@ -1018,6 +1019,12 @@ fi
 if [ "$1" = "verify-deletions" ]; then
   shift
   track_command "verify-deletions" "ts-node $SCRIPT_DIR/verify-deletions.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "fix-root-path-depth" ]; then
+  shift
+  track_command "fix-root-path-depth" "ts-node $SCRIPT_DIR/fix-root-path-depth.ts $*"
   exit $?
 fi
 

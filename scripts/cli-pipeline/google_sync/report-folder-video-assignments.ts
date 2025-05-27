@@ -80,6 +80,12 @@ interface FolderItem {
   main_video_id: string | null;
   path: string | null;
   isFolder: boolean;
+  parent_folder_id: string | null;
+  created_at: string | null;
+  modified_at: string | null;
+  document_type_id: string | null;
+  document_type_name?: string;
+  expert_document_id?: string;
   children?: FolderItem[];
 }
 
@@ -123,10 +129,28 @@ async function buildFolderHierarchy(rootDriveId: string): Promise<FolderItem | n
     return null;
   }
   
+  // Get document types for all items
+  const { data: documentTypes } = await supabase
+    .from('document_types')
+    .select('id, name');
+  
+  const docTypeMap = new Map<string, string>();
+  documentTypes?.forEach(dt => docTypeMap.set(dt.id, dt.name));
+  
+  // Get expert documents for all items
+  const itemIds = allItems.map(item => item.id);
+  const { data: expertDocs } = await supabase
+    .from('expert_documents')
+    .select('id, source_id')
+    .in('source_id', itemIds);
+  
+  const expertDocMap = new Map<string, string>();
+  expertDocs?.forEach(ed => expertDocMap.set(ed.source_id, ed.id));
+  
   // Build hierarchy
   const itemMap = new Map<string, FolderItem>();
   
-  // Convert to FolderItem format
+  // Convert to FolderItem format with all fields
   allItems.forEach(item => {
     const folderItem: FolderItem = {
       id: item.id,
@@ -137,6 +161,12 @@ async function buildFolderHierarchy(rootDriveId: string): Promise<FolderItem | n
       main_video_id: item.main_video_id,
       path: item.path,
       isFolder: item.mime_type === 'application/vnd.google-apps.folder',
+      parent_folder_id: item.parent_folder_id,
+      created_at: item.created_at,
+      modified_at: item.modified_at,
+      document_type_id: item.document_type_id,
+      document_type_name: item.document_type_id ? docTypeMap.get(item.document_type_id) : undefined,
+      expert_document_id: expertDocMap.get(item.id),
       children: []
     };
     
@@ -181,6 +211,14 @@ function countItems(folder: FolderItem): { total: number; withVideoId: number; w
 }
 
 /**
+ * Format date for display
+ */
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return 'Unknown';
+  return new Date(dateStr).toLocaleString();
+}
+
+/**
  * Generate markdown report content
  */
 function generateMarkdownReport(data: ReportData): string {
@@ -188,32 +226,67 @@ function generateMarkdownReport(data: ReportData): string {
   
   // Header
   lines.push(`# Main Video ID Assignment Report`);
-  lines.push(`## Folder: ${data.folder.name}`);
   lines.push(`Generated: ${data.generatedAt}`);
+  lines.push(`Mode: REPORT`);
   lines.push('');
   
   // Summary statistics
   lines.push('## Summary');
-  lines.push(`- **Folder Drive ID**: ${data.folder.drive_id}`);
-  lines.push(`- **Folder Main Video ID**: ${data.folder.main_video_id || 'Not assigned'}`);
+  lines.push(`- **Folder**: ${data.folder.name}`);
   lines.push(`- **Total Items**: ${data.totalItems}`);
   lines.push(`- **Items with Video ID**: ${data.itemsWithVideoId}`);
   lines.push(`- **Items without Video ID**: ${data.itemsWithoutVideoId}`);
   lines.push(`- **Coverage**: ${data.videoIdCoverage.toFixed(1)}%`);
   lines.push('');
   
-  // Folder structure
-  lines.push('## Folder Structure');
+  // Hierarchical view header
+  lines.push('## Hierarchical View of Folder Structure');
+  lines.push('');
+  lines.push('Legend: ✓ = Has main_video_id | ✗ = Missing main_video_id | 📁 = Folder | 📄 = File');
   lines.push('');
   
-  // Recursive function to print hierarchy
-  const printItem = (item: FolderItem, indent: string = '') => {
+  // Detailed folder information
+  const printDetailedItem = (item: FolderItem, indent: string = '', isRoot: boolean = true) => {
     const icon = item.isFolder ? '📁' : '📄';
-    const videoIdStatus = item.main_video_id ? `✓ ${item.main_video_id}` : '✗ No video ID';
+    const videoStatus = item.main_video_id ? '✓' : '✗';
     
-    lines.push(`${indent}${icon} ${item.name}`);
-    lines.push(`${indent}   └─ ${videoIdStatus}`);
+    if (isRoot || item.path_depth === 0) {
+      // High-level folder format
+      lines.push(`### ${icon} ${item.name} (High-Level Folder)`);
+      lines.push(`- **Path Depth**: ${item.path_depth}`);
+      lines.push(`- **Drive ID**: ${item.drive_id}`);
+      lines.push(`- **Supabase ID**: ${item.id}`);
+      lines.push(`- **Parent Folder**: ${item.parent_folder_id || 'None (Root)'}`);
+      lines.push(`- **Main Video ID**: ${item.main_video_id || 'Not assigned'}`);
+      lines.push(`- **Created**: ${formatDate(item.created_at)}`);
+      lines.push(`- **Modified**: ${formatDate(item.modified_at)}`);
+      lines.push('');
+      lines.push('**Contents:**');
+      lines.push('');
+    }
     
+    // Print item with proper indentation
+    if (!isRoot) {
+      const docType = item.document_type_name || 'Unclassified';
+      let itemLine = `${indent}${videoStatus} ${icon} ${item.name}`;
+      
+      if (!item.isFolder) {
+        itemLine += `\n${indent}      Type: ${docType} | Video ID: ${item.main_video_id || 'None'}`;
+        if (item.expert_document_id) {
+          itemLine += `\n${indent}      Expert Doc ID: ${item.expert_document_id}`;
+        }
+        itemLine += `\n${indent}      Drive ID: ${item.drive_id}`;
+        itemLine += `\n${indent}      Supabase ID: ${item.id}`;
+      } else {
+        itemLine += ` (${item.children?.length || 0} items)`;
+        itemLine += `\n${indent}      Drive ID: ${item.drive_id}`;
+        itemLine += `\n${indent}      Video ID: ${item.main_video_id || 'None'}`;
+      }
+      
+      lines.push(itemLine);
+    }
+    
+    // Process children
     if (item.children && item.children.length > 0) {
       // Sort children: folders first, then files
       const sortedChildren = [...item.children].sort((a, b) => {
@@ -222,27 +295,37 @@ function generateMarkdownReport(data: ReportData): string {
         return a.name.localeCompare(b.name);
       });
       
-      sortedChildren.forEach((child, index) => {
-        const isLast = index === sortedChildren.length - 1;
-        const childIndent = indent + '   ';
-        printItem(child, childIndent);
+      sortedChildren.forEach(child => {
+        const childIndent = isRoot ? '    ' : indent + '    ';
+        printDetailedItem(child, childIndent, false);
       });
     }
   };
   
-  printItem(data.folder);
+  printDetailedItem(data.folder);
   lines.push('');
   
-  // Items without video ID
+  // Items without video ID section
   if (data.itemsWithoutVideoId > 0) {
-    lines.push('## Items Missing Video ID');
+    lines.push('──────────────────────────────────────────────────────────────────────────────────────────────────────────────');
+    lines.push('');
+    lines.push('## Items Missing Main Video ID');
     lines.push('');
     
     const listMissingItems = (item: FolderItem, path: string = '') => {
       const currentPath = path ? `${path}/${item.name}` : item.name;
       
       if (!item.main_video_id) {
-        lines.push(`- ${currentPath} (${item.drive_id})`);
+        const itemType = item.isFolder ? 'Folder' : 'File';
+        const docType = item.document_type_name || 'Unclassified';
+        lines.push(`- **${currentPath}**`);
+        lines.push(`  - Type: ${itemType} (${docType})`);
+        lines.push(`  - Drive ID: ${item.drive_id}`);
+        lines.push(`  - Supabase ID: ${item.id}`);
+        if (item.expert_document_id) {
+          lines.push(`  - Expert Doc ID: ${item.expert_document_id}`);
+        }
+        lines.push('');
       }
       
       if (item.children) {
@@ -251,8 +334,19 @@ function generateMarkdownReport(data: ReportData): string {
     };
     
     listMissingItems(data.folder);
-    lines.push('');
   }
+  
+  // Next steps
+  lines.push('## Next Steps');
+  if (data.itemsWithoutVideoId > 0) {
+    lines.push('- Run `assign-main-video-id` to assign video IDs to all items');
+  } else {
+    lines.push('- All items have main_video_id assigned ✓');
+  }
+  lines.push('- Run `classify-docs-service` for .docx/.txt files');
+  lines.push('- Run `classify-pdfs` for PDF files');
+  lines.push('- Run `classify-powerpoints` for PowerPoint files');
+  lines.push('');
   
   return lines.join('\n');
 }

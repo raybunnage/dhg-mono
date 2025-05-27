@@ -236,7 +236,8 @@ export class FileService {
    */
   async getHighLevelFolders(
     supabase: SupabaseClient<any>,
-    includeMainVideoOnly: boolean = false
+    includeMainVideoOnly: boolean = false,
+    rootDriveId?: string
   ): Promise<GoogleDriveItem[]> {
     try {
       let query = supabase
@@ -249,12 +250,18 @@ export class FileService {
           document_type_id,
           parent_folder_id,
           main_video_id,
-          mime_type
+          mime_type,
+          root_drive_id
         `)
         .eq('path_depth', 0)
-        .is('is_root', false)
+        .or('is_root.is.null,is_root.eq.false')
         .eq('mime_type', 'application/vnd.google-apps.folder')
         .order('name');
+
+      // Apply root drive filter if provided
+      if (rootDriveId) {
+        query = query.eq('root_drive_id', rootDriveId);
+      }
 
       if (includeMainVideoOnly) {
         query = query.not('main_video_id', 'is', null);
@@ -271,6 +278,184 @@ export class FileService {
     } catch (error) {
       Logger.error(`Error in getHighLevelFolders: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return [];
+    }
+  }
+
+  /**
+   * Find all MP4 files recursively in a folder and its subfolders
+   * Based on the pattern from update-main-video-ids.ts
+   */
+  async findMp4FilesRecursively(
+    supabase: SupabaseClient<any>,
+    folderDriveId: string,
+    visitedFolders: Set<string> = new Set()
+  ): Promise<GoogleDriveItem[]> {
+    try {
+      // Prevent infinite loops
+      if (visitedFolders.has(folderDriveId)) {
+        Logger.debug(`Already visited folder ${folderDriveId}, skipping to prevent loop`);
+        return [];
+      }
+      visitedFolders.add(folderDriveId);
+
+      // Get all direct MP4 files in the folder
+      const { data: directMp4Files, error: directError } = await supabase
+        .from('sources_google')
+        .select(`
+          id,
+          drive_id,
+          name,
+          path,
+          path_depth,
+          document_type_id,
+          parent_folder_id,
+          main_video_id,
+          mime_type
+        `)
+        .eq('parent_folder_id', folderDriveId)
+        .eq('is_deleted', false)
+        .or('mime_type.eq.video/mp4,name.ilike.%.mp4,name.ilike.%.m4v');
+      
+      if (directError) {
+        Logger.error(`Error fetching direct MP4 files from folder ${folderDriveId}: ${directError.message}`);
+        return [];
+      }
+
+      // Get all subfolders
+      const { data: subfolders, error: subfolderError } = await supabase
+        .from('sources_google')
+        .select('id, drive_id, name')
+        .eq('parent_folder_id', folderDriveId)
+        .eq('mime_type', 'application/vnd.google-apps.folder')
+        .eq('is_deleted', false);
+      
+      if (subfolderError) {
+        Logger.error(`Error fetching subfolders from folder ${folderDriveId}: ${subfolderError.message}`);
+        return directMp4Files || [];
+      }
+
+      // Start with direct MP4 files
+      let allMp4Files: GoogleDriveItem[] = directMp4Files || [];
+      
+      // Recursively search each subfolder
+      if (subfolders && subfolders.length > 0) {
+        for (const subfolder of subfolders) {
+          const subfolderId = subfolder.drive_id;
+          const mp4FilesInSubfolder = await this.findMp4FilesRecursively(
+            supabase, 
+            subfolderId, 
+            visitedFolders
+          );
+          
+          // Add subfolder information to help with prioritization
+          mp4FilesInSubfolder.forEach(file => {
+            (file as any).found_in_folder = subfolder.name;
+          });
+          
+          allMp4Files = [...allMp4Files, ...mp4FilesInSubfolder];
+        }
+      }
+      
+      return allMp4Files;
+    } catch (error: any) {
+      Logger.error(`Error in recursive MP4 search: ${error.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Get the best MP4 file from a list, prioritizing files in media-related folders
+   * Based on the pattern from update-main-video-ids.ts
+   */
+  getBestMp4File(mp4Files: GoogleDriveItem[]): GoogleDriveItem | null {
+    if (!mp4Files || mp4Files.length === 0) {
+      return null;
+    }
+    
+    // If there's only one file, use it
+    if (mp4Files.length === 1) {
+      return mp4Files[0];
+    }
+    
+    // Priority folders in descending order of importance
+    const priorityFolders = ['presentation', 'video', 'media', 'recording', 'mp4'];
+    
+    // Check for files in priority folders
+    for (const priorityKeyword of priorityFolders) {
+      const filesInPriorityFolder = mp4Files.filter(file => {
+        const foundInFolder = (file as any).found_in_folder;
+        return foundInFolder && foundInFolder.toLowerCase().includes(priorityKeyword);
+      });
+      
+      if (filesInPriorityFolder.length > 0) {
+        // If multiple files in priority folder, use the first one
+        return filesInPriorityFolder[0];
+      }
+    }
+    
+    // If no files found in priority folders, just return the first file
+    return mp4Files[0];
+  }
+
+  /**
+   * Find and assign main video ID for a high-level folder
+   * Returns the video ID if found and assigned, null otherwise
+   */
+  async findAndAssignMainVideoId(
+    supabase: SupabaseClient<any>,
+    folder: GoogleDriveItem
+  ): Promise<string | null> {
+    try {
+      // Only process high-level folders (path_depth = 0)
+      if (folder.path_depth !== 0) {
+        Logger.debug(`Folder ${folder.name} is not a high-level folder (depth: ${folder.path_depth})`);
+        return null;
+      }
+
+      // Skip if already has main_video_id
+      if (folder.main_video_id) {
+        Logger.debug(`Folder ${folder.name} already has main_video_id: ${folder.main_video_id}`);
+        return folder.main_video_id;
+      }
+
+      // Find MP4 files recursively
+      Logger.debug(`Searching for MP4 files in folder: ${folder.name}`);
+      const mp4Files = await this.findMp4FilesRecursively(supabase, folder.drive_id);
+      
+      if (mp4Files.length === 0) {
+        Logger.debug(`No MP4 files found in folder: ${folder.name}`);
+        return null;
+      }
+
+      // Get the best MP4 file
+      const bestMp4File = this.getBestMp4File(mp4Files);
+      
+      if (!bestMp4File) {
+        Logger.debug(`No suitable MP4 file found for folder: ${folder.name}`);
+        return null;
+      }
+
+      Logger.info(`Found MP4 file for ${folder.name}: ${bestMp4File.name} (${bestMp4File.id})`);
+      
+      // Update the folder with the main_video_id
+      const { error: updateError } = await supabase
+        .from('sources_google')
+        .update({ 
+          main_video_id: bestMp4File.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', folder.id);
+      
+      if (updateError) {
+        Logger.error(`Error updating main_video_id for folder ${folder.name}: ${updateError.message}`);
+        return null;
+      }
+
+      Logger.info(`Successfully assigned main_video_id for folder ${folder.name}`);
+      return bestMp4File.id;
+    } catch (error: any) {
+      Logger.error(`Error in findAndAssignMainVideoId: ${error.message}`);
+      return null;
     }
   }
 

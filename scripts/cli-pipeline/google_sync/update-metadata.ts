@@ -12,7 +12,7 @@
  * 
  * Options:
  *   --dry-run          Show what would be updated without making changes
- *   --limit <n>        Limit number of files to update (default: 100)
+ *   --limit <n>        Limit number of files to update (default: 1000)
  *   --verbose          Show detailed logs
  *   --force            Update all files, not just changed ones
  */
@@ -49,7 +49,7 @@ const forceUpdate = args.includes('--force');
 const limitIndex = args.indexOf('--limit');
 const limit = limitIndex !== -1 && args[limitIndex + 1] 
   ? parseInt(args[limitIndex + 1], 10) 
-  : 100;
+  : 1000;
 
 // Create Supabase client
 const supabaseClientService = SupabaseClientService.getInstance();

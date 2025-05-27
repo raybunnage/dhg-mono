@@ -26,6 +26,7 @@ import { SupabaseClientService } from '../../../packages/shared/services/supabas
 import { getGoogleDriveService, GoogleDriveService } from '../../../packages/shared/services/google-drive';
 import type { Database } from '../../../supabase/types';
 import { getActiveFilterProfile } from './get-active-filter-profile';
+import { displayActiveFilter } from './display-active-filter';
 
 // Load environment files
 function loadEnvFiles() {
@@ -282,13 +283,11 @@ async function main() {
   console.log('========================\n');
   
   try {
-    // Check for active filter profile
-    const activeFilter = await getActiveFilterProfile();
+    // Display active filter prominently
+    const activeFilter = await displayActiveFilter();
     let rootDriveId: string | undefined;
     
     if (activeFilter && activeFilter.rootDriveId) {
-      console.log(`🔍 Active filter: "${activeFilter.profile.name}"`);
-      console.log(`📁 Using root_drive_id: ${activeFilter.rootDriveId}\n`);
       rootDriveId = activeFilter.rootDriveId;
     }
     

@@ -1,5 +1,51 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
+./scripts/cli-pipeline/drive_filter/drive-filter-cli.sh set-active-profile -p 'Dynamic Healing Discussion Group'
+
+./scripts/cli-pipeline/drive_filter/drive-filter-cli.sh set-active-profile -p 'Polyvagal Steering Group'
+
+./scripts/cli-pipeline/google_sync/google-sync-cli.sh process-new-files-enhanced    
+
+./scripts/cli-pipeline/google_sync/google-sync-cli.sh assign-main-video-id \
+    --folder-id "1cKEcvA1Y3EwFGrR-wSWsyfkiTmp3uClg" \
+    --video-id "88d99fa3-b901-407c-8e77-079770d33fe3"
+
+
+
+Why No Updates After process-new-files-enhanced:
+
+  1. 24-hour threshold: By default, update-metadata only processes files that haven't been updated in the last 24 hours
+  2. process-new-files-enhanced updates timestamps: When process-new-files-enhanced runs, it:
+    - Creates new expert_documents records
+    - Updates main_video_id on folders and files
+    - These operations update the updated_at timestamp in sources_google
+  3. Files are too "fresh": Since the files were just updated by process-new-files-enhanced, they don't meet the "older than 24 hours" criteria
+
+  Solutions:
+
+  1. Use --force flag to update all files regardless of when they were last updated:
+  ./google-sync-cli.sh update-metadata --force
+  2. Wait 24 hours for the files to become eligible for metadata updates
+  3. The design is intentional to avoid unnecessary API calls:
+    - If files were just processed, their metadata is likely current
+    - This prevents redundant Google Drive API calls
+    - Helps stay within API rate limits
+
+  This is actually good behavior - it prevents the system from doing unnecessary work on files that were just processed.
+
+
+So NO folders have video assignments yet. This confirms that the process-new-files-enhanced command's Phase 1 is finding the folders but not finding videos. The issue is that
+  it only looks for .mp4 files, not other video formats like .mpeg.
+
+  To summarize:
+  1. The fix worked - Phase 1 is now running and attempting to assign videos
+  2. The limitation - It only searches for .mp4 files, not other video formats like .mpeg
+  3. Most folders legitimately don't have videos - they contain audio files (.m4a) or documents
+
+  The system is working as designed. If you want to include other video formats like .mpeg, that would require updating the findMp4FilesRecursively function in the file-service
+  to search for more video mime types.
+
+
 
 
 more database cleaniup
@@ -11,7 +57,9 @@ making a video viewer
 refactoring the sync commands into pieces
 
 
-
+ ./scripts/cli-pipeline/google_sync/google-sync-cli.sh assign-main-video-id \
+    --folder-id "1cKEcvA1Y3EwFGrR-wSWsyfkiTmp3uClg" \
+    --video-id "88d99fa3-b901-407c-8e77-079770d33fe3"
 
 
 

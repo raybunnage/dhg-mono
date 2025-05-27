@@ -73,7 +73,13 @@ list_profiles() {
 }
 
 set_active_profile() {
-  track_command "set-active-profile" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/commands/set-active-profile.ts $@"
+  local args=()
+  for arg in "$@"; do
+    # Escape single quotes in the argument
+    escaped_arg=$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")
+    args+=("'$escaped_arg'")
+  done
+  track_command "set-active-profile" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/commands/set-active-profile.ts ${args[*]}"
 }
 
 get_active_profile() {

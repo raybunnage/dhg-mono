@@ -22,6 +22,7 @@
  *   --verbose          Show detailed logs and progress updates
  *   --output-file      Save report to a file (default: true)
  *   --no-output-file   Disable file output
+ *   --skip-video-assignment  Skip Phase 1 main_video_id assignment (if already done)
  */
 
 import * as dotenv from 'dotenv';
@@ -53,6 +54,7 @@ const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const isVerbose = args.includes('--verbose');
 const outputToFile = !args.includes('--no-output-file');
+const skipVideoAssignment = args.includes('--skip-video-assignment');
 
 const limitIndex = args.indexOf('--limit');
 let limit = limitIndex !== -1 && args[limitIndex + 1] 
@@ -524,8 +526,79 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     
     console.log(`📝 ${filesToProcess.length} files need expert_documents records`);
     
-    if (filesToProcess.length === 0 && folders.length === 0) {
-      console.log('No new files or folders to process');
+    // PHASE 1: Assign main_video_id to high-level folders FIRST (unless skipped)
+    // This should run regardless of whether there are files to process
+    if (!skipVideoAssignment) {
+      console.log('\n🔍 Phase 1: Assigning main_video_id to high-level folders...');
+      console.log('This ensures all files have the correct video association before creating expert documents.');
+      
+      // Get high-level folders that need video assignment
+      const allHighLevelFolders = await fileService.getHighLevelFolders(supabase, false, rootDriveId);
+      const foldersNeedingVideo = allHighLevelFolders.filter(f => !f.main_video_id);
+      
+      console.log(`Found ${allHighLevelFolders.length} high-level folders`);
+      console.log(`${foldersNeedingVideo.length} folders need main_video_id assignment`);
+      
+      let foldersWithVideo = 0;
+      let totalItemsUpdated = 0;
+      
+      for (const folder of foldersNeedingVideo) {
+        // Use the new recursive MP4 search method from file-service
+        const videoId = await fileService.findAndAssignMainVideoId(supabase, folder);
+        
+        if (videoId) {
+          foldersWithVideo++;
+          console.log(`✅ Assigned video to ${folder.name}`);
+          
+          // Count all items that need to be updated with this main_video_id
+          const allItems = await fileService.traverseGoogleDriveFolder(
+            supabase,
+            folder.drive_id,
+            {
+              includeFiles: true,
+              includeFolders: true
+            }
+          );
+          
+          // Update all nested items with the main_video_id
+          const allItemIds = [
+            ...allItems.folders.map(f => f.id),
+            ...allItems.files.map(f => f.id)
+          ];
+          
+          // Process in batches of 100 to avoid query limits
+          const updateBatchSize = 100;
+          for (let i = 0; i < allItemIds.length; i += updateBatchSize) {
+            const batch = allItemIds.slice(i, i + updateBatchSize);
+            const { error: batchError } = await supabase
+              .from('sources_google')
+              .update({ main_video_id: videoId })
+              .in('id', batch);
+            
+            if (!batchError) {
+              totalItemsUpdated += batch.length;
+            } else {
+              console.error(`Error updating batch: ${batchError.message}`);
+            }
+          }
+        } else {
+          console.log(`❌ No video found for ${folder.name}`);
+        }
+      }
+      
+      if (foldersWithVideo > 0) {
+        console.log(`\n✅ Phase 1 Complete: Assigned videos to ${foldersWithVideo} folders`);
+        console.log(`   Updated ${totalItemsUpdated} total items with main_video_id`);
+      } else if (foldersNeedingVideo.length > 0) {
+        console.log(`\n⚠️  Phase 1: No videos found for any folders`);
+      } else {
+        console.log(`\n✓ Phase 1: All folders already have main_video_id assigned`);
+      }
+    }
+    
+    // Check if we have any files to process
+    if (filesToProcess.length === 0) {
+      console.log('\nNo new files need expert_documents records');
       result.duration = (Date.now() - startTime) / 1000;
       return result;
     }
@@ -575,69 +648,114 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     // Reset the file service's processed items tracker
     fileService.resetProcessedItems();
     
-    // PHASE 1: Assign main_video_id to high-level folders
-    console.log('\n🔍 Phase 1: Assigning main_video_id to high-level folders...');
+    // PHASE 1: Assign main_video_id to high-level folders (unless skipped)
+    if (!skipVideoAssignment) {
+      console.log('\n🔍 Phase 1: Assigning main_video_id to high-level folders...');
+      console.log('This ensures all files have the correct video association before creating expert documents.');
     
     // Get high-level folders
-    const allHighLevelFolders = await fileService.getHighLevelFolders(supabase, false);
+    const allHighLevelFolders = await fileService.getHighLevelFolders(supabase, false, rootDriveId);
     let foldersWithVideo = 0;
     let totalItemsUpdated = 0;
     
     for (const folder of allHighLevelFolders) {
       if (!folder.main_video_id) {
-        // Traverse the folder to find a main video
-        const traversalResult = await fileService.traverseGoogleDriveFolder(
-          supabase,
-          folder.drive_id,
-          {
-            includeFiles: true,
-            includeFolders: false,
-            onItemProcessed: async (item) => {
-              // Look for MP4 files as main videos
-              if (item.mime_type === 'video/mp4' && item.name?.toLowerCase().endsWith('.mp4')) {
-                // Update the high-level folder with main_video_id
-                await supabase
-                  .from('sources_google')
-                  .update({ main_video_id: item.id })
-                  .eq('drive_id', folder.drive_id);
-                
-                // Update all nested items
-                const nestedResult = await fileService.traverseGoogleDriveFolder(
-                  supabase,
-                  folder.drive_id,
-                  { includeFiles: true, includeFolders: true }
-                );
-                
-                const allItemIds = [
-                  ...nestedResult.folders.map(f => f.id),
-                  ...nestedResult.files.map(f => f.id)
-                ];
-                
-                if (allItemIds.length > 0) {
-                  await supabase
-                    .from('sources_google')
-                    .update({ main_video_id: item.id })
-                    .in('id', allItemIds);
-                  
-                  totalItemsUpdated += allItemIds.length;
-                }
-                
-                folder.main_video_id = item.id;
-                foldersWithVideo++;
-                return;
-              }
+        // Use the new recursive MP4 search method from file-service
+        const videoId = await fileService.findAndAssignMainVideoId(supabase, folder);
+        
+        if (videoId) {
+          foldersWithVideo++;
+          console.log(`✅ Assigned video to ${folder.name}`);
+          
+          // Count all items that need to be updated with this main_video_id
+          const allItems = await fileService.traverseGoogleDriveFolder(
+            supabase,
+            folder.drive_id,
+            {
+              includeFiles: true,
+              includeFolders: true
+            }
+          );
+          
+          // Update all nested items with the main_video_id
+          const allItemIds = [
+            ...allItems.folders.map(f => f.id),
+            ...allItems.files.map(f => f.id)
+          ];
+          
+          // Process in batches of 100 to avoid query limits
+          const updateBatchSize = 100;
+          for (let i = 0; i < allItemIds.length; i += updateBatchSize) {
+            const batch = allItemIds.slice(i, i + updateBatchSize);
+            const { error: batchError } = await supabase
+              .from('sources_google')
+              .update({ main_video_id: videoId })
+              .in('id', batch);
+            
+            if (!batchError) {
+              totalItemsUpdated += batch.length;
+            } else {
+              console.error(`Error updating batch: ${batchError.message}`);
             }
           }
-        );
+          
+          // Update the video name in the map
+          const { data: videoFile } = await supabase
+            .from('sources_google')
+            .select('name')
+            .eq('id', videoId)
+            .single();
+          
+          if (videoFile) {
+            videoNameMap.set(videoId, videoFile.name);
+            console.log(`✓ Assigned ${videoFile.name} as main video for ${folder.name}`);
+          }
+        } else if (isVerbose) {
+          console.log(`⚠️ No MP4 file found in ${folder.name}`);
+        }
       }
     }
     
     if (foldersWithVideo > 0) {
       console.log(`✅ Assigned main_video_id to ${foldersWithVideo} high-level folders`);
-      console.log(`✅ Updated main_video_id for ${totalItemsUpdated} total items`);
+      console.log(`✅ Updated main_video_id for ${totalItemsUpdated} total nested items`);
     } else {
       console.log('ℹ️  All high-level folders already have main_video_id assigned');
     }
+    
+    // Also check if any individual files still need main_video_id from their parent
+    console.log('\n🔍 Checking individual files for main_video_id inheritance...');
+    let inheritanceUpdates = 0;
+    
+    for (const file of filesToProcess) {
+      if (!file.main_video_id && file.parent_folder_id) {
+        // Get parent folder's main_video_id
+        const { data: parentFolder } = await supabase
+          .from('sources_google')
+          .select('main_video_id')
+          .eq('drive_id', file.parent_folder_id)
+          .single();
+        
+        if (parentFolder?.main_video_id) {
+          const { error } = await supabase
+            .from('sources_google')
+            .update({ main_video_id: parentFolder.main_video_id })
+            .eq('id', file.id);
+          
+          if (!error) {
+            file.main_video_id = parentFolder.main_video_id;
+            inheritanceUpdates++;
+          }
+        }
+      }
+    }
+    
+    if (inheritanceUpdates > 0) {
+      console.log(`✅ Updated ${inheritanceUpdates} files with inherited main_video_id`);
+    }
+  } else {
+    console.log('\n⏭️  Skipping Phase 1: main_video_id assignment (--skip-video-assignment flag set)');
+  }
     
     // PHASE 2: Process new files and create expert documents
     console.log('\n📝 Phase 2: Creating expert_documents records...');
