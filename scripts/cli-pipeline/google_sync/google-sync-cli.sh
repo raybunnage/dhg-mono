@@ -452,6 +452,11 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    mark-pdfs                    Mark PDF files for reprocessing (creates needs_reprocessing status)"
   echo "    clear-reprocessing           Clear 'needs_reprocessing' status for documents"
   echo ""
+  echo "AUDIO EXTRACTION:"
+  echo "    analyze-audio-gaps           Find MP4 files missing corresponding M4A audio files"
+  echo "    generate-audio-batch         Generate batch processing scripts for audio extraction"
+  echo "    upload-audio-files           Upload extracted M4A files to Google Drive"
+  echo ""
   echo "OTHER:"
   echo "    analyze-command-usage        Analyze Google sync command usage patterns from tracking data"
   echo "    analyze-unprocessed-files    Analyze which files in sources_google don't have expert_documents records"
@@ -606,6 +611,22 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  # Reset is_deleted flag for files that still exist in Google Drive"
   echo "  ./google-sync-cli.sh reset-deleted-files --dry-run"
   echo "  ./google-sync-cli.sh reset-deleted-files --verbose --limit 200"
+  echo ""
+  echo "AUDIO EXTRACTION:"
+  echo "  # Find MP4 files missing M4A audio files"
+  echo "  ./google-sync-cli.sh analyze-audio-gaps"
+  echo ""
+  echo "  # Save analysis to a file with a limit of 20 files"
+  echo "  ./google-sync-cli.sh analyze-audio-gaps --output=audio-gaps.json --limit=20"
+  echo ""
+  echo "  # Generate batch processing scripts with local Google Drive path"
+  echo "  ./google-sync-cli.sh generate-audio-batch --google-drive-path=\"/Users/username/Google Drive/My Drive\" --limit=10"
+  echo ""
+  echo "  # Upload extracted M4A files to Google Drive (dry run)"
+  echo "  ./google-sync-cli.sh upload-audio-files --batch-id=audio-batch-2025-05-27T10-00-00 --dry-run"
+  echo ""
+  echo "  # Upload extracted M4A files from a specific directory"
+  echo "  ./google-sync-cli.sh upload-audio-files --batch-dir=\"/Users/username/Documents/dhg-audio-processing/batch-123\""
   echo ""
   echo "ANALYTICS:"
   echo "  # Analyze Google sync command usage patterns"
@@ -1264,5 +1285,24 @@ fi
 if [ "$1" = "report-folder-video-assignments" ]; then
   shift
   track_command "report-folder-video-assignments" "ts-node $SCRIPT_DIR/report-folder-video-assignments.ts $*"
+  exit $?
+fi
+
+# AUDIO EXTRACTION COMMANDS
+if [ "$1" = "analyze-audio-gaps" ]; then
+  shift
+  track_command "analyze-audio-gaps" "ts-node $SCRIPT_DIR/analyze-audio-gaps.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "generate-audio-batch" ]; then
+  shift
+  track_command "generate-audio-batch" "ts-node $SCRIPT_DIR/generate-audio-batch.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "upload-audio-files" ]; then
+  shift
+  track_command "upload-audio-files" "ts-node $SCRIPT_DIR/upload-audio-files.ts $*"
   exit $?
 fi

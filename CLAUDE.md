@@ -322,6 +322,30 @@ export class MyService {
 - Use adapter pattern in apps to maintain backward compatibility
 - Each environment handles its own client configuration needs
 
+### Vite Cache Issues - Not Seeing Latest Code Changes
+
+**❌ Problem**: After making code changes, running `pnpm dev` doesn't show the latest changes - old code still runs
+- Vite aggressively caches modules in `node_modules/.vite`
+- Browser caches can also prevent seeing updates
+- Hot Module Replacement (HMR) sometimes fails silently
+- TypeScript build artifacts can get stale
+
+**✅ Solution**: Use the cache clearing scripts to ensure fresh builds
+1. **For all apps**: `./scripts/clear-all-caches.sh`
+2. **For specific app**: `./scripts/clear-app-cache.sh dhg-audio`
+3. **Best practice**: `./scripts/dev-fresh.sh dhg-audio` (clears cache AND starts dev server)
+
+**Additional steps**:
+- Always hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows/Linux)
+- Or in DevTools: Right-click refresh → "Empty Cache and Hard Reload"
+- If issues persist, restart your terminal session
+
+**Root causes**:
+- Vite stores compiled modules in `.vite` cache directory
+- File watchers sometimes miss changes in monorepo setups
+- Symlinked packages can confuse the module resolution
+- Browser ServiceWorkers can serve stale content
+
 ### Universal Supabase Adapter
 
 **✅ Solution**: The project includes a universal Supabase adapter that handles both browser and server environments automatically.

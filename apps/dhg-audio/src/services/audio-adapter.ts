@@ -88,10 +88,13 @@ export class AudioAdapter {
     // This will run through our server endpoint which fetches from Google Drive
     const proxyUrl = driveId ? `/api/audio/${driveId}` : '';
     
-    // Extract title from expert_documents if available, otherwise fall back to filename
+    // Extract title from expert_documents if available, or from mp4_title, otherwise fall back to filename
     let displayName = file.name;
     if (file.expert_documents && file.expert_documents.length > 0 && file.expert_documents[0].title) {
       displayName = file.expert_documents[0].title;
+    } else if (file.mp4_title) {
+      // Use the title from the corresponding mp4 file
+      displayName = file.mp4_title;
     }
     
     return {

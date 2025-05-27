@@ -50,6 +50,7 @@ class AudioBrowserService {
           mime_type,
           path,
           metadata,
+          parent_folder_id,
           sources_google_experts(
             expert_id,
             experts:expert_id(
@@ -75,7 +76,42 @@ class AudioBrowserService {
       }
 
       console.log(`Successfully fetched ${data?.length || 0} audio files`);
-      return data || [];
+      
+      // For m4a files without titles, try to find corresponding mp4 files
+      const enrichedData = await Promise.all((data || []).map(async (audioFile: any) => {
+        // If this is an m4a file without a title, look for corresponding mp4
+        if (audioFile.mime_type?.includes('m4a') && 
+            (!audioFile.expert_documents || audioFile.expert_documents.length === 0 || !audioFile.expert_documents[0]?.title)) {
+          
+          // Extract base name without extension
+          const baseName = audioFile.name.replace(/\.m4a$/i, '');
+          
+          // Look for mp4 file in same folder
+          const { data: mp4Files } = await this.supabase
+            .from('sources_google')
+            .select(`
+              id,
+              name,
+              expert_documents!expert_documents_source_id_fkey(
+                title
+              )
+            `)
+            .eq('parent_folder_id', audioFile.parent_folder_id)
+            .ilike('name', `${baseName}.mp4`)
+            .is('is_deleted', false)
+            .limit(1);
+            
+          if (mp4Files && mp4Files.length > 0 && mp4Files[0].expert_documents?.[0]?.title) {
+            // Add the mp4's title to the m4a file data
+            audioFile.mp4_title = mp4Files[0].expert_documents[0].title;
+            console.log(`Found MP4 title for ${audioFile.name}: ${audioFile.mp4_title}`);
+          }
+        }
+        
+        return audioFile;
+      }));
+      
+      return enrichedData;
     } catch (error) {
       console.error('Exception in getAudioFiles:', error);
       // More detailed error logging
@@ -103,6 +139,7 @@ class AudioBrowserService {
           mime_type,
           path,
           metadata,
+          parent_folder_id,
           sources_google_experts(
             expert_id,
             experts:expert_id(
@@ -120,6 +157,35 @@ class AudioBrowserService {
       if (error) {
         console.error(`Error fetching audio file with id ${id}:`, error);
         throw error;
+      }
+
+      // For m4a files without titles, try to find corresponding mp4 file
+      if (data && data.mime_type?.includes('m4a') && 
+          (!data.expert_documents || data.expert_documents.length === 0 || !data.expert_documents[0]?.title)) {
+        
+        // Extract base name without extension
+        const baseName = data.name.replace(/\.m4a$/i, '');
+        
+        // Look for mp4 file in same folder
+        const { data: mp4Files } = await this.supabase
+          .from('sources_google')
+          .select(`
+            id,
+            name,
+            expert_documents!expert_documents_source_id_fkey(
+              title
+            )
+          `)
+          .eq('parent_folder_id', data.parent_folder_id)
+          .ilike('name', `${baseName}.mp4`)
+          .is('is_deleted', false)
+          .limit(1);
+          
+        if (mp4Files && mp4Files.length > 0 && mp4Files[0].expert_documents?.[0]?.title) {
+          // Add the mp4's title to the m4a file data
+          data.mp4_title = mp4Files[0].expert_documents[0].title;
+          console.log(`Found MP4 title for ${data.name}: ${data.mp4_title}`);
+        }
       }
 
       return data;
