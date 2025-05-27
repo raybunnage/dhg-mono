@@ -3,9 +3,9 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { PromptManagementService } from '../packages/shared/services/prompt-service/prompt-management-service';
-import { SupabaseClientService } from '../packages/shared/services/supabase-client';
-import { Logger } from '../packages/shared/utils';
+import { PromptManagementService } from '../../../packages/shared/services/prompt-service/prompt-management-service';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import { Logger } from '../../../packages/shared/utils';
 
 // Configure the name and file path
 const PROMPT_NAME = 'document-classification-prompt-new';

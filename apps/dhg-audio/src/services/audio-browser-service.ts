@@ -56,6 +56,9 @@ class AudioBrowserService {
               expert_name,
               full_name
             )
+          ),
+          expert_documents!expert_documents_source_id_fkey(
+            title
           )
         `)
         .or('mime_type.eq.audio/x-m4a,mime_type.eq.audio/mp4a,mime_type.like.%m4a%,mime_type.eq.audio/mpeg,mime_type.like.%mp3%')
@@ -106,6 +109,9 @@ class AudioBrowserService {
               expert_name,
               full_name
             )
+          ),
+          expert_documents!expert_documents_source_id_fkey(
+            title
           )
         `)
         .eq('id', id)

@@ -1,8 +1,8 @@
 /**
  * Script to check if a prompt exists in the database
  */
-import { promptManagementService, DatabasePrompt } from '../packages/shared/services/prompt-service/prompt-management-service';
-import { Logger } from '../packages/shared/utils';
+import { promptManagementService, DatabasePrompt } from '../../../packages/shared/services/prompt-service/prompt-management-service';
+import { Logger } from '../../../packages/shared/utils';
 
 // Prompt name to check
 const PROMPT_NAME = 'document-classification-prompt-new';

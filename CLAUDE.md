@@ -56,7 +56,8 @@
 
 3. **CLI Pipeline Architecture**: 
    - ⚠️ **ALL new scripts MUST go in `scripts/cli-pipeline/{domain}/`**
-   - Available domains: `google_sync/`, `document/`, `media-processing/`, `presentations/`, `prompt_service/`
+   - ⚠️ **NEVER place scripts directly in `/scripts/` root folder**
+   - Available domains: `google_sync/`, `document/`, `document_types/`, `media-processing/`, `presentations/`, `prompt_service/`
    - Keep flat file structure within pipeline folders - no nested subfolders
    - Each pipeline uses commander.js for CLI integration
    - Each pipeline has its own package.json with commander.js v11.0.0
@@ -145,7 +146,9 @@
 
 1. **Creating files in wrong locations**: 
    - ❌ NEVER put scripts in the root directory
+   - ❌ NEVER put scripts directly in `/scripts/` folder
    - ✅ ALWAYS use `scripts/cli-pipeline/{domain}/`
+   - ✅ Example: `/scripts/cli-pipeline/prompt_service/check-prompt.ts`
 
 2. **Direct database clients**: 
    - ❌ NEVER create your own Supabase clients

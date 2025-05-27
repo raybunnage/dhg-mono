@@ -1,8 +1,8 @@
 /**
  * Script to update the metadata of a prompt
  */
-import { promptManagementService, DatabasePrompt } from '../packages/shared/services/prompt-service/prompt-management-service';
-import { Logger } from '../packages/shared/utils';
+import { promptManagementService, DatabasePrompt } from '../../../packages/shared/services/prompt-service/prompt-management-service';
+import { Logger } from '../../../packages/shared/utils';
 
 // Prompt name to update
 const PROMPT_NAME = 'scientific-document-analysis-prompt';

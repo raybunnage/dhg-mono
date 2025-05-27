@@ -1,4 +1,4 @@
-import { SupabaseClientService } from './packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 async function checkTitles() {
   try {

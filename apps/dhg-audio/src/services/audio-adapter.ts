@@ -88,9 +88,15 @@ export class AudioAdapter {
     // This will run through our server endpoint which fetches from Google Drive
     const proxyUrl = driveId ? `/api/audio/${driveId}` : '';
     
+    // Extract title from expert_documents if available, otherwise fall back to filename
+    let displayName = file.name;
+    if (file.expert_documents && file.expert_documents.length > 0 && file.expert_documents[0].title) {
+      displayName = file.expert_documents[0].title;
+    }
+    
     return {
       id: file.id,
-      name: file.name,
+      name: displayName,
       url: proxyUrl || googleDriveUrl, // Prefer our proxy, fallback to direct
       directUrl: googleDriveUrl, // Keep the direct URL as a fallback
       driveId: driveId || '',

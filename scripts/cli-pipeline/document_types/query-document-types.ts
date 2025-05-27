@@ -3,7 +3,7 @@
  * Script to query document types from the Supabase database
  */
 
-import { SupabaseClientService } from '../packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 async function queryDocumentTypes() {
   try {

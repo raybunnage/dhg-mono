@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { parse } from 'csv-parse/sync';
-import { SupabaseClientService } from '../packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 async function updateSubjectDescriptions() {
   try {
@@ -9,7 +9,7 @@ async function updateSubjectDescriptions() {
     const supabase = SupabaseClientService.getInstance().getClient();
     
     // Read and parse the CSV file
-    const csvFilePath = path.resolve(__dirname, '../file_types/csv/id_description_concise.csv');
+    const csvFilePath = path.resolve(__dirname, '../../../file_types/csv/id_description_concise.csv');
     const csvContent = fs.readFileSync(csvFilePath, 'utf-8');
     
     const records = parse(csvContent, {
