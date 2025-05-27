@@ -83,6 +83,11 @@ show_help() {
   echo "    migration test       Test migration sections against database"
   echo "    migration run-staged Execute migration with confirmation between sections"
   echo ""
+  echo "TABLE RENAMING:"
+  echo "    rename-table         Rename a table with optional compatibility view"
+  echo "    rollback-rename      Rollback a table rename operation"
+  echo "    list-migrations      List all table migration history"
+  echo ""
   echo "OPTIONS:"
   echo "  --debug                Run commands directly without tracking"
   echo "  --simple               Run simplified version with direct output"
@@ -367,6 +372,25 @@ migration_help() {
   echo "  # Continue on errors with logging"
   echo "  ./database-cli.sh migration run-staged --continue-on-error --log migration.log migration.sql"
   echo ""
+  echo "TABLE RENAMING:"
+  echo "  # Rename a table with compatibility view"
+  echo "  ./database-cli.sh rename-table old_table_name new_table_name"
+  echo ""
+  echo "  # Rename without creating a compatibility view"
+  echo "  ./database-cli.sh rename-table old_table_name new_table_name --no-view"
+  echo ""
+  echo "  # Dry run to see what would happen"
+  echo "  ./database-cli.sh rename-table old_table_name new_table_name --dry-run"
+  echo ""
+  echo "  # List all table migrations"
+  echo "  ./database-cli.sh list-migrations"
+  echo ""
+  echo "  # Rollback a table rename"
+  echo "  ./database-cli.sh rollback-rename new_table_name"
+  echo ""
+  echo "  # Force rollback without confirmation"
+  echo "  ./database-cli.sh rollback-rename new_table_name --force"
+  echo ""
   echo "SECTION TYPES:"
   echo "  extensions, tables, indexes, functions, triggers, rls, grants, views, custom"
   echo ""
@@ -463,6 +487,36 @@ case "$1" in
         exit 1
         ;;
     esac
+    ;;
+  "rename-table")
+    if [ -z "$2" ] || [ -z "$3" ]; then
+      echo "Error: Missing required arguments"
+      echo "Usage: $0 rename-table <old-name> <new-name> [options]"
+      echo "Options:"
+      echo "  --no-view     Skip creating compatibility view"
+      echo "  --dry-run     Show what would be done without making changes"
+      echo "  --notes=TEXT  Add notes to migration record"
+      exit 1
+    fi
+    echo "🔄 Renaming table..."
+    track_command "rename-table" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/rename-table.ts ${@:2}"
+    ;;
+  "rollback-rename")
+    if [ -z "$2" ]; then
+      echo "Error: Missing required argument"
+      echo "Usage: $0 rollback-rename <table-name> [options]"
+      echo "Options:"
+      echo "  --id=ID       Rollback specific migration by ID"
+      echo "  --force       Skip confirmation prompt"
+      echo "  --dry-run     Show what would be done without making changes"
+      exit 1
+    fi
+    echo "🔄 Rolling back table rename..."
+    track_command "rollback-rename" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/rollback-table-rename.ts ${@:2}"
+    ;;
+  "list-migrations")
+    echo "📋 Listing table migration history..."
+    track_command "list-migrations" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/rollback-table-rename.ts list ${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help
