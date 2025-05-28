@@ -11,7 +11,7 @@ export async function viewPromptMetadataCommand(promptName: string): Promise<voi
     
     // Fetch the prompt
     const { data: prompt, error } = await supabase
-      .from('prompts')
+      .from('ai_prompts')
       .select(`
         id,
         name,

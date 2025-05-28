@@ -1101,7 +1101,7 @@ export type Database = {
           },
         ]
       }
-      emails: {
+      email_messages: {
         Row: {
           attachment_cnt: number | null
           content: string | null
@@ -1340,6 +1340,59 @@ export type Database = {
           starting_ref_id?: number | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      filter_user_profile_drives: {
+        Row: {
+          id: string
+          include_children: boolean | null
+          profile_id: string | null
+          root_drive_id: string
+        }
+        Insert: {
+          id?: string
+          include_children?: boolean | null
+          profile_id?: string | null
+          root_drive_id: string
+        }
+        Update: {
+          id?: string
+          include_children?: boolean | null
+          profile_id?: string | null
+          root_drive_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_filter_profile_drives_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "filter_user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      filter_user_profiles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
         }
         Relationships: []
       }
@@ -2521,94 +2574,8 @@ export type Database = {
           },
         ]
       }
-      user_filter_profile_drives: {
-        Row: {
-          id: string
-          include_children: boolean | null
-          profile_id: string | null
-          root_drive_id: string
-        }
-        Insert: {
-          id?: string
-          include_children?: boolean | null
-          profile_id?: string | null
-          root_drive_id: string
-        }
-        Update: {
-          id?: string
-          include_children?: boolean | null
-          profile_id?: string | null
-          root_drive_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_filter_profile_drives_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "user_filter_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_filter_profiles: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
-      backup_inventory_view: {
-        Row: {
-          backup_date: string | null
-          backup_reason: string | null
-          backup_size: string | null
-          backup_table_name: string | null
-          created_at: string | null
-          created_by: string | null
-          original_table_name: string | null
-          row_count: number | null
-        }
-        Insert: {
-          backup_date?: string | null
-          backup_reason?: string | null
-          backup_size?: never
-          backup_table_name?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          original_table_name?: string | null
-          row_count?: number | null
-        }
-        Update: {
-          backup_date?: string | null
-          backup_reason?: string | null
-          backup_size?: never
-          backup_table_name?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          original_table_name?: string | null
-          row_count?: number | null
-        }
-        Relationships: []
-      }
       document_classifications_view: {
         Row: {
           document_type: string | null

@@ -40,7 +40,7 @@ command
       
       // Get the profile directly from database
       const { data: profile, error: profileError } = await supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .select('*')
         .eq('id', options.id)
         .single();
@@ -56,12 +56,12 @@ command
       try {
         // Simple query to test if the table exists
         const { error: tableTestError } = await supabase
-          .from('user_filter_profile_drives')
+          .from('filter_user_profile_drives')
           .select('id')
           .limit(1);
           
         if (tableTestError && tableTestError.code === '42P01') { // Table doesn't exist
-          console.error(`❌ The user_filter_profile_drives table does not exist.`);
+          console.error(`❌ The filter_user_profile_drives table does not exist.`);
           console.error('Please run the apply-migrations command to set up the required tables.');
           process.exit(1);
         }
@@ -74,7 +74,7 @@ command
       // Now check if drive exists in excluded drives
       try {
         const { data: existingDrives, error: existingDrivesError } = await supabase
-          .from('user_filter_profile_drives')
+          .from('filter_user_profile_drives')
           .select('*')
           .eq('profile_id', options.id)
           .eq('root_drive_id', options.driveId);
@@ -101,7 +101,7 @@ command
       // Add the drive directly to the profile
       try {
         const { data: result, error: insertError } = await supabase
-          .from('user_filter_profile_drives')
+          .from('filter_user_profile_drives')
           .insert({
             id: uuidv4(),
             profile_id: options.id,

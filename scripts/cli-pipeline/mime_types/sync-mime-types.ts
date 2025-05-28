@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /**
- * Script to synchronize mime_types table with all unique mime types found in sources_google
+ * Script to synchronize sys_mime_types table with all unique mime types found in sources_google
  */
 
 import { Command } from 'commander';
@@ -147,19 +147,19 @@ export interface SyncMimeTypesOptions {
 }
 
 /**
- * Extracts unique MIME types from sources_google and updates the mime_types table
+ * Extracts unique MIME types from sources_google and updates the sys_mime_types table
  * @param options Configuration options
  */
 async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
   const dryRun = options.dryRun || false;
   const verbose = options.verbose || false;
   
-  console.log(`${dryRun ? '[DRY RUN] ' : ''}Synchronizing mime_types table with unique MIME types from sources_google...`);
+  console.log(`${dryRun ? '[DRY RUN] ' : ''}Synchronizing sys_mime_types table with unique MIME types from sources_google...`);
 
   // Track the command
   let trackingId: string;
   try {
-    trackingId = await commandTrackingService.startTracking('mime_types', 'sync-mime-types');
+    trackingId = await commandTrackingService.startTracking('sys_mime_types', 'sync-mime-types');
   } catch (error) {
     console.warn(`Warning: Unable to initialize command tracking: ${error instanceof Error ? error.message : String(error)}`);
     trackingId = 'tracking-unavailable';
@@ -184,19 +184,19 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
       throw new Error(`Supabase connection failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // 1. Check if mime_types table exists, create it if not
-    console.log('Checking if mime_types table exists...');
+    // 1. Check if sys_mime_types table exists, create it if not
+    console.log('Checking if sys_mime_types table exists...');
     
     try {
-      // Try to directly select from mime_types table - if it fails, the table likely doesn't exist
+      // Try to directly select from sys_mime_types table - if it fails, the table likely doesn't exist
       const { data: mimeTypesTest, error: mimeTypesTestError } = await supabaseClient
-        .from('mime_types')
+        .from('sys_mime_types')
         .select('id')
         .limit(1);
       
       if (mimeTypesTestError && mimeTypesTestError.code === 'PGRST116') {
         // PGRST116 means relation does not exist
-        console.log('mime_types table does not exist. Creating it...');
+        console.log('sys_mime_types table does not exist. Creating it...');
         
         if (!dryRun) {
           // Load and execute the SQL from our migration file
@@ -205,7 +205,7 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
           
           // Execute SQL directly using the Supabase JavaScript client
           const createTableSql = `
-            CREATE TABLE IF NOT EXISTS mime_types (
+            CREATE TABLE IF NOT EXISTS sys_mime_types (
               id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
               mime_type TEXT UNIQUE NOT NULL,
               description TEXT,
@@ -216,29 +216,29 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
               created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
               updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
             );
-            CREATE INDEX IF NOT EXISTS idx_mime_types_mime_type ON mime_types(mime_type);
-            CREATE INDEX IF NOT EXISTS idx_mime_types_category ON mime_types(category);
+            CREATE INDEX IF NOT EXISTS idx_sys_mime_types_mime_type ON sys_mime_types(mime_type);
+            CREATE INDEX IF NOT EXISTS idx_sys_mime_types_category ON sys_mime_types(category);
           `;
           
           // Execute the SQL directly
           const { error: createError } = await supabaseClient.rpc('pg_execute', { query: createTableSql });
           
           if (createError) {
-            throw new Error(`Failed to create mime_types table: ${createError.message}`);
+            throw new Error(`Failed to create sys_mime_types table: ${createError.message}`);
           }
           
-          console.log('✅ mime_types table created successfully');
+          console.log('✅ sys_mime_types table created successfully');
         } else {
-          console.log('[DRY RUN] Would create mime_types table');
+          console.log('[DRY RUN] Would create sys_mime_types table');
         }
       } else if (mimeTypesTestError) {
         // Other error occurred
-        throw new Error(`Error checking mime_types table: ${mimeTypesTestError.message}`);
+        throw new Error(`Error checking sys_mime_types table: ${mimeTypesTestError.message}`);
       } else {
-        console.log('mime_types table already exists.');
+        console.log('sys_mime_types table already exists.');
       }
     } catch (dbError) {
-      throw new Error(`Failed to check or create mime_types table: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+      throw new Error(`Failed to check or create sys_mime_types table: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
     }
 
     // 2. Get all unique mime types from sources_google
@@ -272,11 +272,11 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
       });
     }
 
-    // 3. Get existing MIME types from mime_types table
-    console.log('Fetching existing MIME types from mime_types table...');
+    // 3. Get existing MIME types from sys_mime_types table
+    console.log('Fetching existing MIME types from sys_mime_types table...');
     
     const { data: existingMimeTypes, error: existingTypesError } = await supabaseClient
-      .from('mime_types')
+      .from('sys_mime_types')
       .select('mime_type');
       
     if (existingTypesError && existingTypesError.code !== 'PGRST116') {
@@ -286,12 +286,12 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
     
     const existingTypes = new Set((existingMimeTypes || []).map(item => item.mime_type));
     
-    console.log(`Found ${existingTypes.size} existing entries in mime_types table.`);
+    console.log(`Found ${existingTypes.size} existing entries in sys_mime_types table.`);
 
     // 4. Find new MIME types to insert
     const newMimeTypes = uniqueMimeTypeValues.filter(mimeType => !existingTypes.has(mimeType));
     
-    console.log(`Found ${newMimeTypes.length} new MIME types to add to the mime_types table.`);
+    console.log(`Found ${newMimeTypes.length} new MIME types to add to the sys_mime_types table.`);
     
     if (newMimeTypes.length === 0) {
       console.log('No new MIME types to add.');
@@ -320,7 +320,7 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
       if (!dryRun) {
         // Insert the new records
         const { data: insertedTypes, error: insertError } = await supabaseClient
-          .from('mime_types')
+          .from('sys_mime_types')
           .insert(newRecords)
           .select('id, mime_type');
           
@@ -328,9 +328,9 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
           throw new Error(`Error inserting new MIME types: ${insertError.message}`);
         }
         
-        console.log(`✅ Successfully added ${insertedTypes?.length || 0} new MIME types to the mime_types table.`);
+        console.log(`✅ Successfully added ${insertedTypes?.length || 0} new MIME types to the sys_mime_types table.`);
       } else {
-        console.log(`[DRY RUN] Would add ${newRecords.length} new MIME types to the mime_types table.`);
+        console.log(`[DRY RUN] Would add ${newRecords.length} new MIME types to the sys_mime_types table.`);
       }
     }
 
@@ -405,7 +405,7 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
       try {
         await commandTrackingService.completeTracking(trackingId, {
           recordsAffected: newMimeTypes.length,
-          summary: `${dryRun ? '[DRY RUN] ' : ''}Synced mime_types table with ${newMimeTypes.length} new MIME types`
+          summary: `${dryRun ? '[DRY RUN] ' : ''}Synced sys_mime_types table with ${newMimeTypes.length} new MIME types`
         });
       } catch (error) {
         console.warn(`Warning: Unable to complete command tracking: ${error instanceof Error ? error.message : String(error)}`);
@@ -432,7 +432,7 @@ const program = new Command();
 
 program
   .name('sync-mime-types')
-  .description('Synchronize the mime_types table with unique MIME types from sources_google')
+  .description('Synchronize the sys_mime_types table with unique MIME types from sources_google')
   .option('--dry-run', 'Show what would be done without making changes')
   .option('-v, --verbose', 'Show detailed information about each MIME type')
   .action((options: SyncMimeTypesOptions) => {

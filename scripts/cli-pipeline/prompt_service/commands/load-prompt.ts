@@ -40,7 +40,7 @@ export async function loadPromptCommand(filePath: string, options: LoadPromptOpt
     
     // Check if the prompt already exists
     const { data: existingPrompt } = await supabase
-      .from('prompts')
+      .from('ai_prompts')
       .select('id, name')
       .eq('name', promptName)
       .maybeSingle();
@@ -62,7 +62,7 @@ export async function loadPromptCommand(filePath: string, options: LoadPromptOpt
       console.log(`Updating existing prompt: ${promptName}`);
       
       const { data, error } = await supabase
-        .from('prompts')
+        .from('ai_prompts')
         .update({
           content: cleanContent,
           metadata: metadataObj,
@@ -85,7 +85,7 @@ export async function loadPromptCommand(filePath: string, options: LoadPromptOpt
       let categoryId = null;
       if (options.category) {
         const { data: category } = await supabase
-          .from('prompt_categories')
+          .from('ai_prompt_categories')
           .select('id')
           .eq('name', options.category)
           .maybeSingle();
@@ -98,7 +98,7 @@ export async function loadPromptCommand(filePath: string, options: LoadPromptOpt
       }
       
       const { data, error } = await supabase
-        .from('prompts')
+        .from('ai_prompts')
         .insert({
           name: promptName,
           content: cleanContent,

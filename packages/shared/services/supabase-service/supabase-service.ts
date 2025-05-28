@@ -156,7 +156,7 @@ export class SupabaseService {
       Logger.debug(`Getting prompt by name: ${name}`);
       
       const { data, error } = await this.client
-        .from('prompts')
+        .from('ai_prompts')
         .select('*')
         .eq('name', name)
         .single();

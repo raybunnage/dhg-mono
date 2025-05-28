@@ -24,7 +24,7 @@ export class SupabaseClientAdapter {
     // Browser Environment: Use Vite's import.meta.env
     this.supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
     
-    // IMPORTANT: For this particular page, we need service role access to user_filter_profiles table
+    // IMPORTANT: For this particular page, we need service role access to filter_user_profiles table
     // Prioritize service role key for this application
     this.supabaseKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 
                        import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -91,9 +91,9 @@ export class SupabaseClientAdapter {
     try {
       const client = this.getClient();
       
-      // Try a simple query to user_filter_profiles table
+      // Try a simple query to filter_user_profiles table
       const { data: profileData, error: profileError } = await client
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .select('id, name, is_active')
         .limit(10);
       
@@ -113,7 +113,7 @@ export class SupabaseClientAdapter {
         }
         
         console.log('Connection test partially successful (document_types only)');
-        return { success: true, error: 'Cannot access user_filter_profiles table' };
+        return { success: true, error: 'Cannot access filter_user_profiles table' };
       }
       
       // Log the filter profiles found

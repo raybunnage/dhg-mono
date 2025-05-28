@@ -28,7 +28,7 @@ command
       if (options.profile) {
         const supabase = SupabaseClientService.getInstance().getClient();
         const { data, error } = await supabase
-          .from('user_filter_profiles')
+          .from('filter_user_profiles')
           .select('id')
           .eq('name', options.profile)
           .single();
@@ -43,7 +43,7 @@ command
       
       // Set up previous active profile
       const { error: deactivateError } = await SupabaseClientService.getInstance().getClient()
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .update({ is_active: false })
         .not('id', 'eq', profileId);
         
@@ -54,7 +54,7 @@ command
       
       // Activate the selected profile  
       const { data, error: activateError } = await SupabaseClientService.getInstance().getClient()
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .update({ is_active: true })
         .eq('id', profileId)
         .select()

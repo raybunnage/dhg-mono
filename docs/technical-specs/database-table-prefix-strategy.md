@@ -8,13 +8,9 @@ This document outlines a comprehensive strategy for implementing table prefixes 
 
 Based on analysis of the 56 existing tables, here are the recommended prefixes for each functional group:
 
-### 1. Authentication & User Management - `auth_`
-- `auth_allowed_emails` (from `allowed_emails`)
-- `auth_user_profiles` (from `user_profiles_v2`)
-- `auth_audit_log` (from `auth_audit_log`)
-- `auth_cli_tokens` (from `cli_auth_tokens`)
 
-### 2. Document Management System - `doc_`
+
+### 2. Document Management System - `doc_` . TRICKIER
 - `doc_types` (from `document_types`)
 - `doc_types_original` (from `document_types_original`)
 - `doc_type_aliases` (from `document_type_aliases`)
@@ -24,24 +20,20 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 - `doc_processing_queue` (from `documentation_processing_queue`)
 - `doc_sections` (from `documentation_sections`)
 
-### 3. Expert System - `expert_`
+### 3. Expert System - `expert_` . TRICKER
 - `expert_profiles` (from `experts`)
 - `expert_documents` (from `expert_documents`)
 - `expert_preferences` (from `expert_preferences`)
-- `expert_citation_aliases` (from `citation_expert_aliases`)
+- `expert_citation_aliases` (from `citation_expert_aliases`) . DONE
 
-### 4. Google Drive Integration - `google_`
+### 4. Google Drive Integration - `google_` . . TRICKIER
 - `google_sources` (from `sources_google`)
 - `google_sources_experts` (from `sources_google_experts`)
 - `google_sync_history` (from `sync_history`)
 - `google_sync_statistics` (from `sync_statistics`)
 - `google_sources_legacy` (from `sources`)
 
-### 5. Email System - `email_`
-- `email_messages` (from `emails`)
-- `email_addresses` (from `email_addresses`)
-
-### 6. Media & Presentations - `media_`
+### 6. Media & Presentations - `media_` .  TRICKIER 
 - `media_presentations` (from `presentations`)
 - `media_presentation_assets` (from `presentation_assets`)
 - `media_sessions` (from `media_sessions`)
@@ -49,15 +41,23 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 - `media_topic_segments` (from `media_topic_segments`)
 - `media_bookmarks` (from `media_bookmarks`)
 
-### 7. Script Management - `script_`
-- `script_registry` (from `scripts`)
-
 ### 8. Command & Analytics - `cmd_`   LATER   probably change to command
 - `cmd_tracking` (from `cli_command_tracking`)   leave as is
 - `cmd_categories` (from `command_categories`)
 - `cmd_patterns` (from `command_patterns`)
 
-### 9. AI & Prompt Management - `ai_` DOING  
+
+### 1. Authentication & User Management - `auth_` . DONE
+- `auth_allowed_emails` (from `allowed_emails`)
+- `auth_user_profiles` (from `user_profiles_v2`)
+- `auth_audit_log` (from `auth_audit_log`)
+- `auth_cli_tokens` (from `cli_auth_tokens`)
+
+### 5. Email System - `email_`  DONE
+- `email_messages` (from `emails`)
+- `email_addresses` (from `email_addresses`)
+
+### 9. AI & Prompt Management - `ai_` DONE
 - `ai_prompts` (from `prompts`)
 - `ai_prompt_categories` (from `prompt_categories`)
 - `ai_prompt_output_templates` (from `prompt_output_templates`)
@@ -71,22 +71,32 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 - `learn_user_analytics` (from `user_learning_analytics`)
 - `learn_subject_classifications` (from `subject_classifications`)
 
+### 13. User Filtering & Preferences - `filter_` . DONE
+- `filter_user_profiles` (from `user_filter_profiles`)
+- `filter_user_profile_drives` (from `user_filter_profile_drives`)
+
+### 12. System & Infrastructure - `sys_` . DONE
+- `sys_mime_types` (from `mime_types`) DONE
+DELETED
+- `sys_function_relationships` (from `function_relationships`)
+- `sys_sql_query_history` (from `sql_query_history`)
+ARCHIVED
+- `sys_domains` (from `domains`)
+- `sys_app_pages` (from `app_pages`)
+- `sys_asset_types` (from `asset_types`)
+- `sys_function_registry` (from `function_registry`)  archived
+
+
+
+### 7. Script Management - `script_` LATER
+- `script_registry` (from `scripts`)
+
 ### 11. Processing & Batch Operations - `batch_` . LATER
 - `batch_processing` (from `processing_batches`)
 - `batch_table_classifications` (from `table_classifications`)
 
-### 12. System & Infrastructure - `sys_` . INVESTIGATING
-- `sys_function_registry` (from `function_registry`)
-- `sys_function_relationships` (from `function_relationships`)
-- `sys_sql_query_history` (from `sql_query_history`)
-- `sys_domains` (from `domains`)
-- `sys_app_pages` (from `app_pages`)
-- `sys_asset_types` (from `asset_types`)
-- `sys_mime_types` (from `mime_types`)
 
-### 13. User Filtering & Preferences - `filter_` . LATER
-- `filter_user_profiles` (from `user_filter_profiles`)
-- `filter_user_profile_drives` (from `user_filter_profile_drives`)
+
 
 ## Implementation Strategy
 
@@ -111,16 +121,14 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 
 Start with system tables that have minimal application dependencies:
 - `sys_mime_types`
-- `sys_asset_types`
-- `sys_domains`
-- `sys_app_pages`
+- `sys_domains`   archived
 
 ### Phase 3: Command & Analytics (Week 3)
 **Priority: Internal tooling tables**
 
 Rename command tracking tables:
 - `cmd_tracking`
-- `cmd_categories`
+- `cmd_categories`   
 - `cmd_patterns`
 
 ### Phase 4: AI & Batch Processing (Week 4)

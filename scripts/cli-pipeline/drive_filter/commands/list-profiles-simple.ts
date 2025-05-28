@@ -6,7 +6,7 @@ async function listProfiles() {
   try {
     const supabase = SupabaseClientService.getInstance().getClient();
     const { data: profiles, error } = await supabase
-      .from('user_filter_profiles')
+      .from('filter_user_profiles')
       .select('*')
       .order('name');
     

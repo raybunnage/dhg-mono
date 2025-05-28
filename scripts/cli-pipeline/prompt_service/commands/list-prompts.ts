@@ -16,7 +16,7 @@ export async function listPromptsCommand(options: ListPromptsOptions): Promise<v
     
     // Build the query
     let query = supabase
-      .from('prompts')
+      .from('ai_prompts')
       .select(`
         id,
         name,

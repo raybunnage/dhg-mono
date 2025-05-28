@@ -317,7 +317,7 @@ program
         // It's an ID
         const supabase = SupabaseClientService.getInstance().getClient();
         const { data, error } = await supabase
-          .from('prompts')
+          .from('ai_prompts')
           .select('*')
           .eq('id', promptNameOrId)
           .single();
@@ -332,7 +332,7 @@ program
         // It's a name, get all prompts and find by name
         const supabase = SupabaseClientService.getInstance().getClient();
         const { data, error } = await supabase
-          .from('prompts')
+          .from('ai_prompts')
           .select('*')
           .eq('name', promptNameOrId)
           .single();
@@ -410,7 +410,7 @@ program
         // It's an ID
         const supabase = SupabaseClientService.getInstance().getClient();
         const { data, error } = await supabase
-          .from('prompts')
+          .from('ai_prompts')
           .select('*')
           .eq('id', promptNameOrId)
           .single();
@@ -473,7 +473,7 @@ program
         // It's an ID
         const supabase = SupabaseClientService.getInstance().getClient();
         const { data, error } = await supabase
-          .from('prompts')
+          .from('ai_prompts')
           .select('*')
           .eq('id', promptNameOrId)
           .single();

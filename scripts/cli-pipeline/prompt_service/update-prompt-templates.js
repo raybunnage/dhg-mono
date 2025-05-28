@@ -5,7 +5,7 @@ async function associateTemplates() {
   
   // Get the prompt ID
   const { data: prompt, error: promptError } = await supabase
-    .from('prompts')
+    .from('ai_prompts')
     .select('id')
     .eq('name', 'document-classification-prompt-new')
     .single();
@@ -17,7 +17,7 @@ async function associateTemplates() {
   
   // Get template IDs
   const { data: templates, error: templatesError } = await supabase
-    .from('prompt_output_templates')
+    .from('ai_prompt_output_templates')
     .select('id, name');
   
   if (templatesError) {
@@ -42,7 +42,7 @@ async function associateTemplates() {
   
   // Check which associations already exist
   const { data: existingAssociations, error: assocError } = await supabase
-    .from('prompt_template_associations')
+    .from('ai_prompt_template_associations')
     .select('template_id')
     .eq('prompt_id', prompt.id);
   
@@ -67,7 +67,7 @@ async function associateTemplates() {
       
       // Update priority
       const { error: updateError } = await supabase
-        .from('prompt_template_associations')
+        .from('ai_prompt_template_associations')
         .update({ priority: assoc.priority })
         .eq('prompt_id', prompt.id)
         .eq('template_id', templateId);
@@ -82,7 +82,7 @@ async function associateTemplates() {
       
       // Create new association
       const { error: insertError } = await supabase
-        .from('prompt_template_associations')
+        .from('ai_prompt_template_associations')
         .insert({
           prompt_id: prompt.id,
           template_id: templateId,

@@ -22,7 +22,7 @@ interface SyncCommandOptions {
 // Add commands directly to the program using .command()
 program
   .command('sync')
-  .description('Synchronize the mime_types table with unique MIME types from sources_google')
+  .description('Synchronize the sys_mime_types table with unique MIME types from sources_google')
   .option('--dry-run', 'Show what would be done without making changes')
   .option('-v, --verbose', 'Show detailed information about each MIME type')
   .action((options: SyncCommandOptions) => {

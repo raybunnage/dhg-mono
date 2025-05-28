@@ -28,12 +28,12 @@ command
       // Check filter tables exist
       console.log('Checking filter tables...');
       
-      const profilesTest = await supabase.from('user_filter_profiles').select('id', { count: 'exact', head: true });
+      const profilesTest = await supabase.from('filter_user_profiles').select('id', { count: 'exact', head: true });
       if (profilesTest.error && profilesTest.error.code === '42P01') {
-        console.error(chalk.red('✗ user_filter_profiles table not found. Run apply-migrations command first.'));
+        console.error(chalk.red('✗ filter_user_profiles table not found. Run apply-migrations command first.'));
         process.exit(1);
       } else if (profilesTest.error) {
-        console.error(chalk.red('✗ Error accessing user_filter_profiles table:'), profilesTest.error);
+        console.error(chalk.red('✗ Error accessing filter_user_profiles table:'), profilesTest.error);
         process.exit(1);
       }
       

@@ -8,7 +8,7 @@ async function simulatePromptUsage() {
     // Get the prompt content
     console.log('Loading prompt...');
     const { data: prompt, error: promptError } = await supabase
-      .from('prompts')
+      .from('ai_prompts')
       .select('*')
       .eq('name', 'document-classification-prompt-new')
       .single();

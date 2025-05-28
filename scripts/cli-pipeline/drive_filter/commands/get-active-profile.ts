@@ -21,7 +21,7 @@ command
     try {
       const supabase = SupabaseClientService.getInstance().getClient();
       const { data, error } = await supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .select('*')
         .eq('is_active', true)
         .single();

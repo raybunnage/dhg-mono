@@ -22,7 +22,7 @@ import { filterService } from '@/utils/filter-service-adapter';
     
     // Test connection with direct test query
     console.log('Testing Supabase connection with direct query...');
-    const { count, error } = await supabase.from('user_filter_profiles').select('*', { count: 'exact', head: true });
+    const { count, error } = await supabase.from('filter_user_profiles').select('*', { count: 'exact', head: true });
     
     if (error) {
       console.error('Supabase connection test failed:', error);
@@ -41,10 +41,10 @@ import { FilterProfile } from '@/utils/filter-service-adapter';
 async function debugCheckFilterProfiles() {
   try {
     // Direct database query to check what profiles exist - USING THE EXACT QUERY THAT WORKS IN SUPABASE
-    console.log('Debug: Running exact query that works in Supabase: select id, name, is_active from user_filter_profiles');
+    console.log('Debug: Running exact query that works in Supabase: select id, name, is_active from filter_user_profiles');
     
     const { data, error } = await supabase
-      .from('user_filter_profiles')
+      .from('filter_user_profiles')
       .select('id, name, is_active');
       
     console.log('Debug: Direct database check for profiles');
@@ -400,7 +400,7 @@ export function Home() {
       try {
         console.log('Home: DEBUG - Checking available profiles directly');
         const { data: profilesDebug, error: profilesError } = await supabase
-          .from('user_filter_profiles')
+          .from('filter_user_profiles')
           .select('*')
           .order('name');
         
@@ -420,7 +420,7 @@ export function Home() {
       try {
         console.log('Home: DEBUG - Checking profile drives directly');
         const { data: drivesDebug, error: drivesError } = await supabase
-          .from('user_filter_profile_drives')
+          .from('filter_user_profile_drives')
           .select('*');
         
         if (drivesError) {
@@ -487,7 +487,7 @@ export function Home() {
             
             // Get root drive IDs directly - this establishes what we want to filter by
             const { data: profileDrives, error: drivesError } = await supabase
-              .from('user_filter_profile_drives')
+              .from('filter_user_profile_drives')
               .select('root_drive_id')
               .eq('profile_id', activeFilterProfile.id);
             
@@ -553,7 +553,7 @@ export function Home() {
             
             // Get root drive IDs for the active profile
             const { data: profileDrives } = await supabase
-              .from('user_filter_profile_drives')
+              .from('filter_user_profile_drives')
               .select('root_drive_id')
               .eq('profile_id', activeFilterProfile.id);
             

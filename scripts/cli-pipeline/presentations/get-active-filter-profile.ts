@@ -1,8 +1,8 @@
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import type { Database } from '../../../supabase/types';
 
-type UserFilterProfile = Database['public']['Tables']['user_filter_profiles']['Row'];
-type UserFilterProfileDrive = Database['public']['Tables']['user_filter_profile_drives']['Row'];
+type UserFilterProfile = Database['public']['Tables']['filter_user_profiles']['Row'];
+type UserFilterProfileDrive = Database['public']['Tables']['filter_user_profile_drives']['Row'];
 
 export interface ActiveFilterProfile {
   profile: UserFilterProfile;
@@ -19,7 +19,7 @@ export async function getActiveFilterProfile(): Promise<ActiveFilterProfile | nu
   try {
     // Get the active user filter profile
     const { data: activeProfile, error: profileError } = await supabase
-      .from('user_filter_profiles')
+      .from('filter_user_profiles')
       .select('*')
       .eq('is_active', true)
       .single();
@@ -39,7 +39,7 @@ export async function getActiveFilterProfile(): Promise<ActiveFilterProfile | nu
     
     // Get the associated drive for this profile
     const { data: profileDrive, error: driveError } = await supabase
-      .from('user_filter_profile_drives')
+      .from('filter_user_profile_drives')
       .select('root_drive_id')
       .eq('profile_id', activeProfile.id)
       .single();

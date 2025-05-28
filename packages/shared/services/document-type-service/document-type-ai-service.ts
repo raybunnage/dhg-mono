@@ -79,7 +79,7 @@ export class DocumentTypeAIService {
       
       // First, check if we have a database prompt template
       const { data: promptsData, error: promptsError } = await supabase
-        .from('prompts')
+        .from('ai_prompts')
         .select('*')
         .eq('name', 'document-type-request-template')
         .eq('status', 'active');

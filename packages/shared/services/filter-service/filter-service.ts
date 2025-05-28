@@ -47,7 +47,7 @@ export class FilterService {
    */
   public async loadProfile(profileId: string): Promise<FilterProfile | null> {
     const { data, error } = await this.supabase
-      .from('user_filter_profiles')
+      .from('filter_user_profiles')
       .select('*')
       .eq('id', profileId)
       .single();
@@ -74,7 +74,7 @@ export class FilterService {
    */
   public async loadActiveProfile(): Promise<FilterProfile | null> {
     const { data, error } = await this.supabase
-      .from('user_filter_profiles')
+      .from('filter_user_profiles')
       .select('*')
       .eq('is_active', true)
       .limit(1);
@@ -113,7 +113,7 @@ export class FilterService {
     try {
       // First deactivate all profiles
       const { error: deactivateError } = await this.supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .update({ is_active: false })
         .not('id', 'is', null);
 
@@ -124,7 +124,7 @@ export class FilterService {
 
       // Then activate the specified profile
       const { error: activateError } = await this.supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .update({ is_active: true })
         .eq('id', profileId);
 
@@ -159,7 +159,7 @@ export class FilterService {
       console.log(`FilterService: Fetching drives for profile ${profileId}`);
       
       const { data, error } = await this.supabase
-        .from('user_filter_profile_drives')
+        .from('filter_user_profile_drives')
         .select('root_drive_id')
         .eq('profile_id', profileId);
       
@@ -209,7 +209,7 @@ export class FilterService {
    */
   public async createProfile(profile: Omit<FilterProfile, 'id' | 'created_at'>): Promise<FilterProfile | null> {
     const { data, error } = await this.supabase
-      .from('user_filter_profiles')
+      .from('filter_user_profiles')
       .insert(profile)
       .select()
       .single();
@@ -231,7 +231,7 @@ export class FilterService {
   public async updateProfile(profileId: string, updates: Partial<Omit<FilterProfile, 'id' | 'created_at'>>): Promise<boolean> {
     try {
       const { error } = await this.supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .update(updates)
         .eq('id', profileId);
       
@@ -265,7 +265,7 @@ export class FilterService {
   public async deleteProfile(profileId: string): Promise<boolean> {
     // First delete any associated drives
     const { error: drivesError } = await this.supabase
-      .from('user_filter_profile_drives')
+      .from('filter_user_profile_drives')
       .delete()
       .eq('profile_id', profileId);
 
@@ -276,7 +276,7 @@ export class FilterService {
 
     // Then delete the profile itself
     const { error } = await this.supabase
-      .from('user_filter_profiles')
+      .from('filter_user_profiles')
       .delete()
       .eq('id', profileId);
 
@@ -303,7 +303,7 @@ export class FilterService {
       console.log('FilterService: Fetching filter profiles from database');
       
       const { data, error } = await this.supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .select('*')
         .order('name');
 
@@ -342,7 +342,7 @@ export class FilterService {
       }));
       
       const { error } = await this.supabase
-        .from('user_filter_profile_drives')
+        .from('filter_user_profile_drives')
         .insert(drivesToAdd);
       
       if (error) {
@@ -369,7 +369,7 @@ export class FilterService {
   public async removeDrivesFromProfile(profileId: string, driveIds: string[]): Promise<boolean> {
     try {
       const { error } = await this.supabase
-        .from('user_filter_profile_drives')
+        .from('filter_user_profile_drives')
         .delete()
         .eq('profile_id', profileId)
         .in('root_drive_id', driveIds);
@@ -475,7 +475,7 @@ export class FilterService {
   public static generateMigrationSQL(): string {
     return `
 -- Create filter profiles table
-CREATE TABLE IF NOT EXISTS user_filter_profiles (
+CREATE TABLE IF NOT EXISTS filter_user_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
@@ -484,17 +484,17 @@ CREATE TABLE IF NOT EXISTS user_filter_profiles (
 );
 
 -- Create filter profile drives table for including specific root drives
-CREATE TABLE IF NOT EXISTS user_filter_profile_drives (
+CREATE TABLE IF NOT EXISTS filter_user_profile_drives (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  profile_id UUID REFERENCES user_filter_profiles(id) ON DELETE CASCADE,
+  profile_id UUID REFERENCES filter_user_profiles(id) ON DELETE CASCADE,
   root_drive_id TEXT NOT NULL,
   include_children BOOLEAN DEFAULT true
 );
 
 -- Create index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_filter_profiles_active ON user_filter_profiles(is_active);
-CREATE INDEX IF NOT EXISTS idx_filter_profile_drives_profile_id ON user_filter_profile_drives(profile_id);
-CREATE INDEX IF NOT EXISTS idx_filter_profile_drives_root_drive_id ON user_filter_profile_drives(root_drive_id);
+CREATE INDEX IF NOT EXISTS idx_filter_profiles_active ON filter_user_profiles(is_active);
+CREATE INDEX IF NOT EXISTS idx_filter_profile_drives_profile_id ON filter_user_profile_drives(profile_id);
+CREATE INDEX IF NOT EXISTS idx_filter_profile_drives_root_drive_id ON filter_user_profile_drives(root_drive_id);
     `;
   }
 }

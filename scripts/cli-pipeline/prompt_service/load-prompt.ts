@@ -32,7 +32,7 @@ async function main() {
     
     // Check if the prompt already exists
     const { data: existingPrompt } = await supabase
-      .from('prompts')
+      .from('ai_prompts')
       .select('id, name')
       .eq('name', PROMPT_NAME)
       .maybeSingle();

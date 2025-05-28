@@ -12,7 +12,7 @@ async function setActiveProfile(profileId: string) {
     // First deactivate all profiles
     console.log('Deactivating all profiles...');
     const { error: deactivateError } = await supabase
-      .from('user_filter_profiles')
+      .from('filter_user_profiles')
       .update({ is_active: false })
       .not('id', 'eq', profileId);
       
@@ -24,7 +24,7 @@ async function setActiveProfile(profileId: string) {
     // Then activate the specified profile
     console.log(`Activating profile ${profileId}...`);
     const { data, error: activateError } = await supabase
-      .from('user_filter_profiles')
+      .from('filter_user_profiles')
       .update({ is_active: true })
       .eq('id', profileId)
       .select()

@@ -35,7 +35,7 @@ command
       // Verify Supabase connection before proceeding
       const supabase = SupabaseClientService.getInstance().getClient();
       const { error } = await supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .select('id')
         .limit(1);
         
@@ -65,7 +65,7 @@ command
 
       // Create the profile directly since filterService.createProfile is having issues
       const { data, error: insertError } = await supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .insert({
           name: options.name,
           description: options.description,

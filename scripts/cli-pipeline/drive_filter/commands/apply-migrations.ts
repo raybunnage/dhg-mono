@@ -58,45 +58,45 @@ command
       
       // Verify tables exist
       try {
-        // Verify user_filter_profiles table
+        // Verify filter_user_profiles table
         const { error: profileError } = await supabase
-          .from('user_filter_profiles')
+          .from('filter_user_profiles')
           .select('id')
           .limit(1);
         
         if (profileError) {
-          console.error('⚠️ Migrations appeared to apply, but user_filter_profiles table verification failed:', profileError.message);
+          console.error('⚠️ Migrations appeared to apply, but filter_user_profiles table verification failed:', profileError.message);
           process.exit(1);
         }
         
-        console.log('✓ Tables verified: user_filter_profiles exists');
+        console.log('✓ Tables verified: filter_user_profiles exists');
         
-        // Verify user_filter_profile_drives table
+        // Verify filter_user_profile_drives table
         const { error: drivesError } = await supabase
-          .from('user_filter_profile_drives')
+          .from('filter_user_profile_drives')
           .select('id')
           .limit(1);
           
         if (drivesError) {
-          console.error('⚠️ Migrations appeared to apply, but user_filter_profile_drives table verification failed:', drivesError.message);
+          console.error('⚠️ Migrations appeared to apply, but filter_user_profile_drives table verification failed:', drivesError.message);
           process.exit(1);
         }
         
-        console.log('✓ Tables verified: user_filter_profile_drives exists');
+        console.log('✓ Tables verified: filter_user_profile_drives exists');
         
-        // Verify drive_id column in user_filter_profile_drives
+        // Verify drive_id column in filter_user_profile_drives
         try {
           const { error: driveIdError } = await supabase
-            .from('user_filter_profile_drives')
+            .from('filter_user_profile_drives')
             .select('drive_id')
             .limit(1);
             
           if (driveIdError && driveIdError.message.includes('does not exist')) {
-            console.error('⚠️ The drive_id column is missing in user_filter_profile_drives table');
+            console.error('⚠️ The drive_id column is missing in filter_user_profile_drives table');
             process.exit(1);
           }
           
-          console.log('✓ Column verified: drive_id exists in user_filter_profile_drives');
+          console.log('✓ Column verified: drive_id exists in filter_user_profile_drives');
         } catch (err: any) {
           console.error('⚠️ Error verifying drive_id column:', err.message);
           process.exit(1);

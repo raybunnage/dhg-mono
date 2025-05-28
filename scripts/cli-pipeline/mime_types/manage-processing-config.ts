@@ -221,7 +221,7 @@ async function addMimeTypeProcessingConfig(options: MimeTypeProcessingOptions): 
   // Track the command
   let trackingId: string;
   try {
-    trackingId = await commandTrackingService.startTracking('mime_types', 'configure-processing');
+    trackingId = await commandTrackingService.startTracking('sys_mime_types', 'configure-processing');
   } catch (error) {
     console.warn(`Warning: Unable to initialize command tracking: ${error instanceof Error ? error.message : String(error)}`);
     trackingId = 'tracking-unavailable';
@@ -246,32 +246,32 @@ async function addMimeTypeProcessingConfig(options: MimeTypeProcessingOptions): 
       throw new Error(`Supabase connection failed: ${error instanceof Error ? error.message : String(error)}`);
     }
     
-    // Verify the mime_types table exists
-    console.log('Testing connection with mime_types table...');
+    // Verify the sys_mime_types table exists
+    console.log('Testing connection with sys_mime_types table...');
     try {
       const { data: mimeTypesTest, error: mimeTypesError } = await supabaseClient
-        .from('mime_types')
+        .from('sys_mime_types')
         .select('id, mime_type')
         .limit(1);
         
       if (mimeTypesError) {
-        throw new Error(`Error querying mime_types: ${JSON.stringify(mimeTypesError)}`);
+        throw new Error(`Error querying sys_mime_types: ${JSON.stringify(mimeTypesError)}`);
       }
       
       if (mimeTypesTest && mimeTypesTest.length > 0) {
-        console.log('✅ Successfully connected to mime_types table');
+        console.log('✅ Successfully connected to sys_mime_types table');
       } else {
-        console.log('⚠️ mime_types table exists but may be empty. Consider running the sync command first.');
+        console.log('⚠️ sys_mime_types table exists but may be empty. Consider running the sync command first.');
       }
     } catch (error) {
-      throw new Error(`Testing mime_types table failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Testing sys_mime_types table failed: ${error instanceof Error ? error.message : String(error)}`);
     }
     
-    // 1. Find the MIME type ID from mime_types table
+    // 1. Find the MIME type ID from sys_mime_types table
     console.log(`Looking up MIME type ID for ${mimeType}...`);
     
     const { data: mimeTypeData, error: mimeTypeError } = await supabaseClient
-      .from('mime_types')
+      .from('sys_mime_types')
       .select('id, mime_type')
       .eq('mime_type', mimeType)
       .single();
@@ -279,7 +279,7 @@ async function addMimeTypeProcessingConfig(options: MimeTypeProcessingOptions): 
     if (mimeTypeError) {
       // If the MIME type doesn't exist, we need to create it first
       if (mimeTypeError.code === 'PGRST116' || mimeTypeError.message.includes('not found')) {
-        console.log(`MIME type ${mimeType} not found in mime_types table. Please run the sync-mime-types command first.`);
+        console.log(`MIME type ${mimeType} not found in sys_mime_types table. Please run the sync-mime-types command first.`);
         console.log('Example: ./mime-types-cli.sh sync');
         return false;
       }
