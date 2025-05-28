@@ -126,7 +126,7 @@ async function checkFilesWithFolderTypes(options: IntegrityCheckOptions = {}) {
   
   // Find files (not folders) that have folder document types
   const { data, error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, document_type_id')
     .not('mime_type', 'eq', 'application/vnd.google-apps.folder')
     .in('document_type_id', folderTypeIds)
@@ -211,7 +211,7 @@ async function checkFilesWithFolderTypes(options: IntegrityCheckOptions = {}) {
         const batchIds = batch.map(r => r.id);
         
         const { error: updateError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ document_type_id: genericTypeId })
           .in('id', batchIds);
           
@@ -265,7 +265,7 @@ async function checkFoldersWithNonFolderTypes(options: IntegrityCheckOptions = {
   
   // Find folders with non-folder document types
   const { data, error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, document_type_id')
     .eq('mime_type', 'application/vnd.google-apps.folder')
     .not('document_type_id', 'in', `(${folderTypeIds.join(',')})`)
@@ -344,7 +344,7 @@ async function checkFoldersWithNonFolderTypes(options: IntegrityCheckOptions = {
         const batchIds = batch.map(r => r.id);
         
         const { error: updateError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ document_type_id: genericFolderTypeId })
           .in('id', batchIds);
           
@@ -433,7 +433,7 @@ async function checkFileExtensionConsistency(options: IntegrityCheckOptions = {}
   
   // Get files from sources_google that have document_type_id
   const { data, error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, document_type_id')
     .not('document_type_id', 'is', null)
     .not('mime_type', 'eq', 'application/vnd.google-apps.folder') // Exclude folders
@@ -550,7 +550,7 @@ async function checkFileExtensionConsistency(options: IntegrityCheckOptions = {}
           
           // Update the record
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ document_type_id: newDocType.id })
             .eq('id', file.id);
             
@@ -636,7 +636,7 @@ async function checkMimeTypeConsistency(options: IntegrityCheckOptions = {}) {
   
   // Get files from sources_google that have document_type_id and mime_type
   const { data, error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, document_type_id')
     .not('document_type_id', 'is', null)
     .not('mime_type', 'is', null)
@@ -752,7 +752,7 @@ async function checkMimeTypeConsistency(options: IntegrityCheckOptions = {}) {
           
           // Update the record
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ document_type_id: newDocType.id })
             .eq('id', file.id);
             
@@ -845,7 +845,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
   
   // Get files that end with .txt or .docx
   const { data: docxFiles, error: docxFilesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, document_type_id')
     .not('document_type_id', 'is', null)
     .not('is_deleted', 'eq', true)
@@ -858,7 +858,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
   
   // Get files that end with .pdf
   const { data: pdfFiles, error: pdfFilesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, document_type_id')
     .not('document_type_id', 'is', null)
     .not('is_deleted', 'eq', true)
@@ -871,7 +871,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
   
   // Get files that end with .pptx
   const { data: pptxFiles, error: pptxFilesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, document_type_id')
     .not('document_type_id', 'is', null)
     .not('is_deleted', 'eq', true)
@@ -1158,7 +1158,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
             const batchIds = batch.map(r => r.id);
             
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ document_type_id: replacementType.id })
               .in('id', batchIds);
               
@@ -1187,7 +1187,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
             const batchIds = batch.map(r => r.id);
             
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ document_type_id: replacementType.id })
               .in('id', batchIds);
               
@@ -1216,7 +1216,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
             const batchIds = batch.map(r => r.id);
             
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ document_type_id: replacementType.id })
               .in('id', batchIds);
               

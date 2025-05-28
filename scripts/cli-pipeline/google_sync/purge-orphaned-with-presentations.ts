@@ -92,7 +92,7 @@ async function purgeOrphanedWithPresentations(options: PurgeOptions = {}): Promi
   // We need to use a more complex approach since Supabase doesn't directly support NOT IN subqueries
   console.log('Fetching all source_ids from sources_google...');
   const { data: allSourcesData, error: sourcesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id');
     
   if (sourcesError) {

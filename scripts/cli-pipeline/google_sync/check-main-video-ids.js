@@ -21,7 +21,7 @@ async function main() {
     
     // Get total count
     const { count: totalCount, error: totalError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true });
     
     if (totalError) {
@@ -31,7 +31,7 @@ async function main() {
     
     // Get count with main_video_id set
     const { count: withMainVideo, error: mainVideoError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true })
       .not('main_video_id', 'is', null);
     
@@ -89,7 +89,7 @@ async function main() {
     // Test the associations
     console.log('\nChecking some file associations:');
     const { data: testFiles, error: testError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, main_video_id')
       .not('main_video_id', 'is', null)
       .limit(5);
@@ -99,7 +99,7 @@ async function main() {
     } else if (testFiles) {
       for (const file of testFiles) {
         const { data: videoData, error: videoError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('name, mime_type')
           .eq('id', file.main_video_id)
           .single();

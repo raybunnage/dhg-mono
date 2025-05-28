@@ -42,7 +42,7 @@ async function checkExpertDocumentCoverage(): Promise<void> {
     
     // 1. Get folder info
     const { data: folderInfo, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path')
       .eq('drive_id', folderId)
       .single();
@@ -70,7 +70,7 @@ async function checkExpertDocumentCoverage(): Promise<void> {
     
     // 3. Count MP4 files in the folder
     const { count: mp4Count, error: mp4Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact' })
       .eq('mime_type', 'video/mp4')
       .eq('parent_folder_id', folderId);
@@ -85,7 +85,7 @@ async function checkExpertDocumentCoverage(): Promise<void> {
     
     // 4. Count MP4 files with parent_path containing folder name
     const { count: mp4PathCount, error: mp4PathError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact' })
       .eq('mime_type', 'video/mp4')
       .ilike('parent_path', `%${folderInfo.name}%`);
@@ -130,7 +130,7 @@ async function checkExpertDocumentCoverage(): Promise<void> {
     if (sourceIdsWithExpertDocs.size > 0) {
       const sourceIdsArray = Array.from(sourceIdsWithExpertDocs);
       const { data: sourceNames, error: namesError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, parent_path, parent_folder_id')
         .in('id', sourceIdsArray.slice(0, 100)); // Limit to first 100
       

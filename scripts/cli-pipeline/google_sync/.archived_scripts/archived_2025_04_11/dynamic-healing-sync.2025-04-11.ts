@@ -239,7 +239,7 @@ async function ensureRootFolder(folderId: string, folderName: string): Promise<{
   try {
     // Check if folder already exists in the database
     const { data: existingFolders, error: queryError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, is_root')
       .eq('drive_id', folderId)
       .eq('deleted', false);
@@ -259,7 +259,7 @@ async function ensureRootFolder(folderId: string, folderName: string): Promise<{
       
       // Update it to be a root folder
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({
           name: folderName,
           is_root: true,
@@ -281,7 +281,7 @@ async function ensureRootFolder(folderId: string, folderName: string): Promise<{
     // Insert new root folder
     const now = new Date().toISOString();
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .insert({
         drive_id: folderId,
         name: folderName,
@@ -335,7 +335,7 @@ async function insertFiles(
   
   // Get existing files to avoid duplicates
   const { data: existingRecords, error: queryError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('drive_id')
     .eq('deleted', false);
     
@@ -392,7 +392,7 @@ async function insertFiles(
     
     // Insert the files into the database
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .insert(filesToInsert);
     
     if (error) {

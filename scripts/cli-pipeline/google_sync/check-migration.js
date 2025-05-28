@@ -18,7 +18,7 @@ async function main() {
     
     // Check sources_google
     const { data: sgData, error: sgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id')
       .limit(1);
     
@@ -32,7 +32,7 @@ async function main() {
         
         // Check schema
         const { data: sgSample, error: sgSampleError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*')
           .limit(1);
         
@@ -83,7 +83,7 @@ async function main() {
     
     // Check sources_google
     const { data: sg2Data, error: sg2Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id')
       .limit(1);
     
@@ -102,7 +102,7 @@ async function main() {
     
     // Dynamic Healing Group
     const { count: dhgCount, error: dhgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true })
       .eq('root_drive_id', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV');
     
@@ -114,7 +114,7 @@ async function main() {
     
     // Polyvagal Steering Group
     const { count: pvsgCount, error: pvsgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true })
       .eq('root_drive_id', '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc');
     
@@ -126,7 +126,7 @@ async function main() {
     
     // Total records
     const { count: totalCount, error: totalError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true });
     
     if (totalError) {

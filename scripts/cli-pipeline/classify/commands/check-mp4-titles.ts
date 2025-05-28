@@ -32,7 +32,7 @@ export async function checkMp4TitlesCommand(options: CheckMp4TitlesOptions = {})
     
     // Get MP4 files from sources_google
     let sourceQuery = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .eq('mime_type', 'video/mp4')
       .eq('is_deleted', false)

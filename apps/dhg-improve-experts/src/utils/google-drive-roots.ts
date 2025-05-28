@@ -30,7 +30,7 @@ export async function getRootFolders(): Promise<RootFolder[]> {
   try {
     // Query the sources_google table for root folders
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('is_root', true)
       .eq('deleted', false)
@@ -105,7 +105,7 @@ export async function addRootFolder(
     
     // Check if folder already exists
     const { data: existingFolders, error: queryError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id')
       .eq('drive_id', folderId)
       .eq('deleted', false);
@@ -117,7 +117,7 @@ export async function addRootFolder(
     // If folder exists, update it
     if (existingFolders && existingFolders.length > 0) {
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({
           name,
           is_root: true,
@@ -156,7 +156,7 @@ export async function addRootFolder(
     // Insert new root folder
     const now = new Date().toISOString();
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .insert({
         drive_id: folderId,
         name,
@@ -209,7 +209,7 @@ export async function removeRootFolder(id: string, hardDelete = false): Promise<
     if (hardDelete) {
       // Hard delete - remove from database
       const { error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ deleted: true, updated_at: new Date().toISOString() })
         .eq('id', id);
         
@@ -219,7 +219,7 @@ export async function removeRootFolder(id: string, hardDelete = false): Promise<
     } else {
       // Soft delete - just mark as not a root folder
       const { error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ 
           is_root: false, 
           updated_at: new Date().toISOString() 
@@ -246,7 +246,7 @@ export async function removeRootFolder(id: string, hardDelete = false): Promise<
 export async function getRootFolder(id: string, isGoogleId = false): Promise<RootFolder | null> {
   try {
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('is_root', true)
       .eq('deleted', false);
@@ -351,7 +351,7 @@ export async function updateRootFolderSyncStatus(
 ): Promise<boolean> {
   try {
     const { data, error: updateError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update({
         sync_status: status,
         sync_error: error || null,

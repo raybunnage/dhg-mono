@@ -48,7 +48,7 @@ async function resetDocumentProcessingStatus(ids: string, options: ResetProcessi
     
     // First, verify the source IDs exist
     const { data: sourcesData, error: sourcesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .in('id', sourceIds);
     

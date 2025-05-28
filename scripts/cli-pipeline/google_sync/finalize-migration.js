@@ -40,7 +40,7 @@ async function checkTableCounts(supabase) {
   try {
     // Check sources_google
     const { count: sgCount, error: sgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true });
     
     if (sgError) {
@@ -50,7 +50,7 @@ async function checkTableCounts(supabase) {
     
     // Check sources_google
     const { count: sg2Count, error: sg2Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true });
     
     if (sg2Error) {
@@ -196,7 +196,7 @@ async function main() {
       
       // Check if sources_google exists
       const { count, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true });
       
       if (error) {

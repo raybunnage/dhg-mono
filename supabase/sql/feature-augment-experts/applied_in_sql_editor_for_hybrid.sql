@@ -50,8 +50,8 @@ COMMIT;
 
 BEGIN;
 
--- Add new columns to sources_google table
-ALTER TABLE sources_google
+-- Add new columns to google_sources table
+ALTER TABLE google_sources
   ADD COLUMN IF NOT EXISTS expert_id uuid REFERENCES experts(id),
   ADD COLUMN IF NOT EXISTS sync_status text,
   ADD COLUMN IF NOT EXISTS sync_error text,
@@ -61,16 +61,16 @@ ALTER TABLE sources_google
   ADD COLUMN IF NOT EXISTS extracted_content jsonb;
 
 -- Add constraints
-ALTER TABLE sources_google
+ALTER TABLE google_sources
   ADD CONSTRAINT valid_sync_status 
     CHECK (sync_status IN ('pending', 'synced', 'error', 'disabled')),
   ADD CONSTRAINT valid_extracted_content
     CHECK (extracted_content IS NULL OR jsonb_typeof(extracted_content) = 'object');
 
 -- Create indexes
-CREATE INDEX IF NOT EXISTS idx_sources_google_expert_id ON sources_google(expert_id);
-CREATE INDEX IF NOT EXISTS idx_sources_google_document_type_id ON sources_google(document_type_id);
-CREATE INDEX IF NOT EXISTS idx_sources_google_content_extracted ON sources_google(content_extracted);
+CREATE INDEX IF NOT EXISTS idx_google_sources_expert_id ON google_sources(expert_id);
+CREATE INDEX IF NOT EXISTS idx_google_sources_document_type_id ON google_sources(document_type_id);
+CREATE INDEX IF NOT EXISTS idx_google_sources_content_extracted ON google_sources(content_extracted);
 
 COMMIT;
 
@@ -81,7 +81,7 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS expert_documents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   expert_id uuid REFERENCES experts(id),
-  source_id uuid REFERENCES sources_google(id),
+  source_id uuid REFERENCES google_sources(id),
   document_type_id uuid REFERENCES document_types(id),
   
   -- Content and Analysis

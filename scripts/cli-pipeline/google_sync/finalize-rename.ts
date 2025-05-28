@@ -22,7 +22,7 @@ async function main() {
     
     // Check if old table exists
     const { data: oldTableCheck, error: oldTableError } = await supabase.rpc('execute_sql', {
-      sql: `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google')`
+      sql: `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'google_sources')`
     });
     
     if (oldTableError) {
@@ -33,7 +33,7 @@ async function main() {
     
     // Check if new table exists
     const { data: newTableCheck, error: newTableError } = await supabase.rpc('execute_sql', {
-      sql: `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google')`
+      sql: `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'google_sources')`
     });
     
     if (newTableError) {

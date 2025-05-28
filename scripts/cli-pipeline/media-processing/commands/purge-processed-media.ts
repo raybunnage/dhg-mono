@@ -104,7 +104,7 @@ async function getProcessedFiles(supabase: any): Promise<{ mp4Files: string[]; m
   const sourceIds = documents.map((doc: any) => doc.source_id);
   
   const { data: sources, error: sourcesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type')
     .in('id', sourceIds);
   

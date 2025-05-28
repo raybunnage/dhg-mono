@@ -1,5 +1,5 @@
--- Create the sources_google table with improved schema
-CREATE TABLE IF NOT EXISTS public.sources_google (
+-- Create the google_sources table with improved schema
+CREATE TABLE IF NOT EXISTS public.google_sources (
     -- Core identity fields
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     name text NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.sources_google (
     
     -- Enhanced hierarchy fields (improvements)
     root_drive_id text NOT NULL,              -- NEW! Always required, identifies the top-level folder
-    parent_folder_id uuid REFERENCES public.sources_google(id), -- References parent in the same table
+    parent_folder_id uuid REFERENCES public.google_sources(id), -- References parent in the same table
     path text,                                -- Full path including filename
     is_root boolean DEFAULT false,            -- Identifies top-level folders
     
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS public.sources_google (
     thumbnail_link text,
     
     -- NEW! Main video association for related files
-    main_video_id uuid REFERENCES public.sources_google(id),
+    main_video_id uuid REFERENCES public.google_sources(id),
     
     -- Processing fields
     content_extracted boolean DEFAULT false,
@@ -43,10 +43,10 @@ CREATE TABLE IF NOT EXISTS public.sources_google (
 );
 
 -- Create indexes for performance
-CREATE INDEX IF NOT EXISTS sources_google_root_drive_id_idx ON public.sources_google(root_drive_id);
-CREATE INDEX IF NOT EXISTS sources_google_parent_folder_id_idx ON public.sources_google(parent_folder_id);
-CREATE INDEX IF NOT EXISTS sources_google_path_idx ON public.sources_google(path);
-CREATE INDEX IF NOT EXISTS sources_google_is_root_idx ON public.sources_google(is_root) WHERE is_root = true;
-CREATE INDEX IF NOT EXISTS sources_google_mime_type_idx ON public.sources_google(mime_type);
-CREATE INDEX IF NOT EXISTS sources_google_main_video_id_idx ON public.sources_google(main_video_id);
-CREATE INDEX IF NOT EXISTS sources_google_path_array_idx ON public.sources_google USING gin(path_array);
+CREATE INDEX IF NOT EXISTS google_sources_root_drive_id_idx ON public.google_sources(root_drive_id);
+CREATE INDEX IF NOT EXISTS google_sources_parent_folder_id_idx ON public.google_sources(parent_folder_id);
+CREATE INDEX IF NOT EXISTS google_sources_path_idx ON public.google_sources(path);
+CREATE INDEX IF NOT EXISTS google_sources_is_root_idx ON public.google_sources(is_root) WHERE is_root = true;
+CREATE INDEX IF NOT EXISTS google_sources_mime_type_idx ON public.google_sources(mime_type);
+CREATE INDEX IF NOT EXISTS google_sources_main_video_id_idx ON public.google_sources(main_video_id);
+CREATE INDEX IF NOT EXISTS google_sources_path_array_idx ON public.google_sources USING gin(path_array);

@@ -99,7 +99,7 @@ export default function SourceButtonsPage() {
     try {
       // Get first unprocessed docx file
       const { data: doc } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, mime_type')
         .eq('content_extracted', false)
         .eq('mime_type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')

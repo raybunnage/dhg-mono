@@ -27,7 +27,7 @@ async function renameFile() {
 
     // Find the record by source_id
     const { data: record, error: findError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, path_array')
       .eq('id', sourceId)
       .single();
@@ -71,7 +71,7 @@ async function renameFile() {
     } else {
       // Update the record
       const { data: updateResult, error: updateError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update(updateData)
         .eq('id', record.id)
         .select();

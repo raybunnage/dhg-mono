@@ -55,7 +55,7 @@ async function countRecords() {
   try {
     // Build query for all records
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, mime_type, path, deleted, created_at, updated_at')
       .or(`parent_folder_id.eq.${CLAWSON_FOLDER_ID},drive_id.eq.${CLAWSON_FOLDER_ID}`);
     
@@ -101,7 +101,7 @@ async function countRecords() {
     
     // Get the root folder itself
     const { data: folder, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('drive_id', CLAWSON_FOLDER_ID)
       .single();

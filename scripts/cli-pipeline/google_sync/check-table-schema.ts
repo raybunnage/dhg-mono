@@ -22,7 +22,7 @@ async function checkSchema() {
   try {
     // Query the information schema to get column details
     const { data, error } = await supabase.rpc('get_table_definition', {
-      table_name: 'sources_google'
+      table_name: 'google_sources'
     });
     
     if (error) {
@@ -32,7 +32,7 @@ async function checkSchema() {
       console.log('Trying fallback approach...');
       
       const { data: sampleData, error: sampleError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .limit(1);
         

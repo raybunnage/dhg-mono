@@ -215,7 +215,7 @@ async function findByName() {
     console.log(`\n=== Checking database for items with name containing "${searchPattern}" ===`);
     
     const { data: dbItems, error: dbError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .ilike('name', `%${searchPattern}%`)
       .eq('is_deleted', false)

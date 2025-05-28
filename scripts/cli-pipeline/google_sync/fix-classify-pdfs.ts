@@ -51,7 +51,7 @@ async function markProcessed(options: {
   const sourceIds = docsToProcess.map(doc => doc.source_id);
   
   const { data: pdfFiles, error: filesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type')
     .in('id', sourceIds)
     .eq('mime_type', 'application/pdf')

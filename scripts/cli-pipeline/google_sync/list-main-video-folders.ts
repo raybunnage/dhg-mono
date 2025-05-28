@@ -14,7 +14,7 @@ export const listMainVideoFolders = async (): Promise<void> => {
     
     // Query folders with main_video_id that is not null
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select(`
         id,
         name,
@@ -39,7 +39,7 @@ export const listMainVideoFolders = async (): Promise<void> => {
     // Fetch the names of all main_video_ids
     const videoIds = data.map(folder => folder.main_video_id).filter(Boolean);
     const { data: videoData, error: videoError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .in('id', videoIds);
 

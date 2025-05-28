@@ -24,7 +24,7 @@ async function main() {
     
     // First, count the records
     const { count: sourceCount, error: countError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true });
       
     if (countError) {
@@ -37,7 +37,7 @@ async function main() {
     console.log('Checking target table...');
     
     const { count: targetCount, error: targetCountError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true });
       
     if (targetCountError) {
@@ -72,7 +72,7 @@ async function main() {
       
       // Fetch a batch of records
       const { data: sourceRecords, error: fetchError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .range(offset, offset + batchSize - 1);
         
@@ -119,7 +119,7 @@ async function main() {
       
       // Upsert the records
       const { error: upsertError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .upsert(transformedRecords, { onConflict: 'id' });
         
       if (upsertError) {

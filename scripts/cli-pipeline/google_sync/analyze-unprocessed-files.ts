@@ -13,7 +13,7 @@ async function analyzeUnprocessedFiles() {
   
   // First, let's get all sources_google records for the root drive
   const { data: allSources, error: sourcesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, drive_id, mime_type, name, path, path_depth, modified_at, size')
     .eq('root_drive_id', rootDriveId)
     .eq('is_deleted', false);
@@ -108,7 +108,7 @@ async function analyzeUnprocessedFiles() {
 
   // Total counts
   const { count: totalSourcesGoogle } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*', { count: 'exact', head: true })
     .eq('root_drive_id', rootDriveId)
     .eq('is_deleted', false);

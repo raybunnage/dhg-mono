@@ -47,7 +47,7 @@ export const createPresentationsFromMp4Command = async (options: {
     if (fixMissingFolders) {
       // 3. Get high-level folders information for expert lookup
       let fixFoldersQuery = supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, path_depth, main_video_id, name, root_drive_id')
         .eq('path_depth', 0)
         .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac'); // The specific document type for high-level folders
@@ -127,7 +127,7 @@ export const createPresentationsFromMp4Command = async (options: {
         
         // Get the source details
         const { data: source, error: sourceError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, path, path_depth, drive_id')
           .eq('id', presentation.video_source_id)
           .single();
@@ -251,7 +251,7 @@ export const createPresentationsFromMp4Command = async (options: {
     
     // Get all MP4 files and filter out those that already have presentations
     let mp4Query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select(`
         id, 
         name, 
@@ -329,7 +329,7 @@ export const createPresentationsFromMp4Command = async (options: {
     
     // 3. Get high-level folders information for expert lookup
     let foldersQuery = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, path_depth, main_video_id, name, root_drive_id')
       .eq('path_depth', 0)
       .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac'); // The specific document type for high-level folders
@@ -619,7 +619,7 @@ export const createPresentationsFromMp4Command = async (options: {
         
         // Get the source details
         const { data: source, error: sourceError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, path, path_depth, drive_id')
           .eq('id', presentation.video_source_id)
           .single();

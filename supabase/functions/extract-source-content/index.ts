@@ -11,7 +11,7 @@ serve(async (req) => {
 
     // Get unprocessed documents
     const { data: documents, error: fetchError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('content_extracted', false)
       .is('extraction_error', null)
@@ -39,7 +39,7 @@ serve(async (req) => {
 
         // For now, just mark as processed
         const { error: updateError } = await supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .update({
             content_extracted: true,
             extracted_content: { text: 'TODO: Add actual content' },
@@ -52,7 +52,7 @@ serve(async (req) => {
       } catch (error) {
         // Log error but continue processing other documents
         await supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .update({
             extraction_error: error.message,
             updated_at: new Date().toISOString()

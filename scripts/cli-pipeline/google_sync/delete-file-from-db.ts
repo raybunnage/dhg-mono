@@ -26,7 +26,7 @@ async function deleteFile() {
   try {
     // First check if file exists
     const { data, error: queryError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id')
       .eq('drive_id', fileId);
       
@@ -44,7 +44,7 @@ async function deleteFile() {
     
     // Delete the file
     const { error: deleteError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .delete()
       .eq('drive_id', fileId);
       

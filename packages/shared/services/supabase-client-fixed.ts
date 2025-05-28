@@ -144,7 +144,7 @@ export class SupabaseClientServiceFixed {
       // Try simple queries to verify connection to different tables
       try {
         const { data, error } = await this.client!
-          .from('sources_google')
+          .from('google_sources')
           .select('count(*)', { count: 'exact', head: true });
         
         if (error) {

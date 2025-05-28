@@ -110,7 +110,7 @@ async function fixPolyvagalFolder() {
   try {
     // Get current folder record
     const { data: folder, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('drive_id', POLYVAGAL_FOLDER_ID)
       .single();
@@ -154,7 +154,7 @@ async function fixPolyvagalFolder() {
       console.log('\nDRY RUN: Would update the Polyvagal folder');
     } else {
       const { error: updateError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update(updates)
         .eq('id', folder.id);
       
@@ -178,7 +178,7 @@ async function fixPolyvagalFolder() {
 async function getRelatedRecords(folderId) {
   try {
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .or(`drive_id.eq.${folderId},parent_folder_id.eq.${folderId}`);
     
@@ -244,7 +244,7 @@ async function fixChildPaths(rootFolderId, rootFolderName) {
         console.log('DRY RUN: Would update path');
       } else {
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update(updates)
           .eq('id', record.id);
         
@@ -271,7 +271,7 @@ async function verifyParentChildRelationships() {
   try {
     // Get all records
     const { data: allRecords, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*');
     
     if (error) {
@@ -306,7 +306,7 @@ async function verifyParentChildRelationships() {
         console.log('DRY RUN: Would set parent_folder_id to null');
       } else {
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({
             parent_folder_id: null,
             updated_at: new Date().toISOString()

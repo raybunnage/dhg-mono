@@ -9,7 +9,7 @@ async function main() {
     
     // Get a specific folder that needs a presentation
     const { data: folder, error } = await presentationService.supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, path, main_video_id')
       .eq('id', 'ed473ea7-bdad-4c2b-a432-934eaae11730')  // 2020-06-17-Wager-Networks-Intro
       .single();

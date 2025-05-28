@@ -271,7 +271,7 @@ async function getNextBatchOfMp4Files(limit: number): Promise<any[]> {
   
   // Find MP4 files that don't have .mp4 in the name but mime_type is video/mp4
   let query = supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, drive_id, path, web_view_link, root_drive_id')
     .eq('mime_type', 'video/mp4')
     .not('name', 'ilike', '%.mp4')

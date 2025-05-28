@@ -16,7 +16,7 @@ async function countAllFiles() {
   try {
     // Count the total records
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id');
     
     if (error) {
@@ -29,7 +29,7 @@ async function countAllFiles() {
     // Check our folder specifically
     const folderId = '1lLO4dx_V3XhJSb4btA-hH15yxlPhllY2';
     const { data: folderData, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id')
       .eq('drive_id', folderId);
     
@@ -42,7 +42,7 @@ async function countAllFiles() {
     
     // Check files with this parent folder
     const { data: childData, error: childError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, parent_folder_id')
       .eq('parent_folder_id', folderId);
     

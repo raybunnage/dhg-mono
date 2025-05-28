@@ -79,7 +79,7 @@ async function extractMetadataForFile(fileId: string, supabase: any): Promise<bo
     
     // Get the file from the database
     const { data: file, error: fileError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, metadata, size')
       .eq('id', fileId)
       .single();
@@ -161,7 +161,7 @@ async function extractMetadataForFile(fileId: string, supabase: any): Promise<bo
     
     // Update the database
     const { error: updateError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update(updateData)
       .eq('id', fileId);
     
@@ -188,7 +188,7 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
     // Get MP4 files that need metadata extraction
     // Using a simpler query that works reliably with Supabase
     const { data: files, error: queryError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, metadata')
       .eq('mime_type', 'video/mp4')
       .eq('is_deleted', false)

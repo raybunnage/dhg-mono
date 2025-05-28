@@ -45,7 +45,7 @@ const program = new Command('update-root-drive-id')
       
       // Do a simple test query to see if we can access the sources_google table
       const { count: tableCount, error: tableError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .limit(1);
         
@@ -77,7 +77,7 @@ const program = new Command('update-root-drive-id')
         // Update the root folder to indicate we're processing it
         // First get current sync_status
         const { data: folderData, error: folderError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('sync_status')
           .eq('drive_id', rootId)
           .single();
@@ -88,7 +88,7 @@ const program = new Command('update-root-drive-id')
           // Update only the last_indexed timestamp without changing sync_status
           // to avoid potential constraint violations
           const { error: statusError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ 
               last_indexed: new Date().toISOString()
             })
@@ -123,7 +123,7 @@ const program = new Command('update-root-drive-id')
       for (const pattern of pathPatterns) {
         // Find records with path that matches the pattern
         const { count: pathMatchCount, error: pathError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*', { count: 'exact', head: true })
           .like('path', pattern)
           .is('root_drive_id', null)
@@ -142,7 +142,7 @@ const program = new Command('update-root-drive-id')
             
             // Update these records with the root_drive_id
             const { data: updateData, error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ root_drive_id: rootId })
               .like('path', pattern)
               .is('root_drive_id', null)
@@ -164,7 +164,7 @@ const program = new Command('update-root-drive-id')
       const mimeTypes = ['application/vnd.google-apps.folder', 'video/mp4', 'audio/x-m4a', 'text/plain'];
       for (const mimeType of mimeTypes) {
         const { count: mimeCount, error: mimeError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*', { count: 'exact', head: true })
           .eq('mime_type', mimeType)
           .like('path', `%${stats.rootFolderName}%`) 
@@ -182,7 +182,7 @@ const program = new Command('update-root-drive-id')
           if (!dryRun) {
             // Update these records with root_drive_id
             const { error: updateTypeError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ root_drive_id: rootId })
               .eq('mime_type', mimeType)
               .like('path', `%${stats.rootFolderName}%`)
@@ -215,7 +215,7 @@ const program = new Command('update-root-drive-id')
       // Add a count verification step
       console.log('\nVerifying total count of records with this root_drive_id...');
       const { count: finalCount, error: countError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .eq('root_drive_id', rootId);
         
@@ -271,7 +271,7 @@ const program = new Command('update-root-drive-id')
             console.log(`Using expanded OR query: ${orQuery}`);
             
             const { data: bulkResults, error: bulkError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .select('id, drive_id, name, path')
               .or(orQuery)
               .is('root_drive_id', null)
@@ -294,7 +294,7 @@ const program = new Command('update-root-drive-id')
                 console.log(`Updating bulk batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(bulkResults.length/batchSize)}`);
                 
                 const { data: updateData, error: bulkUpdateError } = await supabase
-                  .from('sources_google')
+                  .from('google_sources')
                   .update({ root_drive_id: rootId })
                   .in('id', batchIds)
                   .select('id');
@@ -315,7 +315,7 @@ const program = new Command('update-root-drive-id')
                 
                 // Get the final count after bulk update
                 const { count: lastCount, error: finalCountError } = await supabase
-                  .from('sources_google')
+                  .from('google_sources')
                   .select('*', { count: 'exact', head: true })
                   .eq('root_drive_id', rootId);
                   
@@ -349,7 +349,7 @@ const program = new Command('update-root-drive-id')
         // To ensure we respect valid_sync_status constraint, we need to check if the record exists first
         // and verify what status values are allowed
         const { data: existingFolder, error: getError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('sync_status')
           .eq('drive_id', rootId)
           .single();
@@ -359,7 +359,7 @@ const program = new Command('update-root-drive-id')
         } else {
           // Try to update with 'synced' status, which is likely valid based on other code
           const { error: statusUpdateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ 
               sync_status: 'synced',  // This should be one of the allowed status values
               last_indexed: new Date().toISOString() 
@@ -372,7 +372,7 @@ const program = new Command('update-root-drive-id')
             // Try a fallback update without changing sync_status
             console.log('Attempting fallback update without changing sync_status...');
             const { error: fallbackError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ 
                 last_indexed: new Date().toISOString() 
               })
@@ -403,7 +403,7 @@ async function getRootFolderInfo(
 ): Promise<{ id: string; name: string } | null> {
   try {
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .eq('drive_id', rootId)
       .single();
@@ -454,7 +454,7 @@ async function updateRootDriveId(
   try {
     // First check if there are already records with this root_drive_id
     const { count: existingCount, error: existingError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true })
       .eq('root_drive_id', rootId);
       
@@ -493,7 +493,7 @@ async function updateRootDriveId(
       const batchFolderIds = folderIdsArray.slice(i, i + batchSize);
       
       const { data: folderRecords, error: folderError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, root_drive_id')
         .in('drive_id', batchFolderIds);
       
@@ -519,7 +519,7 @@ async function updateRootDriveId(
             if (!dryRun) {
               // Update the record with the root_drive_id
               const { error: updateError } = await supabase
-                .from('sources_google')
+                .from('google_sources')
                 .update({ root_drive_id: rootId })
                 .eq('id', record.id);
               
@@ -551,7 +551,7 @@ async function updateRootDriveId(
     while (true) {
       // Get the current batch of file records - don't filter by mime_type to ensure we get everything
       const { data: fileRecords, error: fileError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, parent_folder_id, root_drive_id, mime_type, path')
         .in('parent_folder_id', folderIdsArray)
         .eq('deleted', false)
@@ -584,7 +584,7 @@ async function updateRootDriveId(
           if (!dryRun) {
             // Update the record with the root_drive_id
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ root_drive_id: rootId })
               .eq('id', record.id);
             
@@ -656,7 +656,7 @@ async function updateRootDriveId(
     // We'll use a direct SQL query to find all records potentially related to this root
     // IMPORTANT: Don't filter by root_drive_id being null, so we can update ALL matching records
     const { data: directSearchResults, error: directSearchError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, path, parent_folder_id, root_drive_id')
       .or(orQuery)
       .eq('deleted', false);
@@ -679,7 +679,7 @@ async function updateRootDriveId(
           console.log(`Batch IDs: ${batchIds.slice(0, 3).join(', ')}... (${batchIds.length} total)`);
           
           const { data: updateData, error: batchUpdateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ root_drive_id: rootId })
             .in('id', batchIds)
             .select('id, root_drive_id');
@@ -705,7 +705,7 @@ async function updateRootDriveId(
     
     // Find records with root drive ID as parent folder
     const { data: parentFolderRecords, error: parentFolderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, path')
       .eq('deleted', false)
       .is('root_drive_id', null)
@@ -720,7 +720,7 @@ async function updateRootDriveId(
       if (!dryRun) {
         // Update these records
         const { error: parentUpdateError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ root_drive_id: rootId })
           .in('id', parentFolderRecords.map(r => r.id));
           
@@ -750,7 +750,7 @@ async function updateRootDriveId(
     // Process each batch of path-related records
     while (true) {
       const { data: pathRecords, error: pathNameError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, path, root_drive_id')
         .eq('deleted', false)
         .is('root_drive_id', null)
@@ -784,7 +784,7 @@ async function updateRootDriveId(
           if (!dryRun) {
             // Update the record with the root_drive_id
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ root_drive_id: rootId })
               .eq('id', record.id);
             
@@ -817,7 +817,7 @@ async function updateRootDriveId(
       // This SQL query might be causing errors with the NOT IN clause for large arrays
       // Let's use a direct query for better results that doesn't rely on the NOT IN clause
       const { data: nameRecords, error: nameError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, parent_folder_id, root_drive_id, path')
         .eq('deleted', false)
         .is('root_drive_id', null)
@@ -851,7 +851,7 @@ async function updateRootDriveId(
           if (!dryRun) {
             // Update the record with the root_drive_id
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ root_drive_id: rootId })
               .eq('id', record.id);
             
@@ -891,7 +891,7 @@ async function updateRootDriveId(
       console.log(`Searching with pattern: ${pattern}`);
       
       const { data: patternMatches, error: patternError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id')
         .or(`path.like.${pattern},name.like.${pattern}`)
         .eq('deleted', false)
@@ -910,7 +910,7 @@ async function updateRootDriveId(
           const patternIds = patternMatches.map(r => r.id);
           
           const { error: patternUpdateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ root_drive_id: rootId })
             .in('id', patternIds);
             
@@ -939,7 +939,7 @@ async function updateRootDriveId(
     
     while (true) {
       const { data: transcriptRecords, error: transcriptError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, path, root_drive_id')
         .eq('deleted', false)
         .is('root_drive_id', null)
@@ -984,7 +984,7 @@ async function updateRootDriveId(
           if (!dryRun) {
             // Update the record with the root_drive_id
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ root_drive_id: rootId })
               .eq('id', record.id);
             
@@ -1041,7 +1041,7 @@ async function buildFolderHierarchy(
     // First, get all records that have this root ID anywhere in their path
     // This will catch records that might be in a different folder structure
     const { data: pathRecords, error: pathError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('drive_id, path, parent_folder_id, mime_type')
       .eq('deleted', false)
       .like('path', `%${rootFolderId}%`);
@@ -1061,7 +1061,7 @@ async function buildFolderHierarchy(
     // Note: We're not limiting by page size to match sync-and-update-metadata.ts pagination handling
     // IMPORTANT: Don't filter by root_drive_id to ensure we get ALL records, even if they already have a value set
     const { data: directRecords, error: directError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('drive_id, path, parent_folder_id, mime_type')
       .eq('deleted', false)
       .eq('parent_folder_id', rootFolderId);
@@ -1098,7 +1098,7 @@ async function buildFolderHierarchy(
     // Use the dynamic healing sync approach - look for all records with paths containing this folder's name
     // This is a powerful approach that can catch records nested at any depth
     const { data: rootFolderData, error: rootFolderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('name')
       .eq('drive_id', rootFolderId)
       .single();
@@ -1140,7 +1140,7 @@ async function buildFolderHierarchy(
         console.log(`Searching with pattern: ${pattern}`);
         
         const { data: patternRecords, error: patternError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('drive_id, path, parent_folder_id, mime_type')
           .eq('deleted', false)
           .like('path', pattern);
@@ -1165,7 +1165,7 @@ async function buildFolderHierarchy(
       
       // Also try a direct search by name
       const { data: nameRecords, error: nameError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('drive_id, path, parent_folder_id, mime_type')
         .eq('deleted', false)
         .ilike('name', `%${rootName}%`);

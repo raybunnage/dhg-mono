@@ -11,7 +11,7 @@ async function main() {
     const folderId = 'ed473ea7-bdad-4c2b-a432-934eaae11730'; // 2020-06-17-Wager-Networks-Intro
     
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('id', folderId);
     
@@ -38,7 +38,7 @@ async function main() {
     const folderId2 = 'ffcff225-44a0-40b3-b57c-b83d48fad196'; // 2020-07-15-Wager-Imaging-ANS-part2
     
     const { data: data2, error: error2 } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('id', folderId2);
     

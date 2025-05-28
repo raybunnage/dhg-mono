@@ -507,7 +507,7 @@ async function processUnprocessed(options: {
 
               // 6.1 Update document type in sources_google
               const { error: updateSourceError } = await supabase
-                .from('sources_google')
+                .from('google_sources')
                 .update({ document_type_id: pdfSourceDocumentTypeId })
                 .eq('id', sourceId);
                 

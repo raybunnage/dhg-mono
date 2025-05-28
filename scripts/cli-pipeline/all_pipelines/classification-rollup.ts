@@ -128,7 +128,7 @@ export async function generateClassificationRollup(options: ClassificationRollup
               subject_classification_id, 
               COUNT(*) as count
             FROM table_classifications
-            WHERE entity_type = 'sources_google'
+            WHERE entity_type = 'google_sources'
             AND entity_id IN (${sourceIdsString})
             GROUP BY subject_classification_id
             ORDER BY COUNT(*) DESC

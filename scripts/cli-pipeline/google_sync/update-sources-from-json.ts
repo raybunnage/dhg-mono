@@ -100,7 +100,7 @@ async function updateSourcesFromJson(
       Logger.info(`Fetching records batch ${Math.floor(i/dbBatchSize) + 1} of ${Math.ceil(allIds.length/dbBatchSize)}...`);
       
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .in('drive_id', idBatch);
         
@@ -218,7 +218,7 @@ async function updateSourcesFromJson(
           try {
             const promises = updateChunk.map(update => 
               supabase
-                .from('sources_google')
+                .from('google_sources')
                 .update(update.data)
                 .eq('drive_id', update.id)
             );

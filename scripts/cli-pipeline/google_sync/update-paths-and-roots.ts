@@ -25,7 +25,7 @@ async function main() {
     
     // First, get records that need path fixing
     const { data: pathsToFix, error: fetchError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, path')
       .not('path', 'like', '/%');
       
@@ -41,7 +41,7 @@ async function main() {
         if (record.path) {
           const newPath = '/' + record.path;
           await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ path: newPath })
             .eq('id', record.id);
         }
@@ -54,7 +54,7 @@ async function main() {
     
     // Get all records to update path arrays
     const { data: allRecords, error: recordsError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, path')
       .order('id');
       
@@ -76,7 +76,7 @@ async function main() {
           const pathDepth = pathArray.length;
           
           await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ 
               path_array: pathArray, 
               path_depth: pathDepth 
@@ -90,7 +90,7 @@ async function main() {
     console.log('Setting root_drive_id for Dynamic Healing Discussion Group...');
     
     const { error: dhgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update({ root_drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' })
       .or('path.like.%/Dynamic Healing Discussion Group/%,drive_id.eq.1wriOM2j2IglnMcejplqG_XcCxSIfoRMV');
     
@@ -102,7 +102,7 @@ async function main() {
     console.log('Setting root_drive_id for Polyvagal Steering Group...');
     
     const { error: pvsgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update({ root_drive_id: '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc' })
       .or('path.like.%/Polyvagal Steering Group/%,drive_id.eq.1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc');
     
@@ -114,7 +114,7 @@ async function main() {
     console.log('Setting root_drive_id for transcript files...');
     
     const { error: transcriptError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update({ root_drive_id: '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV' })
       .or('name.ilike.%transcript%,path.ilike.%transcript%')
       .in('mime_type', ['text/plain', 'application/vnd.google-apps.document'])
@@ -126,7 +126,7 @@ async function main() {
     
     // 6. Count records by root
     const { count: dhgRecords, error: dhgCountError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact', head: true })
       .eq('root_drive_id', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV');
     
@@ -135,7 +135,7 @@ async function main() {
     }
     
     const { count: pvsgRecords, error: pvsgCountError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact', head: true })
       .eq('root_drive_id', '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc');
     

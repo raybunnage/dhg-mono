@@ -68,7 +68,7 @@ function getLocalMp4Files(): string[] {
 async function getDatabaseMp4Files(supabase: any): Promise<string[]> {
   try {
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('name')
       .eq('mime_type', 'video/mp4')
       .eq('deleted', false);

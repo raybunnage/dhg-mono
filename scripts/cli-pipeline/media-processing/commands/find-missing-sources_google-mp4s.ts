@@ -86,7 +86,7 @@ async function getMissingMP4Files(supabase: any): Promise<MissingFile[]> {
     
     // Then get all MP4 files from sources_google
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, drive_id, web_view_link, mime_type')
       .eq('mime_type', 'video/mp4')
       .eq('is_deleted', false);

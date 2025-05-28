@@ -6,7 +6,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { Database } from '../../../supabase/types';
 
-type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
 
 interface BatchConfig {
   batchId: string;
@@ -124,7 +124,7 @@ export async function uploadAudioFiles(options: {
         // Create database entry
         console.log('  📝 Creating database entry...');
         const { error: dbError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .insert({
             drive_id: response.data.id,
             name: response.data.name,

@@ -153,7 +153,7 @@ async function getRecordCounts(supabase) {
   try {
     // Get counts from sources_google
     const { data: sgData, error: sgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true });
     
     if (sgError) {
@@ -165,7 +165,7 @@ async function getRecordCounts(supabase) {
     
     // Get counts by path for Dynamic Healing
     const { data: dhgData, error: dhgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true })
       .ilike('path', '%Dynamic Healing Discussion Group%');
     
@@ -173,7 +173,7 @@ async function getRecordCounts(supabase) {
     
     // Get counts by path for Polyvagal Steering
     const { data: pvsgData, error: pvsgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true })
       .ilike('path', '%Polyvagal Steering Group%');
     
@@ -182,7 +182,7 @@ async function getRecordCounts(supabase) {
     // Get counts from sources_google
     try {
       const { data: sg2Data, error: sg2Error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true });
       
       const newCount = (sg2Error || !sg2Data) ? 0 : sg2Data.count || 0;
@@ -348,7 +348,7 @@ async function main() {
       
       // Get a sample record from sources_google
       const { data: sampleData, error: sampleError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .limit(1);
       

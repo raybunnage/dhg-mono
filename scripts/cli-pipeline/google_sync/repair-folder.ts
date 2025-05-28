@@ -67,7 +67,7 @@ if (!folderName) {
 const supabaseClientService = SupabaseClientService.getInstance();
 const supabase = supabaseClientService.getClient();
 
-type SourcesGoogleRow = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogleRow = Database['public']['Tables']['google_sources']['Row'];
 type ExpertDocumentRow = Database['public']['Tables']['expert_documents']['Row'];
 
 interface RepairResult {
@@ -96,7 +96,7 @@ async function getAllNestedItems(rootDriveId: string): Promise<SourcesGoogleRow[
     processed.add(currentId);
     
     const { data: children, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .or(`drive_id.eq.${currentId},parent_folder_id.eq.${currentId}`);
     
@@ -157,7 +157,7 @@ async function deleteSourceRecords(itemIds: string[], isDryRun: boolean): Promis
   
   if (!isDryRun) {
     const { error: deleteError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .delete()
       .in('id', itemIds);
     
@@ -190,7 +190,7 @@ async function repairFolder(): Promise<RepairResult> {
   try {
     // Find the folder by name with path_depth = 0 and main_video_id
     const { data: folder, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('name', folderName)
       .eq('path_depth', 0)

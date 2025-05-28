@@ -91,7 +91,7 @@ export async function reportMainVideoIds(
   try {
     // Step 1: Verify the root folder exists
     const { data: rootFolder, error: rootFolderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path')
       .eq('drive_id', actualFolderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -106,7 +106,7 @@ export async function reportMainVideoIds(
     
     // Step 2: Find all subfolders directly under the root folder
     const { data: subFolders, error: subFoldersError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, drive_id, parent_folder_id')
       .eq('parent_folder_id', actualFolderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -176,7 +176,7 @@ export async function reportMainVideoIds(
         // No presentation with main_video_id found
         // Check if any MP4 files exist in this folder (direct children)
         const { data: mp4Files, error: mp4Error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name')
           .eq('parent_folder_id', folder.id)
           .eq('mime_type', 'video/mp4')
@@ -196,7 +196,7 @@ export async function reportMainVideoIds(
           
           // Get all subfolders
           const { data: subfolders, error: subfoldersError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name')
             .eq('parent_folder_id', folder.id)
             .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -222,7 +222,7 @@ export async function reportMainVideoIds(
               
               // Search for MP4 files in this subfolder
               const { data: subfolderMp4s, error: subfolderMp4Error } = await supabase
-                .from('sources_google')
+                .from('google_sources')
                 .select('id, name, path')
                 .eq('parent_folder_id', subfolder.id)
                 .eq('mime_type', 'video/mp4')
@@ -306,7 +306,7 @@ export async function reportMainVideoIds(
           } else {
             // Check if any MP4 files exist in this folder (direct children)
             const { data: mp4Files, error: mp4Error } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .select('id, name')
               .eq('parent_folder_id', folder.id)
               .eq('mime_type', 'video/mp4')
@@ -325,7 +325,7 @@ export async function reportMainVideoIds(
               
               // Get all subfolders
               const { data: subfolders, error: subfoldersError } = await supabase
-                .from('sources_google')
+                .from('google_sources')
                 .select('id, name')
                 .eq('parent_folder_id', folder.id)
                 .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -350,7 +350,7 @@ export async function reportMainVideoIds(
                   
                   // Search for MP4 files in this subfolder
                   const { data: subfolderMp4s, error: subfolderMp4Error } = await supabase
-                    .from('sources_google')
+                    .from('google_sources')
                     .select('id, name')
                     .eq('parent_folder_id', subfolder.id)
                     .eq('mime_type', 'video/mp4')

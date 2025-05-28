@@ -34,7 +34,7 @@ async function debugReprocessingStatus() {
   const sourceIds = docsToReprocess.map(doc => doc.source_id);
   
   const { data: sources, error: sourcesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, document_type_id')
     .in('id', sourceIds);
     

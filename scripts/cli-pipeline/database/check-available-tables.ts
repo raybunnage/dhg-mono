@@ -10,7 +10,7 @@ async function checkAvailableTables() {
     'experts',
     'expert_documents', 
     'document_types',
-    'sources_google',
+    'google_sources',
     'scripts',
     'prompts',
     'prompt_output_templates',

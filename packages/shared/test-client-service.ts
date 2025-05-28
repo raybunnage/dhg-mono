@@ -39,7 +39,7 @@ async function testClientService() {
     // Try another query
     console.log('\n--- Querying sources_google table ---');
     const { data: filesData, error: filesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .is('document_type_id', null)
       .is('is_deleted', false)

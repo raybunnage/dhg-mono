@@ -43,7 +43,7 @@ async function findMissingTables() {
     'expert_documents',
     'documents',
     'document_types',
-    'sources_google',
+    'google_sources',
     'scripts',
     'prompts',
     'prompt_templates',

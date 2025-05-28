@@ -35,7 +35,7 @@ async function resetDocumentType() {
     
     // Update the sources_google record
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update({ document_type_id: null })
       .eq('id', sourceId)
       .select();

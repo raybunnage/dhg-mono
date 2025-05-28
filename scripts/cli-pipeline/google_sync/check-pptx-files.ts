@@ -8,7 +8,7 @@ async function checkPptxFiles() {
   
   // First check files without document_type_id
   const { data: nullData, error: nullError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, document_type_id')
     .ilike('name', '%.pptx%')
     .is('document_type_id', null);
@@ -22,7 +22,7 @@ async function checkPptxFiles() {
   // Then check files with a different document_type_id than the one we want to set
   const targetId = '299ad443-4d84-40d8-98cb-a9df423ba451';
   const { data, error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, document_type_id')
     .ilike('name', '%.pptx%')
     .not('document_type_id', 'eq', targetId);
@@ -39,7 +39,7 @@ async function checkPptxFiles() {
   
   // Count total PPTX files for comparison
   const { count: totalCount, error: countError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id', { count: 'exact' })
     .ilike('name', '%.pptx%');
     

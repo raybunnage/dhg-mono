@@ -27,7 +27,7 @@ interface ColumnDefinition {
 
 async function updateSchemaFromJson(
   jsonFilePath: string,
-  tableName: string = 'sources_google',
+  tableName: string = 'google_sources',
   dryRun: boolean = true,
   generateSql: boolean = false,
   verbose: boolean = false
@@ -278,7 +278,7 @@ if (require.main === module) {
   
   // Parse table name
   const tableArg = args.find(arg => arg.startsWith('--table='));
-  const tableName = tableArg ? tableArg.split('=')[1] : 'sources_google';
+  const tableName = tableArg ? tableArg.split('=')[1] : 'google_sources';
   
   updateSchemaFromJson(jsonFilePath, tableName, dryRun, generateSql, verbose);
 }

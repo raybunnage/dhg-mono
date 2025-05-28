@@ -69,7 +69,7 @@ command
       
       // Get drive details from sources_google table (reuse the supabase client)
       const { data: drives, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, path, mime_type')
         .in('drive_id', driveIds);
       

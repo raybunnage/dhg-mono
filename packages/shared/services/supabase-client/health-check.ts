@@ -35,7 +35,7 @@ async function runHealthCheck() {
     
     // Check if we can query standard tables
     const tables = [
-      'sources_google',
+      'google_sources',
       'experts',
       'expert_documents',
       'document_types',

@@ -53,7 +53,7 @@ export const findDuplicateFolderNamesCommand = async (options: {
 
     // First, get all folder names at the specified path depth
     let foldersQuery = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('name')
       .eq('path_depth', pathDepth)
       .eq('is_deleted', false)
@@ -108,7 +108,7 @@ export const findDuplicateFolderNamesCommand = async (options: {
       
       // Get all folders with this name
       let folderInfoQuery = supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, created_at, name, root_drive_id')
         .eq('name', folderName)
         .eq('path_depth', pathDepth)
@@ -152,7 +152,7 @@ export const findDuplicateFolderNamesCommand = async (options: {
         // If we have a presentation with a video, get the video details
         if (presentations && presentations.video_source_id) {
           const { data: videoSource, error: videoError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name')
             .eq('id', presentations.video_source_id)
             .maybeSingle();

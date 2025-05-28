@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '../../../../../supabase/types';
 
-type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
 type Presentation = Database['public']['Tables']['presentations']['Row'];
 
 interface FileTreeItemProps {

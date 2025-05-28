@@ -41,7 +41,7 @@ class AudioBrowserService {
       });
       
       const query = this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           name,
@@ -88,7 +88,7 @@ class AudioBrowserService {
           
           // Look for mp4 file in same folder
           const { data: mp4Files } = await this.supabase
-            .from('sources_google')
+            .from('google_sources')
             .select(`
               id,
               name,
@@ -130,7 +130,7 @@ class AudioBrowserService {
   async getAudioFile(id: string): Promise<any> {
     try {
       const { data, error } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           name,
@@ -168,7 +168,7 @@ class AudioBrowserService {
         
         // Look for mp4 file in same folder
         const { data: mp4Files } = await this.supabase
-          .from('sources_google')
+          .from('google_sources')
           .select(`
             id,
             name,

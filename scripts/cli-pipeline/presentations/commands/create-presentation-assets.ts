@@ -162,7 +162,7 @@ export async function createPresentationAssetsCommand(options: {
         
         // Verify folder source exists and has a path_depth of 0
         const { data: folderSource, error: folderError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, drive_id, path, path_depth')
           .eq('id', presentation.high_level_folder_source_id)
           .eq('path_depth', 0)
@@ -185,7 +185,7 @@ export async function createPresentationAssetsCommand(options: {
         // Step 1: First find the direct children of this folder (matching the Google Drive ID)
         Logger.info(`Looking for files directly under folder with drive_id: ${folderSource.drive_id}`);
         const { data: directDriveChildren, error: driveError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, mime_type, path, drive_id, parent_folder_id')
           .eq('parent_folder_id', folderSource.drive_id)
           .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
@@ -199,7 +199,7 @@ export async function createPresentationAssetsCommand(options: {
         
         // Step 2: Find all subfolders within this folder
         const { data: subfolders, error: subfoldersError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, mime_type, path, drive_id')
           .eq('parent_folder_id', folderSource.drive_id)
           .eq('mime_type', 'application/vnd.google-apps.folder');
@@ -214,7 +214,7 @@ export async function createPresentationAssetsCommand(options: {
             Logger.info(`Looking for files in subfolder: ${subfolder.name} (drive_id: ${subfolder.drive_id})`);
             
             const { data: subfolderFiles, error: subFilesError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .select('id, name, mime_type, path, drive_id, parent_folder_id')
               .eq('parent_folder_id', subfolder.drive_id)
               .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
@@ -239,7 +239,7 @@ export async function createPresentationAssetsCommand(options: {
           Logger.info(`Using folder path: ${folderPath}`);
           
           const { data: allContents, error: contentsError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, mime_type, path, drive_id')
             .ilike('path', `${folderPath}/%`);
           
@@ -274,7 +274,7 @@ export async function createPresentationAssetsCommand(options: {
                 
                 // Look for files with parent_folder_id matching this subfolder's drive_id
                 const { data: driveIdFiles, error: driveIdError } = await supabase
-                  .from('sources_google')
+                  .from('google_sources')
                   .select('id, name, mime_type, path, drive_id')
                   .eq('parent_folder_id', subfolder.drive_id)
                   .not('mime_type', 'eq', 'application/vnd.google-apps.folder');

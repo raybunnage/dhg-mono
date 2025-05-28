@@ -63,7 +63,7 @@ async function getRootFolderDetails(folderId) {
   try {
     // Get the root folder itself
     const { data: folder, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('drive_id', folderId)
       .single();
@@ -74,7 +74,7 @@ async function getRootFolderDetails(folderId) {
     
     // Get all records related to this root folder
     const { data: relatedRecords, error: recordsError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .or(`parent_folder_id.eq.${folderId},drive_id.eq.${folderId}`);
       
@@ -84,7 +84,7 @@ async function getRootFolderDetails(folderId) {
     
     // Get all records where this folder is the parent
     const { data: childRecords, error: childrenError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('parent_folder_id', folderId);
       
@@ -109,7 +109,7 @@ async function getRootFolderDetails(folderId) {
 async function getAllRecords() {
   try {
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*');
       
     if (error) throw error;
@@ -213,7 +213,7 @@ async function fixRelationshipIssues(missingParents, circularRefs) {
     for (const record of missingParents) {
       try {
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({
             parent_folder_id: null,
             updated_at: new Date().toISOString()
@@ -238,7 +238,7 @@ async function fixRelationshipIssues(missingParents, circularRefs) {
     for (const record of circularRefs) {
       try {
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({
             parent_folder_id: null,
             updated_at: new Date().toISOString()

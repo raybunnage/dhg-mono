@@ -241,7 +241,7 @@ export async function getVideoSummary(fileId: string): Promise<WhisperSummaryRes
 
     // Get matching audio file info
     const { data: file } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('id', fileId)
       .single();

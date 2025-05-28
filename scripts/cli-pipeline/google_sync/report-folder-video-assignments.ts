@@ -69,7 +69,7 @@ if (!folderId) {
 const supabaseClientService = SupabaseClientService.getInstance();
 const supabase = supabaseClientService.getClient();
 
-type SourcesGoogleRow = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogleRow = Database['public']['Tables']['google_sources']['Row'];
 
 interface FolderItem {
   id: string;
@@ -104,7 +104,7 @@ interface ReportData {
 async function buildFolderHierarchy(rootDriveId: string): Promise<FolderItem | null> {
   // Get the root folder
   const { data: rootFolder, error: rootError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*')
     .eq('drive_id', rootDriveId)
     .single();
@@ -116,7 +116,7 @@ async function buildFolderHierarchy(rootDriveId: string): Promise<FolderItem | n
   
   // Get all items in this folder tree
   const { data: allItems, error: itemsError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*')
     .eq('root_drive_id', rootFolder.root_drive_id)
     .gte('path_depth', rootFolder.path_depth || 0)

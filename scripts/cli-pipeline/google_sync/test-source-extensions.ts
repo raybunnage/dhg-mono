@@ -19,7 +19,7 @@ async function checkSourceExtensions() {
     const filters = targetExtensions.map(ext => `name.ilike.%${ext}`);
     
     const { data: sources, error: sourcesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .or(filters.join(','))
       .limit(50);

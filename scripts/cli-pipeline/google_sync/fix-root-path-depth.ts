@@ -19,7 +19,7 @@ program
     try {
       // First, get all unique root_drive_ids
       const { data: uniqueRoots, error: rootsError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('root_drive_id')
         .not('root_drive_id', 'is', null);
         
@@ -31,7 +31,7 @@ program
       
       // Check folders where drive_id matches root_drive_id (these are root folders)
       const { data: rootFolders, error: foldersError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, path_depth, is_root, root_drive_id')
         .in('drive_id', rootDriveIds)
         .eq('mime_type', 'application/vnd.google-apps.folder');
@@ -58,7 +58,7 @@ program
         if (!isDryRun) {
           // Update the folder's path_depth to -1
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ 
               path_depth: -1,
               is_root: true  // Also ensure is_root is set

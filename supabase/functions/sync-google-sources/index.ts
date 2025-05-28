@@ -12,7 +12,7 @@ serve(async (req) => {
       for (const file of files) {
         // Check for existing record first
         const { data: existing } = await supabaseAdmin
-          .from('sources_google')
+          .from('google_sources')
           .select('id, drive_id')
           .eq('drive_id', file.id)
           .single();
@@ -24,7 +24,7 @@ serve(async (req) => {
 
         // Insert new record if no duplicate found
         const { error: insertError } = await supabaseAdmin
-          .from('sources_google')
+          .from('google_sources')
           .insert({
             drive_id: file.id,
             name: file.name,
@@ -45,7 +45,7 @@ serve(async (req) => {
 
     const cleanupOrphanedRecords = async (validDriveIds: string[]) => {
       const { error } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .delete()
         .not('drive_id', 'in', validDriveIds)
         .is('content_extracted', false); // Only delete unprocessed records

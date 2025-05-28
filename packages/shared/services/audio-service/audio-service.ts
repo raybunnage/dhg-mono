@@ -22,14 +22,14 @@ export class AudioService {
   }
 
   /**
-   * Get all M4A files from sources_google table
+   * Get all M4A files from google_sources table
    * @param limit Optional limit of records to return
    * @returns Array of M4A audio files
    */
   async getAudioFiles(limit?: number): Promise<any[]> {
     try {
       const { data, error } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           name,
@@ -71,7 +71,7 @@ export class AudioService {
   async getAudioFile(id: string): Promise<any> {
     try {
       const { data, error } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           name,

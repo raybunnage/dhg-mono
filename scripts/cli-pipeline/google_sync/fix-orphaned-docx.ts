@@ -12,7 +12,7 @@ import { SupabaseClientService } from '../../../packages/shared/services/supabas
 import { Database } from '../../../supabase/types';
 
 // Define types from the Supabase types file
-type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
 type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
 
 // Create the program
@@ -47,7 +47,7 @@ program
       if (debug) console.log('Querying for DOCX files with document_type_id...');
       
       const { data: docxFiles, error: docxError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, document_type_id, mime_type')
         .like('mime_type', '%wordprocessingml.document%')
         .not('document_type_id', 'is', null)
@@ -141,7 +141,7 @@ program
           
           try {
             const { data, error } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ document_type_id: null })
               .in('id', batchIds)
               .select('id');

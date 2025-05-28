@@ -80,7 +80,7 @@ async function markPdfsForReprocessing(options: {
     console.log('\nFinding PDF files in sources_google...');
     
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, document_type_id, drive_id, mime_type, modified_at')
       .eq('mime_type', 'application/pdf')
       .is('is_deleted', false)

@@ -4,13 +4,13 @@
 -- Split into separate statements to be executed one at a time
 
 -- 1. Rename the original table (keep it as a backup)
-ALTER TABLE sources_google RENAME TO sources_google_deprecated;
+ALTER TABLE google_sources RENAME TO google_sources_deprecated;
 
--- 2. Apply the updated schema to sources_google
--- (No rename required since we are directly working with sources_google now)
+-- 2. Apply the updated schema to google_sources
+-- (No rename required since we are directly working with google_sources now)
 
 -- 3. Create a view for backward compatibility
-CREATE OR REPLACE VIEW sources_google_legacy_view AS
+CREATE OR REPLACE VIEW google_sources_legacy_view AS
 SELECT
     id,
     drive_id,
@@ -33,14 +33,14 @@ SELECT
     last_indexed,
     main_video_id
 FROM
-    sources_google;
+    google_sources;
 
 -- 4. Ensure all critical indexes exist
 -- These should already exist on our table
-CREATE INDEX IF NOT EXISTS sources_google_drive_id_idx ON sources_google(drive_id);
-CREATE INDEX IF NOT EXISTS sources_google_root_drive_id_idx ON sources_google(root_drive_id);
-CREATE INDEX IF NOT EXISTS sources_google_parent_folder_id_idx ON sources_google(parent_folder_id);
-CREATE INDEX IF NOT EXISTS sources_google_mime_type_idx ON sources_google(mime_type);
-CREATE INDEX IF NOT EXISTS sources_google_path_idx ON sources_google(path);
-CREATE INDEX IF NOT EXISTS sources_google_name_idx ON sources_google(name);
-CREATE INDEX IF NOT EXISTS sources_google_document_type_id_idx ON sources_google(document_type_id);
+CREATE INDEX IF NOT EXISTS google_sources_drive_id_idx ON google_sources(drive_id);
+CREATE INDEX IF NOT EXISTS google_sources_root_drive_id_idx ON google_sources(root_drive_id);
+CREATE INDEX IF NOT EXISTS google_sources_parent_folder_id_idx ON google_sources(parent_folder_id);
+CREATE INDEX IF NOT EXISTS google_sources_mime_type_idx ON google_sources(mime_type);
+CREATE INDEX IF NOT EXISTS google_sources_path_idx ON google_sources(path);
+CREATE INDEX IF NOT EXISTS google_sources_name_idx ON google_sources(name);
+CREATE INDEX IF NOT EXISTS google_sources_document_type_id_idx ON google_sources(document_type_id);

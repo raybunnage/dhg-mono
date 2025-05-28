@@ -383,7 +383,7 @@ export class SupabaseClientService {
       try {
         console.log('Testing connection with sources_google table...');
         const { error } = await client
-          .from('sources_google')
+          .from('google_sources')
           .select('id')
           .limit(1);
         

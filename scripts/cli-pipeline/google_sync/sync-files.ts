@@ -467,7 +467,7 @@ async function syncFiles(
     // Ensure root folder exists in database
     if (!isDryRun) {
       const { data: existingRoot } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, is_root')
         .eq('drive_id', rootDriveId)
         .eq('is_deleted', false)
@@ -476,7 +476,7 @@ async function syncFiles(
       if (!existingRoot) {
         const now = new Date().toISOString();
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .insert({
             id: uuidv4(),
             drive_id: rootDriveId,
@@ -524,7 +524,7 @@ async function syncFiles(
     const queryStartTime = Date.now();
     
     const { data: existingRecords, error: queryError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, path, path_depth, mime_type, parent_folder_id')
       .eq('root_drive_id', rootDriveId)
       .eq('is_deleted', false);
@@ -586,7 +586,7 @@ async function syncFiles(
         }));
         
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .insert(insertData);
         
         if (error) {
@@ -638,7 +638,7 @@ async function syncFiles(
           const batchIds = deleteIds.slice(start, end);
           
           const { error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({
               is_deleted: true,
               updated_at: new Date().toISOString()

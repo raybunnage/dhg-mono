@@ -28,7 +28,7 @@ export async function processBatch(
   
   // 2. Get all files data
   const { data: files, error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*')
     .in('id', fileIds);
     
@@ -355,7 +355,7 @@ export async function getBatchItems(batchId: string) {
     const fileIds = batch.parameters.fileIds;
     if (Array.isArray(fileIds) && fileIds.length > 0) {
       const { data: filesData } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, mime_type, size, created_at, updated_at')
         .in('id', fileIds);
         

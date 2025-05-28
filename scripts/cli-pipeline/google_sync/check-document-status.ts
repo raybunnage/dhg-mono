@@ -59,7 +59,7 @@ async function checkDocumentStatus() {
       console.log(`\nChecking sources_google record with ID: ${data.source_id}`);
       
       const { data: sourceData, error: sourceError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('id', data.source_id)
         .single();
@@ -95,7 +95,7 @@ async function checkDocumentStatus() {
             console.log(`\nTo fix this, you can set the document_type_id to null in sources_google:`);
             console.log(`
             const { error } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ document_type_id: null })
               .eq('id', '${sourceData.id}');
             `);
@@ -105,7 +105,7 @@ async function checkDocumentStatus() {
           console.log(`\nChecking for PDF documents that need processing...`);
           
           const { data: eligibleDocs, error: eligibleError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select(`
               id,
               name,

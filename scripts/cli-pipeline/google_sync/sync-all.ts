@@ -144,7 +144,7 @@ async function generateSyncReport(
       
       // Query for recently added files
       const { data: newFiles } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('name, mime_type, created_at')
         .eq('root_drive_id', rootDriveId)
         .eq('is_deleted', false)

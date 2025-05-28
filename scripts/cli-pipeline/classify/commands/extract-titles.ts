@@ -296,7 +296,7 @@ export async function extractTitlesCommand(options: ExtractTitlesOptions): Promi
     
     // Get MP4 files from sources_google
     let sourceQuery = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .eq('mime_type', 'video/mp4')
       .limit(limit);

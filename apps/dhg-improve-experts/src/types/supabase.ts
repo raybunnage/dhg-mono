@@ -10,7 +10,7 @@
 export * from '../../../../supabase/types';
 
 // Additional application-specific types
-export type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];
+export type SourceGoogle = Database['public']['Tables']['google_sources']['Row'];
 
 // Generic API response type
 export interface ApiResponse<T = any> {

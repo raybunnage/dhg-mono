@@ -147,7 +147,7 @@ program
       // 3. Has raw_content in the expert_documents table
       // 4. Is not deleted
       const { data: filesToProcess, error: filesError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           name,
@@ -304,7 +304,7 @@ Return your classification as a complete, valid JSON object with all of these fi
             
             // Update the sources_google record with the new document_type_id
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({
                 document_type_id: classificationResponse.document_type_id,
                 updated_at: new Date().toISOString()

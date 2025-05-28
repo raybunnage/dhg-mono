@@ -91,7 +91,7 @@ export async function listUnclassifiedFiles(
     
     // Build query for PDF, PowerPoint, TXT, and DOCX files
     const query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, path, drive_id, document_type_id')
       .eq('is_deleted', false)
       .or(

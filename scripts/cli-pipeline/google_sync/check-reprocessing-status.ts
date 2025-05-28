@@ -95,7 +95,7 @@ export async function checkReprocessingStatus(options: {
 
     // 1. Fetch sources from sources_google with filtering
     let query = supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, document_type_id')
       .limit(limit);
     
@@ -445,7 +445,7 @@ export async function checkReprocessingStatus(options: {
             const directResults = [];
             for (const doc of docs) {
               const { data: source } = await supabaseClient
-                .from('sources_google')
+                .from('google_sources')
                 .select('id, name, document_type_id, mime_type')
                 .eq('id', doc.source_id)
                 .single();

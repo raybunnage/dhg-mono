@@ -219,7 +219,7 @@ async function initServices() {
     protected async getExistingDriveIds(): Promise<Set<string>> {
       try {
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('drive_id')
           .eq('deleted', false);
           
@@ -259,7 +259,7 @@ async function initServices() {
         }));
         
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .insert(records);
           
         if (error) {
@@ -278,7 +278,7 @@ async function initServices() {
       try {
         // Get files where parent_folder_id matches the root folder
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, drive_id')
           .eq('parent_folder_id', rootFolderId)
           .eq('deleted', false);
@@ -303,7 +303,7 @@ async function initServices() {
         
         // Delete records from the database
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .delete()
           .in('id', fileIds);
           
@@ -325,7 +325,7 @@ async function initServices() {
         
         // Mark records as deleted in the database
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ 
             deleted: true,
             updated_at: new Date().toISOString()

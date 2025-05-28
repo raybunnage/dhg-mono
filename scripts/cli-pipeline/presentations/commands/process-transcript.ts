@@ -17,7 +17,7 @@ async function main() {
     
     // Find documents from the sources_google table directly
     const { data: transcriptFiles, error: filesError } = await presentationService.supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, mime_type')
       .limit(10);
     

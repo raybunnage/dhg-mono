@@ -26,7 +26,7 @@ export async function insertHierarchy(
     
     // Insert the current item (folder or file)
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .insert({
         name: itemToInsert.name,
         drive_id: itemToInsert.drive_id,

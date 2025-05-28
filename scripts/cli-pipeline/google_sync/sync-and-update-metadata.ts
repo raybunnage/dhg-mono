@@ -226,7 +226,7 @@ async function listFilesRecursively(
 async function checkFileExists(fileId: string): Promise<{ exists: boolean, data?: any, error?: any }> {
   try {
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name')
       .eq('drive_id', fileId)
       .eq('is_deleted', false);
@@ -347,7 +347,7 @@ async function insertSpecificFile(driveService: GoogleDriveService, fileId: stri
     
     // Insert the file and return the inserted record
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .insert(insertData)
       .select();
       
@@ -473,7 +473,7 @@ async function syncFiles(
     if (!isDryRun) {
       console.log('Ensuring folder is registered as a root folder...');
       const { data: existingFolders, error: queryError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, is_root')
         .eq('drive_id', folderId)
         .eq('is_deleted', false);
@@ -492,7 +492,7 @@ async function syncFiles(
         } else {
           // Update it to be a root folder
           const { error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({
               name: folder.name,
               is_root: true,
@@ -542,7 +542,7 @@ async function syncFiles(
         }
         
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .insert(insertData);
           
         if (error) {
@@ -614,7 +614,7 @@ async function syncFiles(
     
     // Get existing files to avoid duplicates
     const { data: existingRecords, error: queryError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, root_drive_id, name, metadata')
       .eq('is_deleted', false);
       
@@ -790,7 +790,7 @@ async function syncFiles(
             const idsToUpdate = batch.map(record => record.id);
             
             const { error } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({
                 is_deleted: true,
                 updated_at: new Date().toISOString(),
@@ -984,7 +984,7 @@ async function syncFiles(
         }
         
         const { data: insertedFiles, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .insert(filesToInsert)
           .select();
         
@@ -1160,7 +1160,7 @@ async function updateMetadata(
     
     // Fetch all records under this root folder ID
     const { data: records, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('root_drive_id', folderId)  // Get all files with this root folder 
       .eq('is_deleted', false)
@@ -1421,7 +1421,7 @@ async function updateMetadata(
                   // Use a timeout to prevent hanging requests
                   const timeout = 15000; // 15 seconds timeout
                   const updatePromise = supabase
-                    .from('sources_google')
+                    .from('google_sources')
                     .update(updateData)
                     .eq('id', recordId);
                     
@@ -1762,7 +1762,7 @@ export async function syncAndUpdateMetadata(
           // Fetch details of newly inserted files
           const supabase = SupabaseClientService.getInstance().getClient();
           const { data: newFiles } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, mime_type, path, created_at')
             .eq('root_drive_id', effectiveFolderId)
             .order('created_at', { ascending: false })
@@ -1793,7 +1793,7 @@ export async function syncAndUpdateMetadata(
           // to show files that might have been added recently
           const supabase = SupabaseClientService.getInstance().getClient();
           const { data: recentFiles } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, mime_type, path, created_at')
             .eq('root_drive_id', effectiveFolderId)
             .eq('is_deleted', false)
@@ -1815,7 +1815,7 @@ export async function syncAndUpdateMetadata(
         
         // Add renamed files section if any were detected
         const { data: possiblyRenamedFiles } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, path, updated_at')
           .eq('root_drive_id', effectiveFolderId)
           .eq('is_deleted', false)
@@ -1849,7 +1849,7 @@ export async function syncAndUpdateMetadata(
           
           // Try to fetch recently deleted files
           const { data: deletedFiles } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, path, updated_at')
             .eq('root_drive_id', effectiveFolderId)
             .eq('is_deleted', true)
@@ -1898,7 +1898,7 @@ export async function syncAndUpdateMetadata(
       try {
         // Check if the root folder exists and is marked as deleted
         const { data: rootFolderCheck, error: rootCheckError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, is_deleted')
           .eq('drive_id', effectiveFolderId)
           .single();
@@ -1911,7 +1911,7 @@ export async function syncAndUpdateMetadata(
             
             // Update the root folder to ensure it's not marked as deleted
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({
                 is_deleted: false,
                 updated_at: new Date().toISOString()
@@ -1945,7 +1945,7 @@ export async function syncAndUpdateMetadata(
         const maxNewFilesToShow = Math.min(syncResult.filesInserted, 50); // Show up to 50 new files
         
         const { data: newFiles, error: newFilesError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select(`
             id, 
             name, 
@@ -1974,7 +1974,7 @@ export async function syncAndUpdateMetadata(
           
           if (parentFolderIds.size > 0) {
             const { data: parentFolders, error: parentFoldersError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .select('id, drive_id, name')
               .in('drive_id', Array.from(parentFolderIds));
               

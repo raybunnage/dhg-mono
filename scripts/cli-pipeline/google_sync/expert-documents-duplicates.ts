@@ -162,7 +162,7 @@ async function findDuplicateExpertDocuments(options: DuplicateReportOptions = {}
     
     // Get the source name from sources_google
     const { data: sourceData, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('name')
       .eq('id', sourceId)
       .limit(1);

@@ -51,7 +51,7 @@ async function countAllFiles() {
   try {
     // Get all records
     const { data: allRecords, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*');
     
     if (error) {

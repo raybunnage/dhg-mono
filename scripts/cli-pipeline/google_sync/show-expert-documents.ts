@@ -458,7 +458,7 @@ async function showExpertDocuments() {
     console.log(`Fetching ${sourceIds.length} associated sources_google records...`);
     const sourcesGoogleResult = await safeQuery(
       () => supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, document_type_id, mime_type')
         .in('id', sourceIds.slice(0, 100)), // Limit the IN clause to avoid errors with too many values
       'Fetch initial sources_google batch'
@@ -480,7 +480,7 @@ async function showExpertDocuments() {
         try {
           const batchResult = await safeQuery(
             () => supabase
-              .from('sources_google')
+              .from('google_sources')
               .select('id, name, document_type_id, mime_type')
               .in('id', batchIds),
             `Fetch sources_google batch ${i+1}/${batches}`
@@ -510,7 +510,7 @@ async function showExpertDocuments() {
       try {
         const totalCountResult = await safeQuery(
           () => supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('*', { count: 'exact', head: true })
             .eq('is_deleted', false),
           'Count total sources_google records'
@@ -525,7 +525,7 @@ async function showExpertDocuments() {
       try {
         const foldersCountResult = await safeQuery(
           () => supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('*', { count: 'exact', head: true })
             .eq('is_deleted', false)
             .eq('mime_type', 'application/vnd.google-apps.folder'),
@@ -542,7 +542,7 @@ async function showExpertDocuments() {
       try {
         const withDocTypesResult = await safeQuery(
           () => supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('*', { count: 'exact', head: true })
             .not('document_type_id', 'is', null)
             .eq('is_deleted', false),
@@ -681,7 +681,7 @@ async function showExpertDocuments() {
       try {
         const allSourcesGoogleResult = await safeQuery(
           () => supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, mime_type, document_type_id')
             .eq('is_deleted', false)
             .not('mime_type', 'eq', 'application/vnd.google-apps.folder')

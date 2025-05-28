@@ -38,7 +38,7 @@ export async function forceReclassifyDocument(
     
     // 1. Get the source details
     const { data: source, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('id', sourceId)
       .single();
@@ -469,7 +469,7 @@ Based on the filename and any context, please help classify this document approp
           
           // Also update in sources_google
           await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ document_type_id: classificationResult.document_type_id })
             .eq('id', sourceId);
         }

@@ -16,7 +16,7 @@ CREATE INDEX IF NOT EXISTS idx_sys_mime_types_mime_type ON sys_mime_types(mime_t
 CREATE INDEX IF NOT EXISTS idx_sys_mime_types_category ON sys_mime_types(category);
 
 -- Add comment to the table
-COMMENT ON TABLE sys_mime_types IS 'A reference table of all MIME types found in the sources_google table';
+COMMENT ON TABLE sys_mime_types IS 'A reference table of all MIME types found in the google_sources table';
 
 -- Comment on columns
 COMMENT ON COLUMN sys_mime_types.mime_type IS 'The MIME type string (e.g., application/pdf)';

@@ -73,7 +73,7 @@ interface MissingFile {
 async function getReferencedMediaFiles(supabase: any): Promise<string[]> {
   try {
     const { data: sources, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('name, mime_type')
       .eq('mime_type', 'video/mp4')
       .eq('deleted', false);

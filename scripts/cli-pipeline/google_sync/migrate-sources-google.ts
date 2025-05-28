@@ -91,7 +91,7 @@ async function getCounts() {
   
   // Get count from original table
   const { data: originalCountData, error: originalError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*', { count: 'exact', head: true });
     
   if (originalError) {
@@ -102,7 +102,7 @@ async function getCounts() {
   
   // Check if sources_google exists
   const { data: tableExists, error: existsError } = await supabase.rpc('execute_sql', {
-    sql: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google')"
+    sql: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'google_sources')"
   });
   
   if (existsError) {
@@ -114,7 +114,7 @@ async function getCounts() {
   // Get count from new table if it exists
   if (tableExists && tableExists.length > 0 && tableExists[0].exists) {
     const { data: newCountData, error: newError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true });
       
     if (newError) {
@@ -126,7 +126,7 @@ async function getCounts() {
   
   // Get count of Dynamic Healing files
   const { data: dhgCountData, error: dhgError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*', { count: 'exact', head: true })
     .eq('root_drive_id', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV');
     
@@ -246,7 +246,7 @@ const program = new Command('migrate-sources-google')
         
         const supabase = getSupabaseClient();
         // Use direct table deletion - delete all records
-        const { error: deleteError } = await supabase.from('sources_google').delete().gt('id', '00000000-0000-0000-0000-000000000000');
+        const { error: deleteError } = await supabase.from('google_sources').delete().gt('id', '00000000-0000-0000-0000-000000000000');
         
         if (deleteError) {
           throw new Error(`Failed to truncate table: ${deleteError.message}`);

@@ -16,7 +16,7 @@ async function fixMp4ProcessingStatus() {
     // First get all MP4 source IDs
     console.log('Finding sources with mime_type = video/mp4...');
     const { data: mp4Sources, error: sourcesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .eq('mime_type', 'video/mp4');
       

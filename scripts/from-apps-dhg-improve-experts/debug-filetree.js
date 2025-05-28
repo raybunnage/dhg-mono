@@ -5,7 +5,7 @@ async function debugFileTree() {
   // Get a sample of old records that work
   console.log('FETCHING WORKING RECORDS (ORIGINAL)...');
   const { data: oldRecords, error: oldError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, path, parent_path, parent_folder_id, is_root, drive_id')
     .limit(3)
     .order('created_at', { ascending: true });
@@ -19,7 +19,7 @@ async function debugFileTree() {
   console.log('
 FETCHING NEW RECORDS...');
   const { data: newRecords, error: newError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, path, parent_path, parent_folder_id, is_root, drive_id')
     .limit(3)
     .order('created_at', { ascending: false });
@@ -46,7 +46,7 @@ NEW RECORDS (NOT WORKING):');
   console.log('
 FETCHING WORKING ROOT FOLDER...');
   const { data: workingRoot, error: workingRootError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, path, parent_path, parent_folder_id, is_root, drive_id')
     .eq('is_root', true)
     .order('created_at', { ascending: true })
@@ -61,7 +61,7 @@ FETCHING WORKING ROOT FOLDER...');
   console.log('
 FETCHING NON-WORKING ROOT FOLDER...');
   const { data: nonWorkingRoot, error: nonWorkingRootError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, path, parent_path, parent_folder_id, is_root, drive_id')
     .eq('is_root', true)
     .order('created_at', { ascending: false })
@@ -83,7 +83,7 @@ WORKING ROOT FOLDER:');
     console.log('
 CHILDREN USING parent_path:');
     const { data: pathChildren } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, path, parent_path, parent_folder_id, is_root')
       .eq('parent_path', rootFolder.path)
       .limit(3);
@@ -96,7 +96,7 @@ CHILDREN USING parent_path:');
     console.log('
 CHILDREN USING parent_folder_id:');
     const { data: idChildren } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, path, parent_path, parent_folder_id, is_root')
       .eq('parent_folder_id', rootFolder.drive_id)
       .limit(3);
@@ -117,7 +117,7 @@ NON-WORKING ROOT FOLDER:');
     console.log('
 CHILDREN USING parent_path:');
     const { data: pathChildren } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, path, parent_path, parent_folder_id, is_root')
       .eq('parent_path', rootFolder.path)
       .limit(3);
@@ -135,7 +135,7 @@ CHILDREN USING parent_path:');
     console.log('
 CHILDREN USING parent_folder_id:');
     const { data: idChildren } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, path, parent_path, parent_folder_id, is_root')
       .eq('parent_folder_id', rootFolder.drive_id)
       .limit(3);

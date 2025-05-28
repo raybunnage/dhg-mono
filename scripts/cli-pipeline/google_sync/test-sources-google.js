@@ -27,7 +27,7 @@ async function getSourcesGoogleStats(supabase) {
   try {
     // Total record count
     const { count: totalCount, error: totalError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true });
     
     if (totalError) {
@@ -82,7 +82,7 @@ async function getSourcesGoogleStats(supabase) {
     
     // Get some example files at different depths
     const { data: exampleFiles, error: exampleError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('name, path, path_depth, mime_type')
       .order('path_depth', { ascending: true })
       .limit(10);
@@ -110,7 +110,7 @@ async function getSourcesGoogleStats(supabase) {
 async function getSubfolders(supabase, parentFolderId) {
   try {
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, path')
       .eq('parent_folder_id', parentFolderId)
       .like('mime_type', '%folder%');
@@ -132,7 +132,7 @@ async function getSubfolders(supabase, parentFolderId) {
 async function getFilesInFolder(supabase, folderId, limit = 10) {
   try {
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, path, mime_type')
       .eq('parent_folder_id', folderId)
       .not('mime_type', 'like', '%folder%')
@@ -220,7 +220,7 @@ async function testRecursiveTraversal(supabase) {
   
   // Get all files at depth 1 (direct children of root)
   const { data: level1Files, error: level1Error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, drive_id, path, mime_type, path_depth')
     .eq('path_depth', 1)
     .eq('root_drive_id', DHG_ROOT_ID)
@@ -246,7 +246,7 @@ async function testRecursiveTraversal(supabase) {
   // Get counts by depth
   for (let depth = 1; depth <= 5; depth++) {
     const { count, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true })
       .eq('path_depth', depth)
       .eq('root_drive_id', DHG_ROOT_ID);
@@ -325,7 +325,7 @@ async function main() {
     
     // First get the root folder
     const { data: rootFolder, error: rootError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id')
       .eq('drive_id', DHG_ROOT_ID)
       .eq('is_root', true)
@@ -345,7 +345,7 @@ async function main() {
       console.log(`\nTraversing specific folder: ${specificFolderId}`);
       
       const { data: folderInfo, error: folderError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name')
         .eq('drive_id', specificFolderId)
         .limit(1);

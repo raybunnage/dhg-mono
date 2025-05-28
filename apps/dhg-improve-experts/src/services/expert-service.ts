@@ -99,7 +99,7 @@ export class ExpertService {
       Logger.debug(`Getting source info by ID: ${id}`);
       
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('title')
         .eq('id', id)
         .single();
@@ -198,7 +198,7 @@ export class ExpertService {
       Logger.debug('Getting Google Drive sources map');
       
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, title');
         
       if (error) throw error;
@@ -223,7 +223,7 @@ export class ExpertService {
       Logger.debug('Getting Google Drive sources');
       
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, title')
         .order('title');
         

@@ -13,7 +13,7 @@ async function resetDocuments() {
   
   // Focus on PowerPoint files for testing
   const { data: sources } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type')
     .eq('mime_type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
     .is('is_deleted', false)
@@ -34,7 +34,7 @@ async function resetDocuments() {
     
     // Clear the document_type_id to make sure it's picked up
     const { error: clearError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update({ document_type_id: null })
       .eq('id', source.id);
     

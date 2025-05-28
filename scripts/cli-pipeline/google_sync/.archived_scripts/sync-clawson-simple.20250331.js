@@ -122,7 +122,7 @@ async function syncFiles(files, isDryRun) {
     
     // Get existing files to avoid duplicates
     const { data: existingRecords, error: queryError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('drive_id, name')
       .eq('deleted', false);
       
@@ -208,7 +208,7 @@ async function syncFiles(files, isDryRun) {
       
       try {
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .insert(filesToInsert);
         
         if (error) {

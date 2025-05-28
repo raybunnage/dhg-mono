@@ -106,7 +106,7 @@ async function reportDriveRoots() {
   try {
     // Get all root folders
     const { data: rootFolders, error: rootsError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, path, created_at, updated_at')
       .eq('is_root', true)
       .eq('deleted', false)
@@ -142,7 +142,7 @@ async function reportDriveRoots() {
     for (const root of selectedRoots) {
       // Get immediate children (direct files and folders)
       const { data: directChildren, error: childrenError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, mime_type, path')
         .eq('parent_folder_id', root.drive_id)
         .eq('deleted', false);
@@ -156,7 +156,7 @@ async function reportDriveRoots() {
 
       // Get all descendants using path pattern matching
       const { data: allDescendants, error: descendantsError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, mime_type, path, parent_folder_id')
         .like('path', `${root.path}/%`)
         .eq('deleted', false);
@@ -240,7 +240,7 @@ async function reportDriveRoots() {
           
           // First, get all items including the root
           const { data: allItems, error: itemsError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, mime_type, path, drive_id, parent_folder_id')
             .or(`id.eq.${root.id},path.like.${root.path}/%`)
             .eq('deleted', false);

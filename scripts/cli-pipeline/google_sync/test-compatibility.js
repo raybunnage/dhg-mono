@@ -71,7 +71,7 @@ async function createCompatibilityView(supabase) {
 async function runTypicalQueries(supabase, useCompat = false) {
   console.log(`\nRunning typical application queries ${useCompat ? 'on compat view' : 'with field mapping'}...`);
   
-  const tableName = useCompat ? 'sources_google_compat' : 'sources_google';
+  const tableName = useCompat ? 'sources_google_compat' : 'google_sources';
   const parentField = useCompat ? 'parent_id' : 'parent_folder_id';
   const deletedField = useCompat ? 'deleted' : 'is_deleted';
   
@@ -122,7 +122,7 @@ async function runTypicalQueries(supabase, useCompat = false) {
     
     if (!fileId) {
       const { data: sampleData, error: sampleError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .limit(1);
       
@@ -138,7 +138,7 @@ async function runTypicalQueries(supabase, useCompat = false) {
     
     // Query in sources_google format
     const { data: sg2Data, error: sg2Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, drive_id, parent_folder_id, path')
       .eq('id', fileId)
       .limit(1);
@@ -156,7 +156,7 @@ async function runTypicalQueries(supabase, useCompat = false) {
     
     // Check in original sources_google for comparison
     const { data: sgData, error: sgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, drive_id, parent_id, path')
       .eq('id', fileId)
       .limit(1);
@@ -284,7 +284,7 @@ async function checkExpertReferences(supabase) {
         JOIN 
           information_schema.constraint_column_usage ccu ON ccu.constraint_name = rc.constraint_name
         WHERE 
-          target_table = 'sources_google' OR target_table = 'sources_google'
+          target_table = 'google_sources' OR target_table = 'google_sources'
       `
     });
     
@@ -342,7 +342,7 @@ async function checkExpertReferences(supabase) {
           
           // Check if the document_id exists in sources_google
           const { data: documentData, error: documentError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name')
             .eq('id', sample.document_id)
             .limit(1);
@@ -388,7 +388,7 @@ async function main() {
         FROM 
           information_schema.columns 
         WHERE 
-          table_name IN ('sources_google', 'sources_google')
+          table_name IN ('google_sources', 'google_sources')
         ORDER BY 
           table_name, 
           ordinal_position
@@ -399,8 +399,8 @@ async function main() {
       console.error('Error getting schemas:', schemaError.message);
     } else {
       // Group columns by table
-      const sgColumns = schemas.filter(col => col.table_name === 'sources_google');
-      const sg2Columns = schemas.filter(col => col.table_name === 'sources_google');
+      const sgColumns = schemas.filter(col => col.table_name === 'google_sources');
+      const sg2Columns = schemas.filter(col => col.table_name === 'google_sources');
       
       console.log(`sources_google: ${sgColumns.length} columns`);
       console.log(`sources_google: ${sg2Columns.length} columns`);

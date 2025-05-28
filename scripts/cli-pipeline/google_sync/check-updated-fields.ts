@@ -11,7 +11,7 @@ async function checkDocument() {
     
     // Get sources_google record for DR.Dantzer.IL-6.docx
     const { data: sourceData, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, document_type_id')
       .ilike('name', 'DR.Dantzer.IL-6.docx')
       .limit(1);

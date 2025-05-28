@@ -56,7 +56,7 @@ async function main() {
     
     // First, check if the ID is a database ID
     const { data: folder, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, path')
       .eq(folderId.length === 36 ? 'id' : 'drive_id', folderId)
       .limit(1)

@@ -7,8 +7,8 @@ import { v4 as uuidv4 } from 'uuid';
 const GOOGLE_DRIVE_FOLDER_ID = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
 
 // Use the actual type from Supabase schema
-type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];
-type SourceGoogleInsert = Database['public']['Tables']['sources_google']['Insert'];
+type SourceGoogle = Database['public']['Tables']['google_sources']['Row'];
+type SourceGoogleInsert = Database['public']['Tables']['google_sources']['Insert'];
 
 interface DriveFile {
   id: string;
@@ -580,7 +580,7 @@ async function getLocalSourceFiles() {
   try {
     // Fetch source files from Supabase
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('deleted', false)
       .not('mime_type', 'is', null); // Filter out entries without mime_type
@@ -634,7 +634,7 @@ export async function insertGoogleFiles(files: DriveFile[], timeout = 600000): P
     // Test the connection first
     try {
       const { data: testData, error: testError } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .limit(1);
       
@@ -663,7 +663,7 @@ export async function insertGoogleFiles(files: DriveFile[], timeout = 600000): P
       console.log(`INSERTING FILES: Checking existing files with these IDs: ${fileIds.join(', ')}`);
       
       const { data: existingFiles, error: existingError } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('drive_id')
         .in('drive_id', fileIds);
       
@@ -905,7 +905,7 @@ export async function insertGoogleFiles(files: DriveFile[], timeout = 600000): P
         console.log(`INSERTING FILES: Inserting ${newRecords.length} new files into sources_google table`);
         try {
           const { data: insertedData, error: insertError } = await supabaseAdmin
-            .from('sources_google')
+            .from('google_sources')
             .insert(newRecords)
             .select();
             
@@ -934,7 +934,7 @@ export async function insertGoogleFiles(files: DriveFile[], timeout = 600000): P
               // Verify the insertions were successful by querying for the records
               const newDriveIds = newRecords.map(record => record.drive_id);
               const { data: verificationData, error: verificationError } = await supabaseAdmin
-                .from('sources_google')
+                .from('google_sources')
                 .select('id, drive_id, name')
                 .in('drive_id', newDriveIds);
                 
@@ -1001,7 +1001,7 @@ export async function insertGoogleFiles(files: DriveFile[], timeout = 600000): P
             console.log(`INSERTING FILES: Updating file ${record.drive_id} (${record.name})`);
             
             const { data: updateData, error: updateError } = await supabaseAdmin
-              .from('sources_google')
+              .from('google_sources')
               .update({
                 name: record.name,
                 mime_type: record.mime_type,
@@ -1180,7 +1180,7 @@ async function buildProperFilePaths(
     console.log(`Fetching ${allParentIds.size} missing folder data from database...`);
     try {
       const { data, error } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('drive_id, name, path')
         .in('drive_id', Array.from(allParentIds))
         .eq('mime_type', 'application/vnd.google-apps.folder');
@@ -1303,14 +1303,14 @@ export async function fixPathsInDatabase(rootFolderId?: string): Promise<{
     
     // Get all records that need to be fixed
     let query = supabaseAdmin
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, mime_type, parent_folder_id, is_root');
     
     // If root folder ID is provided, limit to that subtree
     if (rootFolderId) {
       // First get the root folder
       const { data: rootFolder } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, mime_type, path')
         .eq('drive_id', rootFolderId)
         .single();
@@ -1447,7 +1447,7 @@ export async function fixPathsInDatabase(rootFolderId?: string): Promise<{
         try {
           // Update this file
           const { error } = await supabaseAdmin
-            .from('sources_google')
+            .from('google_sources')
             .update({
               path: update.path,
               parent_path: update.parent_path,

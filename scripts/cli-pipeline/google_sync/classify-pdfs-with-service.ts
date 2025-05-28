@@ -711,7 +711,7 @@ async function classifyPdfDocuments(
       console.log('Falling back to looking for unclassified PDF files...');
       // Execute the query and return empty array if nothing found
       const { data: fallbackFiles, error: fallbackError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .is('is_deleted', false)
         .eq('mime_type', 'application/pdf')
@@ -734,7 +734,7 @@ async function classifyPdfDocuments(
     const sourceIds = docsToReprocess.map(doc => doc.source_id);
     
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .in('id', sourceIds)
       .eq('mime_type', 'application/pdf')
@@ -750,7 +750,7 @@ async function classifyPdfDocuments(
         }
         
         const { data: folders } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, drive_id, name, root_drive_id')
           .or(`name.ilike.%${folderId}%,path.ilike.%${folderId}%`)
           .is('is_folder', true)
@@ -838,7 +838,7 @@ async function classifyPdfDocuments(
       
       // Fetch the source files for these expert documents
       const { data: reprocessingFiles, error: reprocessingError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .in('id', reprocessingSourceIds)
         .eq('mime_type', 'application/pdf')
@@ -954,7 +954,7 @@ async function classifyPdfDocuments(
           
           // Update document type in sources_google - always use PDF document type ID for .pdf files
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ document_type_id: pdfDocumentTypeId })
             .eq('id', file.id);
           

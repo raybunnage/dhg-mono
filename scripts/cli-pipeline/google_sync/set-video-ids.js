@@ -23,7 +23,7 @@ async function findMainVideos(supabase) {
   try {
     // Find videos with mp4 mime type in DHG
     const { data: mp4Files, error: mp4Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, path')
       .eq('root_drive_id', DHG_ROOT_ID)
       .like('mime_type', '%mp4%')
@@ -62,7 +62,7 @@ async function setMainVideoIds(supabase, mp4Files) {
     try {
       // Approach 1: Update based on name similarity
       const { data: updatedByName, error: nameError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ main_video_id: video.id })
         .eq('root_drive_id', DHG_ROOT_ID)
         .is('main_video_id', null)
@@ -78,7 +78,7 @@ async function setMainVideoIds(supabase, mp4Files) {
       
       // Approach 2: Update video itself to be its own main_video_id
       const { data: updatedSelf, error: selfError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ main_video_id: video.id })
         .eq('id', video.id)
         .is('main_video_id', null)
@@ -100,7 +100,7 @@ async function setMainVideoIds(supabase, mp4Files) {
         
         if (dirPath) {
           const { data: updatedByPath, error: pathError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ main_video_id: video.id })
             .eq('root_drive_id', DHG_ROOT_ID)
             .is('main_video_id', null)
@@ -152,7 +152,7 @@ async function main() {
       console.log('\nSTEP 3: Verifying results...');
       
       const { count, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .eq('root_drive_id', DHG_ROOT_ID)
         .not('main_video_id', 'is', null);

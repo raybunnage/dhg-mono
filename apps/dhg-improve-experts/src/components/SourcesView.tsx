@@ -49,7 +49,7 @@ export function SourcesView() {
     console.log('Fetching sources...');
     setLoading(true);
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .order('name');
     

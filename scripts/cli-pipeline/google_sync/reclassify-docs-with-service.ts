@@ -479,7 +479,7 @@ async function reclassifyDocuments(
     ];
 
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select(`
         *,
         expert_documents(id, document_processing_status)
@@ -497,7 +497,7 @@ async function reclassifyDocuments(
         }
         
         const { data: folders } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, drive_id, name, root_drive_id')
           .or(`name.ilike.%${folderId}%,path.ilike.%${folderId}%`)
           .is('is_folder', true)
@@ -588,7 +588,7 @@ async function reclassifyDocuments(
         if (!dryRun && classificationResult.document_type_id) {
           // Update document type in sources_google
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ document_type_id: classificationResult.document_type_id })
             .eq('id', file.id);
           

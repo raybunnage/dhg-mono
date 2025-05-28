@@ -258,7 +258,7 @@ async function getFoldersForExpertAssignment(limit: number = 500): Promise<Minim
   
   // Find high-level folders that represent presentations
   const { data: folders, error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select(`
       id, 
       name, 
@@ -307,7 +307,7 @@ async function getVideoDocumentInfo(mainVideoId: string | null, folderPath?: str
     if (mainVideoId) {
       // Get the sources_google record for the video
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, mime_type, path')
         .eq('id', mainVideoId)
         .single();
@@ -326,7 +326,7 @@ async function getVideoDocumentInfo(mainVideoId: string | null, folderPath?: str
       // Search for video files that match the folder path pattern
       // Using LIKE pattern to match videos that might be in a subfolder but related
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, mime_type, path')
         .like('path', `${folderPath}%`) // Find files with paths starting with the folder path
         .in('mime_type', ['video/mp4', 'video/quicktime']) // Common video MIME types
@@ -347,7 +347,7 @@ async function getVideoDocumentInfo(mainVideoId: string | null, folderPath?: str
     // try to find videos with the same parent_folder_id
     if (!videoSource && folderId) {
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, mime_type, path')
         .eq('parent_folder_id', folderId)
         .in('mime_type', ['video/mp4', 'video/quicktime'])
@@ -550,7 +550,7 @@ async function deleteExpertFromFolder(options: {
     
     // Get folder and expert details for better user feedback
     const { data: folderData, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .eq('id', relationshipData.source_id)
       .single();
@@ -628,7 +628,7 @@ async function assignExpertToFolder(options: {
     // Step 1: Verify folder exists
     if (verbose) loggerUtil.info(`Verifying folder ID: ${folderId}`);
     const { data: folderData, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, path_depth, main_video_id')
       .eq('id', folderId)
       .single();
@@ -755,7 +755,7 @@ async function runInteractiveFolderMode(folderId: string, options: AssignMultipl
     
     // Get folder details
     const { data: folderData, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, path_depth, document_type_id, main_video_id')
       .eq('id', folderId)
       .single();

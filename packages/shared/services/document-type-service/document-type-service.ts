@@ -334,7 +334,7 @@ export class DocumentTypeService {
       
       // Check for references to this document type in other tables
       const { count: referencesCount, error: referencesError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id', { count: 'exact', head: true })
         .eq('document_type_id', id);
       
@@ -445,7 +445,7 @@ export class DocumentTypeService {
       
       // Count references in sources_google
       const { data: sourcesData, error: sourcesError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('document_type_id');
       
       if (sourcesError) {

@@ -62,7 +62,7 @@ async function checkExpertDocumentCoverage(): Promise<void> {
   try {
     // Step 1: Get folder info to verify it exists
     const { data: folderInfo, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path')
       .eq('drive_id', folderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -77,7 +77,7 @@ async function checkExpertDocumentCoverage(): Promise<void> {
     
     // Step 2: Get all MP4 files in the folder
     const { data: mp4Files, error: mp4Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, parent_path, parent_folder_id, drive_id')
       .eq('deleted', false)
       .eq('mime_type', 'video/mp4');

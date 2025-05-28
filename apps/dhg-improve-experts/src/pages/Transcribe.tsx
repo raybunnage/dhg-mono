@@ -9,7 +9,7 @@ import { processAudioFile } from '@/utils/audio-pipeline';
 import { processBatch } from '@/utils/batch-processor';
 import { v4 as uuidv4 } from 'uuid';
 
-type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];
+type SourceGoogle = Database['public']['Tables']['google_sources']['Row'];
 
 interface MP4FileWithAudio extends SourceGoogle {
   id: string;
@@ -52,7 +52,7 @@ export function Transcribe() {
       
       // First get all MP4 files
       const { data: mp4Data, error: mp4Error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('mime_type', 'video/mp4')
         .eq('deleted', false)
@@ -69,7 +69,7 @@ export function Transcribe() {
 
       // Get all audio files in one query
       const { data: allAudioData, error: audioError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .in('mime_type', ['audio/m4a', 'audio/x-m4a', 'audio/mp4', 'audio/mpeg'])
         .eq('deleted', false);
@@ -271,7 +271,7 @@ export function Transcribe() {
       try {
         console.log('🔄 Sending update to Supabase...');
         const { error: updateError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update(updatePayload)
           .eq('id', targetFile.id);
         
@@ -294,7 +294,7 @@ export function Transcribe() {
       try {
         console.log('🔍 Verifying Supabase update...');
         const { data: verifyData, error: verifyError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('extracted_content')
           .eq('id', targetFile.id)
           .single();
@@ -368,7 +368,7 @@ export function Transcribe() {
     try {
       // Find specific M4A file by ID
       const { data: sourceFile, error: queryError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('id', '08c67178-1487-4f5b-920b-c60efa3ea938')
         .limit(1)
@@ -427,7 +427,7 @@ export function Transcribe() {
     try {
       // Fetch the stored record to get the extracted content
       const { data: sourceFile, error: fetchError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('extracted_content')
         .eq('id', pendingM4A.id)
         .single();
@@ -666,7 +666,7 @@ export function Transcribe() {
       };
       
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .insert(insertData)
         .select()
         .single();
@@ -737,7 +737,7 @@ export function Transcribe() {
             onClick={async () => {
               // Find Staats audio file
               const { data: sourceFile, error: queryError } = await supabase
-                .from('sources_google')
+                .from('google_sources')
                 .select('*')
                 .eq('id', '08c67178-1487-4f5b-920b-c60efa3ea938')
                 .limit(1)

@@ -233,7 +233,7 @@ async function addMimeTypeProcessingConfig(options: MimeTypeProcessingOptions): 
     try {
       // Use sources_google table for connection test - this table should always exist
       const { data: sourceTest, error: sourceError } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .limit(1);
         

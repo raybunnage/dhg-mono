@@ -10,7 +10,7 @@ import docx4js from 'docx4js';
 import { ChatContent } from '@/components/ChatContent';
 import '@/styles/globals.css';  // Make sure this is imported
 
-type Json = Database['public']['Tables']['sources_google']['Row']['metadata'];
+type Json = Database['public']['Tables']['google_sources']['Row']['metadata'];
 
 type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'] & {
   id: string;
@@ -254,7 +254,7 @@ export function FileViewer({ file }: FileViewerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [pdfLoadingPage, setPdfLoadingPage] = useState(false);
-  const [contentSource, setContentSource] = useState<'expert_doc' | 'sources_google' | 'drive' | null>(null);
+  const [contentSource, setContentSource] = useState<'expert_doc' | 'google_sources' | 'drive' | null>(null);
   const [extractedContent, setExtractedContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -432,7 +432,7 @@ export function FileViewer({ file }: FileViewerProps) {
                 {contentSource && (
                   <span className="text-sm px-2 py-1 rounded bg-gray-100 font-normal">
                     {contentSource === 'expert_doc' ? 'Processed' : 
-                     contentSource === 'sources_google' ? 'Extracted' : 
+                     contentSource === 'google_sources' ? 'Extracted' : 
                      'Live'}
                   </span>
                 )}

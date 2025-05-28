@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Database } from '../../../../file_types/supabase/types';
 import { toast } from 'react-hot-toast';
 
-type SourcesGoogleRow = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogleRow = Database['public']['Tables']['google_sources']['Row'];
 type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
 type BatchProcessingStatus = Database['public']['Views']['batch_processing_status']['Row'];
 
@@ -28,7 +28,7 @@ export default function ExpertProfiles() {
     async function loadFiles() {
       try {
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select(`
             *,
             expert_documents (

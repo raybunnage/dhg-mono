@@ -272,7 +272,7 @@ async function main() {
             Logger.info(`🔍 Presentation "${title}" has no main_video_id, looking for matching Google Drive file...`);
 
             const { data: matchingFiles, error: matchError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .select('id, name, drive_id')
               .eq('deleted', false)
               .eq('mime_type', 'video/mp4')

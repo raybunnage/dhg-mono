@@ -62,12 +62,12 @@ async function main() {
     
     if (targetRootId) {
       // Either matching root_drive_id or path containing the target name
-      countQuery = supabase.from('sources_google')
+      countQuery = supabase.from('google_sources')
         .select('id', { count: 'exact', head: true })
         .or(`root_drive_id.eq.${targetRootId},path.ilike.%${targetRootName}%`);
     } else {
       // Count all records
-      countQuery = supabase.from('sources_google')
+      countQuery = supabase.from('google_sources')
         .select('id', { count: 'exact', head: true });
     }
     
@@ -91,7 +91,7 @@ async function main() {
         
         // Set root_drive_id for DHG
         const { data: dhgData, error: dhgError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ 
             root_drive_id: ROOT_FOLDERS.DHG,
             // We'd add parent_folder_id here, but it would require renaming
@@ -112,7 +112,7 @@ async function main() {
         
         // Set root_drive_id for PVSG
         const { data: pvsgData, error: pvsgError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ 
             root_drive_id: ROOT_FOLDERS.PVSG 
           })
@@ -133,7 +133,7 @@ async function main() {
     if (!isDryRun) {
       // Check DHG records
       const { count: dhgCount, error: dhgError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id', { count: 'exact', head: true })
         .eq('root_drive_id', ROOT_FOLDERS.DHG);
       
@@ -145,7 +145,7 @@ async function main() {
       
       // Check PVSG records
       const { count: pvsgCount, error: pvsgError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id', { count: 'exact', head: true })
         .eq('root_drive_id', ROOT_FOLDERS.PVSG);
       
@@ -157,7 +157,7 @@ async function main() {
       
       // Get a sample record to verify
       const { data: sampleData, error: sampleError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('root_drive_id', ROOT_FOLDERS.DHG)
         .limit(1);

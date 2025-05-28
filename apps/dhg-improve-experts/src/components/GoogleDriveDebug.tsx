@@ -14,7 +14,7 @@ export const GoogleDriveDebug: React.FC = () => {
       // Test with regular client
       console.log('Testing with regular client...');
       const { data: regularData, error: regularError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('count(*)')
         .limit(1);
         
@@ -26,7 +26,7 @@ export const GoogleDriveDebug: React.FC = () => {
       );
       
       const { data: adminData, error: adminError } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('count(*)')
         .limit(1);
       
@@ -71,7 +71,7 @@ export const GoogleDriveDebug: React.FC = () => {
       console.log('Inserting minimal record:', testRecord);
       
       const { data, error } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .insert(testRecord)
         .select();
       
@@ -91,7 +91,7 @@ export const GoogleDriveDebug: React.FC = () => {
   const getStructure = async () => {
     setLoading(true);
     try {
-      const data = await getTableStructure('sources_google');
+      const data = await getTableStructure('google_sources');
       setResult(data);
     } catch (err) {
       console.error('Error getting table structure:', err);

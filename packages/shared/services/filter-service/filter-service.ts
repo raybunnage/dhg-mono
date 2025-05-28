@@ -433,7 +433,7 @@ export class FilterService {
       
       // Get all sources where root_drive_id matches one of our allowed drive IDs
       const { data: matchingSources, error: sourcesError } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .in('root_drive_id', rootDriveIds);
       

@@ -245,7 +245,7 @@ async function syncFiles(
     if (!isDryRun) {
       console.log('Ensuring folder is registered as a root folder...');
       const { data: existingFolders, error: queryError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, is_root')
         .eq('drive_id', folderId)
         .eq('deleted', false);
@@ -264,7 +264,7 @@ async function syncFiles(
         } else {
           // Update it to be a root folder
           const { error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({
               name: folder.data.name,
               is_root: true,
@@ -285,7 +285,7 @@ async function syncFiles(
         // Insert new root folder
         const now = new Date().toISOString();
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .insert({
             drive_id: folderId,
             name: folder.data.name,
@@ -341,7 +341,7 @@ async function syncFiles(
     
     // Get existing files to avoid duplicates
     const { data: existingRecords, error: queryError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('drive_id')
       .eq('deleted', false);
       
@@ -409,7 +409,7 @@ async function syncFiles(
       // Insert the files into the database
       try {
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .insert(filesToInsert);
         
         if (error) {
@@ -472,7 +472,7 @@ async function updateMetadata(
     if (verbose) console.log(`Fetching records from Supabase (limit: ${limit})...`);
     
     const { data: records, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .or(`parent_folder_id.eq.${folderId},drive_id.eq.${folderId}`)
       .eq('deleted', false)
@@ -552,7 +552,7 @@ async function updateMetadata(
           // Update record in Supabase
           if (!dryRun) {
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update(updateData)
               .eq('id', record.id);
               

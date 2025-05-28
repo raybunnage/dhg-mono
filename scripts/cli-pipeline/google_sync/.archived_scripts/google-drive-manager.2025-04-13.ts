@@ -73,7 +73,7 @@ program
     console.log('Fetching root folders...');
     try {
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('is_root', true)
         .eq('deleted', false)
@@ -168,7 +168,7 @@ program
       
       // Check if folder already exists
       const { data: existingFolders, error: queryError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name')
         .eq('drive_id', folderId)
         .eq('deleted', false);
@@ -182,7 +182,7 @@ program
         console.log(`Folder already exists with name "${existingFolders[0].name}", updating...`);
         
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({
             name: options.name,
             is_root: true,
@@ -209,7 +209,7 @@ program
       
       // Insert new root folder
       const now = new Date().toISOString();
-      const insertData: Database['public']['Tables']['sources_google']['Insert'] = {
+      const insertData: Database['public']['Tables']['google_sources']['Insert'] = {
         drive_id: folderId,
         name: options.name || '',
         is_root: true,
@@ -228,7 +228,7 @@ program
       };
       
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .insert(insertData)
         .select();
         
@@ -253,7 +253,7 @@ program
     try {
       // First check if the folder exists
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id')
         .eq('id', id)
         .eq('deleted', false)
@@ -278,7 +278,7 @@ program
       if (options.hard) {
         // Hard delete - mark as deleted
         const { error: deleteError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ 
             deleted: true, 
             updated_at: new Date().toISOString() 
@@ -293,7 +293,7 @@ program
       } else {
         // Soft delete - just unmark as root
         const { error: updateError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ 
             is_root: false, 
             updated_at: new Date().toISOString() 
@@ -365,7 +365,7 @@ program
       
       // Check if it's already a root folder in our system
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, is_root, path, last_indexed')
         .eq('drive_id', folderId)
         .eq('deleted', false);
@@ -477,7 +477,7 @@ program
         
         // Get the root folder details
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, drive_id, is_root')
           .eq('id', rootId)
           .eq('deleted', false)
@@ -514,7 +514,7 @@ program
         
         // Get all root folders
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, drive_id')
           .eq('is_root', true)
           .eq('deleted', false)
@@ -567,7 +567,7 @@ program
       
       // Get existing root folders from database
       const { data: existingRoots, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('drive_id')
         .eq('is_root', true)
         .eq('deleted', false);

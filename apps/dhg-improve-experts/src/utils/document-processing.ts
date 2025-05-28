@@ -243,7 +243,7 @@ export async function testSingleDocument(documentId: string): Promise<void> {
   try {
     // Get document from sources_google
     const { data: doc, error: fetchError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('id', documentId)
       .single();
@@ -293,7 +293,7 @@ export async function testSingleDocument(documentId: string): Promise<void> {
 
     // Update sources_google record
     const { error: updateError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update({
         content_extracted: true,
         extracted_content: { text: extractedContent },

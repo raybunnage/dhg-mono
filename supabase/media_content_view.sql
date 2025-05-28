@@ -1,5 +1,5 @@
 -- Media content view with expert information
--- This view joins sources_google with presentations, expert_documents, experts and subject classifications
+-- This view joins google_sources with presentations, expert_documents, experts and subject classifications
 -- to provide a comprehensive view of media content for both video and audio applications
 
 CREATE OR REPLACE VIEW media_content_view AS
@@ -24,7 +24,7 @@ SELECT
   sc.subject,
   tc.entity_id
 FROM
-  sources_google sg
+  google_sources sg
 LEFT JOIN
   presentations p ON sg.id = p.video_source_id
 LEFT JOIN
@@ -34,7 +34,7 @@ LEFT JOIN
 LEFT JOIN
   experts e ON sge.expert_id = e.id
 LEFT JOIN
-  table_classifications tc ON tc.entity_id = sg.id AND tc.entity_type = 'sources_google'
+  table_classifications tc ON tc.entity_id = sg.id AND tc.entity_type = 'google_sources'
 LEFT JOIN
   subject_classifications sc ON sc.id = tc.subject_classification_id
 WHERE

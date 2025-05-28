@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import type { Database } from '../../../../../supabase/types';
 
-type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
 
 export async function syncFileMetadata(accessToken: string) {
   const BATCH_SIZE = 50;
@@ -19,7 +19,7 @@ export async function syncFileMetadata(accessToken: string) {
   try {
     // Get files with their current metadata
     const { data: files, error: fetchError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, metadata')  // Added name and metadata
       .eq('deleted', false)
       .order('id');
@@ -77,7 +77,7 @@ export async function syncFileMetadata(accessToken: string) {
 
           // Update database
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({
               metadata: newMetadata,
               updated_at: new Date().toISOString()

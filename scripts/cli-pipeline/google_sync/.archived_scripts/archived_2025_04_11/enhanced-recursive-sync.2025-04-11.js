@@ -259,7 +259,7 @@ async function insertFiles(files, folderInfo, dryRun = false) {
   // Get existing files including their IDs to preserve relationships
   console.log('Checking for existing files in database...');
   const { data: existingFiles, error: queryError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, drive_id, name, path, parent_folder_id, root_drive_id');
   
   if (queryError) {
@@ -329,7 +329,7 @@ async function insertFiles(files, folderInfo, dryRun = false) {
         const { file, existingId } = item;
         
         const { error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({
             name: file.name,
             mime_type: file.mimeType,
@@ -412,7 +412,7 @@ async function insertFiles(files, folderInfo, dryRun = false) {
       
       // Insert the batch
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .insert(records);
       
       if (error) {
@@ -452,7 +452,7 @@ async function ensureRootFolder(folderId, folderName, dryRun = false) {
     
     // Check if folder already exists
     const { data: existingFolder, error: queryError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, is_root')
       .eq('drive_id', folderId)
       .eq('deleted', false)
@@ -471,7 +471,7 @@ async function ensureRootFolder(folderId, folderName, dryRun = false) {
       
       // Update to make it a root folder
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({
           is_root: true,
           path: `/${folderName}`,
@@ -492,7 +492,7 @@ async function ensureRootFolder(folderId, folderName, dryRun = false) {
     
     // Insert new root folder
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .insert({
         drive_id: folderId,
         name: folderName,

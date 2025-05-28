@@ -17,7 +17,7 @@ import { google } from 'googleapis';
 
 // Define types
 type DocumentType = Database['public']['Tables']['document_types']['Row'];
-type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
 type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
 
 class DocumentClassifier {
@@ -347,7 +347,7 @@ class DocumentClassifier {
     try {
       // Start building the query
       let query = this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .is('document_type_id', null);
       
@@ -365,7 +365,7 @@ class DocumentClassifier {
           
           // Look up the folder in the sources_google table directly instead of sources_google_roots
           const { data: folders, error: folderError } = await this.supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, drive_id, name, root_drive_id')
             .or(`name.ilike.%${folderId}%,path.ilike.%${folderId}%`)
             .is('is_folder', true)  // Only get folders
@@ -390,7 +390,7 @@ class DocumentClassifier {
             // Try to look up the exact ID in case it was provided
             try {
               const { data: exactFolder, error: exactError } = await this.supabase
-                .from('sources_google')
+                .from('google_sources')
                 .select('id, drive_id, name, root_drive_id')
                 .eq('drive_id', folderId)
                 .is('is_folder', true)
@@ -1509,7 +1509,7 @@ This is generated mock data for testing purposes only.`;
     
     try {
       const { error } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ document_type_id: documentTypeId })
         .eq('id', sourceFile.id);
   

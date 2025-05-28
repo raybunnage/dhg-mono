@@ -46,7 +46,7 @@ async function identifyOrphanedRecords(options: IdentifyOptions): Promise<void> 
     // Step 1: Get all valid source IDs from sources_google
     console.log('Fetching valid source IDs from sources_google...');
     const { data: validSources, error: sourcesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id');
       
     if (sourcesError) {

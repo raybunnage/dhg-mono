@@ -38,7 +38,7 @@ async function directReclassify() {
   for (const doc of docs) {
     // Get source info
     const { data: source } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .eq('id', doc.source_id)
       .single();
@@ -50,7 +50,7 @@ async function directReclassify() {
     
     // Ensure source has no document_type_id
     await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update({ document_type_id: null })
       .eq('id', source.id);
     

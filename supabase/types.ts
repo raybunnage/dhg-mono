@@ -2783,7 +2783,7 @@ export type Database = {
       classified_entity_type:
         | "expert_documents"
         | "documentation_files"
-        | "sources_google"
+        | "google_sources"
         | "scripts"
       document_classifier: "pdf" | "powerpoint" | "docx" | "expert"
       document_processing_status:
@@ -3006,7 +3006,7 @@ export const Constants = {
       classified_entity_type: [
         "expert_documents",
         "documentation_files",
-        "sources_google",
+        "google_sources",
         "scripts",
       ],
       document_classifier: ["pdf", "powerpoint", "docx", "expert"],

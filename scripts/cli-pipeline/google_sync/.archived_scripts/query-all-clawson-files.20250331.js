@@ -21,7 +21,7 @@ async function queryAllFiles() {
   try {
     // Query all files related to the folder
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .or(`parent_folder_id.eq.${FOLDER_ID},drive_id.eq.${FOLDER_ID}`);
     

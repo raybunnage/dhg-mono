@@ -13,7 +13,7 @@ export function FileTree() {
         setLoading(true);
         
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*');
           
         if (error) throw error;

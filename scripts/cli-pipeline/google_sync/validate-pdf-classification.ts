@@ -234,7 +234,7 @@ async function validatePdfClassification(options: ValidationOptions): Promise<an
     
     // Get PDFs with document types
     const { data: pdfData, error: pdfError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select(`
         id,
         name,

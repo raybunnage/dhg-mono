@@ -159,7 +159,7 @@ async function syncGoogleDriveContents(folderId: string) {
   
   // Batch insert into Supabase
   const { data, error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .upsert(processedFiles.map(file => ({
       drive_id: file.id,
       name: file.name,

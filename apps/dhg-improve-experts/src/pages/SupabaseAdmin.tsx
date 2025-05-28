@@ -339,7 +339,7 @@ $$ LANGUAGE plpgsql;`);
           console.log("No tables found, using fallback list");
           // Last resort - use a smaller list of common tables
           tablesFound = [
-            'sources_google', 
+            'google_sources', 
             'google_sync_history',
             'experts',
             'expert_documents',
@@ -379,7 +379,7 @@ $$ LANGUAGE plpgsql;`);
           // Fallback to hardcoded list approach
           console.log("Schema query failed, using fallback approach");
           const fallbackTables = [
-            'sources_google', 
+            'google_sources', 
             'google_sync_history',
             'google_auth_tokens',
             'experts',
@@ -431,7 +431,7 @@ $$ LANGUAGE plpgsql;`);
             'prompt_usage',
             'prompts',
             'sources',
-            'sources_google_backup',
+            'google_sources_backup',
             'speaker_profiles',
             'sql_query_history',
             'sql_query_tags',
@@ -448,7 +448,7 @@ $$ LANGUAGE plpgsql;`);
         console.error("Error finding tables:", error);
         // Final fallback
         tablesFound = [
-          'sources_google', 
+          'google_sources', 
           'google_sync_history',
           'experts',
           'expert_documents',
@@ -756,7 +756,7 @@ $$ LANGUAGE plpgsql;`);
           { column_name: 'email', data_type: 'text', is_nullable: 'NO', column_default: '', is_unique: 'YES', foreign_key: '', trigger_name: '', check_constraint: '' },
           { column_name: 'created_at', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()', is_unique: 'NO', foreign_key: '', trigger_name: '', check_constraint: '' }
         ];
-      } else if (tableName === 'sources_google') {
+      } else if (tableName === 'google_sources') {
         columns = [
           { column_name: 'id', data_type: 'uuid', is_nullable: 'NO', column_default: 'gen_random_uuid()', is_unique: 'YES', foreign_key: '', trigger_name: '', check_constraint: '' },
           { column_name: 'drive_id', data_type: 'text', is_nullable: 'NO', column_default: '', is_unique: 'NO', foreign_key: '', trigger_name: '', check_constraint: '' },
@@ -775,7 +775,7 @@ $$ LANGUAGE plpgsql;`);
         columns = [
           { column_name: 'id', data_type: 'uuid', is_nullable: 'NO', column_default: 'gen_random_uuid()', is_unique: 'YES', foreign_key: '', trigger_name: '', check_constraint: '' },
           { column_name: 'expert_id', data_type: 'uuid', is_nullable: 'YES', column_default: '', is_unique: 'NO', foreign_key: 'experts.id', trigger_name: '', check_constraint: '' },
-          { column_name: 'source_id', data_type: 'uuid', is_nullable: 'NO', column_default: '', is_unique: 'NO', foreign_key: 'sources_google.id', trigger_name: '', check_constraint: '' },
+          { column_name: 'source_id', data_type: 'uuid', is_nullable: 'NO', column_default: '', is_unique: 'NO', foreign_key: 'google_sources.id', trigger_name: '', check_constraint: '' },
           { column_name: 'created_at', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()', is_unique: 'NO', foreign_key: '', trigger_name: '', check_constraint: '' }
         ];
       } else if (tableName === 'google_sync_history') {
@@ -1250,7 +1250,7 @@ $$ LANGUAGE plpgsql;`);
             
             // Extract all tables from the types.ts definition
             const tableNames = [
-              'sources_google', 
+              'google_sources', 
               'google_sync_history',
               'google_auth_tokens',
               'experts',
@@ -1298,7 +1298,7 @@ $$ LANGUAGE plpgsql;`);
               'processing_templates',
               'profiles',
               'sources',
-              'sources_google_backup',
+              'google_sources_backup',
               'speaker_profiles',
               'google_sync_history_backup',
               'google_sync_statistics',
@@ -1434,7 +1434,7 @@ $$ LANGUAGE plpgsql;`);
             
             // Extract all tables from the types.ts definition
             const tableNames = [
-              'sources_google', 
+              'google_sources', 
               'google_sync_history',
               'google_auth_tokens',
               'experts',
@@ -1482,7 +1482,7 @@ $$ LANGUAGE plpgsql;`);
               'processing_templates',
               'profiles',
               'sources',
-              'sources_google_backup',
+              'google_sources_backup',
               'speaker_profiles',
               'google_sync_history_backup',
               'google_sync_statistics',
@@ -2543,7 +2543,7 @@ COMMENT ON TYPE public.new_status_enum IS 'Enum for tracking processing status';
                       List Tables
                     </Button>
                     <Button variant="outline" onClick={() => { 
-                      setSqlContent("SELECT * FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'sources_google';"); 
+                      setSqlContent("SELECT * FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'google_sources';"); 
                     }}>
                       Table Columns
                     </Button>

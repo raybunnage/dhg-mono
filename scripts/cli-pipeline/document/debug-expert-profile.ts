@@ -17,7 +17,7 @@ async function main() {
       'experts',
       'expert_documents',
       'documents',
-      'sources_google'
+      'google_sources'
     ];
     
     for (const tableName of tablesCheck) {

@@ -9,7 +9,7 @@
 CREATE TABLE IF NOT EXISTS media_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   app_id TEXT NOT NULL, -- Identifier for the app (e.g., 'audio-app', 'video-app')
-  source_id UUID REFERENCES sources_google(id), -- Link to the media file in sources_google
+  source_id UUID REFERENCES google_sources(id), -- Link to the media file in google_sources
   presentation_id UUID REFERENCES presentations(id), -- Link to presentation if applicable
   expert_document_id UUID REFERENCES expert_documents(id), -- Link to transcript if applicable
   media_type TEXT NOT NULL CHECK (media_type IN ('audio', 'video')),
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS media_playback_events (
 CREATE TABLE IF NOT EXISTS media_bookmarks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   session_id UUID REFERENCES media_sessions(id) ON DELETE CASCADE NOT NULL,
-  source_id UUID REFERENCES sources_google(id), -- Direct link to the media source for cross-session bookmarks
+  source_id UUID REFERENCES google_sources(id), -- Direct link to the media source for cross-session bookmarks
   bookmark_type TEXT NOT NULL CHECK (bookmark_type IN ('favorite', 'highlight', 'resume', 'section', 'note')),
   title TEXT,
   description TEXT,
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS learn_topics (
 -- Media Topic Segments - Maps topics to specific parts of media
 CREATE TABLE IF NOT EXISTS media_topic_segments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  source_id UUID REFERENCES sources_google(id) NOT NULL,
+  source_id UUID REFERENCES google_sources(id) NOT NULL,
   topic_id UUID REFERENCES learn_topics(id) NOT NULL,
   expert_id UUID REFERENCES experts(id), -- Link to expert discussing topic (if applicable)
   start_position REAL NOT NULL, -- Start timestamp in seconds
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS expert_preferences (
 -- Media Recommendations - AI-generated media recommendations
 CREATE TABLE IF NOT EXISTS media_recommendations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  source_id UUID REFERENCES sources_google(id) NOT NULL,
+  source_id UUID REFERENCES google_sources(id) NOT NULL,
   recommendation_reason TEXT NOT NULL, -- Why this was recommended
   relevance_score REAL CHECK (relevance_score BETWEEN 0.0 AND 1.0),
   topics JSONB, -- Array of related topics
@@ -197,7 +197,7 @@ SELECT
   sc.subject,
   tc.entity_id
 FROM
-  sources_google sg
+  google_sources sg
 LEFT JOIN
   presentations p ON sg.id = p.video_source_id
 LEFT JOIN
@@ -207,7 +207,7 @@ LEFT JOIN
 LEFT JOIN
   experts e ON sge.expert_id = e.id
 LEFT JOIN
-  table_classifications tc ON tc.entity_id = sg.id AND tc.entity_type = 'sources_google'
+  table_classifications tc ON tc.entity_id = sg.id AND tc.entity_type = 'google_sources'
 LEFT JOIN
   learn_subject_classifications sc ON sc.id = tc.subject_classification_id
 WHERE
@@ -239,7 +239,7 @@ SELECT
 FROM
   media_sessions ms
 JOIN
-  sources_google sg ON ms.source_id = sg.id
+  google_sources sg ON ms.source_id = sg.id
 LEFT JOIN
   presentations p ON ms.presentation_id = p.id
 LEFT JOIN

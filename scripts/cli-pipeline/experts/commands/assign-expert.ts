@@ -231,7 +231,7 @@ async function getFoldersNeedingExperts(): Promise<MinimalFolder[]> {
   
   // Find top-level folders with videos that don't have expert links
   const { data: folders, error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select(`
       id, 
       name, 
@@ -405,7 +405,7 @@ async function assignExpertToFolder(options: {
     // Step 1: Verify folder exists
     if (verbose) loggerUtil.info(`Verifying folder ID: ${folderId}`);
     const { data: folderData, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, path_depth')
       .eq('id', folderId)
       .single();

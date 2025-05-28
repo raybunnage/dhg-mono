@@ -178,7 +178,7 @@ function Sync() {
       
       // Supabase may store booleans differently in the database, try both true and 1
       const { data: data1, error: error1 } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, mime_type')
         .eq('is_root', true)
         .order('name');
@@ -189,7 +189,7 @@ function Sync() {
       
       // Try with is_root = 1 as well
       const { data: data2, error: error2 } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, mime_type')
         .eq('is_root', 1)
         .order('name');
@@ -202,7 +202,7 @@ function Sync() {
       const data = [...(data1 || []), ...(data2 || [])];
       const folders = new Map<string, FolderOption>();
       
-      // Add folders from sources_google
+      // Add folders from google_sources
       if (data) {
         data.forEach(folder => {
           const folderId = folder.drive_id || folder.id;
@@ -322,36 +322,36 @@ function Sync() {
     try {
       // Get total files
       const { count: totalCount } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true });
       
       // Get docx files
       const { count: docxCount } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .eq('mime_type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       
       // Get text files
       const { count: textCount } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .eq('mime_type', 'text/plain');
       
       // Get PDF files
       const { count: pdfCount } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .eq('mime_type', 'application/pdf');
       
       // Get MP4 files
       const { count: mp4Count } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .ilike('mime_type', '%mp4%');
       
       // Get M4A files
       const { count: m4aCount } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .ilike('mime_type', '%m4a%');
       
@@ -670,7 +670,7 @@ function Sync() {
   const getFolderName = async (folderId: string): Promise<string> => {
     try {
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('name')
         .eq('drive_id', folderId)
         .single();
@@ -709,7 +709,7 @@ function Sync() {
     try {
       // Get actual stats from the database instead of mock data
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('mime_type')
         .eq('parent_folder_id', folderId);
       
@@ -2269,7 +2269,7 @@ function Sync() {
                   
                   // Test the connection
                   const { data, error } = await supabaseAdmin
-                    .from('sources_google')
+                    .from('google_sources')
                     .select('id')
                     .limit(1);
                   
@@ -2350,7 +2350,7 @@ function Sync() {
       
       // Supabase may store booleans differently in the database, try both true and 1
       const { data: data1, error: error1 } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, mime_type, parent_path, is_root, sync_status, modified_time, created_at')
         .eq('is_root', true);
         
@@ -2360,7 +2360,7 @@ function Sync() {
       
       // Try with is_root = 1 as well
       const { data: data2, error: error2 } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, mime_type, parent_path, is_root, sync_status, modified_time, created_at')
         .eq('is_root', 1);
         
@@ -2383,7 +2383,7 @@ function Sync() {
           try {
             // Count files linked to this root (where parent_folder_id equals root's drive_id)
             const { count: filesCount, error: filesError } = await supabaseAdmin
-              .from('sources_google')
+              .from('google_sources')
               .select('*', { count: 'exact', head: true })
               .eq('parent_folder_id', root.drive_id)
               .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
@@ -2394,7 +2394,7 @@ function Sync() {
             
             // Count folders linked to this root
             const { count: foldersCount, error: foldersError } = await supabaseAdmin
-              .from('sources_google')
+              .from('google_sources')
               .select('*', { count: 'exact', head: true })
               .eq('parent_folder_id', root.drive_id)
               .eq('mime_type', 'application/vnd.google-apps.folder');
@@ -2479,7 +2479,7 @@ function Sync() {
       
       // First check if record exists - use proper parameter binding
       let query = supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, is_root');
         
       // Try to determine if this is a UUID or a string
@@ -2518,7 +2518,7 @@ function Sync() {
       try {
         // First try with boolean true
         const { data, error } = await supabaseAdmin
-          .from('sources_google')
+          .from('google_sources')
           .update({ is_root: true })
           .eq('id', recordToUpdate.id)
           .select('id, drive_id, name, is_root');
@@ -2533,7 +2533,7 @@ function Sync() {
         console.log('Trying alternative update with is_root=1');
         // If the first approach fails, try with numeric 1
         const { data, error } = await supabaseAdmin
-          .from('sources_google')
+          .from('google_sources')
           .update({ is_root: 1 })
           .eq('id', recordToUpdate.id)
           .select('id, drive_id, name, is_root');
@@ -2602,7 +2602,7 @@ function Sync() {
       
       // Search for records with a name that contains the search string - select all fields
       const { data, error } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .ilike('name', `%${nameToSearch}%`)
         .limit(10);
@@ -2651,7 +2651,7 @@ function Sync() {
         </div>
         
         <p className="mb-4 text-gray-600">
-          These are the records marked as root folders in the sources_google table.
+          These are the records marked as root folders in the google_sources table.
           Root folders are top-level folders that are directly synced from Google Drive.
         </p>
         
@@ -2977,7 +2977,7 @@ function Sync() {
       
       // Get files and folders that have this root as parent_folder_id
       const { data, error } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, mime_type, parent_folder_id')
         .eq('parent_folder_id', record.drive_id)
         .order('mime_type', { ascending: false }) // Folders first
@@ -3022,7 +3022,7 @@ function Sync() {
       
       // Get files and folders that have this folder as parent_folder_id
       const { data, error } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, mime_type, parent_folder_id')
         .eq('parent_folder_id', folderDriveId)
         .order('mime_type', { ascending: false }) // Folders first
@@ -3195,11 +3195,11 @@ function Sync() {
       // 1. Get statistics on current state
       detailsLog.push("Step 1: Analyzing current database state...");
       const { count: totalCount } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true });
       
       const { data: missingPathData, error: missingPathError } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, parent_folder_id, parent_path')
         .is('parent_path', null)
         .not('parent_folder_id', 'is', null);
@@ -3209,7 +3209,7 @@ function Sync() {
       }
       
       const recordsMissingPath = missingPathData?.length || 0;
-      detailsLog.push(`Found ${totalCount} total records in sources_google`);
+      detailsLog.push(`Found ${totalCount} total records in google_sources`);
       detailsLog.push(`Found ${recordsMissingPath} records with missing parent_path but valid parent_folder_id`);
       
       // Set initial stats
@@ -3224,7 +3224,7 @@ function Sync() {
       // 2. First create a map of drive_id to path for all folders
       detailsLog.push("\nStep 2: Building folder path map...");
       const { data: folderData, error: folderError } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, parent_folder_id, path')
         .eq('mime_type', 'application/vnd.google-apps.folder');
         
@@ -3310,7 +3310,7 @@ function Sync() {
         if (validUpdates.length > 0) {
           // Update the records in bulk
           const { data: updateData, error: updateError } = await supabaseAdmin
-            .from('sources_google')
+            .from('google_sources')
             .upsert(validUpdates);
             
           if (updateError) {
@@ -3407,7 +3407,7 @@ function Sync() {
         const { data: columnData, error: metadataError } = await supabaseAdmin
           .from('information_schema.columns')
           .select('column_name')
-          .eq('table_name', 'sources_google')
+          .eq('table_name', 'google_sources')
           .eq('column_name', 'path')
           .limit(1);
         
@@ -3430,7 +3430,7 @@ function Sync() {
         const { data: columnData, error: columnError } = await supabaseAdmin.rpc(
           'execute_sql', 
           { 
-            sql_query: "SELECT column_name FROM information_schema.columns WHERE table_name = 'sources_google' AND column_name = 'path'" 
+            sql_query: "SELECT column_name FROM information_schema.columns WHERE table_name = 'google_sources' AND column_name = 'path'" 
           }
         );
         
@@ -3463,7 +3463,7 @@ function Sync() {
           const { error: alterError } = await supabaseAdmin.rpc(
             'execute_sql', 
             { 
-              sql_query: "ALTER TABLE sources_google ADD COLUMN IF NOT EXISTS path TEXT" 
+              sql_query: "ALTER TABLE google_sources ADD COLUMN IF NOT EXISTS path TEXT" 
             }
           );
           
@@ -3473,7 +3473,7 @@ function Sync() {
                 alterError.message.includes('not found') || 
                 alterError.code === '42883') {
               detailsLog.push("The execute_sql function is not available. Cannot add path column automatically.");
-              detailsLog.push("Please manually add a 'path' column of type TEXT to the sources_google table.");
+              detailsLog.push("Please manually add a 'path' column of type TEXT to the google_sources table.");
               
               // Alert the user with a toast
               toast.error("Cannot add path column automatically. Please add it manually.", { duration: 10000 });
@@ -3499,16 +3499,16 @@ function Sync() {
       
       // Count total records
       const { count: totalCount } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true });
       
       // Count records with null path
       const { count: nullPathCount } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .is('path', null);
       
-      detailsLog.push(`Found ${totalCount} total records in sources_google`);
+      detailsLog.push(`Found ${totalCount} total records in google_sources`);
       detailsLog.push(`Found ${nullPathCount} records with null path`);
       
       // 3. First handle folders - set their paths correctly
@@ -3516,7 +3516,7 @@ function Sync() {
       
       // Get all folders
       const { data: folderData, error: folderError } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, parent_folder_id, parent_path')
         .eq('mime_type', 'application/vnd.google-apps.folder');
         
@@ -3635,7 +3635,7 @@ function Sync() {
         
         // Perform update
         const { data, error } = await supabaseAdmin
-          .from('sources_google')
+          .from('google_sources')
           .upsert(updates, { onConflict: 'drive_id' });
           
         if (error) {
@@ -3653,7 +3653,7 @@ function Sync() {
       
       // Get all files (non-folders)
       const { data: fileData, error: fileError } = await supabaseAdmin
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, parent_folder_id, path')
         .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
         
@@ -3694,7 +3694,7 @@ function Sync() {
         
         // Perform update
         const { data, error } = await supabaseAdmin
-          .from('sources_google')
+          .from('google_sources')
           .upsert(updates, { onConflict: 'drive_id' });
           
         if (error) {
@@ -3775,7 +3775,7 @@ function Sync() {
       try {
         // First try the direct query method - more compatible
         const { data, error } = await supabaseAdmin
-          .from('sources_google')
+          .from('google_sources')
           .select('created_at')
           .order('created_at', { ascending: false });
 
@@ -3819,7 +3819,7 @@ function Sync() {
               TO_CHAR(created_at::date, 'YYYY-MM-DD') as date,
               COUNT(*) as count
             FROM 
-              sources_google
+              google_sources
             GROUP BY 
               TO_CHAR(created_at::date, 'YYYY-MM-DD')
             ORDER BY 
@@ -3910,7 +3910,7 @@ function Sync() {
       for (const date of selectedDates) {
         // First get IDs of records to delete
         const { data: recordsToDelete, error: fetchError } = await supabaseAdmin
-          .from('sources_google')
+          .from('google_sources')
           .select('id')
           .filter('created_at', 'gte', `${date}T00:00:00`)
           .filter('created_at', 'lt', `${date}T23:59:59.999`);
@@ -3935,7 +3935,7 @@ function Sync() {
           
           // Delete the batch
           const { error: deleteError } = await supabaseAdmin
-            .from('sources_google')
+            .from('google_sources')
             .delete()
             .in('id', batchIds);
             
@@ -4084,7 +4084,7 @@ function Sync() {
         
         <div className="prose prose-sm mb-6">
           <p>
-            This tool allows you to delete records from the <code>sources_google</code> table based on their creation date.
+            This tool allows you to delete records from the <code>google_sources</code> table based on their creation date.
             This is useful for cleaning up records before re-importing them with proper path information.
           </p>
           <p className="text-red-600 font-medium">
@@ -4244,7 +4244,7 @@ function Sync() {
           <h3>Understanding the FileTree and Viewer Components</h3>
           
           <p>
-            The <code>FileTree</code> component and <code>Viewer</code> page were designed to show files stored in the <code>sources_google</code> table.
+            The <code>FileTree</code> component and <code>Viewer</code> page were designed to show files stored in the <code>google_sources</code> table.
             They rely on specific fields:
           </p>
           
@@ -4261,7 +4261,7 @@ function Sync() {
           <h3>The expert_documents Coupling Issue</h3>
           
           <p>
-            The current <code>Viewer</code> component joins the <code>sources_google</code> table with the <code>expert_documents</code> table
+            The current <code>Viewer</code> component joins the <code>google_sources</code> table with the <code>expert_documents</code> table
             to show processing status information. This creates tight coupling between the two tables.
           </p>
           
@@ -4284,7 +4284,7 @@ function Sync() {
           </p>
           
           <p>
-            This allows you to view all files in the <code>sources_google</code> table in the file hierarchy, even if they don't have
+            This allows you to view all files in the <code>google_sources</code> table in the file hierarchy, even if they don't have
             expert document processing, as long as they have proper <code>path</code> and <code>parent_path</code> values.
           </p>
           

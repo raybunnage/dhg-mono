@@ -25,7 +25,7 @@ function Viewer() {
         
         // First, fetch sources_google entries
         const { data: sourcesData, error: sourcesError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select(`
             *,
             expert_documents(id, processing_status, processed_content, batch_id, error_message, 
@@ -130,7 +130,7 @@ function Viewer() {
           try {
             const rootPath = `/${rootFolder.name}`;
             await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ path: rootPath })
               .eq('id', rootFolder.id);
               
@@ -145,7 +145,7 @@ function Viewer() {
         
         // Find children by parent_folder_id (both direct ID and drive_id)
         const idChildrenQuery = supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, mime_type, path, parent_path, parent_folder_id, drive_id');
           
         // We need to use filter correctly based on what IDs we have
@@ -182,7 +182,7 @@ function Viewer() {
           // Update the child's paths
           try {
             await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({
                 parent_path: correctParentPath,
                 path: correctPath
@@ -196,7 +196,7 @@ function Viewer() {
             if (child.mime_type === 'application/vnd.google-apps.folder') {
               // Build query for grandchildren
               const grandChildrenQuery = supabase
-                .from('sources_google')
+                .from('google_sources')
                 .select('id, name, parent_folder_id');
                 
               // Use the right filter based on available IDs
@@ -223,7 +223,7 @@ function Viewer() {
                 
                 try {
                   await supabase
-                    .from('sources_google')
+                    .from('google_sources')
                     .update({
                       parent_path: correctPath,
                       path: correctGrandChildPath

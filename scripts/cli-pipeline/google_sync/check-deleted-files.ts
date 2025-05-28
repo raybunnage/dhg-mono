@@ -123,7 +123,7 @@ export async function checkDeletedFiles(
     // Fetch deleted files
     Logger.info('Fetching files marked as deleted...');
     const { data: deletedFiles, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, path_array, root_drive_id, updated_at, mime_type')
       .eq('is_deleted', true)
       .eq('root_drive_id', DYNAMIC_HEALING_FOLDER_ID)

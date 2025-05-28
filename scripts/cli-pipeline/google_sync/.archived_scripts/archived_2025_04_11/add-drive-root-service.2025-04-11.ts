@@ -95,7 +95,7 @@ async function main() {
       
       // Check if folder already exists in the database
       const { data: existingFolders, error: queryError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name')
         .eq('drive_id', resolvedFolderId)
         .eq('deleted', false);
@@ -109,7 +109,7 @@ async function main() {
         console.log(`Folder already exists with name "${existingFolders[0].name}", updating...`);
         
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({
             name: folderName,
             is_root: true,
@@ -137,7 +137,7 @@ async function main() {
       // Insert new root folder
       const now = new Date().toISOString();
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .insert({
           drive_id: resolvedFolderId,
           name: folderName,

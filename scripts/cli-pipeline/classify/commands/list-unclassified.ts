@@ -119,7 +119,7 @@ export async function listUnclassifiedCommand(options: ListUnclassifiedOptions):
       Logger.info(`Fetching sources batch ${Math.floor(i/SOURCES_BATCH_SIZE) + 1} of ${Math.ceil(sourceIds.length/SOURCES_BATCH_SIZE)}...`);
       
       const { data: sources, error: sourcesError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, mime_type')
         .in('id', batchIds);
         

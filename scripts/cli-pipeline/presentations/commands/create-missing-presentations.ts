@@ -49,7 +49,7 @@ async function createPresentationForFolder(folderData: any, presentationService:
     
     // Get video details
     const { data: videoDetails, error: videoError } = await presentationService.supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, drive_id, created_at, modified_at')
       .eq('id', folder.main_video_id)
       .single();
@@ -108,7 +108,7 @@ async function createPresentationForFolder(folderData: any, presentationService:
     
     // Find files in the folder for assets
     const { data: folderFiles, error: folderFilesError } = await presentationService.supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .eq('parent_folder_id', folder.drive_id);
     
@@ -223,7 +223,7 @@ const command = new Command('create-missing-presentations')
       // Get folders with path_depth=0 and main_video_id not null
       // that don't have presentations created for them
       let query = presentationService.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, path, main_video_id, path_depth, root_drive_id')
         .eq('path_depth', 0)
         .not('main_video_id', 'is', null);

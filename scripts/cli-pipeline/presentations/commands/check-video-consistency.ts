@@ -52,7 +52,7 @@ const command = new Command('check-video-consistency')
       log(`- Limit: ${limit}\n`);
       
       const { data: folders, error: foldersError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           name,

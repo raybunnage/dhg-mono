@@ -679,7 +679,7 @@ program
       
       // Get sources for the specified folder
       const { data: dhgSources, error: dhgError } = await presentationService.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .eq('drive_id', dhgFolderId)
         .limit(100); // Limit to avoid query size issues
@@ -1269,7 +1269,7 @@ program
       
       // Get the sources from database
       const { data: sources, error: sourcesError } = await SupabaseClientService.getInstance().getClient()
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, mime_type, path, drive_id, modified_at')
         .in('id', sourceIds);
       

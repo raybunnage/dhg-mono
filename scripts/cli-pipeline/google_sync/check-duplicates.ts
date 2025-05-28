@@ -185,7 +185,7 @@ export async function checkDuplicates(options: CheckDuplicatesOptions) {
     
     // Get total count
     const { count, error: countError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true });
       
     if (countError) {
@@ -197,7 +197,7 @@ export async function checkDuplicates(options: CheckDuplicatesOptions) {
     // Fetch all records - this approach is suitable for smaller tables
     // For large tables, we would use SQL directly with GROUP BY
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, path, path_array, size, mime_type, created_at, updated_at, modified_at, root_drive_id')
       .order('name');
       

@@ -99,7 +99,7 @@ export async function comparePresentationsAssetsCommand(options: ComparePresenta
         Logger.info(`Fetching sources batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(highLevelFolderIds.length/BATCH_SIZE)}...`);
         
         const { data: sources, error: sourcesError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name')
           .in('id', batchIds);
           

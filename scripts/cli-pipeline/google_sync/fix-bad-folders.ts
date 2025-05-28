@@ -73,7 +73,7 @@ async function fixFilesWithFolderTypes(options: FixBadFoldersOptions = {}): Prom
   
   // 1. First, find files that are incorrectly marked with folder document types
   const { data: badFiles, error: badFilesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, document_type_id')
     .not('mime_type', 'eq', 'application/vnd.google-apps.folder')
     .in('document_type_id', FOLDER_DOCUMENT_TYPE_IDS)
@@ -241,7 +241,7 @@ async function fixFilesWithFolderTypes(options: FixBadFoldersOptions = {}): Prom
     // Update the record if not in dry-run mode
     if (!options.dryRun) {
       const { error: updateError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ document_type_id: newDocTypeId })
         .eq('id', file.id);
         
@@ -327,7 +327,7 @@ async function fixExpertDocumentsWithFolderTypes(options: FixBadFoldersOptions =
   for (const expertDoc of expertDocsWithFolderTypes!) {
     // Get the corresponding sources_google record document_type_id
     const { data: sourceData, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, document_type_id, name')
       .eq('id', expertDoc.source_id)
       .single();

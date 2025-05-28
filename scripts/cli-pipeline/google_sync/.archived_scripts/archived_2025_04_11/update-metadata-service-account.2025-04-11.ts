@@ -152,7 +152,7 @@ async function updateMetadata(
     if (verbose) console.log(`Fetching records from Supabase (limit: ${limit})...`);
     
     const { data: records, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .or(`parent_folder_id.eq.${folderId},drive_id.eq.${folderId}`)
       .eq('deleted', false)
@@ -225,7 +225,7 @@ async function updateMetadata(
           // Update record in Supabase
           if (!dryRun) {
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update(updateData)
               .eq('id', record.id);
               

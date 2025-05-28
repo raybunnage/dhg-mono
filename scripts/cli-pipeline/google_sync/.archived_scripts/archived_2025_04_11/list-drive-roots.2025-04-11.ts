@@ -57,7 +57,7 @@ async function listRoots(): Promise<void> {
     
     // Get registered root folders
     const { data: rootFolders, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, path, created_at, updated_at')
       .eq('is_root', true)
       .eq('deleted', false)

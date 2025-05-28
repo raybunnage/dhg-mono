@@ -35,7 +35,7 @@ export function SourceButtons() {
   useEffect(() => {
     const loadFiles = async () => {
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('deleted', false)
         .order('name');
@@ -70,7 +70,7 @@ export function SourceButtons() {
       
       // First get list of existing files to prevent duplicates
       const { data: existingFiles, error: existingError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('drive_id')
         .eq('deleted', false);
 
@@ -94,7 +94,7 @@ export function SourceButtons() {
       if (!dryRun) {
         // First mark files as deleted if they're no longer in Drive
         const { error: updateError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ 
             deleted: true,
             updated_at: new Date().toISOString() 
@@ -108,7 +108,7 @@ export function SourceButtons() {
 
         // Restore files if they reappear in Drive
         const { error: restoreError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ 
             deleted: false,
             updated_at: new Date().toISOString() 
@@ -146,7 +146,7 @@ export function SourceButtons() {
             });
 
             const { error: insertError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .insert([{
                 drive_id: file.id,
                 name: sanitizedName,
@@ -178,7 +178,7 @@ export function SourceButtons() {
 
       if (existingDriveIds.size > 0) {
         const { data: orphanedRecords, error: queryError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, drive_id')
           .not('drive_id', 'in', existingDriveIds)
           .eq('content_extracted', false)
@@ -252,7 +252,7 @@ export function SourceButtons() {
     try {
       // Get first unprocessed PDF or Google Doc
       const { data: doc } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .eq('content_extracted', false)
         .in('mime_type', [
@@ -447,7 +447,7 @@ export function SourceButtons() {
     try {
       // Get all sources_google records
       const { data: sources, error: fetchError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id');
 
       if (fetchError) throw fetchError;
@@ -470,7 +470,7 @@ export function SourceButtons() {
       let deletedCount = 0;
       for (const batch of batches) {
         const { error: deleteError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .delete()
           .in('id', batch);
 
@@ -589,7 +589,7 @@ export function SourceButtons() {
         toast.success(result.message);
         // Refresh files without full page reload
         const { data: updatedFiles } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*')
           .order('created_at', { ascending: false });
         
@@ -621,7 +621,7 @@ export function SourceButtons() {
       if (result.success) {
         // Refresh the file list
         const { data: updatedFiles } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*')
           .order('created_at', { ascending: false });
         

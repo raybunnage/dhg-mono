@@ -16,7 +16,7 @@ import { SupabaseClientService } from '../../../packages/shared/services/supabas
 import { Database } from '../../../supabase/types';
 
 // Define types from the Supabase types file
-type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
 type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
 
 // Create the program
@@ -51,7 +51,7 @@ program
       if (debug) console.log('Querying for PDF files with application/pdf mime_type and null document_type_id...');
       
       const { data: pdfFiles, error: pdfError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, mime_type, document_type_id')
         .eq('mime_type', 'application/pdf')
         .is('document_type_id', null)

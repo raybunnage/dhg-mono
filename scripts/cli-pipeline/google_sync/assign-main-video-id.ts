@@ -66,7 +66,7 @@ if (!folderId || !videoId) {
 const supabaseClientService = SupabaseClientService.getInstance();
 const supabase = supabaseClientService.getClient();
 
-type SourcesGoogleRow = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogleRow = Database['public']['Tables']['google_sources']['Row'];
 
 interface AssignmentResult {
   folderFound: boolean;
@@ -90,7 +90,7 @@ interface ItemNode {
 async function buildHierarchicalTree(rootDriveId: string): Promise<ItemNode | null> {
   // Get the root folder
   const { data: rootItem, error: rootError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*')
     .eq('drive_id', rootDriveId)
     .single();
@@ -108,7 +108,7 @@ async function buildHierarchicalTree(rootDriveId: string): Promise<ItemNode | nu
     processed.add(currentId);
     
     const { data: children, error: childError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('parent_folder_id', currentId)
       .eq('is_deleted', false);
@@ -191,7 +191,7 @@ async function getAllNestedItems(parentDriveId: string): Promise<SourcesGoogleRo
     
     // Get direct children
     const { data: children, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('parent_folder_id', driveId)
       .eq('is_deleted', false);
@@ -242,7 +242,7 @@ async function assignMainVideoId(): Promise<AssignmentResult> {
   try {
     // First, verify the folder exists and has path_depth = 0
     const { data: folder, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('drive_id', folderId)
       .eq('path_depth', 0)
@@ -278,7 +278,7 @@ async function assignMainVideoId(): Promise<AssignmentResult> {
     // Update the folder itself first
     if (!isDryRun) {
       const { error: updateError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ 
           main_video_id: videoId,
           updated_at: new Date().toISOString()
@@ -328,7 +328,7 @@ async function assignMainVideoId(): Promise<AssignmentResult> {
         // Update batch
         const ids = batch.map(item => item.id);
         const { error: updateError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ 
             main_video_id: videoId,
             updated_at: new Date().toISOString()
@@ -391,7 +391,7 @@ async function main() {
     if (activeFilter && activeFilter.rootDriveId) {
       // Get the folder to check its root_drive_id
       const { data: folderCheck, error: checkError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('root_drive_id')
         .eq('drive_id', folderId)
         .single();

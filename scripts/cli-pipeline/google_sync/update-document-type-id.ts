@@ -41,7 +41,7 @@ program
       
       // First check if the source exists and get its current document_type_id
       const { data: sourceData, error: sourceError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, document_type_id')
         .eq('id', options.sourceId)
         .single();
@@ -86,7 +86,7 @@ program
       // Update the document_type_id in sources_google
       console.log('\nUpdating sources_google record...');
       const { data: updateData, error: updateError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({
           document_type_id: options.documentTypeId,
           updated_at: new Date().toISOString()

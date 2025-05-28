@@ -69,7 +69,7 @@ async function main() {
     // Check sources_google
     try {
       const { count, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true });
       
       if (error) {
@@ -81,7 +81,7 @@ async function main() {
       
       // Check for DHG records by root_drive_id
       const { count: dhgCount, error: dhgError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .eq('root_drive_id', '1wriOM2j2IglnMcejplqG_XcCxSIfoRMV');
       
@@ -92,7 +92,7 @@ async function main() {
       
       // Also check by path for comparison
       const { count: dhgPathCount, error: dhgPathError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .ilike('path', '%Dynamic Healing Discussion Group%');
       
@@ -102,7 +102,7 @@ async function main() {
       
       // Check for PVSG records by path
       const { count: pvsgCount, error: pvsgError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .ilike('path', '%Polyvagal Steering Group%');
       
@@ -118,7 +118,7 @@ async function main() {
     // Check sources_google
     try {
       const { count, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true });
       
       if (error) {
@@ -148,7 +148,7 @@ async function main() {
       } else {
         try {
           // Use direct schema manipulation to create the table
-          const { error } = await supabase.schema('public').createTable('sources_google', [
+          const { error } = await supabase.schema('public').createTable('google_sources', [
             { name: 'id', type: 'uuid', primaryKey: true },
             { name: 'name', type: 'text', notNull: true },
             { name: 'mime_type', type: 'text' },
@@ -212,7 +212,7 @@ async function main() {
       if (!skipCreate) {
         try {
           const { error: clearError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .delete()
             .neq('id', '00000000-0000-0000-0000-000000000000');
           
@@ -230,7 +230,7 @@ async function main() {
       let hasMore = true;
       
       // Prepare the query
-      let baseQuery = supabase.from('sources_google').select('*');
+      let baseQuery = supabase.from('google_sources').select('*');
       
       if (targetRootId) {
         // Use root_drive_id for more accurate filtering
@@ -328,7 +328,7 @@ async function main() {
         if (filteredRecords.length > 0) {
           // Insert the transformed records into sources_google
           const { error: insertError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .upsert(filteredRecords);
           
           if (insertError) {
@@ -357,7 +357,7 @@ async function main() {
       try {
         // Count the records in sources_google
         const { count: finalCount, error: countError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*', { count: 'exact', head: true });
         
         if (countError) {
@@ -368,7 +368,7 @@ async function main() {
         
         // Get a sample record
         const { data: sampleData, error: sampleError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*')
           .limit(1);
         

@@ -31,7 +31,7 @@ function Viewer2() {
       // First, create an array of promises for each target folder name
       const folderPromises = TARGET_ROOT_FOLDERS.map(folderName => 
         supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, drive_id, name, mime_type, path, parent_path, is_root, parent_folder_id')
           .eq('name', folderName)
           .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -62,7 +62,7 @@ function Viewer2() {
         
         // Get all folders
         const { data: allFolders, error: allFoldersError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, drive_id, name, mime_type, path, parent_path, is_root, parent_folder_id')
           .eq('mime_type', 'application/vnd.google-apps.folder');
           
@@ -94,7 +94,7 @@ function Viewer2() {
         
         // Try to find folders marked as is_root
         const { data: rootFolders, error: rootFoldersError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, drive_id, name, mime_type, path, parent_path, is_root, parent_folder_id')
           .eq('is_root', true)
           .eq('mime_type', 'application/vnd.google-apps.folder');
@@ -175,7 +175,7 @@ function Viewer2() {
       // 1. First, retrieve ALL records from sources_google
       // This gives us full access to analyze the data structure client-side
       const { data: allItems, error: dataError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id, name, mime_type, path, parent_path, 
           parent_folder_id, drive_id, is_root, parent_id
@@ -476,7 +476,7 @@ function Viewer2() {
         
         // First get all root folders (using the direct approach that works)
         const { data: folders, error: folderError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, mime_type, path, parent_path, is_root, drive_id')
           .eq('mime_type', 'application/vnd.google-apps.folder')
           .order('name');
@@ -496,7 +496,7 @@ function Viewer2() {
         
         // Get all files and folders 
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, mime_type, path, parent_path, is_root');
           
         if (error) throw error;

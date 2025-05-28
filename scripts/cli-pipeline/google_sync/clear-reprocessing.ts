@@ -108,7 +108,7 @@ async function clearReprocessingStatus(options: ClearReprocessingOptions = {}): 
       
       if (sourceIds.length > 0) {
         const { data: sources, error: sourcesError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, mime_type')
           .in('id', sourceIds);
           
@@ -313,7 +313,7 @@ async function clearReprocessingStatus(options: ClearReprocessingOptions = {}): 
               if (batchSourceIds.length === 0) continue;
               
               const { data: sources, error: sourcesError } = await supabase
-                .from('sources_google')
+                .from('google_sources')
                 .select('id, name')
                 .in('id', batchSourceIds);
                 

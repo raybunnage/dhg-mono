@@ -122,7 +122,7 @@ async function verifyDeletions(
   try {
     // Build query for deleted files
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, path, deleted_at')
       .eq('is_deleted', true)
       .order('updated_at', { ascending: false })
@@ -216,7 +216,7 @@ async function verifyDeletions(
       if (!isDryRun) {
         const idsToRestore = verifiedStillExisting.map(r => r.id);
         const { error: restoreError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({
             is_deleted: false,
             updated_at: new Date().toISOString()

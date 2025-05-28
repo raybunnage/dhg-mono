@@ -339,7 +339,7 @@ async function listRootFolders() {
   
   try {
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('is_root', true)
       .eq('deleted', false)

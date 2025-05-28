@@ -65,7 +65,7 @@ export async function linkTopLevelFolders(options: LinkTopLevelFoldersOptions): 
     loggerUtil.info('Finding top-level folders with main video IDs...');
     
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select(`
         id, 
         name, 

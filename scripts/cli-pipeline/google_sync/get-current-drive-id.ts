@@ -186,7 +186,7 @@ export async function getCurrentDriveId(options: GetCurrentDriveIdOptions) {
       // Also check if this file exists in our database
       const supabase = SupabaseClientService.getInstance().getClient();
       const { data: dbRecord } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, path, modified_at, size')
         .eq('drive_id', driveId)
         .single();

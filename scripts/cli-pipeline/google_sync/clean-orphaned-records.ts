@@ -31,7 +31,7 @@ async function cleanOrphanedRecords(options: CleanOptions): Promise<void> {
   
   // Get valid source IDs from sources_google
   const { data: validSources, error: sourcesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id');
     
   if (sourcesError) {

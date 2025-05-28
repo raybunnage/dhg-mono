@@ -292,7 +292,7 @@ async function main() {
       
       // Get the source file information
       const { data: sourceFile, error: sourceError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name')
         .eq('id', document.source_id)
         .single();

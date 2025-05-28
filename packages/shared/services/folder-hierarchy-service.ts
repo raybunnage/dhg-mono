@@ -65,7 +65,7 @@ export class FolderHierarchyService {
 
     // First, get the starting item by its Supabase ID
     const { data: startItem, error: startError } = await this.supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, path_depth, parent_folder_id, main_video_id, path, mime_type')
       .eq('id', itemId)
       .eq('is_deleted', false)
@@ -99,7 +99,7 @@ export class FolderHierarchyService {
     while (currentDriveId && depth < MAX_DEPTH) {
       // Get the parent by its drive_id
       const { data: item, error } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, path_depth, parent_folder_id, main_video_id, path, mime_type')
         .eq('drive_id', currentDriveId)
         .eq('is_deleted', false)
@@ -158,7 +158,7 @@ export class FolderHierarchyService {
   ): Promise<Array<{ id: string; name: string; current_main_video_id: string | null }>> {
     // Get the high-level folder info
     const { data: folder, error: folderError } = await this.supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('name')
       .eq('id', highLevelFolderId)
       .single();
@@ -174,7 +174,7 @@ export class FolderHierarchyService {
     // Find all items that are in this folder's hierarchy
     // Using path_array contains the folder name
     const { data: items, error } = await this.supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, main_video_id')
       .contains('path_array', [folder.name])
       .neq('main_video_id', mainVideoId)
@@ -209,7 +209,7 @@ export class FolderHierarchyService {
       const batch = itemIds.slice(i, i + BATCH_SIZE);
       
       const { error } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ main_video_id: mainVideoId })
         .in('id', batch);
 
@@ -236,7 +236,7 @@ export class FolderHierarchyService {
     
     // Get the drive_id for this folder first
     const { data: folderInfo, error: folderError } = await this.supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('drive_id')
       .eq('id', folderId)
       .single();
@@ -247,7 +247,7 @@ export class FolderHierarchyService {
 
     // First check for MP4 files directly in this folder
     const { data: directVideos, error: directError } = await this.supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, path_depth, parent_folder_id, main_video_id, path, mime_type')
       .eq('parent_folder_id', folderInfo.drive_id)
       .eq('mime_type', 'video/mp4')
@@ -274,7 +274,7 @@ export class FolderHierarchyService {
 
     // Get subfolders
     const { data: subfolders, error: subfolderError } = await this.supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id')
       .eq('parent_folder_id', folderInfo.drive_id)
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -327,7 +327,7 @@ export class FolderHierarchyService {
     try {
       // Get all high-level folders (path_depth = 0) without main_video_id
       let query = this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, main_video_id')
         .eq('path_depth', 0)
         .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -373,7 +373,7 @@ export class FolderHierarchyService {
             
             // Update the high-level folder with main_video_id
             const { error: updateError } = await this.supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ main_video_id: mainVideoId })
               .eq('id', folder.id);
 
@@ -418,7 +418,7 @@ export class FolderHierarchyService {
     try {
       // Get the folder name for path_array filtering
       const { data: folder, error: folderError } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('name')
         .eq('id', highLevelFolderId)
         .single();
@@ -429,7 +429,7 @@ export class FolderHierarchyService {
 
       // Find all items that are nested under this folder (using path_array)
       const { data: nestedItems, error } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .contains('path_array', [folder.name])
         .neq('id', highLevelFolderId) // Don't include the folder itself
@@ -463,7 +463,7 @@ export class FolderHierarchyService {
   async findMainVideoInFolder(folderId: string): Promise<FolderInfo | null> {
     // First check for MP4 files directly in the folder
     const { data: directVideos, error: directError } = await this.supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, path_depth, parent_folder_id, main_video_id, path, mime_type')
       .eq('parent_folder_id', folderId)
       .eq('mime_type', 'video/mp4')
@@ -485,7 +485,7 @@ export class FolderHierarchyService {
 
     // If no direct videos, search in subfolders
     const { data: subfolders, error: subfolderError } = await this.supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .eq('parent_folder_id', folderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')

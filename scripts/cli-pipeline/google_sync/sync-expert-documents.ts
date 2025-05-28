@@ -117,7 +117,7 @@ async function syncExpertDocuments(options: SyncExpertDocumentsOptions): Promise
     // Fallback to a simpler query approach
     // Get all sources_google files that are not folders
     const { data: allSources, error: allSourcesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select(`
         id,
         name,

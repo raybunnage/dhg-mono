@@ -117,13 +117,13 @@ async function listUnsupportedDocumentTypes(options: { format?: string, debug?: 
 
     // First try by document type ID
     const { data: unsupportedSources, error: unsupportedError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, document_type_id, name, mime_type')
       .in('document_type_id', unsupportedDocumentTypeIds);
       
     // Then try by MIME type
     const { data: unsupportedMimeSources, error: unsupportedMimeError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, document_type_id, name, mime_type')
       .in('mime_type', unsupportedMimeTypes);
 

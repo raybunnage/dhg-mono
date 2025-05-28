@@ -43,7 +43,7 @@ export class ExpertDocumentService {
     try {
       // Step 1: Get folder info
       const { data: folderInfo, error: folderError } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, path')
         .eq('drive_id', folderId)
         .eq('mime_type', 'application/vnd.google-apps.folder')

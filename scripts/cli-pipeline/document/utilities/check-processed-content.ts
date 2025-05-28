@@ -54,7 +54,7 @@ async function checkProcessedContent() {
   for (const sourceId of sourceIds) {
     // Get source info
     const { data: sources, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .eq('id', sourceId)
       .limit(1);

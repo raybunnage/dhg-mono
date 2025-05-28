@@ -82,7 +82,7 @@ export class FileService {
     try {
       // Get all direct children of this folder
       const { data: children, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           drive_id,
@@ -185,7 +185,7 @@ export class FileService {
 
     try {
       const { data: children, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           drive_id,
@@ -241,7 +241,7 @@ export class FileService {
   ): Promise<GoogleDriveItem[]> {
     try {
       let query = supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           drive_id,
@@ -300,7 +300,7 @@ export class FileService {
 
       // Get all direct MP4 files in the folder
       const { data: directMp4Files, error: directError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           drive_id,
@@ -323,7 +323,7 @@ export class FileService {
 
       // Get all subfolders
       const { data: subfolders, error: subfolderError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name')
         .eq('parent_folder_id', folderDriveId)
         .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -439,7 +439,7 @@ export class FileService {
       
       // Update the folder with the main_video_id
       const { error: updateError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ 
           main_video_id: bestMp4File.id,
           updated_at: new Date().toISOString()

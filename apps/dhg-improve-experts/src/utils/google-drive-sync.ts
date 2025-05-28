@@ -2,8 +2,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '../../../../../supabase/types';
 import { toast } from 'react-hot-toast';
 
-type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
-type SourcesGoogleInsert = Database['public']['Tables']['sources_google']['Insert'];
+type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
+type SourcesGoogleInsert = Database['public']['Tables']['google_sources']['Insert'];
 
 interface DriveFile {
   id: string;
@@ -37,7 +37,7 @@ export const syncGoogleDriveFiles = async (accessToken: string, folderId: string
 
     // Get existing files
     const { data: existingFiles, error: existingError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('drive_id, metadata')
       .eq('deleted', false);
 
@@ -75,7 +75,7 @@ export const syncGoogleDriveFiles = async (accessToken: string, folderId: string
         if (existingFile) {
           if (JSON.stringify(existingFile.metadata) !== JSON.stringify(metadata)) {
             await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({
                 metadata,
                 updated_at: new Date().toISOString()
@@ -87,7 +87,7 @@ export const syncGoogleDriveFiles = async (accessToken: string, folderId: string
           }
         } else {
           await supabase
-            .from('sources_google')
+            .from('google_sources')
             .insert([{
               drive_id: file.id,
               name: file.name,

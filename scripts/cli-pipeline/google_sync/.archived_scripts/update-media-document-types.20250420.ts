@@ -46,7 +46,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     console.log('\nUpdating audio files (m4a files and audio/mp4)...');
     if (!dryRun) {
       const { error } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .update({ document_type_id: '6ece37e7-840d-4a0c-864d-9f1f971b1d7e' })
         .or('name.ilike.%.m4a,mime_type.eq.audio/mp4');
       
@@ -61,7 +61,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     console.log('\nUpdating high level folders (path_depth = 0 or 1, not root)...');
     if (!dryRun) {
       const { error } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .update({ document_type_id: 'bd903d99-64a1-4297-ba76-1094ab235dac' })
         .or('path_depth.eq.0,path_depth.eq.1')
         .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -78,7 +78,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     console.log('\nUpdating deeper folders...');
     if (!dryRun) {
       const { error } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .update({ document_type_id: 'dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd' })
         .gt('path_depth', 1)
         .eq('mime_type', 'application/vnd.google-apps.folder');
@@ -94,7 +94,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     console.log('\nUpdating root folders...');
     if (!dryRun) {
       const { error } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .update({ document_type_id: '0d61a685-10e0-4c82-b964-60b88b02ac15' })
         .eq('is_root', true);
       
@@ -109,7 +109,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     console.log('\nUpdating PowerPoint files...');
     if (!dryRun) {
       const { error } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .update({ document_type_id: '299ad443-4d84-40d8-98cb-a9df423ba451' })
         .ilike('name', '%.pptx');
       
@@ -124,7 +124,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     console.log('\nUpdating video files...');
     if (!dryRun) {
       const { error } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .update({ document_type_id: 'ba1d7662-0168-4756-a2ea-6d964fd02ba8' })
         .eq('mime_type', 'video/mp4');
       
@@ -152,7 +152,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         
         // Get sources_google records with "Presentation Announcement" document type
         const { data: presentationSources, error: sourcesError } = await supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .select('id')
           .eq('document_type_id', presentationAnnouncementTypeId);
         
@@ -296,7 +296,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       
       // Get sources_google records for document type e9d3e473-5315-4837-9f5f-61f150cbd137
       const { data: specificTypeSources, error: sourcesError } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .eq('document_type_id', 'e9d3e473-5315-4837-9f5f-61f150cbd137');
         
@@ -335,7 +335,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       
       // Mark folders for reprocessing
       const { data: folderSources, error: folderError } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .eq('mime_type', 'application/vnd.google-apps.folder');
         
@@ -392,7 +392,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           // Get the associated sources_google records to check file types
           const incorrectSourceIds = incorrectDocs.map(doc => doc.source_id);
           const { data: incorrectSources, error: incorrectSourcesError } = await supabaseClient
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, document_type_id')
             .in('id', incorrectSourceIds);
             
@@ -445,7 +445,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       // For m4a files, we need to process all expert documents regardless of JSON validation
       // First, let's filter documents related to m4a files by getting their source_ids
       const { data: m4aSources, error: m4aSourcesError } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name')
         .or('name.ilike.%.m4a,mime_type.eq.audio/mp4');
 
@@ -502,7 +502,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         for (let i = 0; i < sourceIds.length; i += batchSize) {
           const batchIds = sourceIds.slice(i, i + batchSize);
           const { data: sources, error: sourcesError } = await supabaseClient
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, mime_type, document_type_id')
             .in('id', batchIds);
             
@@ -577,7 +577,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
                   // Update the sources_google document_type_id first
                   if (!dryRun) {
                     const { error: updateSourceError } = await supabaseClient
-                      .from('sources_google')
+                      .from('google_sources')
                       .update({ document_type_id: 'c1a7b78b-c61e-44a4-8b77-a27a38cbba7e' })
                       .eq('id', source.id);
                       

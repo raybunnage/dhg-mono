@@ -78,7 +78,7 @@ async function findAllDHGFiles(supabase) {
   // Method 1: Find by root_drive_id
   console.log('\nMethod 1: Matching by root_drive_id...');
   const { data: rootIdFiles, error: rootIdError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*')
     .eq('root_drive_id', DHG_ROOT_ID);
   
@@ -99,7 +99,7 @@ async function findAllDHGFiles(supabase) {
   // Method 2: Find by path containing DHG
   console.log('\nMethod 2: Matching by path...');
   const { data: pathFiles, error: pathError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*')
     .ilike('path', `%${DHG_ROOT_NAME}%`);
   
@@ -129,7 +129,7 @@ async function findAllDHGFiles(supabase) {
   
   // Get all potential files that could match (not already in dhgFileMap)
   const { data: allFiles, error: allFilesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*');
   
   if (allFilesError) {
@@ -371,7 +371,7 @@ async function copyToSourcesGoogle2(supabase, dhgFiles) {
   
   // Check if sources_google exists and clear it if needed
   const { data: sg2Count, error: sg2Error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*', { count: 'exact', head: true });
   
   if (sg2Error) {
@@ -400,7 +400,7 @@ async function copyToSourcesGoogle2(supabase, dhgFiles) {
     if (sg2Count > 0 && forceOverwrite) {
       console.log('Clearing existing data from sources_google...');
       const { error: clearError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       
@@ -424,7 +424,7 @@ async function copyToSourcesGoogle2(supabase, dhgFiles) {
     
     try {
       const { error: insertError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .upsert(batch);
       
       if (insertError) {
@@ -442,7 +442,7 @@ async function copyToSourcesGoogle2(supabase, dhgFiles) {
   
   // Final verification
   const { count: finalCount, error: finalError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('*', { count: 'exact', head: true });
   
   if (!finalError) {

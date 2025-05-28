@@ -171,7 +171,7 @@ function Dashboard() {
     async function fetchRootFolders() {
       try {
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, drive_id')
           .is('parent_path', null)
           .eq('mime_type', 'application/vnd.google-apps.folder')

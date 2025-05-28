@@ -40,7 +40,7 @@ async function runSimpleHealthCheck() {
     // Test sources_google table query
     console.log('\n🔍 Testing sources_google table query...');
     const { data: sourcesData, error: sourcesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .limit(3);
     

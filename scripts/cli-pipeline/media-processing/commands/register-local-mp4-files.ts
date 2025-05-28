@@ -99,7 +99,7 @@ async function checkFileExistsInDb(supabase: any, filename: string): Promise<boo
   try {
     // Try exact match first
     const { data: exactMatches, error: exactError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .eq('name', filename)
       .eq('deleted', false);
@@ -117,7 +117,7 @@ async function checkFileExistsInDb(supabase: any, filename: string): Promise<boo
     const filenameBase = filename.replace(/\.mp4$/i, '').toLowerCase();
     
     const { data: fuzzyMatches, error: fuzzyError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .ilike('name', `%${filenameBase}%`)
       .eq('deleted', false);
@@ -199,7 +199,7 @@ async function registerLocalMp4Files(): Promise<LocalFileInfo[]> {
         
         // Insert record into sources_google table
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .insert({
             drive_id: driveId,
             name: filename,

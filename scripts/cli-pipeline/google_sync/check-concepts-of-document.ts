@@ -11,7 +11,7 @@ async function checkConcepts() {
     
     // Get sources_google record for "Impact activites.docx"
     const { data: sourceData, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, document_type_id')
       .ilike('name', 'Impact activites.docx')
       .limit(1);

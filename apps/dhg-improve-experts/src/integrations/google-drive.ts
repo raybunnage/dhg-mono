@@ -42,7 +42,7 @@ export async function populateSourcesGoogle(expertId: string, folderId: string) 
 
         // Insert into sources_google using upsert
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .upsert(sourceData, {
             onConflict: 'drive_id',
             returning: true

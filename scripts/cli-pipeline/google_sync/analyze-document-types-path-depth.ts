@@ -58,7 +58,7 @@ async function analyzeDocumentTypesByPathDepth(): Promise<void> {
   try {
     // 1. Count total folders with document_type_id
     const { data: totalCountData, error: totalError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('count', { count: 'exact', head: true })
       .eq('is_deleted', false)
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -74,7 +74,7 @@ async function analyzeDocumentTypesByPathDepth(): Promise<void> {
     
     // 2. Count folders with document_type_id and path_depth = 0
     const { data: zeroDepthCountData, error: zeroDepthError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('count', { count: 'exact', head: true })
       .eq('is_deleted', false)
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -153,7 +153,7 @@ async function analyzeDocumentTypesByPathDepth(): Promise<void> {
     console.log('----------------------------------------------------------');
     
     const { data: examples, error: examplesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, path_depth, document_types!inner(name)')
       .eq('is_deleted', false)
       .eq('mime_type', 'application/vnd.google-apps.folder')

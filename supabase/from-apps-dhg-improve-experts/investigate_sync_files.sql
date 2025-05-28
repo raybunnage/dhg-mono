@@ -3,7 +3,7 @@
 
 -- 1. Get a count of total synced files
 SELECT COUNT(*) AS total_files 
-FROM sources_google;
+FROM google_sources;
 
 -- 2. Find the most recent sync operation and its details
 SELECT * 
@@ -13,21 +13,21 @@ LIMIT 5;
 
 -- 3. Count files by their parent folder to see hierarchy distribution
 SELECT parent_folder_id, COUNT(*) as file_count
-FROM sources_google
+FROM google_sources
 GROUP BY parent_folder_id
 ORDER BY file_count DESC
 LIMIT 20;
 
 -- 4. Examine distribution of file types
 SELECT mime_type, COUNT(*) as count
-FROM sources_google
+FROM google_sources
 GROUP BY mime_type
 ORDER BY count DESC
 LIMIT 20;
 
 -- 5. Check if there are duplicate files with the same name but different IDs
 SELECT name, COUNT(*) as occurrences
-FROM sources_google
+FROM google_sources
 GROUP BY name
 HAVING COUNT(*) > 1
 ORDER BY occurrences DESC
@@ -42,7 +42,7 @@ WITH RECURSIVE folder_tree AS (
     name, 
     parent_folder_id,
     1 as level
-  FROM sources_google
+  FROM google_sources
   WHERE mime_type = 'application/vnd.google-apps.folder'
     AND parent_folder_id IS NULL
   
@@ -55,7 +55,7 @@ WITH RECURSIVE folder_tree AS (
     c.name, 
     c.parent_folder_id,
     p.level + 1
-  FROM sources_google c
+  FROM google_sources c
   JOIN folder_tree p ON c.parent_folder_id = p.drive_id
   WHERE c.mime_type = 'application/vnd.google-apps.folder'
 )
@@ -65,7 +65,7 @@ SELECT
   f.level,
   COUNT(s.id) as contained_files
 FROM folder_tree f
-LEFT JOIN sources_google s ON s.parent_folder_id = f.drive_id
+LEFT JOIN google_sources s ON s.parent_folder_id = f.drive_id
 GROUP BY f.drive_id, f.name, f.level
 ORDER BY contained_files DESC
 LIMIT 20;
@@ -76,7 +76,7 @@ SELECT
   mime_type, 
   parent_folder_id,
   created_at
-FROM sources_google
+FROM google_sources
 ORDER BY created_at DESC
 LIMIT 100;
 
@@ -91,7 +91,7 @@ WITH RECURSIVE folder_structure AS (
     mime_type,
     0 AS depth,
     ARRAY[name::text] AS path
-  FROM sources_google
+  FROM google_sources
   WHERE drive_id = 'YOUR_FOLDER_ID_HERE' -- REPLACE THIS WITH YOUR ACTUAL FOLDER ID
   
   UNION ALL
@@ -105,7 +105,7 @@ WITH RECURSIVE folder_structure AS (
     c.mime_type,
     p.depth + 1,
     p.path || c.name::text
-  FROM sources_google c
+  FROM google_sources c
   JOIN folder_structure p ON c.parent_folder_id = p.drive_id
 )
 SELECT 
@@ -119,13 +119,13 @@ ORDER BY depth;
 SELECT 
   DATE_TRUNC('hour', created_at) as creation_hour,
   COUNT(*) as files_added
-FROM sources_google
+FROM google_sources
 GROUP BY DATE_TRUNC('hour', created_at)
 ORDER BY creation_hour DESC;
 
 -- 10. Find which folders were most recently synced 
 SELECT DISTINCT parent_folder_id, COUNT(*) as file_count
-FROM sources_google
+FROM google_sources
 WHERE created_at > NOW() - INTERVAL '1 day'
 GROUP BY parent_folder_id
 ORDER BY file_count DESC
@@ -140,7 +140,7 @@ WITH RECURSIVE folder_hierarchy AS (
     parent_folder_id,
     1 AS depth,
     name::text AS path
-  FROM sources_google
+  FROM google_sources
   WHERE mime_type = 'application/vnd.google-apps.folder'
     AND parent_folder_id IS NULL
   
@@ -153,7 +153,7 @@ WITH RECURSIVE folder_hierarchy AS (
     c.parent_folder_id,
     p.depth + 1,
     (p.path || ' > ' || c.name)
-  FROM sources_google c
+  FROM google_sources c
   JOIN folder_hierarchy p ON c.parent_folder_id = p.drive_id
   WHERE c.mime_type = 'application/vnd.google-apps.folder'
 )
@@ -166,5 +166,5 @@ GROUP BY depth
 ORDER BY depth;
 
 -- 12. Clean up unwanted files if necessary (UNCOMMENT ONLY IF NEEDED)
--- DELETE FROM sources_google WHERE created_at > '2025-03-01 00:00:00' AND parent_folder_id = 'YOUR_FOLDER_ID';
+-- DELETE FROM google_sources WHERE created_at > '2025-03-01 00:00:00' AND parent_folder_id = 'YOUR_FOLDER_ID';
 -- DELETE FROM google_sync_history WHERE timestamp > '2025-03-01 00:00:00';

@@ -171,7 +171,7 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
     try {
       // Use sources_google table for connection test - this table should always exist
       const { data: sourceTest, error: sourceError } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .limit(1);
         
@@ -245,7 +245,7 @@ async function syncMimeTypes(options: SyncMimeTypesOptions): Promise<void> {
     console.log('Fetching all unique MIME types from sources_google...');
     
     const { data: uniqueMimeTypes, error: mimeTypesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('mime_type')
       .not('mime_type', 'is', null)
       .order('mime_type');

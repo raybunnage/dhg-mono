@@ -22,7 +22,7 @@ async function main() {
     
     // 2. Prepare the query
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, mime_type, drive_id')
       .limit(100);
     

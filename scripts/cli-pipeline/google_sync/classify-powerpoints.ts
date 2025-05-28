@@ -727,7 +727,7 @@ async function classifyPowerPointDocuments(
     // Find all PowerPoint files in the database
     // We're selecting all fields explicitly to avoid TypeScript issues
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, document_type_id, created_at, modified_at, size, is_deleted, mime_type')
       .is('is_deleted', false)
       .eq('mime_type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
@@ -748,7 +748,7 @@ async function classifyPowerPointDocuments(
         }
         
         const { data: folders } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, drive_id, name, root_drive_id')
           .or(`name.ilike.%${folderId}%,path.ilike.%${folderId}%`)
           .is('is_folder', true)
@@ -917,7 +917,7 @@ async function classifyPowerPointDocuments(
           
           // Clear the processing status for files we won't process
           await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ processing_status: null, processing_started_at: null })
             .eq('id', file.id);
         }
@@ -1007,7 +1007,7 @@ async function classifyPowerPointDocuments(
           // Update document type in sources_google
           console.log(`➡️ Updating document_type_id in sources_google table...`);
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ document_type_id: classificationResult.document_type_id })
             .eq('id', file.id);
           

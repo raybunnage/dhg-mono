@@ -233,7 +233,7 @@ type PresentationAsset = Database['public']['Tables']['presentation_assets']['Ro
   expert_document?: ExpertDocument | null;
 };
 
-type SourceGoogle = Database['public']['Tables']['sources_google']['Row'] & {
+type SourceGoogle = Database['public']['Tables']['google_sources']['Row'] & {
   document_type?: { document_type: string; mime_type: string | null } | null;
 };
 
@@ -565,7 +565,7 @@ export function Home() {
                 
                 // Get all relevant source IDs for these root drive IDs
                 const { data: sources } = await supabase
-                  .from('sources_google')
+                  .from('google_sources')
                   .select('id')
                   .in('root_drive_id', rootDriveIds);
                 
@@ -740,7 +740,7 @@ export function Home() {
             subject_classification_id
           `)
           .in('entity_id', videoSourceIds)
-          .eq('entity_type', 'sources_google');
+          .eq('entity_type', 'google_sources');
         
         if (classificationError) {
           console.error('Error fetching classifications:', classificationError);

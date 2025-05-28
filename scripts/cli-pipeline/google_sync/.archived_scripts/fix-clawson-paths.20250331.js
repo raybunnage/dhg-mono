@@ -22,7 +22,7 @@ async function fixPaths() {
   try {
     // Get all records related to the folder
     const { data: records, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .or(`parent_folder_id.eq.${FOLDER_ID},drive_id.eq.${FOLDER_ID}`);
     
@@ -47,7 +47,7 @@ async function fixPaths() {
         console.log(`Updating path for ${record.name} from "${record.path}" to "${newPath}"`);
         
         const { error: updateError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({
             path: newPath,
             parent_path: ROOT_PATH,

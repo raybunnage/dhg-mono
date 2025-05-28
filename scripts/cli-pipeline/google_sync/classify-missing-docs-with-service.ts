@@ -67,7 +67,7 @@ async function processFile(
     
     // Find the file's source_id from drive_id
     const { data: sourceData, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id')
       .eq('drive_id', driveId)
       .limit(1);
@@ -268,14 +268,14 @@ async function classifyMissingDocuments(
     // 2. Build query for documents to process
     // First, we'll try to find unclassified files (null document_type_id)
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*, expert_documents(id, reprocessing_status)')
       .is('is_deleted', false);
     
     // We'll use two separate queries and combine the results:
     // 1. First, get files with null document_type_id (unclassified)
     const unclassifiedQuery = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .is('is_deleted', false)
       .is('document_type_id', null);
@@ -297,7 +297,7 @@ async function classifyMissingDocuments(
     let reprocessingFiles: any[] = [];
     if (sourceIds.length > 0) {
       const reprocessingQuery = supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .is('is_deleted', false)
         .in('id', sourceIds);
@@ -341,7 +341,7 @@ async function classifyMissingDocuments(
         }
         
         const { data: folders } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, drive_id, name, root_drive_id')
           .or(`name.ilike.%${folderId}%,path.ilike.%${folderId}%`)
           .is('is_folder', true)
@@ -478,7 +478,7 @@ async function classifyMissingDocuments(
           }
           
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ document_type_id: cleanDocumentTypeId })
             .eq('id', file.id);
           

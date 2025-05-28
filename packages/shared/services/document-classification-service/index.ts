@@ -240,7 +240,7 @@ export class DocumentClassificationService {
       
       // 1. Update the document_type_id in sources_google
       const { error: sourceUpdateError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ document_type_id: classification.document_type_id })
         .eq('id', sourceId);
         

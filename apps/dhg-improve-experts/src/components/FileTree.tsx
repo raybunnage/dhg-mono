@@ -5,9 +5,9 @@ import { FileTreeItem } from './FileTreeItem';
 import type { Database } from '../../../../supabase/types';
 
 type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
-type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
 type BatchProcessingStatus = Database['public']['Views']['batch_processing_status']['Row'];
-type Json = Database['public']['Tables']['sources_google']['Row']['metadata'];
+type Json = Database['public']['Tables']['google_sources']['Row']['metadata'];
 
 // First, let's define a proper metadata type based on what we know exists
 interface FileMetadata {

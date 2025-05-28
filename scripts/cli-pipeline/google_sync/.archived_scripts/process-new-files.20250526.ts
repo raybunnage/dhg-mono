@@ -157,7 +157,7 @@ async function processNewFiles(rootDriveId?: string): Promise<ProcessResult> {
     // Note: processing_status doesn't exist in sources_google, we need to check
     // which files don't have expert_documents records yet
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, mime_type, document_type_id, main_video_id, path_depth')
       .eq('is_deleted', false)
       // IMPORTANT: Exclude folders - we only want actual files
@@ -270,7 +270,7 @@ async function processNewFiles(rootDriveId?: string): Promise<ProcessResult> {
             
             // Update the sources_google record with the found main_video_id
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ main_video_id: currentMainVideoId })
               .eq('id', file.id);
             
@@ -434,7 +434,7 @@ async function displayNewSourcesGoogleTable(sourceIds: string[]) {
   
   try {
     const { data: records, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, modified_at, main_video_id, path_depth')
       .in('id', sourceIds)
       .order('path_depth')

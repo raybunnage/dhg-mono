@@ -87,7 +87,7 @@ const command = new Command('repair-mismatched-video-ids')
       
       // Step 2: Get info about these folders
       let foldersQuery = supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, main_video_id, root_drive_id')
         .in('id', folderIds)
         .not('main_video_id', 'is', null);
@@ -132,7 +132,7 @@ const command = new Command('repair-mismatched-video-ids')
       
       // Step 4: Get video name information
       let videosQuery = supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, root_drive_id')
         .in('id', videoIdArray);
       

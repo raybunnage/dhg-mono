@@ -103,7 +103,7 @@ program
       console.log('\nFinding corresponding sources_google records with .docx extension...');
       
       const { data: sourceFiles, error: sourceError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, mime_type')
         .in('id', sourceIds)
         .ilike('name', '%.docx');
@@ -263,7 +263,7 @@ Return your classification as a complete, valid JSON object with all of these fi
             
             // Update ONLY the sources_google record with the document_type_id
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ 
                 document_type_id: cleanDocumentTypeId,
                 updated_at: new Date().toISOString()
@@ -487,7 +487,7 @@ export async function reprocessDocxFiles(options: {
     
     // STEP 2: Find corresponding sources_google records that are .docx files
     const { data: sourceFiles, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, mime_type')
       .in('id', sourceIds)
       .ilike('name', '%.docx');
@@ -574,7 +574,7 @@ Return your classification as a complete, valid JSON object with all of these fi
         if (!dryRun) {
           // Update ONLY the sources_google record with the document_type_id
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ 
               document_type_id: classificationResponse.document_type_id,
               updated_at: new Date().toISOString()

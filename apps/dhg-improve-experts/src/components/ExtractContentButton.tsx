@@ -290,7 +290,7 @@ export function ExtractContentButton({ onSuccess, onError }: ExtractContentButto
 
       // Update sources_google with JSON object
       const { error: updateError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({
           content_extracted: true,
           extracted_content: contentObject,  // This must be a JSON object

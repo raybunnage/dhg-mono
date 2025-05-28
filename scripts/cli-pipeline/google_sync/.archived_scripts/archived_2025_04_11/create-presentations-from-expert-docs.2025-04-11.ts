@@ -70,7 +70,7 @@ async function createPresentationsFromExpertDocs(): Promise<void> {
   try {
     // Step 1: Get folder info to verify it exists
     const { data: folderInfo, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path')
       .eq('drive_id', folderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')

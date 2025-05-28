@@ -69,7 +69,7 @@ async function directClassifyPdfs(options: {
   
   // Step 2: Get the actual PDF files from sources_google
   const { data: pdfFiles, error: filesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, document_type_id, drive_id, root_drive_id')
     .in('id', sourceIds)
     .eq('mime_type', 'application/pdf') // Only process PDF files
@@ -343,7 +343,7 @@ async function directClassifyPdfs(options: {
         
         // Update document type in sources_google
         const { error: updateError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ document_type_id: pdfDocumentTypeId })
           .eq('id', file.id);
           

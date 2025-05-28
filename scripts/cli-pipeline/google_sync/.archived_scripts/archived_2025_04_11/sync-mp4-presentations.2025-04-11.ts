@@ -71,7 +71,7 @@ async function syncMp4Presentations(): Promise<void> {
   try {
     // Step 1: Get folder info to verify it exists
     const { data: folderInfo, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path')
       .eq('drive_id', folderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -87,7 +87,7 @@ async function syncMp4Presentations(): Promise<void> {
     // Step 2: Get all MP4 files in the folder and its subfolders
     // First, let's get any files with proper mime_type
     let query1 = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, drive_id, parent_path, parent_folder_id, web_view_link, modified_time, mime_type')
       .eq('deleted', false)
       .eq('mime_type', 'video/mp4');
@@ -108,7 +108,7 @@ async function syncMp4Presentations(): Promise<void> {
     
     // Next, get files by filename extension
     let query2 = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, drive_id, parent_path, parent_folder_id, web_view_link, modified_time, mime_type')
       .eq('deleted', false)
       .or('name.ilike.%.mp4,name.ilike.%.m4v');

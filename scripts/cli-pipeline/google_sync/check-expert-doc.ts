@@ -105,7 +105,7 @@ async function checkLatestExpertDocument() {
     
     // Get source name in a separate query
     const { data: sourceData } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('name')
       .eq('id', doc.source_id)
       .single();

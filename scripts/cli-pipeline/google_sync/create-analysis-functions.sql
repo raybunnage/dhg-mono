@@ -36,7 +36,7 @@ BEGIN
   FROM 
     expert_documents ed
   JOIN 
-    sources_google sg ON ed.google_file_id = sg.file_id
+    google_sources sg ON ed.google_file_id = sg.file_id
   GROUP BY 
     ed.processing_skip_reason, sg.file_extension
   ORDER BY 

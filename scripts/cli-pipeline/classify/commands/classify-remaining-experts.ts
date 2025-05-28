@@ -190,7 +190,7 @@ async function fetchRemainingExpertDocuments(limit: number, expertName?: string)
     // Fetch source information for these documents
     Logger.info(`Fetching source information for ${sourceIds.length} sources...`);
     const { data: sources, error: sourcesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .in('id', sourceIds);
     
@@ -527,7 +527,7 @@ async function processDocument(
       .from('table_classifications')
       .select('id')
       .eq('entity_id', sourceId)
-      .eq('entity_type', 'sources_google')
+      .eq('entity_type', 'google_sources')
       .limit(1);
       
     if (sourceClassError) {
@@ -586,7 +586,7 @@ async function processDocument(
         .insert({
           id: uuidv4(),
           entity_id: sourceId,
-          entity_type: 'sources_google',
+          entity_type: 'google_sources',
           subject_classification_id: subjectId,
           notes: `Automatically classified with title: ${classificationResult.title} (from document ${doc.id})`
         });

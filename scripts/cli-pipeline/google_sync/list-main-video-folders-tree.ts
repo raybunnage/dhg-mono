@@ -57,7 +57,7 @@ const getSubFoldersAndFiles = async (
 ): Promise<void> => {
   // First get all direct children of this folder - using parent_folder_id which matches the drive_id of the parent
   const { data: children, error: childrenError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select(`
       id,
       drive_id,
@@ -234,7 +234,7 @@ export const listMainVideoFoldersTree = async (options: {
     
     // Get high-level folders (path_depth = 0) with main_video_id that is not null
     const { data: highLevelFolders, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select(`
         id,
         drive_id,
@@ -281,7 +281,7 @@ export const listMainVideoFoldersTree = async (options: {
 
     // Fetch all video files to use as a lookup for main_video_id values
     const { data: videoData, error: videoError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .like('mime_type', 'video/%');
 

@@ -43,7 +43,7 @@ export class GoogleDriveExplorerService {
   async fetchAllFiles(includeExpertDocuments: boolean = false): Promise<FileNode[]> {
     try {
       const { data, error } = await this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .order('name');
       
@@ -95,7 +95,7 @@ export class GoogleDriveExplorerService {
     
     // Get direct children using drive_id
     const { data: children, error } = await this.supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .or(`parent_folder_id.eq.${folderId}`);
 
@@ -142,7 +142,7 @@ export class GoogleDriveExplorerService {
   async searchFiles(searchTerm: string, searchContent: boolean = false): Promise<FileNode[]> {
     try {
       let query = this.supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*');
 
       if (searchContent) {
@@ -269,7 +269,7 @@ export class GoogleDriveExplorerService {
         if (!rootFolder.path) {
           const rootPath = `/${rootFolder.name}`;
           const { error } = await this.supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ path: rootPath })
             .eq('id', rootFolder.id);
 
@@ -310,7 +310,7 @@ export class GoogleDriveExplorerService {
     let errorCount = 0;
 
     const { data: children, error: fetchError } = await this.supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('parent_folder_id', parentDriveId);
 
@@ -324,7 +324,7 @@ export class GoogleDriveExplorerService {
       
       if (child.path !== correctPath || (child as any).parent_path !== parentPath) {
         const { error: updateError } = await this.supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({
             path: correctPath,
             parent_path: parentPath

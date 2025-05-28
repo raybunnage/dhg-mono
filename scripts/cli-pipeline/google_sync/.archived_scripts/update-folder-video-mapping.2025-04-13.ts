@@ -125,7 +125,7 @@ async function updateFolderWithVideoId(
     Logger.info(`DRY RUN: Would update folder "${folder.name}" with main_video_id = ${file.id}`);
   } else {
     const { error: updateError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update({ main_video_id: file.id })
       .eq('id', folder.id);
     
@@ -149,7 +149,7 @@ async function updateFolderWithVideoId(
   
   // Try to find related items by using path_array first
   const { data: relatedItems, error: relatedError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type, path, path_array')
     .eq('is_deleted', false)
     .filter('path_array', 'cs', `{${folder.name}}`);
@@ -178,7 +178,7 @@ async function updateFolderWithVideoId(
     
     // Query using LIKE on path field
     const { data: fallbackItems, error: fallbackError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, path')
       .eq('is_deleted', false)
       .like('path', `${escapedPath}%`);
@@ -208,7 +208,7 @@ async function updateFolderWithVideoId(
           const batchIds = batch.map((item: { id: string }) => item.id);
           
           const { error: batchUpdateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ main_video_id: file.id })
             .in('id', batchIds);
           
@@ -244,7 +244,7 @@ async function updateFolderWithVideoId(
         const batchIds = batch.map((item: { id: string }) => item.id);
         
         const { error: batchUpdateError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ main_video_id: file.id })
           .in('id', batchIds);
         
@@ -298,7 +298,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
   try {
     // Step 1: Find the folder in sources_google with exact match
     const { data: exactFolders, error: exactFolderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, path, path_depth')
       .eq('mime_type', 'application/vnd.google-apps.folder')
       .eq('is_deleted', false)
@@ -318,7 +318,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
       const simplifiedName = folderName.replace(/["']/g, '').trim().split(/\s+/)[0];
       
       const { data: fuzzyFolders, error: fuzzyError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, path, path_depth')
         .eq('mime_type', 'application/vnd.google-apps.folder')
         .eq('is_deleted', false)
@@ -349,7 +349,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
       
       // Step 2: Find the MP4 file with exact match
       const { data: exactFiles, error: exactFileError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, path, parent_folder_id')
         .eq('mime_type', 'video/mp4')
         .eq('is_deleted', false)
@@ -369,7 +369,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
         const baseName = fileName.replace(/\.(mp4|m4v)$/i, '');
         
         const { data: fuzzyFiles, error: fuzzyFileError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, drive_id, path, parent_folder_id')
           .eq('mime_type', 'video/mp4')
           .eq('is_deleted', false)
@@ -408,7 +408,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
       
       // Step 2: Find the MP4 file with exact match
       const { data: exactFiles, error: exactFileError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, path, parent_folder_id')
         .eq('mime_type', 'video/mp4')
         .eq('is_deleted', false)
@@ -428,7 +428,7 @@ async function updateMainVideoIdFromMapping(): Promise<void> {
         const baseName = fileName.replace(/\.(mp4|m4v)$/i, '');
         
         const { data: fuzzyFiles, error: fuzzyFileError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, drive_id, path, parent_folder_id')
           .eq('mime_type', 'video/mp4')
           .eq('is_deleted', false)

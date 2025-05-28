@@ -136,7 +136,7 @@ async function findMp4FilesInFolder(supabase: any, folderId: string): Promise<Mp
   try {
     // First check if the folder exists in sources_google
     const { data: folder, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, drive_id')
       .eq('drive_id', folderId)
       .eq('is_deleted', false)
@@ -161,7 +161,7 @@ async function findMp4FilesInFolder(supabase: any, folderId: string): Promise<Mp
     
     // Build a query to find any MP4 files that might match this folder
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, drive_id, parent_folder_id, path_array')
       .eq('mime_type', 'video/mp4')
       .eq('is_deleted', false)
@@ -275,7 +275,7 @@ async function findMp4FilesInFolder(supabase: any, folderId: string): Promise<Mp
     for (const file of filteredFiles) {
       // Check if the parent folder contains "Presentation" or "Video"
       const { data: parentFolder, error: parentError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name')
         .eq('id', file.parent_folder_id)
         .single();
@@ -348,7 +348,7 @@ export async function reportMainVideoIds(
   try {
     // First check for sources_google entries with document_type_id set
     const { data: docTypeCounts, error: docTypeError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('document_type_id')
       .not('document_type_id', 'is', null)
       .limit(5);
@@ -392,7 +392,7 @@ export async function reportMainVideoIds(
     
     // Step 1: Verify the root folder exists in sources_google
     const { data: rootFolder, error: rootFolderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, drive_id')
       .eq('drive_id', actualFolderId)
       .eq('is_deleted', false)
@@ -407,7 +407,7 @@ export async function reportMainVideoIds(
     
     // Step 2: Find all subfolders directly under the root folder (path_depth = 0)
     const { data: subFolders, error: subFoldersError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, drive_id, path_depth')
       .eq('parent_folder_id', actualFolderId)
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -458,7 +458,7 @@ export async function reportMainVideoIds(
       
       // Check if the folder already has a main_video_id and document_type_id set
       const { data: currentMainVideo, error: mainVideoError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, main_video_id, document_type_id')
         .eq('id', folder.id)
         .single();
@@ -551,7 +551,7 @@ export async function reportMainVideoIds(
           // Update the database if requested
           if (shouldUpdateDb) {
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ main_video_id: mainVideoId })
               .eq('id', folder.id);
               
@@ -568,7 +568,7 @@ export async function reportMainVideoIds(
           if (shouldUpdateDb) {
             // Find all files under this folder's path
             const { data: relatedFiles, error: relatedError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .select('id')
               .eq('is_deleted', false)
               .contains('path_array', [folder.name]);
@@ -583,7 +583,7 @@ export async function reportMainVideoIds(
               for (let i = 0; i < relatedIds.length; i += batchSize) {
                 const batch = relatedIds.slice(i, i + batchSize);
                 const { error: batchError } = await supabase
-                  .from('sources_google')
+                  .from('google_sources')
                   .update({ main_video_id: mainVideoId })
                   .in('id', batch);
                   

@@ -135,7 +135,7 @@ async function diagnosePresentations(): Promise<void> {
     
     // 6. Count total MP4 files
     const { data: mp4Files, error: mp4Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact' })
       .eq('deleted', false)
       .eq('mime_type', 'video/mp4');
@@ -151,7 +151,7 @@ async function diagnosePresentations(): Promise<void> {
     
     // Get folder info
     const { data: folderInfo, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('name, path')
       .eq('drive_id', folderId)
       .single();
@@ -161,7 +161,7 @@ async function diagnosePresentations(): Promise<void> {
     } else if (folderInfo) {
       // Count MP4 files with parent paths containing the folder name
       const { data: folderMp4Files, error: folderMp4Error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, parent_path', { count: 'exact' })
         .eq('deleted', false)
         .eq('mime_type', 'video/mp4')

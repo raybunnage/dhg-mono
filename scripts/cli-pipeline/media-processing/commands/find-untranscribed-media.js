@@ -123,7 +123,7 @@ async function findUntranscribedFiles() {
   
   // 1. Get MP4 files from sources_google
   const { data: sources, error: sourcesError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, mime_type')
     .eq('mime_type', 'video/mp4')
     .eq('deleted', false);

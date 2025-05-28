@@ -70,7 +70,7 @@ export class SourcesGoogleUpdateService {
     try {
       // Query sources_google table
       const query = this.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('is_deleted', false);
 
@@ -187,7 +187,7 @@ export class SourcesGoogleUpdateService {
           // Update record in database (if not dry run)
           if (!dryRun) {
             const { data, error } = await this.supabaseClient
-              .from('sources_google')
+              .from('google_sources')
               .update({
                 ...updateData,
                 updated_at: new Date().toISOString()
@@ -281,7 +281,7 @@ export class SourcesGoogleUpdateService {
 
       // Get folder details first
       const { data: folder, error: fetchError } = await this.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, is_root')
         .eq('id', folderId)
         .single();
@@ -320,7 +320,7 @@ export class SourcesGoogleUpdateService {
         }
 
         const { error: updateError } = await this.supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .update(updateData)
           .eq('id', folderId);
 
@@ -348,7 +348,7 @@ export class SourcesGoogleUpdateService {
   public async getRootFolders(): Promise<GoogleDriveFile[]> {
     try {
       const { data, error } = await this.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('is_root', true)
         .eq('is_deleted', false)

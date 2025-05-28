@@ -15,7 +15,7 @@ async function main() {
     
     // Check sources_google
     const { data: sg2Data, error: sg2Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .limit(1);
     
@@ -36,7 +36,7 @@ async function main() {
       
       // Count records
       const { count: totalCount, error: countError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true });
       
       if (countError) {
@@ -60,7 +60,7 @@ async function main() {
       console.log('\nRoot folder counts in sources_google:');
       for (const rootType of rootQueries) {
         const { count, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*', { count: 'exact', head: true })
           .eq('root_drive_id', rootType.id);
         

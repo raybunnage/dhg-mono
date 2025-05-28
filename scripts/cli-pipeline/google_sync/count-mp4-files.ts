@@ -143,7 +143,7 @@ export async function countMp4Files(options: {
           }
           
           const { data: folderData, error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('drive_id')
             .eq('name', actualDriveId)
             .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -221,7 +221,7 @@ export async function countMp4Files(options: {
         if (!actualDriveId.match(/^[a-zA-Z0-9_-]{25,}$/)) {
           // Look up folder ID by name
           const { data: folderData, error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('drive_id, name, path_array')
             .eq('name', actualDriveId)
             .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -245,7 +245,7 @@ export async function countMp4Files(options: {
         } else {
           // Look up folder by ID
           const { data: folderData, error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('drive_id, name, path_array')
             .eq('drive_id', folderId)
             .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -276,7 +276,7 @@ export async function countMp4Files(options: {
           
           // Query all MP4 files to get their names
           const { data: mp4Data, error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('name')
             .eq('mime_type', 'video/mp4')
             .eq('is_deleted', false)
@@ -300,7 +300,7 @@ export async function countMp4Files(options: {
           }
           
           const { data: mp4Data, error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('name')
             .eq('mime_type', 'video/mp4')
             .eq('root_drive_id', folderId)
@@ -321,7 +321,7 @@ export async function countMp4Files(options: {
             }
             
             const { data: parentData, error: parentError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .select('name')
               .eq('mime_type', 'video/mp4')
               .eq('parent_folder_id', folderId)
@@ -342,7 +342,7 @@ export async function countMp4Files(options: {
               
               // Get a count of all MP4 files in the database
               const { data: countData, error: countError } = await supabase
-                .from('sources_google')
+                .from('google_sources')
                 .select('id', { count: 'exact' })
                 .eq('mime_type', 'video/mp4')
                 .eq('is_deleted', false);
@@ -364,7 +364,7 @@ export async function countMp4Files(options: {
           
           // Get a count of MP4 files in the entire sources_google table
           const { data: countData, error: countError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id', { count: 'exact' })
             .eq('mime_type', 'video/mp4')
             .eq('is_deleted', false);

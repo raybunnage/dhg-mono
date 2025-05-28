@@ -5,7 +5,7 @@ import { Database } from '../../../supabase/types';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 
-type SourcesGoogle = Database['public']['Tables']['sources_google']['Row'];
+type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
 
 interface AudioGapResult {
   folder_drive_id: string;
@@ -28,7 +28,7 @@ export async function analyzeAudioGaps(options: { outputFile?: string; limit?: n
   try {
     // First, get all MP4 files at path_depth = 0 with main_video_id
     const { data: mp4Files, error: mp4Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('mime_type', 'video/mp4')
       .eq('path_depth', 0)
@@ -57,7 +57,7 @@ export async function analyzeAudioGaps(options: { outputFile?: string; limit?: n
       
       // Check if M4A already exists in the same folder
       const { data: existingM4a, error: m4aError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('parent_folder_id', mp4.parent_folder_id)
         .eq('name', expectedM4aName)
@@ -72,7 +72,7 @@ export async function analyzeAudioGaps(options: { outputFile?: string; limit?: n
       if (!existingM4a) {
         // Get folder information
         const { data: folder, error: folderError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('name')
           .eq('drive_id', mp4.parent_folder_id)
           .single();

@@ -550,7 +550,7 @@ program
         // Check source if available
         if (doc.source_id) {
           const { data: source, error: sourceErr } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('*')
             .eq('id', doc.source_id)
             .single();
@@ -581,7 +581,7 @@ program
         Logger.info(`Found ${docs?.length || 0} documents with source ID ${options.sourceId}`);
         
         const { data: source, error: sourceErr } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*')
           .eq('id', options.sourceId)
           .single();
@@ -624,7 +624,7 @@ program.commands.find((cmd: any) => cmd.name() === 'debug-classification-status'
       const fileTypes = ['mp4', 'pdf', 'docx', 'pptx', 'txt'];
       for (const ext of fileTypes) {
         const { data: files, error: filesError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id')
           .ilike('name', `%.${ext}`);
           
@@ -692,7 +692,7 @@ program.commands.find((cmd: any) => cmd.name() === 'debug-classification-status'
           // Fetch source information for these documents
           const sourceIds = sampleDocs.map(doc => doc.source_id).filter(id => id);
           const { data: sources, error: sourceError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, mime_type')
             .in('id', sourceIds);
             

@@ -27,7 +27,7 @@ const maxDepth = 6; // Increase depth to 6 to catch all nested files
 async function findAllMp4Files(supabase) {
   try {
     const { data: mp4Files, error: mp4Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, parent_folder_id, path, path_depth, root_drive_id')
       .eq('root_drive_id', DHG_ROOT_ID)
       .like('mime_type', '%mp4%')
@@ -52,7 +52,7 @@ async function findAllMp4Files(supabase) {
 async function findAllDirectories(supabase, maxDepth) {
   try {
     const { data: directories, error: dirError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, parent_folder_id, path, path_depth, root_drive_id')
       .eq('root_drive_id', DHG_ROOT_ID)
       .like('mime_type', '%folder%')
@@ -197,7 +197,7 @@ async function updateDirectoryHierarchy(supabase, mainVideos) {
     
     // First update the directory itself
     const { error: dirError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .update({ main_video_id: mainVideo.id })
       .eq('id', directory.id);
     
@@ -210,7 +210,7 @@ async function updateDirectoryHierarchy(supabase, mainVideos) {
     const folderPath = directory.path;
     
     const { data: files, error: filesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path')
       .eq('parent_folder_id', directory.drive_id);
     
@@ -228,7 +228,7 @@ async function updateDirectoryHierarchy(supabase, mainVideos) {
         const ids = batch.map(file => file.id);
         
         const { data, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .update({ main_video_id: mainVideo.id })
           .in('id', ids);
         

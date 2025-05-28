@@ -9,7 +9,7 @@ async function checkM4aToMp4Relationship() {
   
   // First, get a sample of m4a files
   const { data: m4aFiles, error: m4aError } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, name, path, parent_folder_id, mime_type')
     .or('mime_type.eq.audio/x-m4a,mime_type.eq.audio/mp4a,mime_type.like.%m4a%')
     .is('is_deleted', false)
@@ -30,7 +30,7 @@ async function checkM4aToMp4Relationship() {
     // Strategy 1: Look for mp4 with similar name in same folder
     const baseName = m4aFile.name.replace(/\.m4a$/i, '');
     const { data: mp4InSameFolder } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, mime_type')
       .eq('parent_folder_id', m4aFile.parent_folder_id)
       .ilike('name', `${baseName}%`)

@@ -323,7 +323,7 @@ program
   .command('update-schema-from-json')
   .description('Update database schema based on a JSON schema definition')
   .argument('[json-file]', 'Path to the JSON schema file', 'schema.json')
-  .option('--table=<name>', 'Table name to update', 'sources_google')
+  .option('--table=<name>', 'Table name to update', 'google_sources')
   .option('--dry-run', 'Show what would be updated without making changes (default)', true)
   .option('--execute', 'Actually execute the schema changes', false)
   .option('--generate-sql', 'Generate SQL migration file', false)

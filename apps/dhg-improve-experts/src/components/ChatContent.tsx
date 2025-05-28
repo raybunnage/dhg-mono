@@ -18,7 +18,7 @@ export function ChatContent({ videoFileName }: ChatContentProps) {
         
         // Query Supabase for the chat file
         const { data: files, error } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('*')
           .eq('name', chatFileName)
           .single();

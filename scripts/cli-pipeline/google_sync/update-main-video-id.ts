@@ -78,7 +78,7 @@ async function updateMainVideoId(): Promise<void> {
     // Step 1: Find the folder with path_depth=0 by name
     Logger.debug(`Looking for folder: ${folderName} with path_depth=0`);
     const { data: folder, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path, drive_id, path_depth, main_video_id, metadata')
       .eq('path_depth', 0)
       .eq('is_deleted', false)
@@ -100,7 +100,7 @@ async function updateMainVideoId(): Promise<void> {
     // Step 2: Find the video file by name
     Logger.debug(`Looking for video file: ${videoName}`);
     const { data: videoFiles, error: videoError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, mime_type, path')
       .eq('mime_type', 'video/mp4')
       .eq('is_deleted', false)
@@ -148,7 +148,7 @@ async function updateMainVideoId(): Promise<void> {
     if (!isDryRun) {
       // Update the main_video_id field
       const { data: updateResult, error: updateError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ 
           main_video_id: videoFile.id,
           metadata: metadata
@@ -168,7 +168,7 @@ async function updateMainVideoId(): Promise<void> {
       
       // Step 5: Update any related files in the folder tree with the same main_video_id
       const { data: relatedFiles, error: relatedError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name')
         .eq('is_deleted', false)
         .contains('path_array', [folder.name]);
@@ -185,7 +185,7 @@ async function updateMainVideoId(): Promise<void> {
           const relatedIds = batch.map(f => f.id);
           
           const { error: batchError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ main_video_id: videoFile.id })
             .in('id', relatedIds);
             
@@ -209,7 +209,7 @@ async function updateMainVideoId(): Promise<void> {
       
       // Show how many related files would be updated
       const { data: relatedFiles, error: relatedError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id', { count: 'exact' })
         .eq('is_deleted', false)
         .contains('path_array', [folder.name]);

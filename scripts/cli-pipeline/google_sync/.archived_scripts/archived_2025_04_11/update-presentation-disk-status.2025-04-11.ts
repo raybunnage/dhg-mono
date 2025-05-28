@@ -76,7 +76,7 @@ async function main() {
 
     // Get all Google Drive sources
     const { data: googleSources, error: sourcesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id')
       .eq('deleted', false)
       .eq('mime_type', 'video/mp4');

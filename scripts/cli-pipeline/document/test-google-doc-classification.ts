@@ -77,7 +77,7 @@ async function getUntypedGoogleFiles(limit: number = 6): Promise<GoogleSourceFil
     
     const client = supabase.getClient();
     const { data, error } = await client
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, mime_type, path, web_view_link')
       .is('document_type_id', null)
       .not('mime_type', 'eq', 'application/vnd.google-apps.folder') // Exclude folders

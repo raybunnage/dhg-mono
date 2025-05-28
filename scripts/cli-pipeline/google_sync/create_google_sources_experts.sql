@@ -19,7 +19,7 @@ CREATE TYPE expert_role_type AS ENUM (
 -- Create the table with the role field
 CREATE TABLE IF NOT EXISTS google_sources_experts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  source_id UUID NOT NULL REFERENCES sources_google(id),
+  source_id UUID NOT NULL REFERENCES google_sources(id),
   expert_id UUID NOT NULL REFERENCES experts(id),
   role expert_role_type,                    -- Optional role using the enum
   role_description TEXT,                    -- For additional context when role is 'other'
@@ -47,10 +47,10 @@ CREATE OR REPLACE FUNCTION migrate_expert_ids() RETURNS void AS $$
 DECLARE
   r RECORD;
 BEGIN
-  -- Get all sources_google entries with expert_id
+  -- Get all google_sources entries with expert_id
   FOR r IN 
     SELECT id, expert_id 
-    FROM sources_google_deprecated
+    FROM google_sources_deprecated
     WHERE expert_id IS NOT NULL
   LOOP
     -- Insert into google_sources_experts
@@ -77,6 +77,6 @@ $$ LANGUAGE plpgsql;
 
 -- Help text explaining the migration
 COMMENT ON FUNCTION migrate_expert_ids() IS 
-'This function migrates expert associations from the sources_google.expert_id field 
+'This function migrates expert associations from the google_sources.expert_id field 
 to the new google_sources_experts table. Run this function after setting up both tables 
-and ensuring sources_google_deprecated still exists.';
+and ensuring google_sources_deprecated still exists.';

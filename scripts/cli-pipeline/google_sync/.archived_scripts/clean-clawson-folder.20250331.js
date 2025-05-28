@@ -63,7 +63,7 @@ async function getAssociatedFiles(folderId) {
   try {
     // Get count first
     const { count, error: countError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact' })
       .or(`parent_folder_id.eq.${folderId},drive_id.eq.${folderId}`)
       .eq('deleted', false);
@@ -74,7 +74,7 @@ async function getAssociatedFiles(folderId) {
     
     // Then get the actual records
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, drive_id, name, mime_type, path, parent_folder_id')
       .or(`parent_folder_id.eq.${folderId},drive_id.eq.${folderId}`)
       .eq('deleted', false);
@@ -123,7 +123,7 @@ async function cleanFolder(folderId, options = {}) {
   try {
     // Get folder information
     const { data: folder, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('drive_id', folderId)
       .single();
@@ -193,7 +193,7 @@ async function cleanFolder(folderId, options = {}) {
         if (permanent) {
           // Permanently delete records
           const { data, error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .delete()
             .in('id', batch.map(file => file.id));
             
@@ -204,7 +204,7 @@ async function cleanFolder(folderId, options = {}) {
         } else {
           // Mark records as deleted
           const { data, error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ 
               deleted: true, 
               updated_at: new Date().toISOString() 

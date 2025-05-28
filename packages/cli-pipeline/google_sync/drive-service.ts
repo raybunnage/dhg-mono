@@ -159,7 +159,7 @@ class GoogleDriveCliService {
       }
 
       const { data, error } = await this.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('is_root', true)
         .eq('deleted', false)
@@ -201,7 +201,7 @@ class GoogleDriveCliService {
       
       // Check if folder already exists in database
       const { data: existingFolders, error: queryError } = await this.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name')
         .eq('drive_id', folderId)
         .eq('deleted', false);
@@ -215,7 +215,7 @@ class GoogleDriveCliService {
         console.log(chalk.yellow(`Folder already exists with name "${existingFolders[0].name}", updating...`));
         
         const { data, error } = await this.supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .update({
             name: folderName,
             is_root: true,
@@ -245,7 +245,7 @@ class GoogleDriveCliService {
       // Insert new root folder
       const now = new Date().toISOString();
       const { data, error } = await this.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .insert({
           drive_id: folderId,
           name: folderName,
@@ -293,7 +293,7 @@ class GoogleDriveCliService {
 
       // First check if the folder exists
       const { data, error } = await this.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id')
         .eq(options.hard ? 'drive_id' : 'id', folderId)
         .eq('deleted', false)
@@ -310,7 +310,7 @@ class GoogleDriveCliService {
       if (options.hard) {
         // Hard delete - mark as deleted
         const { error: deleteError } = await this.supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .update({ 
             deleted: true, 
             updated_at: new Date().toISOString() 
@@ -329,7 +329,7 @@ class GoogleDriveCliService {
       } else {
         // Soft delete - just unmark as root
         const { error: updateError } = await this.supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .update({ 
             is_root: false, 
             updated_at: new Date().toISOString() 
@@ -365,7 +365,7 @@ class GoogleDriveCliService {
       }
 
       let query = this.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('deleted', false);
         
@@ -440,7 +440,7 @@ class GoogleDriveCliService {
       
       if (this.supabaseClient) {
         try {
-          const { error } = await this.supabaseClient.from('sources_google').select('count').limit(1);
+          const { error } = await this.supabaseClient.from('google_sources').select('count').limit(1);
           supabaseReady = !error;
           supabaseError = error;
         } catch (e) {

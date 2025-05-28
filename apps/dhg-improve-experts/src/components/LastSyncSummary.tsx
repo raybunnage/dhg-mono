@@ -42,7 +42,7 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
   const fetchFolders = async () => {
     try {
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id')
         .is('parent_path', null)
         .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -136,7 +136,7 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
       // Instead of using RPC which might not exist, query directly
       try {
         let folderQuery = supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id', { count: 'exact' })
           .eq('mime_type', 'application/vnd.google-apps.folder');
           
@@ -150,7 +150,7 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
         
         // Count non-folder documents (total - folders)
         let totalQuery = supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id', { count: 'exact' });
           
         // If a specific folder is selected, filter by parent_folder_id
@@ -173,7 +173,7 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
       if (!mp4Count || !mp4Size) {
         try {
           let mp4Query = supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('id', { count: 'exact' })
             .ilike('mime_type', '%mp4%');
             

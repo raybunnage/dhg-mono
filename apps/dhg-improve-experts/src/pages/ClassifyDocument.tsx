@@ -11,7 +11,7 @@ import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 type DocumentType = Database['public']['Tables']['document_types']['Row'];
 
 // Add type for sources_google
-type SourceGoogle = Database['public']['Tables']['sources_google']['Row'];
+type SourceGoogle = Database['public']['Tables']['google_sources']['Row'];
 
 // Add type for the select query
 type SourceGoogleSelect = {
@@ -147,18 +147,18 @@ export function ClassifyDocument() {
   const fetchPipelineStats = async () => {
     try {
       const { count: unprocessedCount } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .is('content_extracted', false);
       
       const { count: unclassifiedCount } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .is('document_type_id', null)
         .not('extracted_content', 'is', null);
       
       const { count: pendingExtractionCount } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .eq('content_extracted', false);
       
@@ -428,7 +428,7 @@ export function ClassifyDocument() {
       
       // Count by mime type and document type
       const { data: sources, error: sourcesError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           mime_type,
           document_type_id,
@@ -1140,7 +1140,7 @@ export function ClassifyDocument() {
     try {
       // Check all unextracted DOCX and TXT files
       const { data: filesToProcess, error: queryError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id, name, mime_type, drive_id, content_extracted, extracted_content
         `)
@@ -1201,7 +1201,7 @@ export function ClassifyDocument() {
           
           // Update the database
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({
               extracted_content: contentObject,
               content_extracted: true,
@@ -1257,7 +1257,7 @@ export function ClassifyDocument() {
 
       // Load all documents with extracted content but no document type
       const { data: sourceDocuments, error: sourceError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select<string, SourceGoogleSelect>(`
           id,
           name,
@@ -1351,7 +1351,7 @@ export function ClassifyDocument() {
 
           // Update the document with classification results
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({
               document_type_id: result.typeId,
               updated_at: new Date().toISOString(),
@@ -1409,7 +1409,7 @@ export function ClassifyDocument() {
       
       // Query sources_google for documents with content and document type
       const { data: sourceDocs, error: sourceError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select(`
           id,
           name,

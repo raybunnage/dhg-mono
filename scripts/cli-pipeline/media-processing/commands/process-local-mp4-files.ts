@@ -162,7 +162,7 @@ async function findDocumentIdFromFilename(filename: string, supabase: any): Prom
     // Find documents by querying separately - avoid join issues
     // First find matching source in sources_google
     const { data: matchingSources, error: sourcesError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .eq('mime_type', 'video/mp4')
       .eq('is_deleted', false)
@@ -195,7 +195,7 @@ async function findDocumentIdFromFilename(filename: string, supabase: any): Prom
       // Try to find files with the extension
       // Check sources first
       const { data: matchingSourcesWithExt, error: sourcesExtError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, mime_type')
         .eq('mime_type', 'video/mp4')
         .eq('is_deleted', false)
@@ -294,7 +294,7 @@ async function registerMp4File(supabase: any, fileInfo: MP4FileInfo): Promise<st
     // Step 1: Check if the file exists in sources_google table
     // Use a direct Supabase query to check
     const { data: sourceData, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .eq('name', fileInfo.name)
       .eq('is_deleted', false);
@@ -322,7 +322,7 @@ async function registerMp4File(supabase: any, fileInfo: MP4FileInfo): Promise<st
       
       // Check if the file was registered successfully
       const { data: newSourceData, error: newSourceError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name')
         .eq('name', fileInfo.name)
         .eq('is_deleted', false);

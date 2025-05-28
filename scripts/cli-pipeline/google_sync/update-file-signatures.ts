@@ -94,7 +94,7 @@ export async function updateFileSignatures(
   try {
     // Count total records
     const { count, error: countError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact', head: true });
       
     if (countError) {
@@ -123,7 +123,7 @@ export async function updateFileSignatures(
       
       // Fetch batch of records
       const { data: records, error: selectError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, file_signature, modified_at')
         .range(offset, offset + BATCH_SIZE - 1);
         
@@ -177,7 +177,7 @@ export async function updateFileSignatures(
         if (!isDryRun) {
           // Update file signature in database
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ 
               file_signature: newSignature,
               updated_at: new Date().toISOString()

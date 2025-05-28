@@ -38,7 +38,7 @@ export function SupabasePage() {
   const [schemaData, setSchemaData] = useState<any>(null)
   const [foreignKeyData, setForeignKeyData] = useState<any>(null)
   const [tableMetadata, setTableMetadata] = useState<any>(null)
-  const [tableName, setTableName] = useState('sources_google')
+  const [tableName, setTableName] = useState('google_sources')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<'json' | 'formatted'>('formatted')
@@ -48,7 +48,7 @@ export function SupabasePage() {
   
   // CLAUDE-TAG: Supabase.tsx - This is the right file to modify for the Supabase tab
   const commonTables = [
-    'sources_google',
+    'google_sources',
     'google_sync_history',
     'google_auth_tokens',
     'experts',
@@ -288,7 +288,7 @@ export function SupabasePage() {
       // Use a more focused list of tables to reduce query load
       const essentialTables = [
         // Just query the most important tables rather than all possible tables
-        'sources_google',
+        'google_sources',
         'google_sync_history', 
         'google_auth_tokens',
         'experts',
@@ -459,9 +459,9 @@ export function SupabasePage() {
           foreign_column_name: 'id'
         },
         {
-          table_name: 'sources_google',
+          table_name: 'google_sources',
           column_name: 'parent_folder_id',
-          foreign_table_name: 'sources_google',
+          foreign_table_name: 'google_sources',
           foreign_column_name: 'drive_id'
         }
       ];

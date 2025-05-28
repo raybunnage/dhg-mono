@@ -94,7 +94,7 @@ async function insertMissingSources(
     // Get all existing IDs from sources_google (needed regardless of flow)
     Logger.info('Fetching all drive_ids from sources_google...');
     const { data: existingRecords, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('drive_id');
       
     if (error) {
@@ -206,7 +206,7 @@ async function insertMissingSources(
         for (const entry of batch) {
           // Check one more time if the record already exists (in case it was added during processing)
           const { data: existCheck, error: existError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('drive_id')
             .eq('drive_id', entry.id);
             
@@ -300,7 +300,7 @@ async function insertMissingSources(
           
           // Insert the record
           const { data, error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .insert([record])
             .select();
             

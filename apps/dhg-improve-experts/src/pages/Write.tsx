@@ -78,7 +78,7 @@ export default function Write() {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('mime_type', 'application/vnd.google-apps.folder')
         .order('name');
@@ -97,7 +97,7 @@ export default function Write() {
     setDocumentsLoading(true);
     try {
       let query = supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .neq('mime_type', 'application/vnd.google-apps.folder');
       
@@ -150,7 +150,7 @@ export default function Write() {
     try {
       // Fetch documents from the same folder
       const { data: folderDocs, error: folderError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('parent_path', document.parent_path)
         .neq('id', document.id) // Exclude the selected document

@@ -40,8 +40,8 @@ CREATE TRIGGER update_subject_classifications_updated_at
 CREATE TABLE "presentations" (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT,
-    high_level_folder_source_id UUID REFERENCES sources_google(id),  -- Assuming this references a sources_google table
-    video_source_id UUID REFERENCES sources_google(id),              -- Assuming this references a sources_google table
+    high_level_folder_source_id UUID REFERENCES google_sources(id),  -- Assuming this references a google_sources table
+    video_source_id UUID REFERENCES google_sources(id),              -- Assuming this references a google_sources table
     web_view_link TEXT,
     root_drive_id TEXT,
     expert_document_id UUID REFERENCES expert_documents(id),
@@ -106,7 +106,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE "presentation_assets" (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     presentation_id UUID NOT NULL REFERENCES presentations(id) ON DELETE CASCADE,
-    asset_source_id UUID REFERENCES sources_google(id),
+    asset_source_id UUID REFERENCES google_sources(id),
     asset_expert_document_id UUID REFERENCES expert_documents(id),
     asset_role asset_role_enum,
     asset_type asset_type_enum,
@@ -169,7 +169,7 @@ CREATE TRIGGER update_presentation_assets_updated_at
   CREATE TYPE classified_entity_type AS ENUM (
     'expert_documents',
     'documentation_files',
-    'sources_google',
+    'google_sources',
     'scripts'
   );
 
@@ -225,13 +225,13 @@ JOIN
 JOIN 
   subject_classifications sc ON tc.subject_classification_id = sc.id
 LEFT JOIN 
-  sources_google sg ON ed.source_id = sg.id
+  google_sources sg ON ed.source_id = sg.id
 ORDER BY 
   sg.filename;
 
 
 the entity_id in table_classifications is id of the  expert_documents table 
-give me sql that returns all the expert_documents that do not have at least one id entry in the table_classifications table and join to the sources_google on the source_id field of expert_documents and make sure you exclude the following mime_types, document_types and all folders
+give me sql that returns all the expert_documents that do not have at least one id entry in the table_classifications table and join to the google_sources on the source_id field of expert_documents and make sure you exclude the following mime_types, document_types and all folders
 
 -- unsupported folders
 bd903d99-64a1-4297-ba76-1094ab235dac 
@@ -297,26 +297,26 @@ classify-cli write-unclassified-ids
   Here are all the objects involved.
 
   I need you to fill in the presentations table records.
-  first go through each sources_google file that is an mp4 file and create a presentation record for it.
+  first go through each google_sources file that is an mp4 file and create a presentation record for it.
 
-  From the sources_google file you can get the id field, and the video_source_id is the id of the mp4 file from sources_google. Also the web_view_link is the web view link of the mp4 file from sources_google, as well as the root_drive_id. If possible provide the duration_seconds field from the size field of the sources_google file.
+  From the google_sources file you can get the id field, and the video_source_id is the id of the mp4 file from google_sources. Also the web_view_link is the web view link of the mp4 file from google_sources, as well as the root_drive_id. If possible provide the duration_seconds field from the size field of the google_sources file.
 
   Then find the related expert_documents record and you can pull the title from the dedicted field and transfer it to the presentations title field.
 
   after you have created the presentation record with these basic fields for each mp4 file, 
   use this query   
-"select id, path_depth, main_video_id, name from sources_google where path_depth = 0 and document_type_id = 'bd903d99-64a1-4297-ba76-1094ab235dac'"
+"select id, path_depth, main_video_id, name from google_sources where path_depth = 0 and document_type_id = 'bd903d99-64a1-4297-ba76-1094ab235dac'"
 
-when the main_video_id in this query matches the id of the sources_google mp4 you know you have the right high_level_folder_source_id  and you can set that wih this field in presentations table with this source_id field.   Now you can use this folder id as it is the source_id in the google_sources_experts table and you can return the associated expert_id field and set it in the presetnations.  Thus you should be able to get all the fields for the presentations table except the view count which we'll  work out later. 
+when the main_video_id in this query matches the id of the google_sources mp4 you know you have the right high_level_folder_source_id  and you can set that wih this field in presentations table with this source_id field.   Now you can use this folder id as it is the source_id in the google_sources_experts table and you can return the associated expert_id field and set it in the presetnations.  Thus you should be able to get all the fields for the presentations table except the view count which we'll  work out later. 
 
 
 
 
 now the presentations_assets table you need to do the following
 for each presentation that has a high_level_folder_source_id with a depth of zero
-find that source id in the sources_google table and that folder which is have a path_depth of 0 and then do a recursive search within each of those folders to find all the files that are in it (you can go to a depth of 6 levels) - if it is a supported file then create a presentation_assets record for it and fill in the the presentation_id of the presentation record you created earlier that has the video and fill in the following fields:
+find that source id in the google_sources table and that folder which is have a path_depth of 0 and then do a recursive search within each of those folders to find all the files that are in it (you can go to a depth of 6 levels) - if it is a supported file then create a presentation_assets record for it and fill in the the presentation_id of the presentation record you created earlier that has the video and fill in the following fields:
 
-asset_source_id is the source_id of the file in the sources_google table
+asset_source_id is the source_id of the file in the google_sources table
 asset_expert_document_id is the expert_document_id of the file in the expert_documents table
 skip asset_role and asset_type and and importance_level, timestamp_start and timestamp_end at the moment 
 metadata may be used later but leave it alone for now
@@ -372,7 +372,7 @@ image/svg+xml
 -- Create the presentation_assets table
 CREATE TABLE "presentation_assets" (
     presentation_id  -- comes from the presentations table
-    asset_source_id UUID REFERENCES sources_google(id),
+    asset_source_id UUID REFERENCES google_sources(id),
     asset_expert_document_id UUID REFERENCES expert_documents(id),
     asset_role asset_role_enum,
     asset_type asset_type_enum,

@@ -1,7 +1,7 @@
 -- SQL to remove created_by and updated_by from all tables, triggers, and functions
 
 -- Disable trigger first to prevent errors during column dropping
-DROP TRIGGER IF EXISTS validate_sources_google_users ON public.sources_google;
+DROP TRIGGER IF EXISTS validate_google_sources_users ON public.google_sources;
 
 -- Drop functions that reference these columns
 DROP FUNCTION IF EXISTS public.validate_user_references;

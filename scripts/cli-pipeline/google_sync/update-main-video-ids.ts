@@ -59,7 +59,7 @@ const limit = limitIndex !== -1 && args[limitIndex + 1] ? parseInt(args[limitInd
  */
 async function findMp4FilesRecursively(supabase: any, folderId: string, useSourcesGoogle2 = true): Promise<any[]> {
   try {
-    const tableName = useSourcesGoogle2 ? 'sources_google' : 'sources_google';
+    const tableName = useSourcesGoogle2 ? 'google_sources' : 'google_sources';
     const deletedField = useSourcesGoogle2 ? 'is_deleted' : 'deleted';
     
     // Get all direct MP4 files in the folder
@@ -152,7 +152,7 @@ function getBestMp4File(mp4Files: any[]): any | null {
 async function updateMainVideoIds(useSourcesGoogle2 = true): Promise<void> {
   console.log('=== Update Main Video IDs ===');
   console.log(`Mode: ${isDryRun ? 'DRY RUN' : 'ACTUAL UPDATE'}`);
-  console.log(`Using table: ${useSourcesGoogle2 ? 'sources_google' : 'sources_google'}`);
+  console.log(`Using table: ${useSourcesGoogle2 ? 'google_sources' : 'google_sources'}`);
   console.log(`Folder ID: ${folderId}`);
   if (limit) console.log(`Limit: ${limit} presentations`);
   console.log('============================');
@@ -162,7 +162,7 @@ async function updateMainVideoIds(useSourcesGoogle2 = true): Promise<void> {
   
   try {
     // Step 1: Get folder info to verify it exists
-    const tableName = useSourcesGoogle2 ? 'sources_google' : 'sources_google';
+    const tableName = useSourcesGoogle2 ? 'google_sources' : 'google_sources';
     const deletedField = useSourcesGoogle2 ? 'is_deleted' : 'deleted';
     
     const { data: folderInfo, error: folderError } = await supabase

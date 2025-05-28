@@ -301,7 +301,7 @@ async function buildFolderHierarchy(
   const allDriveIds = Array.from(nodeMap.keys());
   if (allDriveIds.length > 1) { // More than just the root
     const { data: itemDetails } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('drive_id, created_at, modified_at')
       .in('drive_id', allDriveIds);
 
@@ -477,7 +477,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     // Include folders to catch the edge case where new folders are created
     // Order by created_at descending to get newest items first
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
@@ -571,7 +571,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
           for (let i = 0; i < allItemIds.length; i += updateBatchSize) {
             const batch = allItemIds.slice(i, i + updateBatchSize);
             const { error: batchError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ main_video_id: videoId })
               .in('id', batch);
             
@@ -606,7 +606,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     // Get ALL video names for mapping (not just video mime types)
     // Include all files that might be referenced as main_video_id
     const { data: allVideoFiles } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .or('mime_type.like.video/%,name.ilike.%.mp4,name.ilike.%.webm,name.ilike.%.mov,name.ilike.%.avi');
     
@@ -688,7 +688,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
           for (let i = 0; i < allItemIds.length; i += updateBatchSize) {
             const batch = allItemIds.slice(i, i + updateBatchSize);
             const { error: batchError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ main_video_id: videoId })
               .in('id', batch);
             
@@ -701,7 +701,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
           
           // Update the video name in the map
           const { data: videoFile } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('name')
             .eq('id', videoId)
             .single();
@@ -731,14 +731,14 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
       if (!file.main_video_id && file.parent_folder_id) {
         // Get parent folder's main_video_id
         const { data: parentFolder } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('main_video_id')
           .eq('drive_id', file.parent_folder_id)
           .single();
         
         if (parentFolder?.main_video_id) {
           const { error } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({ main_video_id: parentFolder.main_video_id })
             .eq('id', file.id);
           
@@ -790,7 +790,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
           let currentItem = file;
           while (currentItem.path_depth > 0 && currentItem.parent_folder_id) {
             const { data: parentFolder } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .select('*')
               .eq('drive_id', currentItem.parent_folder_id)
               .single();
@@ -809,7 +809,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
           if (currentMainVideoId) {
             // Update the sources_google record
             await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({ main_video_id: currentMainVideoId })
               .eq('id', file.id);
           }
@@ -868,7 +868,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
         let currentItem = file;
         while (currentItem.path_depth > 0 && currentItem.parent_folder_id) {
           const { data: parentFolder } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('*')
             .eq('drive_id', currentItem.parent_folder_id)
             .single();
@@ -895,7 +895,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
         let currentItem = folder;
         while (currentItem.path_depth > 0 && currentItem.parent_folder_id) {
           const { data: parentFolder } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .select('*')
             .eq('drive_id', currentItem.parent_folder_id)
             .single();
@@ -915,7 +915,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     
     // Get details for all affected high-level folders
     const { data: highLevelFolders } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .in('drive_id', Array.from(affectedHighLevelFolders))
       .eq('path_depth', 0);
@@ -1030,7 +1030,7 @@ async function main() {
     
     // Get video name mapping - same as in processNewFilesEnhanced
     const { data: allVideoFiles } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .or('mime_type.like.video/%,name.ilike.%.mp4,name.ilike.%.webm,name.ilike.%.mov,name.ilike.%.avi');
     

@@ -62,7 +62,7 @@ async function main() {
     console.log('\nSTEP 1: Checking tables...');
     
     const { data: sgData, error: sgError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact', head: true });
     
     if (sgError) {
@@ -74,7 +74,7 @@ async function main() {
     
     // Check if sources_google exists
     const { data: sg2Data, error: sg2Error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact', head: true });
     
     let targetTableExists = true;
@@ -148,7 +148,7 @@ async function main() {
         
         if (!isDryRun) {
           const { error: deleteError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .delete()
             .neq('id', '00000000-0000-0000-0000-000000000000');
           
@@ -285,7 +285,7 @@ async function main() {
     if (!isDryRun) {
       // Check DHG records
       const { count: dhgCount, error: dhgError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .eq('root_drive_id', ROOT_FOLDERS.DHG);
       
@@ -297,7 +297,7 @@ async function main() {
       
       // Check PVSG records
       const { count: pvsgCount, error: pvsgError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true })
         .eq('root_drive_id', ROOT_FOLDERS.PVSG);
       
@@ -309,7 +309,7 @@ async function main() {
       
       // Check total count
       const { count: finalCount, error: countError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true });
       
       if (countError) {

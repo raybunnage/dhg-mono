@@ -132,7 +132,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     // 1. Update .conf files in sources_google and their expert documents
     console.log('\nProcessing .conf files...');
     const { data: confFiles, error: confFilesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .ilike('name', '%.conf');
 
@@ -144,7 +144,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       // Update sources_google document type
       if (!dryRun) {
         const { error: updateSourcesError } = await supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .update({ document_type_id: 'c1a7b78b-c61e-44a4-8b77-a27a38cbba7e' }) // Configuration File
           .in('id', confFiles.map(file => file.id));
 
@@ -201,7 +201,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
     console.log(`\nProcessing sources with specific document types (to Document)...`);
     const { data: specificTypeSources, error: specificTypesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, document_type_id')
       .in('document_type_id', documentTypeIdsToDocument);
 
@@ -270,7 +270,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
     console.log(`\nProcessing sources with document types to be set as PDF/PPTX...`);
     const { data: pdfPptxSources, error: pdfPptxSourcesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, document_type_id')
       .in('document_type_id', documentTypesToPdfPptx);
 
@@ -310,7 +310,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // Process documents for rule 1: document_type_id 46dac359-01e9-4e36-bfb2-531da9c25e3f (regardless of content)
     const { data: rule1Sources, error: rule1SourcesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id')
       .eq('document_type_id', '46dac359-01e9-4e36-bfb2-531da9c25e3f');
 
@@ -353,7 +353,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     ];
 
     const { data: jsonExpertSources, error: jsonExpertSourcesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, document_type_id')
       .in('document_type_id', jsonExpertSummarySourceTypes);
 
@@ -424,7 +424,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // Fetch the corresponding sources_google records to check file extensions
     const { data: sourcesForJsonCheck, error: sourcesJsonCheckError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .in('id', expertDocSourceIds);
       
@@ -503,7 +503,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     // 7. Mark documents containing "File analysis unavailable" for document_type_id e9d3e473-5315-4837-9f5f-61f150cbd137
     console.log('\nProcessing documents containing "File analysis unavailable"...');
     const { data: researchPaperSources, error: researchPaperSourcesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id')
       .eq('document_type_id', 'e9d3e473-5315-4837-9f5f-61f150cbd137'); // Research Paper
 
@@ -557,7 +557,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     // 8. Mark folder documents as needs_reprocessing
     console.log('\nMarking folder documents as needs_reprocessing...');
     const { data: folderSources, error: folderSourcesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id')
       .eq('mime_type', 'application/vnd.google-apps.folder');
 
@@ -612,7 +612,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     // 9. Mark password protected documents
     console.log('\nMarking password protected documents...');
     const { data: passwordProtectedSources, error: passwordProtectedError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id')
       .eq('document_type_id', '9dbe32ff-5e82-4586-be63-1445e5bcc548');
 
@@ -729,13 +729,13 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
     // First try by document type ID
     const { data: unsupportedSources, error: unsupportedError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, document_type_id, name, mime_type')
       .in('document_type_id', unsupportedDocumentTypeIds);
       
     // Then try by MIME type
     const { data: unsupportedMimeSources, error: unsupportedMimeError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, document_type_id, name, mime_type')
       .in('mime_type', unsupportedMimeTypes);
 
@@ -842,7 +842,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // Get all sources_google files that are not folders and not deleted
     const { data: allActiveSources, error: activeSourcesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, document_type_id, mime_type')
       .eq('is_deleted', false)
       .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
@@ -967,7 +967,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       
       // Get all active source IDs (not just non-folder sources)
       const { data: allSourceIds, error: allSourceIdsError } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .eq('is_deleted', false);
         
@@ -1021,14 +1021,14 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     // First, get sources with unsupported document types
     console.log('Finding sources with unsupported document types...');
     const { data: unsupportedTypeSourcesForMismarked, error: unsupportedTypesErrorForMismarked } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id')
       .in('document_type_id', unsupportedDocumentTypeIds);
       
     // Second, get sources with unsupported mime types
     console.log('Finding sources with unsupported mime types...');
     const { data: unsupportedMimeSourcesForMismarked, error: unsupportedMimesErrorForMismarked } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id')
       .in('mime_type', unsupportedMimeTypes);
     
@@ -1101,7 +1101,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // Get all MP4 sources
     const { data: mp4Sources, error: mp4SourcesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .eq('mime_type', 'video/mp4')
       .eq('is_deleted', false);
@@ -1161,7 +1161,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // First, count how many folders have the high-level document_type_id
     const { data: folderCount, error: folderCountError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact' })
       .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac')
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -1175,7 +1175,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // Count how many have path_depth = 0
     const { data: depthZeroCount, error: depthZeroError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id', { count: 'exact' })
       .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac')
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -1190,7 +1190,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // Find folders matching criteria: document_type_id = bd903d99-64a1-4297-ba76-1094ab235dac and path_depth > 0
     const { data: specificFolders, error: specificFoldersError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, path_depth')
       .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac')
       .eq('mime_type', 'application/vnd.google-apps.folder')
@@ -1206,7 +1206,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       if (!dryRun) {
         // Update each folder's document_type_id
         const { error: updateFoldersError } = await supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .update({ document_type_id: 'dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd' }) // making all high level folders with a depth > 0 become a low level folder
           .in('id', specificFolders.map(folder => folder.id));
         
@@ -1240,7 +1240,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         
         // Verify the changes were successful
         const { data: verifyFolders, error: verifyError } = await supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .select('id', { count: 'exact' })
           .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac')
           .gt('path_depth', 0)
@@ -1269,7 +1269,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // Get all non-folder, non-deleted sources_google files
     const { data: finalSourcesCheck, error: finalSourcesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .eq('is_deleted', false)
       .not('mime_type', 'eq', 'application/vnd.google-apps.folder');

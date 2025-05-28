@@ -69,7 +69,7 @@ async function linkTranscriptsToPresentation() {
       
       // Check if an expert_document already exists for this source
       const { data: source } = await supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .eq('id', presentation.main_video_id)
         .single();

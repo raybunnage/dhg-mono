@@ -596,7 +596,7 @@ export class PresentationService {
         // Get all sources related to Dynamic Healing Discussion Group, including those not directly in the folder
         // but whose path indicates they're part of the group
         let dhgQuery = this.supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, path, drive_id, root_drive_id');
         
         // If we have a root_drive_id filter, use that instead of the path-based filtering
@@ -1045,13 +1045,13 @@ export class PresentationService {
       if (options.folderId) {
         // Try to find sources in the specified folder
         folderQuery = this._supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, path, drive_id')
           .eq('drive_id', options.folderId);
       } else {
         // Fall back to a broader search if no folder ID provided
         folderQuery = this._supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, path, drive_id')
           .ilike('path', '%Dynamic Healing Discussion Group%');
       }
@@ -1068,7 +1068,7 @@ export class PresentationService {
         
         // Try a broader folder name search as fallback
         const { data: altSources, error: altError } = await this._supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, path, drive_id')
           .limit(10);
         
@@ -1185,7 +1185,7 @@ export class PresentationService {
           : `path.eq.${parentPath}`;
         
         const { data: folderSources, error: sourcesError } = await this._supabaseClient
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, mime_type')
           .or(folderCondition);
         
@@ -1358,7 +1358,7 @@ export class PresentationService {
     }
     
     const { data: videoSources, error: videoError } = await this._supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .in('id', videoIds);
     
@@ -1574,7 +1574,7 @@ export class PresentationService {
       // Get sources from the specified folder
       // Limiting to 100 sources to avoid exceeding request limits
       const { data: folderSources, error: folderError } = await this._supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .eq('drive_id', folderId)
         .limit(100);
@@ -1684,7 +1684,7 @@ export class PresentationService {
       
       // Get sources from the specified folder and its paths
       const { data: folderSources, error: folderError } = await this._supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .or(`drive_id.eq.1wriOM2j2IglnMcejplqG_XcCxSIfoRMV,path.like.%/1wriOM2j2IglnMcejplqG_XcCxSIfoRMV/%,path.like.%Dynamic Healing Discussion Group%`);
       
@@ -1764,7 +1764,7 @@ export class PresentationService {
       
       // Get sources from the specified folder (limit to reasonable number)
       const { data: folderSources, error: folderError } = await this._supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id')
         .eq('drive_id', folderId)
         .limit(200); // Increased limit to 200 sources to catch more documents
@@ -2111,7 +2111,7 @@ export class PresentationService {
       
       // Step 1: Find top-level folders (path_depth = 0) with main_video_id not null
       const { data: topLevelFolders, error: foldersError } = await this._supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, path, main_video_id, path_depth')
         .eq('path_depth', 0)
         .not('main_video_id', 'is', null)
@@ -2182,7 +2182,7 @@ export class PresentationService {
       
       // Build the query for folders with main_video_id
       let query = this._supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, path, main_video_id')
         .not('main_video_id', 'is', null);
         
@@ -2260,7 +2260,7 @@ export class PresentationService {
         if (needsProcessing || options?.includeProcessed || options?.forceUnprocessed) {
           // Get the video details
           const { data: videoDetails, error: videoError } = await this._supabaseClient
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, mime_type')
             .eq('id', folder.main_video_id)
             .single();
@@ -2345,7 +2345,7 @@ export class PresentationService {
           
           // Get video details from main_video_id
           const { data: videoDetails, error: videoError } = await this._supabaseClient
-            .from('sources_google')
+            .from('google_sources')
             .select('id, name, mime_type, drive_id, created_at, modified_at')
             .eq('id', folder.main_video_id)
             .single();
@@ -2558,7 +2558,7 @@ export class PresentationService {
               
               // Get files in the high-level folder
               const { data: folderFiles, error: filesError } = await this._supabaseClient
-                .from('sources_google')
+                .from('google_sources')
                 .select('id, name, mime_type, drive_id, parent_folder_id')
                 .eq('parent_folder_id', createdItem.folder.drive_id)
                 .not('mime_type', 'eq', 'application/vnd.google-apps.folder');
@@ -2590,7 +2590,7 @@ export class PresentationService {
               
               // Get subfolders to check for more files
               const { data: subfolders, error: subfolderError } = await this._supabaseClient
-                .from('sources_google')
+                .from('google_sources')
                 .select('id, name, drive_id')
                 .eq('parent_folder_id', createdItem.folder.drive_id)
                 .eq('mime_type', 'application/vnd.google-apps.folder');

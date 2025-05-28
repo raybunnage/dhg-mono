@@ -47,7 +47,7 @@ async function checkSpecificDocument() {
       console.log(`\nFetching sources_google record with ID: ${specificDoc.source_id}`);
       
       const { data: sourceDoc, error: sourceError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*')
         .eq('id', specificDoc.source_id)
         .single();

@@ -55,7 +55,7 @@ async function checkPathDepths() {
       totalChecked++;
       
       const { data, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, path_depth')
         .eq('drive_id', file.id);
         

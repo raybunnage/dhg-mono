@@ -175,7 +175,7 @@ program
         
         // First, check if the document exists in sources_google
         const { data: sourceData, error: sourceError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select(`
             id,
             name,
@@ -565,7 +565,7 @@ Return your classification as a complete, valid JSON object with all of these fi
                     console.log(`Name in classification: ${classificationResponse.name}`);
                     
                     const { data: updateSourceData, error: updateSourceError } = await supabase
-                      .from('sources_google')
+                      .from('google_sources')
                       .update({
                         document_type_id: classificationResponse.document_type_id, // Use exactly what Claude returned
                         updated_at: new Date().toISOString()

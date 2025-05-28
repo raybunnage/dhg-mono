@@ -24,7 +24,7 @@ const command = new Command('create-one-presentation')
       
       // Get the specific folder
       const { data: folder, error } = await presentationService.supabaseClient
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, path, main_video_id')
         .eq('id', options.folderId)
         .single();

@@ -84,7 +84,7 @@ async function updateMetadata(
   try {
     // Build query for files to check
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*')
       .eq('is_deleted', false)
       .neq('mime_type', 'application/vnd.google-apps.folder')
@@ -164,7 +164,7 @@ async function updateMetadata(
           if (metadataResult.notFound && !isDryRun) {
             // Mark file as deleted if not found
             await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update({
                 is_deleted: true,
                 updated_at: new Date().toISOString()
@@ -277,7 +277,7 @@ async function updateMetadata(
         if (hasChanges || forceUpdate) {
           if (!isDryRun) {
             const { error: updateError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .update(updates)
               .eq('id', file.id);
             

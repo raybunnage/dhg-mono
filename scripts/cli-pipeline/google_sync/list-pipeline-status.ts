@@ -51,7 +51,7 @@ async function listPipelineStatus(options: {
     
     // First, get the sources
     let query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select(`
         id,
         name,

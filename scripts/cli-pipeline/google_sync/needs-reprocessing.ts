@@ -109,7 +109,7 @@ export async function listNeedsReprocessing(options: {
     
     // Get source details for each document
     const { data: sourcesData, error: sourcesError } = await supabaseClient
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, document_type_id')
       .in('id', sourceIds) as { data: SourceGoogle[] | null, error: any };
       

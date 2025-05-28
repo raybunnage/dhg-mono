@@ -33,7 +33,7 @@ async function checkRecentUpdates(
     
     // Query for the most recently updated PDF sources
     const { data: files, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select(`
         id, 
         name, 

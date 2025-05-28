@@ -149,7 +149,7 @@ async function main() {
       
       // Get folder details from the database
       const { data: dbFolder, error: dbError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, drive_id, name, is_root, path')
         .eq('drive_id', resolvedFolderId)
         .eq('deleted', false)
@@ -229,7 +229,7 @@ async function main() {
           for (const file of batch) {
             // Check if the file already exists in the database
             const { data: existingFiles, error: queryError } = await supabase
-              .from('sources_google')
+              .from('google_sources')
               .select('id, drive_id, name, modified_time')
               .eq('drive_id', file.id)
               .eq('deleted', false);
@@ -257,7 +257,7 @@ async function main() {
               
               // Update the file
               const { error: updateError } = await supabase
-                .from('sources_google')
+                .from('google_sources')
                 .update({
                   name: file.name,
                   mime_type: file.mimeType,
@@ -279,7 +279,7 @@ async function main() {
             } else {
               // Insert new file
               const { error: insertError } = await supabase
-                .from('sources_google')
+                .from('google_sources')
                 .insert({
                   drive_id: file.id,
                   name: file.name,
@@ -315,7 +315,7 @@ async function main() {
         // Update last_indexed on the root folder if this is a root folder
         if (dbFolder && dbFolder.is_root) {
           const { error: updateError } = await supabase
-            .from('sources_google')
+            .from('google_sources')
             .update({
               last_indexed: now
             })
@@ -351,7 +351,7 @@ async function showStats(supabase: any, detailedFileTypes: boolean = false) {
   try {
     // Get total count and size
     const { count: totalCount, error: countError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true })
       .eq('deleted', false);
       
@@ -361,7 +361,7 @@ async function showStats(supabase: any, detailedFileTypes: boolean = false) {
     
     // Get folder count
     const { count: folderCount, error: folderError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('*', { count: 'exact', head: true })
       .eq('deleted', false)
       .eq('mime_type', 'application/vnd.google-apps.folder');
@@ -372,7 +372,7 @@ async function showStats(supabase: any, detailedFileTypes: boolean = false) {
     
     // Get total size
     const { data: sizeData, error: sizeError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('size')
       .eq('deleted', false);
       
@@ -387,7 +387,7 @@ async function showStats(supabase: any, detailedFileTypes: boolean = false) {
     
     // Get counts by mime type - we'll just fetch all items and count types in memory
     const { data: typeData, error: typeError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('mime_type')
       .eq('deleted', false)
       .not('mime_type', 'is', null);
@@ -405,7 +405,7 @@ async function showStats(supabase: any, detailedFileTypes: boolean = false) {
     
     // Get root folders
     const { data: rootFolders, error: rootFoldersError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('name, drive_id, last_indexed')
       .eq('deleted', false)
       .eq('is_root', true);

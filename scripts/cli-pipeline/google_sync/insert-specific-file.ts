@@ -104,7 +104,7 @@ async function getParentPath(driveService: any, folderId: string): Promise<strin
  */
 async function checkFileExists(fileId: string) {
   const { data, error } = await supabase
-    .from('sources_google')
+    .from('google_sources')
     .select('id, drive_id, name')
     .eq('drive_id', fileId)
     .eq('is_deleted', false);
@@ -215,7 +215,7 @@ async function insertFile(driveService: any, fileId: string, parentId: string) {
     
     // Insert the file
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .insert(insertData);
       
     if (error) {

@@ -88,7 +88,7 @@ export async function checkDocumentTypes(
   try {
     // Build query for .docx and .txt files
     const query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, path, drive_id, document_type_id')
       .eq('is_deleted', false)
       .or('mime_type.eq.application/vnd.openxmlformats-officedocument.wordprocessingml.document,mime_type.eq.text/plain')

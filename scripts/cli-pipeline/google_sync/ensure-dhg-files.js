@@ -30,7 +30,7 @@ const batchSize = 50; // Insert in smaller batches to prevent issues
 async function getExistingRecords(supabase) {
   try {
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id, path')
       .eq('root_drive_id', DHG_ROOT_ID);
     
@@ -115,7 +115,7 @@ async function insertBatch(supabase, records) {
   
   try {
     const { data, error } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .upsert(records, { onConflict: 'drive_id' });
     
     if (error) {
@@ -143,7 +143,7 @@ async function main() {
     let tableExists = false;
     try {
       const { count, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('*', { count: 'exact', head: true });
       
       if (!error) {

@@ -24,7 +24,7 @@ async function main() {
     
     try {
       const { count, error } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id', { count: 'exact', head: true });
       
       if (!error) {

@@ -121,7 +121,7 @@ async function main() {
     console.log("Fetching folders with main_video_id...");
     
     const { data: folders, error: foldersError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, main_video_id')
       .in('id', folderIds)
       .not('main_video_id', 'is', null);
@@ -159,7 +159,7 @@ async function main() {
     
     // Step 4: Get video name information
     const { data: videos, error: videosError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name')
       .in('id', videoIdArray);
     

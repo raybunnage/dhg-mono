@@ -109,7 +109,7 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     
     // Get the source file information
     const { data: sourceFile, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type, metadata')
       .eq('id', document.source_id)
       .single();

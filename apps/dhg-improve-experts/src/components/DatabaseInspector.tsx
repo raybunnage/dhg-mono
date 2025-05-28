@@ -3,13 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 
 export default function DatabaseInspector() {
-  const [tableName, setTableName] = useState('sources_google');
+  const [tableName, setTableName] = useState('google_sources');
   const [metadata, setMetadata] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<'json' | 'formatted'>('formatted');
   
   const commonTables = [
-    'sources_google',
+    'google_sources',
     'google_sync_history',
     'google_auth_tokens',
     'experts',

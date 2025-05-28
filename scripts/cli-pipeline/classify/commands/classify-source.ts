@@ -101,7 +101,7 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
     
     // 2. Get source information
     const { data: source, error: sourceError } = await supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, mime_type')
       .eq('id', expertDocument.source_id)
       .single();
@@ -131,7 +131,7 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
       .from('table_classifications')
       .select('id', { count: 'exact', head: true })
       .eq('entity_id', expertDocument.source_id)
-      .eq('entity_type', 'sources_google');
+      .eq('entity_type', 'google_sources');
       
     if (sourceClassError) {
       Logger.error(`Error checking source classifications: ${sourceClassError.message}`);
@@ -171,7 +171,7 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
           .from('table_classifications')
           .delete()
           .eq('entity_id', expertDocument.source_id)
-          .eq('entity_type', 'sources_google');
+          .eq('entity_type', 'google_sources');
           
         if (deleteSourceError) {
           Logger.error(`Error deleting source classifications: ${deleteSourceError.message}`);
@@ -499,7 +499,7 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
         .insert({
           id: uuidv4(),
           entity_id: expertDocument.source_id,
-          entity_type: 'sources_google',
+          entity_type: 'google_sources',
           subject_classification_id: subjectId,
           notes: `Automatically classified with title: ${classificationResult.title} (from document ${expertDocument.id})`
         });

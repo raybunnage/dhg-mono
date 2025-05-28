@@ -1,5 +1,5 @@
  SELECT dt.document_type, COUNT(*) as count
-  FROM sources_google sg
+  FROM google_sources sg
   JOIN document_types dt ON sg.document_type_id = dt.id
   WHERE sg.document_type_id IS NOT NULL and is_deleted = FALSE
     GROUP BY dt.document_type
@@ -17,7 +17,7 @@
     SELECT dts.document_type as sg_doc_type, sg.name, ed.*  
   FROM expert_documents ed
   JOIN document_types dt ON ed.document_type_id = dt.id
-  join sources_google sg on ed.source_id = sg.id
+  join google_sources sg on ed.source_id = sg.id
   join document_types dts on sg.document_type_id = dts.id
   WHERE  ed.document_type_id in (
   '9ccdc433-99d8-46fb-8bf7-3ba72cf27c88' , '46dac359-01e9-4e36-bfb2-531da9c25e3f', 'ba7893d4-8404-4489-b553-b6464cd5cbd8' , 'c62f92f5-6123-4324-876d-14639841284e',
@@ -43,7 +43,7 @@ WITH folder_depths AS (
     (LENGTH(sg.path) - LENGTH(REPLACE(sg.path, '/', ''))) + 1 as path_depth,
     sg.path,
     COUNT(*) as folder_count
-  FROM sources_google sg
+  FROM google_sources sg
   LEFT JOIN document_types dt ON sg.document_type_id = dt.id
   WHERE 
     sg.mime_type = 'application/vnd.google-apps.folder'
@@ -66,17 +66,17 @@ ORDER BY
   folder_type,
   path_depth;
 
-select dt.document_type, sg.path_depth, sg.name, sg.mime_type from sources_google sg
+select dt.document_type, sg.path_depth, sg.name, sg.mime_type from google_sources sg
 join document_types dt on dt.id = sg.document_type_id
 where  sg.mime_type = 'application/vnd.google-apps.folder' order by path_depth
 
 
 
-select * from sources_google where name = 'RCW_academic_CV_CU.pdf'
+select * from google_sources where name = 'RCW_academic_CV_CU.pdf'
 
 select * from expert_documents where source_id ='960c9984-adb4-4e2d-8dee-5b347f569f7b'
 
-select * from sources_google where id = 'fe943b28-fe21-4086-a9a5-1ebee71caabd'
+select * from google_sources where id = 'fe943b28-fe21-4086-a9a5-1ebee71caabd'
 
 ALTER TABLE expert_documents
   DROP COLUMN IF EXISTS ai_analysis,
@@ -211,7 +211,7 @@ select id, category, document_type, description, mime_type, file_extension from 
 select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'pdf'
 select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'powerpoint'
 
-select s.id, s.path_depth, s.document_type_id,  s.mime_type, s.name from sources_google s 
+select s.id, s.path_depth, s.document_type_id,  s.mime_type, s.name from google_sources s 
 where s.document_type_id in ('dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd','bd903d99-64a1-4297-ba76-1094ab235dac')
 
 
@@ -220,7 +220,7 @@ where s.document_type_id in ('dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd','bd903d99-64
 where name like '%pptx'
 left join document_types t on t.id = s.document_type_id  where name like '%pdf'
 
-select s.id,  s.mime_type, s.name from sources_google s where s.document_type_id = '9dbe32ff-5e82-4586-be63-1445e5bcc548'
+select s.id,  s.mime_type, s.name from google_sources s where s.document_type_id = '9dbe32ff-5e82-4586-be63-1445e5bcc548'
 
 
 
@@ -238,7 +238,7 @@ order by modified_at desc
 
  
 
-UPDATE sources_google 
+UPDATE google_sources 
 SET document_type_id = 'ba1d7662-0168-4756-a2ea-6d964fd02ba8'
 WHERE mime_type = 'video/mp4' 
 RETURNING id, name, mime_type, document_type_id;
@@ -251,15 +251,15 @@ order by document_type where document_type = 'Technical Specification'
 
 select * from prompts where name = 'document-classification-prompt-new'
 
-select name, mime_type, path_depth, main_video_id,path_array from  sources_google where mime_type = 'application/vnd.google-apps.folder' and path_depth = 0;
-select * from sources_google2 where id = '221817dd-d765-4f2f-a88c-4ba314d33204';
+select name, mime_type, path_depth, main_video_id,path_array from  google_sources where mime_type = 'application/vnd.google-apps.folder' and path_depth = 0;
+select * from google_sources2 where id = '221817dd-d765-4f2f-a88c-4ba314d33204';
 
 insert 
 
 
 WITH total_rows AS (
   SELECT COUNT(*) as total
-  FROM sources_google
+  FROM google_sources
 ),
 null_counts AS (
   SELECT 
@@ -295,7 +295,7 @@ null_counts AS (
     
     -- Additional Fields
     SUM(CASE WHEN main_video_id IS NULL THEN 1 ELSE 0 END) as main_video_id_nulls
-  FROM sources_google
+  FROM google_sources
 )
 SELECT * FROM (
   SELECT
@@ -347,15 +347,15 @@ ORDER BY
 
 
 
-update sources_google2 
+update google_sources2 
 set main_video_id = g.id
-from sources_google2 g
+from google_sources2 g
 where g.mime_type = 'video/mp4' and g.main_video_id is null;
 
 
-UPDATE sources_google2 s
+UPDATE google_sources2 s
 SET main_video_id = g.id
-FROM sources_google2 g
+FROM google_sources2 g
 WHERE g.mime_type = 'video/mp4' 
   AND s.main_video_id IS NULL
   AND s.id = g.id;  
@@ -373,7 +373,7 @@ and name = 'Tauben.Sullivan.4.20.22.mp4'
 
 
 
-SELECT * FROM sources_google2 
+SELECT * FROM google_sources2 
 WHERE '2023-10-04-Hanscom' = ANY(path_array);
 
 
@@ -385,15 +385,15 @@ where file_signature is null;
 where id = 'b257d441-7bce-495d-8a54-3272d2f16c02'
 
 name = 'test new document'
-mime_type, name, path_depth, path_array, metadata FROM sources_google2 where is_deleted = true
+mime_type, name, path_depth, path_array, metadata FROM google_sources2 where is_deleted = true
 
-update sources_google2 set path_depth = 0 WHERE id = 'c711a758-5b2b-439a-80df-7d17231a77d4';
+update google_sources2 set path_depth = 0 WHERE id = 'c711a758-5b2b-439a-80df-7d17231a77d4';
 
 ["2023-10-04-Hanscom","Clawson-RUTs neuroscience","10.4.23.Hanscom:Clawson.mp4"]
 
 
-CREATE TABLE sources_google2 AS 
-SELECT * FROM sources_google2_backup_2024_03_26;
+CREATE TABLE google_sources2 AS 
+SELECT * FROM google_sources2_backup_2024_03_26;
 
 
 
@@ -402,35 +402,35 @@ where name like '%test new document%';
 
 
 
-CREATE INDEX IF NOT EXISTS sources_google2_drive_id_idx ON sources_google2 (drive_id);
-CREATE INDEX IF NOT EXISTS sources_google2_root_drive_id_idx ON sources_google2 (root_drive_id);
-CREATE INDEX IF NOT EXISTS sources_google2_parent_folder_id_idx ON sources_google2 (parent_folder_id);
-CREATE INDEX IF NOT EXISTS sources_google2_mime_type_idx ON sources_google2 (mime_type);
-CREATE INDEX IF NOT EXISTS sources_google2_path_idx ON sources_google2 (path);
-CREATE INDEX IF NOT EXISTS sources_google2_name_idx ON sources_google2 (name);
-CREATE INDEX IF NOT EXISTS sources_google2_document_type_id_idx ON sources_google2 (document_type_id);
-CREATE INDEX IF NOT EXISTS sources_google2_expert_id_idx ON sources_google2 (expert_id);
+CREATE INDEX IF NOT EXISTS google_sources2_drive_id_idx ON google_sources2 (drive_id);
+CREATE INDEX IF NOT EXISTS google_sources2_root_drive_id_idx ON google_sources2 (root_drive_id);
+CREATE INDEX IF NOT EXISTS google_sources2_parent_folder_id_idx ON google_sources2 (parent_folder_id);
+CREATE INDEX IF NOT EXISTS google_sources2_mime_type_idx ON google_sources2 (mime_type);
+CREATE INDEX IF NOT EXISTS google_sources2_path_idx ON google_sources2 (path);
+CREATE INDEX IF NOT EXISTS google_sources2_name_idx ON google_sources2 (name);
+CREATE INDEX IF NOT EXISTS google_sources2_document_type_id_idx ON google_sources2 (document_type_id);
+CREATE INDEX IF NOT EXISTS google_sources2_expert_id_idx ON google_sources2 (expert_id);
 
 -- Step 5: Verify the restoration
-SELECT COUNT(*) as total_rows FROM sources_google2;
+SELECT COUNT(*) as total_rows FROM google_sources2;
 
 
 
---CREATE TABLE sources_google2_backup_2024_03_26 AS 
---SELECT * FROM sources_google2;
+--CREATE TABLE google_sources2_backup_2024_03_26 AS 
+--SELECT * FROM google_sources2;
 
---DROP TABLE IF EXISTS sources_google2;
+--DROP TABLE IF EXISTS google_sources2;
 
-CREATE TABLE sources_google2 AS 
-SELECT * FROM sources_google2_backup_2024_03_26;
+CREATE TABLE google_sources2 AS 
+SELECT * FROM google_sources2_backup_2024_03_26;
 
-CREATE TABLE sources_google2_backup_2025_04_11 AS 
-SELECT * FROM sources_google2_backup_2024_03_26;
+CREATE TABLE google_sources2_backup_2025_04_11 AS 
+SELECT * FROM google_sources2_backup_2024_03_26;
 
-select * from sources_google2 where name = 'test new document';
+select * from google_sources2 where name = 'test new document';
 where updated_at::date = '2025-04-12'
 
-select * from sources_google2 where drive_id in (
+select * from google_sources2 where drive_id in (
 '1lY0Vxhv51RBZ5K9PmVQ9_T5PGpmcnkdh'
 )
 
@@ -447,7 +447,7 @@ ORDER BY ordinal_position;
 
 CREATE TABLE google_sources_experts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    source_id UUID NOT NULL REFERENCES sources_google(id),
+    source_id UUID NOT NULL REFERENCES google_sources(id),
     expert_id UUID NOT NULL REFERENCES experts(id),
     role_description TEXT,                    -- For additional context when role is 'other'
     is_primary BOOLEAN DEFAULT false,         -- Whether this expert is the primary for this source
@@ -462,10 +462,10 @@ CREATE INDEX idx_google_sources_experts_expert_id ON
 google_sources_experts(expert_id);
 
 
-  ALTER TABLE sources_google 
+  ALTER TABLE google_sources 
 ADD PRIMARY KEY (id);
 
-ALTER TABLE sources_google
+ALTER TABLE google_sources
 DROP COLUMN expert_id
 
 
@@ -505,17 +505,17 @@ DELETE FROM experts where expert_name = 'Brenda'
 
 
 
-select count(*) from sources_google where mime_type = 'video/mp4'
+select count(*) from google_sources where mime_type = 'video/mp4'
 
 select * from presentations
 
--- First query: Find videos in sources_google that don't exist in presentations
--- First query: Find videos in sources_google that don't exist in presentations
+-- First query: Find videos in google_sources that don't exist in presentations
+-- First query: Find videos in google_sources that don't exist in presentations
 WITH google_videos AS (
   SELECT 
     name,
     id as source_id
-  FROM sources_google 
+  FROM google_sources 
   WHERE mime_type = 'video/mp4'
 ),
 presentation_files AS (
@@ -525,7 +525,7 @@ presentation_files AS (
   FROM presentations
 )
 SELECT * FROM (
-  -- Videos in sources_google but not in presentations
+  -- Videos in google_sources but not in presentations
   SELECT 
     'Missing in Presentations' as mismatch_type,
     gv.name as google_name,
@@ -539,7 +539,7 @@ SELECT * FROM (
 
   UNION ALL
 
-  -- Videos in presentations but not in sources_google
+  -- Videos in presentations but not in google_sources
   SELECT 
     'Missing in Sources Google' as mismatch_type,
     pf.filename as google_name,

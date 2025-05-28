@@ -42,7 +42,7 @@ export async function propagateExpertIds(options: PropagateExpertIdsOptions): Pr
     loggerUtil.info('Finding high-level folders with experts assigned...');
     
     let folderQuery = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select(`
         id,
         name,
@@ -118,7 +118,7 @@ export async function propagateExpertIds(options: PropagateExpertIdsOptions): Pr
       
       // First-level children (direct descendants of the high-level folder)
       const { data: firstLevelChildren, error: childrenError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .select('id, name, drive_id, path, path_depth, mime_type, is_deleted')
         .eq('parent_folder_id', folderDriveId)
         .eq('is_deleted', false);
@@ -147,7 +147,7 @@ export async function propagateExpertIds(options: PropagateExpertIdsOptions): Pr
         if (!currentFolder) continue;
         
         const { data: nestedChildren, error: nestedError } = await supabase
-          .from('sources_google')
+          .from('google_sources')
           .select('id, name, drive_id, path, path_depth, mime_type, is_deleted')
           .eq('parent_folder_id', currentFolder.drive_id)
           .eq('is_deleted', false);

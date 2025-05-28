@@ -81,7 +81,7 @@ async function reviewAndReclassify(options: ReviewAndReclassifyOptions): Promise
     // Step 3: Query for documents with the specified document type
     console.log(`Fetching sources_google documents with document_type_id: ${documentTypeId}`);
     const query = supabase
-      .from('sources_google')
+      .from('google_sources')
       .select('id, name, drive_id')
       .eq('document_type_id', documentTypeId);
     
@@ -251,7 +251,7 @@ async function reviewAndReclassify(options: ReviewAndReclassifyOptions): Promise
       console.log(`Updating document type to: ${newDocTypeInfo?.name} (${newDocTypeInfo?.category})`);
       
       const { error: updateError } = await supabase
-        .from('sources_google')
+        .from('google_sources')
         .update({ document_type_id: newDocumentTypeId })
         .eq('id', document.id);
       

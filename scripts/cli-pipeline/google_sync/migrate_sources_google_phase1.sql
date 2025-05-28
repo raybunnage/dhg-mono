@@ -1,8 +1,8 @@
 -- Phase 1: Initial data migration with metadata cleanup
 -- Copy and clean basic data from original table with complete data cleanup
 
--- First, make sure the sources_google table exists
-CREATE TABLE IF NOT EXISTS public.sources_google (
+-- First, make sure the google_sources table exists
+CREATE TABLE IF NOT EXISTS public.google_sources (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL,
     mime_type text,
@@ -29,19 +29,19 @@ CREATE TABLE IF NOT EXISTS public.sources_google (
 );
 
 -- Create any necessary indexes
-CREATE INDEX IF NOT EXISTS sources_google_drive_id_idx ON public.sources_google (drive_id);
-CREATE INDEX IF NOT EXISTS sources_google_root_drive_id_idx ON public.sources_google (root_drive_id);
-CREATE INDEX IF NOT EXISTS sources_google_parent_folder_id_idx ON public.sources_google (parent_folder_id);
-CREATE INDEX IF NOT EXISTS sources_google_mime_type_idx ON public.sources_google (mime_type);
-CREATE INDEX IF NOT EXISTS sources_google_path_idx ON public.sources_google (path);
-CREATE INDEX IF NOT EXISTS sources_google_name_idx ON public.sources_google (name);
-CREATE INDEX IF NOT EXISTS sources_google_document_type_id_idx ON public.sources_google (document_type_id);
+CREATE INDEX IF NOT EXISTS google_sources_drive_id_idx ON public.google_sources (drive_id);
+CREATE INDEX IF NOT EXISTS google_sources_root_drive_id_idx ON public.google_sources (root_drive_id);
+CREATE INDEX IF NOT EXISTS google_sources_parent_folder_id_idx ON public.google_sources (parent_folder_id);
+CREATE INDEX IF NOT EXISTS google_sources_mime_type_idx ON public.google_sources (mime_type);
+CREATE INDEX IF NOT EXISTS google_sources_path_idx ON public.google_sources (path);
+CREATE INDEX IF NOT EXISTS google_sources_name_idx ON public.google_sources (name);
+CREATE INDEX IF NOT EXISTS google_sources_document_type_id_idx ON public.google_sources (document_type_id);
 
 -- Clear any existing data (in case of rerun)
-TRUNCATE TABLE public.sources_google;
+TRUNCATE TABLE public.google_sources;
 
 -- Now copy data from the original table
-INSERT INTO public.sources_google (
+INSERT INTO public.google_sources (
     id, name, mime_type, drive_id, root_drive_id, parent_folder_id, path, is_root,
     path_array, path_depth, is_deleted, metadata, size, modified_time, 
     web_view_link, thumbnail_link, content_extracted, extracted_content,
@@ -74,4 +74,4 @@ SELECT
     updated_at, 
     last_indexed
 FROM 
-    public.sources_google;
+    public.google_sources;
