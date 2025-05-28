@@ -125,7 +125,7 @@ export class PromptService {
         // Use SupabaseClientService
         const supabase = this.supabaseService.getClient();
         const { data, error } = await supabase
-          .from('prompts')
+          .from('ai_prompts')
           .select('*')
           .eq('name', promptName)
           .limit(1)
@@ -241,7 +241,7 @@ export class PromptService {
       
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase
-        .from('prompt_relationships')
+        .from('ai_prompt_relationships')
         .select('*')
         .eq('prompt_id', promptId);
       

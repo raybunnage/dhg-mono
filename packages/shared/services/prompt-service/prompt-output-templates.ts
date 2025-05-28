@@ -96,7 +96,7 @@ export class PromptOutputTemplateService {
     try {
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .select('*')
         .order('name');
         
@@ -119,7 +119,7 @@ export class PromptOutputTemplateService {
     try {
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .select('*')
         .eq('id', templateId)
         .single();
@@ -143,7 +143,7 @@ export class PromptOutputTemplateService {
     try {
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .select('*')
         .eq('name', templateName)
         .single();
@@ -177,7 +177,7 @@ export class PromptOutputTemplateService {
       
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .insert({
           name: templateName,
           description,
@@ -219,7 +219,7 @@ export class PromptOutputTemplateService {
       
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .update({
           ...updates,
           updated_at: new Date().toISOString()
@@ -247,7 +247,7 @@ export class PromptOutputTemplateService {
     try {
       const supabase = this.supabaseService.getClient();
       const { error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .delete()
         .eq('id', templateId);
         
@@ -276,7 +276,7 @@ export class PromptOutputTemplateService {
       
       // Check if association already exists
       const { data: existingAssoc, error: checkError } = await supabase
-        .from('prompt_template_associations')
+        .from('ai_prompt_template_associations')
         .select('*')
         .eq('prompt_id', promptId)
         .eq('template_id', templateId)
@@ -290,7 +290,7 @@ export class PromptOutputTemplateService {
       if (existingAssoc) {
         // Update the existing association
         const { data, error } = await supabase
-          .from('prompt_template_associations')
+          .from('ai_prompt_template_associations')
           .update({
             priority,
             updated_at: new Date().toISOString()
@@ -308,7 +308,7 @@ export class PromptOutputTemplateService {
       } else {
         // Create a new association
         const { data, error } = await supabase
-          .from('prompt_template_associations')
+          .from('ai_prompt_template_associations')
           .insert({
             prompt_id: promptId,
             template_id: templateId,
@@ -342,7 +342,7 @@ export class PromptOutputTemplateService {
     try {
       const supabase = this.supabaseService.getClient();
       const { error } = await supabase
-        .from('prompt_template_associations')
+        .from('ai_prompt_template_associations')
         .delete()
         .eq('prompt_id', promptId)
         .eq('template_id', templateId);
@@ -366,7 +366,7 @@ export class PromptOutputTemplateService {
     try {
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase
-        .from('prompt_template_associations')
+        .from('ai_prompt_template_associations')
         .select(`
           id,
           priority,

@@ -9,62 +9,257 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      app_pages: {
+      ai_prompt_categories: {
         Row: {
-          app_name: string
           created_at: string | null
           description: string | null
           id: string
-          page_name: string
-          page_path: string
+          name: string
+          parent_category_id: string | null
           updated_at: string | null
         }
         Insert: {
-          app_name: string
           created_at?: string | null
           description?: string | null
           id?: string
-          page_name: string
-          page_path: string
+          name: string
+          parent_category_id?: string | null
           updated_at?: string | null
         }
         Update: {
-          app_name?: string
           created_at?: string | null
           description?: string | null
           id?: string
-          page_name?: string
-          page_path?: string
+          name?: string
+          parent_category_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_categories_parent_category_id_fkey"
+            columns: ["parent_category_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_prompt_output_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          template: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          template: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          template?: Json
           updated_at?: string | null
         }
         Relationships: []
       }
-      asset_types: {
+      ai_prompt_relationships: {
+        Row: {
+          asset_id: string | null
+          asset_path: string
+          created_at: string
+          description: string | null
+          document_type_id: string | null
+          id: string
+          prompt_id: string
+          relationship_context: string | null
+          relationship_type: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id?: string | null
+          asset_path: string
+          created_at?: string
+          description?: string | null
+          document_type_id?: string | null
+          id?: string
+          prompt_id: string
+          relationship_context?: string | null
+          relationship_type: string
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string | null
+          asset_path?: string
+          created_at?: string
+          description?: string | null
+          document_type_id?: string | null
+          id?: string
+          prompt_id?: string
+          relationship_context?: string | null
+          relationship_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_prompt_relationships_document_type"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types_original"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_relationships_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "documentation_files_missing_doc_ids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_relationships_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_relationships_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_template_associations_view"
+            referencedColumns: ["prompt_id"]
+          },
+        ]
+      }
+      ai_prompt_template_associations: {
         Row: {
           created_at: string | null
-          description: string | null
-          display_order: number | null
-          icon: string | null
           id: string
-          name: string
+          priority: number
+          prompt_id: string
+          template_id: string
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          description?: string | null
-          display_order?: number | null
-          icon?: string | null
           id?: string
-          name: string
+          priority?: number
+          prompt_id: string
+          template_id: string
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          description?: string | null
-          display_order?: number | null
-          icon?: string | null
           id?: string
-          name?: string
+          priority?: number
+          prompt_id?: string
+          template_id?: string
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_template_associations_view"
+            referencedColumns: ["prompt_id"]
+          },
+          {
+            foreignKeyName: "prompt_template_associations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_output_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_template_associations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_template_associations_view"
+            referencedColumns: ["template_id"]
+          },
+        ]
+      }
+      ai_prompts: {
+        Row: {
+          author: string | null
+          category_id: string | null
+          content: Json
+          created_at: string | null
+          description: string | null
+          document_type_id: string | null
+          file_path: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          status: Database["public"]["Enums"]["prompt_status"] | null
+          tags: string[] | null
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          author?: string | null
+          category_id?: string | null
+          content: Json
+          created_at?: string | null
+          description?: string | null
+          document_type_id?: string | null
+          file_path?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          status?: Database["public"]["Enums"]["prompt_status"] | null
+          tags?: string[] | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          author?: string | null
+          category_id?: string | null
+          content?: Json
+          created_at?: string | null
+          description?: string | null
+          document_type_id?: string | null
+          file_path?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          status?: Database["public"]["Enums"]["prompt_status"] | null
+          tags?: string[] | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompts_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types_original"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       auth_allowed_emails: {
         Row: {
@@ -1148,147 +1343,6 @@ export type Database = {
         }
         Relationships: []
       }
-      function_registry: {
-        Row: {
-          ai_prompts: Json | null
-          app_name: string | null
-          category: string
-          code_signature: string | null
-          created_at: string | null
-          dependencies: string[] | null
-          description: string
-          git_branch: string | null
-          git_commit: string | null
-          git_commit_hash: string | null
-          github_url: string | null
-          id: string
-          implementation_notes: string | null
-          input_types: Json | null
-          last_modified_by: string | null
-          last_verified_at: string | null
-          location: string
-          name: string
-          output_types: Json | null
-          refactor_candidate: boolean | null
-          repository: string
-          shared_package_status: boolean | null
-          similar_functions: Json | null
-          specificity: string | null
-          status: string | null
-          supabase_operations: Json | null
-          target_package: string | null
-          updated_at: string | null
-          used_in: string[] | null
-          uses_react: boolean | null
-        }
-        Insert: {
-          ai_prompts?: Json | null
-          app_name?: string | null
-          category: string
-          code_signature?: string | null
-          created_at?: string | null
-          dependencies?: string[] | null
-          description: string
-          git_branch?: string | null
-          git_commit?: string | null
-          git_commit_hash?: string | null
-          github_url?: string | null
-          id?: string
-          implementation_notes?: string | null
-          input_types?: Json | null
-          last_modified_by?: string | null
-          last_verified_at?: string | null
-          location: string
-          name: string
-          output_types?: Json | null
-          refactor_candidate?: boolean | null
-          repository: string
-          shared_package_status?: boolean | null
-          similar_functions?: Json | null
-          specificity?: string | null
-          status?: string | null
-          supabase_operations?: Json | null
-          target_package?: string | null
-          updated_at?: string | null
-          used_in?: string[] | null
-          uses_react?: boolean | null
-        }
-        Update: {
-          ai_prompts?: Json | null
-          app_name?: string | null
-          category?: string
-          code_signature?: string | null
-          created_at?: string | null
-          dependencies?: string[] | null
-          description?: string
-          git_branch?: string | null
-          git_commit?: string | null
-          git_commit_hash?: string | null
-          github_url?: string | null
-          id?: string
-          implementation_notes?: string | null
-          input_types?: Json | null
-          last_modified_by?: string | null
-          last_verified_at?: string | null
-          location?: string
-          name?: string
-          output_types?: Json | null
-          refactor_candidate?: boolean | null
-          repository?: string
-          shared_package_status?: boolean | null
-          similar_functions?: Json | null
-          specificity?: string | null
-          status?: string | null
-          supabase_operations?: Json | null
-          target_package?: string | null
-          updated_at?: string | null
-          used_in?: string[] | null
-          uses_react?: boolean | null
-        }
-        Relationships: []
-      }
-      function_relationships: {
-        Row: {
-          created_at: string | null
-          details: Json | null
-          id: string
-          relationship_type: string | null
-          source_function_id: string | null
-          target_function_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          details?: Json | null
-          id?: string
-          relationship_type?: string | null
-          source_function_id?: string | null
-          target_function_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          details?: Json | null
-          id?: string
-          relationship_type?: string | null
-          source_function_id?: string | null
-          target_function_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "function_relationships_source_function_id_fkey"
-            columns: ["source_function_id"]
-            isOneToOne: false
-            referencedRelation: "function_registry"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "function_relationships_target_function_id_fkey"
-            columns: ["target_function_id"]
-            isOneToOne: false
-            referencedRelation: "function_registry"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       learn_subject_classifications: {
         Row: {
           associated_concepts: string | null
@@ -1649,42 +1703,6 @@ export type Database = {
         }
         Relationships: []
       }
-      mime_types: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          description: string | null
-          extension: string | null
-          icon: string | null
-          id: string
-          is_supported: boolean | null
-          mime_type: string
-          updated_at: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          description?: string | null
-          extension?: string | null
-          icon?: string | null
-          id?: string
-          is_supported?: boolean | null
-          mime_type: string
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          description?: string | null
-          extension?: string | null
-          icon?: string | null
-          id?: string
-          is_supported?: boolean | null
-          mime_type?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       presentation_assets: {
         Row: {
           asset_expert_document_id: string | null
@@ -1914,258 +1932,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      prompt_categories: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          name: string
-          parent_category_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          parent_category_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          parent_category_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prompt_categories_parent_category_id_fkey"
-            columns: ["parent_category_id"]
-            isOneToOne: false
-            referencedRelation: "prompt_categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      prompt_output_templates: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          name: string
-          template: Json
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          template: Json
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          template?: Json
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      prompt_relationships: {
-        Row: {
-          asset_id: string | null
-          asset_path: string
-          created_at: string
-          description: string | null
-          document_type_id: string | null
-          id: string
-          prompt_id: string
-          relationship_context: string | null
-          relationship_type: string
-          updated_at: string
-        }
-        Insert: {
-          asset_id?: string | null
-          asset_path: string
-          created_at?: string
-          description?: string | null
-          document_type_id?: string | null
-          id?: string
-          prompt_id: string
-          relationship_context?: string | null
-          relationship_type: string
-          updated_at?: string
-        }
-        Update: {
-          asset_id?: string | null
-          asset_path?: string
-          created_at?: string
-          description?: string | null
-          document_type_id?: string | null
-          id?: string
-          prompt_id?: string
-          relationship_context?: string | null
-          relationship_type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_prompt_relationships_document_type"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types_original"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_relationships_asset_id_fkey"
-            columns: ["asset_id"]
-            isOneToOne: false
-            referencedRelation: "documentation_files_missing_doc_ids"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_relationships_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "prompt_template_associations_view"
-            referencedColumns: ["prompt_id"]
-          },
-          {
-            foreignKeyName: "prompt_relationships_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "prompts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      prompt_template_associations: {
-        Row: {
-          created_at: string | null
-          id: string
-          priority: number
-          prompt_id: string
-          template_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          priority?: number
-          prompt_id: string
-          template_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          priority?: number
-          prompt_id?: string
-          template_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "prompt_template_associations_view"
-            referencedColumns: ["prompt_id"]
-          },
-          {
-            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "prompts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_template_associations_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "prompt_output_templates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_template_associations_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "prompt_template_associations_view"
-            referencedColumns: ["template_id"]
-          },
-        ]
-      }
-      prompts: {
-        Row: {
-          author: string | null
-          category_id: string | null
-          content: Json
-          created_at: string | null
-          description: string | null
-          document_type_id: string | null
-          file_path: string | null
-          id: string
-          metadata: Json | null
-          name: string
-          status: Database["public"]["Enums"]["prompt_status"] | null
-          tags: string[] | null
-          updated_at: string | null
-          version: string | null
-        }
-        Insert: {
-          author?: string | null
-          category_id?: string | null
-          content: Json
-          created_at?: string | null
-          description?: string | null
-          document_type_id?: string | null
-          file_path?: string | null
-          id?: string
-          metadata?: Json | null
-          name: string
-          status?: Database["public"]["Enums"]["prompt_status"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          version?: string | null
-        }
-        Update: {
-          author?: string | null
-          category_id?: string | null
-          content?: Json
-          created_at?: string | null
-          description?: string | null
-          document_type_id?: string | null
-          file_path?: string | null
-          id?: string
-          metadata?: Json | null
-          name?: string
-          status?: Database["public"]["Enums"]["prompt_status"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          version?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prompts_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "prompt_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompts_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types_original"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       scripts: {
         Row: {
@@ -2537,48 +2303,6 @@ export type Database = {
           },
         ]
       }
-      sql_query_history: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          execution_count: number | null
-          execution_status: string | null
-          id: string
-          is_favorite: boolean | null
-          last_executed_at: string | null
-          query_name: string | null
-          query_text: string
-          tags: string[] | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          execution_count?: number | null
-          execution_status?: string | null
-          id?: string
-          is_favorite?: boolean | null
-          last_executed_at?: string | null
-          query_name?: string | null
-          query_text: string
-          tags?: string[] | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          execution_count?: number | null
-          execution_status?: string | null
-          id?: string
-          is_favorite?: boolean | null
-          last_executed_at?: string | null
-          query_name?: string | null
-          query_text?: string
-          tags?: string[] | null
-        }
-        Relationships: []
-      }
       sync_history: {
         Row: {
           completed_at: string | null
@@ -2678,6 +2402,42 @@ export type Database = {
           mp4_total_size?: string | null
           new_files?: number | null
           total_google_drive_items?: number | null
+        }
+        Relationships: []
+      }
+      sys_mime_types: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          extension: string | null
+          icon: string | null
+          id: string
+          is_supported: boolean | null
+          mime_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          extension?: string | null
+          icon?: string | null
+          id?: string
+          is_supported?: boolean | null
+          mime_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          extension?: string | null
+          icon?: string | null
+          id?: string
+          is_supported?: boolean | null
+          mime_type?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2883,6 +2643,62 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "experts"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_template_associations: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          priority: number | null
+          prompt_id: string | null
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          priority?: number | null
+          prompt_id?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          priority?: number | null
+          prompt_id?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_template_associations_view"
+            referencedColumns: ["prompt_id"]
+          },
+          {
+            foreignKeyName: "prompt_template_associations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_output_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_template_associations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_template_associations_view"
+            referencedColumns: ["template_id"]
           },
         ]
       }

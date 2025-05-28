@@ -294,7 +294,7 @@ export class PromptManagementService {
       const supabase = this.supabaseService.getClient();
       
       const { data, error } = await supabase
-        .from('prompt_categories')
+        .from('ai_prompt_categories')
         .select('*')
         .order('name', { ascending: true });
       
@@ -323,7 +323,7 @@ export class PromptManagementService {
       const supabase = this.supabaseService.getClient();
       
       const { data, error } = await supabase
-        .from('prompt_categories')
+        .from('ai_prompt_categories')
         .insert([{
           name,
           description: description || null,
@@ -392,7 +392,7 @@ export class PromptManagementService {
       const supabase = this.supabaseService.getClient();
       
       const { data, error } = await supabase
-        .from('prompts')
+        .from('ai_prompts')
         .select('*')
         .order('updated_at', { ascending: false });
       
@@ -417,7 +417,7 @@ export class PromptManagementService {
       const supabase = this.supabaseService.getClient();
       
       const { data, error } = await supabase
-        .from('prompts')
+        .from('ai_prompts')
         .select('*')
         .eq('id', promptId)
         .single();
@@ -498,7 +498,7 @@ export class PromptManagementService {
       
       // Create the prompt
       const { data, error } = await supabase
-        .from('prompts')
+        .from('ai_prompts')
         .insert([insertData])
         .select()
         .single();
@@ -596,7 +596,7 @@ export class PromptManagementService {
       // Update the prompt
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase
-        .from('prompts')
+        .from('ai_prompts')
         .update(updateData)
         .eq('id', promptId)
         .select()
@@ -785,7 +785,7 @@ export class PromptManagementService {
       
       // First delete all relationships
       const { error: relationshipError } = await supabase
-        .from('prompt_relationships')
+        .from('ai_prompt_relationships')
         .delete()
         .eq('prompt_id', promptId);
       
@@ -796,7 +796,7 @@ export class PromptManagementService {
       
       // Then delete the prompt
       const { error } = await supabase
-        .from('prompts')
+        .from('ai_prompts')
         .delete()
         .eq('id', promptId);
       
@@ -874,7 +874,7 @@ export class PromptManagementService {
       // Get relationship data from prompt_relationships table
       const supabase = this.supabaseService.getClient();
       const { data: relationshipData, error } = await supabase
-        .from('prompt_relationships')
+        .from('ai_prompt_relationships')
         .select('*')
         .eq('prompt_id', promptId);
       
@@ -992,7 +992,7 @@ export class PromptManagementService {
       // Update the prompt
       const supabase = this.supabaseService.getClient();
       const { data, error } = await supabase
-        .from('prompts')
+        .from('ai_prompts')
         .update({
           metadata: updatedMetadata,
           updated_at: new Date().toISOString()
@@ -1008,7 +1008,7 @@ export class PromptManagementService {
       
       // Get existing relationships
       const { data: existingRelationships, error: fetchError } = await supabase
-        .from('prompt_relationships')
+        .from('ai_prompt_relationships')
         .select('id, asset_id')
         .eq('prompt_id', promptId);
       
@@ -1024,7 +1024,7 @@ export class PromptManagementService {
       // Delete removed relationships
       if (assetsToRemove.length > 0) {
         const { error: deleteError } = await supabase
-          .from('prompt_relationships')
+          .from('ai_prompt_relationships')
           .delete()
           .eq('prompt_id', promptId)
           .in('asset_id', assetsToRemove);
@@ -1058,7 +1058,7 @@ export class PromptManagementService {
         if (isExistingAsset) {
           // Update existing relationship
           const { error: updateError } = await supabase
-            .from('prompt_relationships')
+            .from('ai_prompt_relationships')
             .update({
               relationship_type: settings.relationship_type,
               relationship_context: settings.relationship_context,
@@ -1075,7 +1075,7 @@ export class PromptManagementService {
         } else {
           // Create new relationship
           const { error: insertError } = await supabase
-            .from('prompt_relationships')
+            .from('ai_prompt_relationships')
             .insert({
               prompt_id: promptId,
               asset_id: assetId,
@@ -1110,7 +1110,7 @@ export class PromptManagementService {
       const supabase = this.supabaseService.getClient();
       
       const { data, error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .select('*')
         .order('name', { ascending: true });
       
@@ -1135,7 +1135,7 @@ export class PromptManagementService {
       const supabase = this.supabaseService.getClient();
       
       const { data, error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .select('*')
         .eq('id', templateId)
         .single();
@@ -1165,7 +1165,7 @@ export class PromptManagementService {
       const supabase = this.supabaseService.getClient();
       
       const { data, error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .insert([{
           name,
           description: description || null,
@@ -1203,7 +1203,7 @@ export class PromptManagementService {
       const supabase = this.supabaseService.getClient();
       
       const { data, error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .update(updates)
         .eq('id', templateId)
         .select()
@@ -1232,7 +1232,7 @@ export class PromptManagementService {
       
       // First delete all associations with this template
       const { error: associationError } = await supabase
-        .from('prompt_template_associations')
+        .from('ai_prompt_template_associations')
         .delete()
         .eq('template_id', templateId);
       
@@ -1243,7 +1243,7 @@ export class PromptManagementService {
       
       // Then delete the template
       const { error } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .delete()
         .eq('id', templateId);
       
@@ -1273,7 +1273,7 @@ export class PromptManagementService {
       
       // Get associations
       const { data: associations, error: associationsError } = await supabase
-        .from('prompt_template_associations')
+        .from('ai_prompt_template_associations')
         .select('*')
         .eq('prompt_id', promptId)
         .order('priority', { ascending: true });
@@ -1290,7 +1290,7 @@ export class PromptManagementService {
       // Get the associated templates
       const templateIds = associations.map(a => a.template_id);
       const { data: templates, error: templatesError } = await supabase
-        .from('prompt_output_templates')
+        .from('ai_prompt_output_templates')
         .select('*')
         .in('id', templateIds);
       
@@ -1323,7 +1323,7 @@ export class PromptManagementService {
       
       // Check if the association already exists
       const { data: existingAssociation, error: checkError } = await supabase
-        .from('prompt_template_associations')
+        .from('ai_prompt_template_associations')
         .select('*')
         .eq('prompt_id', promptId)
         .eq('template_id', templateId)
@@ -1337,7 +1337,7 @@ export class PromptManagementService {
       if (existingAssociation) {
         // Update the priority if the association already exists
         const { data, error } = await supabase
-          .from('prompt_template_associations')
+          .from('ai_prompt_template_associations')
           .update({ priority })
           .eq('id', existingAssociation.id)
           .select()
@@ -1353,7 +1353,7 @@ export class PromptManagementService {
       } else {
         // Create a new association
         const { data, error } = await supabase
-          .from('prompt_template_associations')
+          .from('ai_prompt_template_associations')
           .insert([{
             prompt_id: promptId,
             template_id: templateId,
@@ -1388,7 +1388,7 @@ export class PromptManagementService {
       const supabase = this.supabaseService.getClient();
       
       const { error } = await supabase
-        .from('prompt_template_associations')
+        .from('ai_prompt_template_associations')
         .delete()
         .eq('prompt_id', promptId)
         .eq('template_id', templateId);
@@ -1418,7 +1418,7 @@ export class PromptManagementService {
       const supabase = this.supabaseService.getClient();
       
       const { data, error } = await supabase
-        .from('prompt_template_associations')
+        .from('ai_prompt_template_associations')
         .update({ priority })
         .eq('id', associationId)
         .select()

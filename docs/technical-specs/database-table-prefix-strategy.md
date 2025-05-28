@@ -52,30 +52,30 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 ### 7. Script Management - `script_`
 - `script_registry` (from `scripts`)
 
-### 8. Command & Analytics - `cmd_`   probably change to command
+### 8. Command & Analytics - `cmd_`   LATER   probably change to command
 - `cmd_tracking` (from `cli_command_tracking`)   leave as is
 - `cmd_categories` (from `command_categories`)
 - `cmd_patterns` (from `command_patterns`)
 
-### 9. AI & Prompt Management - `ai_`
+### 9. AI & Prompt Management - `ai_` DOING  
 - `ai_prompts` (from `prompts`)
 - `ai_prompt_categories` (from `prompt_categories`)
 - `ai_prompt_output_templates` (from `prompt_output_templates`)
 - `ai_prompt_relationships` (from `prompt_relationships`)
 - `ai_prompt_template_associations` (from `prompt_template_associations`)
 
-### 10. Learning Platform - `learn_`
+### 10. Learning Platform - `learn_`         DONE 
 - `learn_topics` (from `learning_topics`)
 - `learn_user_interests` (from `user_subject_interests`)
 - `learn_user_scores` (from `user_content_scores`)
 - `learn_user_analytics` (from `user_learning_analytics`)
 - `learn_subject_classifications` (from `subject_classifications`)
 
-### 11. Processing & Batch Operations - `batch_`
+### 11. Processing & Batch Operations - `batch_` . LATER
 - `batch_processing` (from `processing_batches`)
 - `batch_table_classifications` (from `table_classifications`)
 
-### 12. System & Infrastructure - `sys_`
+### 12. System & Infrastructure - `sys_` . INVESTIGATING
 - `sys_function_registry` (from `function_registry`)
 - `sys_function_relationships` (from `function_relationships`)
 - `sys_sql_query_history` (from `sql_query_history`)
@@ -84,7 +84,7 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 - `sys_asset_types` (from `asset_types`)
 - `sys_mime_types` (from `mime_types`)
 
-### 13. User Filtering & Preferences - `filter_`
+### 13. User Filtering & Preferences - `filter_` . LATER
 - `filter_user_profiles` (from `user_filter_profiles`)
 - `filter_user_profile_drives` (from `user_filter_profile_drives`)
 

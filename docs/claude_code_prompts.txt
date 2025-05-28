@@ -10,6 +10,31 @@
     --folder-id "1cKEcvA1Y3EwFGrR-wSWsyfkiTmp3uClg" \
     --video-id "88d99fa3-b901-407c-8e77-079770d33fe3"
 
+ Archive/Remove: 
+ 
+ to drop function_relationships, sql_query_history, app_pages and asset_types
+ 
+ sys_function_relationships, sys_sql_query_history, sys_domains, sys_app_pages, sys_asset_types - No active
+
+Summary
+
+  I've successfully archived the code that uses the function_registry table:
+
+  1. Created archive copies:
+    - /apps/dhg-improve-experts/src/utils/.archived_scripts/function-registry.20250127.ts
+    - /apps/dhg-improve-experts/src/utils/code-analysis/.archived_scripts/function-analyzer.20250127.ts
+  2. Removed database dependencies:
+    - Removed recordWorkingSolution function from function-registry.ts
+    - Removed WorkingSolution interface
+    - Removed saveToFunctionRegistry method from function-analyzer.ts
+    - Removed the call to saveToFunctionRegistry
+    - Removed unused supabase import
+  3. Added comments indicating where the archived code can be found
+
+  The code no longer has any dependencies on the function_registry table and can continue to function for local registry
+  operations without database persistence.
+
+
 
 
 Table Rename Command Instructions

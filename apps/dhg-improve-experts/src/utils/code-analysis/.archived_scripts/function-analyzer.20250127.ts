@@ -1,4 +1,4 @@
-// Supabase import removed - function_registry table integration has been archived
+import { supabase } from '@/integrations/supabase/client';
 import { processWithAI } from '@/utils/ai-processing';
 import { functionRegistry, categories } from '@/utils/function-registry';
 import { GutsTracker } from '@/utils/gutsTracker';
@@ -151,8 +151,8 @@ Guidelines for categorization:
           notes: func.notes
         });
 
-        // Function registry table integration has been removed
-        // Previously saved to function_registry table here
+        // Add to GUTS tables
+        this.saveToFunctionRegistry(func);
         
         registeredFunctions.push(func.name);
       });
@@ -164,9 +164,41 @@ Guidelines for categorization:
     }
   }
 
-  // saveToFunctionRegistry method has been archived
-  // This functionality used the function_registry table which is being retired
-  // See .archived_scripts/function-analyzer.20250127.ts for the original implementation
+  /**
+   * Save function to the database function_registry table to make it available to GUTS
+   */
+  private async saveToFunctionRegistry(func: FunctionMetadata): Promise<void> {
+    try {
+      const { data, error } = await supabase
+        .from('function_registry')
+        .upsert({
+          name: func.name,
+          category: func.category,
+          description: func.description,
+          location: func.location,
+          repository: 'dhg-improve-experts',
+          implementation_notes: func.notes || func.implementation,
+          status: func.status === 'active' ? 'verified' : func.status,
+          is_react_component: func.isReactComponent || false,
+          is_dashboard_specific: func.isDashboardSpecific || false,
+          is_utility_candidate: func.isUtilityCandidate || false,
+          complexity: func.complexity || 'medium',
+          dependencies: func.dependencies || [],
+          used_in: func.usedIn || [],
+          last_verified_at: new Date().toISOString()
+        })
+        .select();
+
+      if (error) {
+        console.error('Error saving function to registry:', error);
+        throw error;
+      }
+
+      this.log('Saved function to registry', { name: func.name, id: data?.[0]?.id });
+    } catch (error) {
+      console.error('Failed to save function to registry:', error);
+    }
+  }
 
   /**
    * Determine if a file is a React component
